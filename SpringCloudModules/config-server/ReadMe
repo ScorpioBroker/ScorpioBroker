@@ -1,0 +1,7 @@
+Limitation:
+If yml file is change then restart micro-service
+
+for example
+if changes in query-mqnqger.yml then need to restart query manager micro-service.
+
+ 

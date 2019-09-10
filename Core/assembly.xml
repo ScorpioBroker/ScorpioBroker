@@ -1,0 +1,61 @@
+<assembly
+	xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+	<id>NGSILDBrokerRelease</id>
+	<formats>
+		<format>dir</format>
+	</formats>
+	<includeBaseDirectory>true</includeBaseDirectory>
+	<baseDirectory></baseDirectory>
+
+
+
+	<!-- Copy in the leaf dependencies -->
+	<dependencySets>
+		<dependencySet>
+			<!-- Dependencies of the aggregator pom -->
+			<excludes>
+				<!-- The following deps aren't bundles and can't be used in osgi anyway -->
+				<exclude>org.osgi:org.osgi.compendium</exclude>
+				<exclude>eu.neclab.mediationgateway:*</exclude>
+				<exclude>org.easymock:easymock</exclude>
+				<exclude>net.sf.kxml:kxml2</exclude>
+				<exclude>org.osgi:org.osgi.service.component.annotations</exclude>
+				<exclude>org.osgi:org.osgi.service.metatype.annotations</exclude>
+				<exclude>xmlpull:xmlpull</exclude>
+				<exclude>org.slf4j:slf4j-api</exclude>
+				<exclude>commons-logging:commons-logging</exclude>
+			</excludes>
+			<outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
+			<outputDirectory>bundle</outputDirectory>
+		</dependencySet>
+	</dependencySets>
+
+	<!-- Copy in the leaf modules themselves -->
+	<moduleSets>
+		<moduleSet>
+			<includeSubModules>true</includeSubModules>
+			<excludes>
+				<exclude>eu.nec.leaf:eu.nec.leaf.webinterface:war</exclude>
+			</excludes>
+			<binaries>
+				<outputDirectory>bundle</outputDirectory>
+				<unpack>false</unpack>
+				<includeDependencies>true</includeDependencies>
+				<excludes>
+					<exclude>org.osgi:org.osgi.service.component.annotations</exclude>
+					<exclude>org.osgi:org.osgi.service.metatype.annotations</exclude>
+					<exclude>eu.neclab.mediationgateway:*</exclude>
+					<exclude>org.easymock:easymock</exclude>
+					<exclude>org.osgi:org.osgi.compendium</exclude>
+					<exclude>net.sf.kxml:kxml2</exclude>
+					<exclude>xmlpull:xmlpull</exclude>
+					<exclude>org.slf4j:slf4j-api</exclude>
+					<exclude>commons-logging:commons-logging</exclude>
+				</excludes>
+				<outputFileNameMapping>${artifact.artifactId}.${artifact.extension}</outputFileNameMapping>
+			</binaries>
+		</moduleSet>
+	</moduleSets>
+</assembly>

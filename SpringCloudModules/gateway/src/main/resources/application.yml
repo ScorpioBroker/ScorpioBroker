@@ -1,0 +1,52 @@
+# Configure the Authorization Server and User Info Resource Server details
+security:
+  oauth2:
+    client:
+    # for keycloak configure
+      #accessTokenUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/token
+      #userAuthorizationUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/auth
+      #clientId: authserver
+      #clientSecret: ae8c99a9-f98d-41e9-8fb2-d348acb987e0
+    # for ketrock configure  
+      accessTokenUri: http://172.30.64.120:3000/oauth2/token
+      userAuthorizationUri: http://172.30.64.120:3000/oauth2/authorize
+      clientId: a2034c11-d2a9-4cab-9fac-ff65425bd53f
+      clientSecret: 7364baec-6d6f-4307-8c71-d66e1e6c3afc
+    resource:
+    # for keycloak configure
+      #userInfoUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/userinfo
+    # for keycloak configure
+      userInfoUri: http://172.30.64.120:3000/user
+#Zuul routing rules for microservices.
+zuul:
+  routes:
+    entity-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/entities/**
+      serviceId: ENTITY-MANAGER
+    subscription-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/subscriptions/**
+      serviceId: SUBSCRIPTION-MANAGER
+    context-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/csourceRegistrations/**
+      serviceId: C-SOURCES
+    subforeg:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/csourcesubscriptions/**
+      serviceId: C-SOURCES
+      stripPrefix: false
+    history-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/temporal/**
+      serviceId: HISTORY-MANAGER
+    atcontext-server:
+      sensitiveHeaders:
+      path: /ngsi-ld/contextes/**
+      serviceId: ATCONTEXT-SERVER
+    test-manager:
+      sensitiveHeaders:
+      path: /test/**
+      serviceId: testmanager
+

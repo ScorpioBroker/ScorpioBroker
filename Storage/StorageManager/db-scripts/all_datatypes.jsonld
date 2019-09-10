@@ -1,0 +1,167 @@
+{
+  "@context": [
+    "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
+    {
+      "numberExample": "http://example.org/numberExample",
+      "stringExample": "http://example.org/stringExample",
+      "dateTimeExample": {
+        "@type": "https://uri.etsi.org/ngsi-ld/DateTime",
+        "@id": "http://example.org/dateTimeExample"
+      },
+      "observedAtDateTimeExample": "http://example.org/observedAtDateTimeExample",
+      "dateExample": {
+        "@type": "https://uri.etsi.org/ngsi-ld/Date",
+        "@id": "http://example.org/dateExample"
+      },
+      "timeExample": {
+        "@type": "https://uri.etsi.org/ngsi-ld/Time",
+        "@id": "http://example.org/timeExample"
+      },
+      "otherValueExample": "http://example.org/otherValueExample",
+      "trueExample": "http://example.org/trueExample",
+      "falseExample": "http://example.org/falseExample",
+      "uriExample": "http://example.org/uriExample",
+      "arrayExample": "http://example.org/arrayExample",
+      "topLevelExample": "http://example.org/topLevelExample",
+      "subPropertyExample": "http://example.org/subPropertyExample",
+      "manyLevelsExample": "http://example.org/manyLevelsExample",
+      "sub1": {
+        "@type": "@id",
+        "@id": "http://example.org/sub1"
+      },      
+      "sub2": "http://example.org/sub2",
+      "sub3": "http://example.org/sub3",
+      "relationshipExample": {
+        "@type": "@id",
+        "@id": "http://example.org/relationshipExample"
+      },
+      "objectExample": "http://example.org/objectExample",
+      "streetAddress": "https://example.org/streetAddress",
+      "addressRegion": "https://example.org/addressRegion",
+      "addressLocality": "https://example.org/addressLocality",
+      "postalCode": "https://example.org/postalCode",
+      "multiLevelObjectExample": "http://example.org/multiLevelObjectExample",
+      "streetName": "https://example.org/streetName",
+      "houseNumber": "https://example.org/houseNumber",
+      "area": "https://example.org/area"
+    }
+  ],
+  "id": "urn:ngsi-ld:Test:all_datatypes",
+  "type": "urn:ngsi-ld:Test",
+  "numberExample": {
+    "type": "Property",
+    "value": 100
+  },
+  "stringExample": {
+    "type": "Property",
+    "value": "Mercedes"
+  },
+  "dateTimeExample": {
+    "type": "Property",
+    "value": {
+      "@type": "DateTime",
+      "@value": "2018-12-04T12:00:00Z"
+    }
+  },
+  "observedAtDateTimeExample": {
+    "type": "Property",
+    "value": "Foo",
+    "observedAt": "2018-12-04T12:00:00Z"
+  },
+  "dateExample": {
+    "type": "Property",
+    "value": {
+      "@type": "Date",
+      "@value": "2018-12-04"
+    }
+  },
+  "timeExample": {
+    "type": "Property",
+    "value": {
+      "@type": "Time",
+      "@value": "12:00:00Z"
+    }
+  },
+  "otherValueExample": {
+    "type": "Property",
+    "value": true
+  },
+  "trueExample": {
+    "type": "Property",
+    "value": true
+  },
+  "falseExample": {
+    "type": "Property",
+    "value": false
+  },
+  "uriExample": {
+    "type": "Property",
+    "value": "http://www.example.com"
+  },
+  "objectExample": {
+    "type": "Property",
+    "value": {
+      "streetAddress": "Main Street 65",
+      "addressRegion": "Metropolis",
+      "addressLocality": "Duck Village",
+      "postalCode": 42000
+    }
+  },
+  "multiLevelObjectExample": {
+    "type": "Property",
+    "value": {
+      "streetAddress": {
+        "streetName": "Main Street",
+        "houseNumber": 65
+      }
+    }
+  },
+  "arrayExample": {
+    "type": "Property",
+    "value": [
+      999,
+      true,
+      ["a", "b"],
+      "Foo",
+      {
+        "streetAddress": "Franklinstrasse"
+      }
+    ]
+  },
+  "topLevelExample": {
+    "type": "Property",
+    "value": 10,
+    "subPropertyExample": {
+      "type": "Property",
+      "value": 5
+    }
+  },
+  "manyLevelsExample": {
+    "type": "Property",
+    "value": "A",
+    "sub1": {
+      "type": "Relationship",
+      "object": "urn:ngsi-ld:B",
+      "sub2": {
+        "type": "Property",
+        "value": "C",
+        "sub3": {
+          "type": "Property",
+          "value": "D"
+        }
+      }  
+    }
+  },
+  "relationshipExample": {
+    "type": "Relationship",
+    "object": "urn:ngsi-ld:relationshipExample"
+  },
+  "location":{
+    "type":"GeoProperty",
+    "value":"{ \"type\":\"Point\", \"coordinates\":[ -8.5, 41.2 ] }"
+  },
+  "area":{
+    "type":"GeoProperty",
+    "value":"{ \"type\":\"Polygon\", \"coordinates\": [ [ [ 7.6025390625, 47.70976154266637 ], [ 12.94189453125, 47.90161354142077 ], [ 9.33837890625, 54.85131525968606 ], [ 7.6025390625, 47.70976154266637 ] ] ]  }"
+  }
+}

@@ -1,0 +1,30 @@
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+      bindings:
+        CSOURCE_REGISTRATION_WRITE_CHANNEL:
+          destination: CONTEXT_SOURCE
+          contentType: application/json
+        CSOURCE_NOTIFICATION_WRITE_CHANNEL:
+          destination: CONTEXT_SOURCE_NOTIFICATION
+          contentType: application/json
+        CSOURCE_REGISTRATION_READ_CHANNEL:
+          destination: CONTEXT_SOURCE
+          contentType: application/json
+          group: csource
+        CONTEXT_REGISTRY_READ_CHANNEL:
+          destination: CONTEXT_REGISTRY
+          contentType: application/json
+          group: csourceregistry
+        CONTEXT_UPDATE_READ_CHANNEL:
+          destination: CONTEXT_UPDATE
+          contentType: application/json
+          group: csourceupdate
+        ATCONTEXT_WRITE_CHANNEL:
+          destination: ATCONTEXT
+          contentType: application/json        
+               
+          

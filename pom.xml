@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>NGSILDBroker</artifactId>
+	<packaging>pom</packaging>
+	<parent>
+		<artifactId>OverallParent</artifactId>
+		<groupId>eu.neclab.ngsildbroker</groupId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>./OverallParent</relativePath>
+	</parent>
+
+	
+
+	<modules>
+		<module>OverallParent</module> 
+		<module>BrokerParent</module>
+		<module>Commons</module>
+		<module>SpringCloudParent</module>
+		<module>SpringCloudModules</module>
+		<module>Core</module>
+		<module>Registry</module>
+		<module>Storage</module>
+		<module>History</module>
+  </modules>
+</project>

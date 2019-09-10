@@ -1,0 +1,45 @@
+{
+  "type":"object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "attrs": {
+      "type": "string"
+    },    
+    "idPattern": {
+      "type": "string"
+    },
+    "q": {
+      "type": "string"
+    },
+    "georel": {
+      "type": "object",
+      "javaType" : "GeoqueryRel",
+    },
+    "geometry": {
+      "type": "string"
+    },
+    "coordinates": {
+      "type": "string"
+    },
+    "geoproperty": {
+      "type": "string"
+    },
+    "timerel": {
+      "type": "string"
+    },
+    "time": {
+      "type": "string"
+    },
+    "endTime": {
+      "type": "string"
+    },
+    "timeproperty": {
+      "type": "string"
+    }
+  }
+}

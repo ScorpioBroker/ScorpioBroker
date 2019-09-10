@@ -1,0 +1,62 @@
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+      bindings:
+        ENTITY_WRITE_CHANNEL:
+          destination: ENTITY
+          contentType: application/json
+        ENTITY_READ_CHANNEL:
+          destination: ENTITY
+          contentType: application/json
+          group: entity
+        KVENTITY_WRITE_CHANNEL:
+          destination: KVENTITY
+          contentType: application/json
+        ENTITY_WITHOUT_SYSATTRS_WRITE_CHANNEL:
+          destination: ENTITY_WITHOUT_SYSATTRS
+          contentType: application/json
+        CREATE_WRITE_CHANNEL:
+          destination: ENTITY_CREATE
+          contentType: application/json
+        #CREATE_READ_CHANNEL:
+          #destination: ENTITY_CREATE
+          #contentType: application/json
+          #group: create
+        APPEND_WRITE_CHANNEL:
+          destination: ENTITY_APPEND
+          contentType: application/json
+        #APPEND_READ_CHANNEL:
+          #destination: ENTITY_APPEND
+          #contentType: application/json
+          #group: append
+        UPDATE_WRITE_CHANNEL:
+          destination: ENTITY_UPDATE
+          contentType: application/json
+        #UPDATE_READ_CHANNEL:
+          #destination: ENTITY_UPDATE
+          #contentType: application/json
+          #group: update
+        DELETE_WRITE_CHANNEL:
+          destination: ENTITY_DELETE
+          contentType: application/json
+        #DELETE_READ_CHANNEL:
+          #destination: ENTITY_DELETE
+          #contentType: application/json
+          #group: delete
+        CONTEXT_REGISTRY_WRITE_CHANNEL:
+          destination: CONTEXT_REGISTRY
+          contentType: application/json
+        CONTEXT_REGISTRY_UPDATE_CHANNEL:
+          destination: CONTEXT_UPDATE
+          contentType: application/json
+        INDEX_WRITE_CHANNEL:
+          destination: ENTITY_INDEX
+          contentType: application/json
+        ATCONTEXT_WRITE_CHANNEL:
+          destination: ATCONTEXT
+          contentType: application/json
+               
+          

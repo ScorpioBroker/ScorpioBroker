@@ -1,0 +1,23 @@
+{
+  "@context": [
+    "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
+    {
+      "Vehicle":"http://example.org/vehicle/Vehicle",
+      "brandName":"http://example.org/vehicle/brandName",
+      "speed":"http://example.org/vehicle/speed"
+    }
+  ],
+  "id": "urn:ngsi-ld:ContextSourceRegistration:infotest_type_idPattern",
+  "type": "ContextSourceRegistration",
+  "information": [
+    {
+      "entities": [
+        {
+          "type": "Vehicle",
+          "idPattern": "urn:ngsi-ld:Vehicle.*"
+        }
+      ]
+    }
+  ],
+  "endpoint": "http://my.csource.org:1026"
+}

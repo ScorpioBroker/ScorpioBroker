@@ -1,0 +1,84 @@
+{
+  "http://example.org/vehicle/brandName": [
+    {
+      "@type": [
+        "https://uri.etsi.org/ngsi-ld/Property"
+      ],
+      "https://uri.etsi.org/ngsi-ld/hasValue": [
+        {
+          "@value": "Mercedes"
+        }
+      ]
+    }
+  ],
+  "https://uri.etsi.org/ngsi-ld/createdAt": [
+    {
+      "@type": "https://uri.etsi.org/ngsi-ld/DateTime",
+      "@value": "2017-07-29T12:00:04Z"
+    }
+  ],
+  "@id": "urn:ngsi-ld:Vehicle:A4567",
+  "http://example.org/common/isParked": [
+    {
+      "https://uri.etsi.org/ngsi-ld/hasObject": [
+        {
+          "@id": "urn:ngsi-ld:OffStreetParking:Downtown1"
+        }
+      ],
+      "https://uri.etsi.org/ngsi-ld/observedAt": [
+        {
+          "@type": "https://uri.etsi.org/ngsi-ld/DateTime",
+          "@value": "2017-07-29T12:00:04Z"
+        }
+      ],
+      "http://example.org/common/providedBy": [
+        {
+          "https://uri.etsi.org/ngsi-ld/hasObject": [
+            {
+              "@id": "urn:ngsi-ld:Person:Bob"
+            }
+          ],
+          "@type": [
+            "https://uri.etsi.org/ngsi-ld/Relationship"
+          ]
+        }
+      ],
+      "@type": [
+        "https://uri.etsi.org/ngsi-ld/Relationship"
+      ]
+    }
+  ],
+  "https://uri.etsi.org/ngsi-ld/location": [
+    {
+      "@type": [
+        "https://uri.etsi.org/ngsi-ld/GeoProperty"
+      ],
+      "https://uri.etsi.org/ngsi-ld/hasValue": [
+        {
+          "@value": "{ \"type\":\"Point\", \"coordinates\":[ -8.5, 41.2 ] }"
+        }
+      ]
+    }
+  ],
+  "https://uri.etsi.org/ngsi-ld/modifiedAt": [
+    {
+      "@type": "https://uri.etsi.org/ngsi-ld/DateTime",
+      "@value": "2017-07-29T12:00:04Z"
+    }
+  ],
+  "http://example.org/vehicle/speed": [
+    {
+      "@type": [
+        "https://uri.etsi.org/ngsi-ld/Property"
+      ],
+      "https://uri.etsi.org/ngsi-ld/hasValue": [
+        {
+          "@value": 80
+        }
+      ]
+    }
+  ],
+  "@type": [
+    "http://example.org/vehicle/Vehicle"
+  ]
+}

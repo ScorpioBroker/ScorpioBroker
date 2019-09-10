@@ -1,0 +1,12 @@
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+      bindings:
+         TEMPORAL_ENTITY_WRITE_CHANNEL:
+          destination: TEMPORALENTITY
+          contentType: application/json
+               
+          
