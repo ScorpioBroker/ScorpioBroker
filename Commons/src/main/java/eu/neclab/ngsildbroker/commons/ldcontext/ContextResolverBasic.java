@@ -10,7 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -28,8 +31,9 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 public class ContextResolverBasic {
 
 	private URI CORE_CONTEXT_URL;
-	private String CORE_CONTEXT_URL_STR = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld";
-	private URI DEFAULT_CONTEXT_URL;
+	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	private String CORE_CONTEXT_URL_STR;
+//	private URI DEFAULT_CONTEXT_URL;
 
 	@Autowired
 	KafkaOps kafkaOps;
@@ -42,23 +46,24 @@ public class ContextResolverBasic {
 	private String AT_CONTEXT_BASE_URL = "http://localhost:9090/ngsi-ld/atcontext/";
 	private HttpUtils httpUtils = HttpUtils.getInstance(this);
 	private Map<String, Object> CORE_CONTEXT;
-	private Map<String, Object> DEFAULT_CONTEXT;
+//	private Map<String, Object> DEFAULT_CONTEXT;
 	private Map<String, Object> BASE_CONTEXT = new HashMap<String, Object>();
 	
 	private static final String IS_FULL_VALID = "ajksd7868";
-
+	@PostConstruct
+	private void setup() 
 	{
 		try {
 			CORE_CONTEXT_URL = new URI(CORE_CONTEXT_URL_STR);
 
 			String json = httpUtils.doGet(CORE_CONTEXT_URL);
 			CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
-			DEFAULT_CONTEXT_URL = new URI(
-					"https://forge.etsi.org/gitlab/NGSI-LD/NGSI-LD/raw/master/defaultContext/defaultContextVocab.jsonld");
-			json = httpUtils.doGet(DEFAULT_CONTEXT_URL);
-			DEFAULT_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
+//			DEFAULT_CONTEXT_URL = new URI(
+//					"https://forge.etsi.org/gitlab/NGSI-LD/NGSI-LD/raw/master/defaultContext/defaultContextVocab.jsonld");
+//			json = httpUtils.doGet(DEFAULT_CONTEXT_URL);
+//			DEFAULT_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 			BASE_CONTEXT.putAll(CORE_CONTEXT);
-			BASE_CONTEXT.putAll(DEFAULT_CONTEXT);
+//			BASE_CONTEXT.putAll(DEFAULT_CONTEXT);
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -66,6 +71,7 @@ public class ContextResolverBasic {
 		}
 	}
 
+	
 	public static void main(String[] args) throws Exception {
 		ContextResolverBasic bla = new ContextResolverBasic();
 		List<Object> contextLinks = null;
@@ -221,7 +227,7 @@ public class ContextResolverBasic {
 		if (rawContext != null && !rawContext.isEmpty()) {
 			sorted.addAll(rawContext);
 		}
-		sorted.add(DEFAULT_CONTEXT_URL);
+//		sorted.add(DEFAULT_CONTEXT_URL);
 		sorted.add(CORE_CONTEXT_URL);
 		kafkaOps.pushToKafka(producerChannel.atContextWriteChannel(), (hash + "").getBytes(),
 				DataSerializer.toJson(sorted).getBytes());
