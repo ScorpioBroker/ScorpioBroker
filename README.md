@@ -17,8 +17,11 @@ Scorpio requires two components to be installed.
 ### Postgres
 
 Please download the [Postgres DB](https://www.postgresql.org/) and the [Postgis](https://postgis.net) extension and follow the instructions on the websites to set them up.
+
 Scorpio has been tested and developed with Postgres 10. 
+
 The default username and password which Scorpio uses is "ngb". If you want to use a different username or password you need to provide them as parameter when starting the StorageManager and the RegistryManager.
+
 e.g. java -jar StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword
 or 
 java -jar RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar --spring.datasource.username=funkyusername --spring.datasource.password=funkypassword
@@ -26,8 +29,11 @@ java -jar RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar --spring.datasource.usern
 ### Apache Kafka
 
 Scorpio uses [Apache Kafka](https://kafka.apache.org/) for the communication between the microservices.
+
 Scorpio has been tested and developed with Kafka version 2.12-2.1.0
+
 Please download [Apache Kafka](https://kafka.apache.org/downloads) and follow the instructions on the website. 
+
 In order to start kafka you need to start two components 
 Start zookeeper with <kafkafolder>/bin/[Windows]/zookeeper-server-start.[bat|sh] [..]/../config/zookeeper.properties
 Start kafkaserver with <kafkafolder>/bin/[Windows]/kafka-server-start.[bat|sh] [..]/../config/server.properties
@@ -35,23 +41,39 @@ Start kafkaserver with <kafkafolder>/bin/[Windows]/kafka-server-start.[bat|sh] [
 For more details please visit the Kafka website.
 
 ## Starting of the components
+
 After the build start the individual components as normal Jar files.
+
 Start the SpringCloud services by running 
+
 java -jar eureka-server-<VERSIONNUMBER>-SNAPSHOT.jar
+
 java -jar gateway-<VERSIONNUMBER>-SNAPSHOT.jar
+
 java -jar config-server-<VERSIONNUMBER>-SNAPSHOT.jar
+
+
 Start the broker components 
+
 java -jar StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar
+
 java -jar QueryManager-<VERSIONNUMBER>-SNAPSHOT.jar
+
 java -jar RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar
+
 java -jar EntityManager-<VERSIONNUMBER>-SNAPSHOT.jar
+
 java -jar HistoryManager-<VERSIONNUMBER>-SNAPSHOT.jar
+
 java -jar SubscriptionManager-<VERSIONNUMBER>-SNAPSHOT.jar
+
 java -jar AtContextServer-<VERSIONNUMBER>-SNAPSHOT.jar
+
 ### Changing config 
 All configurable options are present in application.properties files. In order to change those you have two options.
 Either change the properties before the build or you can override configs by add --<OPTION_NAME>=<OPTION_VALUE)
 e.g. 
+
 java -jar StorageManager.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword
 
 ## Basic interaction
@@ -60,9 +82,11 @@ By default the broker runs on port 9090 the base URL for interaction with the br
 http://localhost:9090/ngsi-ld/v1/
 For a detail explaination about the API please look the ETSI spec.
 
+
 Generally speaking you can 
 Create entities by sending an HTTP POST request to http://localhost:9090/ngsi-ld/v1/entities
 with a payload like this 
+
 {
     "id": "urn:ngsi-ld:testunit:123",
     "type": "AirQualityObserved",
@@ -91,11 +115,16 @@ with a payload like this
         "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
     ]
 }
+
+
 In the given example the @context is in the payload therefor you have to set the ContentType header to application/ld+json
 
 To receive entities you can send an HTTP GET to 
+
 http://localhost:9090/ngsi-ld/v1/entities/<entityId>
+
 or run a query by sending a GET like this 
+
 http://localhost:9090/ngsi-ld/v1/entities/?type=Vehicle&limit=2 
 Accept: application/ld+json 
 Link: <http://<HOSTNAME_OF_WHERE_YOU_HAVE_AN_ATCONTEXT>/aggregatedContext.jsonld>; rel="http://www.w3.org/ns/json-ld#context";type="application/ld+json"
