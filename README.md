@@ -22,9 +22,10 @@ Scorpio has been tested and developed with Postgres 10.
 
 The default username and password which Scorpio uses is "ngb". If you want to use a different username or password you need to provide them as parameter when starting the StorageManager and the RegistryManager.
 
-e.g. `java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword`
-or 
-`java -jar Registry/RegistryManager/target/RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar --spring.datasource.username=funkyusername --spring.datasource.password=funkypassword`
+e.g.<br>
+`java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword`<br>
+OR<br>
+`java -jar Registry/RegistryManager/target/RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar --spring.datasource.username=funkyusername --spring.datasource.password=funkypassword`<br>
     
 Don't forget to create the corresponding user ("ngb" or the different username you chose) in postgres. It will be used by the SpringCloud services for database connection. While in terminal, log in to the psql console as postgres user:
 
@@ -59,9 +60,11 @@ Scorpio has been tested and developed with Kafka version 2.12-2.1.0
 
 Please download [Apache Kafka](https://kafka.apache.org/downloads) and follow the instructions on the website. 
 
-In order to start kafka you need to start two components<br>
-Start zookeeper with `<kafkafolder>/bin/[Windows]/zookeeper-server-start.[bat|sh] <kafkafolder>/config/zookeeper.properties`<br>
-Start kafkaserver with `<kafkafolder>/bin/[Windows]/kafka-server-start.[bat|sh] <kafkafolder>/config/server.properties`
+In order to start kafka you need to start two components:<br>
+Start zookeeper with<br>
+`<kafkafolder>/bin/[Windows]/zookeeper-server-start.[bat|sh] <kafkafolder>/config/zookeeper.properties`<br>
+Start kafkaserver with<br>
+`<kafkafolder>/bin/[Windows]/kafka-server-start.[bat|sh] <kafkafolder>/config/server.properties`
 
 For more details please visit the Kafka website.
 
@@ -96,10 +99,10 @@ Start the broker components
 
 ### Changing config 
 All configurable options are present in application.properties files. In order to change those you have two options.
-Either change the properties before the build or you can override configs by add --<OPTION_NAME>=<OPTION_VALUE)
+Either change the properties before the build or you can override configs by add `--<OPTION_NAME>=<OPTION_VALUE)`
 e.g. 
 
-java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword
+`java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword`
 
 ## Basic interaction
 
