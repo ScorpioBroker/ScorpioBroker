@@ -170,9 +170,9 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 
 		}
 
-		if (result.getId() == null) {
-			throw new JsonParseException("Id is missing");
-		}
+//		if (result.getId() == null) {
+//			throw new JsonParseException("Id is missing");
+//		}
 		return result;
 	}
 
