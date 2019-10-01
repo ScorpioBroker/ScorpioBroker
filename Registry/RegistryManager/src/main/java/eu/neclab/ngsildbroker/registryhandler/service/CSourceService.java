@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.registryhandler.service;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -48,7 +49,7 @@ public class CSourceService {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 	public static final Gson GSON = DataSerializer.GSON;
-	
+
 	@Value("${bootstrap.servers}")
 	String BOOTSTRAP_SERVERS;
 
@@ -62,7 +63,7 @@ public class CSourceService {
 
 	@Autowired
 	CSourceSubscriptionService csourceSubService;
-	
+
 	@Autowired
 	QueryParser queryParser;
 
@@ -71,7 +72,7 @@ public class CSourceService {
 
 	private final CSourceProducerChannel producerChannels;
 	@SuppressWarnings("unused")
-	//TODO check to remove
+	// TODO check to remove
 	private final CSourceConsumerChannel consumerChannels;
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
 	Timer watchDog = new Timer(true);
@@ -99,32 +100,33 @@ public class CSourceService {
 		return new ArrayList<JsonNode>(entityMap.values());
 	}
 
-//	private List<String> getParamsList(String types) {
-//		if (types != null) {
-//			return Stream.of(types.split(",")).collect(Collectors.toList());
-//		}
-//		return null;
-//	}
-//
-//	private boolean filterForParams(List<String> params, String matchEntity) {
-//		if (params == null)
-//			return true;
-//		if (!params.contains(matchEntity)) {
-//			return false;
-//		}
-//		return true;
-//	}
-//
-//	private boolean filterForParamsPatterns(List<String> idPatterns, String matchEntity) {
-//		if (idPatterns == null)
-//			return true;
-//		for (String idPattern : idPatterns) {
-//			if (Pattern.compile(idPattern).matcher(matchEntity).matches()) {
-//				return true;
-//			}
-//		}
-//		return false;
-//	}
+	// private List<String> getParamsList(String types) {
+	// if (types != null) {
+	// return Stream.of(types.split(",")).collect(Collectors.toList());
+	// }
+	// return null;
+	// }
+	//
+	// private boolean filterForParams(List<String> params, String matchEntity) {
+	// if (params == null)
+	// return true;
+	// if (!params.contains(matchEntity)) {
+	// return false;
+	// }
+	// return true;
+	// }
+	//
+	// private boolean filterForParamsPatterns(List<String> idPatterns, String
+	// matchEntity) {
+	// if (idPatterns == null)
+	// return true;
+	// for (String idPattern : idPatterns) {
+	// if (Pattern.compile(idPattern).matcher(matchEntity).matches()) {
+	// return true;
+	// }
+	// }
+	// return false;
+	// }
 
 	public CSourceRegistration getCSourceRegistrationById(String registrationId) throws ResponseException, Exception {
 		if (registrationId == null) {
@@ -142,7 +144,8 @@ public class CSourceService {
 		return DataSerializer.getCSourceRegistration(objectMapper.writeValueAsString(entityJsonBody));
 	}
 
-	public boolean updateCSourceRegistration(String registrationId, String payload) throws ResponseException, Exception {
+	public boolean updateCSourceRegistration(String registrationId, String payload)
+			throws ResponseException, Exception {
 		MessageChannel messageChannel = producerChannels.csourceWriteChannel();
 		if (registrationId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
@@ -163,7 +166,7 @@ public class CSourceService {
 
 		synchronized (this) {
 			TimerTask task = regId2TimerTask.get(registrationId.toString());
-			if(task!=null) {
+			if (task != null) {
 				task.cancel();
 			}
 			this.csourceTimerTask(newCSourceRegistration);
@@ -176,7 +179,15 @@ public class CSourceService {
 
 	public URI registerCSource(CSourceRegistration csourceRegistration) throws ResponseException, Exception {
 		MessageChannel messageChannel = producerChannels.csourceWriteChannel();
-		String id = csourceRegistration.getId().toString();
+		String id;
+		URI idUri = csourceRegistration.getId();
+		if (idUri == null) {
+			idUri = generateUniqueRegId(csourceRegistration);
+			csourceRegistration.setId(idUri);
+
+		}
+		id = idUri.toString();
+
 		if (csourceRegistration.getType() == null) {
 			logger.error("Invalid type!");
 			throw new ResponseException(ErrorType.BadRequestData);
@@ -202,7 +213,7 @@ public class CSourceService {
 				throw new ResponseException(ErrorType.AlreadyExists);
 			}
 		}
-				
+
 		// TODO: [check for valid identifier (id)]
 		operations.pushToKafka(messageChannel, id.getBytes(), DataSerializer.toJson(csourceRegistration).getBytes());
 
@@ -211,7 +222,22 @@ public class CSourceService {
 			csourceSubService.checkSubscriptions(csourceRegistration, TriggerReason.newlyMatching);
 		}
 
-		return new URI(id);
+		return idUri;
+	}
+
+	private URI generateUniqueRegId(CSourceRegistration csourceRegistration) {
+
+		try {
+
+			String key = "urn:ngsi-ld:csourceregistration:" + csourceRegistration.hashCode();
+			while (this.operations.isMessageExists(key, this.CSOURCE_TOPIC)) {
+				key = key + "1";
+			}
+			return new URI(key);
+		} catch (URISyntaxException e) {
+			// Left empty intentionally should never happen
+			throw new AssertionError();
+		}
 	}
 
 	public void csourceTimerTask(CSourceRegistration csourceReg) {
@@ -250,7 +276,7 @@ public class CSourceService {
 
 	// for testing
 	@StreamListener(CSourceConsumerChannel.csourceReadChannel)
-	public void handleEntityCreate(Message<?> message)  {
+	public void handleEntityCreate(Message<?> message) {
 		String payload = (String) message.getPayload();
 		String key = new String((byte[]) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY));
 		logger.trace("key received ::::: " + key);
@@ -258,9 +284,8 @@ public class CSourceService {
 	}
 
 	@StreamListener(CSourceConsumerChannel.contextRegistryReadChannel)
-	public void handleEntityRegistration(Message<?> message)  {
-		CSourceRegistration csourceRegistration = DataSerializer
-				.getCSourceRegistration((String) message.getPayload());
+	public void handleEntityRegistration(Message<?> message) {
+		CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration((String) message.getPayload());
 		// objectMapper.readValue((byte[]) message.getPayload(),
 		// CSourceRegistration.class);
 		csourceRegistration.setInternal(true);
@@ -292,7 +317,7 @@ public class CSourceService {
 
 	@KafkaListener(topics = "${csource.query.topic}", groupId = "csourceQueryHandler")
 	@SendTo
-	//@SendTo("QUERY_RESULT") // for tests without QueryManager
+	// @SendTo("QUERY_RESULT") // for tests without QueryManager
 	public byte[] handleContextQuery(@Payload byte[] message) throws Exception {
 		logger.trace("handleContextQuery() :: started");
 		String payload = new String((byte[]) message);
