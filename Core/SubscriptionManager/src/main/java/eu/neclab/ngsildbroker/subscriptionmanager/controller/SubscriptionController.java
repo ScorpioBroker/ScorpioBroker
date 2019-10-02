@@ -156,7 +156,7 @@ public class SubscriptionController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@RequestMapping(method = RequestMethod.PATCH, value = "/{id}")
+	@RequestMapping(method = RequestMethod.PATCH, value = "/{"+NGSIConstants.QUERY_PARAMETER_ID+"}")
 	public ResponseEntity<Object> updateSubscription(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestBody String payload) {
@@ -165,9 +165,12 @@ public class SubscriptionController {
 		try {
 			String resolved = contextResolver.expand(payload, context);
 			Subscription subscription = DataSerializer.getSubscription(resolved);
+			if(subscription.getId() == null) {
+				subscription.setId(id);
+			}
 			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context);
-
-			expandSubscriptionAttributes(subscription, context);
+			
+//			expandSubscriptionAttributes(subscription, context);
 			if (resolved == null || subscription == null || !id.equals(subscription.getId())) {
 				return badRequestResponse;
 			}
@@ -179,29 +182,30 @@ public class SubscriptionController {
 		return ResponseEntity.noContent().build();
 	}
 
-	private void expandSubscriptionAttributes(Subscription subscription, List<Object> context)
-			throws ResponseException {
-		for (EntityInfo info : subscription.getEntities()) {
-			if (info.getType() != null && !info.getType().trim().equals("")) {
-				info.setType(ldTools.expandAttribute(info.getType(), context));
-			}
-		}
-		if (subscription.getAttributeNames() != null) {
-			ArrayList<String> newAttribNames = new ArrayList<String>();
-			for (String attrib : subscription.getAttributeNames()) {
-				newAttribNames.add(ldTools.expandAttribute(attrib, context));
-			}
-			subscription.setAttributeNames(newAttribNames);
-		}
-		if (subscription.getNotification().getAttributeNames() != null) {
-			ArrayList<String> newAttribNames = new ArrayList<String>();
-			for (String attrib : subscription.getNotification().getAttributeNames()) {
-				newAttribNames.add(ldTools.expandAttribute(attrib, context));
-			}
-			subscription.getNotification().setAttributeNames(newAttribNames);
 
-		}
-
-	}
+//	private void expandSubscriptionAttributes(Subscription subscription, List<Object> context)
+//			throws ResponseException {
+//		for (EntityInfo info : subscription.getEntities()) {
+//			if (info.getType() != null && !info.getType().trim().equals("")) {
+//				info.setType(ldTools.expandAttribute(info.getType(), context));
+//			}
+//		}
+//		if (subscription.getAttributeNames() != null) {
+//			ArrayList<String> newAttribNames = new ArrayList<String>();
+//			for (String attrib : subscription.getAttributeNames()) {
+//				newAttribNames.add(ldTools.expandAttribute(attrib, context));
+//			}
+//			subscription.setAttributeNames(newAttribNames);
+//		}
+//		if (subscription.getNotification().getAttributeNames() != null) {
+//			ArrayList<String> newAttribNames = new ArrayList<String>();
+//			for (String attrib : subscription.getNotification().getAttributeNames()) {
+//				newAttribNames.add(ldTools.expandAttribute(attrib, context));
+//			}
+//			subscription.getNotification().setAttributeNames(newAttribNames);
+//
+//		}
+//
+//	}
 
 }
