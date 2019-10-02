@@ -56,6 +56,8 @@ public class RegistrySubscriptionController {
 
 	@Autowired
 	EurekaClient eurekaClient;
+	
+	HttpUtils httpUtils = HttpUtils.getInstance(contextResolver);
 
 	ResponseException badRequest = new ResponseException(ErrorType.BadRequestData);
 
@@ -104,12 +106,12 @@ public class RegistrySubscriptionController {
 	}
 
 	@GetMapping
-	public ResponseEntity<Object> getAllSubscriptions(@RequestParam(required = false, name = "limit", defaultValue = "0") int limit){
+	public ResponseEntity<Object> getAllSubscriptions(HttpServletRequest request,  @RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException{
 		logger.trace("getAllSubscriptions() :: started");
 		List<Subscription> result = null;
 		result = manager.getAllSubscriptions(limit);
 		logger.trace("getAllSubscriptions() :: completed");
-		return ResponseEntity.ok(result);
+		return httpUtils.generateReply(request, DataSerializer.toJson(result));
 	}
 	
 	@GetMapping("{id}")
