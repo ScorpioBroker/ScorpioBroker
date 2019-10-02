@@ -120,10 +120,7 @@ public class SubscriptionController {
 		List<Subscription> result = null;
 		result = manager.getAllSubscriptions(limit);
 		logger.trace("getAllSubscriptions() :: completed");
-		ArrayList<String> subIds = new ArrayList<String>();
-		for (Subscription sub : result) {
-			subIds.add(sub.getId().toString());
-		}
+		
 		return httpUtils.generateReply(request, DataSerializer.toJson(result));
 
 	}
