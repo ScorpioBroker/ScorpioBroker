@@ -292,7 +292,11 @@ public class CSourceSubscriptionService {
 
 	public List<Subscription> getAllSubscriptions(int limit) {
 		List<Subscription> result = new ArrayList<Subscription>();
-		result.addAll(subscriptionId2Subscription.values());
+		for(Subscription sub: subscriptionId2Subscription.values()) {
+			if(!sub.isInternal()) {
+				result.add(sub);
+			}
+		}
 		if (limit > 0) {
 			if (limit < result.size()) {
 				result = result.subList(0, limit);
