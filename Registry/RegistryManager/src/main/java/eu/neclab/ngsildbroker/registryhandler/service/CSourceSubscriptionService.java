@@ -294,7 +294,9 @@ public class CSourceSubscriptionService {
 		List<Subscription> result = new ArrayList<Subscription>();
 		result.addAll(subscriptionId2Subscription.values());
 		if (limit > 0) {
-			result = result.subList(0, limit);
+			if (limit < result.size()) {
+				result = result.subList(0, limit);
+			}
 		}
 		return result;
 	}

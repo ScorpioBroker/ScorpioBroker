@@ -11,7 +11,11 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -70,8 +74,7 @@ public class RegistrySubscriptionController {
 	// }
 
 	
-	@RequestMapping(method = RequestMethod.POST, value = "/")
-	@ResponseBody
+	@PostMapping
 	public ResponseEntity<Object> subscribeRest(HttpServletRequest request,	@RequestBody String payload) throws ResponseException {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription;
@@ -90,7 +93,7 @@ public class RegistrySubscriptionController {
 			URI subId = manager.subscribe(subscriptionRequest);
 			logger.trace("subscribeRest() :: completed");
 			//no absolute url only relative url
-			return ResponseEntity.created(new URI("/ngsi-ld/v1/subscriptions/" + subId.toString())).body(subId);
+			return ResponseEntity.created(new URI("/ngsi-ld/v1/csourceSubscriptions/" + subId.toString())).body(subId);
 		} catch (ResponseException e) {
 			logger.error("Exception ::",e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e));
@@ -100,7 +103,7 @@ public class RegistrySubscriptionController {
 		}
 	}
 
-	@RequestMapping(method = RequestMethod.GET, value = "/")
+	@GetMapping
 	public ResponseEntity<Object> getAllSubscriptions(@RequestParam(required = false, name = "limit", defaultValue = "0") int limit){
 		logger.trace("getAllSubscriptions() :: started");
 		List<Subscription> result = null;
@@ -109,7 +112,8 @@ public class RegistrySubscriptionController {
 		return ResponseEntity.ok(result);
 	}
 	
-	@RequestMapping(method = RequestMethod.GET, value = "/{id}")
+	@GetMapping("{id}")
+	//(method = RequestMethod.GET, value = "/{id}")
 	public ResponseEntity<Object> getSubscriptions(@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
@@ -124,6 +128,7 @@ public class RegistrySubscriptionController {
 		
 	}
 
+	@DeleteMapping("{id}")
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{id}")
 	public ResponseEntity<Object> deleteSubscription(@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
@@ -136,13 +141,16 @@ public class RegistrySubscriptionController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@RequestMapping(method = RequestMethod.PATCH, value = "/{id}")
+	@PatchMapping("{id}")
 	public ResponseEntity<Object> updateSubscription(HttpServletRequest request, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestBody String payload) throws ResponseException {
 		logger.trace("call updateSubscription() ::");
 		List<Object> context = HttpUtils.getAtContext(request);
 		String resolved = contextResolver.expand(payload, context);
 		Subscription subscription = DataSerializer.getSubscription(resolved);
+		if(subscription.getId() == null) {
+			subscription.setId(id);
+		}
 		if (resolved == null || subscription == null || !id.equals(subscription.getId())) {
 			return badRequestResponse;
 		}
