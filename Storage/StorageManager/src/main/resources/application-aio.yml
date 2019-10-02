@@ -1,0 +1,45 @@
+server:
+  port: 1029
+
+bootstrap:
+  servers: localhost:9092
+
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+reader:
+  enabled: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_reader
+    username: ngb
+    password: ngb
+    hikari: 
+      minimumIdle: 5
+      maximumPoolSize: 20
+      idleTimeout: 30000
+      poolName: SpringBootHikariCP
+      maxLifetime: 2000000
+      connectionTimeout: 30000
+
+writer:
+  enabled: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_writer
+    username: ngb
+    password: ngb
+    hikari: 
+      minimumIdle: 5
+      maximumPoolSize: 20
+      idleTimeout: 30000
+      poolName: SpringBootHikariCP
+      maxLifetime: 2000000
+      connectionTimeout: 30000

@@ -1,0 +1,9 @@
+FROM openjdk:8-jre
+
+WORKDIR /usr/src/scorpio
+ARG JAR_FILE
+
+COPY target/${JAR_FILE} ./
+COPY src/main/resources/application-dist.yml ./config/application.yml
+
+CMD [ "java", "-jar", "${JAR_FILE}" ]

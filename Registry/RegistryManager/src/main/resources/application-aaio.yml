@@ -1,0 +1,41 @@
+server:
+  port: 1030
+
+broker:
+  parent:
+    location:
+      url: SELF
+  id: FedBroker1
+  # geoCoverage: {\\"type\\":\\"Polygon\\",\\"coordinates\\": [ [ [ 8.28643798828125, 49.60715036117516 ], [ 8.399047851562498, 49.60715036117516 ], [ 8.399047851562498, 49.664961282899974 ], [ 8.28643798828125, 49.664961282899974 ], [ 8.28643798828125, 49.60715036117516 ] ] ] }
+
+bootstrap:
+  servers: kafka:9092
+
+atcontext:
+  url: http://gateway:9090/ngsi-ld/contextes/
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+spring:
+  kafka:
+    consumer:
+      bootstrap-servers: kafka:9092
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: kafka:9092
+  datasource:
+    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_registrymanager
+    username: ngb
+    password: ngb
+    hikari: 
+      minimumIdle: 5
+      maximumPoolSize: 20
+      idleTimeout: 30000
+      poolName: SpringBootHikariCP
+      maxLifetime: 2000000
+      connectionTimeout: 30000
