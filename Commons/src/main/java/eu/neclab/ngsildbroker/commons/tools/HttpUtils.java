@@ -807,8 +807,8 @@ public final class HttpUtils {
 					+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 		} else {
 			temp.add(AppConstants.NGB_APPLICATION_JSONLD);
-			if(compacted.getCompacted() == null || compacted.getCompacted().isEmpty() || compacted.getCompacted().trim().equals("{}")) {
-				replyBody = "{}";
+			if(compacted.getCompacted() == null || compacted.getCompacted().isEmpty() || compacted.getCompacted().trim().equals("{ }") || compacted.getCompacted().trim().equals("{}")) {
+				replyBody = "{ }";
 			}else {
 				replyBody = compacted.getCompactedWithContext();
 			}
