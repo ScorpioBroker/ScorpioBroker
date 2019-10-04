@@ -35,9 +35,10 @@ Then create a database "ngb":
 
 `postgres=# create database ngb;`
 
-Create a user "ngb":
+Create a user "ngb" and make him a superuser:
 
 `postgres=# create user ngb with encrypted password 'ngb';`
+`postgres=# alter user ngb with superuser;`
 
 Grant privileges on database:
 
