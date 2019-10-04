@@ -37,7 +37,7 @@ Then create a database "ngb":
 
 Create a user "ngb" and make him a superuser:
 
-`postgres=# create user ngb with encrypted password 'ngb';`
+`postgres=# create user ngb with encrypted password 'ngb';`<br>
 `postgres=# alter user ngb with superuser;`
 
 Grant privileges on database:
