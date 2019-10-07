@@ -22,9 +22,36 @@ Scorpio has been tested and developed with Postgres 10.
 
 The default username and password which Scorpio uses is "ngb". If you want to use a different username or password you need to provide them as parameter when starting the StorageManager and the RegistryManager.
 
-e.g. java -jar StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword
-or 
-java -jar RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar --spring.datasource.username=funkyusername --spring.datasource.password=funkypassword
+e.g.<br>
+`java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword`<br>
+OR<br>
+`java -jar Registry/RegistryManager/target/RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar --spring.datasource.username=funkyusername --spring.datasource.password=funkypassword`<br>
+    
+Don't forget to create the corresponding user ("ngb" or the different username you chose) in postgres. It will be used by the SpringCloud services for database connection. While in terminal, log in to the psql console as postgres user:
+
+`sudo -u postgres psql`
+
+Then create a database "ngb":
+
+`postgres=# create database ngb;`
+
+Create a user "ngb" and make him a superuser:
+
+`postgres=# create user ngb with encrypted password 'ngb';`<br>
+`postgres=# alter user ngb with superuser;`
+
+Grant privileges on database:
+
+`postgres=# grant all privileges on database ngb to ngb;`
+
+Also create an own database/schema for the Postgis extension:
+
+`postgres=# CREATE DATABASE gisdb;`<br>
+`postgres=# \connect gisdb;`<br>
+`postgres=# CREATE SCHEMA postgis;`<br>
+`postgres=# ALTER DATABASE gisdb SET search_path=public, postgis, contrib;`<br>
+`postgres=# \connect gisdb;`<br>
+`postgres=# CREATE EXTENSION postgis SCHEMA postgis;`
 
 ### Apache Kafka
 
@@ -34,9 +61,11 @@ Scorpio has been tested and developed with Kafka version 2.12-2.1.0
 
 Please download [Apache Kafka](https://kafka.apache.org/downloads) and follow the instructions on the website. 
 
-In order to start kafka you need to start two components 
-Start zookeeper with <kafkafolder>/bin/[Windows]/zookeeper-server-start.[bat|sh] [..]/../config/zookeeper.properties
-Start kafkaserver with <kafkafolder>/bin/[Windows]/kafka-server-start.[bat|sh] [..]/../config/server.properties
+In order to start kafka you need to start two components:<br>
+Start zookeeper with<br>
+`<kafkafolder>/bin/[Windows]/zookeeper-server-start.[bat|sh] <kafkafolder>/config/zookeeper.properties`<br>
+Start kafkaserver with<br>
+`<kafkafolder>/bin/[Windows]/kafka-server-start.[bat|sh] <kafkafolder>/config/server.properties`
 
 For more details please visit the Kafka website.
 
@@ -46,35 +75,35 @@ After the build start the individual components as normal Jar files.
 
 Start the SpringCloud services by running 
 
-java -jar eureka-server-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar SpringCloudModules/eureka/target/eureka-server-<VERSIONNUMBER>-SNAPSHOT.jar`
 
-java -jar gateway-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar SpringCloudModules/gateway/target/gateway-<VERSIONNUMBER>-SNAPSHOT.jar`
 
-java -jar config-server-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar SpringCloudModules/config-server/target/config-server-<VERSIONNUMBER>-SNAPSHOT.jar`
 
 
 Start the broker components 
 
-java -jar StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar`
 
-java -jar QueryManager-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar Core/QueryManager/target/QueryManager-<VERSIONNUMBER>-SNAPSHOT.jar`
 
-java -jar RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar Registry/RegistryManager/target/RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar`
 
-java -jar EntityManager-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar Core/EntityManager/target/EntityManager-<VERSIONNUMBER>-SNAPSHOT.jar`
 
-java -jar HistoryManager-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar History/HistoryManager/target/HistoryManager-<VERSIONNUMBER>-SNAPSHOT.jar`
 
-java -jar SubscriptionManager-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar Core/SubscriptionManager/target/SubscriptionManager-<VERSIONNUMBER>-SNAPSHOT.jar`
 
-java -jar AtContextServer-<VERSIONNUMBER>-SNAPSHOT.jar
+`java -jar Core/AtContextServer/target/AtContextServer-<VERSIONNUMBER>-SNAPSHOT.jar`
 
 ### Changing config 
 All configurable options are present in application.properties files. In order to change those you have two options.
-Either change the properties before the build or you can override configs by add --<OPTION_NAME>=<OPTION_VALUE)
+Either change the properties before the build or you can override configs by add `--<OPTION_NAME>=<OPTION_VALUE)`
 e.g. 
 
-java -jar StorageManager.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword
+`java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword`
 
 ## Basic interaction
 
@@ -131,6 +160,37 @@ Link: <http://<HOSTNAME_OF_WHERE_YOU_HAVE_AN_ATCONTEXT>/aggregatedContext.jsonld
 
 For more detailed explaination on NGSI-LD or JSON-LD. Please look at the [ETSI Specification](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf) or visit the [JSON-LD website](https://json-ld.org/).
 
+## Troubleshooting
+
+### Missing JAXB dependencies
+
+When starting the eureka-server you may facing the **java.lang.TypeNotPresentException: Type javax.xml.bind.JAXBContext not present** exception. It's very likely that you are running Java 11 on your machine then. Starting from Java 9 package `javax.xml.bind` has been marked deprecated and was finally completely removed in Java 11.
+
+In order to fix this issue and get eureka-server running you need to manually add below JAXB Maven dependencies to `ScorpioBroker/SpringCloudModules/eureka/pom.xml` before starting:
+
+```
+...
+<dependencies>
+        ...
+        <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-core</artifactId>
+                <version>2.3.0.1</version>
+        </dependency>
+        <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>2.3.1</version>
+        </dependency>
+        <dependency>
+                <groupId>com.sun.xml.bind</groupId>
+                <artifactId>jaxb-impl</artifactId>
+                <version>2.3.1</version>
+        </dependency>
+        ...
+</dependencies>
+...
+```
 
 
 
