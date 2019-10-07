@@ -1,34 +1,35 @@
 <?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>eu.neclab.ngsildbroker</groupId>
-    <artifactId>springcloud</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-  </parent>
-  <artifactId>config-server</artifactId>
-  <name>config-server</name>
-  <url>http://maven.apache.org</url>
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-  <dependencies>
-  <dependency>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.neclab.ngsildbroker</groupId>
+		<artifactId>springcloud</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>config-server</artifactId>
+	<name>config-server</name>
+	<url>http://maven.apache.org</url>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	<dependencies>
+		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
-  <dependency>
+		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-config-server</artifactId>
 		</dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-  <profiles>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	<profiles>
 		<profile>
 			<id>docker</id>
 			<build>
@@ -48,10 +49,11 @@
 						</executions>
 						<configuration>
 							<dockerfile>dockerfile4maven</dockerfile>
-							<repository>${project.build.finalName}</repository>
-							<tag>${project.build.finalName}</tag>
+							<repository><tag>${project.artifactId}</tag></repository>
+							<tag><tag>${project.artifactId}</tag></tag>
 							<buildArgs>
-								<JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>
+								<JAR_FILE_RUN><tag>${project.artifactId}</tag>.jar</JAR_FILE_RUN>
 							</buildArgs>
 						</configuration>
 					</plugin>

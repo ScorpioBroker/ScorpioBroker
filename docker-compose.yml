@@ -25,37 +25,37 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   atctxsrv:
-    image: AtContextServer-0.0.1-SNAPSHOT
+    image: AtContextServer
     ports:
       - "27015"
     depends_on:
       - kafka
       - eureka
   cfgsrv:
-    image: config-server-0.0.1-SNAPSHOT
+    image: config-server
     ports:
       - "8888"
     depends_on:
       - eureka
   emgr:
-    image: EntityManager-0.0.1-SNAPSHOT
+    image: EntityManager
     ports:
       - "1025"
     depends_on:
       - kafka
       - eureka
   eureka:
-    image: eureka-server-0.0.1-SNAPSHOT
+    image: eureka-server
     ports:
       - "8761"
   gateway:
-    image: gateway-0.0.1-SNAPSHOT
+    image: gateway
     ports:
       - "9090:9090"
     depends_on:
       - eureka
   histmgr:
-    image: HistoryManager-0.0.1-SNAPSHOT
+    image: HistoryManager
     ports:
       - "1040"
     depends_on:
@@ -63,7 +63,7 @@ services:
       - gateway
       - eureka
   qrymgr:
-    image: QueryManager-0.0.1-SNAPSHOT
+    image: QueryManager
     ports:
       - "1026"
     depends_on:
@@ -71,7 +71,7 @@ services:
       - postgres
       - eureka
   regmgr:
-    image: RegistryManager-0.0.1-SNAPSHOT
+    image: RegistryManager
     ports:
       - "1030"
     depends_on:
@@ -80,7 +80,7 @@ services:
       - gateway
       - eureka
   stomgr:
-    image: StorageManager-0.0.1-SNAPSHOT
+    image: StorageManager
     ports:
       - "1029"
     depends_on:
@@ -88,7 +88,7 @@ services:
       - postgres
       - eureka
   sbsmgr:
-    image: SubscriptionManager-0.0.1-SNAPSHOT
+    image: SubscriptionManager
     ports:
       - "2025"
     depends_on:
