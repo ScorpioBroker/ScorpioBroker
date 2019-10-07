@@ -10,6 +10,7 @@ ARG BUILD_DIR_SGW
 ARG BUILD_DIR_HMG
 ARG BUILD_DIR_QMG
 ARG BUILD_DIR_RMG
+ARG BUILD_DIR_EMG
 ARG BUILD_DIR_STRMG
 ARG BUILD_DIR_SUBMG
 
@@ -20,6 +21,7 @@ ARG JAR_FILE_BUILD_SGW
 ARG JAR_FILE_BUILD_HMG
 ARG JAR_FILE_BUILD_QMG
 ARG JAR_FILE_BUILD_RMG
+ARG JAR_FILE_BUILD_EMG
 ARG JAR_FILE_BUILD_STRMG
 ARG JAR_FILE_BUILD_SUBMG
 
@@ -30,6 +32,7 @@ ARG JAR_FILE_RUN_SGW
 ARG JAR_FILE_RUN_HMG
 ARG JAR_FILE_RUN_QMG
 ARG JAR_FILE_RUN_RMG
+ARG JAR_FILE_RUN_EMG
 ARG JAR_FILE_RUN_STRMG
 ARG JAR_FILE_RUN_SUBMG
 
@@ -40,6 +43,7 @@ COPY ${BUILD_DIR_ACS}/target/${JAR_FILE_BUILD_ACS} ./acs/${JAR_FILE_RUN_ACS}
 COPY ${BUILD_DIR_HMG}/target/${JAR_FILE_BUILD_HMG} ./hmg/${JAR_FILE_RUN_HMG}
 COPY ${BUILD_DIR_QMG}/target/${JAR_FILE_BUILD_QMG} ./qmg/${JAR_FILE_RUN_QMG}
 COPY ${BUILD_DIR_RMG}/target/${JAR_FILE_BUILD_RMG} ./rmg/${JAR_FILE_RUN_RMG}
+COPY ${BUILD_DIR_EMG}/target/${JAR_FILE_BUILD_EMG} ./emg/${JAR_FILE_RUN_EMG}
 COPY ${BUILD_DIR_STRMG}/target/${JAR_FILE_BUILD_STRMG} ./strmg/${JAR_FILE_RUN_STRMG}
 COPY ${BUILD_DIR_SUBMG}/target/${JAR_FILE_BUILD_SUBMG} ./submg/${JAR_FILE_RUN_SUBMG}
 
@@ -51,10 +55,31 @@ COPY ${BUILD_DIR_ACS}/src/main/resources/application-aaio.yml ./acs/config/appli
 COPY ${BUILD_DIR_HMG}/src/main/resources/application-aaio.yml ./hmg/config/application.yml
 COPY ${BUILD_DIR_QMG}/src/main/resources/application-aaio.yml ./qmg/config/application.yml
 COPY ${BUILD_DIR_RMG}/src/main/resources/application-aaio.yml ./rmg/config/application.yml
+COPY ${BUILD_DIR_EMG}/src/main/resources/application-aaio.yml ./emg/config/application.yml
 COPY ${BUILD_DIR_STRMG}/src/main/resources/application-aaio.yml ./strmg/config/application.yml
 COPY ${BUILD_DIR_SUBMG}/src/main/resources/application-aaio.yml ./submg/config/application.yml
 
-COPY target/${JAR_FILE_BUILD} ./${JAR_FILE_RUN}
-COPY run.sh ./run.sh
+ENV sesdir ses
+ENV sesjar ${JAR_FILE_RUN_SES}
+ENV scsdir scs
+ENV scsjar ${JAR_FILE_RUN_SCS}
+ENV sgwdir sgw
+ENV sgwjar ${JAR_FILE_RUN_SGW}
+ENV acsdir acs
+ENV acsjar ${JAR_FILE_RUN_ACS}
+ENV hmgdir hmg
+ENV hmgjar ${JAR_FILE_RUN_HMG}
+ENV qmgdir qmg
+ENV qmgjar ${JAR_FILE_RUN_QMG}
+ENV rmgdir rmg
+ENV rmgjar ${JAR_FILE_RUN_RMG}
+ENV emgdir emg
+ENV emgjar ${JAR_FILE_RUN_EMG}
+ENV strmgdir strmg
+ENV strmgjar ${JAR_FILE_RUN_STRMG}
+ENV submgdir submg
+ENV submgjar ${JAR_FILE_RUN_SUBMG}
 
-CMD [ "java", "-jar", "${JAR_FILE_RUN}" ]
+COPY run.sh ./
+
+CMD bash ./run.sh
