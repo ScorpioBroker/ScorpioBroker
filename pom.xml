@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>NGSILDBroker</artifactId>
@@ -11,10 +12,10 @@
 		<relativePath>./OverallParent</relativePath>
 	</parent>
 
-	
+
 
 	<modules>
-		<module>OverallParent</module> 
+		<module>OverallParent</module>
 		<module>BrokerParent</module>
 		<module>Commons</module>
 		<module>SpringCloudParent</module>
@@ -23,5 +24,38 @@
 		<module>Registry</module>
 		<module>Storage</module>
 		<module>History</module>
-  </modules>
+	</modules>
+	<profiles>
+		<profile>
+			<id>docker-aaio</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.12</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+									<goal>push</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<dockerfile>dockerfile4maven</dockerfile>
+							<repository>${project.artifactId}</repository>
+							<tag>${project.artifactId}</tag>
+							<buildArgs>
+								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>
+								<JAR_FILE_RUN>${project.artifactId}.jar</JAR_FILE_RUN>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+
+		</profile>
+	</profiles>
 </project>
