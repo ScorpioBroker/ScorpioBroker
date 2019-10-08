@@ -2,28 +2,28 @@
 
 cd $sesdir
 java -jar $sesjar &
-cd..
+cd ..
 cd $scsdir
 java -jar $scsjar &
-cd..
+cd ..
 cd $sgwdir
 java -jar $sgwjar &
-cd..
+cd ..
 cd $hmgdir
 java -jar $hmgjar &
-cd..
+cd ..
 cd $qmgdir
 java -jar $qmgjar &
-cd..
+cd ..
 cd $rmgdir
 java -jar $rmgjar &
-cd..
+cd ..
 cd $strmgdir
 java -jar $strmgjar &
-cd..
+cd ..
 cd $submgdir
 java -jar $submgjar &
-cd.. 
+cd .. 
 cd $acsdir
 java -jar $acsjar 
 

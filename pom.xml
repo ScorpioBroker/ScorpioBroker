@@ -51,7 +51,7 @@
 
 								<BUILD_DIR_ACS>Core/AtContextServer</BUILD_DIR_ACS>
 								<BUILD_DIR_SCS>SpringCloudModules/config-server</BUILD_DIR_SCS>
-								<BUILD_DIR_SES>SpringCloudModules/eureka-server</BUILD_DIR_SES>
+								<BUILD_DIR_SES>SpringCloudModules/eureka</BUILD_DIR_SES>
 								<BUILD_DIR_SGW>SpringCloudModules/gateway</BUILD_DIR_SGW>
 								<BUILD_DIR_HMG>History/HistoryManager</BUILD_DIR_HMG>
 								<BUILD_DIR_QMG>Core/QueryManager</BUILD_DIR_QMG>
