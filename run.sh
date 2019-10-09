@@ -21,6 +21,9 @@ cd ..
 cd $strmgdir
 java -jar $strmgjar &
 cd ..
+cd $emgdir
+java -jar $emgjar &
+cd ..
 cd $submgdir
 java -jar $submgjar &
 cd .. 
