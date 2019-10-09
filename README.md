@@ -82,7 +82,7 @@ The second profile is called 'docker-aaio' (for almost all in one). This will ge
 
 To get the aaio version run the maven build like this 
 
-`mvn clean package -DskipTests -Pdocker`
+`mvn clean package -DskipTests -Pdocker-aaio`
  
 The corresponding docker-compose file is docker-compose-aaio.yml
 
