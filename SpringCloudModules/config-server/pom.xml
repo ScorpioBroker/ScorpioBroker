@@ -49,7 +49,7 @@
 						</executions>
 						<configuration>
 							<dockerfile>dockerfile4maven</dockerfile>
-							<repository>scorpio</repository>
+							<repository>scorpiobroker/scorpio</repository>
 							<tag>${project.artifactId}</tag>
 							<buildArgs>
 								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>

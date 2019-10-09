@@ -25,7 +25,7 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   scorpio:
-    image: scorpio:scorpio-aaio
+    image: scorpiobroker/scorpio:scorpio-aaio
     ports:
       - "9090:9090"
     depends_on:

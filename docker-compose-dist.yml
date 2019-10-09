@@ -25,37 +25,37 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   atctxsrv:
-    image: scorpio:AtContextServer
+    image: scorpiobroker/scorpio:AtContextServer
     ports:
       - "27015"
     depends_on:
       - kafka
       - eureka
   cfgsrv:
-    image: scorpio:config-server
+    image: scorpiobroker/scorpio:config-server
     ports:
       - "8888"
     depends_on:
       - eureka
   emgr:
-    image: scorpio:EntityManager
+    image: scorpiobroker/scorpio:EntityManager
     ports:
       - "1025"
     depends_on:
       - kafka
       - eureka
   eureka:
-    image: scorpio:eureka-server
+    image: scorpiobroker/scorpio:eureka-server
     ports:
       - "8761"
   gateway:
-    image: scorpio:gateway
+    image: scorpiobroker/scorpio:gateway
     ports:
       - "9090:9090"
     depends_on:
       - eureka
   histmgr:
-    image: scorpio:HistoryManager
+    image: scorpiobroker/scorpio:HistoryManager
     ports:
       - "1040"
     depends_on:
@@ -63,7 +63,7 @@ services:
       - gateway
       - eureka
   qrymgr:
-    image: scorpio:QueryManager
+    image: scorpiobroker/scorpio:QueryManager
     ports:
       - "1026"
     depends_on:
@@ -71,7 +71,7 @@ services:
       - postgres
       - eureka
   regmgr:
-    image: scorpio:RegistryManager
+    image: scorpiobroker/scorpio:RegistryManager
     ports:
       - "1030"
     depends_on:
@@ -80,7 +80,7 @@ services:
       - gateway
       - eureka
   stomgr:
-    image: scorpio:StorageManager
+    image: scorpiobroker/scorpio:StorageManager
     ports:
       - "1029"
     depends_on:
@@ -88,7 +88,7 @@ services:
       - postgres
       - eureka
   sbsmgr:
-    image: scorpio:SubscriptionManager
+    image: scorpiobroker/scorpio:SubscriptionManager
     ports:
       - "2025"
     depends_on:
