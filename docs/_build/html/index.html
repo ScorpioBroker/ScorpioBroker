@@ -1,0 +1,302 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>``` &#8212; Scorpio Broker 0.9 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/css/fiware_readthedocs.css" />
+    <link rel="stylesheet" type="text/css" href="_static/css/fiware_readthedocs_processing.css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <p># Scorpio NGSI-LD Broker</p>
+<p>Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India.</p>
+<p>## NGSI-LD</p>
+<p>NGSI-LD is an open API and Datamodel specification for context management [published by ETSI](<a class="reference external" href="https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf">https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf</a>).</p>
+<p>## Building</p>
+<p>Scorpio is developed in Java using SpringCloud as microservice framework and Apache Maven as build tool.
+Some of the tests require a running Apache Kafka messagebus (further instruction are in the Setup chapter). If you want to skip those tests you can run “mvn clean package -DskipTests” to just build the individual microservices.</p>
+<p>## Setup
+Scorpio requires two components to be installed.</p>
+<p>### Postgres</p>
+<p>Please download the [Postgres DB](<a class="reference external" href="https://www.postgresql.org/">https://www.postgresql.org/</a>) and the [Postgis](<a class="reference external" href="https://postgis.net">https://postgis.net</a>) extension and follow the instructions on the websites to set them up.</p>
+<p>Scorpio has been tested and developed with Postgres 10.</p>
+<p>The default username and password which Scorpio uses is “ngb”. If you want to use a different username or password you need to provide them as parameter when starting the StorageManager and the RegistryManager.</p>
+<p>e.g.&lt;br&gt;
+<a href="#id1"><span class="problematic" id="id2">`</span></a>java -jar Storage/StorageManager/target/StorageManager-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar –reader.datasource.username=funkyusername –reader.datasource.password=funkypassword`&lt;br&gt;
+OR&lt;br&gt;
+<a href="#id3"><span class="problematic" id="id4">`</span></a>java -jar Registry/RegistryManager/target/RegistryManager-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar –spring.datasource.username=funkyusername –spring.datasource.password=funkypassword`&lt;br&gt;</p>
+<p>Don’t forget to create the corresponding user (“ngb” or the different username you chose) in postgres. It will be used by the SpringCloud services for database connection. While in terminal, log in to the psql console as postgres user:</p>
+<p><cite>sudo -u postgres psql</cite></p>
+<p>Then create a database “ngb”:</p>
+<p><cite>postgres=# create database ngb;</cite></p>
+<p>Create a user “ngb” and make him a superuser:</p>
+<p><cite>postgres=# create user ngb with encrypted password ‘ngb’;`&lt;br&gt;
+`postgres=# alter user ngb with superuser;</cite></p>
+<p>Grant privileges on database:</p>
+<p><cite>postgres=# grant all privileges on database ngb to ngb;</cite></p>
+<p>Also create an own database/schema for the Postgis extension:</p>
+<p><cite>postgres=# CREATE DATABASE gisdb;`&lt;br&gt;
+`postgres=# connect gisdb;`&lt;br&gt;
+`postgres=# CREATE SCHEMA postgis;`&lt;br&gt;
+`postgres=# ALTER DATABASE gisdb SET search_path=public, postgis, contrib;`&lt;br&gt;
+`postgres=# connect gisdb;`&lt;br&gt;
+`postgres=# CREATE EXTENSION postgis SCHEMA postgis;</cite></p>
+<p>### Apache Kafka</p>
+<p>Scorpio uses [Apache Kafka](<a class="reference external" href="https://kafka.apache.org/">https://kafka.apache.org/</a>) for the communication between the microservices.</p>
+<p>Scorpio has been tested and developed with Kafka version 2.12-2.1.0</p>
+<p>Please download [Apache Kafka](<a class="reference external" href="https://kafka.apache.org/downloads">https://kafka.apache.org/downloads</a>) and follow the instructions on the website.</p>
+<p>In order to start kafka you need to start two components:&lt;br&gt;
+Start zookeeper with&lt;br&gt;
+<cite>&lt;kafkafolder&gt;/bin/[Windows]/zookeeper-server-start.[bat|sh] &lt;kafkafolder&gt;/config/zookeeper.properties`&lt;br&gt;
+Start kafkaserver with&lt;br&gt;
+`&lt;kafkafolder&gt;/bin/[Windows]/kafka-server-start.[bat|sh] &lt;kafkafolder&gt;/config/server.properties</cite></p>
+<p>For more details please visit the Kafka website.
+## Getting a docker container
+The current maven build supports two types of docker container generations from the build using maven profiles to trigger it.</p>
+<p>The first profile is called ‘docker’ and can be called like this</p>
+<p><cite>mvn clean package -DskipTests -Pdocker</cite></p>
+<p>this will generate individual docker containers for each micro service. The corresponding docker-compose file is docker-compose-dist.yml</p>
+<p>The second profile is called ‘docker-aaio’ (for almost all in one). This will generate one single docker container for all components the broker except the kafka message bus and the postgres database.</p>
+<p>To get the aaio version run the maven build like this</p>
+<p><cite>mvn clean package -DskipTests -Pdocker-aaio</cite></p>
+<p>The corresponding docker-compose file is docker-compose-aaio.yml</p>
+<p>### General remark for the Kafka docker image and docker-compose</p>
+<p>The Kafka docker container requires you to provide the environment var KAFKA_ADVERTISED_HOST_NAME. This has to be changed in the docker-compose files to match your docker host ip. You can use 127.0.0.1 however this will disallow you to run Kafka in a cluster mode.</p>
+<p>For further details please refer to <a class="reference external" href="https://hub.docker.com/r/wurstmeister/kafka">https://hub.docker.com/r/wurstmeister/kafka</a></p>
+<p>### Running docker build outside of Maven</p>
+<p>If you want to have the build of the jars separated from the docker build you need to provide certain VARS to docker.
+The following list shows all the vars and their intended value if you run docker build from the root dir</p>
+<blockquote>
+<div><ul class="simple">
+<li>BUILD_DIR_ACS = Core/AtContextServer</li>
+<li>BUILD_DIR_SCS = SpringCloudModules/config-server</li>
+<li>BUILD_DIR_SES = SpringCloudModules/eureka</li>
+<li>BUILD_DIR_SGW = SpringCloudModules/gateway</li>
+<li>BUILD_DIR_HMG = History/HistoryManager</li>
+<li>BUILD_DIR_QMG = Core/QueryManager</li>
+<li>BUILD_DIR_RMG = Registry/RegistryManager</li>
+<li>BUILD_DIR_EMG = Core/EntityManager</li>
+<li>BUILD_DIR_STRMG = Storage/StorageManager</li>
+<li>BUILD_DIR_SUBMG = Core/SubscriptionManager</li>
+<li>JAR_FILE_BUILD_ACS = AtContextServer-${project.version}.jar</li>
+<li>JAR_FILE_BUILD_SCS = config-server-${project.version}.jar</li>
+<li>JAR_FILE_BUILD_SES = eureka-server-${project.version}.jar</li>
+<li>JAR_FILE_BUILD_SGW = gateway-${project.version}.jar</li>
+<li>JAR_FILE_BUILD_HMG = HistoryManager-${project.version}.jar</li>
+<li>JAR_FILE_BUILD_QMG = QueryManager-${project.version}.jar</li>
+<li>JAR_FILE_BUILD_RMG = RegistryManager-${project.version}.jar</li>
+<li>JAR_FILE_BUILD_EMG = EntityManager-${project.version}.jar</li>
+<li>JAR_FILE_BUILD_STRMG = StorageManager-${project.version}.jar</li>
+<li>JAR_FILE_BUILD_SUBMG = SubscriptionManager-${project.version}.jar</li>
+<li>JAR_FILE_RUN_ACS = AtContextServer.jar</li>
+<li>JAR_FILE_RUN_SCS = config-server.jar</li>
+<li>JAR_FILE_RUN_SES = eureka-server.jar</li>
+<li>JAR_FILE_RUN_SGW = gateway.jar</li>
+<li>JAR_FILE_RUN_HMG = HistoryManager.jar</li>
+<li>JAR_FILE_RUN_QMG = QueryManager.jar</li>
+<li>JAR_FILE_RUN_RMG = RegistryManager.jar</li>
+<li>JAR_FILE_RUN_EMG = EntityManager.jar</li>
+<li>JAR_FILE_RUN_STRMG = StorageManager.jar</li>
+<li>JAR_FILE_RUN_SUBMG = SubscriptionManager.jar</li>
+</ul>
+</div></blockquote>
+<p>## Starting of the components</p>
+<p>After the build start the individual components as normal Jar files.</p>
+<p>Start the SpringCloud services by running</p>
+<p><cite>java -jar SpringCloudModules/eureka/target/eureka-server-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p><cite>java -jar SpringCloudModules/gateway/target/gateway-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p><cite>java -jar SpringCloudModules/config-server/target/config-server-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p>Start the broker components</p>
+<p><cite>java -jar Storage/StorageManager/target/StorageManager-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p><cite>java -jar Core/QueryManager/target/QueryManager-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p><cite>java -jar Registry/RegistryManager/target/RegistryManager-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p><cite>java -jar Core/EntityManager/target/EntityManager-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p><cite>java -jar History/HistoryManager/target/HistoryManager-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p><cite>java -jar Core/SubscriptionManager/target/SubscriptionManager-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p><cite>java -jar Core/AtContextServer/target/AtContextServer-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar</cite></p>
+<p>### Changing config
+All configurable options are present in application.properties files. In order to change those you have two options.
+Either change the properties before the build or you can override configs by add <cite>–&lt;OPTION_NAME&gt;=&lt;OPTION_VALUE)</cite>
+e.g.</p>
+<p><cite>java -jar Storage/StorageManager/target/StorageManager-&lt;VERSIONNUMBER&gt;-SNAPSHOT.jar –reader.datasource.username=funkyusername –reader.datasource.password=funkypassword</cite></p>
+<p>## Basic interaction</p>
+<p>By default the broker runs on port 9090 the base URL for interaction with the broker would be than
+<a class="reference external" href="http://localhost:9090/ngsi-ld/v1/">http://localhost:9090/ngsi-ld/v1/</a>
+For a detail explaination about the API please look the ETSI spec.</p>
+<p>Generally speaking you can
+Create entities by sending an HTTP POST request to <a class="reference external" href="http://localhost:9090/ngsi-ld/v1/entities">http://localhost:9090/ngsi-ld/v1/entities</a>
+with a payload like this</p>
+<dl class="docutils">
+<dt>{</dt>
+<dd><p class="first">“id”: “<a class="reference external" href="urn:ngsi-ld:testunit:123">urn:ngsi-ld:testunit:123</a>”,
+“type”: “AirQualityObserved”,
+“dateObserved”: {</p>
+<blockquote>
+<div><p>“type”: “Property”,
+“value”: {</p>
+<blockquote>
+<div>“&#64;type”: “DateTime”,
+“&#64;value”: “2018-08-07T12:00:00Z”</div></blockquote>
+<p>}</p>
+</div></blockquote>
+<p>},
+“NO2”: {</p>
+<blockquote>
+<div><p>“type”: “Property”,
+“value”: 22,
+“unitCode”: “GP”,
+“accuracy”: {</p>
+<blockquote>
+<div>“type”: “Property”,
+“value”: 0.95</div></blockquote>
+<p>}</p>
+</div></blockquote>
+<p>},
+“refPointOfInterest”: {</p>
+<blockquote>
+<div>“type”: “Relationship”,
+“object”: “<a class="reference external" href="urn:ngsi-ld:PointOfInterest:RZ:MainSquare">urn:ngsi-ld:PointOfInterest:RZ:MainSquare</a>”</div></blockquote>
+<p>},
+“&#64;context”: [</p>
+<blockquote>
+<div>“<a class="reference external" href="https://schema.lab.fiware.org/ld/context">https://schema.lab.fiware.org/ld/context</a>”,
+“<a class="reference external" href="https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld">https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld</a>”</div></blockquote>
+<p class="last">]</p>
+</dd>
+</dl>
+<p>}</p>
+<p>In the given example the &#64;context is in the payload therefor you have to set the ContentType header to application/ld+json</p>
+<p>To receive entities you can send an HTTP GET to</p>
+<p><a class="reference external" href="http://localhost:9090/ngsi-ld/v1/entities">http://localhost:9090/ngsi-ld/v1/entities</a>/&lt;entityId&gt;</p>
+<p>or run a query by sending a GET like this</p>
+<p><a class="reference external" href="http://localhost:9090/ngsi-ld/v1/entities/?type=Vehicle&amp;limit=2">http://localhost:9090/ngsi-ld/v1/entities/?type=Vehicle&amp;limit=2</a>
+Accept: application/ld+json
+Link: &lt;<a class="reference external" href="http:/">http:/</a>/&lt;HOSTNAME_OF_WHERE_YOU_HAVE_AN_ATCONTEXT&gt;/aggregatedContext.jsonld&gt;; rel=”<a class="reference external" href="http://www.w3.org/ns/json-ld#context">http://www.w3.org/ns/json-ld#context</a>”;type=”application/ld+json”</p>
+<p>For more detailed explaination on NGSI-LD or JSON-LD. Please look at the [ETSI Specification](<a class="reference external" href="https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf">https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf</a>) or visit the [JSON-LD website](<a class="reference external" href="https://json-ld.org/">https://json-ld.org/</a>).</p>
+<p>## Troubleshooting</p>
+<p>### Missing JAXB dependencies</p>
+<p>When starting the eureka-server you may facing the <strong>java.lang.TypeNotPresentException: Type javax.xml.bind.JAXBContext not present</strong> exception. It’s very likely that you are running Java 11 on your machine then. Starting from Java 9 package <cite>javax.xml.bind</cite> has been marked deprecated and was finally completely removed in Java 11.</p>
+<p>In order to fix this issue and get eureka-server running you need to manually add below JAXB Maven dependencies to <cite>ScorpioBroker/SpringCloudModules/eureka/pom.xml</cite> before starting:</p>
+<div class="section" id="id9">
+<h1><a href="#id5"><span class="problematic" id="id6">``</span></a><a href="#id7"><span class="problematic" id="id8">`</span></a><a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>&lt;dependencies&gt;</dt>
+<dd><p class="first">…
+&lt;dependency&gt;</p>
+<blockquote>
+<div>&lt;groupId&gt;com.sun.xml.bind&lt;/groupId&gt;
+&lt;artifactId&gt;jaxb-core&lt;/artifactId&gt;
+&lt;version&gt;2.3.0.1&lt;/version&gt;</div></blockquote>
+<p>&lt;/dependency&gt;
+&lt;dependency&gt;</p>
+<blockquote>
+<div>&lt;groupId&gt;javax.xml.bind&lt;/groupId&gt;
+&lt;artifactId&gt;jaxb-api&lt;/artifactId&gt;
+&lt;version&gt;2.3.1&lt;/version&gt;</div></blockquote>
+<p>&lt;/dependency&gt;
+&lt;dependency&gt;</p>
+<blockquote>
+<div>&lt;groupId&gt;com.sun.xml.bind&lt;/groupId&gt;
+&lt;artifactId&gt;jaxb-impl&lt;/artifactId&gt;
+&lt;version&gt;2.3.1&lt;/version&gt;</div></blockquote>
+<p class="last">&lt;/dependency&gt;
+…</p>
+</dd>
+</dl>
+<p>&lt;/dependencies&gt;
+…
+<a href="#id10"><span class="problematic" id="id11">``</span></a><a href="#id12"><span class="problematic" id="id13">`</span></a></p>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">Scorpio Broker</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, NEC Laboratories Europe GmbH.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
