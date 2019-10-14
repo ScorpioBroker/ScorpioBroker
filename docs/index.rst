@@ -1,20 +1,26 @@
-# Scorpio NGSI-LD Broker
+**********************
+Scorpio NGSI-LD Broker
+**********************
 
 Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India.
 
-## NGSI-LD
+NGSI-LD
+#######
 
 NGSI-LD is an open API and Datamodel specification for context management [published by ETSI](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf).
 
-## Building
+Building
+########
 
 Scorpio is developed in Java using SpringCloud as microservice framework and Apache Maven as build tool. 
 Some of the tests require a running Apache Kafka messagebus (further instruction are in the Setup chapter). If you want to skip those tests you can run "mvn clean package -DskipTests" to just build the individual microservices.
 
-## Setup 
+Setup
+#####
 Scorpio requires two components to be installed.
 
-### Postgres
+Postgres
+========
 
 Please download the [Postgres DB](https://www.postgresql.org/) and the [Postgis](https://postgis.net) extension and follow the instructions on the websites to set them up.
 
@@ -53,7 +59,8 @@ Also create an own database/schema for the Postgis extension:
 `postgres=# \connect gisdb;`<br>
 `postgres=# CREATE EXTENSION postgis SCHEMA postgis;`
 
-### Apache Kafka
+Apache Kafka
+============
 
 Scorpio uses [Apache Kafka](https://kafka.apache.org/) for the communication between the microservices.
 
@@ -68,7 +75,10 @@ Start kafkaserver with<br>
 `<kafkafolder>/bin/[Windows]/kafka-server-start.[bat|sh] <kafkafolder>/config/server.properties`
 
 For more details please visit the Kafka website.
-## Getting a docker container 
+
+Getting a docker container 
+##########################
+
 The current maven build supports two types of docker container generations from the build using maven profiles to trigger it.
 
 The first profile is called 'docker' and can be called like this
@@ -86,13 +96,15 @@ To get the aaio version run the maven build like this
  
 The corresponding docker-compose file is docker-compose-aaio.yml
 
-### General remark for the Kafka docker image and docker-compose
+General remark for the Kafka docker image and docker-compose
+============================================================
 
 The Kafka docker container requires you to provide the environment var KAFKA_ADVERTISED_HOST_NAME. This has to be changed in the docker-compose files to match your docker host ip. You can use 127.0.0.1 however this will disallow you to run Kafka in a cluster mode.
 
 For further details please refer to https://hub.docker.com/r/wurstmeister/kafka 
 
-### Running docker build outside of Maven
+Running docker build outside of Maven
+=====================================
 
 If you want to have the build of the jars separated from the docker build you need to provide certain VARS to docker. 
 The following list shows all the vars and their intended value if you run docker build from the root dir
@@ -158,7 +170,8 @@ The following list shows all the vars and their intended value if you run docker
  
  - JAR_FILE_RUN_SUBMG = SubscriptionManager.jar
 
-## Starting of the components
+Starting of the components
+##########################
 
 After the build start the individual components as normal Jar files.
 
@@ -187,14 +200,16 @@ Start the broker components
 
 `java -jar Core/AtContextServer/target/AtContextServer-<VERSIONNUMBER>-SNAPSHOT.jar`
 
-### Changing config 
+Changing config 
+===============
 All configurable options are present in application.properties files. In order to change those you have two options.
 Either change the properties before the build or you can override configs by add `--<OPTION_NAME>=<OPTION_VALUE)`
 e.g. 
 
 `java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword`
 
-## Basic interaction
+Basic interaction
+#################
 
 By default the broker runs on port 9090 the base URL for interaction with the broker would be than
 http://localhost:9090/ngsi-ld/v1/
@@ -249,9 +264,11 @@ Link: <http://<HOSTNAME_OF_WHERE_YOU_HAVE_AN_ATCONTEXT>/aggregatedContext.jsonld
 
 For more detailed explaination on NGSI-LD or JSON-LD. Please look at the [ETSI Specification](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf) or visit the [JSON-LD website](https://json-ld.org/).
 
-## Troubleshooting
+Troubleshooting
+###############
 
-### Missing JAXB dependencies
+Missing JAXB dependencies
+=========================
 
 When starting the eureka-server you may facing the **java.lang.TypeNotPresentException: Type javax.xml.bind.JAXBContext not present** exception. It's very likely that you are running Java 11 on your machine then. Starting from Java 9 package `javax.xml.bind` has been marked deprecated and was finally completely removed in Java 11.
 
