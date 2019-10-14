@@ -28,10 +28,14 @@ Scorpio has been tested and developed with Postgres 10.
 
 The default username and password which Scorpio uses is "ngb". If you want to use a different username or password you need to provide them as parameter when starting the StorageManager and the RegistryManager.
 
-e.g.<br>
-`java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword`<br>
-OR<br>
-`java -jar Registry/RegistryManager/target/RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar --spring.datasource.username=funkyusername --spring.datasource.password=funkypassword`<br>
+e.g.
+
+`java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword`
+
+OR
+
+`java -jar Registry/RegistryManager/target/RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar --spring.datasource.username=funkyusername --spring.datasource.password=funkypassword`
+
     
 Don't forget to create the corresponding user ("ngb" or the different username you chose) in postgres. It will be used by the SpringCloud services for database connection. While in terminal, log in to the psql console as postgres user:
 
@@ -43,7 +47,8 @@ Then create a database "ngb":
 
 Create a user "ngb" and make him a superuser:
 
-`postgres=# create user ngb with encrypted password 'ngb';`<br>
+`postgres=# create user ngb with encrypted password 'ngb';`
+
 `postgres=# alter user ngb with superuser;`
 
 Grant privileges on database:
@@ -52,11 +57,16 @@ Grant privileges on database:
 
 Also create an own database/schema for the Postgis extension:
 
-`postgres=# CREATE DATABASE gisdb;`<br>
-`postgres=# \connect gisdb;`<br>
-`postgres=# CREATE SCHEMA postgis;`<br>
-`postgres=# ALTER DATABASE gisdb SET search_path=public, postgis, contrib;`<br>
-`postgres=# \connect gisdb;`<br>
+`postgres=# CREATE DATABASE gisdb;`
+
+`postgres=# \connect gisdb;`
+
+`postgres=# CREATE SCHEMA postgis;`
+
+`postgres=# ALTER DATABASE gisdb SET search_path=public, postgis, contrib;`
+
+`postgres=# \connect gisdb;`
+
 `postgres=# CREATE EXTENSION postgis SCHEMA postgis;`
 
 Apache Kafka
@@ -68,10 +78,14 @@ Scorpio has been tested and developed with Kafka version 2.12-2.1.0
 
 Please download [Apache Kafka](https://kafka.apache.org/downloads) and follow the instructions on the website. 
 
-In order to start kafka you need to start two components:<br>
-Start zookeeper with<br>
-`<kafkafolder>/bin/[Windows]/zookeeper-server-start.[bat|sh] <kafkafolder>/config/zookeeper.properties`<br>
-Start kafkaserver with<br>
+In order to start kafka you need to start two components:
+
+Start zookeeper with
+
+`<kafkafolder>/bin/[Windows]/zookeeper-server-start.[bat|sh] <kafkafolder>/config/zookeeper.properties`
+
+Start kafkaserver with
+
 `<kafkafolder>/bin/[Windows]/kafka-server-start.[bat|sh] <kafkafolder>/config/server.properties`
 
 For more details please visit the Kafka website.
