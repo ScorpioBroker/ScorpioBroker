@@ -38,7 +38,7 @@ release = u'0.9'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx_tabs.tabs', 'recommonmark']
+extensions = ['sphinx_tabs.tabs']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -96,7 +96,7 @@ pygments_style = None
 #
 # html_sidebars = {}
 
-def setup(app):      
+def setup(app):
     app.add_stylesheet('css/fiware_readthedocs.css')
     app.add_stylesheet('css/fiware_readthedocs_processing.css')
 
