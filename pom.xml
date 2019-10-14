@@ -45,7 +45,7 @@
 						</executions>
 						<configuration>
 							<dockerfile>dockerfile4maven</dockerfile>
-							<repository>scorpiobroker</repository>
+							<repository>scorpiobroker/scorpio</repository>
 							<tag>scorpio-aaio</tag>
 							<buildArgs>
 
