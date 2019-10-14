@@ -38,7 +38,11 @@ release = u'0.9'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+<<<<<<< HEAD
 extensions = ['sphinx_tabs.tabs']
+=======
+extensions = ['sphinx_tabs.tabs'] #, 'recommonmark']
+>>>>>>> e32a9206fc824e6c2eff9ac78723746d21b4eaa6
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
