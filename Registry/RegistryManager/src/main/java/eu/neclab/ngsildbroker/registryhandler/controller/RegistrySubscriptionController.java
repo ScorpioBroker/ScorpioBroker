@@ -116,11 +116,11 @@ public class RegistrySubscriptionController {
 	
 	@GetMapping("{id}")
 	//(method = RequestMethod.GET, value = "/{id}")
-	public ResponseEntity<Object> getSubscriptions(@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
+	public ResponseEntity<Object> getSubscriptions(HttpServletRequest request, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
 			logger.trace("call getSubscriptions() ::");
-			return ResponseEntity.ok(manager.getSubscription(id));
+			return httpUtils.generateReply(request, DataSerializer.toJson(manager.getSubscription(id)));
 			
 		} catch (ResponseException e) {
 			logger.error("Exception ::",e);
