@@ -550,6 +550,9 @@ public class EntityService {
 		ObjectNode objectNode = (ObjectNode) node;
 		if (attrId != null) { // partial update, remove original instanceid and update temporal properties
 			// remove instanceId from original json, if exists
+			if(objectNode.get(attrId) == null) {
+				throw new ResponseException(ErrorType.NotFound, "Provided attribute is not present");
+			}
 			JsonNode originalNode = ((ArrayNode) objectNode.get(attrId)).get(0);
 			if (((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
 				((ObjectNode) originalNode).remove(NGSIConstants.NGSI_LD_INSTANCE_ID);

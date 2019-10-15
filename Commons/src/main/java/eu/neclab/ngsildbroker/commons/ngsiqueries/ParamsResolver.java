@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.ngsiqueries;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -160,8 +162,8 @@ public class ParamsResolver {
 			return qp;
 		} catch (ResponseException e) {
 			throw e; // rethrow response exception object
-		} 
-//		return null;
+		}
+		// return null;
 	}
 
 	private String expandQueryValues(List<Object> linkHeaders, String queryValue) throws ResponseException {
@@ -179,16 +181,25 @@ public class ParamsResolver {
 		if (req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON)) {
 			context = HttpUtils.getAtContext(req);
 		} else {
-			JsonNode json = objectMapper.valueToTree(payload);
-
+			JsonNode json;
+			try {
+				json = objectMapper.readTree(payload);
+			} catch (IOException e) {
+				throw new ResponseException(ErrorType.BadRequestData, "Failed to read json from body");
+			}
+			context = new ArrayList<Object>();
 			if (json.has(NGSIConstants.JSON_LD_CONTEXT)) {
-				context = (List) json.findValuesAsText(NGSIConstants.JSON_LD_CONTEXT);
-			} else {
-				context = new ArrayList<Object>();
+				JsonNode tempContext = json.get(NGSIConstants.JSON_LD_CONTEXT);
+				try {
+					context.add(JsonUtils.fromString(tempContext.toString()));
+				} catch (IOException e) {
+					throw new ResponseException(ErrorType.BadRequestData);
+				}
 			}
 		}
 		return expandAttribute(attribute, context);
 	}
+
 
 	public String expandAttribute(String attribute, List<Object> context) throws ResponseException {
 		logger.trace("resolveQueryLdContext():: started");
@@ -221,7 +232,7 @@ public class ParamsResolver {
 		LocalDateTime start = LocalDateTime.now();
 		String jsonLdAttributeResolved = contextResolver.expand(jsonLdAttribute, context);
 		LocalDateTime end = LocalDateTime.now();
-		
+
 		logger.debug("jsonLdAttributeResolved: " + jsonLdAttributeResolved);
 		JsonParser parser = new JsonParser();
 		JsonElement jsonTree = parser.parse(jsonLdAttributeResolved);

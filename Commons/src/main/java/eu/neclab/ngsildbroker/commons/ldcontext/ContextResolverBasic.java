@@ -33,7 +33,7 @@ public class ContextResolverBasic {
 	private URI CORE_CONTEXT_URL;
 	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	private String CORE_CONTEXT_URL_STR;
-//	private URI DEFAULT_CONTEXT_URL;
+	// private URI DEFAULT_CONTEXT_URL;
 
 	@Autowired
 	KafkaOps kafkaOps;
@@ -46,24 +46,25 @@ public class ContextResolverBasic {
 	private String AT_CONTEXT_BASE_URL = "http://localhost:9090/ngsi-ld/atcontext/";
 	private HttpUtils httpUtils = HttpUtils.getInstance(this);
 	private Map<String, Object> CORE_CONTEXT;
-//	private Map<String, Object> DEFAULT_CONTEXT;
+	// private Map<String, Object> DEFAULT_CONTEXT;
 	private Map<String, Object> BASE_CONTEXT = new HashMap<String, Object>();
-	
+
 	private static final String IS_FULL_VALID = "ajksd7868";
+
 	@PostConstruct
-	private void setup() 
-	{
+	private void setup() {
 		try {
 			CORE_CONTEXT_URL = new URI(CORE_CONTEXT_URL_STR);
 
 			String json = httpUtils.doGet(CORE_CONTEXT_URL);
 			CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
-//			DEFAULT_CONTEXT_URL = new URI(
-//					"https://forge.etsi.org/gitlab/NGSI-LD/NGSI-LD/raw/master/defaultContext/defaultContextVocab.jsonld");
-//			json = httpUtils.doGet(DEFAULT_CONTEXT_URL);
-//			DEFAULT_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
+			// DEFAULT_CONTEXT_URL = new URI(
+			// "https://forge.etsi.org/gitlab/NGSI-LD/NGSI-LD/raw/master/defaultContext/defaultContextVocab.jsonld");
+			// json = httpUtils.doGet(DEFAULT_CONTEXT_URL);
+			// DEFAULT_CONTEXT = (Map<String, Object>) ((Map)
+			// JsonUtils.fromString(json)).get("@context");
 			BASE_CONTEXT.putAll(CORE_CONTEXT);
-//			BASE_CONTEXT.putAll(DEFAULT_CONTEXT);
+			// BASE_CONTEXT.putAll(DEFAULT_CONTEXT);
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -71,7 +72,6 @@ public class ContextResolverBasic {
 		}
 	}
 
-	
 	public static void main(String[] args) throws Exception {
 		ContextResolverBasic bla = new ContextResolverBasic();
 		List<Object> contextLinks = null;
@@ -93,13 +93,12 @@ public class ContextResolverBasic {
 	}
 
 	public ContextResolverBasic(String atContextBaseUrl) {
-		if(atContextBaseUrl != null) {
+		if (atContextBaseUrl != null) {
 			this.AT_CONTEXT_BASE_URL = atContextBaseUrl;
 		}
 
 	}
-	
-	
+
 	public ContextResolverBasic() {
 
 	}
@@ -127,7 +126,7 @@ public class ContextResolverBasic {
 			ArrayList<Object> usedContext = new ArrayList<Object>();
 			usedContext.add(fullContext);
 			usedContext.add(BASE_CONTEXT);
-			
+
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
 			List<Object> expanded = JsonLdProcessor.expand(json);
 			return JsonUtils.toPrettyString(expanded.get(0));
@@ -186,15 +185,13 @@ public class ContextResolverBasic {
 		fullContext.add(BASE_CONTEXT);
 		CompactedJson result = new CompactedJson();
 		int hash = json.hashCode();
-		if(context.containsKey(IS_FULL_VALID)) {
+		if (context.containsKey(IS_FULL_VALID)) {
 			result.setContextUrl((String) rawContext.get(0));
-		}else {
-			result.setContextUrl(generateAtContextServing(rawContext, hash));	
+		} else {
+			result.setContextUrl(generateAtContextServing(rawContext, hash));
 		}
 		context.remove(IS_FULL_VALID);
 		Map<String, Object> tempResult = JsonLdProcessor.compact(json, fullContext, defaultOptions);
-		
-		
 
 		try {
 			if (tempResult.containsKey("@graph")) {
@@ -212,8 +209,6 @@ public class ContextResolverBasic {
 				tempResult.remove(NGSIConstants.JSON_LD_CONTEXT);
 				result.setCompacted(JsonUtils.toPrettyString(tempResult));
 			}
-			
-			
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -227,7 +222,7 @@ public class ContextResolverBasic {
 		if (rawContext != null && !rawContext.isEmpty()) {
 			sorted.addAll(rawContext);
 		}
-//		sorted.add(DEFAULT_CONTEXT_URL);
+		// sorted.add(DEFAULT_CONTEXT_URL);
 		sorted.add(CORE_CONTEXT_URL);
 		kafkaOps.pushToKafka(producerChannel.atContextWriteChannel(), (hash + "").getBytes(),
 				DataSerializer.toJson(sorted).getBytes());
@@ -238,8 +233,8 @@ public class ContextResolverBasic {
 		Map<String, Object> result = new HashMap<String, Object>();
 		if (context instanceof String) {
 			// just another url
-			String temp = (String)context;
-			if(temp.equals(CORE_CONTEXT_URL_STR)) {
+			String temp = (String) context;
+			if (temp.equals(CORE_CONTEXT_URL_STR)) {
 				result.put(IS_FULL_VALID, true);
 			}
 			result.putAll(getRemoteContext(temp));
@@ -247,14 +242,16 @@ public class ContextResolverBasic {
 			for (Object entry : (List) context) {
 				if (entry instanceof String) {
 					// just another url
-					String temp = (String)entry;
-					if(temp.equals(CORE_CONTEXT_URL_STR)) {
+					String temp = (String) entry;
+					if (temp.equals(CORE_CONTEXT_URL_STR)) {
 						result.put(IS_FULL_VALID, true);
 					}
 
 					result.putAll(getRemoteContext(entry.toString()));
 				} else if (entry instanceof Map) {
 					result.putAll(((Map) entry));
+				} else if (entry instanceof List) {
+					result.putAll(getFullContext(entry));
 				} else {
 					// Everything else should be illegal for @context
 					throw new ResponseException(ErrorType.BadRequestData, "Illegal state of @context");
