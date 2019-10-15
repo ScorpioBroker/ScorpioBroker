@@ -48,7 +48,7 @@ import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 
 @SpringBootTest(properties = { "spring.main.allow-bean-definition-overriding=true" })
 @RunWith(PowerMockRunner.class)
-@AutoConfigureMockMvc(secure = false)
+@AutoConfigureMockMvc//(secure = false)
 @PowerMockRunnerDelegate(SpringRunner.class)
 @PowerMockIgnore({ "javax.management.*", "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "org.w3c.*",
 		"com.sun.org.apache.xalan.*", "javax.activation.*", "javax.net.ssl.*", "javax.security.*" })

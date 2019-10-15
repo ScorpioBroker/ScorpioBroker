@@ -34,7 +34,7 @@ import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 
 @SpringBootTest(properties= {"spring.main.allow-bean-definition-overriding=true"})
 @RunWith(SpringRunner.class)
-@AutoConfigureMockMvc(secure = false)
+@AutoConfigureMockMvc//(secure = false)
 public class EntityControllerTest {
 	@Autowired
     private MockMvc mockMvc;
