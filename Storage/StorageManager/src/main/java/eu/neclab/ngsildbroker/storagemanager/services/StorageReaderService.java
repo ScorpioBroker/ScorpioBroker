@@ -26,7 +26,7 @@ public class StorageReaderService {
 
 	private final static Logger logger = LogManager.getLogger(StorageWriterService.class);
 	
-	public static final Gson GSON = DataSerializer.GSON;
+//	public static final Gson GSON = DataSerializer.GSON;
 	
 	@Autowired
 	EntityStorageReaderDAO storageReaderDao;
@@ -55,7 +55,7 @@ public class StorageReaderService {
 		logger.debug("Received message: " + payload);
 		List<String> entityList = new ArrayList<String>();
 		try {
-			QueryParams qp = GSON.fromJson(payload, QueryParams.class);
+			QueryParams qp = DataSerializer.getQueryParams(payload);
 			entityList = storageReaderDao.query(qp);
 		} catch (Exception e) {
 			e.printStackTrace();

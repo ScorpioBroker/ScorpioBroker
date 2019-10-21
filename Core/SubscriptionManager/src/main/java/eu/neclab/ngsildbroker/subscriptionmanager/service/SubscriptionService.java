@@ -748,7 +748,7 @@ public class SubscriptionService implements SubscriptionManager {
 	@KafkaListener(topics = "${csource.notification.topic}", groupId = "submanager")
 	public void handleCSourceNotification(Message<byte[]> message) {
 		@SuppressWarnings("unchecked")
-		ArrayList<String> endPoints = DataSerializer.GSON.fromJson(new String(message.getPayload()), ArrayList.class);
+		ArrayList<String> endPoints = DataSerializer.getStringList(new String(message.getPayload()));
 		String subId = new String((byte[]) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY));
 		subscribeToRemote(subscriptionId2Subscription.get(subId), endPoints);
 

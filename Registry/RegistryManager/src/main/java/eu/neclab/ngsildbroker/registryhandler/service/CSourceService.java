@@ -48,7 +48,7 @@ import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 public class CSourceService {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
-	public static final Gson GSON = DataSerializer.GSON;
+//	public static final Gson GSON = DataSerializer.GSON;
 
 	@Value("${bootstrap.servers}")
 	String BOOTSTRAP_SERVERS;
@@ -324,7 +324,7 @@ public class CSourceService {
 		logger.debug("Received message: " + payload);
 		String resultPayload = "";
 		try {
-			QueryParams qp = GSON.fromJson(payload, QueryParams.class);
+			QueryParams qp = DataSerializer.getQueryParams(payload);
 			List<String> csourceList = csourceDAO.queryExternalCsources(qp);
 			resultPayload = csourceDAO.getListAsJsonArray(csourceList);
 		} catch (Exception e) {

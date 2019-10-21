@@ -44,7 +44,8 @@ public class HistoryService {
 	@Autowired
 	HistoryDAO historyDAO;
 	
-	public static final Gson GSON = DataSerializer.GSON;
+//	public static final Gson GSON = DataSerializer.GSON;
+	
 	JsonParser parser = new JsonParser();
 
 	private final ProducerChannel producerChannels;
@@ -105,7 +106,7 @@ public class HistoryService {
 			tesk.setEntityType(type);
 			tesk.setEntityCreatedAt(createdAt);
 			tesk.setEntityModifiedAt(modifiedAt);
-			String messageKey = GSON.toJson(tesk);									
+			String messageKey = DataSerializer.toJson(tesk);									
 			logger.debug(" message key " + messageKey + " payload element: empty");
 			kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(), messageKey.getBytes(),
 					"".getBytes());			
@@ -157,12 +158,12 @@ public class HistoryService {
 			tesk.setEntityCreatedAt(entityCreatedAt);
 			tesk.setEntityModifiedAt(entityModifiedAt);
 			tesk.setAttributeId(attributeId);
-			messageKey = GSON.toJson(tesk);
+			messageKey = DataSerializer.toJson(tesk);
 		} else {
 			tesk.setEntityModifiedAt(entityModifiedAt);
 			tesk.setAttributeId(attributeId);
 			tesk.setOverwriteOp(overwriteOp);
-			messageKey = GSON.toJson(tesk);
+			messageKey = DataSerializer.toJson(tesk);
 		}
 		logger.debug(" message key " + messageKey + " payload element " + elementValue);
 		kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(), messageKey.getBytes(),
@@ -184,7 +185,7 @@ public class HistoryService {
 		TemporalEntityStorageKey tesk = new TemporalEntityStorageKey(entityId);
 		tesk.setAttributeId(resolvedAttrId);
 		tesk.setInstanceId(instanceId);
-		String messageKey = GSON.toJson(tesk);		
+		String messageKey = DataSerializer.toJson(tesk);		
 		logger.trace("message key created : " + messageKey);
 		kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(), messageKey.getBytes(),
 				"null".getBytes());

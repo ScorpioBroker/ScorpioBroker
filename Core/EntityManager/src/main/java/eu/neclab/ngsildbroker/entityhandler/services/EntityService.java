@@ -198,12 +198,12 @@ public class EntityService {
 		return id.asText();
 	}
 
-	public String createMessageTest(String payload) throws ResponseException {
-		JsonNode json = SerializationTools.parseJson(objectMapper, payload);
-		JsonNode id = json.get(NGSIConstants.QUERY_PARAMETER_ID);
-		operations.pushToKafka(this.producerChannels.entityWriteChannel(), id.asText().getBytes(), payload.getBytes());
-		return id.asText();
-	}
+//	public String createMessageTest(String payload) throws ResponseException {
+//		JsonNode json = SerializationTools.parseJson(objectMapper, payload);
+//		JsonNode id = json.get(NGSIConstants.QUERY_PARAMETER_ID);
+//		operations.pushToKafka(this.producerChannels.entityWriteChannel(), id.asText().getBytes(), payload.getBytes());
+//		return id.asText();
+//	}
 
 	public JsonNode getKeyValueEntity(JsonNode json) {
 		ObjectNode kvJsonObject = objectMapper.createObjectNode();

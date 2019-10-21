@@ -16,7 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -129,10 +131,134 @@ public class ContextResolverBasic {
 
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
 			List<Object> expanded = JsonLdProcessor.expand(json);
+			protectGeoProps(expanded, usedContext);
 			return JsonUtils.toPrettyString(expanded.get(0));
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new ResponseException(ErrorType.InvalidRequest);
+		}
+
+	}
+
+	private void protectGeoProps(List<Object> expanded, ArrayList<Object> usedContext)
+			throws JsonGenerationException, JsonLdError, IOException {
+		for (Object entry : expanded) {
+			if (entry instanceof Map) {
+
+				protectGeoProps((Map<String, Object>) entry, usedContext);
+			} else if (entry instanceof List) {
+				protectGeoProps((List) entry, usedContext);
+			} else {
+				// don't care for now i think
+			}
+		}
+
+	}
+
+	private void protectGeoProps(Map<String, Object> objMap, ArrayList<Object> usedContext)
+			throws JsonGenerationException, JsonLdError, IOException {
+		boolean typeFound = false;
+		Object value = null;
+		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
+			String key = mapEntry.getKey();
+			Object mapValue = mapEntry.getValue();
+			if (NGSIConstants.JSON_LD_TYPE.equals(key) && !(mapValue instanceof String)
+					&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
+				typeFound = true;
+			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
+				value = ((List) mapValue).get(0);
+			} else {
+				if (mapValue instanceof Map) {
+					protectGeoProps((Map<String, Object>) mapValue, usedContext);
+				} else if (mapValue instanceof List) {
+					protectGeoProps((List) mapValue, usedContext);
+				}
+			}
+		}
+		if (typeFound && value != null) {
+			Object potentialStringValue = ((Map)value).get(NGSIConstants.JSON_LD_VALUE);
+			if(potentialStringValue != null) {
+				return;
+			}
+			Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
+			compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
+			String proctedValue = JsonUtils.toString(compactedFull);
+			// temp.replace("\"", "\\\"");
+			ArrayList<Object> tempList = new ArrayList<Object>();
+			Map<String, Object> tempMap = new HashMap<String, Object>();
+			tempMap.put(NGSIConstants.JSON_LD_VALUE, proctedValue);
+			tempList.add(tempMap);
+			objMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, tempList);
+		}
+
+	}
+
+	private void unprotectGeoProps(Object json, List<Object> fullContext) throws JsonParseException, IOException {
+		if (json instanceof Map) {
+			unprotectGeoProps((Map<String, Object>) json, fullContext);
+		} else if (json instanceof List) {
+			unprotectGeoProps((List) json, fullContext);
+		}
+
+	}
+
+	private void unprotectGeoProps(Map<String, Object> objMap, List<Object> usedContext)
+			throws JsonParseException, IOException {
+		boolean typeFound = false;
+		Object value = null;
+		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
+			String key = mapEntry.getKey();
+			Object mapValue = mapEntry.getValue();
+			if (NGSIConstants.JSON_LD_TYPE.equals(key)
+					&& (mapValue instanceof List)) {
+				Object tempObj = ((List) mapValue).get(0);
+				if(NGSIConstants.NGSI_LD_GEOPROPERTY.equals(tempObj)){
+					typeFound = true;
+				}
+//				if(tempObj instanceof Map) {
+//					if(NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((Map)tempObj).get(NGSIConstants.JSON_LD_VALUE))){
+//						typeFound = true;
+//					}
+//				}
+				
+				
+			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
+				value = mapValue;
+			} else {
+				if (mapValue instanceof Map) {
+					unprotectGeoProps((Map<String, Object>) mapValue, usedContext);
+				} else if (mapValue instanceof List) {
+					unprotectGeoProps((List) mapValue, usedContext);
+				}
+			}
+		}
+		if(typeFound) {
+			System.out.println("mybreak");
+		}
+		
+		if (typeFound && value != null && ((Map)(((List) value).get(0))).get(NGSIConstants.JSON_LD_VALUE) instanceof String) {
+			Map<String, Object> temp = (Map<String, Object>) JsonUtils.fromString((String) (((Map)(((List) value).get(0))).get(NGSIConstants.JSON_LD_VALUE)));
+			temp.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
+			
+			
+//			temp.replace("\\\"", "\"");
+			objMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, JsonLdProcessor.expand(temp));
+			System.out.println();
+		}
+
+	}
+
+	private void unprotectGeoProps(List<Object> objList, List<Object> usedContext)
+			throws JsonParseException, IOException {
+		for (Object entry : objList) {
+			if (entry instanceof Map) {
+
+				unprotectGeoProps((Map<String, Object>) entry, usedContext);
+			} else if (entry instanceof List) {
+				unprotectGeoProps((List) entry, usedContext);
+			} else {
+				// don't care for now i think
+			}
 		}
 
 	}
@@ -191,9 +317,10 @@ public class ContextResolverBasic {
 			result.setContextUrl(generateAtContextServing(rawContext, hash));
 		}
 		context.remove(IS_FULL_VALID);
-		Map<String, Object> tempResult = JsonLdProcessor.compact(json, fullContext, defaultOptions);
-
 		try {
+			unprotectGeoProps(json, fullContext);
+			Map<String, Object> tempResult = JsonLdProcessor.compact(json, fullContext, defaultOptions);
+
 			if (tempResult.containsKey("@graph")) {
 				// we are in a multiresult set
 				Object atContext = tempResult.get("@context");
