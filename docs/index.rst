@@ -15,6 +15,11 @@ Building
 Scorpio is developed in Java using SpringCloud as microservice framework and Apache Maven as build tool. 
 Some of the tests require a running Apache Kafka messagebus (further instruction are in the Setup chapter). If you want to skip those tests you can run "mvn clean package -DskipTests" to just build the individual microservices.
 
+Source code avilable at Github
+
+https://github.com/ScorpioBroker/ScorpioBroker
+
+
 Setup
 #####
 Scorpio requires two components to be installed.

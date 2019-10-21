@@ -73,7 +73,7 @@ The current maven build supports two types of docker container generations from 
 
 The first profile is called 'docker' and can be called like this
   
-`mvn clean package -DskipTests -Pdocker`
+`sudo mvn clean package -DskipTests -Pdocker`
 
 this will generate individual docker containers for each micro service. The corresponding docker-compose file is docker-compose-dist.yml
 
@@ -82,7 +82,7 @@ The second profile is called 'docker-aaio' (for almost all in one). This will ge
 
 To get the aaio version run the maven build like this 
 
-`mvn clean package -DskipTests -Pdocker-aaio`
+`sudo mvn clean package -DskipTests -Pdocker-aaio`
  
 The corresponding docker-compose file is docker-compose-aaio.yml
 
