@@ -1,0 +1,31 @@
+server:
+  port: 1026
+
+bootstrap:
+  servers: kafka:9092
+  
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka:8761/eureka/
+
+directDbConnection: false 
+#if directDbConnection is false then properties below are not used {{{
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: kafka:9092
+  datasource:
+    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_querymanager
+    username: ngb
+    password: ngb
+    hikari: 
+      minimumIdle: 5
+      maximumPoolSize: 20
+      idleTimeout: 30000
+      poolName: SpringBootHikariCP
+      maxLifetime: 2000000
+      connectionTimeout: 30000
+#}}}

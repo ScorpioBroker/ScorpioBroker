@@ -34,7 +34,7 @@ zuul:
       serviceId: C-SOURCES
     subforeg:
       sensitiveHeaders:
-      path: /ngsi-ld/v1/csourcesubscriptions/**
+      path: /ngsi-ld/v1/csourceSubscriptions/**
       serviceId: C-SOURCES
       stripPrefix: false
     history-manager:

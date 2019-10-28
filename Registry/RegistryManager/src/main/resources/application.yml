@@ -25,6 +25,9 @@ spring:
           group: csourceupdate
         ATCONTEXT_WRITE_CHANNEL:
           destination: ATCONTEXT
-          contentType: application/json        
+          contentType: application/json
+        CSOURCE_SUBSCRIPTION_WRITE_CHANNEL:
+          destination: CSOURCE_SUBSCRIPTIONS
+          contentType: application/json  
                
           

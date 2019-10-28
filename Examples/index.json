@@ -1,0 +1,30 @@
+{
+	"@context": [{
+		"numberExample": "http://example.org/numberExample",
+		"stringExample": "http://example.org/stringExample",
+		"dateTimeExample": "http://example.org/dateTimeExample",
+		"dateExample": "http://example.org/dateExample",
+		"timeExample": "http://example.org/timeExample",
+		"otherValueExample": "http://example.org/otherValueExample",
+		"trueExample": "http://example.org/trueExample",
+		"falseExample": "http://example.org/falseExample",
+		"nullExample": "http://example.org/nullExample",
+		"uriExample": "http://example.org/uriExample",
+		"structuredExample1": "http://example.org/structuredExample1",
+		"structuredExample2": "http://example.org/structuredExample2",
+		"topLevelExample": "http://example.org/topLevelExample",
+		"subPropertyExample": "http://example.org/subPropertyExample",
+		"relationshipExample": "http://example.org/relationshipExample",
+		"Vehicle": "http://example.org/vehicle/Vehicle",
+		"brandName": "http://example.org/vehicle/brandName",
+		"speed": "http://example.org/vehicle/speed",
+		"isParked": {
+			"@type": "@id",
+			"@id": "http://example.org/common/isParked"
+		},
+		"providedBy": {
+			"@type": "@id",
+			"@id": "http://example.org/common/providedBy"
+		}
+	}]
+}

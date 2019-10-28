@@ -30,7 +30,7 @@ import eu.neclab.ngsildbroker.registryhandler.service.CSourceSubscriptionService
 
 @SpringBootTest(properties = { "spring.main.allow-bean-definition-overriding=true" })
 @RunWith(SpringRunner.class)
-@AutoConfigureMockMvc(secure = false)
+@AutoConfigureMockMvc//(secure = false)
 public class RegistrySubscriptionControllerTest {
 
 	@Autowired
@@ -79,7 +79,7 @@ public class RegistrySubscriptionControllerTest {
 			when(csourceSubsService.subscribe(any())).thenReturn(new URI("urn:ngsi-ld:Subscription:7"));
 			mockMvc.perform(post("/ngsi-ld/v1/csourceSubscriptions/").contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(payload)).andExpect(status().isCreated())
-					.andExpect(redirectedUrl("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:7")).andDo(print());
+					.andExpect(redirectedUrl("/ngsi-ld/v1/csourceSubscriptions/urn:ngsi-ld:Subscription:7")).andDo(print());
 
 			verify(csourceSubsService, times(1)).subscribe(any());
 		} catch (Exception e) {

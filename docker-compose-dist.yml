@@ -1,0 +1,96 @@
+version: '3'
+
+services:
+  zookeeper:
+    image: zookeeper
+    ports:
+      - "2181"
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: 10.0.2.15
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - zookeeper
+  postgres:
+    image: mdillon/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+  atctxsrv:
+    image: scorpiobroker/scorpio:AtContextServer
+    ports:
+      - "27015"
+    depends_on:
+      - kafka
+      - eureka
+  cfgsrv:
+    image: scorpiobroker/scorpio:config-server
+    ports:
+      - "8888"
+    depends_on:
+      - eureka
+  emgr:
+    image: scorpiobroker/scorpio:EntityManager
+    ports:
+      - "1025"
+    depends_on:
+      - kafka
+      - eureka
+  eureka:
+    image: scorpiobroker/scorpio:eureka-server
+    ports:
+      - "8761"
+  gateway:
+    image: scorpiobroker/scorpio:gateway
+    ports:
+      - "9090:9090"
+    depends_on:
+      - eureka
+  histmgr:
+    image: scorpiobroker/scorpio:HistoryManager
+    ports:
+      - "1040"
+    depends_on:
+      - kafka
+      - gateway
+      - eureka
+  qrymgr:
+    image: scorpiobroker/scorpio:QueryManager
+    ports:
+      - "1026"
+    depends_on:
+      - kafka
+      - postgres
+      - eureka
+  regmgr:
+    image: scorpiobroker/scorpio:RegistryManager
+    ports:
+      - "1030"
+    depends_on:
+      - kafka
+      - postgres
+      - gateway
+      - eureka
+  stomgr:
+    image: scorpiobroker/scorpio:StorageManager
+    ports:
+      - "1029"
+    depends_on:
+      - kafka
+      - postgres
+      - eureka
+  sbsmgr:
+    image: scorpiobroker/scorpio:SubscriptionManager
+    ports:
+      - "2025"
+    depends_on:
+      - kafka
+      - eureka
