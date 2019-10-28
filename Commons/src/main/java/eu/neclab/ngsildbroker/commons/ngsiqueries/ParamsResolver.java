@@ -254,7 +254,7 @@ public class ParamsResolver {
 				ArrayNode contextNode = objectMapper.valueToTree(context);
 				((ObjectNode) rootNode).putArray("@context").addAll(contextNode);
 			}
-			((ObjectNode) rootNode).put(attribute, 0);
+			((ObjectNode) rootNode).put(attribute, "");
 			jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
 		} catch (JsonProcessingException e) {
 			logger.error("Exception ::", e);

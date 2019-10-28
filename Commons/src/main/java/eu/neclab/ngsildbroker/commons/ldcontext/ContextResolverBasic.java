@@ -56,6 +56,7 @@ public class ContextResolverBasic {
 	@PostConstruct
 	private void setup() {
 		try {
+//			defaultOptions.setCompactArrays(false);
 			CORE_CONTEXT_URL = new URI(CORE_CONTEXT_URL_STR);
 
 			String json = httpUtils.doGet(CORE_CONTEXT_URL);
@@ -176,12 +177,46 @@ public class ContextResolverBasic {
 			}
 		}
 		if (typeFound && value != null) {
-			Object potentialStringValue = ((Map)value).get(NGSIConstants.JSON_LD_VALUE);
-			if(potentialStringValue != null) {
+			Object potentialStringValue = ((Map) value).get(NGSIConstants.JSON_LD_VALUE);
+			if (potentialStringValue != null) {
 				return;
 			}
+			
+
 			Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
 			compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
+			String geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
+			List geoValues = (List) compactedFull.get(NGSIConstants.GEO_JSON_COORDINATES);
+			switch (geoType) {
+			case NGSIConstants.GEO_TYPE_POINT:
+				// nothing to be done here point is ok like this
+				break;
+			case NGSIConstants.GEO_TYPE_LINESTRING:
+				ArrayList<Object> containerList = new ArrayList<Object>();
+				for (int i = 0; i < geoValues.size(); i += 2) {
+					ArrayList<Object> container = new ArrayList<Object>();
+					container.add(geoValues.get(i));
+					container.add(geoValues.get(i + 1));
+					containerList.add(container);
+				}
+				compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, containerList);
+				break;
+
+			case NGSIConstants.GEO_TYPE_POLYGON:
+				ArrayList<Object> topLevelContainerList = new ArrayList<Object>();
+				ArrayList<Object> polyContainerList = new ArrayList<Object>();
+				for (int i = 0; i < geoValues.size(); i += 2) {
+					ArrayList<Object> container = new ArrayList<Object>();
+					container.add(geoValues.get(i));
+					container.add(geoValues.get(i + 1));
+					polyContainerList.add(container);
+				}
+				topLevelContainerList.add(polyContainerList);
+				compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, topLevelContainerList);
+				break;
+			default:
+				break;
+			}
 			String proctedValue = JsonUtils.toString(compactedFull);
 			// temp.replace("\"", "\\\"");
 			ArrayList<Object> tempList = new ArrayList<Object>();
@@ -209,19 +244,17 @@ public class ContextResolverBasic {
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
-			if (NGSIConstants.JSON_LD_TYPE.equals(key)
-					&& (mapValue instanceof List)) {
+			if (NGSIConstants.JSON_LD_TYPE.equals(key) && (mapValue instanceof List)) {
 				Object tempObj = ((List) mapValue).get(0);
-				if(NGSIConstants.NGSI_LD_GEOPROPERTY.equals(tempObj)){
+				if (NGSIConstants.NGSI_LD_GEOPROPERTY.equals(tempObj)) {
 					typeFound = true;
 				}
-//				if(tempObj instanceof Map) {
-//					if(NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((Map)tempObj).get(NGSIConstants.JSON_LD_VALUE))){
-//						typeFound = true;
-//					}
-//				}
-				
-				
+				// if(tempObj instanceof Map) {
+				// if(NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((Map)tempObj).get(NGSIConstants.JSON_LD_VALUE))){
+				// typeFound = true;
+				// }
+				// }
+
 			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
 				value = mapValue;
 			} else {
@@ -232,17 +265,15 @@ public class ContextResolverBasic {
 				}
 			}
 		}
-		if(typeFound) {
-			System.out.println("mybreak");
-		}
-		
-		if (typeFound && value != null && ((Map)(((List) value).get(0))).get(NGSIConstants.JSON_LD_VALUE) instanceof String) {
-			Map<String, Object> temp = (Map<String, Object>) JsonUtils.fromString((String) (((Map)(((List) value).get(0))).get(NGSIConstants.JSON_LD_VALUE)));
+
+		if (typeFound && value != null
+				&& ((Map) (((List) value).get(0))).get(NGSIConstants.JSON_LD_VALUE) instanceof String) {
+			Map<String, Object> temp = (Map<String, Object>) JsonUtils
+					.fromString((String) (((Map) (((List) value).get(0))).get(NGSIConstants.JSON_LD_VALUE)));
 			temp.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
-			
-			
-//			temp.replace("\\\"", "\"");
-			objMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, JsonLdProcessor.expand(temp));
+			List<Object> expanded = JsonLdProcessor.expand(temp);
+			// temp.replace("\\\"", "\"");
+			objMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, expanded);
 			System.out.println();
 		}
 

@@ -35,7 +35,7 @@ public interface NGSIConstants {
 	public final static String JSON_LD_TYPE = "@type";
 	public final static String JSON_LD_VALUE = "@value";
 	public final static String JSON_LD_CONTEXT = "@context";
-
+	public final static String NGSI_LD_DEFAULT_PREFIX = "https://uri.etsi.org/ngsi-ld/default-context/";
 	public final static String NGSI_LD_RELATIONSHIP = "https://uri.etsi.org/ngsi-ld/Relationship";
 	public final static String NGSI_LD_PROPERTY = "https://uri.etsi.org/ngsi-ld/Property";
 	public final static String NGSI_LD_HAS_VALUE = "https://uri.etsi.org/ngsi-ld/hasValue";
