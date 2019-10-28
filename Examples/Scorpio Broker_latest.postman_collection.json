@@ -1,0 +1,2231 @@
+{
+	"info": {
+		"_postman_id": "e8982b75-7b02-480f-b360-b92d5c1b00c0",
+		"name": "Scorpio Broker_latest",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Entities",
+			"item": [
+				{
+					"name": "Create entity with Link header",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Vehicle:A100\",\r\n\t\"type\": \"Vehicle\",\r\n\t\"brandName\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": \"Mercedes\"\r\n\t},\r\n\t\"isParked\": {\r\n\t\t\"type\": \"Relationship\",\r\n\t\t\"object\": \"urn:ngsi-ld:OffStreetParking:Downtown1\",\r\n\t\t\"observedAt\": \"2017-07-29T12:00:04\",\r\n\t\t\"providedBy\": {\r\n\t\t\t\"type\": \"Relationship\",\r\n\t\t\t\"object\": \"urn:ngsi-ld:Person:Bob\"\r\n\t\t}\r\n\t},\r\n\t\"speed\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 80\r\n\t},\r\n\t\"createdAt\": \"2017-07-29T12:00:04\",\r\n\t\"location\": {\r\n\t\t\"type\": \"GeoProperty\",\r\n\t\t\"value\": {\r\n\t\t\t\"type\": \"Point\",\r\n\t\t\t\"coordinates\": [-8.5, 41.2]\r\n\t\t}\r\n\t}\r\n}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create entity - context in payload",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"@context\": [{\r\n\t\t\"Vehicle\": \"http://example.org/vehicle/Vehicle\",\r\n\t\t\"brandName\": \"http://example.org/vehicle/brandName\",\r\n\t\t\"speed\": \"http://example.org/vehicle/speed\",\r\n\t\t\"isParked\": {\r\n\t\t\t\"@type\": \"@id\",\r\n\t\t\t\"@id\": \"http://example.org/common/isParked\"\r\n\t\t},\r\n\t\t\"providedBy\": {\r\n\t\t\t\"@type\": \"@id\",\r\n\t\t\t\"@id\": \"http://example.org/common/providedBy\"\r\n\t\t}\r\n\t}],\r\n\t\"id\": \"urn:ngsi-ld:Vehicle:A4580\",\r\n\t\"type\": \"Vehicle\",\r\n\t\"brandName\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": \"Mercedes\"\r\n\t},\r\n\t\"isParked\": {\r\n\t\t\"type\": \"Relationship\",\r\n\t\t\"object\": \"urn:ngsi-ld:OffStreetParking:Downtown1\",\r\n\t\t\"observedAt\": \"2017-07-29T12:00:04\",\r\n\t\t\"providedBy\": {\r\n\t\t\t\"type\": \"Relationship\",\r\n\t\t\t\"object\": \"urn:ngsi-ld:Person:Bob\"\r\n\t\t}\r\n\t},\r\n\t\"speed\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 80\r\n\t},\r\n\t\"createdAt\": \"2017-07-29T12:00:04\",\r\n\t\"location\": {\r\n\t\t\"type\": \"GeoProperty\",\r\n\t\t\"value\": {\r\n\t\t\t\"type\": \"Polygon\",\r\n\t\t\t\"coordinates\": [\r\n\t\t\t\t[\r\n\t\t\t\t\t[8.686752319335938, 49.359122687528746],\r\n\t\t\t\t\t[8.742027282714844, 49.3642654834877],\r\n\t\t\t\t\t[8.767433166503904, 49.398462568451485],\r\n\t\t\t\t\t[8.768119812011719, 49.42750021620163],\r\n\t\t\t\t\t[8.74305725097656, 49.44781634951542],\r\n\t\t\t\t\t[8.669242858886719, 49.43754770762113],\r\n\t\t\t\t\t[8.63525390625, 49.41968407776289],\r\n\t\t\t\t\t[8.637657165527344, 49.3995797187007],\r\n\t\t\t\t\t[8.663749694824219, 49.36851347448498],\r\n\t\t\t\t\t[8.686752319335938, 49.359122687528746]\r\n\t\t\t\t]\r\n\t\t\t]\r\n\t\t}\r\n\t}\r\n}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Append Entity request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"@context\": {\r\n\t\t\"brandName1\": \"http://example.org/vehicle/brandName1\"\r\n\t},\r\n\t\"brandName1\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": \"BMW\"\r\n\t}\r\n}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100/attrs",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Vehicle:A100",
+								"attrs"
+							]
+						},
+						"description": "Add new attributes in existing entity"
+					},
+					"response": []
+				},
+				{
+					"name": "Update entity request",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"@context\": {\r\n\t\t\"brandName1\": \"http://example.org/vehicle/brandName1\"\r\n\t},\r\n\t\"brandName1\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": \"AUDI\"\r\n\t}\r\n}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100/attrs",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Vehicle:A100",
+								"attrs"
+							]
+						},
+						"description": "update the attribute of entity"
+					},
+					"response": []
+				},
+				{
+					"name": "partial update request",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"@context\": {\r\n\t\t\"brandName\": \"http://example.org/vehicle/brandName\"\r\n\t},\r\n\t\"value\": \"BMW\"\r\n}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100/attrs/brandName",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Vehicle:A100",
+								"attrs",
+								"brandName"
+							]
+						},
+						"description": "partially update the attribute of entity"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete attribute",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100/attrs/brandName1",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Vehicle:A100",
+								"attrs",
+								"brandName1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete entity",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Vehicle:A100"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create entity expanded",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"http://example.org/vehicle/brandName\": [\r\n    {\r\n      \"@type\": [\r\n        \"http://uri.etsi.org/ngsi-ld/Property\"\r\n      ],\r\n      \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n        {\r\n          \"@value\": \"Mercedes\"\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"http://uri.etsi.org/ngsi-ld/createdAt\": [\r\n    {\r\n      \"@type\": \"http://uri.etsi.org/ngsi-ld/DateTime\",\r\n      \"@value\": \"2017-07-29T12:00:04\"\r\n    }\r\n  ],\r\n  \"@id\": \"urn:ngsi-ld:Vehicle:A8866\",\r\n  \"http://example.org/common/isParked\": [\r\n    {\r\n      \"http://uri.etsi.org/ngsi-ld/hasObject\": [\r\n        {\r\n          \"@id\": \"urn:ngsi-ld:OffStreetParking:Downtown1\"\r\n        }\r\n      ],\r\n      \"http://uri.etsi.org/ngsi-ld/observedAt\": [\r\n        {\r\n          \"@type\": \"http://uri.etsi.org/ngsi-ld/DateTime\",\r\n          \"@value\": \"2017-07-29T12:00:04\"\r\n        }\r\n      ],\r\n      \"http://example.org/common/providedBy\": [\r\n        {\r\n          \"http://uri.etsi.org/ngsi-ld/hasObject\": [\r\n            {\r\n              \"@id\": \"urn:ngsi-ld:Person:Bob\"\r\n            }\r\n          ],\r\n          \"@type\": [\r\n            \"http://uri.etsi.org/ngsi-ld/Relationship\"\r\n          ]\r\n        }\r\n      ],\r\n      \"@type\": [\r\n        \"http://uri.etsi.org/ngsi-ld/Relationship\"\r\n      ]\r\n    }\r\n  ],\r\n  \"http://uri.etsi.org/ngsi-ld/location\": [\r\n    {\r\n      \"@type\": [\r\n        \"http://uri.etsi.org/ngsi-ld/GeoProperty\"\r\n      ],\r\n      \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n        {\r\n          \"@value\": \"{ \\\"type\\\":\\\"Point\\\", \\\"coordinates\\\":[ -8.5, 41.2 ] }\"\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"http://example.org/vehicle/speed\": [\r\n    {\r\n      \"@type\": [\r\n        \"http://uri.etsi.org/ngsi-ld/Property\"\r\n      ],\r\n      \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n        {\r\n          \"@value\": 80\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"@type\": [\r\n    \"http://example.org/vehicle/Vehicle\"\r\n  ]\r\n}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create entity all_datatypes",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"@context\": [\r\n    {\r\n      \"numberExample\": \"http://example.org/numberExample\",\r\n      \"stringExample\": \"http://example.org/stringExample\",\r\n      \"dateTimeExample\": \"http://example.org/dateTimeExample\",\r\n      \"dateExample\": \"http://example.org/dateExample\",\r\n      \"timeExample\": \"http://example.org/timeExample\",\r\n      \"otherValueExample\": \"http://example.org/otherValueExample\",\r\n      \"trueExample\": \"http://example.org/trueExample\",\r\n      \"falseExample\": \"http://example.org/falseExample\",\r\n      \"nullExample\": \"http://example.org/nullExample\",\r\n      \"uriExample\": \"http://example.org/uriExample\",\r\n      \"structuredExample1\": \"http://example.org/structuredExample1\",\r\n      \"structuredExample2\": \"http://example.org/structuredExample2\",\r\n      \"topLevelExample\": \"http://example.org/topLevelExample\",\r\n      \"subPropertyExample\": \"http://example.org/subPropertyExample\",\r\n      \"relationshipExample\": \"http://example.org/relationshipExample\"\r\n    }\r\n  ],\r\n  \"id\": \"urn:ngsi-ld:Test:all_datatypes\",\r\n  \"type\": \"urn:ngsi-ld:Test\",\r\n  \"numberExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": 100\r\n  },\r\n  \"stringExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"Mercedes\"\r\n  },\r\n  \"dateTimeExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"TODO\"\r\n  },\r\n  \"dateExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"TODO\"\r\n  },\r\n  \"timeExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"TODO\"\r\n  },\r\n  \"otherValueExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": true\r\n  },\r\n  \"trueExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": true\r\n  },\r\n  \"falseExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": false\r\n  },\r\n  \"nullExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": null\r\n  },\r\n  \"uriExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"http://www.example.com\"\r\n  },\r\n  \"topLevelExample\": {\r\n    \"type\": \"Property\",\r\n    \"value\": 10,\r\n    \"subPropertyExample\": {\r\n      \"type\": \"Property\",\r\n      \"value\": 5\r\n    }\r\n  },\r\n  \"relationshipExample\": {\r\n    \"type\": \"Relationship\",\r\n    \"object\": \"urn:ngsi-ld:relationshipExample\"\r\n  }\r\n}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create entity all_datatypes expanded",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"http://example.org/dateExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": \"TODO\"\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/dateTimeExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": \"TODO\"\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/falseExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": false\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"@id\": \"urn:ngsi-ld:Test:all_datatypes\",\r\n    \"http://example.org/nullExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/numberExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": 100\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/otherValueExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": true\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/relationshipExample\": [\r\n      {\r\n        \"http://uri.etsi.org/ngsi-ld/hasObject\": [\r\n          {\r\n            \"@id\": \"urn:ngsi-ld:relationshipExample\"\r\n          }\r\n        ],\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Relationship\"\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/stringExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": \"Mercedes\"\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/structuredExample1\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {},\r\n          {}\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/structuredExample2\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@id\": \"urn:ngsi-ld:Test:street\",\r\n            \"@type\": [\r\n              \"http://uri.etsi.org/ngsi-ld/Property\"\r\n            ],\r\n            \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n              {\r\n                \"@value\": \"Franklinstrasse\"\r\n              }\r\n            ]\r\n          },\r\n          {\r\n            \"@id\": \"urn:ngsi-ld:Test:number\",\r\n            \"@type\": [\r\n              \"http://uri.etsi.org/ngsi-ld/Property\"\r\n            ],\r\n            \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n              {\r\n                \"@value\": 55\r\n              }\r\n            ]\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/timeExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": \"TODO\"\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/topLevelExample\": [\r\n      {\r\n        \"http://example.org/subPropertyExample\": [\r\n          {\r\n            \"@type\": [\r\n              \"http://uri.etsi.org/ngsi-ld/Property\"\r\n            ],\r\n            \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n              {\r\n                \"@value\": 5\r\n              }\r\n            ]\r\n          }\r\n        ],\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": 10\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"http://example.org/trueExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": true\r\n          }\r\n        ]\r\n      }\r\n    ],\r\n    \"@type\": [\r\n      \"urn:ngsi-ld:Test\"\r\n    ],\r\n    \"http://example.org/uriExample\": [\r\n      {\r\n        \"@type\": [\r\n          \"http://uri.etsi.org/ngsi-ld/Property\"\r\n        ],\r\n        \"http://uri.etsi.org/ngsi-ld/hasValue\": [\r\n          {\r\n            \"@value\": \"http://www.example.com\"\r\n          }\r\n        ]\r\n      }\r\n    ]\r\n  }"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Queries",
+			"item": [
+				{
+					"name": "Retrieve specific entity",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"name": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A4569",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Vehicle:A4569"
+							]
+						},
+						"description": "Retrieve specific entity from kafka"
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve by attribute",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/ld+json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?attrs=http://example.org/vehicle/brandName?attrs=http://example.org/vehicle/brandName",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "attrs",
+									"value": "http://example.org/vehicle/brandName"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Query by id",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?id=urn:ngsi-ld:Vehicle:A4569&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "urn:ngsi-ld:Vehicle:A4569"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Query by type",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Query by type using Link header",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?type=Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "Vehicle"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Query by idPattern",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?idPattern=urn:ngsi-ld:Vehicle:A.*&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "idPattern",
+									"value": "urn:ngsi-ld:Vehicle:A.*"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Advanced queries",
+			"item": [
+				{
+					"name": "Number equal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=numberExample==100&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "numberExample==100"
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Number greater",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=numberExample>99&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "numberExample>99"
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "String equal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=stringExample==\"Mercedes\"&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "stringExample==\"Mercedes\""
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "String unequal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=stringExample!=\"Mercedes\"&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "stringExample!=\"Mercedes\""
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "bool false equal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=falseExample==false&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "falseExample==false"
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "bool true equal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=trueExample==true&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "trueExample==true"
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "null equal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=nullExample==null&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "nullExample==null"
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "URI equal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=uriExample==http://www.example.com&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "uriExample==http://www.example.com"
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "URI equal (using String)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=uriExample==\"http://www.example.com\"&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "uriExample==\"http://www.example.com\""
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "andOp example",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=trueExample==true;numberExample<=130;stringExample==\"Mercedes\"&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "trueExample==true;numberExample<=130;stringExample==\"Mercedes\""
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AttrPath (property of property)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{broker1}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=topLevelExample.subPropertyExample>4&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "topLevelExample.subPropertyExample>4"
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AttrPath (relationship of relat...)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=isParked.providedBy==urn:ngsi-ld:Person:Bob&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "isParked.providedBy==urn:ngsi-ld:Person:Bob"
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AttrPath (4 levels of properties)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=manyLevelsExample.sub1.sub2.sub3==\"D\"&type=urn:ngsi-ld:Test",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "manyLevelsExample.sub1.sub2.sub3==\"D\""
+								},
+								{
+									"key": "type",
+									"value": "urn:ngsi-ld:Test"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Geoqueries",
+			"item": [
+				{
+					"name": "Near",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"disabled": true
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=near;maxDistance==360&geometry=Point&coordinates=%5B8.684783577919006%2C49.406131991436396%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "near;maxDistance==360"
+								},
+								{
+									"key": "geometry",
+									"value": "Point"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B8.684783577919006%2C49.406131991436396%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "Get every entity near NEC Labs Heidelberg, with distance up to 360 meters\r\n    NEC Labs Heidelberg coordinates: 8.684783577919006, 49.406131991436396"
+					},
+					"response": []
+				},
+				{
+					"name": "Near (parkingLotLocation property)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{broker1}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=parkingLotLocation&georel=near;maxDistance==360&geometry=Point&coordinates=%5B8.684783577919006%2C49.406131991436396%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "parkingLotLocation"
+								},
+								{
+									"key": "georel",
+									"value": "near;maxDistance==360"
+								},
+								{
+									"key": "geometry",
+									"value": "Point"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B8.684783577919006%2C49.406131991436396%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "Testing a property other than \"location\""
+					},
+					"response": []
+				},
+				{
+					"name": "Near minDistance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=near;minDistance==400&geometry=Point&coordinates=%5B8.684783577919006%2C49.406131991436396%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "near;minDistance==400"
+								},
+								{
+									"key": "geometry",
+									"value": "Point"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B8.684783577919006%2C49.406131991436396%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "Get every entity near NEC Labs Heidelberg, with distance over 400 meters"
+					},
+					"response": []
+				},
+				{
+					"name": "Near Polygon",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=near;maxDistance==50&geometry=Polygon&coordinates=%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "near;maxDistance==50"
+								},
+								{
+									"key": "geometry",
+									"value": "Polygon"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "Get every entity near NEC building (polygon), with distance up to 360 meters"
+					},
+					"response": []
+				},
+				{
+					"name": "Within",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=within&geometry=Polygon&coordinates=%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "within"
+								},
+								{
+									"key": "geometry",
+									"value": "Polygon"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "Get every entity within NEC Labs building (polygon) in Heidelberg"
+					},
+					"response": []
+				},
+				{
+					"name": "Within MultiPolygon",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=within&geometry=MultiPolygon&coordinates=%5B%5B%5B%5B8.686752319335938%2C49.359122687528746%5D%2C%5B8.742027282714844%2C49.3642654834877%5D%2C%5B8.767433166503904%2C49.398462568451485%5D%2C%5B8.768119812011719%2C49.42750021620163%5D%2C%5B8.74305725097656%2C49.44781634951542%5D%2C%5B8.669242858886719%2C49.43754770762113%5D%2C%5B8.63525390625%2C49.41968407776289%5D%2C%5B8.637657165527344%2C49.3995797187007%5D%2C%5B8.663749694824219%2C49.36851347448498%5D%2C%5B8.686752319335938%2C49.359122687528746%5D%5D%5D%2C%5B%5B%5B8.364715576171875%2C48.96939999849952%5D%2C%5B8.47320556640625%2C48.982019588328214%5D%2C%5B8.485565185546875%2C49.017157315497165%5D%2C%5B8.411407470703125%2C49.05677012268616%5D%2C%5B8.33587646484375%2C49.031565622700356%5D%2C%5B8.320770263671875%2C48.98562459864604%5D%2C%5B8.364715576171875%2C48.96939999849952%5D%5D%5D%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "within"
+								},
+								{
+									"key": "geometry",
+									"value": "MultiPolygon"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B%5B%5B%5B8.686752319335938%2C49.359122687528746%5D%2C%5B8.742027282714844%2C49.3642654834877%5D%2C%5B8.767433166503904%2C49.398462568451485%5D%2C%5B8.768119812011719%2C49.42750021620163%5D%2C%5B8.74305725097656%2C49.44781634951542%5D%2C%5B8.669242858886719%2C49.43754770762113%5D%2C%5B8.63525390625%2C49.41968407776289%5D%2C%5B8.637657165527344%2C49.3995797187007%5D%2C%5B8.663749694824219%2C49.36851347448498%5D%2C%5B8.686752319335938%2C49.359122687528746%5D%5D%5D%2C%5B%5B%5B8.364715576171875%2C48.96939999849952%5D%2C%5B8.47320556640625%2C48.982019588328214%5D%2C%5B8.485565185546875%2C49.017157315497165%5D%2C%5B8.411407470703125%2C49.05677012268616%5D%2C%5B8.33587646484375%2C49.031565622700356%5D%2C%5B8.320770263671875%2C48.98562459864604%5D%2C%5B8.364715576171875%2C48.96939999849952%5D%5D%5D%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "Get every entity within Heidelberg or Karlsruhe ( MultiPolygon )"
+					},
+					"response": []
+				},
+				{
+					"name": "Contains",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=contains&geometry=Point&coordinates=%5B8.684783577919006%2C49.406131991436396%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "contains"
+								},
+								{
+									"key": "geometry",
+									"value": "Point"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B8.684783577919006%2C49.406131991436396%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "Get every entity that contains NEC Labs Heidelberg (point)"
+					},
+					"response": []
+				},
+				{
+					"name": "Overlaps",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=overlaps&geometry=Polygon&coordinates=%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "overlaps"
+								},
+								{
+									"key": "geometry",
+									"value": "Polygon"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "Get every entity that overlaps with NEC Labs building (polygon) in Heidelberg"
+					},
+					"response": []
+				},
+				{
+					"name": "Intersects",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=overlaps&geometry=Polygon&coordinates=%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "overlaps"
+								},
+								{
+									"key": "geometry",
+									"value": "Polygon"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "Get every entity that intersects with NEC Labs building (polygon) in Heidelberg\r\n   Intersects(g1, g2 ) == Not (Disjoint(g1, g2 ))"
+					},
+					"response": []
+				},
+				{
+					"name": "Equals",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=equals&geometry=Point&coordinates=%5B8.684783577919006%2C49.406131991436396%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "equals"
+								},
+								{
+									"key": "geometry",
+									"value": "Point"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B8.684783577919006%2C49.406131991436396%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "get every entity equal to NEC Labs Heidelberg point"
+					},
+					"response": []
+				},
+				{
+					"name": "Disjoint",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?geoproperty=location&georel=disjoint&geometry=Polygon&coordinates=%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D&type=http://example.org/vehicle/Vehicle",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities"
+							],
+							"query": [
+								{
+									"key": "geoproperty",
+									"value": "location"
+								},
+								{
+									"key": "georel",
+									"value": "disjoint"
+								},
+								{
+									"key": "geometry",
+									"value": "Polygon"
+								},
+								{
+									"key": "coordinates",
+									"value": "%5B%5B%5B8.684628009796143%2C49.406062179606515%5D%2C%5B8.685507774353027%2C49.4062262372493%5D%2C%5B8.68545413017273%2C49.40634491690448%5D%2C%5B8.684579730033875%2C49.40617736907259%5D%2C%5B8.684628009796143%2C49.406062179606515%5D%5D%5D"
+								},
+								{
+									"key": "type",
+									"value": "http://example.org/vehicle/Vehicle"
+								}
+							]
+						},
+						"description": "get entities that do not share any space together with NEC Labs Heidelberg building"
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "CSource",
+			"item": [
+				{
+					"name": "CSource queries",
+					"item": [
+						{
+							"name": "Query by type",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/ld+json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/ld+json"
+									},
+									{
+										"key": "Link",
+										"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations?type=http://example.org/vehicle/Vehicle?type=http://example.org/vehicle/Vehicle",
+									"host": [
+										"{{gatewayServer}}"
+									],
+									"path": [
+										"ngsi-ld",
+										"v1",
+										"csourceRegistrations"
+									],
+									"query": [
+										{
+											"key": "type",
+											"value": "http://example.org/vehicle/Vehicle"
+										}
+									]
+								},
+								"description": "Get every entity near NEC Labs Heidelberg, with distance up to 360 meters\r\n    NEC Labs Heidelberg coordinates: 8.684783577919006, 49.406131991436396"
+							},
+							"response": []
+						},
+						{
+							"name": "Query by type using Link header",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/ld+json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/ld+json"
+									},
+									{
+										"key": "Link",
+										"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+									}
+								],
+								"url": {
+									"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations?type=Vehicle",
+									"host": [
+										"{{gatewayServer}}"
+									],
+									"path": [
+										"ngsi-ld",
+										"v1",
+										"csourceRegistrations"
+									],
+									"query": [
+										{
+											"key": "type",
+											"value": "Vehicle"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Query by type+id",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/ld+json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/ld+json"
+									}
+								],
+								"url": {
+									"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations?id=urn:ngsi-ld:Vehicle:C1234&type=http://example.org/vehicle/Vehicle",
+									"host": [
+										"{{gatewayServer}}"
+									],
+									"path": [
+										"ngsi-ld",
+										"v1",
+										"csourceRegistrations"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "urn:ngsi-ld:Vehicle:C1234"
+										},
+										{
+											"key": "type",
+											"value": "http://example.org/vehicle/Vehicle"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Query by type+idPattern",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/ld+json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/ld+json"
+									}
+								],
+								"url": {
+									"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations?idPattern=urn:ngsi-ld:Vehicle:C.*&type=http://example.org/vehicle/Vehicle",
+									"host": [
+										"{{gatewayServer}}"
+									],
+									"path": [
+										"ngsi-ld",
+										"v1",
+										"csourceRegistrations"
+									],
+									"query": [
+										{
+											"key": "idPattern",
+											"value": "urn:ngsi-ld:Vehicle:C.*"
+										},
+										{
+											"key": "type",
+											"value": "http://example.org/vehicle/Vehicle"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Geoquery Near min",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/ld+json"
+									},
+									{
+										"key": "Accept",
+										"value": "application/ld+json"
+									},
+									{
+										"key": "Link",
+										"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations?geoproperty=location&georel=near;minDistance==8000&geometry=Polygon&coordinates=%5B%20%5B%20%5B%208.400421142578125%2C%2049.32333182991094%20%5D%2C%20%5B%208.812408447265625%2C%2049.32333182991094%20%5D%2C%20%5B%208.812408447265625%2C%2049.49489061140408%20%5D%2C%20%5B%208.400421142578125%2C%2049.49489061140408%20%5D%2C%20%5B%208.400421142578125%2C%2049.32333182991094%20%5D%20%5D%20%5D&type=http://example.org/vehicle/Vehicle",
+									"host": [
+										"{{gatewayServer}}"
+									],
+									"path": [
+										"ngsi-ld",
+										"v1",
+										"csourceRegistrations"
+									],
+									"query": [
+										{
+											"key": "geoproperty",
+											"value": "location"
+										},
+										{
+											"key": "georel",
+											"value": "near;minDistance==8000"
+										},
+										{
+											"key": "geometry",
+											"value": "Polygon"
+										},
+										{
+											"key": "coordinates",
+											"value": "%5B%20%5B%20%5B%208.400421142578125%2C%2049.32333182991094%20%5D%2C%20%5B%208.812408447265625%2C%2049.32333182991094%20%5D%2C%20%5B%208.812408447265625%2C%2049.49489061140408%20%5D%2C%20%5B%208.400421142578125%2C%2049.49489061140408%20%5D%2C%20%5B%208.400421142578125%2C%2049.32333182991094%20%5D%20%5D%20%5D"
+										},
+										{
+											"key": "type",
+											"value": "http://example.org/vehicle/Vehicle"
+										}
+									]
+								},
+								"description": "Get every entity near NEC Labs Heidelberg, with distance up to 360 meters\r\n    NEC Labs Heidelberg coordinates: 8.684783577919006, 49.406131991436396"
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "Create csource with Link header",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3458\",\r\n  \"type\": \"ContextSourceRegistration\",\r\n  \"name\": \"NameExample\",\r\n  \"description\": \"DescriptionExample\",\r\n  \"information\": [\r\n    {\r\n      \"entities\": [\r\n        {\r\n          \"id\": \"urn:ngsi-ld:Vehicle:A456\",\r\n          \"type\": \"Vehicle\"\r\n        }\r\n      ],\r\n      \"properties\": [\r\n        \"brandName\",\r\n        \"speed\"\r\n      ],\r\n      \"relationships\": [\r\n        \"isParked\"\r\n      ]\r\n    },\r\n    {\r\n      \"entities\": [\r\n        {\r\n          \"idPattern\": \".*downtown$\",\r\n          \"type\": \"OffStreetParking\"\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"endpoint\": \"http://my.csource.org:1026\",\r\n  \"location\": \"{ \\\"type\\\": \\\"Polygon\\\", \\\"coordinates\\\": [[[8.686752319335938,49.359122687528746],[8.742027282714844,49.3642654834877],[8.767433166503904,49.398462568451485],[8.768119812011719,49.42750021620163],[8.74305725097656,49.44781634951542],[8.669242858886719,49.43754770762113],[8.63525390625,49.41968407776289],[8.637657165527344,49.3995797187007],[8.663749694824219,49.36851347448498],[8.686752319335938,49.359122687528746]]] }\",\r\n  \"timestamp\": {\r\n    \"start\": \"2017-11-29T14:53:15\"\r\n  },\r\n  \"expires\": \"2030-11-29T14:53:15\"\r\n}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations/",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"csourceRegistrations",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create csource with context in payload",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3458\",\r\n  \"type\": \"ContextSourceRegistration\",\r\n  \"name\": \"NameExample\",\r\n  \"description\": \"DescriptionExample\",\r\n  \"information\": [\r\n    {\r\n      \"entities\": [\r\n        {\r\n          \"id\": \"urn:ngsi-ld:Vehicle:A456\",\r\n          \"type\": \"Vehicle\"\r\n        }\r\n      ],\r\n      \"properties\": [\r\n        \"brandName\",\r\n        \"speed\"\r\n      ],\r\n      \"relationships\": [\r\n        \"isParked\"\r\n      ]\r\n    },\r\n    {\r\n      \"entities\": [\r\n        {\r\n          \"idPattern\": \".*downtown$\",\r\n          \"type\": \"OffStreetParking\"\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"endpoint\": \"http://my.csource.org:1026\",\r\n  \"location\": \"{ \\\"type\\\": \\\"Polygon\\\", \\\"coordinates\\\": [[[8.686752319335938,49.359122687528746],[8.742027282714844,49.3642654834877],[8.767433166503904,49.398462568451485],[8.768119812011719,49.42750021620163],[8.74305725097656,49.44781634951542],[8.669242858886719,49.43754770762113],[8.63525390625,49.41968407776289],[8.637657165527344,49.3995797187007],[8.663749694824219,49.36851347448498],[8.686752319335938,49.359122687528746]]] }\",\r\n  \"timestamp\": {\r\n    \"start\": \"2017-11-29T14:53:15\"\r\n  },\r\n  \"expires\": \"2030-11-29T14:53:15\",\r\n\"@context\": [\r\n\r\n\t\"https://forge.etsi.org/gitlab/NGSI-LD/NGSI-LD/raw/master/coreContext/ngsi-ld-core-context.jsonld\",    \r\n    {\r\n    \"Vehicle\": \"http://example.org/vehicle/Vehicle\",\r\n    \"brandName\": \"http://example.org/vehicle/brandName\",\r\n    \"brandName1\": \"http://example.org/vehicle/brandName1\",\r\n    \"speed\": \"http://example.org/vehicle/speed\",\r\n    \"totalSpotNumber\": \"http://example.org/parking/totalSpotNumber\",\r\n    \"reliability\": \"http://example.org/common/reliability\",\r\n    \"OffStreetParking\":    \"http://example.org/parking/OffStreetParking\",    \r\n    \"availableSpotNumber\":    \"http://example.org/parking/availableSpotNumber\",\r\n     \"timestamp\": \"http://uri.etsi.org/ngsi-ld/timestamp\",\r\n    \"isParked\": {\r\n        \"@type\": \"@id\",\r\n        \"@id\": \"http://example.org/common/isParked\"\r\n    },\r\n    \"isNextToBuilding\":    {    \r\n        \"@type\":    \"@id\",    \r\n        \"@id\":    \"http://example.org/common/isNextToBuilding\"    \r\n    },    \r\n    \"providedBy\":    {    \r\n        \"@type\":    \"@id\",    \r\n        \"@id\":    \"http://example.org/common/providedBy\"    \r\n    },    \r\n    \"name\":    \"http://example.org/common/name\"    \r\n}\r\n]\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations/",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"csourceRegistrations",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update csource",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3458\",\r\n  \"type\": \"ContextSourceRegistration\",\r\n  \"name\": \"NameExample\",\r\n  \"description\": \"DescriptionExample\",\r\n  \"information\": [\r\n    {\r\n      \"entities\": [\r\n        {\r\n          \"id\": \"urn:ngsi-ld:Vehicle:A456\",\r\n          \"type\": \"Vehicle\"\r\n        }\r\n      ],\r\n      \"properties\": [\r\n        \"brandName\",\r\n        \"speed\",\r\n        \"brandName1\"\r\n      ],\r\n      \"relationships\": [\r\n        \"isParked\"\r\n      ]\r\n    },\r\n    {\r\n      \"entities\": [\r\n        {\r\n          \"idPattern\": \".*downtown$\",\r\n          \"type\": \"OffStreetParking\"\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"endpoint\": \"http://my.csource.org:1026\",\r\n  \"location\": \"{ \\\"type\\\": \\\"Polygon\\\", \\\"coordinates\\\": [[[8.686752319335938,49.359122687528746],[8.742027282714844,49.3642654834877],[8.767433166503904,49.398462568451485],[8.768119812011719,49.42750021620163],[8.74305725097656,49.44781634951542],[8.669242858886719,49.43754770762113],[8.63525390625,49.41968407776289],[8.637657165527344,49.3995797187007],[8.663749694824219,49.36851347448498],[8.686752319335938,49.359122687528746]]] }\",\r\n  \"timestamp\": {\r\n    \"start\": \"2017-11-29T14:53:15\"\r\n  },\r\n  \"expires\": \"2030-11-29T14:53:15\",\r\n\"@context\": [\r\n\r\n                \"https://forge.etsi.org/gitlab/NGSI-LD/NGSI-LD/raw/master/coreContext/ngsi-ld-core-context.jsonld\",    \r\n    {\r\n    \"Vehicle\": \"http://example.org/vehicle/Vehicle\",\r\n    \"brandName\": \"http://example.org/vehicle/brandName\",\r\n    \"brandName1\": \"http://example.org/vehicle/brandName1\",\r\n    \"speed\": \"http://example.org/vehicle/speed\",\r\n    \"totalSpotNumber\": \"http://example.org/parking/totalSpotNumber\",\r\n    \"reliability\": \"http://example.org/common/reliability\",\r\n    \"OffStreetParking\":    \"http://example.org/parking/OffStreetParking\",    \r\n    \"availableSpotNumber\":    \"http://example.org/parking/availableSpotNumber\",    \r\n    \"isParked\": {\r\n        \"@type\": \"@id\",\r\n        \"@id\": \"http://example.org/common/isParked\"\r\n    },\r\n    \"isNextToBuilding\":  {    \r\n        \"@type\":  \"@id\",    \r\n        \"@id\":  \"http://example.org/common/isNextToBuilding\"    \r\n    },    \r\n    \"providedBy\": {    \r\n        \"@type\":  \"@id\",    \r\n        \"@id\":  \"http://example.org/common/providedBy\"    \r\n    },    \r\n    \"name\": \"http://example.org/common/name\",\r\n    \"timestamp\": \"http://uri.etsi.org/ngsi-ld/timestamp\",\r\n    \"expires\":\"http://uri.etsi.org/ngsi-ld/expires\"\r\n}\r\n]\r\n}\r\n"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations/urn:ngsi-ld:ContextSourceRegistration:csr1a3458",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"csourceRegistrations",
+								"urn:ngsi-ld:ContextSourceRegistration:csr1a3458"
+							]
+						},
+						"description": "update attribute in csource"
+					},
+					"response": []
+				},
+				{
+					"name": "delete csource",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations/urn:ngsi-ld:ContextSourceRegistration:csr1a3458",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"csourceRegistrations",
+								"urn:ngsi-ld:ContextSourceRegistration:csr1a3458"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Subscription",
+			"item": [
+				{
+					"name": "Create subscription with link header",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n\t\"type\": \"Subscription\",\r\n\t\"entities\": [{\r\n\t\t\"idPattern\": \".*\",\r\n\t\t\"type\": \"Vehicle\"\r\n\t}],\r\n\t\"watchedAttributes\": [\"airQualityLevel\"],\r\n\t\"notification\": {\r\n\t\t\"attributes\": [\"airQualityLevel\"],\r\n\t\t\"format\": \"keyValues\",\r\n\t\t\"endpoint\": {\r\n\t\t\t\"uri\": \"http://my.endpoint.org/notify\",\r\n\t\t\t\"accept\": \"application/json\"\r\n\t\t}\r\n\t}\r\n}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/subscriptions/",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"subscriptions",
+								""
+							]
+						},
+						"description": "create subscription with context in payload"
+					},
+					"response": []
+				},
+				{
+					"name": "Query all subscriptions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/ld+json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/subscriptions/",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"subscriptions",
+								""
+							]
+						},
+						"description": "for retreiving specific subscription"
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve specific subscription",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/ld+json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:71",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"subscriptions",
+								"urn:ngsi-ld:Subscription:71"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update subscription",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text"
+							},
+							{
+								"key": "Link",
+								"value": "<http://{{link}}/index.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\t{\r\n\t \"id\": \"urn:ngsi-ld:Subscription:7\",\r\n\t \"type\": \"Subscription\",\r\n\t \"entities\": [{\r\n\t  \"type\": \"Vehicle\"\r\n\t }],\r\n\t \"watchedAttributes\": [\"http://example.org/vehicle/brandName2\"],\r\n\t        \"q\":\"http://example.org/vehicle/brandName2!=Mercedes\",\r\n\t \"notification\": {\r\n\t  \"attributes\": [\"http://example.org/vehicle/brandName2\"],\r\n\t  \"format\": \"keyValues\",\r\n\t  \"endpoint\": {\r\n\t   \"uri\": \"http://my.endpoint.org/notify\",\r\n\t\r\n\t   \"accept\": \"application/json\"\r\n\t  }\r\n\t }\r\n\t}"
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:7",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"subscriptions",
+								"urn:ngsi-ld:Subscription:7"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete subscription",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:7",
+							"host": [
+								"{{gatewayServer}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"subscriptions",
+								"urn:ngsi-ld:Subscription:7"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Microservice  status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{RegistryServer}}",
+					"host": [
+						"{{RegistryServer}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "API Gateway",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{gatewayServer}}/actuator/health",
+					"host": [
+						"{{gatewayServer}}"
+					],
+					"path": [
+						"actuator",
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
