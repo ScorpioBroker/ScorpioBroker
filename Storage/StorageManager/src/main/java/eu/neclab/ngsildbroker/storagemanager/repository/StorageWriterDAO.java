@@ -27,7 +27,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 public class StorageWriterDAO {
 	
 	private final static Logger logger = LogManager.getLogger(StorageWriterDAO.class);
-	public static final Gson GSON = DataSerializer.GSON;
+//	public static final Gson GSON = DataSerializer.GSON;
 
     @Autowired
 	private JdbcTemplate writerJdbcTemplate;
@@ -71,7 +71,7 @@ public class StorageWriterDAO {
 	public boolean storeTemporalEntity(String key, String value) throws SQLException {		
 		try {
 			
-			TemporalEntityStorageKey tesk = GSON.fromJson(key, TemporalEntityStorageKey.class);
+			TemporalEntityStorageKey tesk = DataSerializer.getTemporalEntityStorageKey(key);
 			
 			String entityId = tesk.getEntityId();
 			String entityType = tesk.getEntityType();

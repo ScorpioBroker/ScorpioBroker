@@ -9,7 +9,7 @@ import eu.neclab.ngsildbroker.commons.stream.interfaces.IConsumerChannels;
 public interface SubscriptionManagerConsumerChannel extends IConsumerChannels {
 
 	
-	@Value("${bootstrap.servers}")
+	
 	public String entityReadChannel = "ENTITY_READ_CHANNEL";
 	public String createReadChannel = "CREATE_READ_CHANNEL";
 	public String appendReadChannel = "APPEND_READ_CHANNEL";

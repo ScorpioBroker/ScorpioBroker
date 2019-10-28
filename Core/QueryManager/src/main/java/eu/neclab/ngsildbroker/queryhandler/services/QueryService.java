@@ -68,7 +68,7 @@ public class QueryService {
 
 	private final static Logger logger = LoggerFactory.getLogger(QueryService.class);
 
-	public static final Gson GSON = DataSerializer.GSON;
+//	public static final Gson GSON = DataSerializer.GSON;
 
 	@Value("${entity.topic}")
 	String ENTITY_TOPIC;
@@ -333,7 +333,7 @@ public class QueryService {
 					if (queryDAO != null) {
 						return queryDAO.query(qp);
 					} else {
-						return getFromStorageManager(GSON.toJson(qp));
+						return getFromStorageManager(DataSerializer.toJson(qp));
 					}
 				}
 			});
@@ -341,7 +341,7 @@ public class QueryService {
 			Future<String> futureContextRegistry = executorService.submit(new Callable<String>() {
 				public String call() throws Exception {
 					logger.trace("Asynchronous 1 context registry");
-					String brokerList = getFromContextRegistry(GSON.toJson(qp));
+					String brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
 					logger.debug("broker list from context registry::" + brokerList);
 					return brokerList;
 				}

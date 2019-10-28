@@ -170,9 +170,9 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 
 		}
 
-		if (result.getId() == null) {
-			throw new JsonParseException("Id is missing");
-		}
+//		if (result.getId() == null) {
+//			throw new JsonParseException("Id is missing");
+//		}
 		return result;
 	}
 
@@ -197,7 +197,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				}
 				if (info.getIdPattern() != null) {
 					JsonArray temp2 = new JsonArray();
-					temp2.add(info.getIdPattern());
+					JsonObject tempObj = new JsonObject();
+					tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(info.getIdPattern()));
+
+					temp2.add(tempObj);
 					entityObj.add(NGSIConstants.NGSI_LD_ID_PATTERN, temp2);
 				}
 				temp.add(entityObj);

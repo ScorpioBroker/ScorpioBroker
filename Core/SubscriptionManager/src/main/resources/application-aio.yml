@@ -1,0 +1,23 @@
+server:
+  port: 2025
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+bootstrap:
+  servers: localhost:9092
+
+
+  
+spring:
+  kafka:
+    consumer:
+      bootstrap-servers: localhost:9092
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+

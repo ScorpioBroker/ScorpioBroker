@@ -274,13 +274,14 @@ public class SerializationTools {
 			date = (Date) formatter.parse(dateString);
 			return date.getTime();
 		} catch (ParseException e) {
-			try {
-				date = (Date) forgivingFormatter.parse(dateString);
-				return date.getTime();
-			} catch (ParseException e1) {
-				e1.printStackTrace();
-				return null;
-			}
+//			try {
+//				date = (Date) forgivingFormatter.parse(dateString);
+//				return date.getTime();
+//			} catch (ParseException e1) {
+//				e1.printStackTrace();
+//				return null;
+//			}
+			return null;
 			
 		}
 	}
