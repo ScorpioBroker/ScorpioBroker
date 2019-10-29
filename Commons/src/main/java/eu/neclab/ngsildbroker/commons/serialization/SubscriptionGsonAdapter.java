@@ -170,9 +170,9 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 
 		}
 
-//		if (result.getId() == null) {
-//			throw new JsonParseException("Id is missing");
-//		}
+		// if (result.getId() == null) {
+		// throw new JsonParseException("Id is missing");
+		// }
 		return result;
 	}
 
@@ -238,37 +238,52 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		temp = new JsonArray();
 		JsonObject notificationObj = new JsonObject();
 		JsonArray attribs = new JsonArray();
-		for (String attrib : src.getNotification().getAttributeNames()) {
-			JsonObject tempObj = new JsonObject();
-			tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(attrib));
-			attribs.add(tempObj);
+		JsonObject tempObj;
+		JsonArray tempArray;
+		if (src.getNotification() != null) {
+			NotificationParam notification = src.getNotification();
+			if (notification.getAttributeNames() != null) {
+				for (String attrib : notification.getAttributeNames()) {
+					tempObj = new JsonObject();
+					tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(attrib));
+					attribs.add(tempObj);
+				}
+				notificationObj.add(NGSIConstants.NGSI_LD_ATTRIBUTES, attribs);
+			}
+
+			JsonObject endPoint = new JsonObject();
+			JsonArray endPointArray = new JsonArray();
+
+			if (notification.getEndPoint() != null) {
+
+				if (notification.getEndPoint().getAccept() != null) {
+					tempArray = new JsonArray();
+					tempObj = new JsonObject();
+					tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(notification.getEndPoint().getAccept()));
+					tempArray.add(tempObj);
+					endPoint.add(NGSIConstants.NGSI_LD_ACCEPT, tempArray);
+				}
+				if (notification.getEndPoint().getUri() != null) {
+					tempArray = new JsonArray();
+					tempObj = new JsonObject();
+					tempObj.add(NGSIConstants.JSON_LD_VALUE,
+							context.serialize(notification.getEndPoint().getUri().toString()));
+					tempArray.add(tempObj);
+					endPoint.add(NGSIConstants.NGSI_LD_URI, tempArray);
+					endPointArray.add(endPoint);
+					notificationObj.add(NGSIConstants.NGSI_LD_ENDPOINT, endPointArray);
+				}
+			}
+			if (notification.getFormat() != null) {
+				tempArray = new JsonArray();
+				tempObj = new JsonObject();
+				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(notification.getFormat().toString()));
+				tempArray.add(tempObj);
+				notificationObj.add(NGSIConstants.NGSI_LD_FORMAT, tempArray);
+			}
+			temp.add(notificationObj);
+			top.add(NGSIConstants.NGSI_LD_NOTIFICATION, temp);
 		}
-		notificationObj.add(NGSIConstants.NGSI_LD_ATTRIBUTES, attribs);
-		JsonObject endPoint = new JsonObject();
-		JsonArray endPointArray = new JsonArray();
-		if (src.getNotification().getEndPoint().getAccept() != null) {
-			JsonArray tempArray = new JsonArray();
-			JsonObject tempObj = new JsonObject();
-			tempObj.add(NGSIConstants.JSON_LD_VALUE,
-					context.serialize(src.getNotification().getEndPoint().getAccept()));
-			tempArray.add(tempObj);
-			endPoint.add(NGSIConstants.NGSI_LD_ACCEPT, tempArray);
-		}
-		JsonArray tempArray = new JsonArray();
-		JsonObject tempObj = new JsonObject();
-		tempObj.add(NGSIConstants.JSON_LD_VALUE,
-				context.serialize(src.getNotification().getEndPoint().getUri().toString()));
-		tempArray.add(tempObj);
-		endPoint.add(NGSIConstants.NGSI_LD_URI, tempArray);
-		endPointArray.add(endPoint);
-		notificationObj.add(NGSIConstants.NGSI_LD_ENDPOINT, endPointArray);
-		tempArray = new JsonArray();
-		tempObj = new JsonObject();
-		tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getNotification().getFormat().toString()));
-		tempArray.add(tempObj);
-		notificationObj.add(NGSIConstants.NGSI_LD_FORMAT, tempArray);
-		temp.add(notificationObj);
-		top.add(NGSIConstants.NGSI_LD_NOTIFICATION, temp);
 		if (src.getLdQuery() != null) {
 			tempArray = new JsonArray();
 			tempObj = new JsonObject();
@@ -278,10 +293,12 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		}
 
 		attribs = new JsonArray();
-		for (String attrib : src.getAttributeNames()) {
-			tempObj = new JsonObject();
-			tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(attrib));
-			attribs.add(tempObj);
+		if (src.getAttributeNames() != null) {
+			for (String attrib : src.getAttributeNames()) {
+				tempObj = new JsonObject();
+				tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(attrib));
+				attribs.add(tempObj);
+			}
 		}
 		if (attribs.size() > 0) {
 			top.add(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES, attribs);
