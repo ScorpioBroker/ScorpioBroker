@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "e8982b75-7b02-480f-b360-b92d5c1b00c0",
+		"_postman_id": "cbf80864-a29e-4bda-b15f-c5c3ff4932e3",
 		"name": "Scorpio Broker_latest",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -386,7 +386,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?attrs=http://example.org/vehicle/brandName?attrs=http://example.org/vehicle/brandName",
+							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?attrs=http://example.org/vehicle/brandName",
 							"host": [
 								"{{gatewayServer}}"
 							],
@@ -801,48 +801,6 @@
 								{
 									"key": "q",
 									"value": "trueExample==true"
-								},
-								{
-									"key": "type",
-									"value": "urn:ngsi-ld:Test"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "null equal",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/ld+json"
-							},
-							{
-								"key": "Accept",
-								"value": "application/ld+json"
-							},
-							{
-								"key": "Link",
-								"value": "<{{link}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
-							}
-						],
-						"url": {
-							"raw": "{{gatewayServer}}/ngsi-ld/v1/entities?q=nullExample==null&type=urn:ngsi-ld:Test",
-							"host": [
-								"{{gatewayServer}}"
-							],
-							"path": [
-								"ngsi-ld",
-								"v1",
-								"entities"
-							],
-							"query": [
-								{
-									"key": "q",
-									"value": "nullExample==null"
 								},
 								{
 									"key": "type",
@@ -1710,7 +1668,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations?type=http://example.org/vehicle/Vehicle?type=http://example.org/vehicle/Vehicle",
+									"raw": "{{gatewayServer}}/ngsi-ld/v1/csourceRegistrations?type=http://example.org/vehicle/Vehicle",
 									"host": [
 										"{{gatewayServer}}"
 									],
@@ -2048,8 +2006,7 @@
 							{
 								"key": "Link",
 								"value": "<{{link}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
-								"type": "text",
-								"disabled": true
+								"type": "text"
 							},
 							{
 								"key": "Accept",
@@ -2060,7 +2017,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n\t\"type\": \"Subscription\",\r\n\t\"entities\": [{\r\n\t\t\"idPattern\": \".*\",\r\n\t\t\"type\": \"Vehicle\"\r\n\t}],\r\n\t\"watchedAttributes\": [\"airQualityLevel\"],\r\n\t\"notification\": {\r\n\t\t\"attributes\": [\"airQualityLevel\"],\r\n\t\t\"format\": \"keyValues\",\r\n\t\t\"endpoint\": {\r\n\t\t\t\"uri\": \"http://my.endpoint.org/notify\",\r\n\t\t\t\"accept\": \"application/json\"\r\n\t\t}\r\n\t}\r\n}"
+							"raw": "{\r\n\t\"type\": \"Subscription\",\r\n\t\"entities\": [{\r\n\t\t\"idPattern\": \".*\",\r\n\t\t\"type\": \"Vehicle\"\r\n\t}],\r\n\t\"watchedAttributes\": [\"brandName\"],\r\n\t\"notification\": {\r\n\t\t\"attributes\": [\"brandName\"],\r\n\t\t\"format\": \"keyValues\",\r\n\t\t\"endpoint\": {\r\n\t\t\t\"uri\": \"http://my.endpoint.org/notify\",\r\n\t\t\t\"accept\": \"application/json\"\r\n\t\t}\r\n\t}\r\n}"
 						},
 						"url": {
 							"raw": "{{gatewayServer}}/ngsi-ld/v1/subscriptions/",
