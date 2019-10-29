@@ -313,7 +313,7 @@ the [JSON-LD website](https://json-ld.org/).
 
 You can find a set of example calls, as a Postman collection, in the Examples folder. These examples use 2 Variables
 
-- gatewayServer, which has to be '<brokerIP>:<brokerPort>'. When using default settings locally it would be localhost:9090
+- gatewayServer, which has to be `<brokerIP>:<brokerPort>`. When using default settings locally it would be localhost:9090
 - link, which is for the examples providing @context via the Link header. For the examples we host an example @context. Set link to https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/Examples/index.json
 
 ## Troubleshooting
