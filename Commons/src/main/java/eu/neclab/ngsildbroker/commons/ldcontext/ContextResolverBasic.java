@@ -56,18 +56,10 @@ public class ContextResolverBasic {
 	@PostConstruct
 	private void setup() {
 		try {
-//			defaultOptions.setCompactArrays(false);
 			CORE_CONTEXT_URL = new URI(CORE_CONTEXT_URL_STR);
-
 			String json = httpUtils.doGet(CORE_CONTEXT_URL);
 			CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
-			// DEFAULT_CONTEXT_URL = new URI(
-			// "https://forge.etsi.org/gitlab/NGSI-LD/NGSI-LD/raw/master/defaultContext/defaultContextVocab.jsonld");
-			// json = httpUtils.doGet(DEFAULT_CONTEXT_URL);
-			// DEFAULT_CONTEXT = (Map<String, Object>) ((Map)
-			// JsonUtils.fromString(json)).get("@context");
 			BASE_CONTEXT.putAll(CORE_CONTEXT);
-			// BASE_CONTEXT.putAll(DEFAULT_CONTEXT);
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -228,25 +220,25 @@ public class ContextResolverBasic {
 
 	}
 
-	private void unprotectGeoProps(Object json, List<Object> fullContext) throws JsonParseException, IOException {
+	private void unprotectGeoProps(Object json) throws JsonParseException, IOException {
 		if (json instanceof Map) {
-			unprotectGeoProps((Map<String, Object>) json, fullContext);
+			unprotectGeoProps((Map<String, Object>) json);
 		} else if (json instanceof List) {
-			unprotectGeoProps((List) json, fullContext);
+			unprotectGeoProps((List) json);
 		}
 
 	}
 
-	private void unprotectGeoProps(Map<String, Object> objMap, List<Object> usedContext)
+	private void unprotectGeoProps(Map<String, Object> objMap)
 			throws JsonParseException, IOException {
 		boolean typeFound = false;
 		Object value = null;
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
-			if (NGSIConstants.JSON_LD_TYPE.equals(key) && (mapValue instanceof List)) {
-				Object tempObj = ((List) mapValue).get(0);
-				if (NGSIConstants.NGSI_LD_GEOPROPERTY.equals(tempObj)) {
+			if (NGSIConstants.QUERY_PARAMETER_TYPE.equals(key) && (mapValue instanceof String)) {
+				
+				if (NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT.equals(mapValue)) {
 					typeFound = true;
 				}
 				// if(tempObj instanceof Map) {
@@ -255,38 +247,33 @@ public class ContextResolverBasic {
 				// }
 				// }
 
-			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
+			} else if (NGSIConstants.VALUE.equals(key)) {
 				value = mapValue;
 			} else {
 				if (mapValue instanceof Map) {
-					unprotectGeoProps((Map<String, Object>) mapValue, usedContext);
+					unprotectGeoProps((Map<String, Object>) mapValue);
 				} else if (mapValue instanceof List) {
-					unprotectGeoProps((List) mapValue, usedContext);
+					unprotectGeoProps((List) mapValue);
 				}
 			}
 		}
 
-		if (typeFound && value != null
-				&& ((Map) (((List) value).get(0))).get(NGSIConstants.JSON_LD_VALUE) instanceof String) {
-			Map<String, Object> temp = (Map<String, Object>) JsonUtils
-					.fromString((String) (((Map) (((List) value).get(0))).get(NGSIConstants.JSON_LD_VALUE)));
-			temp.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
-			List<Object> expanded = JsonLdProcessor.expand(temp);
-			// temp.replace("\\\"", "\"");
-			objMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, expanded);
-			System.out.println();
+		if (typeFound && value != null) {
+			
+			objMap.put(NGSIConstants.VALUE, JsonUtils.fromString((String) value));
+			
 		}
 
 	}
 
-	private void unprotectGeoProps(List<Object> objList, List<Object> usedContext)
+	private void unprotectGeoProps(List<Object> objList)
 			throws JsonParseException, IOException {
 		for (Object entry : objList) {
 			if (entry instanceof Map) {
 
-				unprotectGeoProps((Map<String, Object>) entry, usedContext);
+				unprotectGeoProps((Map<String, Object>) entry);
 			} else if (entry instanceof List) {
-				unprotectGeoProps((List) entry, usedContext);
+				unprotectGeoProps((List) entry);
 			} else {
 				// don't care for now i think
 			}
@@ -339,7 +326,8 @@ public class ContextResolverBasic {
 		if (context != null && !context.isEmpty()) {
 			fullContext.add(context);
 		}
-		fullContext.add(BASE_CONTEXT);
+		fullContext.add(CORE_CONTEXT_URL_STR);
+//		fullContext.add(BASE_CONTEXT);
 		CompactedJson result = new CompactedJson();
 		int hash = json.hashCode();
 		if (context.containsKey(IS_FULL_VALID)) {
@@ -349,9 +337,9 @@ public class ContextResolverBasic {
 		}
 		context.remove(IS_FULL_VALID);
 		try {
-			unprotectGeoProps(json, fullContext);
+			
 			Map<String, Object> tempResult = JsonLdProcessor.compact(json, fullContext, defaultOptions);
-
+			unprotectGeoProps(tempResult);
 			if (tempResult.containsKey("@graph")) {
 				// we are in a multiresult set
 				Object atContext = tempResult.get("@context");

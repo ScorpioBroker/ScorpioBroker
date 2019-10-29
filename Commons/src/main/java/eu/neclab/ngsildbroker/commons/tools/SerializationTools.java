@@ -69,7 +69,7 @@ public class SerializationTools {
 						prop.setGeoValue( DataSerializer.getGeojsonGeometry(primitive.getAsString()) );
 					}
 				} else {
-					JsonElement atValue = propValue.getAsJsonObject().get(NGSIConstants.VALUE);
+					JsonElement atValue = propValue.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE);
 					if (atValue != null) {
 						if (atValue.isJsonPrimitive()) {
 							JsonPrimitive primitive = atValue.getAsJsonPrimitive();
@@ -210,8 +210,8 @@ public class SerializationTools {
 			return result;
 		} else if (element.isJsonObject()) {
 			JsonObject jsonObj = element.getAsJsonObject();
-			if (jsonObj.has(NGSIConstants.VALUE)) {
-				JsonPrimitive atValue = jsonObj.get(NGSIConstants.VALUE).getAsJsonPrimitive();
+			if (jsonObj.has(NGSIConstants.JSON_LD_VALUE)) {
+				JsonPrimitive atValue = jsonObj.get(NGSIConstants.JSON_LD_VALUE).getAsJsonPrimitive();
 				if (atValue.isBoolean()) {
 					return atValue.getAsBoolean();
 				}
@@ -222,7 +222,7 @@ public class SerializationTools {
 					return atValue.getAsString();
 				}
 
-				return jsonObj.get(NGSIConstants.VALUE).getAsString();
+				return jsonObj.get(NGSIConstants.JSON_LD_VALUE).getAsString();
 			} else {
 				HashMap<String, List<Object>> result = new HashMap<String, List<Object>>();
 				for (Entry<String, JsonElement> entry : jsonObj.entrySet()) {
@@ -262,7 +262,7 @@ public class SerializationTools {
 	private static JsonArray getValueArray(JsonElement value) {
 		JsonArray result = new JsonArray();
 		JsonObject temp = new JsonObject();
-		temp.add(NGSIConstants.VALUE, value);
+		temp.add(NGSIConstants.JSON_LD_VALUE, value);
 		result.add(temp);
 		return result;
 	}
@@ -429,7 +429,7 @@ public class SerializationTools {
 			// }
 			else {
 				obj = new JsonObject();
-				obj.add(NGSIConstants.VALUE, context.serialize(value));
+				obj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(value));
 
 			}
 			top.add(obj);
@@ -483,7 +483,7 @@ public class SerializationTools {
 		top.add(NGSIConstants.JSON_LD_TYPE, type);
 		JsonArray value = new JsonArray();
 		JsonObject objValue = new JsonObject();
-		objValue.add(NGSIConstants.VALUE, context.serialize(property.getValue()));
+		objValue.add(NGSIConstants.JSON_LD_VALUE, context.serialize(property.getValue()));
 		value.add(objValue);
 		top.add(NGSIConstants.NGSI_LD_HAS_VALUE, value);
 		if (property.getObservedAt() > 0) {

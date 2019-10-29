@@ -42,6 +42,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
 	public final static String NGSI_LD_COORDINATES = "https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
+	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
 	public final static String NGSI_LD_LOCATION = "https://uri.etsi.org/ngsi-ld/location";
 	public final static String NGSI_LD_CREATED_AT = "https://uri.etsi.org/ngsi-ld/createdAt";
 	public final static String NGSI_LD_MODIFIED_AT = "https://uri.etsi.org/ngsi-ld/modifiedAt";
@@ -86,7 +87,8 @@ public interface NGSIConstants {
 	
 	public final static String GEO_JSON_COORDINATES = "coordinates";
 	public final static String GEO_JSON_TYPE = "type";
-	public final static String VALUE = "@value";
+	
+	public final static String VALUE = "value";
 	
 	// Entity validation attribute types
 	public final static String VALID_NGSI_ATTRIBUTE_TYPES = "Relationship,Property,DateTime";

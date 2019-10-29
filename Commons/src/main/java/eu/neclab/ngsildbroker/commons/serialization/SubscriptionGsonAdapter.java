@@ -58,7 +58,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 					EntityInfo entity = new EntityInfo();
 					if (obj.has(NGSIConstants.NGSI_LD_ID_PATTERN)) {
 						entity.setIdPattern(obj.get(NGSIConstants.NGSI_LD_ID_PATTERN).getAsJsonArray().get(0)
-								.getAsJsonObject().get(NGSIConstants.VALUE).getAsString());
+								.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
 					}
 					if (obj.has(NGSIConstants.JSON_LD_ID)) {
 						try {
