@@ -309,6 +309,13 @@ For more detailed explaination on NGSI-LD or JSON-LD. Please look at the
 [ETSI Specification](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf) or visit
 the [JSON-LD website](https://json-ld.org/).
 
+### Postman example collection
+
+You can find a set of example calls, as a Postman collection, in the Examples folder. These examples use 2 Variables
+
+- gatewayServer, which has to be <brokerIP>:<brokerPort>. When using default settings locally it would be localhost:9090
+- link, which is for the examples providing @context via the Link header. For the examples we host an example @context. Set link to https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/Examples/index.json
+
 ## Troubleshooting
 
 ### Missing JAXB dependencies
