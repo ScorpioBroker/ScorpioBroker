@@ -1,4 +1,15 @@
 spring:
+  application:
+    name: query-manager
+  main:
+    lazy-initialization: true
+  kafka:
+    admin:
+      properties:
+        cleanup:
+          policy: compact
+  flyway:
+    baselineOnMigrate: true
   cloud:
     stream:
       kafka:
@@ -8,10 +19,65 @@ spring:
          ATCONTEXT_WRITE_CHANNEL:
           destination: ATCONTEXT
           contentType: application/json
-        #ENTITY_READ_CHANNEL:
-         # destination: ENTITY
-         # contentType: application/json
-         # group: entity
+  datasource:
+    url: "jdbc:postgresql://127.0.0.1:5432/ngb?ApplicationName=ngb_querymanager"
+    username: ngb
+    password: ngb
+    hikari:
+      minimumIdle: 5
+      maximumPoolSize: 20
+      idleTimeout: 30000
+      poolName: SpringBootHikariCP
+      maxLifetime: 2000000
+      connectionTimeout: 30000
+
+server:
+  port: 1026
+  tomcat:
+    max:
+      threads: 50
+#Entity-Manager properties
+entity:
+  topic: ENTITY
+  keyValues:
+    topic: KVENTITY
+  withoutSysAttrs:
+    topic: ENTITY_WITHOUT_SYSATTRS
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
+
+bootstrap:
+  servers: localhost:9092
+#enable log compaction
+
+
+csource:
+  query:
+    topic: CONTEXT_REGISTRY_QUERY
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    restart:
+      enabled: true
+      
+atcontext:
+  url: http://localhost:9090/ngsi-ld/contextes/
+ngb:
+  debugmode: false
+kafka:
+  replytimeout: 10000
+  
+defaultLimit: 50
+maxLimit: 500
+directDbConnection: false 
+#if directDbConnection is false then properties below are not used {{{
+
+
 
                
           

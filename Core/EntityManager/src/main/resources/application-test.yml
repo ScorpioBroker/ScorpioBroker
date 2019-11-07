@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: entity-manager
+  kafka:
+    consumer:
+      group-id: ngb
+      auto-offset-reset: earliest
+    admin:
+      properties:
+        cleanup:
+          policy: compact
+
+server:
+  port: 1025
+  tomcat:
+    max:
+      threads: 50
+
+
+#Entity-Manager topics properties
+entity:
+  topic: ENTITY
+  create:
+    topic: ENTITY_CREATE
+  append:
+    topic: ENTITY_APPEND
+  update:
+    topic: ENTITY_UPDATE
+  delete:
+    topic: ENTITY_DELETE
+  index:
+    topic: ENTITY_INDEX
+
+csources:
+  registration:
+    topic: CONTEXT_REGISTRY
+
+
+#kafka broker path
+bootstrap:
+  servers: ${spring.embedded.kafka.brokers}
+
+
+
+
+#Entity Append ovewrite options
+append:
+  overwrite: noOverwrite
+
+
+  

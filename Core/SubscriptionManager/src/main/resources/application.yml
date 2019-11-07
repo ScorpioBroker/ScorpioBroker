@@ -1,4 +1,56 @@
+server:
+  port: 2025
+
+
+atcontext:
+  url: http://localhost:9090/ngsi-ld/contextes/
+
+#Entity-Manager topics properties
+entity:
+  topic: ENTITY
+  create:
+    topic: ENTITY_CREATE
+  append:
+    topic: ENTITY_APPEND
+  update:
+    topic: ENTITY_UPDATE
+  delete:
+    topic: ENTITY_DELETE
+    
+csource:
+  registry:
+    topic: CSOURCE_REGISTRATION
+  notification:
+    topic: CONTEXT_SOURCE_NOTIFICATION
+
+#kafka broker path
+bootstrap:
+  servers: localhost:9092
+
+key:
+  deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#Entity Append ovewrite options
+append:
+  overwrite: noOverwrite
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    restart:
+      enabled: true
+
 spring:
+  kafka:
+    admin:
+      properties:
+        cleanup:
+          policy: compact
+  main:
+    lazy-initialization: true
+  application:
+    name: subscription-manager
   cloud:
     stream:
       kafka:
@@ -8,39 +60,3 @@ spring:
         SUBSCRIPTIONS_WRITE_CHANNEL:
           destination: SUBSCRIPTIONS
           contentType: application/json
-        ATCONTEXT_WRITE_CHANNEL:
-          destination: ATCONTEXT
-          contentType: application/json
-      #  ENTITY_READ_CHANNEL:
-      #    destination: ENTITY
-      #    contentType: application/json
-      #    group: entity
-      #  CREATE_WRITE_CHANNEL:
-      #    destination: ENTITY_CREATE
-      #    contentType: application/json
-      #  CREATE_READ_CHANNEL:
-      #    destination: ENTITY_CREATE
-      #    contentType: application/json
-      #  APPEND_WRITE_CHANNEL:
-      #    destination: ENTITY_APPEND
-      #    contentType: application/json
-      #  APPEND_READ_CHANNEL:
-      #    destination: ENTITY_APPEND
-      #    contentType: application/json
-      #    group: append
-      #  UPDATE_WRITE_CHANNEL:
-      #    destination: ENTITY_UPDATE
-      #    contentType: application/json
-      #  UPDATE_READ_CHANNEL:
-      #    destination: ENTITY_UPDATE
-      #    contentType: application/json
-      #    group: update
-      #  DELETE_WRITE_CHANNEL:
-      #    destination: ENTITY_DELETE
-      #    contentType: application/json
-      #  DELETE_READ_CHANNEL:
-      #    destination: ENTITY_DELETE
-      #    contentType: application/json
-      #    group: delete
-               
-          

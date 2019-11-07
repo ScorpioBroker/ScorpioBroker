@@ -1,4 +1,19 @@
 spring:
+  application:
+    name: history-manager
+  main:
+    lazy-initialization: true
+  datasource:
+    url: "jdbc:postgresql://127.0.0.1:5432/ngb?ApplicationName=ngb_historymanager"
+    username: ngb
+    password: ngb
+    hikari:
+      minimumIdle: 5
+      maximumPoolSize: 20
+      idleTimeout: 30000
+      poolName: SpringBootHikariCP
+      maxLifetime: 2000000
+      connectionTimeout: 30000
   cloud:
     stream:
       kafka:
@@ -8,5 +23,42 @@ spring:
          TEMPORAL_ENTITY_WRITE_CHANNEL:
           destination: TEMPORALENTITY
           contentType: application/json
+
+server:
+  port: 1040
+
+
+
+entity:
+  create:
+    topic: ENTITY_CREATE
+  append:
+    topic: ENTITY_APPEND
+  update:
+    topic: ENTITY_UPDATE
+  delete:
+    topic: ENTITY_DELETE
+  temporal:
+    topic: TEMPORALENTITY
+
+#kafka broker path
+bootstrap:
+  servers: localhost:9092
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    restart:
+      enabled: true
+
+
+atcontext:
+  url: http://localhost:9090/ngsi-ld/contextes/
+
+
                
           

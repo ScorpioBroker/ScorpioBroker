@@ -1,4 +1,11 @@
 spring:
+  application:
+    name: testmanager
+  kafka:
+    admin:
+      properties:
+        cleanup:
+          policy: compact
   cloud:
     stream:
       kafka:
@@ -9,6 +16,21 @@ spring:
          # destination: ENTITY
          # contentType: application/json
          # group: entity
+server:
+  port: 1010
+  tomcat:
+    max:
+      threads: 20
+#Entity-Manager properties
+entity:
+  topic: ENTITY
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
+bootstrap:
+  servers: localhost:9092
+#enable log compaction
 
-               
+              
           

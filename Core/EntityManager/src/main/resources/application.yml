@@ -1,4 +1,60 @@
+
+
+server:
+  port: 1025
+  tomcat:
+    max:
+      threads: 50
+#Entity-Manager topics properties
+entity:
+  topic: ENTITY
+  create:
+    topic: ENTITY_CREATE
+  append:
+    topic: ENTITY_APPEND
+  update:
+    topic: ENTITY_UPDATE
+  delete:
+    topic: ENTITY_DELETE
+  index:
+    topic: ENTITY_INDEX
+
+csources:
+  registration:
+    topic: CONTEXT_REGISTRY
+#kafka broker path
+bootstrap:
+  servers: localhost:9092
+
+
+
+
+
+#Entity Append ovewrite options
+append:
+  overwrite: noOverwrite
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    restart:
+      enabled: true
+
+
+
 spring:
+  application:
+    name: entity-manager
+  kafka:
+    admin:
+      properties:
+        cleanup:
+          policy: compact
   cloud:
     stream:
       kafka:
@@ -8,10 +64,10 @@ spring:
         ENTITY_WRITE_CHANNEL:
           destination: ENTITY
           contentType: application/json
-        ENTITY_READ_CHANNEL:
-          destination: ENTITY
-          contentType: application/json
-          group: entity
+#        ENTITY_READ_CHANNEL:
+#          destination: ENTITY
+#          contentType: application/json
+#          group: entity
         KVENTITY_WRITE_CHANNEL:
           destination: KVENTITY
           contentType: application/json
