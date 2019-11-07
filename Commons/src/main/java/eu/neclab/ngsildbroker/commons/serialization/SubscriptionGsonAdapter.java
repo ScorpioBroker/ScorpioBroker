@@ -179,7 +179,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 	@Override
 	public JsonElement serialize(Subscription src, Type typeOfSrc, JsonSerializationContext context) {
 		JsonObject top = new JsonObject();
-		top.add(NGSIConstants.JSON_LD_ID, context.serialize(src.getId().toString()));
+		//remote subs have no id yet
+		if (src.getId() != null) {
+			top.add(NGSIConstants.JSON_LD_ID, context.serialize(src.getId().toString()));
+		}
 		top.add(NGSIConstants.JSON_LD_TYPE, context.serialize(src.getType()));
 		JsonArray temp = new JsonArray();
 		if (src.getEntities() != null) {
