@@ -1,0 +1,54 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>eu.neclab.ngsildbroker</groupId>
+		<artifactId>OverallParent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../OverallParent</relativePath>
+	</parent>
+	<artifactId>AllInOneRunner</artifactId>
+	<version>0.0.4-SNAPSHOT</version>
+	<packaging>jar</packaging>
+	<dependencies>
+
+
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>AtContextServer</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>EntityManager</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<!-- <dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>HistoryManager</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency> -->
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>QueryManager</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>RegistryManager</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>StorageManager</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>SubscriptionManager</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+
+
+	</dependencies>
+</project>
