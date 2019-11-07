@@ -1,39 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration>
+	<appender name="RollingFile"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<File>./logs/spring-boot-logger-log4j2.log</File>
+		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+			<fileNamePattern>./logs/$${date:yyyy-MM}/spring-boot-logger-log4j2-%d{-dd-MMMM-yyyy}-%i.log.gz
+			</fileNamePattern>
+			<minIndex>1</minIndex>
+			<maxIndex>3</maxIndex>
+		</rollingPolicy>
+		<triggeringPolicy
+			class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<maxFileSize>10MB</maxFileSize>
+		</triggeringPolicy>
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] %logger{0}
+				%X{akkaSource} %msg%n</pattern>
+		</encoder>
+	</appender>
+	<appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] %logger{0}
+				%X{akkaSource} %msg%n</pattern>
+		</encoder>
+	</appender>
+	<!-- <Appenders> <Console name="Console" target="SYSTEM_OUT"> <PatternLayout 
+		pattern="%style{%d{ISO8601}}{black} %highlight{%-5level }[%style{%t}{bright,blue}] 
+		%style{%C{1.}}{bright,yellow}: %msg%n%throwable" /> </Console> <RollingFile 
+		name="RollingFile" fileName="./logs/spring-boot-logger-log4j2.log" filePattern="./logs/$${date:yyyy-MM}/spring-boot-logger-log4j2-%d{-dd-MMMM-yyyy}-%i.log.gz"> 
+		<PatternLayout> <pattern>%d %p %C{1.} [%t] %m%n</pattern> </PatternLayout> 
+		<Policies> rollover on startup, daily and when the file reaches 10 MegaBytes 
+		<OnStartupTriggeringPolicy /> <SizeBasedTriggeringPolicy size="10 MB" /> 
+		<TimeBasedTriggeringPolicy /> </Policies> </RollingFile> </Appenders> -->
 
-    <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout
-                pattern="%style{%d{ISO8601}}{black} %highlight{%-5level }[%style{%t}{bright,blue}] %style{%C{1.}}{bright,yellow}: %msg%n%throwable" />
-        </Console>
 
-        <RollingFile name="RollingFile"
-            fileName="./logs/spring-boot-logger-log4j2.log"
-            filePattern="./logs/$${date:yyyy-MM}/spring-boot-logger-log4j2-%d{-dd-MMMM-yyyy}-%i.log.gz">
-            <PatternLayout>
-                <pattern>%d %p %C{1.} [%t] %m%n</pattern>
-            </PatternLayout>
-            <Policies>
-                <!-- rollover on startup, daily and when the file reaches 
-                    10 MegaBytes -->
-                <OnStartupTriggeringPolicy />
-                <SizeBasedTriggeringPolicy
-                    size="10 MB" />
-                <TimeBasedTriggeringPolicy />
-            </Policies>
-        </RollingFile>
-    </Appenders>
+	<root level="INFO">
+		<appender-ref ref="Console" />
+		<appender-ref ref="RollingFile" />
+	</root>
 
-    <Loggers>
-        <!-- LOG everything at INFO level -->
-        <Root level="ERROR">
-            <AppenderRef ref="Console" /> 
-            <AppenderRef ref="RollingFile" />
-        </Root>
+	<!-- 
+	<Logger name="eu.neclab.ngsildbroker" level="INFO"></Logger> -->
 
-        <!-- LOG "eu.neclab" at TRACE level -->
-        <Logger name="eu.neclab.ngsildbroker" level="ERROR"></Logger>
-        
-    </Loggers>
 
 </Configuration>

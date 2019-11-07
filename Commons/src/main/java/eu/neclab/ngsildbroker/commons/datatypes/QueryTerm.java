@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.BadRequestException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
@@ -120,7 +121,11 @@ public class QueryTerm {
 				return false;
 			}
 			if (TIME_PROPS.contains(myAttribName)) {
-				operant = SerializationTools.date2Long(operant).toString();
+				try {
+					operant = SerializationTools.date2Long(operant).toString();
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
+				}
 			}
 			value = getValue(myProperty);
 			if (value == null) {

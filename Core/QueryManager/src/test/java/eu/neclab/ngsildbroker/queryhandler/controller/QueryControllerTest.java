@@ -51,7 +51,7 @@ import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 @AutoConfigureMockMvc//(secure = false)
 @PowerMockRunnerDelegate(SpringRunner.class)
 @PowerMockIgnore({ "javax.management.*", "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "org.w3c.*",
-		"com.sun.org.apache.xalan.*", "javax.activation.*", "javax.net.ssl.*", "javax.security.*" })
+		"com.sun.org.apache.xalan.*", "javax.activation.*", "javax.net.*", "javax.security.*" })
 public class QueryControllerTest {
 
 	@Autowired
@@ -86,7 +86,7 @@ public class QueryControllerTest {
     			"	}],\r\n" + 
     			"	\"https://uri.etsi.org/ngsi-ld/createdAt\": [{\r\n" + 
     			"		\"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\r\n" + 
-    			"		\"@value\": \"2017-07-29T12:00:04\"\r\n" + 
+    			"		\"@value\": \"2017-07-29T12:00:04Z\"\r\n" + 
     			"	}],\r\n" + 
     			"	\"@id\": \"urn:ngsi-ld:Vehicle:A100\",\r\n" + 
     			"	\"http://example.org/common/isParked\": [{\r\n" + 
@@ -95,7 +95,7 @@ public class QueryControllerTest {
     			"		}],\r\n" + 
     			"		\"https://uri.etsi.org/ngsi-ld/observedAt\": [{\r\n" + 
     			"			\"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\r\n" + 
-    			"			\"@value\": \"2017-07-29T12:00:04\"\r\n" + 
+    			"			\"@value\": \"2017-07-29T12:00:04Z\"\r\n" + 
     			"		}],\r\n" + 
     			"		\"http://example.org/common/providedBy\": [{\r\n" + 
     			"			\"https://uri.etsi.org/ngsi-ld/hasObject\": [{\r\n" + 
@@ -130,7 +130,7 @@ public class QueryControllerTest {
     			"	\"isParked\": {\r\n" + 
     			"		\"type\": \"Relationship\",\r\n" + 
     			"		\"object\": \"urn:ngsi-ld:OffStreetParking:Downtown1\",\r\n" + 
-    			"		\"observedAt\": \"2017-07-29T12:00:04\",\r\n" + 
+    			"		\"observedAt\": \"2017-07-29T12:00:04Z\",\r\n" + 
     			"		\"providedBy\": {\r\n" + 
     			"			\"type\": \"Relationship\",\r\n" + 
     			"			\"object\": \"urn:ngsi-ld:Person:Bob\"\r\n" + 
@@ -140,10 +140,10 @@ public class QueryControllerTest {
     			"		\"type\": \"Property\",\r\n" + 
     			"		\"value\": 80\r\n" + 
     			"	},\r\n" + 
-    			"	\"createdAt\": \"2017-07-29T12:00:04\",\r\n" + 
+    			"	\"createdAt\": \"2017-07-29T12:00:04Z\",\r\n" + 
     			"	\"location\": {\r\n" + 
     			"		\"type\": \"GeoProperty\",\r\n" + 
-    			"		\"value\": \"{ \\\"type\\\":\\\"Point\\\", \\\"coordinates\\\":[ -8.5, 41.2 ] }\"\r\n" + 
+    			"		\"value\": { \"type\":\"Point\", \"coordinates\":[ -8.5, 41.2 ] }\r\n" + 
     			"	}\r\n" + 
     			"}";
     	
@@ -201,7 +201,7 @@ public class QueryControllerTest {
 					any(boolean.class), any(boolean.class));
 //			Mockito.doReturn(responseEntity).when(qc).generateReply(any(), any(), any());
 
-			mockMvc.perform(get("/{entityId}", "urn:ngsi-ld:Vehicle:A100").accept(AppConstants.NGB_APPLICATION_JSON))
+			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A100").accept(AppConstants.NGB_APPLICATION_JSON))
 					.andExpect(status().isOk()).andExpect(jsonPath("$.id").value("urn:ngsi-ld:Vehicle:A100"));
 //					.andExpect(redirectedUrl(linkHeader)).andDo(print());
 			verify(queryService, times(1)).retrieveEntity(any(String.class), any(List.class), any(boolean.class),
@@ -221,7 +221,7 @@ public class QueryControllerTest {
 			Mockito.doReturn("null").when(queryService).retrieveEntity(any(String.class), any(List.class),
 					any(boolean.class), any(boolean.class));
 
-			mockMvc.perform(get("/{entityId}", "urn:ngsi-ld:Vehicle:A100").accept(AppConstants.NGB_APPLICATION_JSON))
+			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A100").accept(AppConstants.NGB_APPLICATION_JSON))
 					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."))
 					.andDo(print());
 			verify(queryService, times(1)).retrieveEntity(any(String.class), any(List.class), any(boolean.class),
@@ -260,7 +260,7 @@ public class QueryControllerTest {
 //			Mockito.doReturn(entityContext).when(contextResolver).getContext(any());
 //			Mockito.doReturn(responseEntity).when(qc).generateReply(any(), any(), any());
 
-			mockMvc.perform(get("/{entityId}?attrs=brandName", "urn:ngsi-ld:Vehicle:A100")
+			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}?attrs=brandName", "urn:ngsi-ld:Vehicle:A100")
 					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isOk())
 					.andExpect(jsonPath("$.id").value("urn:ngsi-ld:Vehicle:A100")).andDo(print());
 			// verify(HttpUtils.parseLinkHeader(any(HttpServletRequest.class),
@@ -281,7 +281,7 @@ public class QueryControllerTest {
 			// when(queryService.retrieveEntity(any(),any(),any(),any())).thenReturn(entity);
 			Mockito.doReturn("null").when(queryService).retrieveEntity(any(String.class), any(List.class),
 					any(boolean.class), any(boolean.class));
-			mockMvc.perform(get("/{entityId}?attrs=brandName", "urn:ngsi-ld:Vehicle:A100")
+			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}?attrs=brandName", "urn:ngsi-ld:Vehicle:A100")
 					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.title").value("Resource not found.")).andDo(print());
 			// verify(HttpUtils.parseLinkHeader(any(HttpServletRequest.class),
@@ -301,7 +301,7 @@ public class QueryControllerTest {
 			Mockito.doThrow(responseException).when(queryService).retrieveEntity(any(String.class), any(List.class),
 					any(boolean.class), any(boolean.class));
 
-			mockMvc.perform(get("/{entityId}", "urn:ngsi-ld:Vehicle:A100").accept(AppConstants.NGB_APPLICATION_JSON))
+			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A100").accept(AppConstants.NGB_APPLICATION_JSON))
 					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."))
 					.andDo(print());
 			verify(queryService, times(1)).retrieveEntity(any(String.class), any(List.class), any(boolean.class),
@@ -346,7 +346,7 @@ public class QueryControllerTest {
 			Mockito.when(request.getRequestURI()).thenReturn(res);
 //			Mockito.doReturn(responseEntity).when(qc).generateReply(any(), any());
 
-			mockMvc.perform(get("/{entityId}/attrs/{attrsId}", "urn:ngsi-ld:Vehicle:A100", "brandName")
+			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}/attrs/{attrsId}", "urn:ngsi-ld:Vehicle:A100", "brandName")
 					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isOk())
 					.andExpect(jsonPath("$.id").value("urn:ngsi-ld:Vehicle:A100")).andDo(print());
 
@@ -382,7 +382,7 @@ public class QueryControllerTest {
 			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(queryService)
 					.retrieveEntity(any(String.class), any(List.class), any(boolean.class), any(boolean.class));
 
-			mockMvc.perform(get("/{entityId}/attrs/{attrsId}", "urn:ngsi-ld:Vehicle:A100", "brandName")
+			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}/attrs/{attrsId}", "urn:ngsi-ld:Vehicle:A100", "brandName")
 					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isBadRequest())
 					.andExpect(jsonPath("$.title").value("Bad Request Data.")).andDo(print());
 
@@ -406,7 +406,7 @@ public class QueryControllerTest {
 			Mockito.doThrow(new ResponseException(ErrorType.InternalError)).when(queryService)
 					.retrieveEntity(any(String.class), any(List.class), any(boolean.class), any(boolean.class));
 
-			mockMvc.perform(get("/{entityId}/attrs/{attrsId}/", "urn:ngsi-ld:Vehicle:A100", "brandName")
+			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}/attrs/{attrsId}/", "urn:ngsi-ld:Vehicle:A100", "brandName")
 					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isInternalServerError())
 					.andExpect(jsonPath("$.title").value("Internal error.")).andDo(print());
 
@@ -456,7 +456,7 @@ public class QueryControllerTest {
 			Mockito.doReturn(result).when(queryService).getData(any(), any(), any(), any(), any(), any());
 //			Mockito.doReturn(responseEntity).when(qc).generateReply(any(), any());
 
-			mockMvc.perform(get("/?attrs=brandName").accept(AppConstants.NGB_APPLICATION_JSON))
+			mockMvc.perform(get("/ngsi-ld/v1/entities/?attrs=brandName").accept(AppConstants.NGB_APPLICATION_JSON))
 					.andExpect(status().isOk()).andDo(print());
 			// verify(HttpUtils.parseLinkHeader(any(HttpServletRequest.class),
 			// NGSIConstants.HEADER_REL_LDCONTEXT));

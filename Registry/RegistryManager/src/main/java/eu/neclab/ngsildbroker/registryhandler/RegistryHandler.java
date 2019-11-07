@@ -17,7 +17,6 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 
@@ -25,10 +24,10 @@ import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 @SpringBootApplication
 @EnableBinding({ CSourceProducerChannel.class, AtContextProducerChannel.class })
 @Import(CommonKafkaConfig.class)
-public class RegistryHandler {// implements EntityHandlerInterface{
-
+public class RegistryHandler {
+	
 	public static void main(String[] args) {
-		SpringApplication.run(RegistryHandler.class, args);
+		SpringApplication.run(RegistryHandler.class);
 	}
 
 	@Bean("rmops")

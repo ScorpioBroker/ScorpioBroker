@@ -64,9 +64,13 @@ public class QueryTest {
 		stringProp.setId(new URI("http://mytestprop.org/teststring"));
 
 		stringProp.setSingleValue("test");
-		stringProp.setCreatedAt(SerializationTools.date2Long(dateTime));
-		stringProp.setObservedAt(SerializationTools.date2Long(dateTime));
-		stringProp.setModifiedAt(SerializationTools.date2Long(dateTime));
+		try {
+			stringProp.setCreatedAt(SerializationTools.date2Long(dateTime));
+			stringProp.setObservedAt(SerializationTools.date2Long(dateTime));
+			stringProp.setModifiedAt(SerializationTools.date2Long(dateTime));
+		} catch (Exception e1) {
+			throw new AssertionError();
+		}
 		String qString = "teststring.observedAt==" + dateTime;
 		try {
 			QueryTerm term = parser.parseQuery(qString, null);

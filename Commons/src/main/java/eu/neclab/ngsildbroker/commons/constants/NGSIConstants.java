@@ -139,7 +139,7 @@ public interface NGSIConstants {
 	public final static String QUERY_LESS = "<";
 	public final static String QUERY_PATTERNOP = "~=";
 	public final static String QUERY_NOTPATTERNOP = "!~=";
-	public final static String CHECK_QUERY_STRING_URI = "/";
+	//public final static String CHECK_QUERY_STRING_URI = "/";
 		
 	public static final String NGSI_LD_UNIT_CODE = "https://uri.etsi.org/ngsi-ld/unitCode";
 	public static final String NGSI_LD_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/datasetId";

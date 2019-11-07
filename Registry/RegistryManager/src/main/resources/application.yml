@@ -7,8 +7,6 @@ spring:
   main:
     lazy-initialization: true
   kafka:
-    consumer:
-      group-id: registry_context
     admin:
       properties:
         cleanup:

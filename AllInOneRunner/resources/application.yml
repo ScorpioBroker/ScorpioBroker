@@ -9,19 +9,27 @@ broker:
   parent:
     location:
       url: SELF
+      
+query:
+  result:
+    topic: QUERY_RESULT
+  topic: QUERY
+
+
 csource:
-  notification:
-    topic: CONTEXT_SOURCE_NOTIFICATION
-  query:
-    result:
-      topic: CONTEXT_REGISTRY_QUERY_RESULT
-    topic: CONTEXT_REGISTRY_QUERY
+  stopListenerIfDbFails: false
+  topic: CONTEXT_SOURCE
   registry:
     topic: CONTEXT_REGISTRY
   source:
     topic: CONTEXT_SOURCE
-  stopListenerIfDbFails: false
-  topic: CONTEXT_SOURCE
+  notification:
+    topic: CONTEXT_SOURCE_NOTIFICATION
+  query:
+    topic: CONTEXT_REGISTRY_QUERY
+    result:
+      topic: CONTEXT_REGISTRY_QUERY_RESULT
+
 csources:
   registration:
     topic: CONTEXT_REGISTRY
@@ -62,17 +70,14 @@ management:
     web:
       exposure:
         include: "*"
-#max:
-#  request:
-#    size: 104857600
+max:
+  request:
+    size: 104857600
 maxLimit: 500
 ngb:
   debugmode: false
 
-query:
-  result:
-    topic: QUERY_RESULT
-  topic: QUERY
+
 reader:
   datasource:
     hikari:
@@ -137,6 +142,15 @@ spring:
           contentType: application/json
         SUBSCRIPTIONS_WRITE_CHANNEL:
           destination: SUBSCRIPTIONS
+          contentType: application/json
+        CSOURCE_SUBSCRIPTION_WRITE_CHANNEL:
+          destination: CSOURCE_SUBSCRIPTIONS
+          contentType: application/json
+        CSOURCE_REGISTRATION_WRITE_CHANNEL:
+          destination: CONTEXT_SOURCE
+          contentType: application/json
+        CSOURCE_NOTIFICATION_WRITE_CHANNEL:
+          destination: CONTEXT_SOURCE_NOTIFICATION
           contentType: application/json
   application.name: aio-runner
   datasource:
