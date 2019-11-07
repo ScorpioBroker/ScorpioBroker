@@ -158,8 +158,12 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				result.setTimeInterval(
 						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsInt());
 			} else if (key.equals(NGSIConstants.NGSI_LD_EXPIRES)) {
-				result.setExpires(SerializationTools.date2Long(value.getAsJsonArray().get(0).getAsJsonObject()
-						.get(NGSIConstants.JSON_LD_VALUE).getAsString()));
+				try {
+					result.setExpires(SerializationTools.date2Long(value.getAsJsonArray().get(0).getAsJsonObject()
+							.get(NGSIConstants.JSON_LD_VALUE).getAsString()));
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 			} else if (key.equals(NGSIConstants.NGSI_LD_STATUS)) {
 				result.setStatus(
 						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());

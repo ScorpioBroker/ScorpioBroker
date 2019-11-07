@@ -151,8 +151,12 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 				relationships, type, geoproperties);
 		if (top.has(NGSIConstants.NGSI_LD_CREATED_AT)) {
 			Long timestamp = null;
-			timestamp = SerializationTools.date2Long(top.getAsJsonArray(NGSIConstants.NGSI_LD_CREATED_AT).get(0)
-					.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+			try {
+				timestamp = SerializationTools.date2Long(top.getAsJsonArray(NGSIConstants.NGSI_LD_CREATED_AT).get(0)
+						.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+			} catch (Exception e) {
+				throw new JsonParseException(e);
+			}
 			if (timestamp != null) {
 				result.setCreatedAt(timestamp);
 			}
@@ -160,8 +164,12 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 		}
 		if (top.has(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
 			Long timestamp = null;
-			timestamp = SerializationTools.date2Long(top.getAsJsonArray(NGSIConstants.NGSI_LD_MODIFIED_AT).get(0)
-					.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+			try {
+				timestamp = SerializationTools.date2Long(top.getAsJsonArray(NGSIConstants.NGSI_LD_MODIFIED_AT).get(0)
+						.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+			} catch (Exception e) {
+				throw new JsonParseException(e);
+			}
 
 			if (timestamp != null) {
 				result.setModifiedAt(timestamp);

@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
@@ -37,13 +36,13 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
 public class SerializationTools {
 	public static SimpleDateFormat formatter = new SimpleDateFormat(NGSIConstants.DEFAULT_DATE_FORMAT);
-	
-	public static SimpleDateFormat forgivingFormatter = new SimpleDateFormat(NGSIConstants.DEFAULT_FORGIVING_DATE_FORMAT);
-	
-	public static Gson geojsonGson = new GsonBuilder()
-			   .registerTypeAdapterFactory(new GeometryAdapterFactory())
-			   .create();
-	
+
+	public static SimpleDateFormat forgivingFormatter = new SimpleDateFormat(
+			NGSIConstants.DEFAULT_FORGIVING_DATE_FORMAT);
+
+	public static Gson geojsonGson = new GsonBuilder().registerTypeAdapterFactory(new GeometryAdapterFactory())
+			.create();
+
 	public static GeoProperty parseGeoProperty(JsonObject jsonProp, String key) {
 		GeoProperty prop = new GeoProperty();
 		prop.setName(key);
@@ -66,7 +65,7 @@ public class SerializationTools {
 					JsonPrimitive primitive = propValue.getAsJsonPrimitive();
 					if (primitive.isString()) {
 						prop.setValue(primitive.getAsString());
-						prop.setGeoValue( DataSerializer.getGeojsonGeometry(primitive.getAsString()) );
+						prop.setGeoValue(DataSerializer.getGeojsonGeometry(primitive.getAsString()));
 					}
 				} else {
 					JsonElement atValue = propValue.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE);
@@ -75,39 +74,51 @@ public class SerializationTools {
 							JsonPrimitive primitive = atValue.getAsJsonPrimitive();
 							if (primitive.isString()) {
 								prop.setValue(primitive.getAsString());
-								prop.setGeoValue( DataSerializer.getGeojsonGeometry(primitive.getAsString()) );
-							} 
+								prop.setGeoValue(DataSerializer.getGeojsonGeometry(primitive.getAsString()));
+							}
 
 						} else {
 							prop.setValue(atValue.getAsString());
-							prop.setGeoValue( DataSerializer.getGeojsonGeometry(atValue.getAsString()) );
+							prop.setGeoValue(DataSerializer.getGeojsonGeometry(atValue.getAsString()));
 						}
 					} else {
 						prop.setValue(propValue.toString());
-						prop.setGeoValue( DataSerializer.getGeojsonGeometry(propValue.getAsString()) );
+						prop.setGeoValue(DataSerializer.getGeojsonGeometry(propValue.getAsString()));
 					}
 
 				}
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
 				Long timestamp = null;
-				timestamp = date2Long(
-						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				try {
+					timestamp = date2Long(
+							value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 				if (timestamp != null) {
 					prop.setObservedAt(timestamp);
 				}
 
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
 				Long timestamp = null;
-				timestamp = date2Long(
-						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				try {
+					timestamp = date2Long(
+							value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 				if (timestamp != null) {
 					prop.setCreatedAt(timestamp);
 				}
 
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
 				Long timestamp = null;
-				timestamp = date2Long(
-						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				try {
+					timestamp = date2Long(
+							value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 				if (timestamp != null) {
 					prop.setModifiedAt(timestamp);
 				}
@@ -130,7 +141,6 @@ public class SerializationTools {
 		return prop;
 	}
 
-
 	@SuppressWarnings("unchecked")
 	public static Property parseProperty(JsonObject jsonProp, String key) {
 		Property prop = new Property();
@@ -152,27 +162,39 @@ public class SerializationTools {
 				// You can ignore the warning here since the first layer is always a list in
 				// ngsi-ld/json-ld
 				prop.setValue((List<Object>) getHasValue(value));
-			
+
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
 				Long timestamp = null;
-				timestamp = date2Long(
-						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				try {
+					timestamp = date2Long(
+							value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 				if (timestamp != null) {
 					prop.setObservedAt(timestamp);
 				}
 
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
 				Long timestamp = null;
-				timestamp = date2Long(
-						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				try {
+					timestamp = date2Long(
+							value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 				if (timestamp != null) {
 					prop.setCreatedAt(timestamp);
 				}
 
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
 				Long timestamp = null;
-				timestamp = date2Long(
-						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				try {
+					timestamp = date2Long(
+							value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 				if (timestamp != null) {
 					prop.setModifiedAt(timestamp);
 				}
@@ -244,21 +266,27 @@ public class SerializationTools {
 	public static JsonArray getValueArray(Integer value) {
 		return getValueArray(new JsonPrimitive(value));
 	}
+
 	public static JsonArray getValueArray(String value) {
 		return getValueArray(new JsonPrimitive(value));
 	}
+
 	public static JsonArray getValueArray(Long value) {
 		return getValueArray(new JsonPrimitive(value));
 	}
+
 	public static JsonArray getValueArray(Double value) {
 		return getValueArray(new JsonPrimitive(value));
 	}
+
 	public static JsonArray getValueArray(Float value) {
 		return getValueArray(new JsonPrimitive(value));
 	}
+
 	public static JsonArray getValueArray(Boolean value) {
 		return getValueArray(new JsonPrimitive(value));
 	}
+
 	private static JsonArray getValueArray(JsonElement value) {
 		JsonArray result = new JsonArray();
 		JsonObject temp = new JsonObject();
@@ -266,31 +294,22 @@ public class SerializationTools {
 		result.add(temp);
 		return result;
 	}
-	
-	public static Long date2Long(String dateString) {
+
+	public static Long date2Long(String dateString) throws Exception {
 
 		Date date;
-		try {
-			date = (Date) formatter.parse(dateString);
-			return date.getTime();
-		} catch (ParseException e) {
-//			try {
-//				date = (Date) forgivingFormatter.parse(dateString);
-//				return date.getTime();
-//			} catch (ParseException e1) {
-//				e1.printStackTrace();
-//				return null;
-//			}
-			return null;
-			
-		}
+
+		date = (Date) formatter.parse(dateString);
+		return date.getTime();
+
 	}
 
-	private static Long getTimestamp(JsonElement value) {
+	private static Long getTimestamp(JsonElement value) throws Exception {
 		return date2Long(
 				value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
-		
+
 	}
+
 	public static Relationship parseRelationship(JsonObject jsonRelationship, String key) {
 		Relationship relationship = new Relationship();
 		relationship.setName(key);
@@ -315,19 +334,34 @@ public class SerializationTools {
 					throw new JsonParseException(e);
 				}
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
-				Long timestamp = getTimestamp(value);
+				Long timestamp;
+				try {
+					timestamp = getTimestamp(value);
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 				if (timestamp != null) {
 					relationship.setObservedAt(timestamp);
 				}
 
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
-				Long timestamp = getTimestamp(value);
+				Long timestamp;
+				try {
+					timestamp = getTimestamp(value);
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 				if (timestamp != null) {
 					relationship.setCreatedAt(timestamp);
 				}
 
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-				Long timestamp = getTimestamp(value);
+				Long timestamp;
+				try {
+					timestamp = getTimestamp(value);
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
 				if (timestamp != null) {
 					relationship.setModifiedAt(timestamp);
 				}
@@ -362,7 +396,7 @@ public class SerializationTools {
 	public static JsonElement getJson(Geometry<?> geojsonGeometry) {
 		return new JsonPrimitive(geojsonGson.toJson(geojsonGeometry));
 	}
-	
+
 	/**
 	 * 
 	 * @param timestamp
@@ -439,7 +473,7 @@ public class SerializationTools {
 
 	private static JsonObject getComplexValue(Map<String, List<Object>> value, JsonSerializationContext context) {
 		JsonObject top = new JsonObject();
-		for(Entry<String, List<Object>> entry: value.entrySet()) {
+		for (Entry<String, List<Object>> entry : value.entrySet()) {
 			top.add(entry.getKey(), getJson(entry.getValue(), context));
 		}
 		return top;
@@ -510,8 +544,6 @@ public class SerializationTools {
 		return gson.fromJson(geoProperty.getValue(), JsonElement.class);
 	}
 
-	
-
 	public static JsonNode parseJson(ObjectMapper objectMapper, String payload) throws ResponseException {
 		JsonNode json = null;
 		try {
@@ -525,6 +557,6 @@ public class SerializationTools {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		return json;
-	}	
-	
+	}
+
 }
