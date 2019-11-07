@@ -294,7 +294,7 @@ public class HistoryService {
 
 	 */
 	@KafkaListener(topics = "${entity.create.topic}", groupId = "historyManagerCreate")
-	public void handleEntityCreate(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) byte[] key) throws Exception {
+	public void handleEntityCreate(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) throws Exception {
 		logger.trace("Listener handleEntityCreate...");		
 		String payload = new String(message);
 		logger.debug("Received message: " + payload);
@@ -303,10 +303,10 @@ public class HistoryService {
 	
 	
 	@KafkaListener(topics = "${entity.append.topic}", groupId = "historyManagerAppend")
-	public void handleEntityAppend(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) byte[] key) throws Exception {
+	public void handleEntityAppend(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) throws Exception {
 		logger.trace("Listener handleEntityAppend...");		
-		String entityId = new String(key);
-		logger.debug("Received key: " + entityId);
+		
+		logger.debug("Received key: " + key);
 		String payload = new String(message);
 		logger.debug("Received message: " + payload);		
 		
@@ -327,7 +327,7 @@ public class HistoryService {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
 				for (JsonElement jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, true); 
-					pushAttributeToKafka(entityId, now, attribIdPayload, jsonElement.toString());					
+					pushAttributeToKafka(key, now, attribIdPayload, jsonElement.toString());					
 				}
 			} 
 		}		
@@ -336,10 +336,10 @@ public class HistoryService {
 	
 	
 	@KafkaListener(topics = "${entity.update.topic}", groupId = "historyManagerUpdate")
-	public void handleEntityUpdate(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) byte[] key) throws Exception {
+	public void handleEntityUpdate(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) throws Exception {
 		logger.trace("Listener handleEntityUpdate...");		
-		String entityId = new String(key);
-		logger.debug("Received key: " + entityId);
+		
+		logger.debug("Received key: " + key);
 		String payload = new String(message);
 		logger.debug("Received message: " + payload);		
 		
@@ -360,7 +360,7 @@ public class HistoryService {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
 				for (JsonElement jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, true); 
-					pushAttributeToKafka(entityId, now, attribIdPayload, jsonElement.toString());					
+					pushAttributeToKafka(key, now, attribIdPayload, jsonElement.toString());					
 				}
 			} 
 		}		
@@ -369,10 +369,10 @@ public class HistoryService {
 
 	
 	@KafkaListener(topics = "${entity.delete.topic}", groupId = "historyManagerDelete")
-	public void handleEntityDelete(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) byte[] key) throws Exception {
+	public void handleEntityDelete(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) throws Exception {
 		logger.trace("Listener handleEntityDelete...");		
-		String skey = new String(key);
-		logger.debug("Received key: " + skey);
+		
+		logger.debug("Received key: " + key);
 		String payload = new String(message);
 		logger.debug("Received message: " + payload);				
 	}
