@@ -6,18 +6,21 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,16 +38,20 @@ import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import eu.neclab.ngsildbroker.queryhandler.utils.Validator;
 
 @RestController
+@RequestMapping("/ngsi-ld/v1/entities")
 public class QueryController {// implements QueryHandlerInterface {
 	private final static Logger logger = LogManager.getLogger(QueryController.class);
-
+	private final static String MY_REQUEST_URL = "/ngsi-ld/v1/entities";
+	private final static String MY_REQUEST_URL_ALT = "/ngsi-ld/v1/entities/";
 	@Autowired
 	QueryService queryService;
 
 	@Autowired
+	@Qualifier("qmparamsResolver")
 	ParamsResolver paramsResolver;
 
 	@Autowired
+	@Qualifier("qmconRes")
 	ContextResolverBasic contextResolver;
 
 	@Value("${atcontext.url}")
@@ -59,7 +66,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	boolean debug = false;
 
 	private HttpUtils httpUtils;
-	
+
 	@PostConstruct
 	private void setup() {
 		httpUtils = HttpUtils.getInstance(contextResolver);
@@ -155,11 +162,10 @@ public class QueryController {// implements QueryHandlerInterface {
 			String originalQueryParams = request.getQueryString();
 
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
-			if (request.getRequestURI().equals(NGSIConstants.CHECK_QUERY_STRING_URI)) {
+			if (request.getRequestURI().equals(MY_REQUEST_URL) || request.getRequestURI().equals(MY_REQUEST_URL_ALT)) {
 				if (originalQueryParams != null) {
 					Validator.validate(request.getParameterMap(), maxLimit);
 					originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
-	
 
 					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
 					if (qp == null) // invalid query
@@ -178,7 +184,8 @@ public class QueryController {// implements QueryHandlerInterface {
 						if (allEntityResult.size() > 1) {
 							return httpUtils.generateReply(request, allEntityResult.get(0));
 						} else {
-							return ResponseEntity.accepted().header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
+							return ResponseEntity.accepted()
+									.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
 									.body(allEntityResult.get(0));
 						}
 					} else {
@@ -211,18 +218,15 @@ public class QueryController {// implements QueryHandlerInterface {
 		if (prevLink != null) {
 			additionalLinks.add(prevLink);
 		}
-		
+
 		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
 		if (!additionalLinks.isEmpty()) {
 			additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
 		}
 
-		
-		
-		return httpUtils.generateReply(request, "["+String.join(",", qResult.getDataString())+"]", additionalHeaders, null, true);						
+		return httpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
+				additionalHeaders, null, true);
 	}
-
-	
 
 	private String generateNextLink(HttpServletRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
@@ -274,6 +278,5 @@ public class QueryController {// implements QueryHandlerInterface {
 
 		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
 	}
-
 
 }

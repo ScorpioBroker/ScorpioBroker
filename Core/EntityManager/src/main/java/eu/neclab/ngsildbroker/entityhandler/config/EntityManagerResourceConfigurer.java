@@ -19,7 +19,7 @@ import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 @EnableWebSecurity
 @EnableResourceServer
 @EnableGlobalMethodSecurity(prePostEnabled = true) // Allow method annotations like @PreAuthorize
-public class ResourceConfigurer extends ResourceServerConfigurerAdapter {
+public class EntityManagerResourceConfigurer extends ResourceServerConfigurerAdapter {
 	@Autowired
 	private ResourceConfigDetails resourceConfigDetails;
 

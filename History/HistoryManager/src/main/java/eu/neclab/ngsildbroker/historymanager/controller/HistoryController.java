@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -35,6 +36,7 @@ import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
 import eu.neclab.ngsildbroker.historymanager.utils.Validator;
 
 @RestController
+@RequestMapping("/ngsi-ld/v1/temporal")
 public class HistoryController {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);

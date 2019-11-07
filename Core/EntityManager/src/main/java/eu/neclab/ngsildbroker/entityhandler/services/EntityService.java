@@ -18,8 +18,9 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.stream.annotation.StreamListener;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -52,7 +53,6 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
-import eu.neclab.ngsildbroker.entityhandler.config.EntityConsumerChannel;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityTopicMap;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.IdValidationRule;
@@ -82,9 +82,11 @@ public class EntityService {
 	String ENTITY_INDEX;
 
 	@Autowired
+	@Qualifier("emops")
 	KafkaOps operations;
 
 	@Autowired
+	@Qualifier("emparamsres")
 	ParamsResolver paramsResolver;
 
 	final private String regexNgsildAttributeTypes = new String(NGSIConstants.NGSI_LD_PROPERTY + "|"
@@ -94,31 +96,26 @@ public class EntityService {
 		this.operations = operations;
 	}
 
-	// @Autowired
-	// KafkaProducer operations;
-	// @Autowired
 	ObjectMapper objectMapper;
 	@Autowired
 	private EurekaClient eurekaClient;
 	@Autowired
+	@Qualifier("emconRes")
 	ContextResolverBasic contextResolver;
 	@Autowired
+	@Qualifier("emtopicmap")
 	EntityTopicMap entityTopicMap;
 
 	private final EntityProducerChannel producerChannels;
-	@SuppressWarnings("unused")
-	// TODO check to remove ... never used
-	private final EntityConsumerChannel consumerChannels;
+
 
 	LocalDateTime start;
 	LocalDateTime end;
 
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
 
-	public EntityService(EntityProducerChannel producerChannels, EntityConsumerChannel consumerChannels,
-			ObjectMapper objectMapper) {
+	public EntityService(EntityProducerChannel producerChannels, ObjectMapper objectMapper) {
 		this.producerChannels = producerChannels;
-		this.consumerChannels = consumerChannels;
 		this.objectMapper = objectMapper;
 	}
 
@@ -198,12 +195,13 @@ public class EntityService {
 		return id.asText();
 	}
 
-//	public String createMessageTest(String payload) throws ResponseException {
-//		JsonNode json = SerializationTools.parseJson(objectMapper, payload);
-//		JsonNode id = json.get(NGSIConstants.QUERY_PARAMETER_ID);
-//		operations.pushToKafka(this.producerChannels.entityWriteChannel(), id.asText().getBytes(), payload.getBytes());
-//		return id.asText();
-//	}
+	// public String createMessageTest(String payload) throws ResponseException {
+	// JsonNode json = SerializationTools.parseJson(objectMapper, payload);
+	// JsonNode id = json.get(NGSIConstants.QUERY_PARAMETER_ID);
+	// operations.pushToKafka(this.producerChannels.entityWriteChannel(),
+	// id.asText().getBytes(), payload.getBytes());
+	// return id.asText();
+	// }
 
 	public JsonNode getKeyValueEntity(JsonNode json) {
 		ObjectNode kvJsonObject = objectMapper.createObjectNode();
@@ -219,10 +217,11 @@ public class EntityService {
 					kvJsonObject.set(entry.getKey(), entry.getValue());
 				} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_VALUE)) {
 					kvJsonObject.set(entry.getKey(), attrObj.get(NGSIConstants.NGSI_LD_HAS_VALUE));
-				} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT) && 
-						attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isArray() &&
-						attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).has(NGSIConstants.JSON_LD_ID)) {
-					kvJsonObject.set(entry.getKey(), attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(NGSIConstants.JSON_LD_ID));
+				} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT)
+						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isArray()
+						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).has(NGSIConstants.JSON_LD_ID)) {
+					kvJsonObject.set(entry.getKey(),
+							attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(NGSIConstants.JSON_LD_ID));
 				}
 			}
 		}
@@ -464,8 +463,7 @@ public class EntityService {
 			throw new ResponseException(ErrorType.NotFound);
 		}
 		JsonNode originalJsonNode = objectMapper.readTree(originalJson);
-		
-		
+
 		UpdateResult updateResult = this.updateFields(originalJson, objectMapper.readTree(payload), attrId);
 		byte[] finalJson = updateResult.getJson();
 		// pubilsh merged message
@@ -508,7 +506,7 @@ public class EntityService {
 			throw new ResponseException(ErrorType.NotFound);
 		}
 		JsonNode originalJsonNode = objectMapper.readTree(originalJson);
-	
+
 		byte[] finalJson = this.deleteFields(originalJson, attrId);
 		// pubilsh updated message
 		boolean result = this.operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
@@ -550,7 +548,7 @@ public class EntityService {
 		ObjectNode objectNode = (ObjectNode) node;
 		if (attrId != null) { // partial update, remove original instanceid and update temporal properties
 			// remove instanceId from original json, if exists
-			if(objectNode.get(attrId) == null) {
+			if (objectNode.get(attrId) == null) {
 				throw new ResponseException(ErrorType.NotFound, "Provided attribute is not present");
 			}
 			JsonNode originalNode = ((ArrayNode) objectNode.get(attrId)).get(0);
@@ -762,10 +760,10 @@ public class EntityService {
 		return new URI(uri.toString() + "/" + resource);
 	}
 
-	@StreamListener(EntityConsumerChannel.entityReadChannel)
+	@KafkaListener(topics = "${entity.topic}", groupId = "entitymanager")
 	public void updateTopicDetails(Message<byte[]> message) throws IOException {
 		logger.trace("updateTopicDetails() :: started");
-		String key = new String((byte[]) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY));
+		String key = operations.getMessageKey(message);
 		int partitionId = (int) message.getHeaders().get(KafkaHeaders.RECEIVED_PARTITION_ID);
 		long offset = (long) message.getHeaders().get(KafkaHeaders.OFFSET);
 		JsonNode entityJsonBody = objectMapper.readTree(message.getPayload());
@@ -777,8 +775,6 @@ public class EntityService {
 		}
 		logger.trace("updateTopicDetails() :: completed");
 	}
-
-	
 
 	public void validateEntity(String payload, HttpServletRequest request) throws ResponseException {
 		Entity entity = DataSerializer.getEntity(payload);

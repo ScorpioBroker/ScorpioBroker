@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -53,16 +55,22 @@ import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
  * @date 20-Jul-2018
  */
 @RestController
+@RequestMapping("/ngsi-ld/v1/csourceRegistrations")
 public class RegistryController {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
-
+	private final static String MY_REQUEST_MAPPING = "/ngsi-ld/v1/csourceRegistrations";
+	private final static String MY_REQUEST_MAPPING_ALT = "/ngsi-ld/v1/csourceRegistrations/";
+	
+	
 	@Autowired
 	EurekaClient eurekaClient;
 	@Autowired
 	CSourceService csourceService;
 	@Autowired
+	@Qualifier("rmconRes")
 	ContextResolverBasic contextResolver;
 	@Autowired
+	@Qualifier("rmparamsResolver")
 	ParamsResolver paramsResolver;
 	@Autowired
 	CSourceDAO csourceDAO;
@@ -98,7 +106,7 @@ public class RegistryController {
 		try {
 			logger.trace("getCSources() ::");
 			String queryParams = request.getQueryString();
-			if (request.getRequestURI().equals(NGSIConstants.CHECK_QUERY_STRING_URI) && queryParams != null) {
+			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING) || request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT))  && queryParams != null) {
 
 				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);

@@ -34,6 +34,7 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -97,18 +98,21 @@ public class SubscriptionService implements SubscriptionManager {
 
 	// KafkaOps kafkaOps = new KafkaOps();
 	@Autowired
+	@Qualifier("smops")
 	KafkaOps kafkaOps;
 
 	@Autowired
 	ObjectMapper objectMapper;
 
 	@Autowired
+	@Qualifier("smconRes")
 	ContextResolverBasic contextResolverService;
 
 	@Autowired
 	EurekaClient eurekaClient;
 
 	@Autowired
+	@Qualifier("smqueryParser")
 	QueryParser queryParser;
 
 	private final SubscriptionManagerProducerChannel producerChannel;
@@ -363,10 +367,11 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@KafkaListener(topics = "${entity.create.topic}", groupId = "submanager")
 	public void handleCreate(Message<byte[]> message) {
-		logger.debug("Create got called: " + new String(message.getPayload()));
-		logger.debug(new String((byte[]) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)));
-		checkSubscriptionsWithCreate(new String((byte[]) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)),
-				new String(message.getPayload()), (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
+		String payload = new String(message.getPayload());
+		String key = kafkaOps.getMessageKey(message);
+		logger.info("Create got called: " + payload);
+		logger.info(key);
+		checkSubscriptionsWithCreate(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
 	private void checkSubscriptionsWithCreate(String key, String payload, long messageTime) {
@@ -491,14 +496,16 @@ public class SubscriptionService implements SubscriptionManager {
 		ArrayList<Relationship> relations = new ArrayList<Relationship>();
 		if (deltaInfo.getProperties() != null) {
 			for (Property prop : deltaInfo.getProperties()) {
-				if (subscription.getAttributeNames().contains(prop.getName())) {
+				if (subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()
+						|| subscription.getAttributeNames().contains(prop.getName())) {
 					props.add(prop);
 				}
 			}
 		}
 		if (deltaInfo.getRelationships() != null) {
 			for (Relationship prop : deltaInfo.getRelationships()) {
-				if (subscription.getAttributeNames().contains(prop.getName())) {
+				if (subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()
+						|| subscription.getAttributeNames().contains(prop.getName())) {
 					relations.add(prop);
 				}
 			}
@@ -507,13 +514,13 @@ public class SubscriptionService implements SubscriptionManager {
 		if (!props.isEmpty() || !relations.isEmpty()) {
 			for (Relationship relationship : entity.getRelationships()) {
 				if (subscription.getNotification().getAttributeNames().contains(relationship.getName())
-						&& !subscription.getAttributeNames().contains(relationship.getName())) {
+						&& !relations.contains(relationship)) {
 					relations.add(relationship);
 				}
 			}
 			for (Property property : entity.getProperties()) {
 				if (subscription.getNotification().getAttributeNames().contains(property.getName())
-						&& !subscription.getAttributeNames().contains(property.getName())) {
+						&& !props.contains(property)) {
 					props.add(property);
 				}
 			}
@@ -527,9 +534,8 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private List<Relationship> extractRelationShips(Entity data, Subscription subscription) {
 		ArrayList<Relationship> result = new ArrayList<Relationship>();
-		ArrayList<String> attribNames = new ArrayList<String>();
-		attribNames.addAll(subscription.getNotification().getAttributeNames());
-		attribNames.addAll(subscription.getAttributeNames());
+		ArrayList<String> attribNames = getAttribNames(subscription);
+		
 		for (Relationship relationship : data.getRelationships()) {
 			if (attribNames.contains(relationship.getName()) && relationship.getObject() != null) {
 				result.add(relationship);
@@ -538,10 +544,19 @@ public class SubscriptionService implements SubscriptionManager {
 		return result;
 	}
 
-	private List<Property> extractProperties(Entity data, Subscription subscription) {
+	private ArrayList<String> getAttribNames(Subscription subscription) {
 		ArrayList<String> attribNames = new ArrayList<String>();
-		attribNames.addAll(subscription.getNotification().getAttributeNames());
-		attribNames.addAll(subscription.getAttributeNames());
+		if (subscription.getNotification().getAttributeNames() != null) {
+			attribNames.addAll(subscription.getNotification().getAttributeNames());
+		}
+		if (subscription.getAttributeNames() != null) {
+			attribNames.addAll(subscription.getAttributeNames());
+		}
+		return attribNames;
+	}
+
+	private List<Property> extractProperties(Entity data, Subscription subscription) {
+		ArrayList<String> attribNames = getAttribNames(subscription);
 		ArrayList<Property> result = new ArrayList<Property>();
 		for (Property property : data.getProperties()) {
 			if (attribNames.contains(property.getName()) && property.getValue() != null) {
@@ -552,9 +567,7 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private List<GeoProperty> extractGeoProperties(Entity data, Subscription subscription) {
-		ArrayList<String> attribNames = new ArrayList<String>();
-		attribNames.addAll(subscription.getNotification().getAttributeNames());
-		attribNames.addAll(subscription.getAttributeNames());
+		ArrayList<String> attribNames = getAttribNames(subscription);
 		ArrayList<GeoProperty> result = new ArrayList<GeoProperty>();
 		for (GeoProperty property : data.getGeoProperties()) {
 			if (attribNames.contains(property.getName()) && property.getValue() != null) {
@@ -683,11 +696,13 @@ public class SubscriptionService implements SubscriptionManager {
 		return result;
 	}
 
-	// @StreamListener(SubscriptionManagerConsumerChannel.updateReadChannel)
 	@KafkaListener(topics = "${entity.update.topic}", groupId = "submanager")
 	public void handleUpdate(Message<byte[]> message) {
-		checkSubscriptionsWithUpdate(new String((byte[]) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)),
-				new String(message.getPayload()), (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
+		String payload = new String(message.getPayload());
+		String key = kafkaOps.getMessageKey(message);
+		logger.info("update got called: " + payload);
+		logger.info(key);
+		checkSubscriptionsWithUpdate(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
 	private void checkSubscriptionsWithUpdate(String key, String payload, long messageTime) {
@@ -710,12 +725,13 @@ public class SubscriptionService implements SubscriptionManager {
 
 	}
 
-	// @StreamListener(SubscriptionManagerConsumerChannel.appendReadChannel)
 	@KafkaListener(topics = "${entity.append.topic}", groupId = "submanager")
 	public void handleAppend(Message<byte[]> message) {
-
-		checkSubscriptionsWithAppend(new String((byte[]) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)),
-				new String(message.getPayload()), (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
+		String payload = new String(message.getPayload());
+		String key = kafkaOps.getMessageKey(message);
+		logger.info("Create got called: " + payload);
+		logger.info(key);
+		checkSubscriptionsWithAppend(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
 	private void checkSubscriptionsWithAppend(String key, String payload, long messageTime) {
@@ -747,11 +763,11 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@KafkaListener(topics = "${csource.notification.topic}", groupId = "submanager")
 	public void handleCSourceNotification(Message<byte[]> message) {
+		String payload = new String(message.getPayload());
+		String key = kafkaOps.getMessageKey(message);
 		@SuppressWarnings("unchecked")
-		ArrayList<String> endPoints = DataSerializer.getStringList(new String(message.getPayload()));
-		String subId = new String((byte[]) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY));
-		subscribeToRemote(subscriptionId2Subscription.get(subId), endPoints);
-
+		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
+		subscribeToRemote(subscriptionId2Subscription.get(key), endPoints);
 	}
 
 	// @KafkaListener(topics = "${csource.registry.topic}", groupId = "submanager")

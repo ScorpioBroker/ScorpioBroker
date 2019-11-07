@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
@@ -15,30 +16,32 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
+import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
+import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.registryhandler.config.CSourceConsumerChannel;
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 
 //@Component(immediate=true)
 @SpringBootApplication
-@EnableBinding({ CSourceConsumerChannel.class, CSourceProducerChannel.class, AtContextProducerChannel.class })
+@EnableBinding({ CSourceProducerChannel.class, AtContextProducerChannel.class })
+@Import(CommonKafkaConfig.class)
 public class RegistryHandler {// implements EntityHandlerInterface{
 
 	public static void main(String[] args) {
 		SpringApplication.run(RegistryHandler.class, args);
 	}
 
-	@Bean
+	@Bean("rmops")
 	KafkaOps ops() {
 		return new KafkaOps();
 	}
 
-	@Bean
+	@Bean("rmconRes")
 	ContextResolverBasic conRes() {
 		return new ContextResolverBasic();
 	}
 
-	@Bean
+	@Bean("rmrestTemplate")
 	RestTemplate restTemplate() {
 		return new RestTemplate(clientHttpRequestFactory());
 	}
@@ -51,24 +54,25 @@ public class RegistryHandler {// implements EntityHandlerInterface{
 		return factory;
 	}
 
-	@Bean
+	@Bean("rmgetCsourceRegistration")
 	CSourceRegistration getCsourceRegistration() {
 		return new CSourceRegistration();
 	}
 
-	@Bean
+	@Bean("rmsecurityConfig")
 	SecurityConfig securityConfig() {
 		return new SecurityConfig();
 	}
 		
-	@Bean
+	@Bean("rmresourceConfigDetails")
 	ResourceConfigDetails resourceConfigDetails() {
 		return new ResourceConfigDetails();
 	}
-	@Bean QueryParser queryParser() {
+	@Bean("rmqueryParser")
+	QueryParser queryParser() {
 		return new QueryParser();
 	}
-	@Bean
+	@Bean("rmparamsResolver")
 	ParamsResolver paramsResolver() {
 		return new ParamsResolver();
 	}

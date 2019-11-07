@@ -17,8 +17,8 @@ import java.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.stream.annotation.StreamListener;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
@@ -29,7 +29,6 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
@@ -39,7 +38,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.registryhandler.config.CSourceConsumerChannel;
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
@@ -48,12 +46,13 @@ import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 public class CSourceService {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
-//	public static final Gson GSON = DataSerializer.GSON;
+	// public static final Gson GSON = DataSerializer.GSON;
 
 	@Value("${bootstrap.servers}")
 	String BOOTSTRAP_SERVERS;
 
 	@Autowired
+	@Qualifier("rmops")
 	KafkaOps operations;
 	@Autowired
 	ObjectMapper objectMapper;
@@ -65,20 +64,19 @@ public class CSourceService {
 	CSourceSubscriptionService csourceSubService;
 
 	@Autowired
+	@Qualifier("rmqueryParser")
 	QueryParser queryParser;
 
 	@Value("${csource.source.topic}")
 	String CSOURCE_TOPIC;
 
 	private final CSourceProducerChannel producerChannels;
-	@SuppressWarnings("unused")
-	// TODO check to remove
-	private final CSourceConsumerChannel consumerChannels;
+
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
 	Timer watchDog = new Timer(true);
 
-	CSourceService(CSourceProducerChannel producerChannels, CSourceConsumerChannel consumerChannels) {
-		this.consumerChannels = consumerChannels;
+	CSourceService(CSourceProducerChannel producerChannels) {
+
 		this.producerChannels = producerChannels;
 	}
 
@@ -275,17 +273,19 @@ public class CSourceService {
 	}
 
 	// for testing
-	@StreamListener(CSourceConsumerChannel.csourceReadChannel)
+	// @StreamListener(CSourceConsumerChannel.csourceReadChannel)
+	@KafkaListener(topics = "${csource.source.topic}", groupId = "regmanger")
 	public void handleEntityCreate(Message<?> message) {
-		String payload = (String) message.getPayload();
-		String key = new String((byte[]) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY));
-		logger.trace("key received ::::: " + key);
-		logger.trace("Received message: {} :::: " + payload);
+		String payload = new String((byte[]) message.getPayload());
+		String key = operations.getMessageKey(message);
+		logger.info("key received ::::: " + key);
+		logger.info("Received message: {} :::: " + payload);
 	}
 
-	@StreamListener(CSourceConsumerChannel.contextRegistryReadChannel)
+	@KafkaListener(topics = "${csource.registry.topic}", groupId = "regmanger") // (CSourceConsumerChannel.contextRegistryReadChannel)
 	public void handleEntityRegistration(Message<?> message) {
-		CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration((String) message.getPayload());
+		CSourceRegistration csourceRegistration = DataSerializer
+				.getCSourceRegistration(new String((byte[]) message.getPayload()));
 		// objectMapper.readValue((byte[]) message.getPayload(),
 		// CSourceRegistration.class);
 		csourceRegistration.setInternal(true);

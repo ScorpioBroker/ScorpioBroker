@@ -13,6 +13,7 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -36,6 +37,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 public class StartupConfig {
 
 	@Autowired
+	@Qualifier("rmrestTemplate")
 	RestTemplate restTemplate;
 	@Autowired
 	EurekaClient eurekaClient;

@@ -32,6 +32,7 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.Message;
@@ -71,14 +72,16 @@ public class CSourceSubscriptionService {
 
 	private final byte[] nullArray = "null".getBytes();
 
-	// KafkaOps kafkaOps = new KafkaOps();
+	
 	@Autowired
+	@Qualifier("rmops")
 	KafkaOps kafkaOps;
 
 	@Autowired
 	ObjectMapper objectMapper;
 
 	@Autowired
+	@Qualifier("rmconRes")
 	ContextResolverBasic contextResolverService;
 
 	@Autowired
@@ -160,12 +163,12 @@ public class CSourceSubscriptionService {
 				subscriptionRequest.getSubscription().setInternal(true);
 				subscribe(subscriptionRequest, false);
 			} catch (JsonParseException e) {
-				logger.error("Exception ::", e);
-				e.printStackTrace();
+				//logger.error("Exception ::", e);
+				//e.printStackTrace();
 				continue;
 			} catch (ResponseException e) {
-				logger.error("Exception ::", e);
-				e.printStackTrace();
+				//logger.error("Exception ::", e);
+				//e.printStackTrace();
 				continue;
 			}
 		}

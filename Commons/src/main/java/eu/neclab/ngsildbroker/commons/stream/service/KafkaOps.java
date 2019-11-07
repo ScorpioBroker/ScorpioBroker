@@ -30,6 +30,7 @@ import org.springframework.cloud.stream.binder.kafka.properties.KafkaProducerPro
 import org.springframework.cloud.stream.binder.kafka.provisioning.KafkaTopicProvisioner;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
@@ -319,5 +320,14 @@ public class KafkaOps {
 			consumer.close();
 		}
 	}
-
+	
+	public String getMessageKey(Message<?> message) {
+		Object key = message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
+		if(key instanceof String) {
+			System.err.println("----------------------ITS A STRING -------------------");
+			return (String) key;
+		}else {
+			return new String((byte[]) key);
+		}
+	}
 }

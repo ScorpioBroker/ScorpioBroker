@@ -72,7 +72,7 @@ public class AtContext {
 	@KafkaListener(topics = "ATCONTEXT", groupId = "atCon")
 	public void listenContext(Message<byte[]> message) {
 		List<Object> context = gson.fromJson(new String(message.getPayload()), List.class);
-		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
+		String key = kafkaOps.getMessageKey(message);
 		id2Contextes.put(key, context);
 	}
 }

@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,19 +42,22 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 
 @RestController
+@RequestMapping("/ngsi-ld/v1/subscriptions")
 public class SubscriptionController {
 
 	private final static Logger logger = LogManager.getLogger(SubscriptionController.class);
-
+	
 	@Autowired
 	SubscriptionManager manager;
 
 	@Autowired
+	@Qualifier("smconRes")
 	ContextResolverBasic contextResolver;
 
 	@Autowired
 	SubscriptionManagerProducerChannel producerChannel;
 	@Autowired
+	@Qualifier("smops")
 	KafkaOps kafkaOps;
 
 	@Autowired
@@ -63,9 +67,11 @@ public class SubscriptionController {
 	String atContextServerUrl;
 
 	@Autowired
+	@Qualifier("smqueryParser")
 	QueryParser queryParser;
 
 	@Autowired
+	@Qualifier("smparamsResolver")
 	ParamsResolver ldTools;
 
 	ResponseException badRequest = new ResponseException(ErrorType.BadRequestData);
@@ -81,7 +87,7 @@ public class SubscriptionController {
 		this.httpUtils = HttpUtils.getInstance(contextResolver);
 	}
 
-	@RequestMapping(method = RequestMethod.POST, value = "/")
+	@RequestMapping(method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<Object> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
 		logger.trace("subscribeRest() :: started");

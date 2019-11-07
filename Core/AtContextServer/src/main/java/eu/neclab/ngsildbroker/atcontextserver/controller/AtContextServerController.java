@@ -10,12 +10,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContext;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
 @RestController
+@RequestMapping("ngsi-ld/contextes")
 public class AtContextServerController {
 	private final static Logger logger = LogManager.getLogger(AtContextServerController.class);
 
@@ -30,11 +32,11 @@ public class AtContextServerController {
 	 * @param attrs
 	 * @return
 	 */
-	@GetMapping(path = "/{entityId}")
+	@GetMapping(path = "/{contextId}")
 	public ResponseEntity<Object> getContextForEntity(HttpServletRequest request,
-			@PathVariable("entityId") String entityId) {
-		logger.trace("getAtContext() for " + entityId);
-		List<Object> contextes = atContext.getContextes(entityId);
+			@PathVariable("contextId") String contextId) {
+		logger.trace("getAtContext() for " + contextId);
+		List<Object> contextes = atContext.getContextes(contextId);
 		StringBuilder body = new StringBuilder("{\"@context\": ");
 
 		body.append(DataSerializer.toJson(contextes));
@@ -42,7 +44,7 @@ public class AtContextServerController {
 		return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(body.toString());
 	}
 
-	@GetMapping
+	@GetMapping(name="atcontextget")
 	public ResponseEntity<Object> getAllContextes() {
 		return ResponseEntity.accepted().body(atContext.getAllContextes().toString());
 	}

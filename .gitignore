@@ -1,0 +1,11 @@
+/.metadata/
+/.recommenders/
+
+/target/
+/.classpath
+/*.project
+/.settings
+/*.springBeans
+Core/QueryManager/logs/
+Storage/StorageManager/logs/
+Go/pkg/

@@ -22,6 +22,10 @@ public class Query extends BaseOperation {
 			List<URI> requestorList) {
 		super(customFlags);
 		this.attributeNames = attributeNames;
+		if(this.attributeNames == null) {
+			this.attributeNames = new ArrayList<String>();
+		}
+			
 		this.entities = entities;
 		this.ldContext = ldContext;
 		this.ldGeoQuery = ldGeoQuery;

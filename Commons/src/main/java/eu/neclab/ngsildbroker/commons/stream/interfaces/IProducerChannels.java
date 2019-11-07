@@ -5,11 +5,11 @@ import org.springframework.messaging.MessageChannel;
 
 public interface IProducerChannels {
 	// public String entity="ENTITY";
-	String writeChannel = "";
-
-	// @Output(entity)
-	// MessageChannel entity();
-
-	@Output(writeChannel)
-	MessageChannel entityCreate();
+//	String writeChannel = "";
+//
+//	// @Output(entity)
+//	// MessageChannel entity();
+//
+//	@Output(writeChannel)
+//	MessageChannel entityCreate();
 }

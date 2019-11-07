@@ -13,6 +13,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionManager;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
 @RestController
+@RequestMapping("/remotenotify")
 public class NotificationController {
 	
 	@Autowired

@@ -30,6 +30,7 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -43,7 +44,6 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.netflix.discovery.EurekaClient;
@@ -59,7 +59,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.queryhandler.config.QueryConsumerChannel;
 import eu.neclab.ngsildbroker.queryhandler.config.QueryProducerChannel;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 
@@ -80,12 +79,14 @@ public class QueryService {
 	String atContextServerUrl;
 
 	@Autowired
+	@Qualifier("qmops")
 	KafkaOps operations;
 	
 	@Autowired
 	ObjectMapper objectMapper;
 
 	@Autowired
+	@Qualifier("qmconRes")
 	ContextResolverBasic contextResolver;
 
 	@Value("${query.topic}")
@@ -118,16 +119,15 @@ public class QueryService {
 	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
 	
 	@Autowired
+	@Qualifier("qmrestTemp")
 	RestTemplate restTemplate;
 	
-	@SuppressWarnings("unused")
-	// TODO check to remove ... never used
-	private final QueryConsumerChannel consumerChannels;
+	
 
 	private QueryProducerChannel producerChannels;
 
-	public QueryService(QueryConsumerChannel consumerChannels, QueryProducerChannel producerChannels) {
-		this.consumerChannels = consumerChannels;
+	public QueryService(QueryProducerChannel producerChannels) {
+		
 		this.producerChannels = producerChannels;
 	}
 

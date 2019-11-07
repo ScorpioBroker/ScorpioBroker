@@ -26,13 +26,13 @@
 
     <Loggers>
         <!-- LOG everything at INFO level -->
-        <Root level="ERROR">
+        <Root level="INFO">
             <AppenderRef ref="Console" /> 
             <AppenderRef ref="RollingFile" />
         </Root>
 
         <!-- LOG "eu.neclab" at TRACE level -->
-        <Logger name="eu.neclab.ngsildbroker" level="INFO"></Logger>
+        <Logger name="eu.neclab.ngsildbroker" level="TRACE"></Logger>
         
     </Loggers>
 

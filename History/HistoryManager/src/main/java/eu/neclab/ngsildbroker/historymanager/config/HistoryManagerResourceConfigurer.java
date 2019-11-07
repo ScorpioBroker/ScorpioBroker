@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.atcontextserver.config;
+package eu.neclab.ngsildbroker.historymanager.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
@@ -16,7 +16,7 @@ import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 @EnableWebSecurity
 @EnableResourceServer
 @EnableGlobalMethodSecurity(prePostEnabled = true) // Allow method annotations like @PreAuthorize
-public class ResourceConfigurer extends ResourceServerConfigurerAdapter {
+public class HistoryManagerResourceConfigurer extends ResourceServerConfigurerAdapter {
 	@Autowired
 	private ResourceConfigDetails resourceConfigDetails;
 
