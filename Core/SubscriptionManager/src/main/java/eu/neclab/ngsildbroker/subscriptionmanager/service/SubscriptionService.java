@@ -369,8 +369,8 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleCreate(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
 		String key = kafkaOps.getMessageKey(message);
-		logger.info("Create got called: " + payload);
-		logger.info(key);
+		logger.debug("Create got called: " + payload);
+		logger.debug(key);
 		checkSubscriptionsWithCreate(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
@@ -700,8 +700,8 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleUpdate(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
 		String key = kafkaOps.getMessageKey(message);
-		logger.info("update got called: " + payload);
-		logger.info(key);
+		logger.debug("update got called: " + payload);
+		logger.debug(key);
 		checkSubscriptionsWithUpdate(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
@@ -729,8 +729,8 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleAppend(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
 		String key = kafkaOps.getMessageKey(message);
-		logger.info("Create got called: " + payload);
-		logger.info(key);
+		logger.debug("Create got called: " + payload);
+		logger.debug(key);
 		checkSubscriptionsWithAppend(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
