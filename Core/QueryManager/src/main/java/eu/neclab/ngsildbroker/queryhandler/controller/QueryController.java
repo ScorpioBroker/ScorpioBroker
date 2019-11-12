@@ -177,7 +177,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					return generateReply(request, qResult);
 
 				} else {
-					// as per [5.7.2.4]
+					
 
 					if (debug) {
 						ArrayList<String> allEntityResult = queryService.retriveAllEntity();
@@ -189,6 +189,7 @@ public class QueryController {// implements QueryHandlerInterface {
 									.body(allEntityResult.get(0));
 						}
 					} else {
+						// as per [5.7.2.4]
 						throw new ResponseException(ErrorType.BadRequestData);
 					}
 

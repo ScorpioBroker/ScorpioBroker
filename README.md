@@ -140,7 +140,7 @@ all components the broker except the kafka message bus and the postgres database
 To get the aaio version run the maven build like this
 
 ```console
-sudo mvn clean package -DskipTests -Pdocker-aaio
+sudo mvn clean package -DskipTests -DskipDefault -Pdocker-aaio
 ```
 
 The corresponding docker-compose file is `docker-compose-aaio.yml`
