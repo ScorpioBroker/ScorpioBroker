@@ -819,7 +819,7 @@ public class EntityService {
 				try {
 					result.addSuccess(createMessage(objectMapper.writeValueAsString(next)));
 				} catch (Exception e) {
-					e.printStackTrace();
+					
 					String entityId = "NOT AVAILABLE";
 					if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
 						entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
@@ -910,7 +910,7 @@ public class EntityService {
 					}
 
 				} catch (Exception e) {
-					e.printStackTrace();
+					
 					RestResponse response;
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
@@ -955,7 +955,7 @@ public class EntityService {
 					result.addSuccess(createMessage(entityString));
 
 				} catch (Exception e) {
-					e.printStackTrace();
+					
 					RestResponse response;
 					if (e instanceof ResponseException) {
 						ResponseException responseException = ((ResponseException) e);
