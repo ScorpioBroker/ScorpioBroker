@@ -96,7 +96,7 @@ public class RegistryController {
 	// return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 	// .body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server
 	// error",
-	// Collections.singletonList("Internal Server Error")));
+	// "Internal Server Error")));
 	// }
 	// }
 
@@ -130,7 +130,7 @@ public class RegistryController {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList("Internal Server Error")));
+							"Internal Server Error"));
 		}
 	}
 
@@ -157,7 +157,7 @@ public class RegistryController {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(e.toString())));
+							e.toString()));
 		}
 	}
 
@@ -174,7 +174,7 @@ public class RegistryController {
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList("Internal Server Error")));
+							"Internal Server Error"));
 		}
 	}
 
@@ -194,7 +194,7 @@ public class RegistryController {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList("Internal Server Error")));
+							"Internal Server Error"));
 		}
 	}
 
@@ -210,7 +210,7 @@ public class RegistryController {
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList("Internal Server Error")));
+							"Internal Server Error"));
 		}
 	}
 

@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,7 @@ public class HistoryService {
 		String createdAt = jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 		String modifiedAt = jsonObject.get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 
-		String now = SerializationTools.formatter.format(new Date());
+		String now = SerializationTools.formatter.format(Instant.now());
 
 		Integer attributeCount = 0;
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
@@ -196,7 +197,7 @@ public class HistoryService {
 	public void addAttrib2TemporalEntity(String entityId, String payload) throws ResponseException, Exception {
 		logger.trace("replace attribute in temporal entity");
 		final JsonObject jsonObject = parser.parse(payload).getAsJsonObject();
-		String now = SerializationTools.formatter.format(new Date());
+		String now = SerializationTools.formatter.format(Instant.now());
 
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
@@ -227,7 +228,7 @@ public class HistoryService {
 	public void modifyAttribInstanceTemporalEntity(String entityId, String payload, String attribId, String instanceId, List<Object> linkHeaders)
 			throws ResponseException, Exception {
 
-		String now = SerializationTools.formatter.format(new Date());
+		String now = SerializationTools.formatter.format(Instant.now());
 		
 		String resolvedAttrId = null;
 		if (attribId != null) {
@@ -310,7 +311,7 @@ public class HistoryService {
 		String payload = new String(message);
 		logger.debug("Received message: " + payload);		
 		
-		String now = SerializationTools.formatter.format(new Date());
+		String now = SerializationTools.formatter.format(Instant.now());
 		
 		final JsonObject jsonObject = parser.parse(payload).getAsJsonObject();	
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
@@ -343,7 +344,7 @@ public class HistoryService {
 		String payload = new String(message);
 		logger.debug("Received message: " + payload);		
 		
-		String now = SerializationTools.formatter.format(new Date());
+		String now = SerializationTools.formatter.format(Instant.now());
 		
 		final JsonObject jsonObject = parser.parse(payload).getAsJsonObject();	
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {

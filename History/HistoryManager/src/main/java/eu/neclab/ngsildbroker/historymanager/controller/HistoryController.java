@@ -80,7 +80,7 @@ public class HistoryController {
 			logger.error("Exception", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(exception.getMessage())));
+							exception.getMessage()));
 		}
 	}
 
@@ -111,7 +111,7 @@ public class HistoryController {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(ex.getMessage())));
+							ex.getMessage()));
 		}
 	}
 
@@ -136,7 +136,7 @@ public class HistoryController {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(ex.getMessage())));
+							ex.getMessage()));
 		}
 	}
 
@@ -156,7 +156,7 @@ public class HistoryController {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(ex.getMessage())));
+							ex.getMessage()));
 		}
 	}
 
@@ -178,7 +178,7 @@ public class HistoryController {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(ex.getMessage())));
+							ex.getMessage()));
 		}
 	}
 
@@ -198,7 +198,7 @@ public class HistoryController {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(ex.getMessage())));
+							ex.getMessage()));
 		}
 	}
 
@@ -224,7 +224,7 @@ public class HistoryController {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(ex.getMessage())));
+							ex.getMessage()));
 		}
 	}
 
@@ -245,7 +245,7 @@ public class HistoryController {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(ex.getMessage())));
+							ex.getMessage()));
 		}
 	}
 

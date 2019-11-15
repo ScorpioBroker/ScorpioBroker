@@ -5,6 +5,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -35,10 +38,10 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
 public class SerializationTools {
-	public static SimpleDateFormat formatter = new SimpleDateFormat(NGSIConstants.DEFAULT_DATE_FORMAT);
-
-	public static SimpleDateFormat forgivingFormatter = new SimpleDateFormat(
-			NGSIConstants.DEFAULT_FORGIVING_DATE_FORMAT);
+//	public static SimpleDateFormat formatter = new SimpleDateFormat(NGSIConstants.DEFAULT_DATE_FORMAT);
+	public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(NGSIConstants.DEFAULT_DATE_FORMAT).withZone(ZoneId.systemDefault());
+//	public static SimpleDateFormat forgivingFormatter = new SimpleDateFormat(
+//			NGSIConstants.DEFAULT_FORGIVING_DATE_FORMAT);
 
 	public static Gson geojsonGson = new GsonBuilder().registerTypeAdapterFactory(new GeometryAdapterFactory())
 			.create();
@@ -296,11 +299,7 @@ public class SerializationTools {
 	}
 
 	public static Long date2Long(String dateString) throws Exception {
-
-		Date date;
-
-		date = (Date) formatter.parse(dateString);
-		return date.getTime();
+		return Instant.from(formatter.parse(dateString)).toEpochMilli();
 
 	}
 
@@ -387,7 +386,7 @@ public class SerializationTools {
 	public static JsonElement getJson(Long timestamp, JsonSerializationContext context) {
 		JsonArray observedArray = new JsonArray();
 		JsonObject observedObj = new JsonObject();
-		observedObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(formatter.format(new Date(timestamp))));
+		observedObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(formatter.format(Instant.ofEpochMilli(timestamp))));
 		observedObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
 		observedArray.add(observedObj);
 		return observedArray;

@@ -3,7 +3,7 @@ append:
 atcontext:
   url: http://localhost:9090/ngsi-ld/contextes/
 bootstrap:
-  servers: kafka:9092
+  servers: localhost:9092
 broker:
   id: FedBroker1
   parent:
@@ -88,21 +88,16 @@ reader:
       minimumIdle: 5
       poolName: SpringBootHikariCP_Reader
     password: ngb
-    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_reader
+    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_reader
     username: ngb
   enabled: true
 
-server:
-  port: 1025
-  tomcat:
-    max:
-      threads: 200
 spring:
   cloud:
     stream:
       kafka:
         binder:
-          brokers: kafka:9092
+          brokers: localhost:9092
       bindings:
         ENTITY_WRITE_CHANNEL:
           destination: ENTITY
@@ -162,7 +157,7 @@ spring:
       minimumIdle: 5
       poolName: SpringBootHikariCP
     password: ngb
-    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_registrymanager
+    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_registrymanager
     username: ngb
   flyway:
     baselineOnMigrate: true
@@ -186,7 +181,107 @@ writer:
       minimumIdle: 5
       poolName: SpringBootHikariCP_Writer
     password: ngb
-    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_writer
+    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_writer
     username: ngb
   enabled: true
+
+# Increase the Hystrix timeout to 60s (globally)
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 60000
+
+
+#GET request configuration for QUERY-MANAGER 
+ribbon:
+  ReadTimeout: 60000
+  ConnectTimeout: 60000
+
+
+
+query-manager:
+  request-path: /ngsi-ld/v1/entities
+  target-service: aio-runner
+  http-method: GET
+
+
+
+server:
+  port: 27015
+  tomcat:
+    max:
+      threads:200
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+zuul:
+  ignored-services: '*'
+  semaphore:
+    maxSemaphores: 60000
+  host:
+    connect-timeout-millis: 60000
+    socket-timeout-millis: 60000
+  routes:
+    entity-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/entities/**
+      serviceId: aio-runner
+      stripPrefix: false
+    subscription-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/subscriptions/**
+      serviceId: aio-runner
+      stripPrefix: false
+    context-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/csourceRegistrations/**
+      serviceId: aio-runner
+      stripPrefix: false
+    subforeg:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/csourceSubscriptions/**
+      serviceId: aio-runner
+      stripPrefix: false
+    history-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/temporal/**
+      serviceId: aio-runner
+      stripPrefix: false
+    atcontext-server:
+      sensitiveHeaders:
+      path: /ngsi-ld/contextes/**
+      serviceId: aio-runner
+      stripPrefix: false
+    test-manager:
+      sensitiveHeaders:
+      path: /test/**
+      serviceId: testmanager
+      stripPrefix: false
+security:
+  active: false
+  oauth2:
+    client:
+    # for keycloak configure
+      #accessTokenUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/token
+      #userAuthorizationUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/auth
+      #clientId: authserver
+      #clientSecret: ae8c99a9-f98d-41e9-8fb2-d348acb987e0
+    # for ketrock configure  
+      accessTokenUri: http://172.30.64.120:3000/oauth2/token
+      userAuthorizationUri: http://172.30.64.120:3000/oauth2/authorize
+      clientId: a2034c11-d2a9-4cab-9fac-ff65425bd53f
+      clientSecret: 7364baec-6d6f-4307-8c71-d66e1e6c3afc
+    resource:
+    # for keycloak configure
+      #userInfoUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/userinfo
+    # for keycloak configure
+      userInfoUri: http://172.30.64.120:3000/user
 

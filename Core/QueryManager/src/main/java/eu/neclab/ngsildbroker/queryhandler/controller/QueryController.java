@@ -119,7 +119,7 @@ public class QueryController {// implements QueryHandlerInterface {
 				return httpUtils.generateReply(request, result);
 			} else {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new RestResponse(HttpStatus.NOT_FOUND,
-						"Resource not found.", Collections.singletonList("Resource not found.")));
+						"Resource not found.", "Resource not found."));
 			}
 
 		} catch (ResponseException exception) {
@@ -129,7 +129,7 @@ public class QueryController {// implements QueryHandlerInterface {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList("Internal Server Error")));
+							"Internal Server Error"));
 		}
 	}
 
@@ -204,7 +204,7 @@ public class QueryController {// implements QueryHandlerInterface {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList("Internal Server Error")));
+							"Internal Server Error"));
 		}
 	}
 

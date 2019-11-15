@@ -19,9 +19,9 @@ public class RestResponse {
 	@JsonIgnore
 	private HttpStatus status;
 	private String title;
-	private List<String> details;
+	private String details;
 
-	public RestResponse(HttpStatus status, String title, List<String> detail) {
+	public RestResponse(HttpStatus status, String title, String detail) {
 		super();
 		this.status = status;
 		this.title = title;
@@ -33,7 +33,7 @@ public class RestResponse {
 		super();
 		this.status = exception.getHttpStatus();
 		this.title = exception.getError().getMessage();
-		this.details = Arrays.asList(exception.getMessage());
+		this.details = exception.getMessage();
 		this.type = status.value();
 	}
 
@@ -49,7 +49,7 @@ public class RestResponse {
 		return title;
 	}
 
-	public List<String> getDetail() {
+	public String getDetail() {
 		return details;
 	}
 

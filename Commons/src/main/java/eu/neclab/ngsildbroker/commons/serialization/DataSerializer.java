@@ -10,6 +10,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoValue;
@@ -83,6 +84,7 @@ public class DataSerializer {
 		builder.registerTypeAdapter(Subscription.class, new SubscriptionGsonAdapter());
 		builder.registerTypeAdapter(CSourceRegistration.class, new CSourceRegistrationGsonAdapter());
 		builder.registerTypeAdapter(GeoValue.class, new GeoValueGsonAdapter());
+		builder.registerTypeAdapter(BatchResult.class, new BatchResultGsonAdapter());
 		builder.registerTypeAdapterFactory(new GeometryAdapterFactory());
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
 	}

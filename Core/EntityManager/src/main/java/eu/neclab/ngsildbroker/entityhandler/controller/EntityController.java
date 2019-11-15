@@ -56,9 +56,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Autowired
 	ObjectMapper objectMapper;
 
-	@Autowired
-	@Qualifier("emops")
-	KafkaOps kafkaOps;
+//	@Autowired
+//	@Qualifier("emops")
+//	KafkaOps kafkaOps;
 
 	@Autowired
 	@Qualifier("emconRes")
@@ -118,7 +118,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(exception.getMessage())));
+							exception.getMessage()));
 		}
 	}
 
@@ -153,7 +153,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.error("Exception :: ", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(e.getMessage())));
+							e.getMessage()));
 		}
 	}
 
@@ -188,7 +188,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			exception.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList("Internal Server Error")));
+							"Internal Server Error"));
 		}
 	}
 
@@ -232,7 +232,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList("Internal Server Error")));
+							"Internal Server Error"));
 		}
 	}
 
@@ -260,7 +260,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList("Internal Server Error")));
+							"Internal Server Error"));
 		}
 	}
 
@@ -284,7 +284,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							Collections.singletonList(exception.getMessage())));
+							exception.getMessage()));
 		}
 	}
 

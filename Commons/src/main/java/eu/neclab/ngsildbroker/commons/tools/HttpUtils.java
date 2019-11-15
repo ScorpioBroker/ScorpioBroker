@@ -694,10 +694,10 @@ public final class HttpUtils {
 	public static List<Object> parseLinkHeader(Enumeration<String> rawLinks, String headerRelLdcontext) {
 
 		ArrayList<Object> result = new ArrayList<Object>();
-		if(rawLinks == null) {
+		if (rawLinks == null) {
 			return result;
 		}
-			
+
 		while (rawLinks.hasMoreElements()) {
 			String[] rawLinkInfos = rawLinks.nextElement().split(";");
 			boolean isWantedRel = false;
@@ -723,24 +723,26 @@ public final class HttpUtils {
 		return result;
 	}
 
-
-
 	public ResponseEntity<Object> generateReply(HttpServletRequest request, String reply) throws ResponseException {
 		return generateReply(request, reply, null);
-		
+
 	}
+
 	public ResponseEntity<Object> generateReply(HttpServletRequest request, String reply,
 			HashMap<String, List<String>> additionalHeaders) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, null);
 	}
+
 	public ResponseEntity<Object> generateReply(HttpServletRequest request, String reply,
 			HashMap<String, List<String>> additionalHeaders, List<Object> additionalContext) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, additionalContext, false);
 	}
+
 	public ResponseEntity<Object> generateReply(HttpServletRequest request, String reply,
-			HashMap<String, List<String>> additionalHeaders, List<Object> additionalContext, boolean forceArrayResult) throws ResponseException {
+			HashMap<String, List<String>> additionalHeaders, List<Object> additionalContext, boolean forceArrayResult)
+			throws ResponseException {
 		List<Object> requestAtContext = getAtContext(request);
-		if(additionalContext != null) {
+		if (additionalContext != null) {
 			requestAtContext.addAll(additionalContext);
 		}
 		CompactedJson compacted = contextResolver.compact(reply, requestAtContext);
@@ -762,53 +764,63 @@ public final class HttpUtils {
 					+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 		} else {
 			temp.add(AppConstants.NGB_APPLICATION_JSONLD);
-			if(compacted.getCompacted() == null || compacted.getCompacted().isEmpty() || compacted.getCompacted().trim().equals("{ }") || compacted.getCompacted().trim().equals("{}")) {
+			if (compacted.getCompacted() == null || compacted.getCompacted().isEmpty()
+					|| compacted.getCompacted().trim().equals("{ }") || compacted.getCompacted().trim().equals("{}")) {
 				replyBody = "{ }";
-			}else {
+			} else {
 				replyBody = compacted.getCompactedWithContext();
 			}
-			
 
 		}
 		additionalHeaders.put(HttpHeaders.CONTENT_TYPE, temp);
-		if(forceArrayResult && !replyBody.startsWith("[")) {
+		if (forceArrayResult && !replyBody.startsWith("[")) {
 			replyBody = "[" + replyBody + "]";
 		}
 		return generateReply(replyBody, additionalHeaders);
 	}
 
 	private ResponseEntity<Object> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders) {
-		BodyBuilder builder = ResponseEntity.status(HttpStatus.OK);
-		for(Entry<String, List<String>> entry: additionalHeaders.entrySet()) {
-			builder.header(entry.getKey(), entry.getValue().toArray(new String[0]));		
+		return generateReply(replyBody, additionalHeaders, HttpStatus.OK);
+	}
+
+	public ResponseEntity<Object> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,
+			HttpStatus status) {
+		BodyBuilder builder = ResponseEntity.status(status);
+		if (additionalHeaders != null) {
+			for (Entry<String, List<String>> entry : additionalHeaders.entrySet()) {
+				builder.header(entry.getKey(), entry.getValue().toArray(new String[0]));
+			}
 		}
 		return builder.body(replyBody);
 	}
 
-//	public static ResponseEntity<Object> generateReply(String acceptHeader, List<Object> contextLinks,
-//			String expandedJson, ContextResolverBasic contextResolver, String atContextServerUrl)
-//			throws ResponseException {
-//		CompactedJson simplified = contextResolver.compact(expandedJson, contextLinks);
-//		BodyBuilder builder = ResponseEntity.status(HttpStatus.OK);
-//		ResponseEntity<Object> result;
-//		if ("application/json".equalsIgnoreCase(acceptHeader)) {
-//			builder = builder.contentType(MediaType.APPLICATION_JSON);
-//
-//			String[] links = new String[contextLinks.size()];
-//			Object[] contextLinksArray = contextLinks.toArray();
-//			for (int i = 0; i < contextLinksArray.length; i++) {
-//				links[i] = (String) contextLinksArray[i];
-//			}
-//
-//			builder = builder.header("Link", links);
-//
-//			result = builder.body(simplified.getCompacted());
-//		} else {
-//			builder = builder.header("Content-Type", "application/ld+json");
-//
-//			result = builder.body(simplified.getCompactedWithContext());
-//		}
-//		return result;
-//	}
+	// public static ResponseEntity<Object> generateReply(String acceptHeader,
+	// List<Object> contextLinks,
+	// String expandedJson, ContextResolverBasic contextResolver, String
+	// atContextServerUrl)
+	// throws ResponseException {
+	// CompactedJson simplified = contextResolver.compact(expandedJson,
+	// contextLinks);
+	// BodyBuilder builder = ResponseEntity.status(HttpStatus.OK);
+	// ResponseEntity<Object> result;
+	// if ("application/json".equalsIgnoreCase(acceptHeader)) {
+	// builder = builder.contentType(MediaType.APPLICATION_JSON);
+	//
+	// String[] links = new String[contextLinks.size()];
+	// Object[] contextLinksArray = contextLinks.toArray();
+	// for (int i = 0; i < contextLinksArray.length; i++) {
+	// links[i] = (String) contextLinksArray[i];
+	// }
+	//
+	// builder = builder.header("Link", links);
+	//
+	// result = builder.body(simplified.getCompacted());
+	// } else {
+	// builder = builder.header("Content-Type", "application/ld+json");
+	//
+	// result = builder.body(simplified.getCompactedWithContext());
+	// }
+	// return result;
+	// }
 
 }

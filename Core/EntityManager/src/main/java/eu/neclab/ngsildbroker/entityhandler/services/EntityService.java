@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,6 +21,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
@@ -34,6 +36,8 @@ import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchFailure;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityDetails;
@@ -42,6 +46,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.Information;
 import eu.neclab.ngsildbroker.commons.datatypes.Property;
 import eu.neclab.ngsildbroker.commons.datatypes.Relationship;
+import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.TimeInterval;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -108,7 +113,6 @@ public class EntityService {
 
 	private final EntityProducerChannel producerChannels;
 
-
 	LocalDateTime start;
 	LocalDateTime end;
 
@@ -165,7 +169,7 @@ public class EntityService {
 		removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
 		String entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
 
-		String now = SerializationTools.formatter.format(new Date());
+		String now = SerializationTools.formatter.format(Instant.now());
 		setTemporalProperties(json, now, now, false);
 		payload = objectMapper.writeValueAsString(json);
 
@@ -541,7 +545,7 @@ public class EntityService {
 	public UpdateResult updateFields(byte[] originalJsonObject, JsonNode jsonToUpdate, String attrId)
 			throws Exception, ResponseException {
 		logger.trace("updateFields() :: started");
-		String now = SerializationTools.formatter.format(new Date());
+		String now = SerializationTools.formatter.format(Instant.now());
 		JsonNode resultJson = objectMapper.createObjectNode();
 		UpdateResult updateResult = new UpdateResult(jsonToUpdate, resultJson);
 		JsonNode node = objectMapper.readTree(new String(originalJsonObject));
@@ -568,8 +572,10 @@ public class EntityService {
 		Iterator<String> it = jsonToUpdate.fieldNames();
 		while (it.hasNext()) {
 			String field = it.next();
+			// TOP level updates of context id or type are ignored
 			if (field.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT)
-					|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)) {
+					|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
+					|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)) {
 				continue;
 			}
 			logger.trace("field: " + field);
@@ -588,8 +594,10 @@ public class EntityService {
 				JsonNode originalNode = ((ArrayNode) objectNode.get(field)).get(0);
 				JsonNode attrNode = jsonToUpdate.get(field).get(0);
 				String createdAt = now;
+
 				// keep original createdAt value if present in the original json
-				if (((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
+				if ((originalNode instanceof ObjectNode)
+						&& ((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
 						&& ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).isArray()) {
 					createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).get(0))
 							.get(NGSIConstants.JSON_LD_VALUE).asText();
@@ -628,7 +636,7 @@ public class EntityService {
 	public AppendResult appendFields(byte[] originalJsonObject, JsonNode jsonToAppend, String overwriteOption)
 			throws Exception {
 		logger.trace("appendFields() :: started");
-		String now = SerializationTools.formatter.format(new Date());
+		String now = SerializationTools.formatter.format(Instant.now());
 		JsonNode resultJson = objectMapper.createObjectNode();
 		AppendResult appendResult = new AppendResult(jsonToAppend, resultJson);
 		JsonNode node = objectMapper.readTree(new String(originalJsonObject));
@@ -792,5 +800,207 @@ public class EntityService {
 	boolean isEntityExist(String id) {
 		boolean result = entityTopicMap.isExist(id);
 		return result;
+	}
+
+	public BatchResult createMultipleMessage(String payload) throws ResponseException {
+
+		try {
+			BatchResult result = new BatchResult();
+			JsonNode myTree = objectMapper.readTree(payload);
+			if (!myTree.isArray()) {
+				throw new ResponseException(ErrorType.InvalidRequest,
+						"This interface only supports arrays of entities");
+			}
+			ArrayNode myArray = (ArrayNode) myTree;
+			Iterator<JsonNode> it = myArray.iterator();
+			while (it.hasNext()) {
+				JsonNode next = it.next();
+
+				try {
+					result.addSuccess(createMessage(objectMapper.writeValueAsString(next)));
+				} catch (Exception e) {
+					e.printStackTrace();
+					String entityId = "NOT AVAILABLE";
+					if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
+						entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
+					}
+					RestResponse response;
+					if (e instanceof ResponseException) {
+						response = new RestResponse((ResponseException) e);
+					} else {
+						response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
+								e.getMessage());
+					}
+
+					result.addFail(new BatchFailure(entityId, response));
+				}
+
+			}
+			return result;
+		} catch (IOException e) {
+			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
+		}
+
+	}
+
+	public BatchResult deleteMultipleMessage(String payload) throws ResponseException {
+		try {
+			BatchResult result = new BatchResult();
+			JsonNode myTree = objectMapper.readTree(payload);
+			if (!myTree.isArray()) {
+				throw new ResponseException(ErrorType.InvalidRequest,
+						"This interface only supports arrays of entities");
+			}
+			ArrayNode myArray = (ArrayNode) myTree;
+			Iterator<JsonNode> it = myArray.iterator();
+			while (it.hasNext()) {
+				JsonNode next = it.next();
+				String entityId = next.asText();
+				try {
+					if (deleteEntity(entityId)) {
+						result.addSuccess(entityId);
+					}
+				} catch (Exception e) {
+					RestResponse response;
+					if (e instanceof ResponseException) {
+						response = new RestResponse((ResponseException) e);
+					} else {
+						response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
+								e.getMessage());
+					}
+
+					result.addFail(new BatchFailure(entityId, response));
+				}
+			}
+			return result;
+		} catch (IOException e) {
+			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
+		}
+
+	}
+
+	public BatchResult updateMultipleMessage(String resolved) throws ResponseException {
+		try {
+			BatchResult result = new BatchResult();
+			JsonNode myTree = objectMapper.readTree(resolved);
+			if (!myTree.isArray()) {
+				throw new ResponseException(ErrorType.InvalidRequest,
+						"This interface only supports arrays of entities");
+			}
+			ArrayNode myArray = (ArrayNode) myTree;
+			Iterator<JsonNode> it = myArray.iterator();
+			while (it.hasNext()) {
+				JsonNode next = it.next();
+				String entityId = "NOT AVAILABLE";
+				if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
+					entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
+				} else {
+					result.addFail(new BatchFailure(entityId,
+							new RestResponse(HttpStatus.BAD_REQUEST, "Bad Request", "No Entity Id provided")));
+					continue;
+				}
+				try {
+					UpdateResult updateResult = updateMessage(entityId, objectMapper.writeValueAsString(next));
+					if (updateResult.getStatus()) {
+						result.addSuccess(entityId);
+					} else {
+						result.addFail(new BatchFailure(entityId, new RestResponse(HttpStatus.MULTI_STATUS,
+								"something went wrong during this update",
+								objectMapper.writeValueAsString(updateResult.getJsonToAppend()) + " was not added")));
+					}
+
+				} catch (Exception e) {
+					e.printStackTrace();
+					RestResponse response;
+					if (e instanceof ResponseException) {
+						response = new RestResponse((ResponseException) e);
+					} else {
+						response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
+								e.getMessage());
+					}
+
+					result.addFail(new BatchFailure(entityId, response));
+				}
+
+			}
+			return result;
+		} catch (IOException e) {
+			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
+		}
+	}
+
+	public BatchResult upsertMultipleMessage(String resolved) throws ResponseException {
+		try {
+			BatchResult result = new BatchResult();
+			JsonNode myTree = objectMapper.readTree(resolved);
+			if (!myTree.isArray()) {
+				throw new ResponseException(ErrorType.InvalidRequest,
+						"This interface only supports arrays of entities");
+			}
+			ArrayNode myArray = (ArrayNode) myTree;
+			Iterator<JsonNode> it = myArray.iterator();
+			while (it.hasNext()) {
+				JsonNode next = it.next();
+				String entityId = "NOT AVAILABLE";
+				if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
+					entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
+				} else {
+					result.addFail(new BatchFailure(entityId,
+							new RestResponse(HttpStatus.BAD_REQUEST, "Bad Request", "No Entity Id provided")));
+					continue;
+				}
+				String entityString = objectMapper.writeValueAsString(next);
+				try {
+
+					result.addSuccess(createMessage(entityString));
+
+				} catch (Exception e) {
+					e.printStackTrace();
+					RestResponse response;
+					if (e instanceof ResponseException) {
+						ResponseException responseException = ((ResponseException) e);
+						if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
+							UpdateResult updateResult;
+							try {
+								updateResult = updateMessage(entityId, entityString);
+
+								if (updateResult.getStatus()) {
+									result.addSuccess(entityId);
+								} else {
+									result.addFail(new BatchFailure(entityId,
+											new RestResponse(HttpStatus.MULTI_STATUS,
+													"something went wrong during this update",
+													objectMapper.writeValueAsString(updateResult.getJsonToAppend())
+															+ " was not added")));
+								}
+							} catch (Exception e1) {
+
+								if (e1 instanceof ResponseException) {
+									response = new RestResponse((ResponseException) e1);
+								} else {
+									response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+											"Internal server error", e1.getMessage());
+								}
+
+								result.addFail(new BatchFailure(entityId, response));
+							}
+						} else {
+							response = new RestResponse((ResponseException) e);
+							result.addFail(new BatchFailure(entityId, response));
+						}
+
+					} else {
+						response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
+								e.getMessage());
+						result.addFail(new BatchFailure(entityId, response));
+					}
+
+				}
+
+			}
+			return result;
+		} catch (IOException e) {
+			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
+		}
 	}
 }

@@ -100,7 +100,32 @@ public class ContextResolverBasic {
 
 	public String expand(String body, List<Object> contextLinks) throws ResponseException {
 		try {
-			Map<String, Object> json = (Map<String, Object>) JsonUtils.fromString(body);
+			Object obj = JsonUtils.fromString(body);
+			if(obj instanceof Map) {
+				return expand((Map<String, Object>) obj, contextLinks);
+			}
+			if(obj instanceof List) {
+				List<Object> list = (List<Object>) obj;
+				if(list.isEmpty()) {
+					throw new ResponseException(ErrorType.InvalidRequest);
+				}
+				StringBuilder result = new StringBuilder("[");
+				for(Object listObj: list) {
+					result.append(expand((Map<String, Object>) listObj, contextLinks));
+					result.append(",");
+				}
+				result.setCharAt(result.length()-1, ']');
+				return result.toString();
+			}
+			throw new ResponseException(ErrorType.InvalidRequest);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ResponseException(ErrorType.InvalidRequest);
+		}
+	}
+	
+	public String expand(Map<String, Object> json, List<Object> contextLinks) throws ResponseException {
+		try {
 			Object tempCtx = json.get(NGSIConstants.JSON_LD_CONTEXT);
 			List<Object> context;
 			if (tempCtx == null) {
