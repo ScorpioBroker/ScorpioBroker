@@ -533,9 +533,11 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private List<Relationship> extractRelationShips(Entity data, Subscription subscription) {
-		ArrayList<Relationship> result = new ArrayList<Relationship>();
 		ArrayList<String> attribNames = getAttribNames(subscription);
-		
+		if(attribNames.isEmpty()) {
+			return data.getRelationships();
+		}
+		ArrayList<Relationship> result = new ArrayList<Relationship>();
 		for (Relationship relationship : data.getRelationships()) {
 			if (attribNames.contains(relationship.getName()) && relationship.getObject() != null) {
 				result.add(relationship);
@@ -549,14 +551,17 @@ public class SubscriptionService implements SubscriptionManager {
 		if (subscription.getNotification().getAttributeNames() != null) {
 			attribNames.addAll(subscription.getNotification().getAttributeNames());
 		}
-		if (subscription.getAttributeNames() != null) {
-			attribNames.addAll(subscription.getAttributeNames());
-		}
+//		if (subscription.getAttributeNames() != null) {
+//			attribNames.addAll(subscription.getAttributeNames());
+//		}
 		return attribNames;
 	}
 
 	private List<Property> extractProperties(Entity data, Subscription subscription) {
 		ArrayList<String> attribNames = getAttribNames(subscription);
+		if(attribNames.isEmpty()) {
+			return data.getProperties();
+		}
 		ArrayList<Property> result = new ArrayList<Property>();
 		for (Property property : data.getProperties()) {
 			if (attribNames.contains(property.getName()) && property.getValue() != null) {
@@ -568,6 +573,9 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private List<GeoProperty> extractGeoProperties(Entity data, Subscription subscription) {
 		ArrayList<String> attribNames = getAttribNames(subscription);
+		if(attribNames.isEmpty()) {
+			return data.getGeoProperties();
+		}
 		ArrayList<GeoProperty> result = new ArrayList<GeoProperty>();
 		for (GeoProperty property : data.getGeoProperties()) {
 			if (attribNames.contains(property.getName()) && property.getValue() != null) {
