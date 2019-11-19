@@ -3,7 +3,7 @@ append:
 atcontext:
   url: http://localhost:9090/ngsi-ld/contextes/
 bootstrap:
-  servers: localhost:9092
+  servers: kafka:9092
 broker:
   id: FedBroker1
   parent:
@@ -97,7 +97,7 @@ spring:
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: kafka:9092
       bindings:
         ENTITY_WRITE_CHANNEL:
           destination: ENTITY
