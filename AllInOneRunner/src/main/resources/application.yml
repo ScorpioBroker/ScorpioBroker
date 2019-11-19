@@ -88,7 +88,7 @@ reader:
       minimumIdle: 5
       poolName: SpringBootHikariCP_Reader
     password: ngb
-    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_reader
+    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_reader
     username: ngb
   enabled: true
 
@@ -157,7 +157,7 @@ spring:
       minimumIdle: 5
       poolName: SpringBootHikariCP
     password: ngb
-    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_registrymanager
+    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_registrymanager
     username: ngb
   flyway:
     baselineOnMigrate: true
@@ -181,7 +181,7 @@ writer:
       minimumIdle: 5
       poolName: SpringBootHikariCP_Writer
     password: ngb
-    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_writer
+    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_writer
     username: ngb
   enabled: true
 
