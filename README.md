@@ -35,8 +35,39 @@ Scorpio is developed in Java using SpringCloud as microservice framework and Apa
 tests require a running Apache Kafka messagebus (further instruction are in the Setup chapter). If you want to skip
 those tests you can run `mvn clean package -DskipTests` to just build the individual microservices.
 
-### Setup
 
+
+
+
+### General Remarks on building
+Further down this document you will get exact build commands/arguments for the different flavors. This part will give you an overview on how the different arguments
+#### Maven Profiles
+There currently three available Maven build profiles 
+##### Default 
+If you provide no -P argument Maven will produce individual jar files for the microservices and the AllInOneRunner with each "full" microservice packaged (this will result in ca. 500 MB size for the AllInOneRunner)
+
+##### docker
+This will trigger the Maven to build docker containers for each microservice.  
+
+##### docker-aaio
+This will trigger the Maven to build one docker container, containing the AllInOneRunner and the spring cloud components (eureka, configserver and gateway)  
+#### Maven arguments
+These arguments are provided via -D in the command line.
+##### skipTests
+Generally recommended if you want to speed up the build or you don't have a kafka instance running, which is required by some of the tests.
+##### skipDefault
+This is a special argument for the Scorpio build. This argument will disable springs repacking for the individual microservices and will allow for a smaller AllInOneRunner jar file. This argument shoulnd ONLY be used in combination with the docker-aaio profile.
+
+#### Spring Profiles
+Spring supports also profiles which can be activated when launching a jar file. Currently there 3 profiles actively used in Scorpio.
+The default profiles assume the default setup to be a individual microservices. The exception is the AllInOneRunner which as default assumes to be running in the docker-aaio setup.
+
+Currently you should be able to run everything with a default profile except the gateway in combination with the AllInOneRunner. 
+In order to use these two together you need to start the gateway with the aaio spring profile. This can be done by attaching this to your start command -Dspring.profiles.active=aaio.
+
+Additonally some components have a dev profile available which is purely meant for development purposes and should only be used for such. 
+  
+### Setup
 Scorpio requires two components to be installed.
 
 #### Postgres
@@ -350,6 +381,14 @@ In order to fix this issue and get eureka-server running you need to manually ad
 </dependencies>
 ...
 ```
+## Acknowledgements
+Part of the development has been founded by the EU in the AUTOPILOT project.
+
+### EU Acknowledgetment
+This activity has received funding from the European Union’s Horizon 2020 research and innovation programme under Grant Agreement No 731993. <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/flag_yellow_low.jpg" width="160">
+
+### Autopilot
+Part of the development was done in and for the [AUTOPILOT project for Automated driving Progressed by Internet Of Things](https://autopilot-project.eu/) <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/autopilot.png" width="160">
 
 ## License
 
