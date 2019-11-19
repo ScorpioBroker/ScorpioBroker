@@ -63,6 +63,11 @@ zuul:
       path: /ngsi-ld/v1/csourceSubscriptions/**
       serviceId: aio-runner
       stripPrefix: false
+    batchoperations:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/entityOperations/**
+      serviceId: aio-runner
+      stripPrefix: false
     history-manager:
       sensitiveHeaders:
       path: /ngsi-ld/v1/temporal/**
