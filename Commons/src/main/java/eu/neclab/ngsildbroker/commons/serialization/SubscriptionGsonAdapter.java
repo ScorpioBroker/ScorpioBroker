@@ -109,18 +109,21 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				result.setLdGeoQuery(geoQuery);
 
 			} else if (key.equals(NGSIConstants.NGSI_LD_NOTIFICATION)) {
-				Iterator<JsonElement> attribs = value.getAsJsonArray().get(0).getAsJsonObject()
-						.getAsJsonArray(NGSIConstants.NGSI_LD_ATTRIBUTES).iterator();
 				ArrayList<String> watchedAttribs = new ArrayList<String>();
 				NotificationParam notifyParam = new NotificationParam();
-				while (attribs.hasNext()) {
-					watchedAttribs.add(attribs.next().getAsJsonObject().get(NGSIConstants.JSON_LD_ID).getAsString());
+				JsonObject ldObj = value.getAsJsonArray().get(0).getAsJsonObject();
+				if (ldObj.has(NGSIConstants.NGSI_LD_ATTRIBUTES)
+						&& ldObj.get(NGSIConstants.NGSI_LD_ATTRIBUTES).isJsonArray()) {
+					Iterator<JsonElement> attribs = ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_ATTRIBUTES).iterator();
+					while (attribs.hasNext()) {
+						watchedAttribs
+								.add(attribs.next().getAsJsonObject().get(NGSIConstants.JSON_LD_ID).getAsString());
 
+					}
 				}
 				notifyParam.setAttributeNames(watchedAttribs);
 				EndPoint endPoint = new EndPoint();
-				JsonObject jsonEndPoint = value.getAsJsonArray().get(0).getAsJsonObject()
-						.getAsJsonArray(NGSIConstants.NGSI_LD_ENDPOINT).get(0).getAsJsonObject();
+				JsonObject jsonEndPoint = ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_ENDPOINT).get(0).getAsJsonObject();
 				endPoint.setAccept(jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_ACCEPT).get(0).getAsJsonObject()
 						.get(NGSIConstants.JSON_LD_VALUE).getAsString());
 				try {
@@ -130,8 +133,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 					throw new JsonParseException(e);
 				}
 				notifyParam.setEndPoint(endPoint);
-				String formatString = value.getAsJsonArray().get(0).getAsJsonObject()
-						.getAsJsonArray(NGSIConstants.NGSI_LD_FORMAT).get(0).getAsJsonObject()
+				String formatString = ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_FORMAT).get(0).getAsJsonObject()
 						.get(NGSIConstants.JSON_LD_VALUE).getAsString();
 				if (formatString.equalsIgnoreCase("keyvalues")) {
 					notifyParam.setFormat(Format.keyValues);
@@ -183,7 +185,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 	@Override
 	public JsonElement serialize(Subscription src, Type typeOfSrc, JsonSerializationContext context) {
 		JsonObject top = new JsonObject();
-		//remote subs have no id yet
+		// remote subs have no id yet
 		if (src.getId() != null) {
 			top.add(NGSIConstants.JSON_LD_ID, context.serialize(src.getId().toString()));
 		}
