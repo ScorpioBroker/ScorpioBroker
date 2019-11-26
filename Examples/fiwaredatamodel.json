@@ -1356,7 +1356,6 @@
 			"@id": "https://uri.fiware.org/ns/datamodels/refSmartSpot"
 		},
 		"SmartPointOfInteraction": "https://uri.fiware.org/ns/datamodels/SmartPointOfInteraction",
-		"information": "https://uri.fiware.org/ns/datamodels/information",
 		"entertainment": "https://uri.fiware.org/ns/datamodels/entertainment",
 		"infotainment": "https://uri.fiware.org/ns/datamodels/infotainment",
 		"co-creation": "https://uri.fiware.org/ns/datamodels/co-creation",
