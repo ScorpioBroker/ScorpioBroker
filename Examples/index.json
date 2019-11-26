@@ -25,7 +25,6 @@
 		"providedBy": {
 			"@type": "@id",
 			"@id": "http://example.org/common/providedBy"
-		},
-		"@vocab": "http://unknowncontext/"
+		}
 	}]
 }
