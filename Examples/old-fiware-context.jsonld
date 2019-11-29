@@ -1,0 +1,1879 @@
+{
+	"@context": [
+		{
+			"0": "https://uri.fiware.org/ns/datamodels#0",
+			"1": "https://uri.fiware.org/ns/datamodels#1",
+			"2": "https://uri.fiware.org/ns/datamodels#2",
+			"3": "https://uri.fiware.org/ns/datamodels#3",
+			"37": "https://uri.fiware.org/ns/datamodels#37",
+			"37,38": "https://uri.fiware.org/ns/datamodels#37,38",
+			"37,38,39": "https://uri.fiware.org/ns/datamodels#37,38,39",
+			"37,39": "https://uri.fiware.org/ns/datamodels#37,39",
+			"38": "https://uri.fiware.org/ns/datamodels#38",
+			"38,39": "https://uri.fiware.org/ns/datamodels#38,39",
+			"39": "https://uri.fiware.org/ns/datamodels#39",
+			"4": "https://uri.fiware.org/ns/datamodels#4",
+			"5": "https://uri.fiware.org/ns/datamodels#5",
+			"6": "https://uri.fiware.org/ns/datamodels#6",
+			"7": "https://uri.fiware.org/ns/datamodels#7",
+			"AeroAllergenObserved": "https://uri.fiware.org/ns/datamodels/AeroAllergenObserved",
+			"AgriApp": "https://uri.fiware.org/ns/datamodels/AgriApp",
+			"AgriCrop": "https://uri.fiware.org/ns/datamodels/AgriCrop",
+			"AgriFarm": "https://uri.fiware.org/ns/datamodels/AgriFarm",
+			"AgriGreenhouse": "https://uri.fiware.org/ns/datamodels/AgriGreenhouse",
+			"AgriParcel": "https://uri.fiware.org/ns/datamodels/AgriParcel",
+			"AgriParcelOperation": "https://uri.fiware.org/ns/datamodels/AgriParcelOperation",
+			"AgriParcelRecord": "https://uri.fiware.org/ns/datamodels/AgriParcelRecord",
+			"AgriPest": "https://uri.fiware.org/ns/datamodels/AgriPest",
+			"AgriProductType": "https://uri.fiware.org/ns/datamodels/AgriProductType",
+			"AgriSoil": "https://uri.fiware.org/ns/datamodels/AgriSoil",
+			"AirQualityObserved": "https://uri.fiware.org/ns/datamodels/AirQualityObserved",
+			"Alert": "https://uri.fiware.org/ns/datamodels/Alert",
+			"Animal": "https://uri.fiware.org/ns/datamodels/Animal",
+			"ArrivalEstimation": "https://uri.fiware.org/ns/datamodels/ArrivalEstimation",
+			"Beach": "https://uri.fiware.org/ns/datamodels/Beach",
+			"BikeHireDockingStation": "https://uri.fiware.org/ns/datamodels/BikeHireDockingStation",
+			"Building": "https://uri.fiware.org/ns/datamodels/Building",
+			"BuildingOperation": "https://uri.fiware.org/ns/datamodels/BuildingOperation",
+			"ByBankTransferInAdvance": "http://purl.org/goodrelations/v1/ByBankTransferInAdvance",
+			"ByInvoice": "http://purl.org/goodrelations/v1/ByInvoice",
+			"C0": "https://uri.fiware.org/ns/datamodels/C0",
+			"C1": "https://uri.fiware.org/ns/datamodels/C1",
+			"C2": "https://uri.fiware.org/ns/datamodels/C2",
+			"CCS/SAE": "https://uri.fiware.org/ns/datamodels/CCS/SAE",
+			"CHAdeMO": "https://uri.fiware.org/ns/datamodels/CHAdeMO",
+			"COD": "http://purl.org/goodrelations/v1/COD",
+			"Caravan_Mains_Socket": "https://uri.fiware.org/ns/datamodels/Caravan_Mains_Socket",
+			"Cash": "http://purl.org/goodrelations/v1/Cash",
+			"CheckInAdvance": "http://purl.org/goodrelations/v1/CheckInAdvance",
+			"Chla": "https://uri.fiware.org/ns/datamodels/Chla",
+			"Cl-": "https://uri.fiware.org/ns/datamodels/Cl-",
+			"CrowdFlowObserved": "https://uri.fiware.org/ns/datamodels/CrowdFlowObserved",
+			"Device": "https://uri.fiware.org/ns/datamodels/Device",
+			"DeviceModel": "https://uri.fiware.org/ns/datamodels/DeviceModel",
+			"DirectDebit": "http://purl.org/goodrelations/v1/DirectDebit",
+			"Dual_CHAdeMO": "https://uri.fiware.org/ns/datamodels/Dual_CHAdeMO",
+			"Dual_J-1772": "https://uri.fiware.org/ns/datamodels/Dual_J-1772",
+			"Dual_Mennekes": "https://uri.fiware.org/ns/datamodels/Dual_Mennekes",
+			"E0": "https://uri.fiware.org/ns/datamodels/E0",
+			"E1": "https://uri.fiware.org/ns/datamodels/E1",
+			"E2": "https://uri.fiware.org/ns/datamodels/E2",
+			"E9": "https://uri.fiware.org/ns/datamodels/E9",
+			"EVChargingStation": "https://uri.fiware.org/ns/datamodels/EVChargingStation",
+			"FlowerBed": "https://uri.fiware.org/ns/datamodels/FlowerBed",
+			"Garden": "https://uri.fiware.org/ns/datamodels/Garden",
+			"GoogleCheckout": "http://purl.org/goodrelations/v1/GoogleCheckout",
+			"GreenspaceRecord": "https://uri.fiware.org/ns/datamodels/GreenspaceRecord",
+			"GtfsAccessPoint": "https://uri.fiware.org/ns/datamodels/GtfsAccessPoint",
+			"GtfsAgency": "https://uri.fiware.org/ns/datamodels/GtfsAgency",
+			"GtfsCalendarDateRule": "https://uri.fiware.org/ns/datamodels/GtfsCalendarDateRule",
+			"GtfsCalendarRule": "https://uri.fiware.org/ns/datamodels/GtfsCalendarRule",
+			"GtfsFrequency": "https://uri.fiware.org/ns/datamodels/GtfsFrequency",
+			"GtfsRoute": "https://uri.fiware.org/ns/datamodels/GtfsRoute",
+			"GtfsService": "https://uri.fiware.org/ns/datamodels/GtfsService",
+			"GtfsShape": "https://uri.fiware.org/ns/datamodels/GtfsShape",
+			"GtfsStation": "https://uri.fiware.org/ns/datamodels/GtfsStation",
+			"GtfsStop": "https://uri.fiware.org/ns/datamodels/GtfsStop",
+			"GtfsStopTime": "https://uri.fiware.org/ns/datamodels/GtfsStopTime",
+			"GtfsTransferRule": "https://uri.fiware.org/ns/datamodels/GtfsTransferRule",
+			"GtfsTrip": "https://uri.fiware.org/ns/datamodels/GtfsTrip",
+			"HPS": "https://uri.fiware.org/ns/datamodels/HPS",
+			"J-1772": "https://uri.fiware.org/ns/datamodels/J-1772",
+			"KeyPerformanceIndicator": "https://uri.fiware.org/ns/datamodels/KeyPerformanceIndicator",
+			"LED": "https://uri.fiware.org/ns/datamodels/LED",
+			"LPS": "https://uri.fiware.org/ns/datamodels/LPS",
+			"Mennekes": "https://uri.fiware.org/ns/datamodels/Mennekes",
+			"Museum": "https://uri.fiware.org/ns/datamodels/Museum",
+			"NH3": "https://uri.fiware.org/ns/datamodels/NH3",
+			"NH4": "https://uri.fiware.org/ns/datamodels/NH4",
+			"NO3": "https://uri.fiware.org/ns/datamodels/NO3",
+			"NoiseLevelObserved": "https://uri.fiware.org/ns/datamodels/NoiseLevelObserved",
+			"O2": "https://uri.fiware.org/ns/datamodels/O2",
+			"OffStreetParking": "https://uri.fiware.org/ns/datamodels/OffStreetParking",
+			"OnStreetParking": "https://uri.fiware.org/ns/datamodels/OnStreetParking",
+			"Open311ServiceRequest": "https://uri.fiware.org/ns/datamodels/Open311ServiceRequest",
+			"Open311ServiceType": "https://uri.fiware.org/ns/datamodels/Open311ServiceType",
+			"Other": "https://uri.fiware.org/ns/datamodels/Other",
+			"PC": "https://uri.fiware.org/ns/datamodels/PC",
+			"PE": "https://uri.fiware.org/ns/datamodels/PE",
+			"ParkingAccess": "https://uri.fiware.org/ns/datamodels/ParkingAccess",
+			"ParkingGroup": "https://uri.fiware.org/ns/datamodels/ParkingGroup",
+			"ParkingSpot": "https://uri.fiware.org/ns/datamodels/ParkingSpot",
+			"PayPal": "http://purl.org/goodrelations/v1/PayPal",
+			"PaySwarm": "http://purl.org/goodrelations/v1/PaySwarm",
+			"Point": "https://uri.fiware.org/ns/datamodels/Point",
+			"PointOfInterest": "https://uri.fiware.org/ns/datamodels/PointOfInterest",
+			"Q-Quality": "https://uri.fiware.org/ns/datamodels/Q-Quality",
+			"Road": "https://uri.fiware.org/ns/datamodels/Road",
+			"RoadSegment": "https://uri.fiware.org/ns/datamodels/RoadSegment",
+			"SmartPointOfInteraction": "https://uri.fiware.org/ns/datamodels/SmartPointOfInteraction",
+			"SmartSpot": "https://uri.fiware.org/ns/datamodels/SmartSpot",
+			"Streetlight": "https://uri.fiware.org/ns/datamodels/Streetlight",
+			"StreetlightControlCabinet": "https://uri.fiware.org/ns/datamodels/StreetlightControlCabinet",
+			"StreetlightGroup": "https://uri.fiware.org/ns/datamodels/StreetlightGroup",
+			"StreetlightModel": "https://uri.fiware.org/ns/datamodels/StreetlightModel",
+			"TBD": "https://uri.fiware.org/ns/datamodels/TBD",
+			"Tesla": "https://uri.fiware.org/ns/datamodels/Tesla",
+			"ThreePhaseAcMeasurement": "https://uri.fiware.org/ns/datamodels/ThreePhaseAcMeasurement",
+			"TimeInstant": {
+				"@id": "https://uri.fiware.org/ns/datamodels/TimeInstant",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"TrafficFlowObserved": "https://uri.fiware.org/ns/datamodels/TrafficFlowObserved",
+			"Type2": "https://uri.fiware.org/ns/datamodels/Type2",
+			"Type3": "https://uri.fiware.org/ns/datamodels/Type3",
+			"UserActivity": "https://uri.fiware.org/ns/datamodels/UserActivity",
+			"UserContext": "https://uri.fiware.org/ns/datamodels/UserContext",
+			"Vehicle": "https://uri.fiware.org/ns/datamodels/Vehicle",
+			"VehicleModel": "https://uri.fiware.org/ns/datamodels/VehicleModel",
+			"Wall_Euro": "https://uri.fiware.org/ns/datamodels/Wall_Euro",
+			"WasteContainer": "https://uri.fiware.org/ns/datamodels/WasteContainer",
+			"WasteContainerIsle": "https://uri.fiware.org/ns/datamodels/WasteContainerIsle",
+			"WasteContainerModel": "https://uri.fiware.org/ns/datamodels/WasteContainerModel",
+			"WaterQualityObserved": "https://uri.fiware.org/ns/datamodels/WaterQualityObserved",
+			"WeatherForecast": "https://uri.fiware.org/ns/datamodels/WeatherForecast",
+			"WeatherObserved": "https://uri.fiware.org/ns/datamodels/WeatherObserved",
+			"aborted": "https://uri.fiware.org/ns/datamodels/aborted",
+			"abs": "https://uri.fiware.org/ns/datamodels/abs",
+			"acceptedPaymentMethod": {
+				"@id": "https://uri.fiware.org/ns/datamodels/acceptedPaymentMethod",
+				"@type": "@vocab"
+			},
+			"accessType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/accessType",
+				"@type": "@vocab"
+			},
+			"accessforDisabled": "https://uri.fiware.org/ns/datamodels/accessforDisabled",
+			"acropolis": "https://uri.fiware.org/ns/datamodels/acropolis",
+			"actionable": "https://uri.fiware.org/ns/datamodels/actionable",
+			"active": "https://uri.fiware.org/ns/datamodels/active",
+			"activeEnergyExport": "https://uri.fiware.org/ns/datamodels/activeEnergyExport",
+			"activeEnergyImport": "https://uri.fiware.org/ns/datamodels/activeEnergyImport",
+			"activePower": "https://uri.fiware.org/ns/datamodels/activePower",
+			"activeProgramId": "https://uri.fiware.org/ns/datamodels/activeProgramId",
+			"activityType": "https://uri.fiware.org/ns/datamodels/activityType",
+			"actuationHours": "https://uri.fiware.org/ns/datamodels/actuationHours",
+			"additionalIntervalPrice": "https://uri.fiware.org/ns/datamodels/additionalIntervalPrice",
+			"address": "https://schema.org/address",
+			"adequate": "https://uri.fiware.org/ns/datamodels/adequate",
+			"aggregateRating": "https://schema.org/aggregateRating",
+			"aggregatedData": "https://uri.fiware.org/ns/datamodels/aggregatedData",
+			"agriculturalVehicle": "https://uri.fiware.org/ns/datamodels/agriculturalVehicle",
+			"agriculture": "https://uri.fiware.org/ns/datamodels/agriculture",
+			"agroVocConcept": "https://uri.fiware.org/ns/datamodels/agroVocConcept",
+			"airPollution": "https://uri.fiware.org/ns/datamodels/airPollution",
+			"airQualityIndex": "https://uri.fiware.org/ns/datamodels/airQualityIndex",
+			"airQualityLevel": "https://uri.fiware.org/ns/datamodels/airQualityLevel",
+			"airbag": "https://uri.fiware.org/ns/datamodels/airbag",
+			"airportTerminal": "https://uri.fiware.org/ns/datamodels/airportTerminal",
+			"alarm": "https://uri.fiware.org/ns/datamodels/alarm",
+			"alcazaba": "https://uri.fiware.org/ns/datamodels/alcazaba",
+			"alcazar": "https://uri.fiware.org/ns/datamodels/alcazar",
+			"alertSource": {
+				"@id": "https://uri.fiware.org/ns/datamodels/alertSource",
+				"@type": "@id"
+			},
+			"allergenRisk": {
+				"@id": "https://uri.fiware.org/ns/datamodels/allergenRisk",
+				"@type": "@vocab"
+			},
+			"allowedVehicleType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/allowedVehicleType",
+				"@type": "@vocab"
+			},
+			"almostEmpty": "https://uri.fiware.org/ns/datamodels/almostEmpty",
+			"almostFull": "https://uri.fiware.org/ns/datamodels/almostFull",
+			"alternateName": "https://schema.org/alternateName",
+			"aluminium": "https://uri.fiware.org/ns/datamodels/aluminium",
+			"always-ON": "https://uri.fiware.org/ns/datamodels/always-ON",
+			"ambulance": "https://uri.fiware.org/ns/datamodels/ambulance",
+			"amperage": "https://uri.fiware.org/ns/datamodels/amperage",
+			"amphitheatre": "https://uri.fiware.org/ns/datamodels/amphitheatre",
+			"annotations": "https://uri.fiware.org/ns/datamodels/annotations",
+			"announcedUrl": "https://uri.fiware.org/ns/datamodels/announcedUrl",
+			"announcementPeriod": "https://uri.fiware.org/ns/datamodels/announcementPeriod",
+			"annualPayment": "https://uri.fiware.org/ns/datamodels/annualPayment",
+			"anyVehicle": "https://uri.fiware.org/ns/datamodels/anyVehicle",
+			"apartments": "https://uri.fiware.org/ns/datamodels/apartments",
+			"apparentEnergyExport": "https://uri.fiware.org/ns/datamodels/apparentEnergyExport",
+			"apparentEnergyImport": "https://uri.fiware.org/ns/datamodels/apparentEnergyImport",
+			"apparentPower": "https://uri.fiware.org/ns/datamodels/apparentPower",
+			"applicationUrl": "https://uri.fiware.org/ns/datamodels/applicationUrl",
+			"appliedArts": "https://uri.fiware.org/ns/datamodels/appliedArts",
+			"appliesOn": "https://uri.fiware.org/ns/datamodels/appliesOn",
+			"aqueduct": "https://uri.fiware.org/ns/datamodels/aqueduct",
+			"arcade": "https://uri.fiware.org/ns/datamodels/arcade",
+			"arch": "https://uri.fiware.org/ns/datamodels/arch",
+			"archaeology": "https://uri.fiware.org/ns/datamodels/archaeology",
+			"archeologicalSite": "https://uri.fiware.org/ns/datamodels/archeologicalSite",
+			"architecture": "https://uri.fiware.org/ns/datamodels/architecture",
+			"area": "https://uri.fiware.org/ns/datamodels/area",
+			"areaCovered": "https://uri.fiware.org/ns/datamodels/areaCovered",
+			"areaSeperatedFromSurroundings": "https://uri.fiware.org/ns/datamodels/areaSeperatedFromSurroundings",
+			"areaServed": "https://schema.org/areaServed",
+			"arrivalEstimationUpdate": {
+				"@id": "https://uri.fiware.org/ns/datamodels/arrivalEstimationUpdate",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"arrivalTime": "https://uri.fiware.org/ns/datamodels/arrivalTime",
+			"artPeriod": "https://uri.fiware.org/ns/datamodels/artPeriod",
+			"assault": "https://uri.fiware.org/ns/datamodels/assault",
+			"asthmaAttack": "https://uri.fiware.org/ns/datamodels/asthmaAttack",
+			"astronomicalClock": "https://uri.fiware.org/ns/datamodels/astronomicalClock",
+			"atmosphericPressure": "https://uri.fiware.org/ns/datamodels/atmosphericPressure",
+			"audioguide": "https://uri.fiware.org/ns/datamodels/audioguide",
+			"auditory": "https://uri.fiware.org/ns/datamodels/auditory",
+			"autogas": "https://uri.fiware.org/ns/datamodels/autogas",
+			"automatedParkingGarage": "https://uri.fiware.org/ns/datamodels/automatedParkingGarage",
+			"automatic": "https://uri.fiware.org/ns/datamodels/automatic",
+			"automaticParkingGuidance": "https://uri.fiware.org/ns/datamodels/automaticParkingGuidance",
+			"auxiliaryServices": "https://uri.fiware.org/ns/datamodels/auxiliaryServices",
+			"availability": "https://uri.fiware.org/ns/datamodels/availability",
+			"availableBikeNumber": "https://uri.fiware.org/ns/datamodels/availableBikeNumber",
+			"availableCapacity": "https://uri.fiware.org/ns/datamodels/availableCapacity",
+			"availableSpotNumber": "https://uri.fiware.org/ns/datamodels/availableSpotNumber",
+			"avalancheRisk": "https://uri.fiware.org/ns/datamodels/avalancheRisk",
+			"averageCrowdSpeed": "https://uri.fiware.org/ns/datamodels/averageCrowdSpeed",
+			"averageGapDistance": "https://uri.fiware.org/ns/datamodels/averageGapDistance",
+			"averageHeadwayTime": "https://uri.fiware.org/ns/datamodels/averageHeadwayTime",
+			"averageSpotLength": "https://uri.fiware.org/ns/datamodels/averageSpotLength",
+			"averageSpotWidth": "https://uri.fiware.org/ns/datamodels/averageSpotWidth",
+			"averageVehicleLength": "https://uri.fiware.org/ns/datamodels/averageVehicleLength",
+			"averageVehicleSpeed": "https://uri.fiware.org/ns/datamodels/averageVehicleSpeed",
+			"backCamera": "https://uri.fiware.org/ns/datamodels/backCamera",
+			"backward": "https://uri.fiware.org/ns/datamodels/backward",
+			"bacteria": "https://uri.fiware.org/ns/datamodels/bacteria",
+			"bad": "https://uri.fiware.org/ns/datamodels/bad",
+			"bakehouse": "https://uri.fiware.org/ns/datamodels/bakehouse",
+			"balancing": "https://uri.fiware.org/ns/datamodels/balancing",
+			"bandalized": "https://uri.fiware.org/ns/datamodels/bandalized",
+			"barn": "https://uri.fiware.org/ns/datamodels/barn",
+			"barrierAccess": "https://uri.fiware.org/ns/datamodels/barrierAccess",
+			"basilica": "https://uri.fiware.org/ns/datamodels/basilica",
+			"batteries": "https://uri.fiware.org/ns/datamodels/batteries",
+			"batteryLevel": "https://uri.fiware.org/ns/datamodels/batteryLevel",
+			"bbox": {
+				"@container": "@list",
+				"@id": "https://purl.org/geojson/vocab#bbox"
+			},
+			"beachType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/beachType",
+				"@type": "@vocab"
+			},
+			"belongsTo": {
+				"@id": "https://uri.fiware.org/ns/datamodels/belongsTo",
+				"@type": "@id"
+			},
+			"bicycle": "https://uri.fiware.org/ns/datamodels/bicycle",
+			"bikeParking": "https://uri.fiware.org/ns/datamodels/bikeParking",
+			"bimonthly": "https://uri.fiware.org/ns/datamodels/bimonthly",
+			"binTrolley": "https://uri.fiware.org/ns/datamodels/binTrolley",
+			"biodiesel ethanol": "https://uri.fiware.org/ns/datamodels/biodiesel ethanol",
+			"birthdate": {
+				"@id": "https://uri.fiware.org/ns/datamodels/birthdate",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"biweekly": "https://uri.fiware.org/ns/datamodels/biweekly",
+			"blackSand": "https://uri.fiware.org/ns/datamodels/blackSand",
+			"block": "https://uri.fiware.org/ns/datamodels/block",
+			"blueFlag": "https://uri.fiware.org/ns/datamodels/blueFlag",
+			"bluetoothChannel": {
+				"@id": "https://uri.fiware.org/ns/datamodels/bluetoothChannel",
+				"@type": "@vocab"
+			},
+			"boat": "https://uri.fiware.org/ns/datamodels/boat",
+			"bollard": "https://uri.fiware.org/ns/datamodels/bollard",
+			"bootingUp": "https://uri.fiware.org/ns/datamodels/bootingUp",
+			"borehole": "https://uri.fiware.org/ns/datamodels/borehole",
+			"botanical": "https://uri.fiware.org/ns/datamodels/botanical",
+			"brandName": "https://uri.fiware.org/ns/datamodels/brandName",
+			"breed": "https://uri.fiware.org/ns/datamodels/breed",
+			"bridge": "https://uri.fiware.org/ns/datamodels/bridge",
+			"broken": "https://uri.fiware.org/ns/datamodels/broken",
+			"brokenLantern": "https://uri.fiware.org/ns/datamodels/brokenLantern",
+			"buildingFire": "https://uri.fiware.org/ns/datamodels/buildingFire",
+			"buildingType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/buildingType",
+				"@type": "@vocab"
+			},
+			"bullfighting": "https://uri.fiware.org/ns/datamodels/bullfighting",
+			"bullfightingRing": "https://uri.fiware.org/ns/datamodels/bullfightingRing",
+			"bumpedPatient": "https://uri.fiware.org/ns/datamodels/bumpedPatient",
+			"bungalow": "https://uri.fiware.org/ns/datamodels/bungalow",
+			"bunker": "https://uri.fiware.org/ns/datamodels/bunker",
+			"burialMound": "https://uri.fiware.org/ns/datamodels/burialMound",
+			"burning": "https://uri.fiware.org/ns/datamodels/burning",
+			"bus": "https://uri.fiware.org/ns/datamodels/bus",
+			"businessTarget": "https://uri.fiware.org/ns/datamodels/businessTarget",
+			"cabin": "https://uri.fiware.org/ns/datamodels/cabin",
+			"cableCarStation": "https://uri.fiware.org/ns/datamodels/cableCarStation",
+			"cafeteria": "https://uri.fiware.org/ns/datamodels/cafeteria",
+			"calculatedBy": "https://uri.fiware.org/ns/datamodels/calculatedBy",
+			"calculationFormula": "https://uri.fiware.org/ns/datamodels/calculationFormula",
+			"calculationFrequency": {
+				"@id": "https://uri.fiware.org/ns/datamodels/calculationFrequency",
+				"@type": "@vocab"
+			},
+			"calculationMethod": {
+				"@id": "https://uri.fiware.org/ns/datamodels/calculationMethod",
+				"@type": "@vocab"
+			},
+			"calculationPeriod": "https://uri.fiware.org/ns/datamodels/calculationPeriod",
+			"calmWaters": "https://uri.fiware.org/ns/datamodels/calmWaters",
+			"calvedBy": {
+				"@id": "https://uri.fiware.org/ns/datamodels/calvedBy",
+				"@type": "@id"
+			},
+			"campground": "https://uri.fiware.org/ns/datamodels/campground",
+			"cancelled": "https://uri.fiware.org/ns/datamodels/cancelled",
+			"capacity": "https://uri.fiware.org/ns/datamodels/capacity",
+			"car": "https://uri.fiware.org/ns/datamodels/car",
+			"carAccident": "https://uri.fiware.org/ns/datamodels/carAccident",
+			"carSharing": "https://uri.fiware.org/ns/datamodels/carSharing",
+			"carStopped": "https://uri.fiware.org/ns/datamodels/carStopped",
+			"carWithCaravan": "https://uri.fiware.org/ns/datamodels/carWithCaravan",
+			"carWithTrailer": "https://uri.fiware.org/ns/datamodels/carWithTrailer",
+			"carWrongDirection": "https://uri.fiware.org/ns/datamodels/carWrongDirection",
+			"caravan": "https://uri.fiware.org/ns/datamodels/caravan",
+			"cargoTransport": "https://uri.fiware.org/ns/datamodels/cargoTransport",
+			"cargoVolume": "https://uri.fiware.org/ns/datamodels/cargoVolume",
+			"cargoWeight": "https://uri.fiware.org/ns/datamodels/cargoWeight",
+			"carport": "https://uri.fiware.org/ns/datamodels/carport",
+			"carports": "https://uri.fiware.org/ns/datamodels/carports",
+			"cartuja": "https://uri.fiware.org/ns/datamodels/cartuja",
+			"cashMachine": "https://uri.fiware.org/ns/datamodels/cashMachine",
+			"castle": "https://uri.fiware.org/ns/datamodels/castle",
+			"castro": "https://uri.fiware.org/ns/datamodels/castro",
+			"catacombs": "https://uri.fiware.org/ns/datamodels/catacombs",
+			"category": {
+				"@id": "https://uri.fiware.org/ns/datamodels/category",
+				"@type": "@vocab"
+			},
+			"cathedral": "https://uri.fiware.org/ns/datamodels/cathedral",
+			"cathedralMuseum": "https://uri.fiware.org/ns/datamodels/cathedralMuseum",
+			"cavesAndTouristicMines": "https://uri.fiware.org/ns/datamodels/cavesAndTouristicMines",
+			"cctv": "https://uri.fiware.org/ns/datamodels/cctv",
+			"cdom": "https://uri.fiware.org/ns/datamodels/cdom",
+			"centralIsland": "https://uri.fiware.org/ns/datamodels/centralIsland",
+			"ceramics": "https://uri.fiware.org/ns/datamodels/ceramics",
+			"chapel": "https://uri.fiware.org/ns/datamodels/chapel",
+			"chargeType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/chargeType",
+				"@type": "@vocab"
+			},
+			"chinese": "https://uri.fiware.org/ns/datamodels/chinese",
+			"church": "https://uri.fiware.org/ns/datamodels/church",
+			"cinema": "https://uri.fiware.org/ns/datamodels/cinema",
+			"circuit": "https://uri.fiware.org/ns/datamodels/circuit",
+			"circular": "https://uri.fiware.org/ns/datamodels/circular",
+			"circus": "https://uri.fiware.org/ns/datamodels/circus",
+			"civic": "https://uri.fiware.org/ns/datamodels/civic",
+			"civilDisorder": "https://uri.fiware.org/ns/datamodels/civilDisorder",
+			"civilEngineering": "https://uri.fiware.org/ns/datamodels/civilEngineering",
+			"cleaningServices": "https://uri.fiware.org/ns/datamodels/cleaningServices",
+			"cleaningTrolley": "https://uri.fiware.org/ns/datamodels/cleaningTrolley",
+			"cloakRoom": "https://uri.fiware.org/ns/datamodels/cloakRoom",
+			"cloister": "https://uri.fiware.org/ns/datamodels/cloister",
+			"closed": "https://uri.fiware.org/ns/datamodels/closed",
+			"closedAbnormal": "https://uri.fiware.org/ns/datamodels/closedAbnormal",
+			"cng": "https://uri.fiware.org/ns/datamodels/cng",
+			"co-creation": "https://uri.fiware.org/ns/datamodels/co-creation",
+			"co2": "https://uri.fiware.org/ns/datamodels/co2",
+			"coachStation": "https://uri.fiware.org/ns/datamodels/coachStation",
+			"coastalEvent": "https://uri.fiware.org/ns/datamodels/coastalEvent",
+			"code": "https://uri.fiware.org/ns/datamodels/code",
+			"coldWave": "https://uri.fiware.org/ns/datamodels/coldWave",
+			"color": "https://uri.fiware.org/ns/datamodels/color",
+			"colorRenderingIndex": "https://uri.fiware.org/ns/datamodels/colorRenderingIndex",
+			"colorTemperature": "https://uri.fiware.org/ns/datamodels/colorTemperature",
+			"columnBrandName": "https://uri.fiware.org/ns/datamodels/columnBrandName",
+			"columnColor": "https://uri.fiware.org/ns/datamodels/columnColor",
+			"columnIssue": "https://uri.fiware.org/ns/datamodels/columnIssue",
+			"columnMadeOf": {
+				"@id": "https://uri.fiware.org/ns/datamodels/columnMadeOf",
+				"@type": "@vocab"
+			},
+			"columnManufacturerName": "https://uri.fiware.org/ns/datamodels/columnManufacturerName",
+			"columnModelName": "https://uri.fiware.org/ns/datamodels/columnModelName",
+			"commercial": "https://uri.fiware.org/ns/datamodels/commercial",
+			"commercial supply": "https://uri.fiware.org/ns/datamodels/commercial supply",
+			"community": "https://uri.fiware.org/ns/datamodels/community",
+			"compliantWith": "https://uri.fiware.org/ns/datamodels/compliantWith",
+			"concrete": "https://uri.fiware.org/ns/datamodels/concrete",
+			"conductance": "https://uri.fiware.org/ns/datamodels/conductance",
+			"conductivity": "https://uri.fiware.org/ns/datamodels/conductivity",
+			"conferenceRoom": "https://uri.fiware.org/ns/datamodels/conferenceRoom",
+			"configuration": "https://uri.fiware.org/ns/datamodels/configuration",
+			"congested": "https://uri.fiware.org/ns/datamodels/congested",
+			"conservatory": "https://uri.fiware.org/ns/datamodels/conservatory",
+			"construction": "https://uri.fiware.org/ns/datamodels/construction",
+			"constructionOrMaintenanceVehicle": "https://uri.fiware.org/ns/datamodels/constructionOrMaintenanceVehicle",
+			"contactPoint": "https://uri.fiware.org/ns/datamodels/contactPoint",
+			"containedInPlace": "https://uri.fiware.org/ns/datamodels/containedInPlace",
+			"containerFix": "https://uri.fiware.org/ns/datamodels/containerFix",
+			"contemporaryArt": "https://uri.fiware.org/ns/datamodels/contemporaryArt",
+			"controlledAsset": {
+				"@id": "https://uri.fiware.org/ns/datamodels/controlledAsset",
+				"@type": "@id"
+			},
+			"controlledProperty": {
+				"@id": "https://uri.fiware.org/ns/datamodels/controlledProperty",
+				"@type": "@vocab"
+			},
+			"controllingMethod": {
+				"@id": "https://uri.fiware.org/ns/datamodels/controllingMethod",
+				"@type": "@vocab"
+			},
+			"convent": "https://uri.fiware.org/ns/datamodels/convent",
+			"conventionCentre": "https://uri.fiware.org/ns/datamodels/conventionCentre",
+			"copyMachineOrService": "https://uri.fiware.org/ns/datamodels/copyMachineOrService",
+			"cosPhi": "https://uri.fiware.org/ns/datamodels/cosPhi",
+			"coverageRadius": "https://uri.fiware.org/ns/datamodels/coverageRadius",
+			"covered": "https://uri.fiware.org/ns/datamodels/covered",
+			"cow": "https://uri.fiware.org/ns/datamodels/cow",
+			"cowshed": "https://uri.fiware.org/ns/datamodels/cowshed",
+			"critical": "https://uri.fiware.org/ns/datamodels/critical",
+			"cropNutrition": "https://uri.fiware.org/ns/datamodels/cropNutrition",
+			"cropProtection": "https://uri.fiware.org/ns/datamodels/cropProtection",
+			"cropStatus": {
+				"@id": "https://uri.fiware.org/ns/datamodels/cropStatus",
+				"@type": "@vocab"
+			},
+			"cropVariety": "https://uri.fiware.org/ns/datamodels/cropVariety",
+			"cupboardMadeOf": {
+				"@id": "https://uri.fiware.org/ns/datamodels/cupboardMadeOf",
+				"@type": "@vocab"
+			},
+			"current": "https://uri.fiware.org/ns/datamodels/current",
+			"currentStanding": {
+				"@id": "https://uri.fiware.org/ns/datamodels/currentStanding",
+				"@type": "@vocab"
+			},
+			"daily": "https://uri.fiware.org/ns/datamodels/daily",
+			"dailyLight": "https://uri.fiware.org/ns/datamodels/dailyLight",
+			"dataProvider": "https://uri.fiware.org/ns/datamodels/dataProvider",
+			"dateActivityEnded": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateActivityEnded",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateActivityStarted": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateActivityStarted",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateCreated": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateCreated",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateEnergyMeteringStarted": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateEnergyMeteringStarted",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateExpires": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateExpires",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateFinished": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateFinished",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateFirstUsed": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateFirstUsed",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateInstalled": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateInstalled",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateIssued": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateIssued",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateLastCalibration": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateLastCalibration",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateLastCleaning": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateLastCleaning",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateLastEmptying": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateLastEmptying",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateLastLampChange": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateLastLampChange",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateLastProgramming": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateLastProgramming",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateLastSwitchingOff": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateLastSwitchingOff",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateLastSwitchingOn": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateLastSwitchingOn",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateLastValueReported": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateLastValueReported",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateLastWatering": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateLastWatering",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateManufactured": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateManufactured",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateMeteringStarted": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateMeteringStarted",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateModified": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateModified",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateNextCalculation": "https://uri.fiware.org/ns/datamodels/dateNextCalculation",
+			"dateObserved": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateObserved",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateObservedFrom": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateObservedFrom",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateObservedTo": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateObservedTo",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateRetrieved": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateRetrieved",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateServiceStarted": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateServiceStarted",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateStarted": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dateStarted",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"dateVehicleFirstRegistered": "https://uri.fiware.org/ns/datamodels/dateVehicleFirstRegistered",
+			"day-LOW": "https://uri.fiware.org/ns/datamodels/day-LOW",
+			"day-OFF": "https://uri.fiware.org/ns/datamodels/day-OFF",
+			"day-ON": "https://uri.fiware.org/ns/datamodels/day-ON",
+			"dayMaximum": "https://uri.fiware.org/ns/datamodels/dayMaximum",
+			"dayMinimum": "https://uri.fiware.org/ns/datamodels/dayMinimum",
+			"decorativeArts": "https://uri.fiware.org/ns/datamodels/decorativeArts",
+			"defectiveLamp": "https://uri.fiware.org/ns/datamodels/defectiveLamp",
+			"defibrillator": "https://uri.fiware.org/ns/datamodels/defibrillator",
+			"departureTime": "https://uri.fiware.org/ns/datamodels/departureTime",
+			"depth": "https://uri.fiware.org/ns/datamodels/depth",
+			"detached": "https://uri.fiware.org/ns/datamodels/detached",
+			"deviceClass": {
+				"@id": "https://uri.fiware.org/ns/datamodels/deviceClass",
+				"@type": "@vocab"
+			},
+			"deviceState": "https://uri.fiware.org/ns/datamodels/deviceState",
+			"dewPoint": "https://uri.fiware.org/ns/datamodels/dewPoint",
+			"diesel": "https://uri.fiware.org/ns/datamodels/diesel",
+			"digester": "https://uri.fiware.org/ns/datamodels/digester",
+			"diocesanMuseum": "https://uri.fiware.org/ns/datamodels/diocesanMuseum",
+			"direction": {
+				"@id": "https://uri.fiware.org/ns/datamodels/direction",
+				"@type": "@vocab"
+			},
+			"directional": "https://uri.fiware.org/ns/datamodels/directional",
+			"disabledRamp": "https://uri.fiware.org/ns/datamodels/disabledRamp",
+			"displacementPowerFactor": "https://uri.fiware.org/ns/datamodels/displacementPowerFactor",
+			"distanceTravelled": "https://uri.fiware.org/ns/datamodels/distanceTravelled",
+			"documentation": "https://uri.fiware.org/ns/datamodels/documentation",
+			"dog": "https://uri.fiware.org/ns/datamodels/dog",
+			"dolmen": "https://uri.fiware.org/ns/datamodels/dolmen",
+			"dormitory": "https://uri.fiware.org/ns/datamodels/dormitory",
+			"drainFlow": "https://uri.fiware.org/ns/datamodels/drainFlow",
+			"dropOff": "https://uri.fiware.org/ns/datamodels/dropOff",
+			"dropOffMechanical": "https://uri.fiware.org/ns/datamodels/dropOffMechanical",
+			"dropOffType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/dropOffType",
+				"@type": "@vocab"
+			},
+			"dropOffWithValet": "https://uri.fiware.org/ns/datamodels/dropOffWithValet",
+			"dropped": "https://uri.fiware.org/ns/datamodels/dropped",
+			"dumpingStation": "https://uri.fiware.org/ns/datamodels/dumpingStation",
+			"dumpster": "https://uri.fiware.org/ns/datamodels/dumpster",
+			"earthquake": "https://uri.fiware.org/ns/datamodels/earthquake",
+			"echelonParking": "https://uri.fiware.org/ns/datamodels/echelonParking",
+			"effectiveSince": {
+				"@id": "https://uri.fiware.org/ns/datamodels/effectiveSince",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"electric": "https://uri.fiware.org/ns/datamodels/electric",
+			"electricChargingStation": "https://uri.fiware.org/ns/datamodels/electricChargingStation",
+			"electricityConsumption": "https://uri.fiware.org/ns/datamodels/electricityConsumption",
+			"electronics": "https://uri.fiware.org/ns/datamodels/electronics",
+			"elevator": "https://uri.fiware.org/ns/datamodels/elevator",
+			"elliptic": "https://uri.fiware.org/ns/datamodels/elliptic",
+			"employeePermit": "https://uri.fiware.org/ns/datamodels/employeePermit",
+			"empty": "https://uri.fiware.org/ns/datamodels/empty",
+			"endDate": "https://uri.fiware.org/ns/datamodels/endDate",
+			"endKilometer": "https://uri.fiware.org/ns/datamodels/endKilometer",
+			"endPoint": "https://uri.fiware.org/ns/datamodels/endPoint",
+			"endTime": "https://uri.fiware.org/ns/datamodels/endTime",
+			"endedAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/endedAt",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"endpoint": "https://uri.fiware.org/ns/datamodels/endpoint",
+			"energy": "https://uri.fiware.org/ns/datamodels/energy",
+			"energyConsumed": "https://uri.fiware.org/ns/datamodels/energyConsumed",
+			"energyCost": "https://uri.fiware.org/ns/datamodels/energyCost",
+			"energyLimitationClass": {
+				"@id": "https://uri.fiware.org/ns/datamodels/energyLimitationClass",
+				"@type": "@vocab"
+			},
+			"english": "https://uri.fiware.org/ns/datamodels/english",
+			"entertainment": "https://uri.fiware.org/ns/datamodels/entertainment",
+			"environment": "https://uri.fiware.org/ns/datamodels/environment",
+			"ethnology": "https://uri.fiware.org/ns/datamodels/ethnology",
+			"eventNotification": "https://uri.fiware.org/ns/datamodels/eventNotification",
+			"eventParking": "https://uri.fiware.org/ns/datamodels/eventParking",
+			"exactTimes": "https://uri.fiware.org/ns/datamodels/exactTimes",
+			"exceptionType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/exceptionType",
+				"@type": "@vocab"
+			},
+			"exhibitonCentre": "https://uri.fiware.org/ns/datamodels/exhibitonCentre",
+			"extCategory": "https://uri.fiware.org/ns/datamodels/extCategory",
+			"externalSecurity": "https://uri.fiware.org/ns/datamodels/externalSecurity",
+			"extraSpotNumber": "https://uri.fiware.org/ns/datamodels/extraSpotNumber",
+			"facilities": {
+				"@id": "https://uri.fiware.org/ns/datamodels/facilities",
+				"@type": "@vocab"
+			},
+			"failed": "https://uri.fiware.org/ns/datamodels/failed",
+			"fair": "https://uri.fiware.org/ns/datamodels/fair",
+			"fairPermit": "https://uri.fiware.org/ns/datamodels/fairPermit",
+			"fairground": "https://uri.fiware.org/ns/datamodels/fairground",
+			"fallenPatient": "https://uri.fiware.org/ns/datamodels/fallenPatient",
+			"falling": "https://uri.fiware.org/ns/datamodels/falling",
+			"farm": "https://uri.fiware.org/ns/datamodels/farm",
+			"farm_auxiliary": "https://uri.fiware.org/ns/datamodels/farm_auxiliary",
+			"faxMachineOrService": "https://uri.fiware.org/ns/datamodels/faxMachineOrService",
+			"façade": "https://uri.fiware.org/ns/datamodels/façade",
+			"feature": {
+				"@id": "https://uri.fiware.org/ns/datamodels/feature",
+				"@type": "@vocab"
+			},
+			"featuredArtist": {
+				"@id": "https://uri.fiware.org/ns/datamodels/featuredArtist",
+				"@type": "@id"
+			},
+			"features": {
+				"@id": "https://uri.fiware.org/ns/datamodels/features",
+				"@type": "@vocab"
+			},
+			"fedWith": {
+				"@id": "https://uri.fiware.org/ns/datamodels/fedWith",
+				"@type": "@id"
+			},
+			"feeCharged": "https://uri.fiware.org/ns/datamodels/feeCharged",
+			"feelLikesTemperature": "https://uri.fiware.org/ns/datamodels/feelLikesTemperature",
+			"female": "https://uri.fiware.org/ns/datamodels/female",
+			"femaleAdult": "https://uri.fiware.org/ns/datamodels/femaleAdult",
+			"femaleYoung": "https://uri.fiware.org/ns/datamodels/femaleYoung",
+			"fenced": "https://uri.fiware.org/ns/datamodels/fenced",
+			"fencedOff": "https://uri.fiware.org/ns/datamodels/fencedOff",
+			"fences": "https://uri.fiware.org/ns/datamodels/fences",
+			"ferryTerminal": "https://uri.fiware.org/ns/datamodels/ferryTerminal",
+			"fertilisation": "https://uri.fiware.org/ns/datamodels/fertilisation",
+			"fertiliser": "https://uri.fiware.org/ns/datamodels/fertiliser",
+			"field": "https://uri.fiware.org/ns/datamodels/field",
+			"fillingLevel": "https://uri.fiware.org/ns/datamodels/fillingLevel",
+			"financial": "https://uri.fiware.org/ns/datamodels/financial",
+			"fineArts": "https://uri.fiware.org/ns/datamodels/fineArts",
+			"finished": "https://uri.fiware.org/ns/datamodels/finished",
+			"fireBrigade": "https://uri.fiware.org/ns/datamodels/fireBrigade",
+			"fireExtinguisher": "https://uri.fiware.org/ns/datamodels/fireExtinguisher",
+			"fireHose": "https://uri.fiware.org/ns/datamodels/fireHose",
+			"fireHydrant": "https://uri.fiware.org/ns/datamodels/fireHydrant",
+			"fireRisk": "https://uri.fiware.org/ns/datamodels/fireRisk",
+			"firmwareVersion": "https://uri.fiware.org/ns/datamodels/firmwareVersion",
+			"firstAidEquipment": "https://uri.fiware.org/ns/datamodels/firstAidEquipment",
+			"firstAvailableFloor": "https://uri.fiware.org/ns/datamodels/firstAvailableFloor",
+			"firstIntervalPrice": "https://uri.fiware.org/ns/datamodels/firstIntervalPrice",
+			"fishMarket": "https://uri.fiware.org/ns/datamodels/fishMarket",
+			"fixed": "https://uri.fiware.org/ns/datamodels/fixed",
+			"flashingBeacon": "https://uri.fiware.org/ns/datamodels/flashingBeacon",
+			"flat": "https://uri.fiware.org/ns/datamodels/flat",
+			"fleetVehicleId": "https://uri.fiware.org/ns/datamodels/fleetVehicleId",
+			"flood": "https://uri.fiware.org/ns/datamodels/flood",
+			"floodLight": "https://uri.fiware.org/ns/datamodels/floodLight",
+			"floodRisk": "https://uri.fiware.org/ns/datamodels/floodRisk",
+			"floorsAboveGround": "https://uri.fiware.org/ns/datamodels/floorsAboveGround",
+			"floorsBelowGround": "https://uri.fiware.org/ns/datamodels/floorsBelowGround",
+			"fog": "https://uri.fiware.org/ns/datamodels/fog",
+			"forBabies": "https://uri.fiware.org/ns/datamodels/forBabies",
+			"forCustomers": "https://uri.fiware.org/ns/datamodels/forCustomers",
+			"forDisabled": "https://uri.fiware.org/ns/datamodels/forDisabled",
+			"forElectricalCharging": "https://uri.fiware.org/ns/datamodels/forElectricalCharging",
+			"forEmployees": "https://uri.fiware.org/ns/datamodels/forEmployees",
+			"forMembers": "https://uri.fiware.org/ns/datamodels/forMembers",
+			"forResidents": "https://uri.fiware.org/ns/datamodels/forResidents",
+			"forStudents": "https://uri.fiware.org/ns/datamodels/forStudents",
+			"forVisitors": "https://uri.fiware.org/ns/datamodels/forVisitors",
+			"forestFire": "https://uri.fiware.org/ns/datamodels/forestFire",
+			"fortifiedTemple": "https://uri.fiware.org/ns/datamodels/fortifiedTemple",
+			"fortress": "https://uri.fiware.org/ns/datamodels/fortress",
+			"forward": "https://uri.fiware.org/ns/datamodels/forward",
+			"free": "https://uri.fiware.org/ns/datamodels/free",
+			"freeAccess": "https://uri.fiware.org/ns/datamodels/freeAccess",
+			"freeSlotNumber": "https://uri.fiware.org/ns/datamodels/freeSlotNumber",
+			"french": "https://uri.fiware.org/ns/datamodels/french",
+			"frequencies": "https://uri.fiware.org/ns/datamodels/frequencies",
+			"frequency": "https://uri.fiware.org/ns/datamodels/frequency",
+			"freshWater": "https://uri.fiware.org/ns/datamodels/freshWater",
+			"friday": "https://uri.fiware.org/ns/datamodels/friday",
+			"fuelConsumption": "https://uri.fiware.org/ns/datamodels/fuelConsumption",
+			"fuelType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/fuelType",
+				"@type": "@vocab"
+			},
+			"full": "https://uri.fiware.org/ns/datamodels/full",
+			"fullAtEntrance": "https://uri.fiware.org/ns/datamodels/fullAtEntrance",
+			"function": {
+				"@id": "https://uri.fiware.org/ns/datamodels/function",
+				"@type": "@vocab"
+			},
+			"fungus": "https://uri.fiware.org/ns/datamodels/fungus",
+			"garage": "https://uri.fiware.org/ns/datamodels/garage",
+			"garageBoxes": "https://uri.fiware.org/ns/datamodels/garageBoxes",
+			"garages": "https://uri.fiware.org/ns/datamodels/garages",
+			"garbageCollection": "https://uri.fiware.org/ns/datamodels/garbageCollection",
+			"garbage_shed": "https://uri.fiware.org/ns/datamodels/garbage_shed",
+			"garden": "https://uri.fiware.org/ns/datamodels/garden",
+			"gasComsumption": "https://uri.fiware.org/ns/datamodels/gasComsumption",
+			"gasoline": "https://uri.fiware.org/ns/datamodels/gasoline",
+			"gate": "https://uri.fiware.org/ns/datamodels/gate",
+			"gateAccess": "https://uri.fiware.org/ns/datamodels/gateAccess",
+			"glass": "https://uri.fiware.org/ns/datamodels/glass",
+			"goat": "https://uri.fiware.org/ns/datamodels/goat",
+			"good": "https://uri.fiware.org/ns/datamodels/good",
+			"goodsSelling": "https://uri.fiware.org/ns/datamodels/goodsSelling",
+			"governmentPermit": "https://uri.fiware.org/ns/datamodels/governmentPermit",
+			"gps": "https://uri.fiware.org/ns/datamodels/gps",
+			"grandstand": "https://uri.fiware.org/ns/datamodels/grandstand",
+			"grave": "https://uri.fiware.org/ns/datamodels/grave",
+			"graveyard": "https://uri.fiware.org/ns/datamodels/graveyard",
+			"grazingBaby": "https://uri.fiware.org/ns/datamodels/grazingBaby",
+			"greenhouse": "https://uri.fiware.org/ns/datamodels/greenhouse",
+			"ground": "https://uri.fiware.org/ns/datamodels/ground",
+			"group": "https://uri.fiware.org/ns/datamodels/group",
+			"growing": "https://uri.fiware.org/ns/datamodels/growing",
+			"guard24hours": "https://uri.fiware.org/ns/datamodels/guard24hours",
+			"guarded": "https://uri.fiware.org/ns/datamodels/guarded",
+			"guidedTour": "https://uri.fiware.org/ns/datamodels/guidedTour",
+			"hangar": "https://uri.fiware.org/ns/datamodels/hangar",
+			"hardwareVersion": "https://uri.fiware.org/ns/datamodels/hardwareVersion",
+			"harvestCommodity": "https://uri.fiware.org/ns/datamodels/harvestCommodity",
+			"harvestingInterval": "https://uri.fiware.org/ns/datamodels/harvestingInterval",
+			"hasAccessPoint": "https://uri.fiware.org/ns/datamodels/hasAccessPoint",
+			"hasAgriCrop": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriCrop",
+				"@type": "@id"
+			},
+			"hasAgriFertiliser": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriFertiliser",
+				"@type": "@id"
+			},
+			"hasAgriParcel": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriParcel",
+				"@type": "@id"
+			},
+			"hasAgriParcelChildren": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriParcelChildren",
+				"@type": "@id"
+			},
+			"hasAgriParcelParent": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriParcelParent",
+				"@type": "@id"
+			},
+			"hasAgriPest": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriPest",
+				"@type": "@id"
+			},
+			"hasAgriProductType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriProductType",
+				"@type": "@id"
+			},
+			"hasAgriProductTypeChildren": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriProductTypeChildren",
+				"@type": "@id"
+			},
+			"hasAgriProductTypeParent": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriProductTypeParent",
+				"@type": "@id"
+			},
+			"hasAgriSoil": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasAgriSoil",
+				"@type": "@id"
+			},
+			"hasBuilding": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasBuilding",
+				"@type": "@id"
+			},
+			"hasDestination": "https://uri.fiware.org/ns/datamodels/hasDestination",
+			"hasDevice": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasDevice",
+				"@type": "@id"
+			},
+			"hasDevices": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasDevices",
+				"@type": "@id"
+			},
+			"hasOperator": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasOperator",
+				"@type": "@id"
+			},
+			"hasOrigin": "https://uri.fiware.org/ns/datamodels/hasOrigin",
+			"hasParentStation": "https://uri.fiware.org/ns/datamodels/hasParentStation",
+			"hasProvider": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasProvider",
+				"@type": "@id"
+			},
+			"hasRoute": "https://uri.fiware.org/ns/datamodels/hasRoute",
+			"hasService": "https://uri.fiware.org/ns/datamodels/hasService",
+			"hasShape": "https://uri.fiware.org/ns/datamodels/hasShape",
+			"hasStop": "https://uri.fiware.org/ns/datamodels/hasStop",
+			"hasTrip": "https://uri.fiware.org/ns/datamodels/hasTrip",
+			"hasWaterQualityObserved": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasWaterQualityObserved",
+				"@type": "@id"
+			},
+			"hasWeatherObserved": {
+				"@id": "https://uri.fiware.org/ns/datamodels/hasWeatherObserved",
+				"@type": "@id"
+			},
+			"hazardOnRoad": "https://uri.fiware.org/ns/datamodels/hazardOnRoad",
+			"hazardous": "https://uri.fiware.org/ns/datamodels/hazardous",
+			"headSign": "https://uri.fiware.org/ns/datamodels/headSign",
+			"heading": "https://uri.fiware.org/ns/datamodels/heading",
+			"headsign": "https://uri.fiware.org/ns/datamodels/headsign",
+			"headwaySeconds": "https://uri.fiware.org/ns/datamodels/headwaySeconds",
+			"health": "https://uri.fiware.org/ns/datamodels/health",
+			"healthCondition": {
+				"@id": "https://uri.fiware.org/ns/datamodels/healthCondition",
+				"@type": "@vocab"
+			},
+			"healthy": "https://uri.fiware.org/ns/datamodels/healthy",
+			"heartAttack": "https://uri.fiware.org/ns/datamodels/heartAttack",
+			"heatWave": "https://uri.fiware.org/ns/datamodels/heatWave",
+			"hedge": "https://uri.fiware.org/ns/datamodels/hedge",
+			"height": "https://uri.fiware.org/ns/datamodels/height",
+			"herb_garden": "https://uri.fiware.org/ns/datamodels/herb_garden",
+			"hermitage": "https://uri.fiware.org/ns/datamodels/hermitage",
+			"high": "https://uri.fiware.org/ns/datamodels/high",
+			"highTemperature": "https://uri.fiware.org/ns/datamodels/highTemperature",
+			"highest": "https://uri.fiware.org/ns/datamodels/highest",
+			"highestFloor": "https://uri.fiware.org/ns/datamodels/highestFloor",
+			"historicalPeriod": "https://uri.fiware.org/ns/datamodels/historicalPeriod",
+			"history": "https://uri.fiware.org/ns/datamodels/history",
+			"horse": "https://uri.fiware.org/ns/datamodels/horse",
+			"hospital": "https://uri.fiware.org/ns/datamodels/hospital",
+			"hostelry": "https://uri.fiware.org/ns/datamodels/hostelry",
+			"hotel": "https://uri.fiware.org/ns/datamodels/hotel",
+			"hourly": "https://uri.fiware.org/ns/datamodels/hourly",
+			"house": "https://uri.fiware.org/ns/datamodels/house",
+			"houseBuilding": "https://uri.fiware.org/ns/datamodels/houseBuilding",
+			"houseboat": "https://uri.fiware.org/ns/datamodels/houseboat",
+			"household": "https://uri.fiware.org/ns/datamodels/household",
+			"humidity": "https://uri.fiware.org/ns/datamodels/humidity",
+			"hurricane": "https://uri.fiware.org/ns/datamodels/hurricane",
+			"hut": "https://uri.fiware.org/ns/datamodels/hut",
+			"hybrid electric/diesel": "https://uri.fiware.org/ns/datamodels/hybrid electric/diesel",
+			"hybrid electric/petrol": "https://uri.fiware.org/ns/datamodels/hybrid electric/petrol",
+			"hydrogen": "https://uri.fiware.org/ns/datamodels/hydrogen",
+			"ice": "https://uri.fiware.org/ns/datamodels/ice",
+			"iceFreeScaffold": "https://uri.fiware.org/ns/datamodels/iceFreeScaffold",
+			"illuminance": "https://uri.fiware.org/ns/datamodels/illuminance",
+			"illuminanceLevel": "https://uri.fiware.org/ns/datamodels/illuminanceLevel",
+			"image": "https://schema.org/image",
+			"inCalf": "https://uri.fiware.org/ns/datamodels/inCalf",
+			"inHeat": "https://uri.fiware.org/ns/datamodels/inHeat",
+			"inTreatment": "https://uri.fiware.org/ns/datamodels/inTreatment",
+			"inactive": "https://uri.fiware.org/ns/datamodels/inactive",
+			"inbound": "https://uri.fiware.org/ns/datamodels/inbound",
+			"individual": "https://uri.fiware.org/ns/datamodels/individual",
+			"individualControl": "https://uri.fiware.org/ns/datamodels/individualControl",
+			"industrial": "https://uri.fiware.org/ns/datamodels/industrial",
+			"industrialBuilding": "https://uri.fiware.org/ns/datamodels/industrialBuilding",
+			"informationPoint": "https://uri.fiware.org/ns/datamodels/informationPoint",
+			"informational": "https://uri.fiware.org/ns/datamodels/informational",
+			"infotainment": "https://uri.fiware.org/ns/datamodels/infotainment",
+			"injuredBiker": "https://uri.fiware.org/ns/datamodels/injuredBiker",
+			"inorganic": "https://uri.fiware.org/ns/datamodels/inorganic",
+			"input": "https://uri.fiware.org/ns/datamodels/input",
+			"insect": "https://uri.fiware.org/ns/datamodels/insect",
+			"insertHoles": "https://uri.fiware.org/ns/datamodels/insertHoles",
+			"insertHolesNumber": "https://uri.fiware.org/ns/datamodels/insertHolesNumber",
+			"inspection": "https://uri.fiware.org/ns/datamodels/inspection",
+			"intensity": "https://uri.fiware.org/ns/datamodels/intensity",
+			"internetConnection": "https://uri.fiware.org/ns/datamodels/internetConnection",
+			"internetWireless": "https://uri.fiware.org/ns/datamodels/internetWireless",
+			"ipAddress": "https://uri.fiware.org/ns/datamodels/ipAddress",
+			"irrigation": "https://uri.fiware.org/ns/datamodels/irrigation",
+			"irrigationRecord": "https://uri.fiware.org/ns/datamodels/irrigationRecord",
+			"isleId": "https://uri.fiware.org/ns/datamodels/isleId",
+			"isolated": "https://uri.fiware.org/ns/datamodels/isolated",
+			"issue": "https://uri.fiware.org/ns/datamodels/issue",
+			"japanese": "https://uri.fiware.org/ns/datamodels/japanese",
+			"justBorn": "https://uri.fiware.org/ns/datamodels/justBorn",
+			"kindergarten": "https://uri.fiware.org/ns/datamodels/kindergarten",
+			"kiosk": "https://uri.fiware.org/ns/datamodels/kiosk",
+			"kissAndRide": "https://uri.fiware.org/ns/datamodels/kissAndRide",
+			"kitchen": "https://uri.fiware.org/ns/datamodels/kitchen",
+			"kpiValue": "https://uri.fiware.org/ns/datamodels/kpiValue",
+			"lactatingBaby": "https://uri.fiware.org/ns/datamodels/lactatingBaby",
+			"lagging": "https://uri.fiware.org/ns/datamodels/lagging",
+			"lampBrandName": "https://uri.fiware.org/ns/datamodels/lampBrandName",
+			"lampManufacturerName": "https://uri.fiware.org/ns/datamodels/lampManufacturerName",
+			"lampModelName": "https://uri.fiware.org/ns/datamodels/lampModelName",
+			"lampTechnology": {
+				"@id": "https://uri.fiware.org/ns/datamodels/lampTechnology",
+				"@type": "@vocab"
+			},
+			"lampWeight": "https://uri.fiware.org/ns/datamodels/lampWeight",
+			"lamppost": "https://uri.fiware.org/ns/datamodels/lamppost",
+			"landLocation": "https://uri.fiware.org/ns/datamodels/landLocation",
+			"laneDirection": {
+				"@id": "https://uri.fiware.org/ns/datamodels/laneDirection",
+				"@type": "@vocab"
+			},
+			"laneId": "https://uri.fiware.org/ns/datamodels/laneId",
+			"laneUsage": {
+				"@id": "https://uri.fiware.org/ns/datamodels/laneUsage",
+				"@type": "@vocab"
+			},
+			"language": "https://uri.fiware.org/ns/datamodels/language",
+			"lanternBrandName": "https://uri.fiware.org/ns/datamodels/lanternBrandName",
+			"lanternManufacturerName": "https://uri.fiware.org/ns/datamodels/lanternManufacturerName",
+			"lanternModelName": "https://uri.fiware.org/ns/datamodels/lanternModelName",
+			"lanternWeight": "https://uri.fiware.org/ns/datamodels/lanternWeight",
+			"lastMeterReading": "https://uri.fiware.org/ns/datamodels/lastMeterReading",
+			"lastPlantedAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/lastPlantedAt",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"lastupdatedAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/lastupdatedAt",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"laternHeight": "https://uri.fiware.org/ns/datamodels/laternHeight",
+			"lawnArea": "https://uri.fiware.org/ns/datamodels/lawnArea",
+			"layout": {
+				"@id": "https://uri.fiware.org/ns/datamodels/layout",
+				"@type": "@vocab"
+			},
+			"leading": "https://uri.fiware.org/ns/datamodels/leading",
+			"leafRelativeHumidity": "https://uri.fiware.org/ns/datamodels/leafRelativeHumidity",
+			"leafTemperature": "https://uri.fiware.org/ns/datamodels/leafTemperature",
+			"leafWetness": "https://uri.fiware.org/ns/datamodels/leafWetness",
+			"legalId": "https://uri.fiware.org/ns/datamodels/legalId",
+			"length": "https://uri.fiware.org/ns/datamodels/length",
+			"levelControl": "https://uri.fiware.org/ns/datamodels/levelControl",
+			"lid": "https://uri.fiware.org/ns/datamodels/lid",
+			"lidOpen": "https://uri.fiware.org/ns/datamodels/lidOpen",
+			"lifeGuard": "https://uri.fiware.org/ns/datamodels/lifeGuard",
+			"liftshare": "https://uri.fiware.org/ns/datamodels/liftshare",
+			"light": "https://uri.fiware.org/ns/datamodels/light",
+			"lightTower": "https://uri.fiware.org/ns/datamodels/lightTower",
+			"lighting": "https://uri.fiware.org/ns/datamodels/lighting",
+			"link": "https://uri.fiware.org/ns/datamodels/link",
+			"literature": "https://uri.fiware.org/ns/datamodels/literature",
+			"litterBins": "https://uri.fiware.org/ns/datamodels/litterBins",
+			"loadingBay": "https://uri.fiware.org/ns/datamodels/loadingBay",
+			"locatedAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/locatedAt",
+				"@type": "@id"
+			},
+			"locationCategory": {
+				"@id": "https://uri.fiware.org/ns/datamodels/locationCategory",
+				"@type": "@vocab"
+			},
+			"lockable": "https://uri.fiware.org/ns/datamodels/lockable",
+			"longTerm": "https://uri.fiware.org/ns/datamodels/longTerm",
+			"lorry": "https://uri.fiware.org/ns/datamodels/lorry",
+			"low": "https://uri.fiware.org/ns/datamodels/low",
+			"lowTemperature": "https://uri.fiware.org/ns/datamodels/lowTemperature",
+			"lowest": "https://uri.fiware.org/ns/datamodels/lowest",
+			"lowestFloor": "https://uri.fiware.org/ns/datamodels/lowestFloor",
+			"lpg": "https://uri.fiware.org/ns/datamodels/lpg",
+			"luggageLocker": "https://uri.fiware.org/ns/datamodels/luggageLocker",
+			"luminousFlux": "https://uri.fiware.org/ns/datamodels/luminousFlux",
+			"macAddress": "https://uri.fiware.org/ns/datamodels/macAddress",
+			"madeOf": {
+				"@id": "https://uri.fiware.org/ns/datamodels/madeOf",
+				"@type": "@vocab"
+			},
+			"madeOfCode": "https://uri.fiware.org/ns/datamodels/madeOfCode",
+			"maintenance": "https://uri.fiware.org/ns/datamodels/maintenance",
+			"male": "https://uri.fiware.org/ns/datamodels/male",
+			"maleAdult": "https://uri.fiware.org/ns/datamodels/maleAdult",
+			"maleYoung": "https://uri.fiware.org/ns/datamodels/maleYoung",
+			"mandatory": "https://uri.fiware.org/ns/datamodels/mandatory",
+			"mansion": "https://uri.fiware.org/ns/datamodels/mansion",
+			"manual": "https://uri.fiware.org/ns/datamodels/manual",
+			"manufacturerName": "https://uri.fiware.org/ns/datamodels/manufacturerName",
+			"maritime": "https://uri.fiware.org/ns/datamodels/maritime",
+			"market": "https://uri.fiware.org/ns/datamodels/market",
+			"masia": "https://uri.fiware.org/ns/datamodels/masia",
+			"masiaFortificada": "https://uri.fiware.org/ns/datamodels/masiaFortificada",
+			"maturing": "https://uri.fiware.org/ns/datamodels/maturing",
+			"maxPowerConsumption": "https://uri.fiware.org/ns/datamodels/maxPowerConsumption",
+			"maximum": "https://uri.fiware.org/ns/datamodels/maximum",
+			"maximumAllowedDuration": "https://uri.fiware.org/ns/datamodels/maximumAllowedDuration",
+			"maximumAllowedHeight": "https://uri.fiware.org/ns/datamodels/maximumAllowedHeight",
+			"maximumAllowedSpeed": "https://uri.fiware.org/ns/datamodels/maximumAllowedSpeed",
+			"maximumAllowedWeight": "https://uri.fiware.org/ns/datamodels/maximumAllowedWeight",
+			"maximumAllowedWidth": "https://uri.fiware.org/ns/datamodels/maximumAllowedWidth",
+			"maximumLoad": "https://uri.fiware.org/ns/datamodels/maximumLoad",
+			"maximumPowerAvailable": "https://uri.fiware.org/ns/datamodels/maximumPowerAvailable",
+			"measurand": "https://uri.fiware.org/ns/datamodels/measurand",
+			"measuresPeriod": "https://uri.fiware.org/ns/datamodels/measuresPeriod",
+			"measuresPeriodUnit": "https://uri.fiware.org/ns/datamodels/measuresPeriodUnit",
+			"medicineAndPharmacy": "https://uri.fiware.org/ns/datamodels/medicineAndPharmacy",
+			"medium": "https://uri.fiware.org/ns/datamodels/medium",
+			"mediumTerm": "https://uri.fiware.org/ns/datamodels/mediumTerm",
+			"menhir": "https://uri.fiware.org/ns/datamodels/menhir",
+			"metal": "https://uri.fiware.org/ns/datamodels/metal",
+			"meterReadingPeriod": "https://uri.fiware.org/ns/datamodels/meterReadingPeriod",
+			"metering": "https://uri.fiware.org/ns/datamodels/metering",
+			"methaneConcentration": "https://uri.fiware.org/ns/datamodels/methaneConcentration",
+			"microbe": "https://uri.fiware.org/ns/datamodels/microbe",
+			"mileageFromOdometer": "https://uri.fiware.org/ns/datamodels/mileageFromOdometer",
+			"military": "https://uri.fiware.org/ns/datamodels/military",
+			"militaryBuilding": "https://uri.fiware.org/ns/datamodels/militaryBuilding",
+			"minPowerConsumption": "https://uri.fiware.org/ns/datamodels/minPowerConsumption",
+			"minaret": "https://uri.fiware.org/ns/datamodels/minaret",
+			"minibus": "https://uri.fiware.org/ns/datamodels/minibus",
+			"minimum": "https://uri.fiware.org/ns/datamodels/minimum",
+			"minimumAllowedSpeed": "https://uri.fiware.org/ns/datamodels/minimumAllowedSpeed",
+			"minimumTransferTime": "https://uri.fiware.org/ns/datamodels/minimumTransferTime",
+			"mining": "https://uri.fiware.org/ns/datamodels/mining",
+			"mite": "https://uri.fiware.org/ns/datamodels/mite",
+			"mnc": "https://uri.fiware.org/ns/datamodels/mnc",
+			"modelBased": "https://uri.fiware.org/ns/datamodels/modelBased",
+			"modelName": "https://uri.fiware.org/ns/datamodels/modelName",
+			"moderate": "https://uri.fiware.org/ns/datamodels/moderate",
+			"modernArt": "https://uri.fiware.org/ns/datamodels/modernArt",
+			"monastary": "https://uri.fiware.org/ns/datamodels/monastary",
+			"monastery": "https://uri.fiware.org/ns/datamodels/monastery",
+			"monday": "https://uri.fiware.org/ns/datamodels/monday",
+			"monolith": "https://uri.fiware.org/ns/datamodels/monolith",
+			"monthly": "https://uri.fiware.org/ns/datamodels/monthly",
+			"monthlyPayment": "https://uri.fiware.org/ns/datamodels/monthlyPayment",
+			"moped": "https://uri.fiware.org/ns/datamodels/moped",
+			"mosque": "https://uri.fiware.org/ns/datamodels/mosque",
+			"motion": "https://uri.fiware.org/ns/datamodels/motion",
+			"motorcycle": "https://uri.fiware.org/ns/datamodels/motorcycle",
+			"motorcycleWithSideCar": "https://uri.fiware.org/ns/datamodels/motorcycleWithSideCar",
+			"motorscooter": "https://uri.fiware.org/ns/datamodels/motorscooter",
+			"motorway": "https://uri.fiware.org/ns/datamodels/motorway",
+			"moved": "https://uri.fiware.org/ns/datamodels/moved",
+			"multiDisciplinar": "https://uri.fiware.org/ns/datamodels/multiDisciplinar",
+			"multiLevel": "https://uri.fiware.org/ns/datamodels/multiLevel",
+			"multiStorey": "https://uri.fiware.org/ns/datamodels/multiStorey",
+			"municipal": "https://uri.fiware.org/ns/datamodels/municipal",
+			"municipalServices": "https://uri.fiware.org/ns/datamodels/municipalServices",
+			"museumHouse": "https://uri.fiware.org/ns/datamodels/museumHouse",
+			"museumType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/museumType",
+				"@type": "@vocab"
+			},
+			"music": "https://uri.fiware.org/ns/datamodels/music",
+			"naturalDisaster": "https://uri.fiware.org/ns/datamodels/naturalDisaster",
+			"naturalScience": "https://uri.fiware.org/ns/datamodels/naturalScience",
+			"necropolis": "https://uri.fiware.org/ns/datamodels/necropolis",
+			"nematodes": "https://uri.fiware.org/ns/datamodels/nematodes",
+			"nested": "https://uri.fiware.org/ns/datamodels/nested",
+			"network": "https://uri.fiware.org/ns/datamodels/network",
+			"nextActuationDeadline": {
+				"@id": "https://uri.fiware.org/ns/datamodels/nextActuationDeadline",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"nextCleaningDeadline": {
+				"@id": "https://uri.fiware.org/ns/datamodels/nextCleaningDeadline",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"nextWateringDeadline": {
+				"@id": "https://uri.fiware.org/ns/datamodels/nextWateringDeadline",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"night-LOW": "https://uri.fiware.org/ns/datamodels/night-LOW",
+			"night-OFF": "https://uri.fiware.org/ns/datamodels/night-OFF",
+			"night-ON": "https://uri.fiware.org/ns/datamodels/night-ON",
+			"noPermitNeeded": "https://uri.fiware.org/ns/datamodels/noPermitNeeded",
+			"noStatus": "https://uri.fiware.org/ns/datamodels/noStatus",
+			"nobleHouse": "https://uri.fiware.org/ns/datamodels/nobleHouse",
+			"noiseLevel": "https://uri.fiware.org/ns/datamodels/noiseLevel",
+			"nonTracked": "https://uri.fiware.org/ns/datamodels/nonTracked",
+			"none": "https://uri.fiware.org/ns/datamodels/none",
+			"notAvailable": "https://uri.fiware.org/ns/datamodels/notAvailable",
+			"noxiousWeed": "https://uri.fiware.org/ns/datamodels/noxiousWeed",
+			"numismatic": "https://uri.fiware.org/ns/datamodels/numismatic",
+			"observedAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/observedAt",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"occupancy": "https://uri.fiware.org/ns/datamodels/occupancy",
+			"occupancyDetectionType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/occupancyDetectionType",
+				"@type": "@vocab"
+			},
+			"occupationRate": {
+				"@id": "https://uri.fiware.org/ns/datamodels/occupationRate",
+				"@type": "@vocab"
+			},
+			"occupied": "https://uri.fiware.org/ns/datamodels/occupied",
+			"occupier": {
+				"@id": "https://uri.fiware.org/ns/datamodels/occupier",
+				"@type": "@id"
+			},
+			"off": "https://uri.fiware.org/ns/datamodels/off",
+			"office": "https://uri.fiware.org/ns/datamodels/office",
+			"officeBuilding": "https://uri.fiware.org/ns/datamodels/officeBuilding",
+			"offstreet": "https://uri.fiware.org/ns/datamodels/offstreet",
+			"oil": "https://uri.fiware.org/ns/datamodels/oil",
+			"ok": "https://uri.fiware.org/ns/datamodels/ok",
+			"on": "https://uri.fiware.org/ns/datamodels/on",
+			"onDemand": "https://uri.fiware.org/ns/datamodels/onDemand",
+			"onFoot": "https://uri.fiware.org/ns/datamodels/onFoot",
+			"onOff": "https://uri.fiware.org/ns/datamodels/onOff",
+			"onRoute": "https://uri.fiware.org/ns/datamodels/onRoute",
+			"oneway": "https://uri.fiware.org/ns/datamodels/oneway",
+			"ongoing": "https://uri.fiware.org/ns/datamodels/ongoing",
+			"onlyResidents": "https://uri.fiware.org/ns/datamodels/onlyResidents",
+			"onlyWithPermit": "https://uri.fiware.org/ns/datamodels/onlyWithPermit",
+			"onstreet": "https://uri.fiware.org/ns/datamodels/onstreet",
+			"open": "https://uri.fiware.org/ns/datamodels/open",
+			"openClose": "https://uri.fiware.org/ns/datamodels/openClose",
+			"openSpace": "https://uri.fiware.org/ns/datamodels/openSpace",
+			"openingHours": "https://schema.org/openingHours",
+			"openingHoursSpecification": "https://uri.fiware.org/ns/datamodels/openingHoursSpecification",
+			"openingTimesInForce": "https://uri.fiware.org/ns/datamodels/openingTimesInForce",
+			"operatedBy": "https://uri.fiware.org/ns/datamodels/operatedBy",
+			"operationSequence": "https://uri.fiware.org/ns/datamodels/operationSequence",
+			"operationType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/operationType",
+				"@type": "@vocab"
+			},
+			"operator": "https://uri.fiware.org/ns/datamodels/operator",
+			"optional": "https://uri.fiware.org/ns/datamodels/optional",
+			"organic": "https://uri.fiware.org/ns/datamodels/organic",
+			"organization": "https://uri.fiware.org/ns/datamodels/organization",
+			"ornamentalLantern": "https://uri.fiware.org/ns/datamodels/ornamentalLantern",
+			"orp": "https://uri.fiware.org/ns/datamodels/orp",
+			"osVersion": "https://uri.fiware.org/ns/datamodels/osVersion",
+			"other": "https://uri.fiware.org/ns/datamodels/other",
+			"outOfService": "https://uri.fiware.org/ns/datamodels/outOfService",
+			"outOfServiceSlotNumber": "https://uri.fiware.org/ns/datamodels/outOfServiceSlotNumber",
+			"outbound": "https://uri.fiware.org/ns/datamodels/outbound",
+			"output": "https://uri.fiware.org/ns/datamodels/output",
+			"overnightParking": "https://uri.fiware.org/ns/datamodels/overnightParking",
+			"overspeed": "https://uri.fiware.org/ns/datamodels/overspeed",
+			"ownedBy": {
+				"@id": "https://uri.fiware.org/ns/datamodels/ownedBy",
+				"@type": "@id"
+			},
+			"owner": {
+				"@id": "https://uri.fiware.org/ns/datamodels/owner",
+				"@type": "@id"
+			},
+			"pH": "https://uri.fiware.org/ns/datamodels/pH",
+			"page": "https://uri.fiware.org/ns/datamodels/page",
+			"painting": "https://uri.fiware.org/ns/datamodels/painting",
+			"palace": "https://uri.fiware.org/ns/datamodels/palace",
+			"paleonthology": "https://uri.fiware.org/ns/datamodels/paleonthology",
+			"pantheon": "https://uri.fiware.org/ns/datamodels/pantheon",
+			"paper": "https://uri.fiware.org/ns/datamodels/paper",
+			"parallelParking": "https://uri.fiware.org/ns/datamodels/parallelParking",
+			"park": "https://uri.fiware.org/ns/datamodels/park",
+			"parkAndCycle": "https://uri.fiware.org/ns/datamodels/parkAndCycle",
+			"parkAndRide": "https://uri.fiware.org/ns/datamodels/parkAndRide",
+			"parkAndWalk": "https://uri.fiware.org/ns/datamodels/parkAndWalk",
+			"parked": "https://uri.fiware.org/ns/datamodels/parked",
+			"parking": "https://uri.fiware.org/ns/datamodels/parking",
+			"parkingGarage": "https://uri.fiware.org/ns/datamodels/parkingGarage",
+			"parkingLot": "https://uri.fiware.org/ns/datamodels/parkingLot",
+			"parkingMode": {
+				"@id": "https://uri.fiware.org/ns/datamodels/parkingMode",
+				"@type": "@vocab"
+			},
+			"parksAndGardens": "https://uri.fiware.org/ns/datamodels/parksAndGardens",
+			"partly": "https://uri.fiware.org/ns/datamodels/partly",
+			"patrolled": "https://uri.fiware.org/ns/datamodels/patrolled",
+			"pavilion": "https://uri.fiware.org/ns/datamodels/pavilion",
+			"payDesk": "https://uri.fiware.org/ns/datamodels/payDesk",
+			"paymentMachine": "https://uri.fiware.org/ns/datamodels/paymentMachine",
+			"pazo": "https://uri.fiware.org/ns/datamodels/pazo",
+			"pedestrianPath": "https://uri.fiware.org/ns/datamodels/pedestrianPath",
+			"peopleCount": "https://uri.fiware.org/ns/datamodels/peopleCount",
+			"perpendicularParking": "https://uri.fiware.org/ns/datamodels/perpendicularParking",
+			"pesticide": "https://uri.fiware.org/ns/datamodels/pesticide",
+			"petrol": "https://uri.fiware.org/ns/datamodels/petrol",
+			"petrol(leaded)": "https://uri.fiware.org/ns/datamodels/petrol(leaded)",
+			"petrol(unleaded)": "https://uri.fiware.org/ns/datamodels/petrol(unleaded)",
+			"phaseToPhaseVoltage": "https://uri.fiware.org/ns/datamodels/phaseToPhaseVoltage",
+			"phaseVoltage": "https://uri.fiware.org/ns/datamodels/phaseVoltage",
+			"phenologicalCondition": {
+				"@id": "https://uri.fiware.org/ns/datamodels/phenologicalCondition",
+				"@type": "@vocab"
+			},
+			"phone": "https://uri.fiware.org/ns/datamodels/phone",
+			"pickupType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/pickupType",
+				"@type": "@vocab"
+			},
+			"pig": "https://uri.fiware.org/ns/datamodels/pig",
+			"planned": "https://uri.fiware.org/ns/datamodels/planned",
+			"plannedEndAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/plannedEndAt",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"plannedStartAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/plannedStartAt",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"plantingFrom": "https://uri.fiware.org/ns/datamodels/plantingFrom",
+			"plastic": "https://uri.fiware.org/ns/datamodels/plastic",
+			"playground": "https://uri.fiware.org/ns/datamodels/playground",
+			"police": "https://uri.fiware.org/ns/datamodels/police",
+			"pollenConcentration": "https://uri.fiware.org/ns/datamodels/pollenConcentration",
+			"polularArchitecture": "https://uri.fiware.org/ns/datamodels/polularArchitecture",
+			"polygon": "https://uri.fiware.org/ns/datamodels/polygon",
+			"popularArtsAndTraditions": "https://uri.fiware.org/ns/datamodels/popularArtsAndTraditions",
+			"portable": "https://uri.fiware.org/ns/datamodels/portable",
+			"postTop": "https://uri.fiware.org/ns/datamodels/postTop",
+			"pothole": "https://uri.fiware.org/ns/datamodels/pothole",
+			"power": "https://uri.fiware.org/ns/datamodels/power",
+			"powerConsumption": "https://uri.fiware.org/ns/datamodels/powerConsumption",
+			"powerFactor": "https://uri.fiware.org/ns/datamodels/powerFactor",
+			"powerState": {
+				"@id": "https://uri.fiware.org/ns/datamodels/powerState",
+				"@type": "@vocab"
+			},
+			"practical": "https://uri.fiware.org/ns/datamodels/practical",
+			"precipitation": "https://uri.fiware.org/ns/datamodels/precipitation",
+			"prehistoric": "https://uri.fiware.org/ns/datamodels/prehistoric",
+			"prehistoricCave": "https://uri.fiware.org/ns/datamodels/prehistoricCave",
+			"prehistoricPlace": "https://uri.fiware.org/ns/datamodels/prehistoricPlace",
+			"pressure": "https://uri.fiware.org/ns/datamodels/pressure",
+			"pressureTendency": {
+				"@id": "https://uri.fiware.org/ns/datamodels/pressureTendency",
+				"@type": "@vocab"
+			},
+			"previousLocation": "https://uri.fiware.org/ns/datamodels/previousLocation",
+			"priceCurrency": "https://uri.fiware.org/ns/datamodels/priceCurrency",
+			"priceRatePerMinute": "https://uri.fiware.org/ns/datamodels/priceRatePerMinute",
+			"primary": "https://uri.fiware.org/ns/datamodels/primary",
+			"private": "https://uri.fiware.org/ns/datamodels/private",
+			"privateVehicle": "https://uri.fiware.org/ns/datamodels/privateVehicle",
+			"proCathedral": "https://uri.fiware.org/ns/datamodels/proCathedral",
+			"process": "https://uri.fiware.org/ns/datamodels/process",
+			"product": "https://uri.fiware.org/ns/datamodels/product",
+			"promenade": "https://uri.fiware.org/ns/datamodels/promenade",
+			"provider": "https://uri.fiware.org/ns/datamodels/provider",
+			"proximitySensor": "https://uri.fiware.org/ns/datamodels/proximitySensor",
+			"public": "https://uri.fiware.org/ns/datamodels/public",
+			"publicBuilding": "https://uri.fiware.org/ns/datamodels/publicBuilding",
+			"publicPhone": "https://uri.fiware.org/ns/datamodels/publicPhone",
+			"publicPrivate": "https://uri.fiware.org/ns/datamodels/publicPrivate",
+			"publicTransport": "https://uri.fiware.org/ns/datamodels/publicTransport",
+			"publicTransportStation": "https://uri.fiware.org/ns/datamodels/publicTransportStation",
+			"purchaseDate": {
+				"@id": "https://uri.fiware.org/ns/datamodels/purchaseDate",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"pyramid": "https://uri.fiware.org/ns/datamodels/pyramid",
+			"qualitative": "https://uri.fiware.org/ns/datamodels/qualitative",
+			"quantitative": "https://uri.fiware.org/ns/datamodels/quantitative",
+			"quantity": "https://uri.fiware.org/ns/datamodels/quantity",
+			"quarterly": "https://uri.fiware.org/ns/datamodels/quarterly",
+			"railway": "https://uri.fiware.org/ns/datamodels/railway",
+			"rainfall": "https://uri.fiware.org/ns/datamodels/rainfall",
+			"rainwater capture": "https://uri.fiware.org/ns/datamodels/rainwater capture",
+			"raising": "https://uri.fiware.org/ns/datamodels/raising",
+			"ramp": "https://uri.fiware.org/ns/datamodels/ramp",
+			"reactiveEnergyConsumed": "https://uri.fiware.org/ns/datamodels/reactiveEnergyConsumed",
+			"reactiveEnergyExport": "https://uri.fiware.org/ns/datamodels/reactiveEnergyExport",
+			"reactiveEnergyImport": "https://uri.fiware.org/ns/datamodels/reactiveEnergyImport",
+			"reactivePower": "https://uri.fiware.org/ns/datamodels/reactivePower",
+			"readyForHarvesting": "https://uri.fiware.org/ns/datamodels/readyForHarvesting",
+			"recommendedLoad": "https://uri.fiware.org/ns/datamodels/recommendedLoad",
+			"rectangular": "https://uri.fiware.org/ns/datamodels/rectangular",
+			"refActivity": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refActivity",
+				"@type": "@id"
+			},
+			"refAgent": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refAgent",
+				"@type": "@id"
+			},
+			"refBuilding": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refBuilding",
+				"@type": "@id"
+			},
+			"refDevice": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refDevice",
+				"@type": "@id"
+			},
+			"refDeviceModel": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refDeviceModel",
+				"@type": "@id"
+			},
+			"refGarden": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refGarden",
+				"@type": "@id"
+			},
+			"refGreenspace": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refGreenspace",
+				"@type": "@id"
+			},
+			"refGtfsTransitFeedFile": "https://uri.fiware.org/ns/datamodels/refGtfsTransitFeedFile",
+			"refMap": "https://uri.fiware.org/ns/datamodels/refMap",
+			"refObject": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refObject",
+				"@type": "@id"
+			},
+			"refOperator": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refOperator",
+				"@type": "@id"
+			},
+			"refParkingAccess": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refParkingAccess",
+				"@type": "@id"
+			},
+			"refParkingGroup": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refParkingGroup",
+				"@type": "@id"
+			},
+			"refParkingSite": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refParkingSite",
+				"@type": "@id"
+			},
+			"refParkingSpot": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refParkingSpot",
+				"@type": "@id"
+			},
+			"refPointOfInterest": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refPointOfInterest",
+				"@type": "@id"
+			},
+			"refRecord": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refRecord",
+				"@type": "@id"
+			},
+			"refRelatedBuildingOperation": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refRelatedBuildingOperation",
+				"@type": "@id"
+			},
+			"refRelatedDeviceOperation": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refRelatedDeviceOperation",
+				"@type": "@id"
+			},
+			"refRelatedEntity": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refRelatedEntity",
+				"@type": "@id"
+			},
+			"refRoad": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refRoad",
+				"@type": "@id"
+			},
+			"refRoadSegment": "https://uri.fiware.org/ns/datamodels/refRoadSegment",
+			"refSeeAlso": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refSeeAlso",
+				"@type": "@id"
+			},
+			"refSmartPointOfInteraction": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refSmartPointOfInteraction",
+				"@type": "@id"
+			},
+			"refSmartSpot": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refSmartSpot",
+				"@type": "@id"
+			},
+			"refStreetlight": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refStreetlight",
+				"@type": "@id"
+			},
+			"refStreetlightControlCabinet": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refStreetlightControlCabinet",
+				"@type": "@id"
+			},
+			"refStreetlightGroup": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refStreetlightGroup",
+				"@type": "@id"
+			},
+			"refStreetlightModel": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refStreetlightModel",
+				"@type": "@id"
+			},
+			"refTarget": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refTarget",
+				"@type": "@id"
+			},
+			"refTargetDevice": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refTargetDevice",
+				"@type": "@id"
+			},
+			"refUser": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refUser",
+				"@type": "@id"
+			},
+			"refUserDevice": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refUserDevice",
+				"@type": "@id"
+			},
+			"refVehicleModel": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refVehicleModel",
+				"@type": "@id"
+			},
+			"refWasteContainer": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refWasteContainer",
+				"@type": "@id"
+			},
+			"refWasteContainerIsle": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refWasteContainerIsle",
+				"@type": "@id"
+			},
+			"refWasteContainerModel": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refWasteContainerModel",
+				"@type": "@id"
+			},
+			"refWeatherObserved": {
+				"@id": "https://uri.fiware.org/ns/datamodels/refWeatherObserved",
+				"@type": "@id"
+			},
+			"refuseBin": "https://uri.fiware.org/ns/datamodels/refuseBin",
+			"regulation": "https://uri.fiware.org/ns/datamodels/regulation",
+			"relatedSource": {
+				"@id": "https://uri.fiware.org/ns/datamodels/relatedSource",
+				"@type": "@id"
+			},
+			"relativeHumidity": "https://uri.fiware.org/ns/datamodels/relativeHumidity",
+			"reliability": "https://uri.fiware.org/ns/datamodels/reliability",
+			"religiousCentre": "https://uri.fiware.org/ns/datamodels/religiousCentre",
+			"remainingDistance": "https://uri.fiware.org/ns/datamodels/remainingDistance",
+			"remainingTime": "https://uri.fiware.org/ns/datamodels/remainingTime",
+			"reportedAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/reportedAt",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"reproductiveCondition": {
+				"@id": "https://uri.fiware.org/ns/datamodels/reproductiveCondition",
+				"@type": "@vocab"
+			},
+			"requiredPermit": {
+				"@id": "https://uri.fiware.org/ns/datamodels/requiredPermit",
+				"@type": "@vocab"
+			},
+			"reservation": "https://uri.fiware.org/ns/datamodels/reservation",
+			"reservationType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/reservationType",
+				"@type": "@vocab"
+			},
+			"residence": "https://uri.fiware.org/ns/datamodels/residence",
+			"residentPermit": "https://uri.fiware.org/ns/datamodels/residentPermit",
+			"residential": "https://uri.fiware.org/ns/datamodels/residential",
+			"responsible": "https://uri.fiware.org/ns/datamodels/responsible",
+			"restArea": "https://uri.fiware.org/ns/datamodels/restArea",
+			"restaurant": "https://uri.fiware.org/ns/datamodels/restaurant",
+			"result": {
+				"@id": "https://uri.fiware.org/ns/datamodels/result",
+				"@type": "@vocab"
+			},
+			"retail": "https://uri.fiware.org/ns/datamodels/retail",
+			"reversedLane": "https://uri.fiware.org/ns/datamodels/reversedLane",
+			"riding_hall": "https://uri.fiware.org/ns/datamodels/riding_hall",
+			"river": "https://uri.fiware.org/ns/datamodels/river",
+			"road": "https://uri.fiware.org/ns/datamodels/road",
+			"roadClass": {
+				"@id": "https://uri.fiware.org/ns/datamodels/roadClass",
+				"@type": "@vocab"
+			},
+			"roadClosed": "https://uri.fiware.org/ns/datamodels/roadClosed",
+			"roadSignalling": "https://uri.fiware.org/ns/datamodels/roadSignalling",
+			"roadWorks": "https://uri.fiware.org/ns/datamodels/roadWorks",
+			"robbery": "https://uri.fiware.org/ns/datamodels/robbery",
+			"rodent": "https://uri.fiware.org/ns/datamodels/rodent",
+			"roof": "https://uri.fiware.org/ns/datamodels/roof",
+			"rooftop": "https://uri.fiware.org/ns/datamodels/rooftop",
+			"root": "https://uri.fiware.org/ns/datamodels/root",
+			"rosarium": "https://uri.fiware.org/ns/datamodels/rosarium",
+			"roundedLid": "https://uri.fiware.org/ns/datamodels/roundedLid",
+			"routeColor": "https://uri.fiware.org/ns/datamodels/routeColor",
+			"routeId": "https://uri.fiware.org/ns/datamodels/routeId",
+			"routeSortOrder": "https://uri.fiware.org/ns/datamodels/routeSortOrder",
+			"routeTextColor": "https://uri.fiware.org/ns/datamodels/routeTextColor",
+			"routeType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/routeType",
+				"@type": "@vocab"
+			},
+			"rssi": "https://uri.fiware.org/ns/datamodels/rssi",
+			"ruins": "https://uri.fiware.org/ns/datamodels/ruins",
+			"sacredArt": "https://uri.fiware.org/ns/datamodels/sacredArt",
+			"safeDeposit": "https://uri.fiware.org/ns/datamodels/safeDeposit",
+			"salinity": "https://uri.fiware.org/ns/datamodels/salinity",
+			"sanctuary": "https://uri.fiware.org/ns/datamodels/sanctuary",
+			"saturday": "https://uri.fiware.org/ns/datamodels/saturday",
+			"scheduled": "https://uri.fiware.org/ns/datamodels/scheduled",
+			"school": "https://uri.fiware.org/ns/datamodels/school",
+			"schoolTransportation": "https://uri.fiware.org/ns/datamodels/schoolTransportation",
+			"scienceAndTechnology": "https://uri.fiware.org/ns/datamodels/scienceAndTechnology",
+			"sculpturalGroups": "https://uri.fiware.org/ns/datamodels/sculpturalGroups",
+			"sculpture": "https://uri.fiware.org/ns/datamodels/sculpture",
+			"seasonTicket": "https://uri.fiware.org/ns/datamodels/seasonTicket",
+			"secondary": "https://uri.fiware.org/ns/datamodels/secondary",
+			"security": "https://uri.fiware.org/ns/datamodels/security",
+			"securityStaff": "https://uri.fiware.org/ns/datamodels/securityStaff",
+			"seeAlso": "https://uri.fiware.org/ns/datamodels/seeAlso",
+			"seeded": "https://uri.fiware.org/ns/datamodels/seeded",
+			"semiautomatic": "https://uri.fiware.org/ns/datamodels/semiautomatic",
+			"seminar": "https://uri.fiware.org/ns/datamodels/seminar",
+			"sensing": "https://uri.fiware.org/ns/datamodels/sensing",
+			"serialNumber": "https://uri.fiware.org/ns/datamodels/serialNumber",
+			"service": "https://uri.fiware.org/ns/datamodels/service",
+			"serviceArea": "https://uri.fiware.org/ns/datamodels/serviceArea",
+			"serviceProvided": {
+				"@id": "https://uri.fiware.org/ns/datamodels/serviceProvided",
+				"@type": "@vocab"
+			},
+			"serviceStatus": {
+				"@id": "https://uri.fiware.org/ns/datamodels/serviceStatus",
+				"@type": "@vocab"
+			},
+			"severity": {
+				"@id": "https://uri.fiware.org/ns/datamodels/severity",
+				"@type": "@vocab"
+			},
+			"sex": {
+				"@id": "https://uri.fiware.org/ns/datamodels/sex",
+				"@type": "@vocab"
+			},
+			"shape": {
+				"@id": "https://uri.fiware.org/ns/datamodels/shape",
+				"@type": "@vocab"
+			},
+			"shed": "https://uri.fiware.org/ns/datamodels/shed",
+			"sheds": "https://uri.fiware.org/ns/datamodels/sheds",
+			"sheep": "https://uri.fiware.org/ns/datamodels/sheep",
+			"shop": "https://uri.fiware.org/ns/datamodels/shop",
+			"shoppingCentre": "https://uri.fiware.org/ns/datamodels/shoppingCentre",
+			"shortName": "https://uri.fiware.org/ns/datamodels/shortName",
+			"shortTerm": "https://uri.fiware.org/ns/datamodels/shortTerm",
+			"shower": "https://uri.fiware.org/ns/datamodels/shower",
+			"showers": "https://uri.fiware.org/ns/datamodels/showers",
+			"shrine": "https://uri.fiware.org/ns/datamodels/shrine",
+			"sick": "https://uri.fiware.org/ns/datamodels/sick",
+			"sideEntry": "https://uri.fiware.org/ns/datamodels/sideEntry",
+			"sidewalk": "https://uri.fiware.org/ns/datamodels/sidewalk",
+			"signLight": "https://uri.fiware.org/ns/datamodels/signLight",
+			"signalStrength": {
+				"@id": "https://uri.fiware.org/ns/datamodels/signalStrength",
+				"@type": "@vocab"
+			},
+			"singleLevel": "https://uri.fiware.org/ns/datamodels/singleLevel",
+			"singleSpaceDetection": "https://uri.fiware.org/ns/datamodels/singleSpaceDetection",
+			"siredBy": {
+				"@id": "https://uri.fiware.org/ns/datamodels/siredBy",
+				"@type": "@id"
+			},
+			"skilift": "https://uri.fiware.org/ns/datamodels/skilift",
+			"smoke": "https://uri.fiware.org/ns/datamodels/smoke",
+			"snail": "https://uri.fiware.org/ns/datamodels/snail",
+			"snow": "https://uri.fiware.org/ns/datamodels/snow",
+			"snow/ice": "https://uri.fiware.org/ns/datamodels/snow/ice",
+			"snowHeight": "https://uri.fiware.org/ns/datamodels/snowHeight",
+			"socketNumber": "https://uri.fiware.org/ns/datamodels/socketNumber",
+			"socketType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/socketType",
+				"@type": "@vocab"
+			},
+			"softwareVersion": "https://uri.fiware.org/ns/datamodels/softwareVersion",
+			"soilMoisture": "https://uri.fiware.org/ns/datamodels/soilMoisture",
+			"soilMoistureEC": "https://uri.fiware.org/ns/datamodels/soilMoistureEC",
+			"soilMoistureEc": "https://uri.fiware.org/ns/datamodels/soilMoistureEc",
+			"soilMoistureVwc": "https://uri.fiware.org/ns/datamodels/soilMoistureVwc",
+			"soilSalinity": "https://uri.fiware.org/ns/datamodels/soilSalinity",
+			"soilTemperature": "https://uri.fiware.org/ns/datamodels/soilTemperature",
+			"solarRadiation": "https://uri.fiware.org/ns/datamodels/solarRadiation",
+			"solarRadiaton": "https://uri.fiware.org/ns/datamodels/solarRadiaton",
+			"sonometerClass": {
+				"@id": "https://uri.fiware.org/ns/datamodels/sonometerClass",
+				"@type": "@vocab"
+			},
+			"source": "https://uri.fiware.org/ns/datamodels/source",
+			"spacesAvailable": "https://uri.fiware.org/ns/datamodels/spacesAvailable",
+			"specialLocation": {
+				"@id": "https://uri.fiware.org/ns/datamodels/specialLocation",
+				"@type": "@vocab"
+			},
+			"specialTransport": "https://uri.fiware.org/ns/datamodels/specialTransport",
+			"specialUsage": "https://uri.fiware.org/ns/datamodels/specialUsage",
+			"specials": "https://uri.fiware.org/ns/datamodels/specials",
+			"species": {
+				"@id": "https://uri.fiware.org/ns/datamodels/species",
+				"@type": "@vocab"
+			},
+			"specificFacility": "https://uri.fiware.org/ns/datamodels/specificFacility",
+			"specificIdentifiedVehiclePermit": "https://uri.fiware.org/ns/datamodels/specificIdentifiedVehiclePermit",
+			"speed": "https://uri.fiware.org/ns/datamodels/speed",
+			"spring": "https://uri.fiware.org/ns/datamodels/spring",
+			"square": "https://uri.fiware.org/ns/datamodels/square",
+			"stable": "https://uri.fiware.org/ns/datamodels/stable",
+			"stadium": "https://uri.fiware.org/ns/datamodels/stadium",
+			"staffGuidesToSpace": "https://uri.fiware.org/ns/datamodels/staffGuidesToSpace",
+			"staffed": "https://uri.fiware.org/ns/datamodels/staffed",
+			"startDate": "https://uri.fiware.org/ns/datamodels/startDate",
+			"startKilometer": "https://uri.fiware.org/ns/datamodels/startKilometer",
+			"startPoint": "https://uri.fiware.org/ns/datamodels/startPoint",
+			"startTime": "https://uri.fiware.org/ns/datamodels/startTime",
+			"startedAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/startedAt",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"static_caravan": "https://uri.fiware.org/ns/datamodels/static_caravan",
+			"steady": "https://uri.fiware.org/ns/datamodels/steady",
+			"steel": "https://uri.fiware.org/ns/datamodels/steel",
+			"stopHeadsign": "https://uri.fiware.org/ns/datamodels/stopHeadsign",
+			"stopId": "https://uri.fiware.org/ns/datamodels/stopId",
+			"stopSequence": "https://uri.fiware.org/ns/datamodels/stopSequence",
+			"storedWasteCode": "https://uri.fiware.org/ns/datamodels/storedWasteCode",
+			"storedWasteKind": {
+				"@id": "https://uri.fiware.org/ns/datamodels/storedWasteKind",
+				"@type": "@vocab"
+			},
+			"storedWasteOrigin": {
+				"@id": "https://uri.fiware.org/ns/datamodels/storedWasteOrigin",
+				"@type": "@vocab"
+			},
+			"streamGauge": "https://uri.fiware.org/ns/datamodels/streamGauge",
+			"streetCleaning": "https://uri.fiware.org/ns/datamodels/streetCleaning",
+			"streetLighting": "https://uri.fiware.org/ns/datamodels/streetLighting",
+			"strongWaves": "https://uri.fiware.org/ns/datamodels/strongWaves",
+			"studentPermit": "https://uri.fiware.org/ns/datamodels/studentPermit",
+			"sty": "https://uri.fiware.org/ns/datamodels/sty",
+			"style": {
+				"@id": "https://uri.fiware.org/ns/datamodels/style",
+				"@type": "@vocab"
+			},
+			"subCategory": "https://uri.fiware.org/ns/datamodels/subCategory",
+			"sumptuaryArts": "https://uri.fiware.org/ns/datamodels/sumptuaryArts",
+			"sunLoungerRental": "https://uri.fiware.org/ns/datamodels/sunLoungerRental",
+			"sunday": "https://uri.fiware.org/ns/datamodels/sunday",
+			"sunshadeRental": "https://uri.fiware.org/ns/datamodels/sunshadeRental",
+			"supportedUnits": "https://uri.fiware.org/ns/datamodels/supportedUnits",
+			"surfPracticeArea": "https://uri.fiware.org/ns/datamodels/surfPracticeArea",
+			"surface": "https://uri.fiware.org/ns/datamodels/surface",
+			"suspiciousAction": "https://uri.fiware.org/ns/datamodels/suspiciousAction",
+			"sweepingMachine": "https://uri.fiware.org/ns/datamodels/sweepingMachine",
+			"switchingMode": {
+				"@id": "https://uri.fiware.org/ns/datamodels/switchingMode",
+				"@type": "@vocab"
+			},
+			"switchingOnHours": "https://uri.fiware.org/ns/datamodels/switchingOnHours",
+			"synagogue": "https://uri.fiware.org/ns/datamodels/synagogue",
+			"tanker": "https://uri.fiware.org/ns/datamodels/tanker",
+			"taulasTalayotsNavetas": "https://uri.fiware.org/ns/datamodels/taulasTalayotsNavetas",
+			"taxi": "https://uri.fiware.org/ns/datamodels/taxi",
+			"taxon": "https://uri.fiware.org/ns/datamodels/taxon",
+			"tds": "https://uri.fiware.org/ns/datamodels/tds",
+			"telephone": "https://uri.fiware.org/ns/datamodels/telephone",
+			"temperature": "https://uri.fiware.org/ns/datamodels/temperature",
+			"temple": "https://uri.fiware.org/ns/datamodels/temple",
+			"temporaryPrice": "https://uri.fiware.org/ns/datamodels/temporaryPrice",
+			"terrace": "https://uri.fiware.org/ns/datamodels/terrace",
+			"tertiary": "https://uri.fiware.org/ns/datamodels/tertiary",
+			"textile": "https://uri.fiware.org/ns/datamodels/textile",
+			"thdCurrent": "https://uri.fiware.org/ns/datamodels/thdCurrent",
+			"thdVoltage": "https://uri.fiware.org/ns/datamodels/thdVoltage",
+			"thdrIntensity": "https://uri.fiware.org/ns/datamodels/thdrIntensity",
+			"thdrVoltage": "https://uri.fiware.org/ns/datamodels/thdrVoltage",
+			"theathre": "https://uri.fiware.org/ns/datamodels/theathre",
+			"thematic": "https://uri.fiware.org/ns/datamodels/thematic",
+			"themePark": "https://uri.fiware.org/ns/datamodels/themePark",
+			"thunderstorms": "https://uri.fiware.org/ns/datamodels/thunderstorms",
+			"thursday": "https://uri.fiware.org/ns/datamodels/thursday",
+			"timepoint": {
+				"@id": "https://uri.fiware.org/ns/datamodels/timepoint",
+				"@type": "@vocab"
+			},
+			"timezone": "https://uri.fiware.org/ns/datamodels/timezone",
+			"toilet": "https://uri.fiware.org/ns/datamodels/toilet",
+			"toilets": "https://uri.fiware.org/ns/datamodels/toilets",
+			"toll": "https://uri.fiware.org/ns/datamodels/toll",
+			"tollTerminal": "https://uri.fiware.org/ns/datamodels/tollTerminal",
+			"tornado": "https://uri.fiware.org/ns/datamodels/tornado",
+			"totalActiveEnergyExport": "https://uri.fiware.org/ns/datamodels/totalActiveEnergyExport",
+			"totalActiveEnergyImport": "https://uri.fiware.org/ns/datamodels/totalActiveEnergyImport",
+			"totalActivePower": "https://uri.fiware.org/ns/datamodels/totalActivePower",
+			"totalApparentEnergyExport": "https://uri.fiware.org/ns/datamodels/totalApparentEnergyExport",
+			"totalApparentEnergyImport": "https://uri.fiware.org/ns/datamodels/totalApparentEnergyImport",
+			"totalApparentPower": "https://uri.fiware.org/ns/datamodels/totalApparentPower",
+			"totalDisplacementPowerFactor": "https://uri.fiware.org/ns/datamodels/totalDisplacementPowerFactor",
+			"totalLaneNumber": "https://uri.fiware.org/ns/datamodels/totalLaneNumber",
+			"totalPowerFactor": "https://uri.fiware.org/ns/datamodels/totalPowerFactor",
+			"totalReactiveEnergyExport": "https://uri.fiware.org/ns/datamodels/totalReactiveEnergyExport",
+			"totalReactiveEnergyImport": "https://uri.fiware.org/ns/datamodels/totalReactiveEnergyImport",
+			"totalReactivePower": "https://uri.fiware.org/ns/datamodels/totalReactivePower",
+			"totalSlotNumber": "https://uri.fiware.org/ns/datamodels/totalSlotNumber",
+			"totalSpotNumber": "https://uri.fiware.org/ns/datamodels/totalSpotNumber",
+			"touristArea": "https://uri.fiware.org/ns/datamodels/touristArea",
+			"touristOffice": "https://uri.fiware.org/ns/datamodels/touristOffice",
+			"tower": "https://uri.fiware.org/ns/datamodels/tower",
+			"town": "https://uri.fiware.org/ns/datamodels/town",
+			"tracked": "https://uri.fiware.org/ns/datamodels/tracked",
+			"traffic": "https://uri.fiware.org/ns/datamodels/traffic",
+			"trafficFlow": "https://uri.fiware.org/ns/datamodels/trafficFlow",
+			"trafficJam": "https://uri.fiware.org/ns/datamodels/trafficJam",
+			"trailer": "https://uri.fiware.org/ns/datamodels/trailer",
+			"trainStation": "https://uri.fiware.org/ns/datamodels/trainStation",
+			"train_station": "https://uri.fiware.org/ns/datamodels/train_station",
+			"tram": "https://uri.fiware.org/ns/datamodels/tram",
+			"transferType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/transferType",
+				"@type": "@vocab"
+			},
+			"transformer_tower": "https://uri.fiware.org/ns/datamodels/transformer_tower",
+			"transportation": "https://uri.fiware.org/ns/datamodels/transportation",
+			"transports": "https://uri.fiware.org/ns/datamodels/transports",
+			"trashCan": "https://uri.fiware.org/ns/datamodels/trashCan",
+			"trolley": "https://uri.fiware.org/ns/datamodels/trolley",
+			"tropicalCyclone": "https://uri.fiware.org/ns/datamodels/tropicalCyclone",
+			"truck": "https://uri.fiware.org/ns/datamodels/truck",
+			"truckParking": "https://uri.fiware.org/ns/datamodels/truckParking",
+			"trunk": "https://uri.fiware.org/ns/datamodels/trunk",
+			"tss": "https://uri.fiware.org/ns/datamodels/tss",
+			"tsunami": "https://uri.fiware.org/ns/datamodels/tsunami",
+			"tuesday": "https://uri.fiware.org/ns/datamodels/tuesday",
+			"tunnel": "https://uri.fiware.org/ns/datamodels/tunnel",
+			"turbidity": "https://uri.fiware.org/ns/datamodels/turbidity",
+			"uVIndexMax": "https://uri.fiware.org/ns/datamodels/uVIndexMax",
+			"unclassified": "https://uri.fiware.org/ns/datamodels/unclassified",
+			"underground": "https://uri.fiware.org/ns/datamodels/underground",
+			"unesco": "https://uri.fiware.org/ns/datamodels/unesco",
+			"universitary": "https://uri.fiware.org/ns/datamodels/universitary",
+			"university": "https://uri.fiware.org/ns/datamodels/university",
+			"unknown": "https://uri.fiware.org/ns/datamodels/unknown",
+			"updatedAt": {
+				"@id": "https://uri.fiware.org/ns/datamodels/updatedAt",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"urban": "https://uri.fiware.org/ns/datamodels/urban",
+			"urbanDeterrentParking": "https://uri.fiware.org/ns/datamodels/urbanDeterrentParking",
+			"urbanTransit": "https://uri.fiware.org/ns/datamodels/urbanTransit",
+			"urbanTreeSpot": "https://uri.fiware.org/ns/datamodels/urbanTreeSpot",
+			"url": "https://uri.fiware.org/ns/datamodels/url",
+			"usageScenario": {
+				"@id": "https://uri.fiware.org/ns/datamodels/usageScenario",
+				"@type": "@vocab"
+			},
+			"validFrom": {
+				"@id": "https://uri.fiware.org/ns/datamodels/validFrom",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"validTo": {
+				"@id": "https://uri.fiware.org/ns/datamodels/validTo",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"validity": "https://uri.fiware.org/ns/datamodels/validity",
+			"van": "https://uri.fiware.org/ns/datamodels/van",
+			"vehicleConfiguration": "https://uri.fiware.org/ns/datamodels/vehicleConfiguration",
+			"vehicleEngine": "https://uri.fiware.org/ns/datamodels/vehicleEngine",
+			"vehicleIdentificationNumber": "https://uri.fiware.org/ns/datamodels/vehicleIdentificationNumber",
+			"vehicleLift": "https://uri.fiware.org/ns/datamodels/vehicleLift",
+			"vehicleModelDate": {
+				"@id": "https://uri.fiware.org/ns/datamodels/vehicleModelDate",
+				"@type": "https://uri.etsi.org/ngsi-ld/DateTime"
+			},
+			"vehicleOnRailTerminal": "https://uri.fiware.org/ns/datamodels/vehicleOnRailTerminal",
+			"vehiclePlateIdentifier": "https://uri.fiware.org/ns/datamodels/vehiclePlateIdentifier",
+			"vehicleSpecialUsage": {
+				"@id": "https://uri.fiware.org/ns/datamodels/vehicleSpecialUsage",
+				"@type": "@vocab"
+			},
+			"vehicleSubType": "https://uri.fiware.org/ns/datamodels/vehicleSubType",
+			"vehicleType": {
+				"@id": "https://uri.fiware.org/ns/datamodels/vehicleType",
+				"@type": "@vocab"
+			},
+			"vendingMachine": "https://uri.fiware.org/ns/datamodels/vendingMachine",
+			"version": "https://uri.fiware.org/ns/datamodels/version",
+			"veryBad": "https://uri.fiware.org/ns/datamodels/veryBad",
+			"veryGood": "https://uri.fiware.org/ns/datamodels/veryGood",
+			"veryHigh": "https://uri.fiware.org/ns/datamodels/veryHigh",
+			"virus": "https://uri.fiware.org/ns/datamodels/virus",
+			"visitorPermit": "https://uri.fiware.org/ns/datamodels/visitorPermit",
+			"voltage": "https://uri.fiware.org/ns/datamodels/voltage",
+			"walledArea": "https://uri.fiware.org/ns/datamodels/walledArea",
+			"walls": "https://uri.fiware.org/ns/datamodels/walls",
+			"warehouse": "https://uri.fiware.org/ns/datamodels/warehouse",
+			"wasteContainerCleaning": "https://uri.fiware.org/ns/datamodels/wasteContainerCleaning",
+			"wasteDisposal": "https://uri.fiware.org/ns/datamodels/wasteDisposal",
+			"water": "https://uri.fiware.org/ns/datamodels/water",
+			"water dam": "https://uri.fiware.org/ns/datamodels/water dam",
+			"waterConsumption": "https://uri.fiware.org/ns/datamodels/waterConsumption",
+			"waterCraftRental": "https://uri.fiware.org/ns/datamodels/waterCraftRental",
+			"waterPollution": "https://uri.fiware.org/ns/datamodels/waterPollution",
+			"waterSource": {
+				"@id": "https://uri.fiware.org/ns/datamodels/waterSource",
+				"@type": "@vocab"
+			},
+			"water_tower": "https://uri.fiware.org/ns/datamodels/water_tower",
+			"wateringFrequency": {
+				"@id": "https://uri.fiware.org/ns/datamodels/wateringFrequency",
+				"@type": "@vocab"
+			},
+			"wax": "https://uri.fiware.org/ns/datamodels/wax",
+			"weather": "https://uri.fiware.org/ns/datamodels/weather",
+			"weatherConditions": "https://uri.fiware.org/ns/datamodels/weatherConditions",
+			"wednesday": "https://uri.fiware.org/ns/datamodels/wednesday",
+			"weekly": "https://uri.fiware.org/ns/datamodels/weekly",
+			"weight": "https://uri.fiware.org/ns/datamodels/weight",
+			"welfareCondition": {
+				"@id": "https://uri.fiware.org/ns/datamodels/welfareCondition",
+				"@type": "@vocab"
+			},
+			"wheelChairAccessible": {
+				"@id": "https://uri.fiware.org/ns/datamodels/wheelChairAccessible",
+				"@type": "@vocab"
+			},
+			"wheelieBin": "https://uri.fiware.org/ns/datamodels/wheelieBin",
+			"wheels": "https://uri.fiware.org/ns/datamodels/wheels",
+			"whiteSand": "https://uri.fiware.org/ns/datamodels/whiteSand",
+			"width": "https://uri.fiware.org/ns/datamodels/width",
+			"wifi": "https://uri.fiware.org/ns/datamodels/wifi",
+			"wind": "https://uri.fiware.org/ns/datamodels/wind",
+			"windDirection": "https://uri.fiware.org/ns/datamodels/windDirection",
+			"windSpeed": "https://uri.fiware.org/ns/datamodels/windSpeed",
+			"windy": "https://uri.fiware.org/ns/datamodels/windy",
+			"withIncidence": "https://uri.fiware.org/ns/datamodels/withIncidence",
+			"wood": "https://uri.fiware.org/ns/datamodels/wood",
+			"workOrder": "https://uri.fiware.org/ns/datamodels/workOrder",
+			"workRecord": "https://uri.fiware.org/ns/datamodels/workRecord",
+			"working": "https://uri.fiware.org/ns/datamodels/working",
+			"workingLife": "https://uri.fiware.org/ns/datamodels/workingLife",
+			"workingMode": {
+				"@id": "https://uri.fiware.org/ns/datamodels/workingMode",
+				"@type": "@vocab"
+			},
+			"yearly": "https://uri.fiware.org/ns/datamodels/yearly",
+			"zen": "https://uri.fiware.org/ns/datamodels/zen",
+			"zoneCode": "https://uri.fiware.org/ns/datamodels/zoneCode"
+		},
+		"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+	]
+}
