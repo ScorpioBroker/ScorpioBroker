@@ -30,7 +30,7 @@ abstract public class StorageReaderDAO {
 	public void init() {
 		readerJdbcTemplate.execute("SELECT 1"); // create connection pool and connect to database
 	}
-	
+
 	public List<String> query(QueryParams qp) {
 		List<String> entitiesList = new ArrayList<String>();
 		try {
@@ -45,13 +45,26 @@ abstract public class StorageReaderDAO {
 			e.printStackTrace();
 		}
 		return entitiesList;
-		
+
 	}
 
 	public String getListAsJsonArray(List<String> s) {
-		return "["+String.join(",", s)+"]";
-	}	
-	
+		return "[" + String.join(",", s) + "]";
+	}
+
+	public List<String> getAllTypes() {
+		ArrayList<String> result = new ArrayList<String>();
+		List<Map<String, Object>> list = readerJdbcTemplate.queryForList(
+				"SELECT distinct type as type FROM entity UNION SELECT distinct entity_type as type FROM csourceinformation;");
+		if(list == null ||list.isEmpty()) {
+			return null;
+		}
+		for (Map<String, Object> row : list) {
+			result.add(row.get("type").toString());
+		}
+		return result;
+	}
+
 	/*
 	 * TODO: optimize sql queries by using prepared statements (if possible)
 	 */
@@ -62,20 +75,20 @@ abstract public class StorageReaderDAO {
 		ReflectionUtils.doWithFields(qp.getClass(), field -> {
 			String dbColumn, sqlOperator;
 			String sqlWhereProperty = "";
-			
+
 			field.setAccessible(true);
 			String queryParameter = field.getName();
 			Object fieldValue = field.get(qp);
-			if (fieldValue!=null) {
+			if (fieldValue != null) {
 
 				logger.trace("Query parameter:" + queryParameter);
-			
+
 				String queryValue = "";
 				if (fieldValue instanceof String) {
 					queryValue = fieldValue.toString();
 					logger.trace("Query value: " + queryValue);
 				}
-	
+
 				switch (queryParameter) {
 				case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
 					dbColumn = DBConstants.DBCOLUMN_ID;
@@ -105,11 +118,11 @@ abstract public class StorageReaderDAO {
 					break;
 				case NGSIConstants.QUERY_PARAMETER_GEOREL:
 					if (fieldValue instanceof GeoqueryRel) {
-						GeoqueryRel gqr = (GeoqueryRel)fieldValue;
+						GeoqueryRel gqr = (GeoqueryRel) fieldValue;
 						logger.trace("Georel value " + gqr.getGeorelOp());
 						try {
-							sqlWhereProperty = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
-									qp.getGeoproperty());
+							sqlWhereProperty = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(),
+									qp.getCoordinates(), qp.getGeoproperty());
 						} catch (ResponseException e) {
 							e.printStackTrace();
 						}
@@ -125,30 +138,32 @@ abstract public class StorageReaderDAO {
 			}
 		});
 
-		
-		String tableDataColumn;			
+		String tableDataColumn;
 		if (qp.getKeyValues()) {
-			if (qp.getIncludeSysAttrs()) { 
+			if (qp.getIncludeSysAttrs()) {
 				tableDataColumn = DBConstants.DBCOLUMN_KVDATA;
-			} else { //without sysattrs at root level (entity createdat/modifiedat)
-				tableDataColumn = DBConstants.DBCOLUMN_KVDATA + " - '" + NGSIConstants.NGSI_LD_CREATED_AT + "' - '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
+			} else { // without sysattrs at root level (entity createdat/modifiedat)
+				tableDataColumn = DBConstants.DBCOLUMN_KVDATA + " - '" + NGSIConstants.NGSI_LD_CREATED_AT + "' - '"
+						+ NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
 			}
 		} else {
-			if (qp.getIncludeSysAttrs()) { 
+			if (qp.getIncludeSysAttrs()) {
 				tableDataColumn = DBConstants.DBCOLUMN_DATA;
 			} else {
 				tableDataColumn = DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS; // default request
 			}
 		}
-		
+
 		String dataColumn = tableDataColumn;
 		if (qp.getAttrs() != null) {
-			String expandedAttributeList = "'" + NGSIConstants.JSON_LD_ID + "','" + NGSIConstants.JSON_LD_TYPE + "','" + 
-					qp.getAttrs().replace(",", "','") + "'";
-			if (qp.getIncludeSysAttrs()) { 
-				expandedAttributeList += "," + NGSIConstants.NGSI_LD_CREATED_AT + "," +NGSIConstants.NGSI_LD_MODIFIED_AT; 
+			String expandedAttributeList = "'" + NGSIConstants.JSON_LD_ID + "','" + NGSIConstants.JSON_LD_TYPE + "','"
+					+ qp.getAttrs().replace(",", "','") + "'";
+			if (qp.getIncludeSysAttrs()) {
+				expandedAttributeList += "," + NGSIConstants.NGSI_LD_CREATED_AT + ","
+						+ NGSIConstants.NGSI_LD_MODIFIED_AT;
 			}
-			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each("+tableDataColumn+") WHERE key IN ( "+expandedAttributeList+"))";
+			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each(" + tableDataColumn + ") WHERE key IN ( "
+					+ expandedAttributeList + "))";
 		}
 		String sqlQuery = "SELECT " + dataColumn + " as data FROM " + DBConstants.DBTABLE_ENTITY + " ";
 		if (fullSqlWhereProperty.length() > 0)
@@ -169,7 +184,7 @@ abstract public class StorageReaderDAO {
 		String georelOp = georel.getGeorelOp();
 		logger.trace("  Geoquery term georelOp: " + georelOp);
 
-		if (dbColumn==null) {
+		if (dbColumn == null) {
 			dbColumn = DBConstants.NGSILD_TO_SQL_RESERVED_PROPERTIES_MAPPING_GEO.get(geoproperty);
 			if (dbColumn == null) {
 				sqlWhere.append("data @> '{\"" + geoproperty + "\": [{\"" + NGSIConstants.JSON_LD_TYPE + "\":[\""
@@ -178,19 +193,18 @@ abstract public class StorageReaderDAO {
 						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}'), 4326)";
 			}
 		}
-		
+
 		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
 				+ coordinates + " }'), 4326)";
 		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georelOp);
 
 		switch (georelOp) {
 		case NGSIConstants.GEO_REL_NEAR:
-			if (georel.getDistanceType()!=null && georel.getDistanceValue()!=null) {
+			if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
 				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
 					sqlWhere.append("NOT ");
-				sqlWhere.append(
-						sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue + "::geography, "
-								+ georel.getDistanceValue() + ") ");
+				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
+						+ "::geography, " + georel.getDistanceValue() + ") ");
 			} else {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"GeoQuery: Type and distance are required for near relation");
@@ -214,5 +228,5 @@ abstract public class StorageReaderDAO {
 			String geoproperty) throws ResponseException {
 		return this.translateNgsildGeoqueryToPostgisQuery(georel, geometry, coordinates, geoproperty, null);
 	}
-	
+
 }
