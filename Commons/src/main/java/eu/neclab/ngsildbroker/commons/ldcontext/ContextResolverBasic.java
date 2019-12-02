@@ -141,7 +141,7 @@ public class ContextResolverBasic {
 				context.addAll(contextLinks);
 			}
 			Map<String, Object> fullContext = getFullContext(context);
-			validateAndCleanContext(fullContext);
+//			validateAndCleanContext(fullContext);
 			fullContext.remove(IS_FULL_VALID);
 			ArrayList<Object> usedContext = new ArrayList<Object>();
 			usedContext.add(fullContext);
@@ -346,7 +346,7 @@ public class ContextResolverBasic {
 
 	private CompactedJson compact(Object json, Map<String, Object> context, List<Object> rawContext)
 			throws ResponseException {
-		validateAndCleanContext(context);
+//		validateAndCleanContext(context);
 		List<Object> fullContext = new ArrayList<Object>();
 		if (context != null && !context.isEmpty()) {
 			fullContext.add(context);
