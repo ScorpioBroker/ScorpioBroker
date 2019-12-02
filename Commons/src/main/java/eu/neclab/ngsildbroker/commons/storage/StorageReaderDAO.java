@@ -55,7 +55,7 @@ abstract public class StorageReaderDAO {
 	public List<String> getAllTypes() {
 		ArrayList<String> result = new ArrayList<String>();
 		List<Map<String, Object>> list = readerJdbcTemplate.queryForList(
-				"SELECT distinct type as type FROM entity UNION SELECT distinct entity_type as type FROM csourceinformation;");
+				"SELECT distinct type as type FROM entity WHERE type IS NOT NULL UNION SELECT distinct entity_type as type FROM csourceinformation WHERE entity_type IS NOT NULL;");
 		if(list == null ||list.isEmpty()) {
 			return null;
 		}
