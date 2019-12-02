@@ -31,7 +31,34 @@ public class Entity {
 	private Property createdAtProp = new Property();
 	private Property modifiedAtProp = new Property();
 	private Property observedAtProp = new Property();
-
+	public Entity(URI id, String type, List<BaseProperty> baseProps, Object refToAccessControl) {
+		this.id = id;
+		this.type = type;
+		this.refToAccessControl = refToAccessControl;
+		this.allBaseProperties = baseProps;
+		relationships = new ArrayList<Relationship>();
+		properties = new ArrayList<Property>();
+		geoProperties = new ArrayList<GeoProperty>();
+		for(BaseProperty baseProp: baseProps) {
+			if(baseProp instanceof GeoProperty) {
+				if(baseProp.id.toString().equals(NGSIConstants.NGSI_LD_LOCATION)) {
+					this.location = (GeoProperty) baseProp;
+				}else if(baseProp.id.toString().equals(NGSIConstants.NGSI_LD_OBSERVATION_SPACE)) {
+					this.observationSpace = (GeoProperty) baseProp;
+				}else if(baseProp.id.toString().equals(NGSIConstants.NGSI_LD_OPERATION_SPACE)) {
+					this.operationSpace = (GeoProperty) baseProp;
+				}else {
+					this.geoProperties.add((GeoProperty) baseProp);
+				}
+			}else if(baseProp instanceof Relationship) {
+				this.relationships.add((Relationship) baseProp);
+			}else if(baseProp instanceof Property) {
+				this.properties.add((Property) baseProp);
+			}
+		}
+	}
+	
+	
 	public Entity(URI id, GeoProperty location, GeoProperty observationSpace, GeoProperty operationSpace,
 			List<Property> properties, Object refToAccessControl, List<Relationship> relationships, String type,
 			List<GeoProperty> geoProperties) {
@@ -67,6 +94,15 @@ public class Entity {
 		if (geoProperties != null) {
 			allBaseProperties.addAll(geoProperties);
 		}
+		if (location != null) {
+			allBaseProperties.add(location);
+		}
+		if (observationSpace != null) {
+			allBaseProperties.add(observationSpace);
+		}
+		if (operationSpace != null) {
+			allBaseProperties.add(operationSpace);
+		}
 
 	}
 
@@ -92,6 +128,10 @@ public class Entity {
 	}
 
 	public void setLocation(GeoProperty location) {
+		if (this.location != null) {
+			allBaseProperties.remove(this.location);
+		}
+		allBaseProperties.add(location);
 		this.location = location;
 	}
 
@@ -100,6 +140,10 @@ public class Entity {
 	}
 
 	public void setObservationSpace(GeoProperty observationSpace) {
+		if (this.observationSpace != null) {
+			allBaseProperties.remove(this.observationSpace);
+		}
+		allBaseProperties.add(observationSpace);
 		this.observationSpace = observationSpace;
 	}
 
@@ -108,6 +152,10 @@ public class Entity {
 	}
 
 	public void setOperationSpace(GeoProperty operationSpace) {
+		if (this.operationSpace != null) {
+			allBaseProperties.remove(this.operationSpace);
+		}
+		allBaseProperties.add(operationSpace);
 		this.operationSpace = operationSpace;
 	}
 
