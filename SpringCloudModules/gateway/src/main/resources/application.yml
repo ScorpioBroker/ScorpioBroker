@@ -99,6 +99,11 @@ zuul:
       sensitiveHeaders:
       path: /ngsi-ld/contextes/**
       serviceId: ATCONTEXT-SERVER
+      stripPrefix: false+
+    infos:
+      sensitiveHeaders:
+      path: /scorpio/v1/info**
+      serviceId: STORAGE-MANAGER
       stripPrefix: false
     test-manager:
       sensitiveHeaders:

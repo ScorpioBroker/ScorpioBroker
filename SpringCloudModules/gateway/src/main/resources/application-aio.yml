@@ -20,6 +20,9 @@ query-manager:
   target-service: aio-runner
   http-method: GET
 
+spring:
+  application:
+    name: gateway
 
 
 server:
@@ -76,6 +79,11 @@ zuul:
     atcontext-server:
       sensitiveHeaders:
       path: /ngsi-ld/contextes/**
+      serviceId: aio-runner
+      stripPrefix: false
+    infos:
+      sensitiveHeaders:
+      path: /scorpio/v1/info**
       serviceId: aio-runner
       stripPrefix: false
     test-manager:
