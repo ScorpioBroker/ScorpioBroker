@@ -8,6 +8,7 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEA
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.filosganga.geogson.model.Geometry;
 import com.github.filosganga.geogson.model.Point;
@@ -72,7 +74,6 @@ public class CSourceSubscriptionService {
 
 	private final byte[] nullArray = "null".getBytes();
 
-	
 	@Autowired
 	@Qualifier("rmops")
 	KafkaOps kafkaOps;
@@ -163,12 +164,12 @@ public class CSourceSubscriptionService {
 				subscriptionRequest.getSubscription().setInternal(true);
 				subscribe(subscriptionRequest, false);
 			} catch (JsonParseException e) {
-				//logger.error("Exception ::", e);
-				//e.printStackTrace();
+				// logger.error("Exception ::", e);
+				// e.printStackTrace();
 				continue;
 			} catch (ResponseException e) {
-				//logger.error("Exception ::", e);
-				//e.printStackTrace();
+				// logger.error("Exception ::", e);
+				// e.printStackTrace();
 				continue;
 			}
 		}
@@ -211,16 +212,41 @@ public class CSourceSubscriptionService {
 		if (sync) {
 			syncToMessageBus(subscriptionRequest);
 		}
-
+		if (subscription.isInternal()) {
+			new Thread() {
+				public void run() {
+					generateInitialNotification(subscription);
+				}
+			}.start();
+		}
 		return subscription.getId();
+	}
+
+	private void generateInitialNotification(Subscription subscription) {
+		List<JsonNode> registrations;
+
+		try {
+			registrations = cSourceService.getCSourceRegistrations();
+
+			for (JsonNode reg : registrations) {
+				CSourceRegistration regEntry = DataSerializer
+						.getCSourceRegistration(objectMapper.writeValueAsString(reg));
+				CSourceNotification notifyEntry = generateNotificationEntry(regEntry, subscription,
+						TriggerReason.newlyMatching);
+				internalNotificationHandler.notify(notifyEntry, subscription);
+			}
+		} catch (Exception e) {
+			logger.error("Failed to get initial notification from registry");
+			logger.error(e);
+		}
+
 	}
 
 	private void syncToMessageBus(SubscriptionRequest subscriptionRequest) {
 		String id = subscriptionRequest.getSubscription().getId().toString();
-		if (!this.kafkaOps.isMessageExists(id,
-				KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC)) {
-			this.kafkaOps.pushToKafka(producerChannel.csourceSubscriptionWriteChannel(),
-					id.getBytes(), DataSerializer.toJson(subscriptionRequest).getBytes());
+		if (!this.kafkaOps.isMessageExists(id, KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC)) {
+			this.kafkaOps.pushToKafka(producerChannel.csourceSubscriptionWriteChannel(), id.getBytes(),
+					DataSerializer.toJson(subscriptionRequest).getBytes());
 		}
 	}
 
@@ -295,8 +321,8 @@ public class CSourceSubscriptionService {
 
 	public List<Subscription> getAllSubscriptions(int limit) {
 		List<Subscription> result = new ArrayList<Subscription>();
-		for(Subscription sub: subscriptionId2Subscription.values()) {
-			if(!sub.isInternal()) {
+		for (Subscription sub : subscriptionId2Subscription.values()) {
+			if (!sub.isInternal()) {
 				result.add(sub);
 			}
 		}
@@ -522,24 +548,25 @@ public class CSourceSubscriptionService {
 		}
 
 		if (GEO_REL_EQUALS.equals(relation)) {
-			if (location instanceof Point) {	
-				List<Double> geoValueAsList = java.util.Arrays.asList( ((Point)location).lon(), ((Point)location).lat() );
+			if (location instanceof Point) {
+				List<Double> geoValueAsList = java.util.Arrays.asList(((Point) location).lon(),
+						((Point) location).lat());
 				return geoValueAsList.equals(geoQuery.getCoordinates());
 			} else {
-	
+
 				return false;
-			}			
+			}
 		} else {
 			Shape entityShape;
 			if (location instanceof Point) {
-				entityShape = shapeFactory.pointXY( ((Point)location).lon(),
-						((Point)location).lat() );
+				entityShape = shapeFactory.pointXY(((Point) location).lon(), ((Point) location).lat());
 			} else if (location instanceof Polygon) {
 				PolygonBuilder polygonBuilder = shapeFactory.polygon();
-				Iterator<SinglePosition> it = ((Polygon)location).positions().children().iterator().next().children().iterator();
-				while (it.hasNext()) {  
-		            polygonBuilder.pointXY( ((SinglePosition)it).coordinates().getLon(), 
-		            		((SinglePosition)it).coordinates().getLat() );
+				Iterator<SinglePosition> it = ((Polygon) location).positions().children().iterator().next().children()
+						.iterator();
+				while (it.hasNext()) {
+					polygonBuilder.pointXY(((SinglePosition) it).coordinates().getLon(),
+							((SinglePosition) it).coordinates().getLat());
 				}
 				entityShape = polygonBuilder.build();
 			} else {

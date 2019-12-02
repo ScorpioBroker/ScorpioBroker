@@ -45,6 +45,8 @@ public class StartupConfig {
 	String id;
 	@Value("${broker.geoCoverage:#{null}}")
 	String geom;
+	@Value("${broker.reginfo:#{null}}")
+	String reginfo;
 	@Value("${broker.parent.location.url:SELF}")
 	String parentUrl;
 	@Value("${broker.customEndpoint:}")
@@ -118,6 +120,9 @@ public class StartupConfig {
 	}
 
 	private String getCSInformationNode() throws URISyntaxException {
+		if(reginfo != null){
+			return reginfo;
+		}
 		Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
 		// @formatter:off
 		Map<String, String> streamRecords = records.entrySet().stream()
