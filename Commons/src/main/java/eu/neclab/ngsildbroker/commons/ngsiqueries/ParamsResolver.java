@@ -250,10 +250,11 @@ public class ParamsResolver {
 		String jsonString = null;
 		try {
 			JsonNode rootNode = objectMapper.createObjectNode();
-			if (context != null) {
-				ArrayNode contextNode = objectMapper.valueToTree(context);
-				((ObjectNode) rootNode).putArray("@context").addAll(contextNode);
-			}
+//			if (context != null) {
+//				ArrayNode contextNode = objectMapper.valueToTree(context);
+//				((ObjectNode) rootNode).putArray("@context").addAll(contextNode);
+//			}
+			//cant be in here like that
 			((ObjectNode) rootNode).put(attribute, "");
 			jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
 		} catch (JsonProcessingException e) {

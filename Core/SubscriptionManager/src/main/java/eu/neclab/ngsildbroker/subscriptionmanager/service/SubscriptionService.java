@@ -54,6 +54,7 @@ import com.netflix.discovery.shared.Application;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
@@ -430,6 +431,7 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private void sendNotification(List<Entity> dataList, Subscription subscription) {
+		logger.debug(DataSerializer.toJson(dataList));
 		if (subscription.getTimeInterval() > 0) {
 			try {
 				intervalHandler.notify(new Notification(EntityTools.getRandomID("notification:"), new Date(),
@@ -465,23 +467,55 @@ public class SubscriptionService implements SubscriptionManager {
 				return null;
 			}
 		}
-		List<Property> properties = extractProperties(entity, subscription);
-		List<Relationship> relationships = extractRelationShips(entity, subscription);
-		List<GeoProperty> geoProperties = extractGeoProperties(entity, subscription);
-		if (properties.isEmpty() && relationships.isEmpty() && geoProperties.isEmpty()) {
+		List<BaseProperty> baseProps = extractBaseProps(entity, subscription);
+
+		if (baseProps.isEmpty()) {
 			return null;
 		}
-		Entity result = new Entity(entity.getId(), entity.getLocation(), entity.getObservationSpace(),
-				entity.getOperationSpace(), properties, entity.getRefToAccessControl(), relationships, entity.getType(),
-				geoProperties);
+		Entity result = new Entity(entity.getId(), entity.getType(), baseProps, entity.getRefToAccessControl());
 
 		return result;
+	}
+
+	private List<BaseProperty> extractBaseProps(Entity entity, Subscription subscription) {
+		ArrayList<BaseProperty> result = new ArrayList<BaseProperty>();
+		if(!shouldFire(entity, subscription)) {
+			return result;
+		}
+		ArrayList<String> attribNames = getAttribNames(subscription);
+		if (attribNames.isEmpty()) {
+			return entity.getAllBaseProperties();
+		}
+		
+		for (BaseProperty property : entity.getAllBaseProperties()) {
+			if (attribNames.contains(property.getName())) {
+				result.add(property);
+			}
+		}
+		return result;
+	}
+
+	private boolean shouldFire(Entity entity, Subscription subscription) {
+		if(subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
+			return true;
+		}
+		for(String attribName:subscription.getAttributeNames()) {
+			for(BaseProperty baseProp: entity.getAllBaseProperties()) {
+				if(attribName.equals(baseProp.getName())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private Entity generateDataFromBaseOp(Entity deltaInfo, Subscription subscription) throws ResponseException {
 
 		byte[] msg = kafkaOps.getMessage(deltaInfo.getId().toString(), KafkaConstants.ENTITY_TOPIC);
 		Entity entity = DataSerializer.getEntity(new String(msg));
+		if(!shouldFire(deltaInfo, subscription)) {
+			return null;
+		}
 		if (!evaluateGeoQuery(subscription.getLdGeoQuery(), entity.getLocation())) {
 			return null;
 		}
@@ -490,100 +524,32 @@ public class SubscriptionService implements SubscriptionManager {
 				return null;
 			}
 		}
-		Entity temp = new Entity(deltaInfo.getId(), entity.getLocation(), entity.getObservationSpace(),
-				entity.getOperationSpace(), null, entity.getRefToAccessControl(), null, entity.getType(), null);
-		ArrayList<Property> props = new ArrayList<Property>();
-		ArrayList<Relationship> relations = new ArrayList<Relationship>();
-		if (deltaInfo.getProperties() != null) {
-			for (Property prop : deltaInfo.getProperties()) {
-				if (subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()
-						|| subscription.getAttributeNames().contains(prop.getName())) {
-					props.add(prop);
-				}
-			}
+		
+		List<BaseProperty> baseProps = extractBaseProps(entity, subscription);
+		if (baseProps.isEmpty()) {
+			return null;
 		}
-		if (deltaInfo.getRelationships() != null) {
-			for (Relationship prop : deltaInfo.getRelationships()) {
-				if (subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()
-						|| subscription.getAttributeNames().contains(prop.getName())) {
-					relations.add(prop);
-				}
-			}
-		}
-
-		if (!props.isEmpty() || !relations.isEmpty()) {
-			for (Relationship relationship : entity.getRelationships()) {
-				if (subscription.getNotification().getAttributeNames().contains(relationship.getName())
-						&& !relations.contains(relationship)) {
-					relations.add(relationship);
-				}
-			}
-			for (Property property : entity.getProperties()) {
-				if (subscription.getNotification().getAttributeNames().contains(property.getName())
-						&& !props.contains(property)) {
-					props.add(property);
-				}
-			}
-			temp.setProperties(props);
-			temp.setRelationships(relations);
-			return temp;
-		}
-
-		return null;
+		Entity temp = new Entity(deltaInfo.getId(),entity.getType(), baseProps, entity.getRefToAccessControl());
+		
+		return temp;
 	}
 
-	private List<Relationship> extractRelationShips(Entity data, Subscription subscription) {
-		ArrayList<String> attribNames = getAttribNames(subscription);
-		if(attribNames.isEmpty()) {
-			return data.getRelationships();
-		}
-		ArrayList<Relationship> result = new ArrayList<Relationship>();
-		for (Relationship relationship : data.getRelationships()) {
-			if (attribNames.contains(relationship.getName()) && relationship.getObject() != null) {
-				result.add(relationship);
-			}
-		}
-		return result;
-	}
+	
 
 	private ArrayList<String> getAttribNames(Subscription subscription) {
 		ArrayList<String> attribNames = new ArrayList<String>();
 		if (subscription.getNotification().getAttributeNames() != null) {
 			attribNames.addAll(subscription.getNotification().getAttributeNames());
 		}
-//		if (subscription.getAttributeNames() != null) {
-//			attribNames.addAll(subscription.getAttributeNames());
-//		}
+		// if (subscription.getAttributeNames() != null) {
+		// attribNames.addAll(subscription.getAttributeNames());
+		// }
 		return attribNames;
 	}
 
-	private List<Property> extractProperties(Entity data, Subscription subscription) {
-		ArrayList<String> attribNames = getAttribNames(subscription);
-		if(attribNames.isEmpty()) {
-			return data.getProperties();
-		}
-		ArrayList<Property> result = new ArrayList<Property>();
-		for (Property property : data.getProperties()) {
-			if (attribNames.contains(property.getName()) && property.getValue() != null) {
-				result.add(property);
-			}
-		}
-		return result;
-	}
+	
 
-	private List<GeoProperty> extractGeoProperties(Entity data, Subscription subscription) {
-		ArrayList<String> attribNames = getAttribNames(subscription);
-		if(attribNames.isEmpty()) {
-			return data.getGeoProperties();
-		}
-		ArrayList<GeoProperty> result = new ArrayList<GeoProperty>();
-		for (GeoProperty property : data.getGeoProperties()) {
-			if (attribNames.contains(property.getName()) && property.getValue() != null) {
-				result.add(property);
-			}
-		}
-		return result;
-	}
+	
 
 	private boolean evaluateGeoQuery(LDGeoQuery geoQuery, GeoProperty location) {
 		return evaluateGeoQuery(geoQuery, location, -1);
@@ -773,6 +739,7 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleCSourceNotification(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
 		String key = kafkaOps.getMessageKey(message);
+		System.err.println("LOOOK HERE FOR KEY AND VALUE: " + key + " " + payload);
 		@SuppressWarnings("unchecked")
 		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
 		subscribeToRemote(subscriptionId2Subscription.get(key), endPoints);

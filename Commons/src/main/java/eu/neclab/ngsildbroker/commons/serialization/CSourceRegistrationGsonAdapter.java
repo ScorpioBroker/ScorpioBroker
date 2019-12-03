@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -14,6 +15,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import javax.sql.rowset.serial.SerialException;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
@@ -34,7 +37,7 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 public class CSourceRegistrationGsonAdapter
 		implements JsonDeserializer<CSourceRegistration>, JsonSerializer<CSourceRegistration> {
 	
-	private SimpleDateFormat formatter = new SimpleDateFormat(NGSIConstants.DEFAULT_DATE_FORMAT);
+	
 
 	@Override
 	public JsonElement serialize(CSourceRegistration src, Type typeOfSrc, JsonSerializationContext context) {
@@ -154,7 +157,7 @@ public class CSourceRegistrationGsonAdapter
 		}
 		
 		if(src.getExpires()!=null) {
-			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools.getJson(src.getExpires().getTime(), context));
+			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools.getJson(src.getExpires(), context));
 		}
 		
 		return top;
@@ -266,13 +269,11 @@ public class CSourceRegistrationGsonAdapter
 				}
 			}else if(key.equals(NGSIConstants.NGSI_LD_EXPIRES)) {
 				String expires=value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
-				Date date = null;
 				try {
-					date = (Date) formatter.parse(expires);
-				} catch (ParseException e) {
-					e.printStackTrace();
+					result.setExpires(SerializationTools.date2Long(expires));
+				} catch (Exception e) {
+					throw new JsonParseException(e.getMessage());
 				}
-				result.setExpires(date);
 			}
 		}
 		return result;

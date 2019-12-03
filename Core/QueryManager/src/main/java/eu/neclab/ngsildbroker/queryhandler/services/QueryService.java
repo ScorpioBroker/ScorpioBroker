@@ -293,9 +293,9 @@ public class QueryService {
 		// get consumer record
 		ConsumerRecord<String, byte[]> consumerRecord = sendAndReceive.get();
 		// return consumer value
-		logger.trace("getFromContextRegistry() :: completed");
+		logger.info("getFromContextRegistry() :: completed");
 		contextRegistryData = new String((byte[]) consumerRecord.value());
-		logger.debug("getFromContextRegistry() data broker list::" + contextRegistryData);
+		logger.info("getFromContextRegistry() data broker list::" + contextRegistryData);
 		return contextRegistryData;
 	}
 
@@ -367,6 +367,7 @@ public class QueryService {
 					fromCsources.forEach(e->logger.debug(e));
 				}
 			} catch (Exception e) {
+				e.printStackTrace();
 				logger.error("No reply from registry. Looks like you are running without a context source registry.");
 				logger.error(e.getMessage());
 			}
@@ -463,8 +464,13 @@ public class QueryService {
 			logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + query);
 			Callable<String> callable = () -> {
 				HttpHeaders headers = new HttpHeaders();
-				headers.addAll("Link", Arrays.asList(linkHeaders.toArray(new String[0])));
+				for(Object link: linkHeaders) {
+					headers.add("Link", "<" + link.toString() + ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+				}
+				
+				
 				HttpEntity entity = new HttpEntity<>(headers);
+				
 				String result = restTemplate.exchange(uri.toString() + "/ngsi-ld/v1/entities/?" + query, HttpMethod.GET,
 						entity, String.class).getBody();
 			
@@ -486,7 +492,7 @@ public class QueryService {
 					JsonNode jsonNode = objectMapper.readTree(response);
 					for (int i = 0; i <= jsonNode.size(); i++) {
 						if (jsonNode.get(i) != null && !jsonNode.isNull()) {
-							String payload = contextResolver.expand(jsonNode.get(i).toString(), linkHeaders);
+							String payload = contextResolver.expand(jsonNode.get(i).toString(), null);//, linkHeaders);
 							entitiesList.add(payload);
 						}
 					}

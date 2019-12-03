@@ -101,20 +101,20 @@ public class ContextResolverBasic {
 	public String expand(String body, List<Object> contextLinks) throws ResponseException {
 		try {
 			Object obj = JsonUtils.fromString(body);
-			if(obj instanceof Map) {
+			if (obj instanceof Map) {
 				return expand((Map<String, Object>) obj, contextLinks);
 			}
-			if(obj instanceof List) {
+			if (obj instanceof List) {
 				List<Object> list = (List<Object>) obj;
-				if(list.isEmpty()) {
+				if (list.isEmpty()) {
 					throw new ResponseException(ErrorType.InvalidRequest);
 				}
 				StringBuilder result = new StringBuilder("[");
-				for(Object listObj: list) {
+				for (Object listObj : list) {
 					result.append(expand((Map<String, Object>) listObj, contextLinks));
 					result.append(",");
 				}
-				result.setCharAt(result.length()-1, ']');
+				result.setCharAt(result.length() - 1, ']');
 				return result.toString();
 			}
 			throw new ResponseException(ErrorType.InvalidRequest);
@@ -123,7 +123,7 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.InvalidRequest);
 		}
 	}
-	
+
 	public String expand(Map<String, Object> json, List<Object> contextLinks) throws ResponseException {
 		try {
 			Object tempCtx = json.get(NGSIConstants.JSON_LD_CONTEXT);
@@ -140,16 +140,21 @@ public class ContextResolverBasic {
 			if (contextLinks != null && !contextLinks.isEmpty()) {
 				context.addAll(contextLinks);
 			}
-			Map<String, Object> fullContext = getFullContext(context);
-//			validateAndCleanContext(fullContext);
-			fullContext.remove(IS_FULL_VALID);
+			// context.remove(CORE_CONTEXT_URL_STR);
+
+			// Map<String, Object> fullContext = getFullContext(context);
+			// // validateAndCleanContext(fullContext);
+			// fullContext.remove(IS_FULL_VALID);
 			ArrayList<Object> usedContext = new ArrayList<Object>();
-			usedContext.add(fullContext);
+			usedContext.addAll(context);
 			usedContext.add(BASE_CONTEXT);
 
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
 			List<Object> expanded = JsonLdProcessor.expand(json);
 			protectGeoProps(expanded, usedContext);
+			if (expanded.isEmpty()) {
+				return "";
+			}
 			return JsonUtils.toPrettyString(expanded.get(0));
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -184,7 +189,11 @@ public class ContextResolverBasic {
 					&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
 				typeFound = true;
 			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
-				value = ((List) mapValue).get(0);
+				if (mapValue != null && mapValue instanceof List) {
+					List tempList = (List) mapValue;
+					if (!tempList.isEmpty())
+						value = tempList.get(0);
+				}
 			} else {
 				if (mapValue instanceof Map) {
 					protectGeoProps((Map<String, Object>) mapValue, usedContext);
@@ -198,7 +207,6 @@ public class ContextResolverBasic {
 			if (potentialStringValue != null) {
 				return;
 			}
-			
 
 			Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
 			compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
@@ -254,15 +262,14 @@ public class ContextResolverBasic {
 
 	}
 
-	private void unprotectGeoProps(Map<String, Object> objMap)
-			throws JsonParseException, IOException {
+	private void unprotectGeoProps(Map<String, Object> objMap) throws JsonParseException, IOException {
 		boolean typeFound = false;
 		Object value = null;
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
 			if (NGSIConstants.QUERY_PARAMETER_TYPE.equals(key) && (mapValue instanceof String)) {
-				
+
 				if (NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT.equals(mapValue)) {
 					typeFound = true;
 				}
@@ -284,15 +291,14 @@ public class ContextResolverBasic {
 		}
 
 		if (typeFound && value != null) {
-			
+
 			objMap.put(NGSIConstants.VALUE, JsonUtils.fromString((String) value));
-			
+
 		}
 
 	}
 
-	private void unprotectGeoProps(List<Object> objList)
-			throws JsonParseException, IOException {
+	private void unprotectGeoProps(List<Object> objList) throws JsonParseException, IOException {
 		for (Object entry : objList) {
 			if (entry instanceof Map) {
 
@@ -346,13 +352,13 @@ public class ContextResolverBasic {
 
 	private CompactedJson compact(Object json, Map<String, Object> context, List<Object> rawContext)
 			throws ResponseException {
-//		validateAndCleanContext(context);
+		// validateAndCleanContext(context);
 		List<Object> fullContext = new ArrayList<Object>();
 		if (context != null && !context.isEmpty()) {
 			fullContext.add(context);
 		}
 		fullContext.add(CORE_CONTEXT_URL_STR);
-//		fullContext.add(BASE_CONTEXT);
+		// fullContext.add(BASE_CONTEXT);
 		CompactedJson result = new CompactedJson();
 		int hash = json.hashCode();
 		if (context.containsKey(IS_FULL_VALID)) {
@@ -362,7 +368,7 @@ public class ContextResolverBasic {
 		}
 		context.remove(IS_FULL_VALID);
 		try {
-			
+
 			Map<String, Object> tempResult = JsonLdProcessor.compact(json, fullContext, defaultOptions);
 			unprotectGeoProps(tempResult);
 			if (tempResult.containsKey("@graph")) {
@@ -407,8 +413,10 @@ public class ContextResolverBasic {
 			String temp = (String) context;
 			if (temp.equals(CORE_CONTEXT_URL_STR)) {
 				result.put(IS_FULL_VALID, true);
+			} else {
+				// Don't download core again
+				result.putAll(getRemoteContext(temp));
 			}
-			result.putAll(getRemoteContext(temp));
 		} else if (context instanceof List) {
 			for (Object entry : (List) context) {
 				if (entry instanceof String) {
@@ -416,9 +424,10 @@ public class ContextResolverBasic {
 					String temp = (String) entry;
 					if (temp.equals(CORE_CONTEXT_URL_STR)) {
 						result.put(IS_FULL_VALID, true);
-					}
+					} else {
 
-					result.putAll(getRemoteContext(entry.toString()));
+						result.putAll(getRemoteContext(entry.toString()));
+					}
 				} else if (entry instanceof Map) {
 					result.putAll(((Map) entry));
 				} else if (entry instanceof List) {
@@ -440,6 +449,7 @@ public class ContextResolverBasic {
 
 	private Map<String, Object> getRemoteContext(String url) throws ResponseException {
 		try {
+
 			String body = httpUtils.doGet(new URI(url));
 			Map<String, Object> remoteContext = (Map<String, Object>) JsonUtils.fromString(body);
 			Object temp = remoteContext.get(NGSIConstants.JSON_LD_CONTEXT);

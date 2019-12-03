@@ -253,7 +253,7 @@ public class CSourceService {
 				}
 			};
 			regId2TimerTask.put(csourceReg.getId().toString(), cancel);
-			watchDog.schedule(cancel, csourceReg.getExpires().getTime() - System.currentTimeMillis());
+			watchDog.schedule(cancel, csourceReg.getExpires() - System.currentTimeMillis());
 		}
 	}
 
@@ -309,10 +309,9 @@ public class CSourceService {
 	}
 
 	// return true for future date validation
-	private boolean isValidFutureDate(Date date) {
-		LocalDateTime currentDate = LocalDateTime.now();
-		LocalDateTime expires = LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
-		return !expires.isBefore(currentDate);
+	private boolean isValidFutureDate(Long date) {
+		
+		return System.currentTimeMillis() < date;
 	}
 
 	@KafkaListener(topics = "${csource.query.topic}", groupId = "csourceQueryHandler")

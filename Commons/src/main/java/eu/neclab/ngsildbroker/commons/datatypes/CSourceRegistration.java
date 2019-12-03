@@ -14,7 +14,7 @@ public class CSourceRegistration {
 
 	private String description;
 	private URI endpoint;
-	private Date expires;
+	private Long expires;
 	private URI id;
 
 	private List<Information> information;
@@ -97,11 +97,11 @@ public class CSourceRegistration {
 		this.endpoint = endpoint;
 	}
 
-	public Date getExpires() {
+	public Long getExpires() {
 		return expires;
 	}
 
-	public void setExpires(Date expires) {
+	public void setExpires(Long expires) {
 		this.expires = expires;
 	}
 

@@ -231,9 +231,13 @@ public class CSourceSubscriptionService {
 			for (JsonNode reg : registrations) {
 				CSourceRegistration regEntry = DataSerializer
 						.getCSourceRegistration(objectMapper.writeValueAsString(reg));
-				CSourceNotification notifyEntry = generateNotificationEntry(regEntry, subscription,
-						TriggerReason.newlyMatching);
-				internalNotificationHandler.notify(notifyEntry, subscription);
+				if (!regEntry.isInternal()) {
+					CSourceNotification notifyEntry = generateNotificationEntry(regEntry, subscription,
+							TriggerReason.newlyMatching);
+					if (notifyEntry != null) {
+						internalNotificationHandler.notify(notifyEntry, subscription);
+					}
+				}
 			}
 		} catch (Exception e) {
 			logger.error("Failed to get initial notification from registry");
