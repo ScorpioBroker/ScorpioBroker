@@ -52,6 +52,19 @@ abstract public class StorageReaderDAO {
 		return "[" + String.join(",", s) + "]";
 	}
 
+	public List<String> getLocalTypes() {
+		ArrayList<String> result = new ArrayList<String>();
+		List<Map<String, Object>> list = readerJdbcTemplate.queryForList(
+				"SELECT distinct type as type FROM entity WHERE type IS NOT NULL;");
+		if(list == null ||list.isEmpty()) {
+			return null;
+		}
+		for (Map<String, Object> row : list) {
+			result.add(row.get("type").toString());
+		}
+		return result;
+	}
+	
 	public List<String> getAllTypes() {
 		ArrayList<String> result = new ArrayList<String>();
 		List<Map<String, Object>> list = readerJdbcTemplate.queryForList(

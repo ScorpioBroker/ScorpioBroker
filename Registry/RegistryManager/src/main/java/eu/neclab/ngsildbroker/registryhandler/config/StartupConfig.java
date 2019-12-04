@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Information;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 
 @Component
 public class StartupConfig {
@@ -51,12 +52,16 @@ public class StartupConfig {
 	String parentUrl;
 	@Value("${broker.customEndpoint:}")
 	String customEndpoint;
+	@Value("${broker.regOnlyLocal:#{false}}")
+	boolean localOnlyAutoReg;
 	@Autowired
 	KafkaOps operations;
 	@Value("${csource.source.topic}")
 	String CSOURCE_TOPIC;
 	@Autowired
 	ObjectMapper objectMapper;
+	@Autowired
+	CSourceDAO cSourceDAO;
 	// String s="\"type\": \"Polygon\",\"coordinates\": [[[100.0, 0.0],[101.0,
 	// 0.0],[101.0, 1.0],[100.0, 1.0],[100.0, 0.0] ] ]";
 
@@ -75,24 +80,50 @@ public class StartupConfig {
 			logger.error("registration with parent falied : no endpoint and geom specified ");
 			return;
 		}
+		try {
+			new URI(id);
+		} catch (URISyntaxException e1) {
+			logger.error("aborting registration. your id has to be a uri");
+			return;
+		}
 		String endpoint;
 		if (!customEndpoint.isEmpty()) {
 			endpoint = customEndpoint;
 		} else {
 			// TODO this has to be changed because the registry manager just straight up
 			// crashes if the gateway is not up yet
-			endpoint = MicroServiceUtils.getResourceURL(eurekaClient, "");
+			try {
+				endpoint = MicroServiceUtils.getResourceURL(eurekaClient, "");
+			} catch (Exception e) {
+				logger.error(
+						"Failed to retrieve endpoint url. Please make sure that the gateway is running or provide a customEndpoint entry");
+				return;
+			}
 		}
-
+		if(!parentUrl.endsWith("/")) {
+			parentUrl += "/";
+		}
+		URI parentUri;
+		URI parentPatchUri;
+		try {
+			parentUri = new URI(parentUrl);
+			parentPatchUri = new URI(parentUrl + id);
+		} catch (URISyntaxException e1) {
+			logger.error("your parentUrl is not a valid uri");
+			return;
+		}
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		String payload = getPayload(endpoint);
+		HttpEntity<String> entity = new HttpEntity<String>(payload, headers);
 		try {
 			// set headers
-			HttpHeaders headers = new HttpHeaders();
-			headers.setContentType(MediaType.APPLICATION_JSON);
-			String payload = getPayload(endpoint);
+
 			logger.info("payload ::" + payload);
-			HttpEntity<String> entity = new HttpEntity<String>(payload, headers);
+
 			// call
-			restTemplate.postForObject(new URI(parentUrl), entity, String.class);
+			restTemplate.postForObject(parentUri, entity, String.class);
+
 			logger.info("Broker registered with parent at :" + parentUrl);
 		} catch (HttpClientErrorException | HttpServerErrorException httpClientOrServerExc) {
 			logger.error("status code::" + httpClientOrServerExc.getStatusCode());
@@ -101,16 +132,21 @@ public class StartupConfig {
 				logger.error("Broker registration failed due to parent broker.");
 			}
 			if (HttpStatus.CONFLICT.equals(httpClientOrServerExc.getStatusCode())) {
-				logger.error("Broker already registered with parent.");
+				logger.info("Broker already registered with parent. Attempting patch");
+				try {
+				restTemplate.patchForObject(parentPatchUri, entity, String.class);
+				} catch (Exception e) {
+					logger.error("patching failed");
+				}
 			}
-		} catch (Exception e) {
-			logger.error("Registration with parent failed::", e);
+		} catch(Exception e) {
+			logger.error("failed to register with parent completly", e);
 		}
 
 	}
 
 	// minimum payload for csource registration
-	private String getPayload(String endpoint) throws URISyntaxException {
+	private String getPayload(String endpoint) {
 		// @formatter:off
 		return "{\r\n" + "	\"id\": \"" + id + "\",\r\n" + "	\"type\": \"ContextSourceRegistration\",\r\n"
 				+ "	\"information\": " + getCSInformationNode() + ",\r\n" + "	\"endpoint\": \"" + endpoint + "\",\r\n"
@@ -119,16 +155,36 @@ public class StartupConfig {
 		// @formatter:on
 	}
 
-	private String getCSInformationNode() throws URISyntaxException {
-		if(reginfo != null){
+	private String getCSInformationNode() {
+
+		if (reginfo != null) {
 			return reginfo;
 		}
-		Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
-		// @formatter:off
-		Map<String, String> streamRecords = records.entrySet().stream()
-				.collect(Collectors.toMap(Map.Entry::getKey, e -> new String(e.getValue())));
-		// @formatter:on
-		return this.getInformationNode(streamRecords);
+		List<String> types;
+		if (localOnlyAutoReg) {
+			types = cSourceDAO.getLocalTypes();
+		} else {
+			types = cSourceDAO.getAllTypes();
+		}
+		if (types.isEmpty()) {
+			return "[]";
+		}
+		StringBuilder result = new StringBuilder("[{\"entities\": [");
+
+		for (String type : types) {
+			result.append("{\"type\": \"" + type + "\"},");
+		}
+		result.deleteCharAt(result.length() - 1);
+		result.append("]}]");
+		return result.toString();
+
+		//
+		// Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
+		// // @formatter:off
+		// Map<String, String> streamRecords = records.entrySet().stream()
+		// .collect(Collectors.toMap(Map.Entry::getKey, e -> new String(e.getValue())));
+		// // @formatter:on
+		// return this.getInformationNode(streamRecords);
 	}
 
 	private String getInformationNode(Map<String, String> records) throws URISyntaxException {
