@@ -263,7 +263,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		}
 		builder.append("offset=" + offset + "&");
 		builder.append("limit=" + limit + "&");
-		builder.append("qtoken=" + token + ">rel=\"" + rel + "\"");
+		builder.append("qtoken=" + token + ">;rel=\"" + rel + "\"");
 		return builder.toString();
 	}
 

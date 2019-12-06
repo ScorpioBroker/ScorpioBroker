@@ -788,7 +788,10 @@ public final class HttpUtils {
 		BodyBuilder builder = ResponseEntity.status(status);
 		if (additionalHeaders != null) {
 			for (Entry<String, List<String>> entry : additionalHeaders.entrySet()) {
-				builder.header(entry.getKey(), entry.getValue().toArray(new String[0]));
+				for(String value: entry.getValue()) {
+					builder.header(entry.getKey(), value);
+				}
+				
 			}
 		}
 		return builder.body(replyBody);
