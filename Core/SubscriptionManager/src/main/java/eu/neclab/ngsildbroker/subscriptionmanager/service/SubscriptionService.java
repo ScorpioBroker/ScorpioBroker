@@ -739,7 +739,6 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleCSourceNotification(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
 		String key = kafkaOps.getMessageKey(message);
-		System.err.println("LOOOK HERE FOR KEY AND VALUE: " + key + " " + payload);
 		@SuppressWarnings("unchecked")
 		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
 		subscribeToRemote(subscriptionId2Subscription.get(key), endPoints);
