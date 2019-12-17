@@ -85,7 +85,7 @@ public class EntityService {
 	String appendOverwriteFlag;
 	@Value("${entity.index.topic}")
 	String ENTITY_INDEX;
-	
+
 	@Value("${batchoperations.maxnumber.create:-1}")
 	int maxCreateBatch;
 	@Value("${batchoperations.maxnumber.update:-1}")
@@ -821,8 +821,9 @@ public class EntityService {
 						"This interface only supports arrays of entities");
 			}
 			ArrayNode myArray = (ArrayNode) myTree;
-			if(maxCreateBatch != -1 && myArray.size() > maxCreateBatch) {
-				throw new ResponseException(ErrorType.RequestEntityTooLarge, "Maximum allowed number of entities for this operation is " + maxCreateBatch);
+			if (maxCreateBatch != -1 && myArray.size() > maxCreateBatch) {
+				throw new ResponseException(ErrorType.RequestEntityTooLarge,
+						"Maximum allowed number of entities for this operation is " + maxCreateBatch);
 			}
 			Iterator<JsonNode> it = myArray.iterator();
 			while (it.hasNext()) {
@@ -831,7 +832,7 @@ public class EntityService {
 				try {
 					result.addSuccess(createMessage(objectMapper.writeValueAsString(next)));
 				} catch (Exception e) {
-					
+
 					String entityId = "NOT AVAILABLE";
 					if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
 						entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
@@ -864,8 +865,9 @@ public class EntityService {
 						"This interface only supports arrays of entities");
 			}
 			ArrayNode myArray = (ArrayNode) myTree;
-			if(maxDeleteBatch != -1 && myArray.size() > maxDeleteBatch) {
-				throw new ResponseException(ErrorType.RequestEntityTooLarge, "Maximum allowed number of entities for this operation is " + maxDeleteBatch);
+			if (maxDeleteBatch != -1 && myArray.size() > maxDeleteBatch) {
+				throw new ResponseException(ErrorType.RequestEntityTooLarge,
+						"Maximum allowed number of entities for this operation is " + maxDeleteBatch);
 			}
 
 			Iterator<JsonNode> it = myArray.iterator();
@@ -904,8 +906,9 @@ public class EntityService {
 						"This interface only supports arrays of entities");
 			}
 			ArrayNode myArray = (ArrayNode) myTree;
-			if(maxUpdateBatch != -1 && myArray.size() > maxUpdateBatch) {
-				throw new ResponseException(ErrorType.RequestEntityTooLarge, "Maximum allowed number of entities for this operation is " + maxUpdateBatch);
+			if (maxUpdateBatch != -1 && myArray.size() > maxUpdateBatch) {
+				throw new ResponseException(ErrorType.RequestEntityTooLarge,
+						"Maximum allowed number of entities for this operation is " + maxUpdateBatch);
 			}
 			Iterator<JsonNode> it = myArray.iterator();
 			while (it.hasNext()) {
@@ -929,7 +932,7 @@ public class EntityService {
 					}
 
 				} catch (Exception e) {
-					
+
 					RestResponse response;
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
@@ -957,8 +960,9 @@ public class EntityService {
 						"This interface only supports arrays of entities");
 			}
 			ArrayNode myArray = (ArrayNode) myTree;
-			if(maxUpsertBatch != -1 && myArray.size() > maxUpsertBatch) {
-				throw new ResponseException(ErrorType.RequestEntityTooLarge, "Maximum allowed number of entities for this operation is " + maxUpsertBatch);
+			if (maxUpsertBatch != -1 && myArray.size() > maxUpsertBatch) {
+				throw new ResponseException(ErrorType.RequestEntityTooLarge,
+						"Maximum allowed number of entities for this operation is " + maxUpsertBatch);
 			}
 			Iterator<JsonNode> it = myArray.iterator();
 			while (it.hasNext()) {
@@ -977,7 +981,7 @@ public class EntityService {
 					result.addSuccess(createMessage(entityString));
 
 				} catch (Exception e) {
-					
+
 					RestResponse response;
 					if (e instanceof ResponseException) {
 						ResponseException responseException = ((ResponseException) e);
