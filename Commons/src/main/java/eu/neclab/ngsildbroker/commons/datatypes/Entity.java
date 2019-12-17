@@ -21,7 +21,7 @@ public class Entity {
 	private List<Property> properties;
 	private Object refToAccessControl;
 	private List<Relationship> relationships;
-	private List<GeoProperty> geoProperties;	
+	private List<GeoProperty> geoProperties;
 	private String type;
 	private Long createdAt;
 	private Long modifiedAt;
@@ -31,6 +31,7 @@ public class Entity {
 	private Property createdAtProp = new Property();
 	private Property modifiedAtProp = new Property();
 	private Property observedAtProp = new Property();
+
 	public Entity(URI id, String type, List<BaseProperty> baseProps, Object refToAccessControl) {
 		this.id = id;
 		this.type = type;
@@ -39,26 +40,45 @@ public class Entity {
 		relationships = new ArrayList<Relationship>();
 		properties = new ArrayList<Property>();
 		geoProperties = new ArrayList<GeoProperty>();
-		for(BaseProperty baseProp: baseProps) {
-			if(baseProp instanceof GeoProperty) {
-				if(baseProp.id.toString().equals(NGSIConstants.NGSI_LD_LOCATION)) {
+		for (BaseProperty baseProp : baseProps) {
+			if (baseProp instanceof GeoProperty) {
+				if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_LOCATION)) {
 					this.location = (GeoProperty) baseProp;
-				}else if(baseProp.id.toString().equals(NGSIConstants.NGSI_LD_OBSERVATION_SPACE)) {
+				} else if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_OBSERVATION_SPACE)) {
 					this.observationSpace = (GeoProperty) baseProp;
-				}else if(baseProp.id.toString().equals(NGSIConstants.NGSI_LD_OPERATION_SPACE)) {
+				} else if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_OPERATION_SPACE)) {
 					this.operationSpace = (GeoProperty) baseProp;
-				}else {
+				} else {
 					this.geoProperties.add((GeoProperty) baseProp);
 				}
-			}else if(baseProp instanceof Relationship) {
+			} else if (baseProp instanceof Relationship) {
 				this.relationships.add((Relationship) baseProp);
-			}else if(baseProp instanceof Property) {
-				this.properties.add((Property) baseProp);
+			} else if (baseProp instanceof Property) {
+				if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
+					if (((Property) baseProp).getValue() != null) {
+						createdAtProp = (Property) baseProp;
+						createdAt = (Long) createdAtProp.getValue().get(0);
+					}
+
+				} else if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+					if (((Property) baseProp).getValue() != null) {
+						modifiedAtProp = (Property) baseProp;
+						modifiedAt = (Long) modifiedAtProp.getValue().get(0);
+					}
+
+				} else if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
+					if (((Property) baseProp).getValue() != null) {
+						observedAtProp = (Property) baseProp;
+						observedAt = (Long) observedAtProp.getValue().get(0);
+					}
+				} else {
+					this.properties.add((Property) baseProp);
+				}
+
 			}
 		}
 	}
-	
-	
+
 	public Entity(URI id, GeoProperty location, GeoProperty observationSpace, GeoProperty operationSpace,
 			List<Property> properties, Object refToAccessControl, List<Relationship> relationships, String type,
 			List<GeoProperty> geoProperties) {
@@ -223,12 +243,10 @@ public class Entity {
 		modifiedAtProp.setSingleValue(modifiedAt);
 		this.modifiedAt = modifiedAt;
 	}
-	
 
 	public List<BaseProperty> getAllBaseProperties() {
 		return allBaseProperties;
 	}
-
 
 	public List<GeoProperty> getGeoProperties() {
 		return geoProperties;
@@ -242,8 +260,8 @@ public class Entity {
 			allBaseProperties.addAll(geoProperties);
 		}
 		this.geoProperties = geoProperties;
-	}	
-	
+	}
+
 	@Override
 	public String toString() {
 		return "Entity [id=" + id + ", location=" + location + ", observationSpace=" + observationSpace
