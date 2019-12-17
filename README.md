@@ -340,6 +340,16 @@ For more detailed explaination on NGSI-LD or JSON-LD. Please look at the
 [ETSI Specification](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf) or visit
 the [JSON-LD website](https://json-ld.org/).
 
+### Enable CORS support
+You can enable cors support in the gateway by providing these configuration options
+ - gateway.enablecors  -   default is False. Set to true for general enabling
+ - gateway.enablecors.allowall  -   default is False. Set to true to enable CORS from all origins, allow all headers and all methods. Not secure but still very often used.
+ - gateway.enablecors.allowedorigin  -   A comma separated list of allowed origins
+ - gateway.enablecors.allowedheader  -   A comma separated list of allowed headers
+ - gateway.enablecors.allowedmethods  -   A comma separated list of allowed methods 
+ - gateway.enablecors.allowallmethods  -   default is False. Set to true to allow all methods. If set to true it will override the allowmethods entry
+
+
 ### Postman example collection
 
 You can find a set of example calls, as a Postman collection, in the Examples folder. These examples use 2 Variables
@@ -381,6 +391,7 @@ In order to fix this issue and get eureka-server running you need to manually ad
 </dependencies>
 ...
 ```
+This should be fixed now using conditional dependencies. 
 ## Acknowledgements
 Part of the development has been founded by the EU in the AUTOPILOT project.
 
