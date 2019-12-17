@@ -85,6 +85,15 @@ public class EntityService {
 	String appendOverwriteFlag;
 	@Value("${entity.index.topic}")
 	String ENTITY_INDEX;
+	
+	@Value("${batchoperations.maxnumber.create:-1}")
+	int maxCreateBatch;
+	@Value("${batchoperations.maxnumber.update:-1}")
+	int maxUpdateBatch;
+	@Value("${batchoperations.maxnumber.upsert:-1}")
+	int maxUpsertBatch;
+	@Value("${batchoperations.maxnumber.delete:-1}")
+	int maxDeleteBatch;
 
 	@Autowired
 	@Qualifier("emops")
@@ -812,6 +821,9 @@ public class EntityService {
 						"This interface only supports arrays of entities");
 			}
 			ArrayNode myArray = (ArrayNode) myTree;
+			if(maxCreateBatch != -1 && myArray.size() > maxCreateBatch) {
+				throw new ResponseException(ErrorType.RequestEntityTooLarge, "Maximum allowed number of entities for this operation is " + maxCreateBatch);
+			}
 			Iterator<JsonNode> it = myArray.iterator();
 			while (it.hasNext()) {
 				JsonNode next = it.next();
@@ -852,6 +864,10 @@ public class EntityService {
 						"This interface only supports arrays of entities");
 			}
 			ArrayNode myArray = (ArrayNode) myTree;
+			if(maxDeleteBatch != -1 && myArray.size() > maxDeleteBatch) {
+				throw new ResponseException(ErrorType.RequestEntityTooLarge, "Maximum allowed number of entities for this operation is " + maxDeleteBatch);
+			}
+
 			Iterator<JsonNode> it = myArray.iterator();
 			while (it.hasNext()) {
 				JsonNode next = it.next();
@@ -888,6 +904,9 @@ public class EntityService {
 						"This interface only supports arrays of entities");
 			}
 			ArrayNode myArray = (ArrayNode) myTree;
+			if(maxUpdateBatch != -1 && myArray.size() > maxUpdateBatch) {
+				throw new ResponseException(ErrorType.RequestEntityTooLarge, "Maximum allowed number of entities for this operation is " + maxUpdateBatch);
+			}
 			Iterator<JsonNode> it = myArray.iterator();
 			while (it.hasNext()) {
 				JsonNode next = it.next();
@@ -938,6 +957,9 @@ public class EntityService {
 						"This interface only supports arrays of entities");
 			}
 			ArrayNode myArray = (ArrayNode) myTree;
+			if(maxUpsertBatch != -1 && myArray.size() > maxUpsertBatch) {
+				throw new ResponseException(ErrorType.RequestEntityTooLarge, "Maximum allowed number of entities for this operation is " + maxUpsertBatch);
+			}
 			Iterator<JsonNode> it = myArray.iterator();
 			while (it.hasNext()) {
 				JsonNode next = it.next();

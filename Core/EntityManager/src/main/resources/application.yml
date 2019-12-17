@@ -26,7 +26,12 @@ csources:
 bootstrap:
   servers: localhost:9092
 
-
+batchoperations:
+  maxnumber:
+    create: 1000
+    update: 1000
+    upsert: 1000
+    delete: 1000
 
 
 

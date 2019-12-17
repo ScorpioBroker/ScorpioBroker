@@ -14,7 +14,12 @@ query:
   result:
     topic: QUERY_RESULT
   topic: QUERY
-
+batchoperations:
+  maxnumber:
+    create: 1000
+    update: 1000
+    upsert: 1000
+    delete: 1000
 
 csource:
   stopListenerIfDbFails: false
