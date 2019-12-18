@@ -56,7 +56,7 @@ public class QueryTerm {
 	 * 
 	 * @param properties
 	 * @return
-	 * @throws ResponseException 
+	 * @throws ResponseException
 	 */
 	public boolean calculate(List<BaseProperty> properties) throws ResponseException {
 		boolean result = false;
@@ -76,7 +76,8 @@ public class QueryTerm {
 		return result;
 	}
 
-	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant) throws ResponseException {
+	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant)
+			throws ResponseException {
 		if (!attribute.matches(URI) && attribute.contains(".")) {
 			String[] splittedAttrib = attribute.split("\\.");
 			ArrayList<BaseProperty> newProps = new ArrayList<BaseProperty>();
@@ -158,14 +159,24 @@ public class QueryTerm {
 
 			} else if (operant.matches(LIST)) {
 				List<String> listOfOperants = Arrays.asList(operant.split(","));
-
-				for (String listOperant : listOfOperants) {
-					if (!value.contains(listOperant)) {
-						return false;
+				switch (operator) {
+				case "!=":
+					for (String listOperant : listOfOperants) {
+						if (value.contains(listOperant)) {
+							return false;
+						}
 					}
+					return true;
+				case "==":
+					for (String listOperant : listOfOperants) {
+						if (value.contains(listOperant)) {
+							return true;
+						}
+					}
+					return false;
+				default:
+					return false;
 				}
-				return true;
-
 			} else {
 				boolean finalReturnValue = false;
 				for (Object item : value) {
