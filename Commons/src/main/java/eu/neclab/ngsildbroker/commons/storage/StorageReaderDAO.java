@@ -24,7 +24,7 @@ abstract public class StorageReaderDAO {
 	private final static Logger logger = LogManager.getLogger(StorageReaderDAO.class);
 
 	@Autowired
-	private JdbcTemplate readerJdbcTemplate;
+	protected JdbcTemplate readerJdbcTemplate;
 
 	@PostConstruct
 	public void init() {
@@ -35,7 +35,7 @@ abstract public class StorageReaderDAO {
 		List<String> entitiesList = new ArrayList<String>();
 		try {
 			String sqlQuery = translateNgsildQueryToSql(qp);
-			logger.info("NGSI-LD to SQL: " + sqlQuery);
+			logger.debug("NGSI-LD to SQL: " + sqlQuery);
 			List<Map<String, Object>> list = readerJdbcTemplate.queryForList(sqlQuery);
 			for (Map<String, Object> row : list) {
 				entitiesList.add(row.get("data").toString());
