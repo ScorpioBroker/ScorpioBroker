@@ -82,7 +82,9 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_POLYOGN="https://uri.etsi.org/ngsi-ld/Polygon";
 	public final static String NGSI_LD_POINT="https://uri.etsi.org/ngsi-ld/Point";
 	public final static String NGSI_LD_LINESTRING="https://uri.etsi.org/ngsi-ld/LineString";
-	
+	public final static String NGSI_LD_SUBSCRIPTION_ID ="https://uri.etsi.org/ngsi-ld/subscriptionId";
+	public final static String NGSI_LD_NOTIFIED_AT ="https://uri.etsi.org/ngsi-ld/notifiedAt";
+	public final static String NGSI_LD_DATA ="https://uri.etsi.org/ngsi-ld/data";
 	public final static String NGSI_LD_INTERNAL="https://uri.etsi.org/ngsi-ld/internal";
 	
 	public final static String GEO_JSON_COORDINATES = "coordinates";

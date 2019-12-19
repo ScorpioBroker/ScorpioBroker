@@ -26,8 +26,7 @@ public class DataSerializer {
 	// }.getType();
 	private static final Gson GSON = createGsonObject();
 	private static final Gson SPECIAL_GSON = createSpecialGsonObject();
-	private static final Type entitiesType = new TypeToken<List<Entity>>() {
-	}.getType();
+	
 	// private static final Type propertiesType = new TypeToken<List<Property>>() {
 	//
 	// }.getType();
@@ -86,6 +85,8 @@ public class DataSerializer {
 		builder.registerTypeAdapter(GeoValue.class, new GeoValueGsonAdapter());
 		builder.registerTypeAdapter(BatchResult.class, new BatchResultGsonAdapter());
 		builder.registerTypeAdapterFactory(new GeometryAdapterFactory());
+		builder.registerTypeAdapter(Notification.class, new NotificationGsonAdapter());
+		builder.registerTypeAdapter(SerializationTypes.entitiesType, new EntitiesGsonAdapter());
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
 	}
 
@@ -121,10 +122,7 @@ public class DataSerializer {
 	// return GSON.fromJson(json, propertiesType);
 	// }
 
-	// get collection of entities from json
-	public static List<Entity> getEntities(String json) {
-		return GSON.fromJson(json, entitiesType);
-	}
+
 
 	// get collection of entities from json
 	public static List<CSourceRegistration> getCSourceRegistrations(String json, Type type) {

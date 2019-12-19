@@ -77,7 +77,7 @@ public abstract class EntityTools {
 		for (Notification notification : data) {
 			newData.addAll(notification.getData());
 		}
-		return new Notification(data.get(0).getId(), new Date(System.currentTimeMillis()),
+		return new Notification(data.get(0).getId(), System.currentTimeMillis(),
 				data.get(0).getSubscriptionId(), newData, data.get(0).getErrorMsg(), data.get(0).getErrorType(),
 				data.get(0).getShortErrorMsg(), data.get(0).isSuccess());
 	}

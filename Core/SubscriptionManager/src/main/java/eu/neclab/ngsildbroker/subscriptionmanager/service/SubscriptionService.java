@@ -144,7 +144,7 @@ public class SubscriptionService implements SubscriptionManager {
 	private void setup() {
 
 		httpUtils = HttpUtils.getInstance(contextResolverService);
-		notificationHandler = new NotificationHandlerREST(this, contextResolverService);
+		notificationHandler = new NotificationHandlerREST(this, contextResolverService, objectMapper);
 		intervalHandler = new IntervalNotificationHandler(contextResolverService, notificationHandler,
 				subscriptionId2Context);
 		logger.trace("call loadStoredSubscriptions() ::");
@@ -434,7 +434,7 @@ public class SubscriptionService implements SubscriptionManager {
 		logger.debug(DataSerializer.toJson(dataList));
 		if (subscription.getTimeInterval() > 0) {
 			try {
-				intervalHandler.notify(new Notification(EntityTools.getRandomID("notification:"), new Date(),
+				intervalHandler.notify(new Notification(EntityTools.getRandomID("notification:"), System.currentTimeMillis(),
 						subscription.getId(), dataList, null, null, 0, true), subscription.getId().toString());
 			} catch (URISyntaxException e) {
 				logger.error("Exception ::", e);
@@ -444,7 +444,7 @@ public class SubscriptionService implements SubscriptionManager {
 		} else {
 			try {
 				notificationHandler.notify(
-						new Notification(EntityTools.getRandomID("notification:"), new Date(), subscription.getId(),
+						new Notification(EntityTools.getRandomID("notification:"), System.currentTimeMillis(), subscription.getId(),
 								dataList, null, null, 0, true),
 						subscription.getNotification().getEndPoint().getUri(),
 						subscription.getNotification().getEndPoint().getAccept(), subscription.getId().toString(),

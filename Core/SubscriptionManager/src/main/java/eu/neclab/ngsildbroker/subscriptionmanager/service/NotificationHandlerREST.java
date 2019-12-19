@@ -15,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Map.Entry;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.DispatcherType;
@@ -33,8 +34,16 @@ import javax.servlet.http.Part;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseEntity.BodyBuilder;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
@@ -50,10 +59,12 @@ public class NotificationHandlerREST implements NotificationHandler {
 	private final static Logger logger = LogManager.getLogger(NotificationHandlerREST.class);
 	private SubscriptionService subscriptionManagerService;
 	HttpUtils httpUtils;
+	private ObjectMapper objectMapper;
 
 	public NotificationHandlerREST(SubscriptionService subscriptionManagerService,
-			ContextResolverBasic contextResolver) {
+			ContextResolverBasic contextResolver, ObjectMapper objectMapper) {
 		this.subscriptionManagerService = subscriptionManagerService;
+		this.objectMapper = objectMapper;
 		httpUtils = HttpUtils.getInstance(contextResolver);
 	}
 
@@ -89,7 +100,7 @@ public class NotificationHandlerREST implements NotificationHandler {
 							synchronized (subId2Notifications) {
 								Notification sendOutNotification = EntityTools
 										.squashNotifications(subId2Notifications.removeAll(subId));
-								String jsonStr = DataSerializer.toJson(sendOutNotification.getData());
+								String jsonStr = DataSerializer.toJson(sendOutNotification);
 								Long now = System.currentTimeMillis();
 								subId2LastReport.put(subId, now / 1000);
 								subscriptionManagerService.reportNotification(subId, now);
@@ -115,12 +126,12 @@ public class NotificationHandlerREST implements NotificationHandler {
 
 			} else {
 				// TODO handle errors for notifications
-				String jsonStr = DataSerializer.toJson(notification.getData());
+				String jsonStr = DataSerializer.toJson(notification);
 				logger.trace("Sending notification");
 				ResponseEntity<Object> reply;
 				try {
 					reply = generateNotificationResponse(acceptHeader, jsonStr, context);
-					logger.debug(reply.getBody().toString());
+					logger.info(reply.getBody().toString());
 					httpUtils.doPost(callback, reply.getBody().toString(), reply.getHeaders().toSingleValueMap());
 				} catch (ResponseException e) {
 					logger.error("Exception ::", e);
@@ -564,7 +575,28 @@ public class NotificationHandlerREST implements NotificationHandler {
 			}
 			
 		};
-		return httpUtils.generateReply(request, body, null, context);
+		
+		ResponseEntity<Object> temp = httpUtils.generateReply(request, body, null, context);
+		JsonNode jsonTree;
+		try {
+			jsonTree = objectMapper.readTree(temp.getBody().toString());
+			if(jsonTree.get("data").isArray()) {
+				return temp;
+			}
+			ArrayNode dataArray = objectMapper.createArrayNode();
+			
+			dataArray.add(jsonTree.get("data"));
+			((ObjectNode)jsonTree).set("data", dataArray);
+					
+			BodyBuilder builder = ResponseEntity.status(HttpStatus.ACCEPTED);
+			
+			return builder.headers(temp.getHeaders()).body(objectMapper.writeValueAsString(jsonTree));
+			
+		} catch (IOException e) {
+			//Left empty intentionally
+		}
+		return temp;
+		 
 	}
 
 }

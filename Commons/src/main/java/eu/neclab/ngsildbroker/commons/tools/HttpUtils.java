@@ -779,7 +779,7 @@ public final class HttpUtils {
 		return generateReply(replyBody, additionalHeaders);
 	}
 
-	private ResponseEntity<Object> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders) {
+	public ResponseEntity<Object> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders) {
 		return generateReply(replyBody, additionalHeaders, HttpStatus.OK);
 	}
 

@@ -12,11 +12,19 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
  * @created 11-Jun-2018 11:13:22
  */
 public class Notification extends QueryResult {
-
+	
+	
+	public Notification(URI id, Long notifiedAt, URI subscriptionId, List<Entity> data) {
+		super(null, null, null, -1, true);
+		this.id = id;
+		this.notifiedAt = notifiedAt;
+		this.subscriptionId = subscriptionId;
+		this.data = data;
+	}
 	
 	
 	
-	public Notification(URI id, Date notifiedAt, URI subscriptionId, List<Entity> data, String errorMsg, ErrorType errorType, int shortErrorMsg, boolean success) {
+	public Notification(URI id, Long notifiedAt, URI subscriptionId, List<Entity> data, String errorMsg, ErrorType errorType, int shortErrorMsg, boolean success) {
 		super(null, errorMsg, errorType, shortErrorMsg, success);
 		this.id = id;
 		this.notifiedAt = notifiedAt;
@@ -27,7 +35,7 @@ public class Notification extends QueryResult {
 
 
 	private URI id;
-	private Date notifiedAt;
+	private Long notifiedAt;
 	private URI subscriptionId;
 	private List<Entity> data;
 	private final String type = "Notification";
@@ -46,13 +54,13 @@ public class Notification extends QueryResult {
 
 
 
-	public Date getNotifiedAt() {
+	public Long getNotifiedAt() {
 		return notifiedAt;
 	}
 
 
 
-	public void setNotifiedAt(Date notifiedAt) {
+	public void setNotifiedAt(Long notifiedAt) {
 		this.notifiedAt = notifiedAt;
 	}
 
