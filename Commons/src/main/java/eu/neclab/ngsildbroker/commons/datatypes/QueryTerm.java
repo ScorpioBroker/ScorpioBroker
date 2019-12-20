@@ -295,10 +295,18 @@ public class QueryTerm {
 	}
 
 	private List<Object> getValue(BaseProperty myProperty) {
+		List<Object> result = new ArrayList<Object>();
 		if (myProperty instanceof Property) {
-			return ((Property) myProperty).getValue();
+			for(Object item: ((Property) myProperty).getValue()) {
+				if(item instanceof TypedValue) {
+					result.add(((TypedValue) item).getValue());
+				}else {
+					result.add(item);
+				}
+			}
+			return result;
 		} else if (myProperty instanceof Relationship) {
-			List<Object> result = new ArrayList<Object>();
+			
 			result.add(((Relationship) myProperty).getObject().toString());
 			return result;
 		}

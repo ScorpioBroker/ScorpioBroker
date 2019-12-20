@@ -19,6 +19,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
+import eu.neclab.ngsildbroker.commons.datatypes.TypedValue;
 
 public class DataSerializer {
 
@@ -86,6 +87,7 @@ public class DataSerializer {
 		builder.registerTypeAdapter(BatchResult.class, new BatchResultGsonAdapter());
 		builder.registerTypeAdapterFactory(new GeometryAdapterFactory());
 		builder.registerTypeAdapter(Notification.class, new NotificationGsonAdapter());
+		builder.registerTypeAdapter(TypedValue.class, new TypedValueGsonAdapter());
 		builder.registerTypeAdapter(SerializationTypes.entitiesType, new EntitiesGsonAdapter());
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
 	}

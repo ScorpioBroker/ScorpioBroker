@@ -33,6 +33,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.Property;
 import eu.neclab.ngsildbroker.commons.datatypes.Relationship;
+import eu.neclab.ngsildbroker.commons.datatypes.TypedValue;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
@@ -235,6 +236,21 @@ public class SerializationTools {
 			return result;
 		} else if (element.isJsonObject()) {
 			JsonObject jsonObj = element.getAsJsonObject();
+			if(jsonObj.has(NGSIConstants.JSON_LD_VALUE) && jsonObj.has(NGSIConstants.JSON_LD_TYPE)) {
+				Object objValue;
+				JsonPrimitive atValue = jsonObj.get(NGSIConstants.JSON_LD_VALUE).getAsJsonPrimitive();
+				if (atValue.isBoolean()) {
+					objValue = atValue.getAsBoolean();
+				}else if (atValue.isNumber()) {
+					objValue = atValue.getAsDouble();
+				}else if (atValue.isString()) {
+					objValue =  atValue.getAsString();
+				}else {
+					objValue = jsonObj.get(NGSIConstants.JSON_LD_VALUE).getAsString(); 
+				}
+
+				return new TypedValue(jsonObj.get(NGSIConstants.JSON_LD_TYPE).getAsString(), objValue); 
+			}
 			if (jsonObj.has(NGSIConstants.JSON_LD_VALUE)) {
 				JsonPrimitive atValue = jsonObj.get(NGSIConstants.JSON_LD_VALUE).getAsJsonPrimitive();
 				if (atValue.isBoolean()) {
@@ -461,6 +477,9 @@ public class SerializationTools {
 			// should never happen
 			// }
 			else {
+				if(value instanceof TypedValue) {
+					return context.serialize(value);
+				}
 				obj = new JsonObject();
 				obj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(value));
 
