@@ -47,7 +47,7 @@
 						<configuration>
 							<dockerfile>dockerfile4maven</dockerfile>
 							<repository>scorpiobroker/scorpio</repository>
-							<tag>scorpio-aaio</tag>
+							<tag>scorpio-aaio_${project.version}</tag>
 							<buildArgs>
 
 								<!-- <BUILD_DIR_ACS>Core/AtContextServer</BUILD_DIR_ACS> -->
