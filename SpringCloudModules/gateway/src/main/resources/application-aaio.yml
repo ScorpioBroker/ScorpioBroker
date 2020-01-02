@@ -83,7 +83,7 @@ zuul:
       stripPrefix: false
     infos:
       sensitiveHeaders:
-      path: /scorpio/v1/info**
+      path: /scorpio/v1/info/**
       serviceId: aio-runner
       stripPrefix: false
     test-manager:
