@@ -287,7 +287,7 @@ java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.
 By default the broker runs on port 9090 the base URL for interaction with the broker would be than
 http://localhost:9090/ngsi-ld/v1/ For a detail explaination about the API please look the ETSI spec.
 
-Generally speaking you can Create entities by sending an HTTP POST request to http://localhost:9090/ngsi-ld/v1/entities
+Generally speaking you can Create entities by sending an HTTP POST request to http://localhost:9090/ngsi-ld/v1/entities/
 with a payload like this
 
 ```json
