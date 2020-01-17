@@ -1,0 +1,23 @@
+{
+	"translate": 
+		{
+			"id": "$$urn:smartcity:heidelberg:tunel:.id",
+			"type.&&&&": "https://uri.fiware.org/ns/data-models#tunnel",
+			"location.type.&&&&": "GeoProperty",
+			"location.value.coordinates.0": "geometry.coordinates.0",
+			"location.value.coordinates.1": "geometry.coordinates.1",
+			"location.value.type": "geometry.type",
+			"name.value": "properties.name",
+			"maximumAllowedSpeed.value": "properties.maxspeed",
+			"maximumAllowedSpeed.type.&&&&": "Property",
+			"maximumAllowedWidth.value": "properties.maxwidth",
+			"maximumAllowedWidth.type.&&&&": "Property",
+			"@context.0.&&&&": "https://schema.lab.fiware.org/ld/context.jsonld"
+		},
+	"from": "http://daten.geonet-mrn.de:8080/geoserver/ows?srsName=EPSG%3A4326&outputFormat=json&service=WFS&srs=EPSG%3A4326&request=GetFeature&typename=geonode%3Atunnels&version=1.0.0",
+	"fromheaders": {"Accept":"application/json","Content-Type":"application/json"},
+	"to": "http://localhost:19090",
+	"toheaders": {"Content-Type": "Application/ld+json"},
+	"polltime": 3600
+}
+
