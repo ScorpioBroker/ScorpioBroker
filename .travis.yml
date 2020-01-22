@@ -1,5 +1,6 @@
 language: java
 # use Java 8
+dist: trusty
 jdk:
 - oraclejdk8
 
