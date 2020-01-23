@@ -8,11 +8,7 @@ services:
   - postgresql
 
 env:
-  - TEST_ENDPOINT=http://localhost:9090
-  - ACC_ENDPOINT=http://localhost:4444
-  - NOTIFY_ENDPOINT=http://localhost:4444/acc
-  - WEB_APP_PORT=4444
-
+  - TEST_ENDPOINT=http://localhost:9090 ACC_ENDPOINT=http://localhost:4444 NOTIFY_ENDPOINT=http://localhost:4444/acc WEB_APP_PORT=4444
 
 
 addons:
