@@ -4,10 +4,68 @@ dist: trusty
 jdk:
 - oraclejdk8
 
+services:
+  - postgresql
+
+env:
+  - TEST_ENDPOINT=http://localhost:9090
+  - ACC_ENDPOINT=http://localhost:4444
+  - NOTIFY_ENDPOINT=http://localhost:4444/acc
+  - WEB_APP_PORT=4444
+
+
+
+addons:
+  postgresql: 9.6
+  apt:
+    packages:
+    - postgresql-9.6-postgis-2.3
+    - npm
+before_script:
+  - psql -U postgres -c "create extension postgis;"
+  - psql -U postgres -c "create database ngb;"
+  - psql -U postgres -c "create user ngb with password 'ngb';"
+  - psql -U postgres -c "alter database ngb owner to ngb;"  
+  - psql -U postgres -c "grant all privileges on database ngb to ngb;"
+  - cd
+  - mkdir kafka
+  - cd kafka
+  - wget http://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
+  - tar -xzf kafka_2.12-2.2.0.tgz
+  - nohup kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties > /dev/null 2>&1 &
+  - sleep 2
+  - nohup kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties > /dev/null 2>&1 &
+  - sleep 2
+  - cd ..
+  - mkdir testsuit
+  - cd testsuit
+  - git clone https://github.com/FIWARE/NGSI-LD_TestSuite.git
+  - cd NGSI-LD_TestSuite
+  - npm install
+  - cd ..
+  - cd ..
+  
+  
+script:
+ - mvn clean package -DskipDefaults -PbuildForTest -B
+ - java -jar ./SpringCloudModules/eureka/target/eureka-server.jar & 
+ - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar &
+ - java -Dspring.profiles.active=local -jar ./AllInOneRunner/target/AllInOneRunner.jar &
+ - while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done
+ - cd
+ - cd testsuit 
+ - cd NGSI-LD_TestSuite
+ - node accumulator/accumulator.js &
+ - npm test
+ 
 # see https://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure
 sudo: false
 
+
+
 # cache the build tool's caches
 cache:
+  npm: true
   directories:
-  - $HOME/.m2
+    - $HOME/.m2
+  

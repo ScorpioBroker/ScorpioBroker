@@ -18,6 +18,12 @@
 	</properties>
 	<profiles>
 		<profile>
+			<id>buildForTest</id>
+			<build>
+				<finalName>${project.artifactId}</finalName>
+			</build>
+		</profile>
+		<profile>
 			<id>java-above-8-support</id>
 			<activation>
 				<jdk>[9.0,)</jdk>
