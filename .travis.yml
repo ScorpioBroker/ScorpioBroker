@@ -43,7 +43,7 @@ before_script:
   
   
 script:
- - cd $TRAVIS_BUILD_DIR/ScorpioBroker
+ - cd $TRAVIS_BUILD_DIR
  - mvn clean package -DskipDefaults -PbuildForTest -B
  - java -jar ./SpringCloudModules/eureka/target/eureka-server.jar & 
  - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar &
