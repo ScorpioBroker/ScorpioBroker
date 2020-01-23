@@ -48,7 +48,7 @@ script:
  - java -jar ./SpringCloudModules/eureka/target/eureka-server.jar & 
  - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar &
  - java -Dspring.profiles.active=local -jar ./AllInOneRunner/target/AllInOneRunner.jar &
- - while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done
+ - while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -ne 202 ]; do sleep 10; done
  - cd
  - cd testsuit 
  - cd NGSI-LD_TestSuite
@@ -56,7 +56,7 @@ script:
  - npm test
  
 # see https://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure
-sudo: false
+sudo: true
 
 
 
