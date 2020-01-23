@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.constants;
 
+import java.util.HashMap;
+
 public interface NGSIConstants {
 	public final static String GEO_REL_TYPE = "type";
 	public final static String GEO_REL_REL = "rel";
@@ -149,4 +151,7 @@ public interface NGSIConstants {
 	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]'Z'";
 	public static final String DEFAULT_FORGIVING_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 	public static final String HEADER_REL_LDCONTEXT = "http://www.w3.org/ns/json-ld#context";
+	
+	public static final HashMap<Integer, String> HTTP_CODE_2_NGSI_ERROR = new HashMap<Integer, String>();
+	
 }

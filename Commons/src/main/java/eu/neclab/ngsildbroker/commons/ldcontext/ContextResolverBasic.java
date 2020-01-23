@@ -365,6 +365,7 @@ public class ContextResolverBasic {
 			result.setContextUrl((String) rawContext.get(0));
 		} else {
 			result.setContextUrl(generateAtContextServing(rawContext, hash));
+			rawContext.add(CORE_CONTEXT_URL_STR);
 		}
 		context.remove(IS_FULL_VALID);
 		try {
@@ -373,15 +374,16 @@ public class ContextResolverBasic {
 			unprotectGeoProps(tempResult);
 			if (tempResult.containsKey("@graph")) {
 				// we are in a multiresult set
-				Object atContext = tempResult.get("@context");
+				Object atContext = tempResult.get(NGSIConstants.JSON_LD_CONTEXT);
 				List<Map<String, Object>> toCompact = (List<Map<String, Object>>) tempResult.get("@graph");
 				result.setCompacted(JsonUtils.toPrettyString(toCompact));
 				for (Map<String, Object> entry : toCompact) {
-					entry.put("@context", atContext);
+					entry.put(NGSIConstants.JSON_LD_CONTEXT, rawContext);
 				}
 				result.setCompactedWithContext(JsonUtils.toPrettyString(toCompact));
 			} else {
-
+				
+				tempResult.put(NGSIConstants.JSON_LD_CONTEXT, rawContext);
 				result.setCompactedWithContext(JsonUtils.toPrettyString(tempResult));
 				tempResult.remove(NGSIConstants.JSON_LD_CONTEXT);
 				result.setCompacted(JsonUtils.toPrettyString(tempResult));

@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -28,7 +29,8 @@ import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 
 @SpringBootTest(properties = { "spring.main.allow-bean-definition-overriding=true" })
 @RunWith(SpringRunner.class)
-@AutoConfigureMockMvc//(secure = false)
+//@WebMvcTest
+@AutoConfigureMockMvc(secure = false) 
 public class RegistryControllerTest {
 
 	@Autowired
@@ -76,7 +78,7 @@ public class RegistryControllerTest {
 		try {
 			when(csourceService.registerCSource(any()))
 					.thenReturn(new URI("urn:ngsi-ld:ContextSourceRegistration:csr1a3458"));
-			mockMvc.perform(post("/").contentType(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
+			mockMvc.perform(post("/ngsi-ld/v1/csourceRegistrations/").contentType(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isCreated())
 					.andExpect(redirectedUrl("/ngsi-ld/v1/csources/urn:ngsi-ld:ContextSourceRegistration:csr1a3458"))
 					.andDo(print());
@@ -94,7 +96,7 @@ public class RegistryControllerTest {
 		try {
 			when(csourceService.updateCSourceRegistration("urn:ngsi-ld:ContextSourceRegistration:csr1a3458",
 					updatePayload)).thenReturn(true);
-			mockMvc.perform(patch("/{registrationId}", "urn:ngsi-ld:ContextSourceRegistration:csr1a3458")
+			mockMvc.perform(patch("/ngsi-ld/v1/csourceRegistrations/{registrationId}", "urn:ngsi-ld:ContextSourceRegistration:csr1a3458")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isNoContent()).andDo(print());
 
@@ -110,7 +112,7 @@ public class RegistryControllerTest {
 		try {
 			when(csourceService.deleteCSourceRegistration("urn:ngsi-ld:ContextSourceRegistration:csr1a3458"))
 					.thenReturn(true);
-			mockMvc.perform(delete("/{registrationId}", "urn:ngsi-ld:ContextSourceRegistration:csr1a3458")
+			mockMvc.perform(delete("/ngsi-ld/v1/csourceRegistrations/{registrationId}", "urn:ngsi-ld:ContextSourceRegistration:csr1a3458")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isNoContent()).andDo(print());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());

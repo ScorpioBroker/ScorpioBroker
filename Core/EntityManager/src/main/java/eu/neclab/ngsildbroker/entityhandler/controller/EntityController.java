@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.net.URI;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 
 import javax.annotation.PostConstruct;
@@ -24,8 +25,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonParseException;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
@@ -114,6 +117,14 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.error("Exception :: ", exception);
 			exception.printStackTrace();
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+		} catch(DateTimeParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "Failed to parse provided datetime field.",
+							exception.getMessage()));
+		} catch(JsonParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "There is an error in the provided json document",
+							exception.getMessage()));
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -149,6 +160,14 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+		} catch(DateTimeParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "Failed to parse provided datetime field.",
+							exception.getMessage()));
+		} catch(JsonParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "There is an error in the provided json document",
+							exception.getMessage()));
 		} catch (Exception e) {
 			logger.error("Exception :: ", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -183,6 +202,14 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+		} catch(DateTimeParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "Failed to parse provided datetime field.",
+							exception.getMessage()));
+		} catch(JsonParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "There is an error in the provided json document",
+							exception.getMessage()));
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			exception.printStackTrace();
@@ -228,6 +255,14 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+		} catch(DateTimeParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "Failed to parse provided datetime field.",
+							exception.getMessage()));
+		} catch(JsonParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "There is an error in the provided json document",
+							exception.getMessage()));
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -256,6 +291,14 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+		} catch(DateTimeParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "Failed to parse provided datetime field.",
+							exception.getMessage()));
+		} catch(JsonParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "There is an error in the provided json document",
+							exception.getMessage()));
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -280,6 +323,14 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+		} catch(DateTimeParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "Failed to parse provided datetime field.",
+							exception.getMessage()));
+		} catch(JsonParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(HttpStatus.BAD_REQUEST, "There is an error in the provided json document",
+							exception.getMessage()));
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

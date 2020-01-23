@@ -96,6 +96,15 @@ public final class HttpUtils {
 		}
 		return SINGLETON;
 	}
+	public static void doPreflightCheck(HttpServletRequest req) throws ResponseException {
+		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
+		if(contentType == null) {
+			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
+		}
+		if(!contentType.equalsIgnoreCase("application/json") || !contentType.equalsIgnoreCase("application/ld+json")) {
+			throw new ResponseException(ErrorType.UnsupportedMediaType, "Unsupported content type. Allowed are application/json and application/ld+json");
+		}
+	}
 
 	public String expandPayload(HttpServletRequest request, String payload)
 			throws ResponseException, MalformedURLException, UnsupportedEncodingException {
