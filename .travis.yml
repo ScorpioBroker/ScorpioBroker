@@ -23,6 +23,7 @@ before_script:
   - psql -U postgres -c "create user ngb with password 'ngb';"
   - psql -U postgres -c "alter database ngb owner to ngb;"  
   - psql -U postgres -c "grant all privileges on database ngb to ngb;"
+  - psql -U postgres -c "alter role ngb superuser;"
   - cd
   - mkdir kafka
   - cd kafka
