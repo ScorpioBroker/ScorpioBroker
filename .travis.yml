@@ -28,9 +28,9 @@ before_script:
   - cd kafka
   - wget http://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
   - tar -xzf kafka_2.12-2.2.0.tgz
-  - nohup kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties > /dev/null 2>&1 &
+  - kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties >  &
   - sleep 2
-  - nohup kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties > /dev/null 2>&1 &
+  - kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties &
   - sleep 2
   - cd ..
   - mkdir testsuit
@@ -55,6 +55,12 @@ script:
  - node accumulator/accumulator.js &
  - npm test
  
+ after_script:
+  - cd
+  - cd kafka
+  - kafka_2.12-2.2.0/bin/zookeeper-server-stop.sh
+  - kafka_2.12-2.2.0/bin/kafka-server-stop.sh
+
 # see https://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure
 sudo: true
 
