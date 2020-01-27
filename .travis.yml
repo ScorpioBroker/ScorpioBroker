@@ -55,11 +55,11 @@ script:
  - node accumulator/accumulator.js &
  - npm test
  
- after_script:
-  - cd
-  - cd kafka
-  - kafka_2.12-2.2.0/bin/zookeeper-server-stop.sh
-  - kafka_2.12-2.2.0/bin/kafka-server-stop.sh
+after_script:
+ - cd
+ - cd kafka
+ - kafka_2.12-2.2.0/bin/zookeeper-server-stop.sh
+ - kafka_2.12-2.2.0/bin/kafka-server-stop.sh
 
 # see https://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure
 sudo: true
