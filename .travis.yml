@@ -50,7 +50,7 @@ script:
  - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar &
  - java -Dspring.profiles.active=local -jar ./AllInOneRunner/target/AllInOneRunner.jar &
  - sleep 120
- - while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -ne 202 ]; do sleep 10; done
+ #- while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -ne 202 ]; do sleep 10; done
  - cd
  - cd testsuit 
  - cd NGSI-LD_TestSuite
