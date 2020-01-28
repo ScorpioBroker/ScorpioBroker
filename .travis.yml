@@ -47,7 +47,7 @@ script:
  - cd $TRAVIS_BUILD_DIR
  - mvn clean package -DskipDefaults -PbuildForTest -B
  - java -jar ./SpringCloudModules/eureka/target/eureka-server.jar & 
- - java -jar ./SpringCloudModules/config-server/target/config-server.jar &
+ - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/config-server/target/config-server.jar &
  - sleep 10
  - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar &
  - sleep 10
