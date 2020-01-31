@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.serialization;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +29,7 @@ public class DataSerializer {
 	// }.getType();
 	private static final Gson GSON = createGsonObject();
 	private static final Gson SPECIAL_GSON = createSpecialGsonObject();
-	
+
 	// private static final Type propertiesType = new TypeToken<List<Property>>() {
 	//
 	// }.getType();
@@ -92,6 +94,14 @@ public class DataSerializer {
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
 	}
 
+	public static List<Entity> getEntities(String json) {
+		return GSON.fromJson(json, SerializationTypes.entitiesType);
+	}
+
+	public static List<Entity> getEntities(InputStreamReader in) {
+		return GSON.fromJson(in, SerializationTypes.entitiesType);
+	}
+
 	public static Entity getEntity(String json) {
 		return GSON.fromJson(json, Entity.class);
 	}
@@ -123,8 +133,6 @@ public class DataSerializer {
 	// public static List<Property> getProperties(String json){
 	// return GSON.fromJson(json, propertiesType);
 	// }
-
-
 
 	// get collection of entities from json
 	public static List<CSourceRegistration> getCSourceRegistrations(String json, Type type) {

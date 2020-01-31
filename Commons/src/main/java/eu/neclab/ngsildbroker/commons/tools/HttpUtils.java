@@ -96,13 +96,15 @@ public final class HttpUtils {
 		}
 		return SINGLETON;
 	}
+
 	public static void doPreflightCheck(HttpServletRequest req) throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
-		if(contentType == null) {
+		if (contentType == null) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
 		}
-		if(!contentType.equalsIgnoreCase("application/json") || !contentType.equalsIgnoreCase("application/ld+json")) {
-			throw new ResponseException(ErrorType.UnsupportedMediaType, "Unsupported content type. Allowed are application/json and application/ld+json");
+		if (!contentType.equalsIgnoreCase("application/json") || !contentType.equalsIgnoreCase("application/ld+json")) {
+			throw new ResponseException(ErrorType.UnsupportedMediaType,
+					"Unsupported content type. Allowed are application/json and application/ld+json");
 		}
 	}
 
@@ -760,8 +762,27 @@ public final class HttpUtils {
 			additionalHeaders = new HashMap<String, List<String>>();
 		}
 		String replyBody;
-		if (request.getHeader(HttpHeaders.ACCEPT) != null
-				&& request.getHeader(HttpHeaders.ACCEPT).equals(AppConstants.NGB_APPLICATION_JSON)) {
+		Enumeration<String> acceptHeaders = request.getHeaders(HttpHeaders.ACCEPT);
+		int found = -1;
+		if (acceptHeaders != null) {
+			while (acceptHeaders.hasMoreElements()) {
+				String header = acceptHeaders.nextElement();
+				if (header.contains(AppConstants.NGB_APPLICATION_JSONLD)) {
+					found = 2;
+					break;
+				}
+				if (header.contains(AppConstants.NGB_APPLICATION_JSON)) {
+					found = 1;
+					break;
+				}
+				if (header.contains(AppConstants.NGB_APPLICATION_GENERIC)
+						|| header.contains(AppConstants.NGB_GENERIC_GENERIC)) {
+					found = 2;
+				}
+			}
+		}
+		switch (found) {
+		case 1:
 			temp.add(AppConstants.NGB_APPLICATION_JSON);
 			replyBody = compacted.getCompacted();
 			List<String> links = additionalHeaders.get(HttpHeaders.LINK);
@@ -771,7 +792,8 @@ public final class HttpUtils {
 			}
 			links.add("<" + compacted.getContextUrl()
 					+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-		} else {
+			break;
+		case 2:
 			temp.add(AppConstants.NGB_APPLICATION_JSONLD);
 			if (compacted.getCompacted() == null || compacted.getCompacted().isEmpty()
 					|| compacted.getCompacted().trim().equals("{ }") || compacted.getCompacted().trim().equals("{}")) {
@@ -779,8 +801,12 @@ public final class HttpUtils {
 			} else {
 				replyBody = compacted.getCompactedWithContext();
 			}
-
+			break;
+		case -1:
+		default:
+			throw new ResponseException(ErrorType.InvalidRequest, "Provided accept types are not supported");
 		}
+		
 		additionalHeaders.put(HttpHeaders.CONTENT_TYPE, temp);
 		if (forceArrayResult && !replyBody.startsWith("[")) {
 			replyBody = "[" + replyBody + "]";
@@ -797,10 +823,10 @@ public final class HttpUtils {
 		BodyBuilder builder = ResponseEntity.status(status);
 		if (additionalHeaders != null) {
 			for (Entry<String, List<String>> entry : additionalHeaders.entrySet()) {
-				for(String value: entry.getValue()) {
+				for (String value : entry.getValue()) {
 					builder.header(entry.getKey(), value);
 				}
-				
+
 			}
 		}
 		return builder.body(replyBody);

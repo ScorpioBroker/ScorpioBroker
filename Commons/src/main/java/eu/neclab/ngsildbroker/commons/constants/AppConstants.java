@@ -22,6 +22,8 @@ public class AppConstants {
 	
 	public final static String NGB_APPLICATION_JSON="application/json";
 	public final static String NGB_APPLICATION_JSONLD="application/ld+json";
+	public final static String NGB_APPLICATION_GENERIC ="application/*";
+	public final static String NGB_GENERIC_GENERIC ="*/*";
 	
 	//allowed geometry types in queries params.
 	public final static List<String> NGB_ALLOWED_GEOM_LIST=new ArrayList<String>(Arrays.asList("POINT","POLYGON"));
