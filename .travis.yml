@@ -36,7 +36,7 @@ before_script:
   - cd ..
   - mkdir testsuit
   - cd testsuit
-  - git clone https://github.com/FIWARE/NGSI-LD_TestSuite.git
+  - git clone https://github.com/ScorpioBroker/NGSI-LD_TestSuite.git
   - cd NGSI-LD_TestSuite
   - npm install
   - cd ..
