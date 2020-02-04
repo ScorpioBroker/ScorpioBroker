@@ -763,25 +763,30 @@ public final class HttpUtils {
 		}
 		String replyBody;
 		Enumeration<String> acceptHeaders = request.getHeaders(HttpHeaders.ACCEPT);
-		int found = -1;
+		
+		float[][] foundHeaders = new float[3][2];
 		if (acceptHeaders != null) {
 			while (acceptHeaders.hasMoreElements()) {
 				String header = acceptHeaders.nextElement();
 				if (header.contains(AppConstants.NGB_APPLICATION_JSONLD)) {
-					found = 2;
+					foundHeaders[0][0] = 1;
+					foundHeaders[0][1] = getQ(header);
 					break;
 				}
 				if (header.contains(AppConstants.NGB_APPLICATION_JSON)) {
-					found = 1;
+					foundHeaders[1][0] = 1;
+					foundHeaders[1][1] = getQ(header);
 					break;
 				}
 				if (header.contains(AppConstants.NGB_APPLICATION_GENERIC)
 						|| header.contains(AppConstants.NGB_GENERIC_GENERIC)) {
-					found = 2;
+					foundHeaders[2][0] = 1;
+					foundHeaders[2][1] = getQ(header);
 				}
 			}
 		}
-		switch (found) {
+		int sendingContentType = getContentType(foundHeaders);
+		switch (sendingContentType) {
 		case 1:
 			temp.add(AppConstants.NGB_APPLICATION_JSON);
 			replyBody = compacted.getCompacted();
@@ -812,6 +817,44 @@ public final class HttpUtils {
 			replyBody = "[" + replyBody + "]";
 		}
 		return generateReply(replyBody, additionalHeaders);
+	}
+
+	private int getContentType(float[][] foundHeaders) {
+		int type = -1;
+		float currentWeight = - 1;
+		if(foundHeaders[0][0] == 1) {
+			type = 2;
+			currentWeight = foundHeaders[0][1];
+		}
+		if(foundHeaders[1][0] == 1) {
+			if(type != -1) {
+				if(foundHeaders[1][1] > currentWeight) {
+					type = 1;
+				}
+			}else {
+				type = 1;
+				currentWeight = foundHeaders[1][1];
+			}
+		}
+		if(foundHeaders[2][0] == 1) {
+			if(type != -1) {
+				if(foundHeaders[2][1] > currentWeight) {
+					type = 2;
+				}
+			}else {
+				type = 2;
+			}
+		}
+		return type;
+	}
+	
+
+	private float getQ(String header) {
+		int begin = header.indexOf(";q=");
+		if(begin == -1) {
+			return 1;
+		}
+		return Float.parseFloat(header.substring(begin+3));
 	}
 
 	public ResponseEntity<Object> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders) {
