@@ -175,6 +175,17 @@ sudo mvn clean package -DskipTests -DskipDefault -Pdocker-aaio
 ```
 
 The corresponding docker-compose file is `docker-compose-aaio.yml`
+#### Starting the docker container
+
+To start the docker container please use the corresponding docker-compose files. I.e.
+```console
+sudo docker-composer -f docker-compose-aaio.yml up
+```
+
+to stop the container properly execute 
+```console
+sudo docker-composer -f docker-compose-aaio.yml down
+```
 
 #### General remark for the Kafka docker image and docker-compose
 
