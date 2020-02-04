@@ -771,12 +771,10 @@ public final class HttpUtils {
 				if (header.contains(AppConstants.NGB_APPLICATION_JSONLD)) {
 					foundHeaders[0][0] = 1;
 					foundHeaders[0][1] = getQ(header);
-					break;
 				}
 				if (header.contains(AppConstants.NGB_APPLICATION_JSON)) {
 					foundHeaders[1][0] = 1;
 					foundHeaders[1][1] = getQ(header);
-					break;
 				}
 				if (header.contains(AppConstants.NGB_APPLICATION_GENERIC)
 						|| header.contains(AppConstants.NGB_GENERIC_GENERIC)) {
