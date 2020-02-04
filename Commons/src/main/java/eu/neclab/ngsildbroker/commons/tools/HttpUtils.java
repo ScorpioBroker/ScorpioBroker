@@ -850,11 +850,11 @@ public final class HttpUtils {
 	
 
 	private float getQ(String header) {
-		int begin = header.indexOf(";q=");
+		int begin = header.indexOf("q=");
 		if(begin == -1) {
 			return 1;
 		}
-		return Float.parseFloat(header.substring(begin+3));
+		return Float.parseFloat(header.substring(begin+2));
 	}
 
 	public ResponseEntity<Object> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders) {
