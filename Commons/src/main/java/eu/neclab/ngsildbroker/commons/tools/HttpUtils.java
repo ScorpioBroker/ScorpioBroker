@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -762,27 +763,30 @@ public final class HttpUtils {
 			additionalHeaders = new HashMap<String, List<String>>();
 		}
 		String replyBody;
-		Enumeration<String> acceptHeaders = request.getHeaders(HttpHeaders.ACCEPT);
-		
+		Enumeration<String> tempHeaders = request.getHeaders(HttpHeaders.ACCEPT);
+		ArrayList<String> acceptHeaders = new ArrayList<String>();
+		while (tempHeaders.hasMoreElements()) {
+			String next = tempHeaders.nextElement();
+			acceptHeaders.addAll(Arrays.asList(next.split(",")));
+		}
 		float[][] foundHeaders = new float[3][2];
-		if (acceptHeaders != null) {
-			while (acceptHeaders.hasMoreElements()) {
-				String header = acceptHeaders.nextElement();
-				if (header.contains(AppConstants.NGB_APPLICATION_JSONLD)) {
-					foundHeaders[0][0] = 1;
-					foundHeaders[0][1] = getQ(header);
-				}
-				if (header.contains(AppConstants.NGB_APPLICATION_JSON)) {
-					foundHeaders[1][0] = 1;
-					foundHeaders[1][1] = getQ(header);
-				}
-				if (header.contains(AppConstants.NGB_APPLICATION_GENERIC)
-						|| header.contains(AppConstants.NGB_GENERIC_GENERIC)) {
-					foundHeaders[2][0] = 1;
-					foundHeaders[2][1] = getQ(header);
-				}
+
+		for (String header : acceptHeaders) {
+			if (header.contains(AppConstants.NGB_APPLICATION_JSONLD)) {
+				foundHeaders[0][0] = 1;
+				foundHeaders[0][1] = getQ(header);
+			}
+			if (header.contains(AppConstants.NGB_APPLICATION_JSON)) {
+				foundHeaders[1][0] = 1;
+				foundHeaders[1][1] = getQ(header);
+			}
+			if (header.contains(AppConstants.NGB_APPLICATION_GENERIC)
+					|| header.contains(AppConstants.NGB_GENERIC_GENERIC)) {
+				foundHeaders[2][0] = 1;
+				foundHeaders[2][1] = getQ(header);
 			}
 		}
+
 		int sendingContentType = getContentType(foundHeaders);
 		switch (sendingContentType) {
 		case 1:
@@ -809,7 +813,7 @@ public final class HttpUtils {
 		default:
 			throw new ResponseException(ErrorType.InvalidRequest, "Provided accept types are not supported");
 		}
-		
+
 		additionalHeaders.put(HttpHeaders.CONTENT_TYPE, temp);
 		if (forceArrayResult && !replyBody.startsWith("[")) {
 			replyBody = "[" + replyBody + "]";
@@ -819,40 +823,39 @@ public final class HttpUtils {
 
 	private int getContentType(float[][] foundHeaders) {
 		int type = -1;
-		float currentWeight = - 1;
-		if(foundHeaders[0][0] == 1) {
+		float currentWeight = -1;
+		if (foundHeaders[0][0] == 1) {
 			type = 2;
 			currentWeight = foundHeaders[0][1];
 		}
-		if(foundHeaders[1][0] == 1) {
-			if(type != -1) {
-				if(foundHeaders[1][1] > currentWeight) {
+		if (foundHeaders[1][0] == 1) {
+			if (type != -1) {
+				if (foundHeaders[1][1] > currentWeight) {
 					type = 1;
 				}
-			}else {
+			} else {
 				type = 1;
 				currentWeight = foundHeaders[1][1];
 			}
 		}
-		if(foundHeaders[2][0] == 1) {
-			if(type != -1) {
-				if(foundHeaders[2][1] > currentWeight) {
+		if (foundHeaders[2][0] == 1) {
+			if (type != -1) {
+				if (foundHeaders[2][1] > currentWeight) {
 					type = 2;
 				}
-			}else {
+			} else {
 				type = 2;
 			}
 		}
 		return type;
 	}
-	
 
 	private float getQ(String header) {
 		int begin = header.indexOf("q=");
-		if(begin == -1) {
+		if (begin == -1) {
 			return 1;
 		}
-		return Float.parseFloat(header.substring(begin+2));
+		return Float.parseFloat(header.substring(begin + 2));
 	}
 
 	public ResponseEntity<Object> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders) {
