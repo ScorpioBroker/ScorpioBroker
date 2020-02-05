@@ -103,7 +103,7 @@ public final class HttpUtils {
 		if (contentType == null) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
 		}
-		if (!contentType.equalsIgnoreCase("application/json") || !contentType.equalsIgnoreCase("application/ld+json")) {
+		if (!contentType.toLowerCase().contains("application/json") || !contentType.toLowerCase().contains("application/ld+json")) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType,
 					"Unsupported content type. Allowed are application/json and application/ld+json");
 		}
