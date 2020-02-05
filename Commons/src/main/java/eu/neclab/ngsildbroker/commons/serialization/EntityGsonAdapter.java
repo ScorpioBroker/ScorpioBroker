@@ -130,6 +130,8 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 					} else if (valueType.equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
 						GeoProperty geoproperty = SerializationTools.parseGeoProperty(objValue, key);
 						geoproperties.add(geoproperty);
+					} else {
+						throw new JsonParseException("Unknown top level entry provided " + key);
 					}
 				}
 			}
