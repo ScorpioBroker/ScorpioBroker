@@ -34,7 +34,7 @@ public class IntervalNotificationHandler {
 	public void addSub(String subId, long interval, URI callback, String acceptHeader) {
 		id2Callback.put(subId, callback);
 		TimerTask temp = new TimerTask() {
-
+			//TODO this has to send periodic queries 
 			@Override
 			public void run() {
 				List<Notification> data;

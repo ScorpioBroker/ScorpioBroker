@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.queryhandler.controller;
 
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -170,7 +171,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
 					if (qp == null) // invalid query
 						throw new ResponseException(ErrorType.InvalidRequest);
-
+					checkParamsForValidity(qp);
 					QueryResult qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
 							qToken);
 
@@ -208,6 +209,24 @@ public class QueryController {// implements QueryHandlerInterface {
 		}
 	}
 
+	private void checkParamsForValidity(QueryParams qp) throws ResponseException {
+		if(qp.getGeometry() != null && !qp.getGeometry().isEmpty()) {
+			if(!NGSIConstants.ALLOWED_GEOMETRIES.contains(qp.getGeometry())) {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid geometry provided");
+			}
+		}
+		if(qp.getGeorel() != null && qp.getGeorel().getGeorelOp() != null && !qp.getGeorel().getGeorelOp().isEmpty()) {
+			if(!NGSIConstants.ALLOWED_GEOREL.contains(qp.getGeometry())) {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel provided");
+			}
+		}
+		
+		
+	}
+
+	
+	
+	
 	public ResponseEntity<Object> generateReply(HttpServletRequest request, QueryResult qResult)
 			throws ResponseException {
 		String nextLink = generateNextLink(request, qResult);

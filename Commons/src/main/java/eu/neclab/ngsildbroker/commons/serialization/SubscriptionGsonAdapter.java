@@ -198,7 +198,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				if (info.getId() != null) {
 					JsonArray temp2 = new JsonArray();
 					temp2.add(info.getId().toString());
-					entityObj.add(NGSIConstants.JSON_LD_ID, new JsonPrimitive(info.getId().toString()));//temp2);
+					entityObj.add(NGSIConstants.JSON_LD_ID, new JsonPrimitive(info.getId().toString()));// temp2);
 				}
 				if (info.getType() != null) {
 					JsonArray temp2 = new JsonArray();
@@ -291,6 +291,16 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				tempArray.add(tempObj);
 				notificationObj.add(NGSIConstants.NGSI_LD_FORMAT, tempArray);
 			}
+			if (notification.getLastFailedNotification() != null) {
+				
+			}
+			if (notification.getLastNotification() != null) {
+
+			}
+			if (notification.getLastSuccessfulNotification() != null) {
+
+			}
+
 			temp.add(notificationObj);
 			top.add(NGSIConstants.NGSI_LD_NOTIFICATION, temp);
 		}

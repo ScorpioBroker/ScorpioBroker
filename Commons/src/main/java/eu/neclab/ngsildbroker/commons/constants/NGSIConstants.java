@@ -1,6 +1,9 @@
 package eu.neclab.ngsildbroker.commons.constants;
 
 import java.util.HashMap;
+import java.util.List;
+
+import java.util.Arrays;
 
 public interface NGSIConstants {
 	public final static String GEO_REL_TYPE = "type";
@@ -153,5 +156,7 @@ public interface NGSIConstants {
 	public static final String HEADER_REL_LDCONTEXT = "http://www.w3.org/ns/json-ld#context";
 	
 	public static final HashMap<Integer, String> HTTP_CODE_2_NGSI_ERROR = new HashMap<Integer, String>();
+	public static final List<String> ALLOWED_GEOMETRIES = Arrays.asList("Point", "MultiPoint", "LineString","MultiLineString", "Polygon", "MultiPolygon");
+	public static final List<String> ALLOWED_GEOREL = Arrays.asList("near","equals","disjoint","intersects","within","contains","overlaps");
 	
 }
