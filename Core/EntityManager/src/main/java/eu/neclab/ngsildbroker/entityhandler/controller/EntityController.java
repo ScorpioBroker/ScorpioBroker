@@ -105,6 +105,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			@RequestBody(required = false) String payload) {
 		String result = null;
 		try {
+			HttpUtils.doPreflightCheck(request);
 			logger.trace("create entity :: started");
 			String resolved = httpUtils.expandPayload(request, payload);
 			entityService.validateEntity(resolved, request);
@@ -146,6 +147,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			@RequestBody String payload) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
+			HttpUtils.doPreflightCheck(request);
 			logger.trace("update entity :: started");
 
 			String resolved = httpUtils.expandPayload(request, payload);
@@ -189,6 +191,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			@RequestBody String payload, @RequestParam(required = false, name = "options") String options) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
+			HttpUtils.doPreflightCheck(request);
 			logger.trace("append entity :: started");
 			String resolved = httpUtils.expandPayload(request, payload);
 
@@ -233,6 +236,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@RequestBody String payload) {
 		try {
+			HttpUtils.doPreflightCheck(request);
 			logger.trace("partial-update entity :: started");
 
 			String expandedPayload = httpUtils.expandPayload(request, payload);

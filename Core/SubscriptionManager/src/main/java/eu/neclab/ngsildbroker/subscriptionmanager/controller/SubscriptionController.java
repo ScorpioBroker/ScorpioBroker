@@ -94,6 +94,7 @@ public class SubscriptionController {
 		Subscription subscription = null;
 
 		try {
+			HttpUtils.doPreflightCheck(request);
 			List<Object> context = HttpUtils.getAtContext(request);
 			String resolved = contextResolver.expand(payload, context);
 
@@ -164,8 +165,10 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestBody String payload) {
 		logger.trace("call updateSubscription() ::");
-		List<Object> context = HttpUtils.getAtContext(request);
+		
 		try {
+			HttpUtils.doPreflightCheck(request);
+			List<Object> context = HttpUtils.getAtContext(request);
 			String resolved = contextResolver.expand(payload, context);
 			Subscription subscription = DataSerializer.getSubscription(resolved);
 			if(subscription.getId() == null) {

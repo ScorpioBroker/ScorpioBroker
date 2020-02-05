@@ -45,10 +45,11 @@ public class EntityBatchController {
 	public ResponseEntity<Object> createMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
+			HttpUtils.doPreflightCheck(request);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.createMultipleMessage(resolved);
 			return generateBatchResultReply(result);
-		} catch (MalformedURLException | UnsupportedEncodingException | ResponseException e) {
+		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 	}
@@ -67,10 +68,11 @@ public class EntityBatchController {
 	public ResponseEntity<Object> upsertMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
+			HttpUtils.doPreflightCheck(request);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.upsertMultipleMessage(resolved);
 			return generateBatchResultReply(result);
-		} catch (MalformedURLException | UnsupportedEncodingException | ResponseException e) {
+		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 	}
@@ -79,10 +81,11 @@ public class EntityBatchController {
 	public ResponseEntity<Object> updateMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
+			HttpUtils.doPreflightCheck(request);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.updateMultipleMessage(resolved);
 			return generateBatchResultReply(result);
-		} catch (MalformedURLException | UnsupportedEncodingException | ResponseException e) {
+		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 	}
