@@ -292,15 +292,46 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				notificationObj.add(NGSIConstants.NGSI_LD_FORMAT, tempArray);
 			}
 			if (notification.getLastFailedNotification() != null) {
-				
+				tempArray = new JsonArray();
+				tempObj = new JsonObject();
+				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(SerializationTools.formatter.format(notification.getLastFailedNotification().toInstant())));
+				tempObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
+				tempArray.add(tempObj);
+				notificationObj.add(NGSIConstants.NGSI_LD_LAST_FAILURE, tempArray);
 			}
 			if (notification.getLastNotification() != null) {
-
+				tempArray = new JsonArray();
+				tempObj = new JsonObject();
+				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(SerializationTools.formatter.format(notification.getLastNotification().toInstant())));
+				tempObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
+				tempArray.add(tempObj);
+				notificationObj.add(NGSIConstants.NGSI_LD_LAST_NOTIFICATION, tempArray);
 			}
 			if (notification.getLastSuccessfulNotification() != null) {
-
+				tempArray = new JsonArray();
+				tempObj = new JsonObject();
+				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(SerializationTools.formatter.format(notification.getLastSuccessfulNotification().toInstant())));
+				tempObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
+				tempArray.add(tempObj);
+				notificationObj.add(NGSIConstants.NGSI_LD_LAST_SUCCESS, tempArray);
 			}
-
+			notificationObj.add(NGSIConstants.NGSI_LD_TIMES_SEND, SerializationTools.getValueArray(notification.getTimesSent()));
+//			{
+//			    "https://uri.etsi.org/ngsi-ld/lastSuccess": [
+//			      {
+//			        "@type": "https://uri.etsi.org/ngsi-ld/DateTime",
+//			        "@value": "2020-04-04T12:03:04Z"
+//			      }
+//			    ]
+//			  }
+//			
+//			  {
+//				    "https://uri.etsi.org/ngsi-ld/timesSent": [
+//				      {
+//				        "@value": "2020-04-04T12:03:04Z"
+//				      }
+//				    ]
+//				  }
 			temp.add(notificationObj);
 			top.add(NGSIConstants.NGSI_LD_NOTIFICATION, temp);
 		}

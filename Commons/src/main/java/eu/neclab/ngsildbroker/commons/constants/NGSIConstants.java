@@ -92,6 +92,12 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_DATA ="https://uri.etsi.org/ngsi-ld/data";
 	public final static String NGSI_LD_INTERNAL="https://uri.etsi.org/ngsi-ld/internal";
 	
+	public final static String NGSI_LD_LAST_NOTIFICATION ="https://uri.etsi.org/ngsi-ld/lastNotification"; 
+	public final static String NGSI_LD_LAST_FAILURE = "https://uri.etsi.org/ngsi-ld/lastFailure ";
+	public final static String NGSI_LD_LAST_SUCCESS = "https://uri.etsi.org/ngsi-ld/lastSuccess";
+	public final static String NGSI_LD_TIMES_SEND =	"https://uri.etsi.org/ngsi-ld/timesSent";
+	
+	
 	public final static String GEO_JSON_COORDINATES = "coordinates";
 	public final static String GEO_JSON_TYPE = "type";
 	
