@@ -317,7 +317,7 @@ public class QueryService {
 	 * @throws Exception
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders,
-			Integer limit, Integer offset, String qToken)
+			Integer limit, Integer offset, String qToken, Boolean showServices)
 			throws ResponseException, Exception {
 
 		List<String> aggregatedResult = new ArrayList<String>();

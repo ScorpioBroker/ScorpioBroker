@@ -43,7 +43,9 @@ public class NotificationParam {
 		return lastNotification;
 	}
 
-
+	public void setTimesSent(int timeSent) {
+		this.timesSent = timeSent;
+	}
 
 	public void setLastNotification(Date lastNotification) {
 		this.timesSent++;

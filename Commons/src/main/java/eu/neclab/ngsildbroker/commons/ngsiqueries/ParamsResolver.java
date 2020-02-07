@@ -28,8 +28,10 @@ import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
@@ -52,6 +54,60 @@ public class ParamsResolver {
 	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, List<Object> linkHeaders)
 			throws ResponseException {
 		return this.getQueryParamsFromUriQuery(ngsildQueryParams, linkHeaders, false);
+	}
+
+	public List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
+
+		ArrayList<QueryParams> result = new ArrayList<QueryParams>();
+		for (EntityInfo entityInfo : subscription.getEntities()) {
+			QueryParams temp = new QueryParams();
+
+			if (subscription.getNotification().getAttributeNames() != null
+					&& !subscription.getNotification().getAttributeNames().isEmpty()) {
+				temp.setAttrs(String.join(",", subscription.getNotification().getAttributeNames()));
+			}
+			temp.setType(entityInfo.getType());
+			if (entityInfo.getId() != null) {
+				temp.setId(entityInfo.getId().toString());
+			}
+			if (entityInfo.getIdPattern() != null) {
+				temp.setIdPattern(entityInfo.getIdPattern());
+			}
+			if (subscription.getLdGeoQuery() != null) {
+				temp.setGeometry(subscription.getLdGeoQuery().getGeometry().name());
+				temp.setGeoproperty(subscription.getLdGeoQuery().getGeoProperty());
+				temp.setGeorel(new GeoqueryRel(subscription.getLdGeoQuery().getGeoRelation()));
+				StringBuilder builder = new StringBuilder();
+				List<Double> coordinates = subscription.getLdGeoQuery().getCoordinates();
+				for (int i = 0; i < coordinates.size(); i += 2) {
+					builder.append("[");
+					builder.append(coordinates.get(i));
+					builder.append(",");
+					builder.append(coordinates.get(i + 1));
+					builder.append("]");
+				}
+				String coordinatesString;
+				switch (temp.getGeometry().toLowerCase()) {
+				case "polygon":
+					coordinatesString = "[[" + builder.toString() +"]]";
+					break;
+				case "linestring":
+					coordinatesString = "[" + builder.toString() +"]";
+					break;
+				case "point":
+				default:
+					coordinatesString = builder.toString();
+					break;
+				}
+				temp.setCoordinates(coordinatesString);
+			}
+			if(subscription.getLdQuery() != null && !subscription.getLdQuery().isEmpty()) {
+				temp.setQ(subscription.getLdQuery());
+			}
+			result.add(temp);
+		}
+
+		return result;
 	}
 
 	// new simplified format
@@ -200,7 +256,6 @@ public class ParamsResolver {
 		return expandAttribute(attribute, context);
 	}
 
-
 	public String expandAttribute(String attribute, List<Object> context) throws ResponseException {
 		logger.trace("resolveQueryLdContext():: started");
 
@@ -250,11 +305,11 @@ public class ParamsResolver {
 		String jsonString = null;
 		try {
 			JsonNode rootNode = objectMapper.createObjectNode();
-//			if (context != null) {
-//				ArrayNode contextNode = objectMapper.valueToTree(context);
-//				((ObjectNode) rootNode).putArray("@context").addAll(contextNode);
-//			}
-			//cant be in here like that
+			// if (context != null) {
+			// ArrayNode contextNode = objectMapper.valueToTree(context);
+			// ((ObjectNode) rootNode).putArray("@context").addAll(contextNode);
+			// }
+			// cant be in here like that
 			((ObjectNode) rootNode).put(attribute, "");
 			jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
 		} catch (JsonProcessingException e) {

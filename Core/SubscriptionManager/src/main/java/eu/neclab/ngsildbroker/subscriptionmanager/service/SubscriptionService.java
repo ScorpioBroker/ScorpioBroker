@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
@@ -72,6 +73,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionManager;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
+import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
@@ -116,6 +118,19 @@ public class SubscriptionService implements SubscriptionManager {
 	@Qualifier("smqueryParser")
 	QueryParser queryParser;
 
+	@Autowired
+	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
+
+	@Value("${query.topic}")
+	String requestTopic;
+
+	@Value("${query.result.topic}")
+	String queryResultTopic;
+
+	@Autowired
+	@Qualifier("smparamsResolver")
+	ParamsResolver paramsResolver;
+
 	private final SubscriptionManagerProducerChannel producerChannel;
 
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
@@ -145,8 +160,8 @@ public class SubscriptionService implements SubscriptionManager {
 
 		httpUtils = HttpUtils.getInstance(contextResolverService);
 		notificationHandler = new NotificationHandlerREST(this, contextResolverService, objectMapper);
-		intervalHandler = new IntervalNotificationHandler(contextResolverService, notificationHandler,
-				subscriptionId2Context);
+		intervalHandler = new IntervalNotificationHandler(notificationHandler, kafkaTemplate, queryResultTopic,
+				requestTopic, paramsResolver);
 		logger.trace("call loadStoredSubscriptions() ::");
 		Map<String, byte[]> subs = kafkaOps.pullFromKafka(KafkaConstants.SUBSCRIPTIONS_TOPIC);
 		for (byte[] sub : subs.values()) {
@@ -187,47 +202,46 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 		}
 		this.subscriptionId2Subscription.put(subscription.getId().toString(), subscription);
-		this.subscriptionId2Context.putAll(subscription.getId().toString(), subscriptionRequest.getContext());
-		this.sub2CreationTime.put(subscription, System.currentTimeMillis());
-		for (EntityInfo info : subscription.getEntities()) {
-			if (info.getId() != null) {
-				idBasedSubscriptions.put(info.getId().toString(), subscription);
-			} else if (info.getType() != null) {
-				typeBasedSubscriptions.put(info.getType(), subscription);
-			} else if (info.getIdPattern() != null) {
-				idPatternBasedSubscriptions.put(info.getIdPattern(), subscription);
-			}
-
-		}
-		syncToMessageBus(subscriptionRequest);
-
-		if (subscription.getExpires() != null) {
-			TimerTask cancel = new TimerTask() {
-
-				@Override
-				public void run() {
-					synchronized (subscriptionId2Subscription) {
-						subscriptionId2Subscription.remove(subscription.getId().toString());
-					}
-					synchronized (idBasedSubscriptions) {
-						idBasedSubscriptions.values().remove(subscription);
-					}
-					synchronized (typeBasedSubscriptions) {
-						typeBasedSubscriptions.values().remove(subscription);
-					}
-					synchronized (idPatternBasedSubscriptions) {
-						idPatternBasedSubscriptions.values().remove(subscription);
-					}
-
-				}
-			};
-			subId2TimerTask.put(subscription.getId().toString(), cancel);
-			watchDog.schedule(cancel, subscription.getExpires() - System.currentTimeMillis());
-		}
 		if (subscription.getTimeInterval() > 0) {
-			intervalHandler.addSub(subscription.getId().toString(), subscription.getTimeInterval(),
-					subscription.getNotification().getEndPoint().getUri(),
-					subscription.getNotification().getEndPoint().getAccept());
+			intervalHandler.addSub(subscriptionRequest);
+		} else {
+			this.subscriptionId2Context.putAll(subscription.getId().toString(), subscriptionRequest.getContext());
+			this.sub2CreationTime.put(subscription, System.currentTimeMillis());
+			for (EntityInfo info : subscription.getEntities()) {
+				if (info.getId() != null) {
+					idBasedSubscriptions.put(info.getId().toString(), subscription);
+				} else if (info.getType() != null) {
+					typeBasedSubscriptions.put(info.getType(), subscription);
+				} else if (info.getIdPattern() != null) {
+					idPatternBasedSubscriptions.put(info.getIdPattern(), subscription);
+				}
+
+			}
+			syncToMessageBus(subscriptionRequest);
+
+			if (subscription.getExpires() != null) {
+				TimerTask cancel = new TimerTask() {
+
+					@Override
+					public void run() {
+						synchronized (subscriptionId2Subscription) {
+							subscriptionId2Subscription.remove(subscription.getId().toString());
+						}
+						synchronized (idBasedSubscriptions) {
+							idBasedSubscriptions.values().remove(subscription);
+						}
+						synchronized (typeBasedSubscriptions) {
+							typeBasedSubscriptions.values().remove(subscription);
+						}
+						synchronized (idPatternBasedSubscriptions) {
+							idPatternBasedSubscriptions.values().remove(subscription);
+						}
+
+					}
+				};
+				subId2TimerTask.put(subscription.getId().toString(), cancel);
+				watchDog.schedule(cancel, subscription.getExpires() - System.currentTimeMillis());
+			}
 		}
 		return subscription.getId();
 	}
@@ -264,6 +278,7 @@ public class SubscriptionService implements SubscriptionManager {
 		synchronized (subscriptionId2Context) {
 			this.subscriptionId2Context.removeAll(id.toString());
 		}
+		intervalHandler.removeSub(id.toString());
 		for (EntityInfo info : removedSub.getEntities()) {
 			if (info.getId() != null) {
 				synchronized (idBasedSubscriptions) {
@@ -432,29 +447,32 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private void sendNotification(List<Entity> dataList, Subscription subscription) {
 		logger.debug(DataSerializer.toJson(dataList));
-		if (subscription.getTimeInterval() > 0) {
-			try {
-				intervalHandler.notify(new Notification(EntityTools.getRandomID("notification:"), System.currentTimeMillis(),
-						subscription.getId(), dataList, null, null, 0, true), subscription.getId().toString());
-			} catch (URISyntaxException e) {
-				logger.error("Exception ::", e);
-				// Left empty intentionally
-				throw new AssertionError();
-			}
-		} else {
-			try {
-				notificationHandler.notify(
-						new Notification(EntityTools.getRandomID("notification:"), System.currentTimeMillis(), subscription.getId(),
-								dataList, null, null, 0, true),
-						subscription.getNotification().getEndPoint().getUri(),
-						subscription.getNotification().getEndPoint().getAccept(), subscription.getId().toString(),
-						subscriptionId2Context.get(subscription.getId().toString()), subscription.getThrottling());
-			} catch (URISyntaxException e) {
-				logger.error("Exception ::", e);
-				// Left empty intentionally
-				throw new AssertionError();
-			}
+		// if (subscription.getTimeInterval() > 0) {
+		// try {
+		// intervalHandler.notify(new
+		// Notification(EntityTools.getRandomID("notification:"),
+		// System.currentTimeMillis(), subscription.getId(), dataList, null, null, 0,
+		// true),
+		// subscription.getId().toString());
+		// } catch (URISyntaxException e) {
+		// logger.error("Exception ::", e);
+		// // Left empty intentionally
+		// throw new AssertionError();
+		// }
+		// } else {
+		try {
+			notificationHandler.notify(
+					new Notification(EntityTools.getRandomID("notification:"), System.currentTimeMillis(),
+							subscription.getId(), dataList, null, null, 0, true),
+					subscription.getNotification().getEndPoint().getUri(),
+					subscription.getNotification().getEndPoint().getAccept(), subscription.getId().toString(),
+					subscriptionId2Context.get(subscription.getId().toString()), subscription.getThrottling());
+		} catch (URISyntaxException e) {
+			logger.error("Exception ::", e);
+			// Left empty intentionally
+			throw new AssertionError();
 		}
+		// }
 	}
 
 	private Entity generateNotificationEntity(Entity entity, Subscription subscription) throws ResponseException {
@@ -479,14 +497,14 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private List<BaseProperty> extractBaseProps(Entity entity, Subscription subscription) {
 		ArrayList<BaseProperty> result = new ArrayList<BaseProperty>();
-		if(!shouldFire(entity, subscription)) {
+		if (!shouldFire(entity, subscription)) {
 			return result;
 		}
 		ArrayList<String> attribNames = getAttribNames(subscription);
 		if (attribNames.isEmpty()) {
 			return entity.getAllBaseProperties();
 		}
-		
+
 		for (BaseProperty property : entity.getAllBaseProperties()) {
 			if (attribNames.contains(property.getName())) {
 				result.add(property);
@@ -496,12 +514,12 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private boolean shouldFire(Entity entity, Subscription subscription) {
-		if(subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
+		if (subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
 			return true;
 		}
-		for(String attribName:subscription.getAttributeNames()) {
-			for(BaseProperty baseProp: entity.getAllBaseProperties()) {
-				if(attribName.equals(baseProp.getName())) {
+		for (String attribName : subscription.getAttributeNames()) {
+			for (BaseProperty baseProp : entity.getAllBaseProperties()) {
+				if (attribName.equals(baseProp.getName())) {
 					return true;
 				}
 			}
@@ -513,7 +531,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 		byte[] msg = kafkaOps.getMessage(deltaInfo.getId().toString(), KafkaConstants.ENTITY_TOPIC);
 		Entity entity = DataSerializer.getEntity(new String(msg));
-		if(!shouldFire(deltaInfo, subscription)) {
+		if (!shouldFire(deltaInfo, subscription)) {
 			return null;
 		}
 		if (!evaluateGeoQuery(subscription.getLdGeoQuery(), entity.getLocation())) {
@@ -524,17 +542,15 @@ public class SubscriptionService implements SubscriptionManager {
 				return null;
 			}
 		}
-		
+
 		List<BaseProperty> baseProps = extractBaseProps(entity, subscription);
 		if (baseProps.isEmpty()) {
 			return null;
 		}
-		Entity temp = new Entity(deltaInfo.getId(),entity.getType(), baseProps, entity.getRefToAccessControl());
-		
+		Entity temp = new Entity(deltaInfo.getId(), entity.getType(), baseProps, entity.getRefToAccessControl());
+
 		return temp;
 	}
-
-	
 
 	private ArrayList<String> getAttribNames(Subscription subscription) {
 		ArrayList<String> attribNames = new ArrayList<String>();
@@ -546,10 +562,6 @@ public class SubscriptionService implements SubscriptionManager {
 		// }
 		return attribNames;
 	}
-
-	
-
-	
 
 	private boolean evaluateGeoQuery(LDGeoQuery geoQuery, GeoProperty location) {
 		return evaluateGeoQuery(geoQuery, location, -1);

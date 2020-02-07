@@ -3,7 +3,11 @@ package eu.neclab.ngsildbroker.commons.serialization;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
@@ -141,7 +145,18 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				} else if (formatString.equalsIgnoreCase("normalized")) {
 					notifyParam.setFormat(Format.normalized);
 				}
+				if (ldObj.has(NGSIConstants.NGSI_LD_LAST_FAILURE)) {
+					TemporalAccessor temp = SerializationTools.formatter.parse(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_LAST_FAILURE).get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+					notifyParam.setLastFailedNotification(new Date(Instant.from(temp).toEpochMilli()));
+				}
+				if (ldObj.has(NGSIConstants.NGSI_LD_LAST_SUCCESS)) {
+					TemporalAccessor temp = SerializationTools.formatter.parse(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_LAST_SUCCESS).get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+					notifyParam.setLastNotification(new Date(Instant.from(temp).toEpochMilli()));
 
+				}
+				if (ldObj.has(NGSIConstants.NGSI_LD_TIMES_SEND)) {
+					notifyParam.setTimesSent(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_TIMES_SEND).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsInt());
+				}
 				result.setNotification(notifyParam);
 
 			} else if (key.equals(NGSIConstants.NGSI_LD_QUERY)) {
@@ -294,7 +309,8 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			if (notification.getLastFailedNotification() != null) {
 				tempArray = new JsonArray();
 				tempObj = new JsonObject();
-				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(SerializationTools.formatter.format(notification.getLastFailedNotification().toInstant())));
+				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(
+						SerializationTools.formatter.format(notification.getLastFailedNotification().toInstant())));
 				tempObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
 				tempArray.add(tempObj);
 				notificationObj.add(NGSIConstants.NGSI_LD_LAST_FAILURE, tempArray);
@@ -302,7 +318,8 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			if (notification.getLastNotification() != null) {
 				tempArray = new JsonArray();
 				tempObj = new JsonObject();
-				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(SerializationTools.formatter.format(notification.getLastNotification().toInstant())));
+				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(
+						SerializationTools.formatter.format(notification.getLastNotification().toInstant())));
 				tempObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
 				tempArray.add(tempObj);
 				notificationObj.add(NGSIConstants.NGSI_LD_LAST_NOTIFICATION, tempArray);
@@ -310,28 +327,30 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			if (notification.getLastSuccessfulNotification() != null) {
 				tempArray = new JsonArray();
 				tempObj = new JsonObject();
-				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(SerializationTools.formatter.format(notification.getLastSuccessfulNotification().toInstant())));
+				tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(
+						SerializationTools.formatter.format(notification.getLastSuccessfulNotification().toInstant())));
 				tempObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
 				tempArray.add(tempObj);
 				notificationObj.add(NGSIConstants.NGSI_LD_LAST_SUCCESS, tempArray);
 			}
-			notificationObj.add(NGSIConstants.NGSI_LD_TIMES_SEND, SerializationTools.getValueArray(notification.getTimesSent()));
-//			{
-//			    "https://uri.etsi.org/ngsi-ld/lastSuccess": [
-//			      {
-//			        "@type": "https://uri.etsi.org/ngsi-ld/DateTime",
-//			        "@value": "2020-04-04T12:03:04Z"
-//			      }
-//			    ]
-//			  }
-//			
-//			  {
-//				    "https://uri.etsi.org/ngsi-ld/timesSent": [
-//				      {
-//				        "@value": "2020-04-04T12:03:04Z"
-//				      }
-//				    ]
-//				  }
+			notificationObj.add(NGSIConstants.NGSI_LD_TIMES_SEND,
+					SerializationTools.getValueArray(notification.getTimesSent()));
+			// {
+			// "https://uri.etsi.org/ngsi-ld/lastSuccess": [
+			// {
+			// "@type": "https://uri.etsi.org/ngsi-ld/DateTime",
+			// "@value": "2020-04-04T12:03:04Z"
+			// }
+			// ]
+			// }
+			//
+			// {
+			// "https://uri.etsi.org/ngsi-ld/timesSent": [
+			// {
+			// "@value": "2020-04-04T12:03:04Z"
+			// }
+			// ]
+			// }
 			temp.add(notificationObj);
 			top.add(NGSIConstants.NGSI_LD_NOTIFICATION, temp);
 		}

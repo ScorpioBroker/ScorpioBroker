@@ -149,7 +149,8 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
-			@RequestParam(name = "options", required = false) List<String> options) {
+			@RequestParam(name = "options", required = false) List<String> options,
+			@RequestParam(name = "services", required = false) Boolean showServices) {
 
 		if (limit == null) {
 			limit = defaultLimit;
@@ -173,7 +174,7 @@ public class QueryController {// implements QueryHandlerInterface {
 						throw new ResponseException(ErrorType.InvalidRequest);
 					checkParamsForValidity(qp);
 					QueryResult qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
-							qToken);
+							qToken, showServices);
 
 					return generateReply(request, qResult);
 

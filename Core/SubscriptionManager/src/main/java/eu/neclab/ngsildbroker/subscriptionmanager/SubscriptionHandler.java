@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
@@ -20,7 +21,7 @@ import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProd
 
 @SpringBootApplication
 @EnableBinding({ SubscriptionManagerProducerChannel.class, AtContextProducerChannel.class })
-@Import(CommonKafkaConfig.class)
+@Import(KafkaConfig.class)
 public class SubscriptionHandler {
 
 	@Value("${atcontext.url}")
@@ -45,7 +46,11 @@ public class SubscriptionHandler {
 	SecurityConfig securityConfig() {
 		return new SecurityConfig();
 	}
-		
+//	@Bean("smrestTemp")
+//	RestTemplate restTemp() {
+//		return new RestTemplate();
+//	}
+//		
 	@Bean("smresourceConfigDetails")
 	ResourceConfigDetails resourceConfigDetails() {
 		return new ResourceConfigDetails();

@@ -1,9 +1,31 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+
 public class GeoqueryRel {
 	private String georelOp = null;
 	private String distanceType = null;
 	private String distanceValue = null;
+	
+	
+	public GeoqueryRel() {
+		super();
+	}
+	
+	
+	public GeoqueryRel(GeoRelation georel) {
+		super();
+		this.georelOp = georel.getRelation();
+		if(georel.getMaxDistance() != null && georel.getMaxDistance() > 0) {
+			this.distanceType = NGSIConstants.GEO_REL_MAX_DISTANCE;
+			this.distanceValue = "" + georel.getMaxDistance();
+		}else if(georel.getMinDistance() != null && georel.getMaxDistance() > 0) {
+			this.distanceType = NGSIConstants.GEO_REL_MIN_DISTANCE;
+			this.distanceValue = "" + georel.getMinDistance();
+		}
+	}
+
+
 	public String getGeorelOp() {
 		return georelOp;
 	}
