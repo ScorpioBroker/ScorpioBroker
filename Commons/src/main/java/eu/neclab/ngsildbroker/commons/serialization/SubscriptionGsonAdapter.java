@@ -384,10 +384,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		if (attribs.size() > 0) {
 			top.add(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES, attribs);
 		}
-		if (src.getThrottling() != null) {
+		if (src.getThrottling() != null  && src.getTimeInterval() != 0) {
 			top.add(NGSIConstants.NGSI_LD_THROTTLING, SerializationTools.getValueArray(src.getThrottling()));
 		}
-		if (src.getTimeInterval() != null) {
+		if (src.getTimeInterval() != null && src.getTimeInterval() != 0) {
 			top.add(NGSIConstants.NGSI_LD_TIME_INTERVAL, SerializationTools.getValueArray(src.getTimeInterval()));
 		}
 		if (src.getExpires() != null) {

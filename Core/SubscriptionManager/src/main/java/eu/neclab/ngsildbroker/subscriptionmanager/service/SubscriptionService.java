@@ -194,6 +194,7 @@ public class SubscriptionService implements SubscriptionManager {
 	public URI subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
 
 		Subscription subscription = subscriptionRequest.getSubscription();
+		validateSub(subscription);
 		if (subscription.getId() == null) {
 			subscription.setId(generateUniqueSubId(subscription));
 		} else {
@@ -201,6 +202,8 @@ public class SubscriptionService implements SubscriptionManager {
 				throw new ResponseException(ErrorType.AlreadyExists);
 			}
 		}
+		
+		
 		this.subscriptionId2Subscription.put(subscription.getId().toString(), subscription);
 		if (subscription.getTimeInterval() > 0) {
 			intervalHandler.addSub(subscriptionRequest);
@@ -244,6 +247,16 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 		}
 		return subscription.getId();
+	}
+
+	private void validateSub(Subscription subscription) throws ResponseException {
+		if(subscription.getThrottling() > 0 && subscription.getTimeInterval() >0 ) {
+			throw new ResponseException(ErrorType.BadRequestData, "throttling  and timeInterval cannot both be set");
+		}
+		if(subscription.getTimeInterval() >0  && (subscription.getAttributeNames() != null || !subscription.getAttributeNames().isEmpty())) {
+			throw new ResponseException(ErrorType.BadRequestData, "watchedAttributes  and timeInterval cannot both be set");
+		}
+		
 	}
 
 	private void syncToMessageBus(SubscriptionRequest subscription) {
