@@ -138,24 +138,35 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 					throw new JsonParseException(e);
 				}
 				notifyParam.setEndPoint(endPoint);
-				String formatString = ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_FORMAT).get(0).getAsJsonObject()
-						.get(NGSIConstants.JSON_LD_VALUE).getAsString();
-				if (formatString.equalsIgnoreCase("keyvalues")) {
-					notifyParam.setFormat(Format.keyValues);
-				} else if (formatString.equalsIgnoreCase("normalized")) {
+				if (ldObj.has(NGSIConstants.NGSI_LD_FORMAT) && ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_FORMAT).get(0).getAsJsonObject()
+						.get(NGSIConstants.JSON_LD_VALUE) != null) {
+					String formatString = ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_FORMAT).get(0).getAsJsonObject()
+							.get(NGSIConstants.JSON_LD_VALUE).getAsString();
+					if (formatString.equalsIgnoreCase("keyvalues")) {
+						notifyParam.setFormat(Format.keyValues);
+					} else if (formatString.equalsIgnoreCase("normalized")) {
+						notifyParam.setFormat(Format.normalized);
+					}
+				}else {
+					//Default
 					notifyParam.setFormat(Format.normalized);
 				}
 				if (ldObj.has(NGSIConstants.NGSI_LD_LAST_FAILURE)) {
-					TemporalAccessor temp = SerializationTools.formatter.parse(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_LAST_FAILURE).get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+					TemporalAccessor temp = SerializationTools.formatter
+							.parse(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_LAST_FAILURE).get(0).getAsJsonObject()
+									.get(NGSIConstants.JSON_LD_VALUE).getAsString());
 					notifyParam.setLastFailedNotification(new Date(Instant.from(temp).toEpochMilli()));
 				}
 				if (ldObj.has(NGSIConstants.NGSI_LD_LAST_SUCCESS)) {
-					TemporalAccessor temp = SerializationTools.formatter.parse(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_LAST_SUCCESS).get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+					TemporalAccessor temp = SerializationTools.formatter
+							.parse(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_LAST_SUCCESS).get(0).getAsJsonObject()
+									.get(NGSIConstants.JSON_LD_VALUE).getAsString());
 					notifyParam.setLastNotification(new Date(Instant.from(temp).toEpochMilli()));
 
 				}
 				if (ldObj.has(NGSIConstants.NGSI_LD_TIMES_SEND)) {
-					notifyParam.setTimesSent(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_TIMES_SEND).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsInt());
+					notifyParam.setTimesSent(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_TIMES_SEND).getAsJsonObject()
+							.get(NGSIConstants.JSON_LD_VALUE).getAsInt());
 				}
 				result.setNotification(notifyParam);
 
