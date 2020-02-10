@@ -217,7 +217,7 @@ public class QueryController {// implements QueryHandlerInterface {
 			}
 		}
 		if(qp.getGeorel() != null && qp.getGeorel().getGeorelOp() != null && !qp.getGeorel().getGeorelOp().isEmpty()) {
-			if(!NGSIConstants.ALLOWED_GEOREL.contains(qp.getGeometry())) {
+			if(!NGSIConstants.ALLOWED_GEOREL.contains(qp.getGeorel().getGeorelOp())) {
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel provided");
 			}
 		}
