@@ -152,6 +152,7 @@ public class ContextResolverBasic {
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
 			List<Object> expanded = JsonLdProcessor.expand(json);
 			protectGeoProps(expanded, usedContext);
+//			protectLocationFromSubs(expanded, usedContext);
 			if (expanded.isEmpty()) {
 				return "";
 			}
@@ -161,6 +162,70 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.InvalidRequest);
 		}
 
+	}
+
+	private void protectLocationFromSubs(List<Object> expanded, ArrayList<Object> usedContext) {
+		Map firstEntry = (Map)expanded.get(0);
+		if (!(firstEntry.get(NGSIConstants.JSON_LD_TYPE).equals(NGSIConstants.NGSI_LD_SUBSCRIPTION_ID)) || !firstEntry.containsKey(NGSIConstants.NGSI_LD_LOCATION)) {
+			return;
+		}
+		Object location = firstEntry.get(NGSIConstants.NGSI_LD_LOCATION);
+		if(location instanceof String) {
+			return;
+		}
+		try {
+			Object safedLocation = getProperGeoJson(location, usedContext);
+			firstEntry.put(NGSIConstants.NGSI_LD_LOCATION, safedLocation);
+		} catch (JsonGenerationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private Object getProperGeoJson(Object value, ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
+		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
+		compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
+		String geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
+		List geoValues = (List) compactedFull.get(NGSIConstants.GEO_JSON_COORDINATES);
+		switch (geoType) {
+		case NGSIConstants.GEO_TYPE_POINT:
+			// nothing to be done here point is ok like this
+			break;
+		case NGSIConstants.GEO_TYPE_LINESTRING:
+			ArrayList<Object> containerList = new ArrayList<Object>();
+			for (int i = 0; i < geoValues.size(); i += 2) {
+				ArrayList<Object> container = new ArrayList<Object>();
+				container.add(geoValues.get(i));
+				container.add(geoValues.get(i + 1));
+				containerList.add(container);
+			}
+			compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, containerList);
+			break;
+
+		case NGSIConstants.GEO_TYPE_POLYGON:
+			ArrayList<Object> topLevelContainerList = new ArrayList<Object>();
+			ArrayList<Object> polyContainerList = new ArrayList<Object>();
+			for (int i = 0; i < geoValues.size(); i += 2) {
+				ArrayList<Object> container = new ArrayList<Object>();
+				container.add(geoValues.get(i));
+				container.add(geoValues.get(i + 1));
+				polyContainerList.add(container);
+			}
+			topLevelContainerList.add(polyContainerList);
+			compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, topLevelContainerList);
+			break;
+		default:
+			break;
+		}
+		String proctedValue = JsonUtils.toString(compactedFull);
+		// temp.replace("\"", "\\\"");
+		ArrayList<Object> tempList = new ArrayList<Object>();
+		Map<String, Object> tempMap = new HashMap<String, Object>();
+		tempMap.put(NGSIConstants.JSON_LD_VALUE, proctedValue);
+		return tempMap;
 	}
 
 	private void protectGeoProps(List<Object> expanded, ArrayList<Object> usedContext)
@@ -372,6 +437,7 @@ public class ContextResolverBasic {
 
 			Map<String, Object> tempResult = JsonLdProcessor.compact(json, fullContext, defaultOptions);
 			unprotectGeoProps(tempResult);
+//			unprotectLocationFromRegistry(tempResult);
 			if (tempResult.containsKey("@graph")) {
 				// we are in a multiresult set
 				Object atContext = tempResult.get(NGSIConstants.JSON_LD_CONTEXT);
@@ -394,6 +460,17 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.InvalidRequest);
 		}
 		return result;
+	}
+
+	private void unprotectLocationFromRegistry(Map<String, Object> tempResult) throws JsonParseException, IOException {
+		if(!tempResult.get(NGSIConstants.QUERY_PARAMETER_TYPE).equals("Subscription")) {
+			return;
+		}
+		Object location = tempResult.get(NGSIConstants.QUERY_PARAMETER_LOCATION);
+		if(location == null) {
+			return;
+		}
+		tempResult.put(NGSIConstants.QUERY_PARAMETER_LOCATION, JsonUtils.fromString((String) location));
 	}
 
 	private String generateAtContextServing(List<Object> rawContext, int hash) {
