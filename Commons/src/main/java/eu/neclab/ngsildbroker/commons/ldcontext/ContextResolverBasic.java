@@ -427,8 +427,13 @@ public class ContextResolverBasic {
 					if (temp.equals(CORE_CONTEXT_URL_STR)) {
 						result.put(IS_FULL_VALID, true);
 					} else {
-
+						try {
 						result.putAll(getRemoteContext(entry.toString()));
+						} catch(ResponseException e) {
+							//this can happen as not all "remote" entries are really remote contexts 
+							//print error to show up in log and add "remote" as is to used context
+							e.printStackTrace();
+						}
 					}
 				} else if (entry instanceof Map) {
 					result.putAll(((Map) entry));
