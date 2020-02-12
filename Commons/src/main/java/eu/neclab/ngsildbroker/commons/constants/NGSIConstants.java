@@ -49,6 +49,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
 	public final static String NGSI_LD_LOCATION = "https://uri.etsi.org/ngsi-ld/location";
+	public final static String NGSI_LD_LOCATION_SHORT = "location";
 	public final static String NGSI_LD_CREATED_AT = "https://uri.etsi.org/ngsi-ld/createdAt";
 	public final static String NGSI_LD_MODIFIED_AT = "https://uri.etsi.org/ngsi-ld/modifiedAt";
 	public final static String NGSI_LD_OBSERVED_AT = "https://uri.etsi.org/ngsi-ld/observedAt";
@@ -75,6 +76,10 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_NOTIFICATION = "https://uri.etsi.org/ngsi-ld/notification";
 	public final static String NGSI_LD_QUERY = "https://uri.etsi.org/ngsi-ld/q";
 	public final static String NGSI_LD_WATCHED_ATTRIBUTES = "https://uri.etsi.org/ngsi-ld/watchedAttributes";
+	public final static String NGSI_LD_WATCHED_ATTRIBUTES_SHORT = "watchedAttributes";
+	public final static String NGSI_LD_ENTITIES_SHORT = "entities";
+	public final static String NGSI_LD_ATTRIBUTES_SHORT = "attributes";
+	
 	public final static String NGSI_LD_THROTTLING = "https://uri.etsi.org/ngsi-ld/throttling";
 	public final static String NGSI_LD_TIME_INTERVAL = "https://uri.etsi.org/ngsi-ld/timeInterval";
 	public final static String NGSI_LD_EXPIRES = "https://uri.etsi.org/ngsi-ld/expires";
@@ -91,7 +96,10 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_NOTIFIED_AT ="https://uri.etsi.org/ngsi-ld/notifiedAt";
 	public final static String NGSI_LD_DATA ="https://uri.etsi.org/ngsi-ld/data";
 	public final static String NGSI_LD_INTERNAL="https://uri.etsi.org/ngsi-ld/internal";
-	
+	public final static String NGSI_LD_CSOURCE_REGISTRATION ="https://uri.etsi.org/ngsi-ld/ContextSourceRegistration";
+	public final static String NGSI_LD_CSOURCE_REGISTRATION_SHORT ="ContextSourceRegistration";
+	public final static String NGSI_LD_SUBSCRIPTION = "https://uri.etsi.org/ngsi-ld/Subscription";
+	public final static String NGSI_LD_SUBSCRIPTION_SHORT = "Subscription";
 	public final static String NGSI_LD_LAST_NOTIFICATION ="https://uri.etsi.org/ngsi-ld/lastNotification"; 
 	public final static String NGSI_LD_LAST_FAILURE = "https://uri.etsi.org/ngsi-ld/lastFailure ";
 	public final static String NGSI_LD_LAST_SUCCESS = "https://uri.etsi.org/ngsi-ld/lastSuccess";

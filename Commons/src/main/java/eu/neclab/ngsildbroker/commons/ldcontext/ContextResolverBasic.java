@@ -164,26 +164,7 @@ public class ContextResolverBasic {
 
 	}
 
-	private void protectLocationFromSubs(List<Object> expanded, ArrayList<Object> usedContext) {
-		Map firstEntry = (Map)expanded.get(0);
-		if (!(firstEntry.get(NGSIConstants.JSON_LD_TYPE).equals(NGSIConstants.NGSI_LD_SUBSCRIPTION_ID)) || !firstEntry.containsKey(NGSIConstants.NGSI_LD_LOCATION)) {
-			return;
-		}
-		Object location = firstEntry.get(NGSIConstants.NGSI_LD_LOCATION);
-		if(location instanceof String) {
-			return;
-		}
-		try {
-			Object safedLocation = getProperGeoJson(location, usedContext);
-			firstEntry.put(NGSIConstants.NGSI_LD_LOCATION, safedLocation);
-		} catch (JsonGenerationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+	
 
 	private Object getProperGeoJson(Object value, ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
 		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
@@ -250,6 +231,18 @@ public class ContextResolverBasic {
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
+			if (key.equals(NGSIConstants.NGSI_LD_LOCATION)) {
+				if(mapValue instanceof Map) {
+					Map temp = (Map)mapValue;
+					if (temp.get(NGSIConstants.JSON_LD_TYPE) != null) {
+						if(!((List)temp.get(NGSIConstants.JSON_LD_TYPE)).get(0).equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
+							//we are in a location entry of registry as this is not a geo property
+							mapEntry.setValue(getProperGeoJson(mapValue, usedContext));
+							continue;
+						}
+					}
+				}
+			}
 			if (NGSIConstants.JSON_LD_TYPE.equals(key) && !(mapValue instanceof String)
 					&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
 				typeFound = true;
@@ -333,6 +326,21 @@ public class ContextResolverBasic {
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
+			if (key.equals(NGSIConstants.NGSI_LD_LOCATION_SHORT)) {
+				if(mapValue instanceof String) {
+					mapEntry.setValue(JsonUtils.fromString((String) mapValue));
+					continue;
+				}
+			}
+			if(key.equals(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES_SHORT) || key.equals(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT) || key.equals(NGSIConstants.NGSI_LD_ENTITIES_SHORT)) {
+				if(!(mapValue instanceof List)) {
+					ArrayList<Object> temp = new ArrayList<Object>();
+					temp.add(mapValue);
+					mapEntry.setValue(temp);
+				}
+				continue;
+			}
+			
 			if (NGSIConstants.QUERY_PARAMETER_TYPE.equals(key) && (mapValue instanceof String)) {
 
 				if (NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT.equals(mapValue)) {
@@ -462,16 +470,7 @@ public class ContextResolverBasic {
 		return result;
 	}
 
-	private void unprotectLocationFromRegistry(Map<String, Object> tempResult) throws JsonParseException, IOException {
-		if(!tempResult.get(NGSIConstants.QUERY_PARAMETER_TYPE).equals("Subscription")) {
-			return;
-		}
-		Object location = tempResult.get(NGSIConstants.QUERY_PARAMETER_LOCATION);
-		if(location == null) {
-			return;
-		}
-		tempResult.put(NGSIConstants.QUERY_PARAMETER_LOCATION, JsonUtils.fromString((String) location));
-	}
+	
 
 	private String generateAtContextServing(List<Object> rawContext, int hash) {
 		ArrayList<Object> sorted = new ArrayList<Object>();
