@@ -40,7 +40,8 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
 public class SerializationTools {
 //	public static SimpleDateFormat formatter = new SimpleDateFormat(NGSIConstants.DEFAULT_DATE_FORMAT);
-	public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(NGSIConstants.DEFAULT_DATE_FORMAT).withZone(ZoneId.systemDefault());
+	private static DateTimeFormatter informatter = DateTimeFormatter.ofPattern(NGSIConstants.ALLOWED_IN_DEFAULT_DATE_FORMAT).withZone(ZoneId.systemDefault());
+	public static DateTimeFormatter formatter = DateTimeFormatter.ofPattern(NGSIConstants.ALLOWED_OUT_DEFAULT_DATE_FORMAT).withZone(ZoneId.systemDefault());
 //	public static SimpleDateFormat forgivingFormatter = new SimpleDateFormat(
 //			NGSIConstants.DEFAULT_FORGIVING_DATE_FORMAT);
 
@@ -321,7 +322,7 @@ public class SerializationTools {
 	}
 
 	public static Long date2Long(String dateString) throws Exception {
-		return Instant.from(formatter.parse(dateString)).toEpochMilli();
+		return Instant.from(informatter.parse(dateString)).toEpochMilli();
 
 	}
 
@@ -408,7 +409,7 @@ public class SerializationTools {
 	public static JsonElement getJson(Long timestamp, JsonSerializationContext context) {
 		JsonArray observedArray = new JsonArray();
 		JsonObject observedObj = new JsonObject();
-		observedObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(formatter.format(Instant.ofEpochMilli(timestamp))));
+		observedObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(informatter.format(Instant.ofEpochMilli(timestamp))));
 		observedObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
 		observedArray.add(observedObj);
 		return observedArray;
