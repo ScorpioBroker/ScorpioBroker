@@ -14,7 +14,7 @@ public class AppConstants {
 	// entities URL for
 	public final static String ENTITES_URL = "/ngsi-ld/v1/entities/";
 	// csource URL
-	public final static String CSOURCE_URL = "/ngsi-ld/v1/csources/";
+	public final static String CSOURCE_URL = "/ngsi-ld/v1/csourceRegistrations/";
 	//history
 	public final static String HISTORY_URL="/ngsi-ld/v1/temporal/entities/";
 	//subscriptions
