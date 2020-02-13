@@ -205,6 +205,8 @@ public class SerializationTools {
 
 			} else if (propKey.equals(NGSIConstants.JSON_LD_TYPE)) {
 				continue;
+			} else if (propKey.equals(NGSIConstants.NGSI_LD_INSTANCE_ID)){
+				continue;
 			} else {
 				JsonObject objValue = value.getAsJsonArray().get(0).getAsJsonObject();
 				if (objValue.has(NGSIConstants.JSON_LD_TYPE)) {

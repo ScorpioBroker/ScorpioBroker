@@ -80,7 +80,7 @@ public class RegistryControllerTest {
 					.thenReturn(new URI("urn:ngsi-ld:ContextSourceRegistration:csr1a3458"));
 			mockMvc.perform(post("/ngsi-ld/v1/csourceRegistrations/").contentType(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isCreated())
-					.andExpect(redirectedUrl("/ngsi-ld/v1/csources/urn:ngsi-ld:ContextSourceRegistration:csr1a3458"))
+					.andExpect(redirectedUrl("/ngsi-ld/v1/csourceRegistrations/urn:ngsi-ld:ContextSourceRegistration:csr1a3458"))
 					.andDo(print());
 
 			verify(csourceService, times(1)).registerCSource(any());
