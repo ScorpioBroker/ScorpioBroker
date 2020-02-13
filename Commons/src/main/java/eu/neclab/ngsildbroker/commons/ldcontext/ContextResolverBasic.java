@@ -206,7 +206,8 @@ public class ContextResolverBasic {
 		ArrayList<Object> tempList = new ArrayList<Object>();
 		Map<String, Object> tempMap = new HashMap<String, Object>();
 		tempMap.put(NGSIConstants.JSON_LD_VALUE, proctedValue);
-		return tempMap;
+		tempList.add(tempMap);
+		return tempList;
 	}
 
 	private void protectGeoProps(List<Object> expanded, ArrayList<Object> usedContext)
@@ -232,8 +233,8 @@ public class ContextResolverBasic {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
 			if (key.equals(NGSIConstants.NGSI_LD_LOCATION)) {
-				if(mapValue instanceof Map) {
-					Map temp = (Map)mapValue;
+				if(((List)mapValue).get(0) instanceof Map) {
+					Map temp = (Map)((List)mapValue).get(0);
 					if (temp.get(NGSIConstants.JSON_LD_TYPE) != null) {
 						if(!((List)temp.get(NGSIConstants.JSON_LD_TYPE)).get(0).equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
 							//we are in a location entry of registry as this is not a geo property

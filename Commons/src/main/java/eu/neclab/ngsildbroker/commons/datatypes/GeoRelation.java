@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-
 /**
  * @author hebgen
  * @version 1.0
@@ -12,7 +11,7 @@ public class GeoRelation {
 	private Double minDistance;
 	private String relation;
 
-	public GeoRelation(){
+	public GeoRelation() {
 
 	}
 
@@ -43,24 +42,32 @@ public class GeoRelation {
 	public void setRelation(String relation) {
 		this.relation = relation;
 	}
+
 	public String getABNFString() {
 		StringBuilder result = new StringBuilder();
 		result.append(relation);
-		if(maxDistance != null) {
+		if (maxDistance != null) {
 			result.append(";");
 			result.append("maxDistance");
 			result.append("==");
-			result.append(maxDistance);
+			if (maxDistance % 1 == 0) {
+				result.append(maxDistance.intValue());
+			} else {
+				result.append(maxDistance);
+			}
 		}
-		if(minDistance != null) {
+		if (minDistance != null) {
 			result.append(";");
 			result.append("minDistance");
 			result.append("==");
-			result.append(minDistance);
+			if (minDistance % 1 == 0) {
+				result.append(minDistance.intValue());
+			} else {
+				result.append(minDistance);
+			}
 		}
 		return result.toString();
-		
+
 	}
-	
 
 }

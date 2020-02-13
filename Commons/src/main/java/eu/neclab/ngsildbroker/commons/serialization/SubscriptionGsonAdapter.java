@@ -138,8 +138,8 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 					throw new JsonParseException(e);
 				}
 				notifyParam.setEndPoint(endPoint);
-				if (ldObj.has(NGSIConstants.NGSI_LD_FORMAT) && ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_FORMAT).get(0).getAsJsonObject()
-						.get(NGSIConstants.JSON_LD_VALUE) != null) {
+				if (ldObj.has(NGSIConstants.NGSI_LD_FORMAT) && ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_FORMAT).get(0)
+						.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE) != null) {
 					String formatString = ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_FORMAT).get(0).getAsJsonObject()
 							.get(NGSIConstants.JSON_LD_VALUE).getAsString();
 					if (formatString.equalsIgnoreCase("keyvalues")) {
@@ -147,8 +147,8 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 					} else if (formatString.equalsIgnoreCase("normalized")) {
 						notifyParam.setFormat(Format.normalized);
 					}
-				}else {
-					//Default
+				} else {
+					// Default
 					notifyParam.setFormat(Format.normalized);
 				}
 				if (ldObj.has(NGSIConstants.NGSI_LD_LAST_FAILURE)) {
@@ -344,8 +344,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				tempArray.add(tempObj);
 				notificationObj.add(NGSIConstants.NGSI_LD_LAST_SUCCESS, tempArray);
 			}
-			notificationObj.add(NGSIConstants.NGSI_LD_TIMES_SEND,
-					SerializationTools.getValueArray(notification.getTimesSent()));
+			if (notification.getTimesSent() > 0) {
+				notificationObj.add(NGSIConstants.NGSI_LD_TIMES_SEND,
+						SerializationTools.getValueArray(notification.getTimesSent()));
+			}
 			// {
 			// "https://uri.etsi.org/ngsi-ld/lastSuccess": [
 			// {
@@ -384,7 +386,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		if (attribs.size() > 0) {
 			top.add(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES, attribs);
 		}
-		if (src.getThrottling() != null  && src.getTimeInterval() != 0) {
+		if (src.getThrottling() != null && src.getTimeInterval() != 0) {
 			top.add(NGSIConstants.NGSI_LD_THROTTLING, SerializationTools.getValueArray(src.getThrottling()));
 		}
 		if (src.getTimeInterval() != null && src.getTimeInterval() != 0) {
