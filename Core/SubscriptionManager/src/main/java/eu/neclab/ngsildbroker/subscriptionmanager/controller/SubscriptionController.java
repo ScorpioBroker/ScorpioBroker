@@ -46,7 +46,7 @@ import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProd
 public class SubscriptionController {
 
 	private final static Logger logger = LogManager.getLogger(SubscriptionController.class);
-	
+
 	@Autowired
 	SubscriptionManager manager;
 
@@ -78,7 +78,6 @@ public class SubscriptionController {
 
 	ResponseEntity<Object> badRequestResponse = ResponseEntity.status(badRequest.getHttpStatus())
 			.body(new RestResponse(badRequest));
-	
 
 	private HttpUtils httpUtils;
 
@@ -97,9 +96,13 @@ public class SubscriptionController {
 			HttpUtils.doPreflightCheck(request);
 			List<Object> context = HttpUtils.getAtContext(request);
 			String resolved = contextResolver.expand(payload, context);
-
-			subscription = DataSerializer.getSubscription(resolved);
-
+			try {
+				subscription = DataSerializer.getSubscription(resolved);
+			} catch (Exception e) {
+				logger.error("Exception ::", e);
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+						.body("provided payload has errors.\n" + e.getMessage());
+			}
 			if (resolved == null || subscription == null) {
 				return badRequestResponse;
 			}
@@ -127,7 +130,7 @@ public class SubscriptionController {
 		List<Subscription> result = null;
 		result = manager.getAllSubscriptions(limit);
 		logger.trace("getAllSubscriptions() :: completed");
-		
+
 		return httpUtils.generateReply(request, DataSerializer.toJson(result));
 
 	}
@@ -160,23 +163,23 @@ public class SubscriptionController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@RequestMapping(method = RequestMethod.PATCH, value = "/{"+NGSIConstants.QUERY_PARAMETER_ID+"}")
+	@RequestMapping(method = RequestMethod.PATCH, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
 	public ResponseEntity<Object> updateSubscription(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestBody String payload) {
 		logger.trace("call updateSubscription() ::");
-		
+
 		try {
 			HttpUtils.doPreflightCheck(request);
 			List<Object> context = HttpUtils.getAtContext(request);
 			String resolved = contextResolver.expand(payload, context);
 			Subscription subscription = DataSerializer.getSubscription(resolved);
-			if(subscription.getId() == null) {
+			if (subscription.getId() == null) {
 				subscription.setId(id);
 			}
 			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context);
-			
-//			expandSubscriptionAttributes(subscription, context);
+
+			// expandSubscriptionAttributes(subscription, context);
 			if (resolved == null || subscription == null || !id.equals(subscription.getId())) {
 				return badRequestResponse;
 			}
@@ -188,30 +191,30 @@ public class SubscriptionController {
 		return ResponseEntity.noContent().build();
 	}
 
-
-//	private void expandSubscriptionAttributes(Subscription subscription, List<Object> context)
-//			throws ResponseException {
-//		for (EntityInfo info : subscription.getEntities()) {
-//			if (info.getType() != null && !info.getType().trim().equals("")) {
-//				info.setType(ldTools.expandAttribute(info.getType(), context));
-//			}
-//		}
-//		if (subscription.getAttributeNames() != null) {
-//			ArrayList<String> newAttribNames = new ArrayList<String>();
-//			for (String attrib : subscription.getAttributeNames()) {
-//				newAttribNames.add(ldTools.expandAttribute(attrib, context));
-//			}
-//			subscription.setAttributeNames(newAttribNames);
-//		}
-//		if (subscription.getNotification().getAttributeNames() != null) {
-//			ArrayList<String> newAttribNames = new ArrayList<String>();
-//			for (String attrib : subscription.getNotification().getAttributeNames()) {
-//				newAttribNames.add(ldTools.expandAttribute(attrib, context));
-//			}
-//			subscription.getNotification().setAttributeNames(newAttribNames);
-//
-//		}
-//
-//	}
+	// private void expandSubscriptionAttributes(Subscription subscription,
+	// List<Object> context)
+	// throws ResponseException {
+	// for (EntityInfo info : subscription.getEntities()) {
+	// if (info.getType() != null && !info.getType().trim().equals("")) {
+	// info.setType(ldTools.expandAttribute(info.getType(), context));
+	// }
+	// }
+	// if (subscription.getAttributeNames() != null) {
+	// ArrayList<String> newAttribNames = new ArrayList<String>();
+	// for (String attrib : subscription.getAttributeNames()) {
+	// newAttribNames.add(ldTools.expandAttribute(attrib, context));
+	// }
+	// subscription.setAttributeNames(newAttribNames);
+	// }
+	// if (subscription.getNotification().getAttributeNames() != null) {
+	// ArrayList<String> newAttribNames = new ArrayList<String>();
+	// for (String attrib : subscription.getNotification().getAttributeNames()) {
+	// newAttribNames.add(ldTools.expandAttribute(attrib, context));
+	// }
+	// subscription.getNotification().setAttributeNames(newAttribNames);
+	//
+	// }
+	//
+	// }
 
 }
