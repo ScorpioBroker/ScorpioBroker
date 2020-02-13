@@ -155,7 +155,7 @@ public class ParamsResolver {
 
 					geoqueryTokens = queryParser.parseGeoRel(georel);
 					logger.debug("  Geoquery term georelOp: " + geoqueryTokens.getGeorelOp());
-
+					
 					if (geoqueryTokens.getGeorelOp().isEmpty() || geometry.isEmpty() || coordinates.isEmpty()) {
 						throw new ResponseException(ErrorType.BadRequestData,
 								"Georel detected but georel, geometry or coordinates are empty!");
@@ -164,7 +164,7 @@ public class ParamsResolver {
 						throw new ResponseException(ErrorType.BadRequestData,
 								" geometry detected, Bad geometry!" + geometry);
 					}
-
+					validateCoordinates(coordinates);
 					GeoqueryRel gr = new GeoqueryRel();
 					gr.setGeorelOp(geoqueryTokens.getGeorelOp());
 					gr.setDistanceType(geoqueryTokens.getDistanceType());
@@ -220,6 +220,13 @@ public class ParamsResolver {
 			throw e; // rethrow response exception object
 		}
 		// return null;
+	}
+
+	private void validateCoordinates(String coordinates) throws ResponseException {
+		if(!coordinates.matches("^\\[*(\\[[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?),\\s*[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)(,\\d)?\\],?)+\\]*$")) {
+			throw new ResponseException(ErrorType.BadRequestData, "coordinates are not valid");
+		}
+		
 	}
 
 	private String expandQueryValues(List<Object> linkHeaders, String queryValue) throws ResponseException {
