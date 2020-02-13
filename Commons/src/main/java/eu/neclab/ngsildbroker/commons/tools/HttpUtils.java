@@ -98,14 +98,22 @@ public final class HttpUtils {
 		return SINGLETON;
 	}
 
-	public static void doPreflightCheck(HttpServletRequest req) throws ResponseException {
+	public static void doPreflightCheck(HttpServletRequest req, String payload) throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
 		if (contentType == null) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
 		}
-		if (!contentType.toLowerCase().contains("application/json") && !contentType.toLowerCase().contains("application/ld+json")) {
+		if (!contentType.toLowerCase().contains("application/json")
+				&& !contentType.toLowerCase().contains("application/ld+json")) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType,
-					"Unsupported content type. Allowed are application/json and application/ld+json. You provided " + contentType);
+					"Unsupported content type. Allowed are application/json and application/ld+json. You provided "
+							+ contentType);
+		}
+		if (payload != null) {
+			if (contentType.toLowerCase().contains("application/json") && payload.contains("@context")) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"data of the content type application/json cannot provide an @context entry in the body");
+			}
 		}
 	}
 

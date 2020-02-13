@@ -45,7 +45,7 @@ public class EntityBatchController {
 	public ResponseEntity<Object> createMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
-			HttpUtils.doPreflightCheck(request);
+			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.createMultipleMessage(resolved);
 			return generateBatchResultReply(result);
@@ -68,7 +68,7 @@ public class EntityBatchController {
 	public ResponseEntity<Object> upsertMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
-			HttpUtils.doPreflightCheck(request);
+			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.upsertMultipleMessage(resolved);
 			return generateBatchResultReply(result);
@@ -81,7 +81,7 @@ public class EntityBatchController {
 	public ResponseEntity<Object> updateMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
-			HttpUtils.doPreflightCheck(request);
+			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.updateMultipleMessage(resolved);
 			return generateBatchResultReply(result);

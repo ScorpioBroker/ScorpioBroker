@@ -93,7 +93,7 @@ public class SubscriptionController {
 		Subscription subscription = null;
 
 		try {
-			HttpUtils.doPreflightCheck(request);
+			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
 			String resolved = contextResolver.expand(payload, context);
 			try {
@@ -170,7 +170,7 @@ public class SubscriptionController {
 		logger.trace("call updateSubscription() ::");
 
 		try {
-			HttpUtils.doPreflightCheck(request);
+			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
 			String resolved = contextResolver.expand(payload, context);
 			Subscription subscription = DataSerializer.getSubscription(resolved);

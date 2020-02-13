@@ -138,7 +138,7 @@ public class RegistryController {
 	public ResponseEntity<Object> registerCSource(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
-			HttpUtils.doPreflightCheck(request);
+			HttpUtils.doPreflightCheck(request, payload);
 			logger.debug("payload received :: " + payload);
 
 			this.validate(payload);
@@ -183,7 +183,7 @@ public class RegistryController {
 	public ResponseEntity<Object> updateCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
 		try {
-			HttpUtils.doPreflightCheck(request);
+			HttpUtils.doPreflightCheck(request, payload);
 			logger.debug("update CSource() ::" + registrationId);
 			String resolved = httpUtils.expandPayload(request, payload);
 
