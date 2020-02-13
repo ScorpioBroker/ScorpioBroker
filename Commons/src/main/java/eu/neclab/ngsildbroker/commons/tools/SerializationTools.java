@@ -213,7 +213,11 @@ public class SerializationTools {
 						properties.add(parseProperty(objValue, propKey));
 					} else if (valueType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
 						relationships.add(parseRelationship(objValue, propKey));
+					}else {
+						throw new JsonParseException("unknown type of attribute");
 					}
+				}else {
+					throw new JsonParseException("cannot determine type of sub attribute. please provide a valid type");
 				}
 			}
 
