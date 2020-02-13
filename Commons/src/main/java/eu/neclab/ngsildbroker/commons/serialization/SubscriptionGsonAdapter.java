@@ -75,6 +75,8 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 					}
 					if (obj.has(NGSIConstants.JSON_LD_TYPE)) {
 						entity.setType(obj.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().get(0).getAsString());
+					}else {
+						throw new JsonParseException("type is a mandatory field in all entries of entities");
 					}
 					result.addEntityInfo(entity);
 				}
@@ -202,9 +204,11 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			}
 
 		}
-
+		if(result.getNotification() == null) {
+			throw new JsonParseException("no notification parameter provided");
+		}
 		// if (result.getId() == null) {
-		// throw new JsonParseException("Id is missing");
+		// 
 		// }
 		return result;
 	}
