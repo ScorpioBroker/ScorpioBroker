@@ -55,13 +55,14 @@ public class EntityBatchController {
 	}
 	
 	private ResponseEntity<Object> generateBatchResultReply(BatchResult result) {
-		HttpStatus status = HttpStatus.MULTI_STATUS;
-		if(result.getFails().isEmpty()) {
-			status = HttpStatus.OK;
-		}
-		if(result.getSuccess().isEmpty()) {
-			status = HttpStatus.BAD_REQUEST;
-		}
+//		HttpStatus status = HttpStatus.MULTI_STATUS;
+//		if(result.getFails().isEmpty()) {
+//			status = HttpStatus.OK;
+//		}
+//		if(result.getSuccess().isEmpty()) {
+//			status = HttpStatus.BAD_REQUEST;
+//		}
+		HttpStatus status = HttpStatus.OK;
 		return httpUtils.generateReply(DataSerializer.toJson(result), null, status);
 	}
 	@PostMapping("/upsert")
