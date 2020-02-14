@@ -208,6 +208,8 @@ public class SerializationTools {
 				continue;
 			} else if (propKey.equals(NGSIConstants.NGSI_LD_INSTANCE_ID)){
 				continue;
+			}else if (propKey.equals(NGSIConstants.NGSI_LD_UNIT_CODE)){
+				continue;
 			} else {
 				JsonObject objValue = value.getAsJsonArray().get(0).getAsJsonObject();
 				if (objValue.has(NGSIConstants.JSON_LD_TYPE)) {

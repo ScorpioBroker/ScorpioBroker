@@ -109,12 +109,15 @@ public final class HttpUtils {
 					"Unsupported content type. Allowed are application/json and application/ld+json. You provided "
 							+ contentType);
 		}
-		if (payload != null) {
-			if (contentType.toLowerCase().contains("application/json") && payload.contains("@context")) {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"data of the content type application/json cannot provide an @context entry in the body");
-			}
+		if (payload == null || payload.trim().isEmpty() || payload.trim().equals("{}") || payload.trim().equals("[]")) {
+			throw new ResponseException(ErrorType.BadRequestData, "empty payloads are not allowed in this operation");
 		}
+
+		if (contentType.toLowerCase().contains("application/json") && payload.contains("@context")) {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"data of the content type application/json cannot provide an @context entry in the body");
+		}
+
 	}
 
 	public String expandPayload(HttpServletRequest request, String payload)
