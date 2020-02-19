@@ -94,8 +94,11 @@ public class SubscriptionService implements SubscriptionManager {
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
 
-	NotificationHandler notificationHandler;
-	IntervalNotificationHandler intervalHandler;
+	NotificationHandlerREST notificationHandlerREST;
+	IntervalNotificationHandler intervalHandlerREST;
+
+	NotificationHandlerMQTT notificationHandlerMQTT;
+	IntervalNotificationHandler intervalHandlerMQTT;
 
 	Timer watchDog = new Timer(true);
 
@@ -159,8 +162,11 @@ public class SubscriptionService implements SubscriptionManager {
 	private void setup() {
 
 		httpUtils = HttpUtils.getInstance(contextResolverService);
-		notificationHandler = new NotificationHandlerREST(this, contextResolverService, objectMapper);
-		intervalHandler = new IntervalNotificationHandler(notificationHandler, kafkaTemplate, queryResultTopic,
+		notificationHandlerREST = new NotificationHandlerREST(this, contextResolverService, objectMapper);
+		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, queryResultTopic,
+				requestTopic, paramsResolver);
+		notificationHandlerMQTT = new NotificationHandlerMQTT(this, contextResolverService, objectMapper);
+		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, queryResultTopic,
 				requestTopic, paramsResolver);
 		logger.trace("call loadStoredSubscriptions() ::");
 		Map<String, byte[]> subs = kafkaOps.pullFromKafka(KafkaConstants.SUBSCRIPTIONS_TOPIC);
@@ -202,11 +208,15 @@ public class SubscriptionService implements SubscriptionManager {
 				throw new ResponseException(ErrorType.AlreadyExists);
 			}
 		}
-		
-		
+
 		this.subscriptionId2Subscription.put(subscription.getId().toString(), subscription);
+		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getSchemeSpecificPart();
 		if (subscription.getTimeInterval() > 0) {
-			intervalHandler.addSub(subscriptionRequest);
+			if (endpointProtocol.equals("mqtt://")) {
+				intervalHandlerMQTT.addSub(subscriptionRequest);
+			} else {
+				intervalHandlerREST.addSub(subscriptionRequest);
+			}
 		} else {
 			this.subscriptionId2Context.putAll(subscription.getId().toString(), subscriptionRequest.getContext());
 			this.sub2CreationTime.put(subscription, System.currentTimeMillis());
@@ -250,13 +260,15 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private void validateSub(Subscription subscription) throws ResponseException {
-		if(subscription.getThrottling() > 0 && subscription.getTimeInterval() >0 ) {
+		if (subscription.getThrottling() > 0 && subscription.getTimeInterval() > 0) {
 			throw new ResponseException(ErrorType.BadRequestData, "throttling  and timeInterval cannot both be set");
 		}
-		if(subscription.getTimeInterval() >0  && (subscription.getAttributeNames() != null || !subscription.getAttributeNames().isEmpty())) {
-			throw new ResponseException(ErrorType.BadRequestData, "watchedAttributes  and timeInterval cannot both be set");
+		if (subscription.getTimeInterval() > 0
+				&& (subscription.getAttributeNames() != null || !subscription.getAttributeNames().isEmpty())) {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"watchedAttributes  and timeInterval cannot both be set");
 		}
-		
+
 	}
 
 	private void syncToMessageBus(SubscriptionRequest subscription) {
@@ -291,7 +303,8 @@ public class SubscriptionService implements SubscriptionManager {
 		synchronized (subscriptionId2Context) {
 			this.subscriptionId2Context.removeAll(id.toString());
 		}
-		intervalHandler.removeSub(id.toString());
+		intervalHandlerREST.removeSub(id.toString());
+		intervalHandlerMQTT.removeSub(id.toString());
 		for (EntityInfo info : removedSub.getEntities()) {
 			if (info.getId() != null) {
 				synchronized (idBasedSubscriptions) {
@@ -474,7 +487,15 @@ public class SubscriptionService implements SubscriptionManager {
 		// }
 		// } else {
 		try {
-			notificationHandler.notify(
+			String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getSchemeSpecificPart();
+			
+			NotificationHandler handler;
+			if(endpointProtocol.equals("mqtt://")) {
+				handler = notificationHandlerMQTT;
+			}else {
+				handler = notificationHandlerREST;
+			}
+			handler.notify(
 					new Notification(EntityTools.getRandomID("notification:"), System.currentTimeMillis(),
 							subscription.getId(), dataList, null, null, 0, true),
 					subscription.getNotification().getEndPoint().getUri(),

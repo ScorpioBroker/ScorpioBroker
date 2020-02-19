@@ -80,7 +80,7 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 				id = new URI(top.get(NGSIConstants.JSON_LD_ID).getAsString());
 			} catch (URISyntaxException e1) {
 				if (!allowIncomplete) {
-					throw new JsonParseException("ID field is mandertory");
+					throw new JsonParseException("ID field is not a valid URI");
 				}
 			}
 		} else {

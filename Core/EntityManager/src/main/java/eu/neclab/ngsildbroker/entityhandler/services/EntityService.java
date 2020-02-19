@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -794,7 +795,12 @@ public class EntityService {
 	}
 
 	public void validateEntity(String payload, HttpServletRequest request) throws ResponseException {
-		Entity entity = DataSerializer.getEntity(payload);
+		Entity entity;
+		try {
+			entity = DataSerializer.getEntity(payload);
+		} catch (JsonParseException e) {
+			throw new ResponseException(ErrorType.InvalidRequest, e.getMessage());
+		}
 		List<ValidationRules> rules = new ArrayList<>();
 		rules.add(new IdValidationRule());
 		rules.add(new TypeValidationRule());
