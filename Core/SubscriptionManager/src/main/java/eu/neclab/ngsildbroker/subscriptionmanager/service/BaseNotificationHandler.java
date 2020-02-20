@@ -56,7 +56,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 	
 	
 	protected abstract void sendReply(ResponseEntity<Object> reply, URI callback) throws Exception;
-	private final static Logger logger = LogManager.getLogger(NotificationHandlerREST.class);
+	private final Logger logger = LogManager.getLogger(this.getClass());
 	private SubscriptionService subscriptionManagerService;
 	protected HttpUtils httpUtils;
 	private ObjectMapper objectMapper;

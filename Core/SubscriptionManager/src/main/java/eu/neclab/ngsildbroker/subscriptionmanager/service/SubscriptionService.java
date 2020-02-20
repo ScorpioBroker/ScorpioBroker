@@ -210,9 +210,9 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 
 		this.subscriptionId2Subscription.put(subscription.getId().toString(), subscription);
-		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getSchemeSpecificPart();
+		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 		if (subscription.getTimeInterval() > 0) {
-			if (endpointProtocol.equals("mqtt://")) {
+			if (endpointProtocol.equals("mqtt")) {
 				intervalHandlerMQTT.addSub(subscriptionRequest);
 			} else {
 				intervalHandlerREST.addSub(subscriptionRequest);
@@ -487,10 +487,10 @@ public class SubscriptionService implements SubscriptionManager {
 		// }
 		// } else {
 		try {
-			String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getSchemeSpecificPart();
+			String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 			
 			NotificationHandler handler;
-			if(endpointProtocol.equals("mqtt://")) {
+			if(endpointProtocol.equals("mqtt")) {
 				handler = notificationHandlerMQTT;
 			}else {
 				handler = notificationHandlerREST;
