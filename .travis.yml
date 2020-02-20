@@ -60,7 +60,7 @@ script:
   - export ACC_ENDPOINT="http://localhost:4444"
   - export NOTIFY_ENDPOINT="http://localhost:4444/acc"
   - export WEB_APP_PORT=4444
-  - node accumulator/accumulator.js &;
+  - node accumulator/accumulator.js &
   - npm test
   - curl http://localhost:9090/scorpio/v1/info/
 
