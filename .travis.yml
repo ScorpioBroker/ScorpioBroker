@@ -55,7 +55,7 @@ before_script:
 script:
   - cd testsuite
   - cd NGSI-LD_TestSuite-master
-  - export EXCLUDED_TESTS="001|002|003|004|014|022|145|147|149|151|155|156|157|158|159|161|162"
+  - export EXCLUDED_TESTS="001|002|003|004|014|022|145|147|149|151|155|156|157|158|159|160|161|162"
   - export TEST_ENDPOINT="http://localhost:9090"
   - export ACC_ENDPOINT="http://localhost:4444"
   - export NOTIFY_ENDPOINT="http://localhost:4444/acc"
