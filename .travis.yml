@@ -14,65 +14,61 @@ addons:
       - postgresql-9.6-postgis-2.3
       - npm
 
-before_script: >
-  psql -U postgres -c "create extension postgis;";
-  psql -U postgres -c "create database ngb;";
-  psql -U postgres -c "create user ngb with password 'ngb';";
-  psql -U postgres -c "alter database ngb owner to ngb;"  ;
-  psql -U postgres -c "grant all privileges on database ngb to ngb;";
-  psql -U postgres -c "alter role ngb superuser;";
+install:
+  - psql -U postgres -c "create extension postgis;"
+  - psql -U postgres -c "create database ngb;"
+  - psql -U postgres -c "create user ngb with password 'ngb';"
+  - psql -U postgres -c "alter database ngb owner to ngb;"
+  - psql -U postgres -c "grant all privileges on database ngb to ngb;"
+  - psql -U postgres -c "alter role ngb superuser;"
+  - mkdir kafka
+  - cd kafka
+  - wget http://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
+  - tar -xzf kafka_2.12-2.2.0.tgz
+  - kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties > /dev/null 2>&1 &
+  - sleep 12
+  - kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties > /dev/null 2>&1 &
+  - sleep 2
+  - cd ..
+  - mkdir testsuite
+  - cd testsuite
+  - curl -LO https://github.com/FIWARE/NGSI-LD_TestSuite/archive/master.zip
+  - shasum -a 256 master.zip
+  - unzip -q master.zip
+  - rm master.zip
+  - cd NGSI-LD_TestSuite-master
+  - npm install
+  - cd ../..
 
-  mkdir kafka;
-  cd kafka;
-  wget http://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz;
-  tar -xzf kafka_2.12-2.2.0.tgz;
-  kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties > /dev/null 2>&1 &;
-  sleep 12;
-  kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties > /dev/null 2>&1 &;
-  sleep 2;
-
-  cd ..;
-  mkdir testsuite;
-  cd testsuite;
-  curl -LO https://github.com/FIWARE/NGSI-LD_TestSuite/archive/master.zip;
-  shasum -a 256 master.zip;
-  unzip -q master.zip;
-  rm master.zip;
-  cd NGSI-LD_TestSuite-master;
-  npm install;
-  cd ../..;
-
-script: >
-  cd $TRAVIS_BUILD_DIR;
-  mvn clean package -DskipDefault -PbuildForTest -B;
+before_script:
+  - cd $TRAVIS_BUILD_DIR
+  - mvn clean package -DskipDefault -PbuildForTest -B
+  - java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
+  #- java -jar ./SpringCloudModules/config-server/target/config-server.jar &
+  - sleep 10
+  - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar > /dev/null 2>&1 &
+  - sleep 10
+  - java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar > /dev/null 2>&1 &
+  - sleep 100
+  - while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done
   
-  java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
-  sleep 10;
-  
-  java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar > /dev/null 2>&1 &;
-  sleep 10;
-  
-  java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar > /dev/null 2>&1 &;
-  sleep 100;
-  
-  while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done;
-  cd testsuite;
-  cd NGSI-LD_TestSuite-master;
-  node accumulator/accumulator.js &;
+script:
+  - cd testsuite
+  - cd NGSI-LD_TestSuite-master
+  - node accumulator/accumulator.js &;
+  - export EXCLUDED_TESTS="001|003|126|129|"
+  - export TEST_ENDPOINT="http://localhost:9090"
+  - export ACC_ENDPOINT="http://localhost:4444"
+  - export NOTIFY_ENDPOINT="http://localhost:4444/acc"
+  - export WEB_APP_PORT=4444
+  - npm test
+  - curl http://localhost:9090/scorpio/v1/info/
 
-  export EXCLUDED_TESTS="001|003|126|129|";
-  export TEST_ENDPOINT="http://localhost:9090";
-  export ACC_ENDPOINT="http://localhost:4444";
-  export NOTIFY_ENDPOINT="http://localhost:4444/acc";
-  export WEB_APP_PORT=4444;
-
-  npm test;
-  curl http://localhost:9090/scorpio/v1/info/
-
-after_script: >
-  cd kafka
-  kafka_2.12-2.2.0/bin/zookeeper-server-stop.sh
-  kafka_2.12-2.2.0/bin/kafka-server-stop.sh
+after_script:
+  - cd
+  - cd kafka
+  - kafka_2.12-2.2.0/bin/zookeeper-server-stop.sh
+  - kafka_2.12-2.2.0/bin/kafka-server-stop.sh
 
 # see https://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure
 sudo: true
