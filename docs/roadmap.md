@@ -22,8 +22,8 @@ The following list of features are planned to be addressed in the short term, an
    - In order to prepare for future releases of the NGSI-LD spec we will develop an experimental (none standard) Websocket binding. 
    - Supporting basic operation from NGSI-LD (query, create, update and subscribe)
 3. MQTT Support 
-   - We have an initial support for mqtt endpoints and subscriptions. We will look into optimizing the approach 
-   - Looking further in MQTT 5 to potentially support an MQTT API endpoint.
+   - We have an initial support for mqtt endpoints on subscriptions. We will look into optimizing the approach 
+   - Looking further into MQTT 5 to potentially support an MQTT API endpoint.
 4. NGSI-LD Testsuit
    - Further testsuit compliance 
 
