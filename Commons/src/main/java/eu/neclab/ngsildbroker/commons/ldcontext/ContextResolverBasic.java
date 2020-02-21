@@ -325,8 +325,12 @@ public class ContextResolverBasic {
 		boolean typeFound = false;
 		Object value = null;
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
+			
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
+			if (key.equals(NGSIConstants.JSON_LD_CONTEXT)) {
+				continue;
+			}
 			if (key.equals(NGSIConstants.NGSI_LD_LOCATION_SHORT)) {
 				if(mapValue instanceof String) {
 					mapEntry.setValue(JsonUtils.fromString((String) mapValue));
