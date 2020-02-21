@@ -9,7 +9,7 @@ All information is provided as general guidelines only, and this section may be 
 
 Disclaimer:
  1. This section has been last updated in February 2020. Please take into account its content could be obsolete.
- 2. Note we develop this software in Agile way, so development plan is continuously under review. Thus, this roadmap has to be understood as rough plan of features to be done along time which is fully valid only at the time of writing it. This roadmap has not be understood as a commitment on features and/or dates.
+ 2. Note we develop this software in an agile way, so the development plan is continuously under review. Thus, this roadmap has to be understood as rough plan of features to be done over time and it is fully valid only at the time of writing it. This roadmap has not be understood as a commitment on features and/or dates.
  3. Some of the roadmap items may be implemented by external community developers, out of the scope of GE owners. Thus, the moment in which these features will be finalized cannot be assured.
 
 ### Short Term
@@ -17,13 +17,12 @@ Disclaimer:
 The following list of features are planned to be addressed in the short term, and incorporated in a next release of the product:
 1. Issue tracking & general bugfixing: 
    We will continue to remove existing bugs and adress the current issues
-   - The biggest chunk will be making the temporal component of scorpio proper spec compliant.
+   - The biggest chunk will be making the temporal component of scorpio completely compliant to the NGSI-LD specification.
 2. Experimental Websocket binding
-   - In order to prepare for future releases of the NGSI-LD spec we will develop an experimental (none standard) Websocket binding. 
-   - Supporting basic operation from NGSI-LD (query, create, update and subscribe)
+   - In order to prepare for future releases of the NGSI-LD spec we will develop an experimental (none standard) Websocket binding, supporting basic operations of NGSI-LD (query, create, update and subscribe)
 3. MQTT Support 
-   - We have an initial support for mqtt endpoints and subscriptions. We will look into optimizing the approach 
-   - Looking further in MQTT 5 to potentially support an MQTT API endpoint.
+   - We have an initial support for mqtt endpoints on subscriptions. We will look into optimizing the approach 
+   - Looking further into MQTT 5 to potentially support an MQTT API endpoint.
 4. NGSI-LD Testsuit
    - Further testsuit compliance 
 
@@ -31,19 +30,20 @@ The following list of features are planned to be addressed in the short term, an
 The following list of features are planned to be addressed in the medium term, typically within the subsequent release(s) generated in the next 6 months after the next planned release.
 1. NGSI-LD Testsuite  
    - Expanding the testsuit with temporal queries
-2. Road to full GE
+2. Provide multi-value support
+3. Road to full GE
    - Updating the documentation to fullfil the requirements of a full GE (readthedocs)
    - Tutorial for the component 
-3. Batch operations 
+4. Batch operations 
    - Initial support for Batch queries
-   - After potential upgrade on the spec update the return values 
-4. move entity count to spec compliant (when defined) endpoint (additional header on queries)
+   - After potential update of the specification, update the return values 
+5. move entity count to specification compliant version (when defined) endpoint (additional header on queries)
    - support result count on queries
-5. support offline mode with local stored core context 
+6. support offline mode with locally stored core context 
 
 ### Long term
 The following list of features are proposals regarding the longer-term evolution of the product even though the development of these features has not yet been scheduled for a release in the near future. Please feel free to contact us if you wish to get involved in the implementation or influence the roadmap:
 1. multi tenant + security 
    - supporting multi tenants which should include adressing certain security aspects like access right management. This will need some discussion on the detail level of access rights etc.
 2. @context cache requestor
-   - providing a kind of a proxy for entity operations which stores an @context 
+   - providing a kind of a proxy for entity operations which stores @context
