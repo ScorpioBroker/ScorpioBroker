@@ -263,10 +263,18 @@ public class SubscriptionService implements SubscriptionManager {
 		if (subscription.getThrottling() > 0 && subscription.getTimeInterval() > 0) {
 			throw new ResponseException(ErrorType.BadRequestData, "throttling  and timeInterval cannot both be set");
 		}
-		if (subscription.getTimeInterval() > 0
-				&& (subscription.getAttributeNames() != null || !subscription.getAttributeNames().isEmpty())) {
+		if (subscription.getTimeInterval() > 0) {
+			if(subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
+				return;
+			}
 			throw new ResponseException(ErrorType.BadRequestData,
 					"watchedAttributes  and timeInterval cannot both be set");
+		}else {
+			if(subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"watchedAttributes  and timeInterval cannot both be set");
+			}
+			
 		}
 
 	}
