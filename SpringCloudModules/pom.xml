@@ -16,6 +16,7 @@
 		<module>gateway</module>
 		<module>eureka</module>
 		<module>config-server</module>
+		<module>spring-cloud-gateway</module>
 	</modules>
 
 
