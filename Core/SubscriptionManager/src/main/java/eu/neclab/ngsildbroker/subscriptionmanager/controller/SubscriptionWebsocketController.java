@@ -19,9 +19,9 @@ public class SubscriptionWebsocketController {
 	}
 
 	//@MessageMapping("/incoming")
-	@SendTo("/topic/outgoing")
+	//@SendTo("/topic/outgoing")
 	public String incoming(Message message) {
-				
+		message.getPayload();		
 		return "blaaaaa";
 	}
 
