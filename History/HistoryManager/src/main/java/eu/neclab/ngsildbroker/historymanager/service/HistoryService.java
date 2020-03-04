@@ -68,19 +68,31 @@ public class HistoryService {
 		final JsonObject jsonObject = parser.parse(payload).getAsJsonObject();
 
 		if (jsonObject.get(NGSIConstants.JSON_LD_ID)==null ||
-			jsonObject.get(NGSIConstants.JSON_LD_TYPE)==null ||
-			jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT)==null ||
-			jsonObject.get(NGSIConstants.NGSI_LD_MODIFIED_AT)==null) {
-			throw new ResponseException(ErrorType.InvalidRequest, "id, type, createdAt and modifiedAt are required fields");
+			jsonObject.get(NGSIConstants.JSON_LD_TYPE)==null) 
+			 {
+			throw new ResponseException(ErrorType.InvalidRequest, "id and type are required fields");
 		}
-			
+		String now = SerializationTools.formatter.format(Instant.now());
+	
+		if (jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT)==null || jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT)==null) {
+			JsonArray temp = new JsonArray();
+			JsonObject tempObj = new JsonObject();
+			tempObj.addProperty(NGSIConstants.JSON_LD_TYPE, "DateTime");
+			tempObj.addProperty(NGSIConstants.JSON_LD_VALUE, now);
+			temp.add(tempObj);
+			if (jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT)==null) {
+				jsonObject.add(NGSIConstants.NGSI_LD_CREATED_AT, temp);
+			}
+			if (jsonObject.get(NGSIConstants.NGSI_LD_MODIFIED_AT)==null) {
+				jsonObject.add(NGSIConstants.NGSI_LD_MODIFIED_AT, temp);
+			}
+		}
 		String id = jsonObject.get(NGSIConstants.JSON_LD_ID).getAsString();
 		String type = jsonObject.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().get(0).getAsString();
 		String createdAt = jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 		String modifiedAt = jsonObject.get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 
-		String now = SerializationTools.formatter.format(Instant.now());
-
+		
 		Integer attributeCount = 0;
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());

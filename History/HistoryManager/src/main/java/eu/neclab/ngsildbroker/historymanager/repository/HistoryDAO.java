@@ -98,7 +98,7 @@ public class HistoryDAO extends StorageReaderDAO {
 				"  select te.id, te.type, te.createdat, te.modifiedat, coalesce(teai.attributeid, '') as attributeid, jsonb_agg(teai.data";
 		
 				if(!qp.getIncludeSysAttrs()) {
-					sqlQuery += "  - '" + NGSIConstants.NGSI_LD_CREATED_AT + "' - '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "' - '" + NGSIConstants.NGSI_LD_OBSERVED_AT + "'";
+					sqlQuery += "  - '" + NGSIConstants.NGSI_LD_CREATED_AT + "' - '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
 				}
 				sqlQuery +=" order by teai.modifiedat desc) as attributedata" + 
 				"  from " + DBConstants.DBTABLE_TEMPORALENTITY + " te" + 
@@ -110,9 +110,12 @@ public class HistoryDAO extends StorageReaderDAO {
 				") " +
 				"select id, tedata || case when attrdata <> '{\"\": [null]}'::jsonb then attrdata else tedata end as data from ( " + 
 				"  select id, ('{\"" + NGSIConstants.JSON_LD_ID + "\":\"' || id || '\"}')::jsonb || " + 
-				"          ('{\"" + NGSIConstants.JSON_LD_TYPE + "\":[\"' || type || '\"]}')::jsonb || " +
-				"          ('{\"" + NGSIConstants.NGSI_LD_CREATED_AT + "\":[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"' || to_char(createdat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\" }]}')::jsonb || " + 
-				"          ('{\"" + NGSIConstants.NGSI_LD_MODIFIED_AT + "\":[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"' || to_char(modifiedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\" }]}')::jsonb  as tedata, " + 
+				"          ('{\"" + NGSIConstants.JSON_LD_TYPE + "\":[\"' || type || '\"]}')::jsonb ";
+				if(qp.getIncludeSysAttrs()) {
+					sqlQuery += "         || ('{\"" + NGSIConstants.NGSI_LD_CREATED_AT + "\":[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"' || to_char(createdat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\" }]}')::jsonb || " + 
+							"          ('{\"" + NGSIConstants.NGSI_LD_MODIFIED_AT + "\":[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"' || to_char(modifiedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\" }]}')::jsonb";
+				}
+				sqlQuery+= "  as tedata, " + 
 				"          jsonb_object_agg(attributeid, attributedata) as attrdata " + 
 				"  from r ";
 		sqlQuery += sqlWhereGeoquery;

@@ -32,6 +32,7 @@ public class Validator {
 		paramMap.put(NGSIConstants.QUERY_PARAMETER_TIME, NGSIConstants.QUERY_PARAMETER_TIME);
 		paramMap.put(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY, NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY);
 		paramMap.put(NGSIConstants.QUERY_PARAMETER_ENDTIME, NGSIConstants.QUERY_PARAMETER_ENDTIME);
+		paramMap.put(NGSIConstants.QUERY_PARAMETER_OPTIONS, NGSIConstants.QUERY_PARAMETER_OPTIONS);
 		return paramMap;
 	}
 
