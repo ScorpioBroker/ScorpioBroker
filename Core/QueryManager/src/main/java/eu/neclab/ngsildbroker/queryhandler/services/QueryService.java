@@ -168,7 +168,7 @@ public class QueryService {
 		}
 		// check whether exists.
 		if (entityJson == null)
-			throw new ResponseException(ErrorType.ResourceNotFound);
+			throw new ResponseException(ErrorType.NotFound);
 
 		JsonNode entityJsonBody = objectMapper.createObjectNode();
 		if (attrs != null && !attrs.isEmpty()) {

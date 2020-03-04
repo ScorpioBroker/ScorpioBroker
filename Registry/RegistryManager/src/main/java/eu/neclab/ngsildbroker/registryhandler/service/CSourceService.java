@@ -150,7 +150,7 @@ public class CSourceService {
 		}
 		byte[] csourceBytes = operations.getMessage(registrationId, this.CSOURCE_TOPIC);
 		if (csourceBytes == null) {
-			throw new ResponseException(ErrorType.ResourceNotFound);
+			throw new ResponseException(ErrorType.NotFound);
 		}
 		// original message in kafka.
 		JsonNode entityJsonBody = objectMapper.createObjectNode();

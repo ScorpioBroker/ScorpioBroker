@@ -119,8 +119,8 @@ public class QueryController {// implements QueryHandlerInterface {
 			if (result != "null" && !result.isEmpty()) {
 				return httpUtils.generateReply(request, result);
 			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new RestResponse(HttpStatus.NOT_FOUND,
-						"Resource not found.", "Resource not found."));
+				return ResponseEntity.status(HttpStatus.NOT_FOUND)
+						.body(new RestResponse(ErrorType.NotFound, "Resource not found."));
 			}
 
 		} catch (ResponseException exception) {
@@ -129,8 +129,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							"Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
 		}
 	}
 
@@ -179,7 +178,6 @@ public class QueryController {// implements QueryHandlerInterface {
 					return generateReply(request, qResult);
 
 				} else {
-					
 
 					if (debug) {
 						ArrayList<String> allEntityResult = queryService.retriveAllEntity();
@@ -205,29 +203,24 @@ public class QueryController {// implements QueryHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							"Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
 		}
 	}
 
 	private void checkParamsForValidity(QueryParams qp) throws ResponseException {
-		if(qp.getGeometry() != null && !qp.getGeometry().isEmpty()) {
-			if(!NGSIConstants.ALLOWED_GEOMETRIES.contains(qp.getGeometry())) {
+		if (qp.getGeometry() != null && !qp.getGeometry().isEmpty()) {
+			if (!NGSIConstants.ALLOWED_GEOMETRIES.contains(qp.getGeometry())) {
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid geometry provided");
 			}
 		}
-		if(qp.getGeorel() != null && qp.getGeorel().getGeorelOp() != null && !qp.getGeorel().getGeorelOp().isEmpty()) {
-			if(!NGSIConstants.ALLOWED_GEOREL.contains(qp.getGeorel().getGeorelOp())) {
+		if (qp.getGeorel() != null && qp.getGeorel().getGeorelOp() != null && !qp.getGeorel().getGeorelOp().isEmpty()) {
+			if (!NGSIConstants.ALLOWED_GEOREL.contains(qp.getGeorel().getGeorelOp())) {
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel provided");
 			}
 		}
-		
-		
+
 	}
 
-	
-	
-	
 	public ResponseEntity<Object> generateReply(HttpServletRequest request, QueryResult qResult)
 			throws ResponseException {
 		String nextLink = generateNextLink(request, qResult);

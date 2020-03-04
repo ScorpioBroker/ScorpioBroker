@@ -43,10 +43,10 @@ public class HistoryController {
 
 	@Autowired
 	ParamsResolver paramsResolver;
-	
+
 	@Autowired
 	HistoryDAO historyDAO;
-	
+
 	@Autowired
 	HistoryService historyService;
 	@Autowired
@@ -55,7 +55,7 @@ public class HistoryController {
 	String atContextServerUrl;
 
 	private HttpUtils httpUtils;
-	
+
 	@PostConstruct
 	private void setup() {
 		this.httpUtils = HttpUtils.getInstance(contextResolver);
@@ -79,8 +79,7 @@ public class HistoryController {
 		} catch (Exception exception) {
 			logger.error("Exception", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							exception.getMessage()));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
 
@@ -91,27 +90,27 @@ public class HistoryController {
 			logger.trace("retrieveTemporalEntity :: started");
 			if (params != null && !Validator.validate(params))
 				throw new ResponseException(ErrorType.BadRequestData);
-			
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
+
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
+					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
 			if (qp == null) // invalid query
 				throw new ResponseException(ErrorType.InvalidRequest);
-			if (qp.getTimerel()==null || qp.getTime()==null) {
+			if (qp.getTimerel() == null || qp.getTime() == null) {
 				throw new ResponseException(ErrorType.BadRequestData, "Time filter is required");
 			}
-			if (qp.getType()==null && qp.getAttrs()==null) {
+			if (qp.getType() == null && qp.getAttrs() == null) {
 				throw new ResponseException(ErrorType.BadRequestData, "Type or attrs is required");
 			}
-			
+
 			logger.trace("retrieveTemporalEntity :: completed");
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)));			
+			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex));
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							ex.getMessage()));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
 
@@ -124,19 +123,19 @@ public class HistoryController {
 			logger.debug("entityId : " + entityId);
 			if (params != null && !Validator.validate(params))
 				throw new ResponseException(ErrorType.BadRequestData);
-			
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
-			qp.setId(entityId);				
-			logger.trace("retrieveTemporalEntityById :: completed");			
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)) );
+
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
+					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
+			qp.setId(entityId);
+			logger.trace("retrieveTemporalEntityById :: completed");
+			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex));
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							ex.getMessage()));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
 
@@ -146,7 +145,8 @@ public class HistoryController {
 		try {
 			logger.trace("deleteTemporalEntityById :: started");
 			logger.debug("entityId : " + entityId);
-			historyService.delete(entityId, null, null, HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
+			historyService.delete(entityId, null, null,
+					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteTemporalEntityById :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
@@ -155,8 +155,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							ex.getMessage()));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
 
@@ -177,8 +176,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							ex.getMessage()));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
 
@@ -188,7 +186,8 @@ public class HistoryController {
 		try {
 			logger.trace("deleteAttrib2TemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId);
-			historyService.delete(entityId, attrId, null, HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
+			historyService.delete(entityId, attrId, null,
+					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteAttrib2TemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
@@ -197,8 +196,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							ex.getMessage()));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
 
@@ -214,7 +212,8 @@ public class HistoryController {
 
 			// TODO : TBD- conflict between specs and implementation <mentioned no request
 			// body in specs>
-			historyService.modifyAttribInstanceTemporalEntity(entityId, resolved, attrId, instanceId, HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
+			historyService.modifyAttribInstanceTemporalEntity(entityId, resolved, attrId, instanceId,
+					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("modifyAttribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
@@ -223,8 +222,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							ex.getMessage()));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
 
@@ -234,8 +232,9 @@ public class HistoryController {
 			@PathVariable("instanceId") String instanceId) {
 		try {
 			logger.trace("deleteAtrribInstanceTemporalEntity :: started");
-			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);			
-			historyService.delete(entityId, attrId, instanceId, HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
+			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
+			historyService.delete(entityId, attrId, instanceId,
+					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
@@ -244,10 +243,8 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							ex.getMessage()));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
-
 
 }

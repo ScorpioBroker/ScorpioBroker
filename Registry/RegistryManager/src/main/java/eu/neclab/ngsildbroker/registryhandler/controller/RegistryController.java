@@ -10,7 +10,6 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,8 +59,7 @@ public class RegistryController {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 	private final static String MY_REQUEST_MAPPING = "/ngsi-ld/v1/csourceRegistrations";
 	private final static String MY_REQUEST_MAPPING_ALT = "/ngsi-ld/v1/csourceRegistrations/";
-	
-	
+
 	@Autowired
 	EurekaClient eurekaClient;
 	@Autowired
@@ -106,7 +104,8 @@ public class RegistryController {
 		try {
 			logger.trace("getCSources() ::");
 			String queryParams = request.getQueryString();
-			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING) || request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT))  && queryParams != null) {
+			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING)
+					|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)) && queryParams != null) {
 
 				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
@@ -116,7 +115,7 @@ public class RegistryController {
 				if (csourceList.size() > 0) {
 					return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 				} else {
-					throw new ResponseException(ErrorType.ResourceNotFound);
+					throw new ResponseException(ErrorType.NotFound);
 				}
 			} else {
 				// spec v0.9.0 section 5.10.2.4: if neither Entity types nor Attribute names are
@@ -129,8 +128,7 @@ public class RegistryController {
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							"Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
 		}
 	}
 
@@ -157,8 +155,7 @@ public class RegistryController {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							e.toString()));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
 
@@ -168,14 +165,13 @@ public class RegistryController {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
 			List<String> csourceList = new ArrayList<String>();
-			csourceList.add( DataSerializer.toJson(csourceService.getCSourceRegistrationById(registrationId)) );			
-			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));            
+			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(registrationId)));
+			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 		} catch (ResponseException exception) {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							"Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
 		}
 	}
 
@@ -195,8 +191,7 @@ public class RegistryController {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							"Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
 		}
 	}
 
@@ -211,8 +206,7 @@ public class RegistryController {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							"Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
 		}
 	}
 
@@ -242,6 +236,5 @@ public class RegistryController {
 		}
 		logger.trace("validation :: completed");
 	}
-	
 
 }

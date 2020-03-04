@@ -211,7 +211,7 @@ public class HistoryService {
 		final JsonObject jsonObject = parser.parse(payload).getAsJsonObject();
 		String now = SerializationTools.formatter.format(Instant.now());
 		if(!historyDAO.entityExists(entityId)) {
-			throw new ResponseException(ErrorType.ResourceNotFound, "You cannot create an attribute on a none existing entity");
+			throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
 		}
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
@@ -256,7 +256,7 @@ public class HistoryService {
 		qp.setInstanceId(instanceId);
 		List<String> entityList = historyDAO.query(qp);
 		if (entityList.size() == 0) {
-			throw new ResponseException(ErrorType.ResourceNotFound);
+			throw new ResponseException(ErrorType.NotFound);
 		}
 
 		// get original createdAt

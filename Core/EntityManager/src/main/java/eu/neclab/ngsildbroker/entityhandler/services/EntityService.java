@@ -155,8 +155,7 @@ public class EntityService {
 	/**
 	 * Method to publish jsonld message to kafka topic
 	 * 
-	 * @param payload
-	 *            jsonld message
+	 * @param payload jsonld message
 	 * @return RestResponse
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
@@ -234,8 +233,7 @@ public class EntityService {
 				} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT)
 						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isArray()
 						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).has(NGSIConstants.JSON_LD_ID)) {
-					kvJsonObject.set(entry.getKey(),
-							attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0));
+					kvJsonObject.set(entry.getKey(), attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0));
 				}
 			}
 		}
@@ -306,11 +304,9 @@ public class EntityService {
 	/**
 	 * Method to update a existing Entity in the system/kafka topic
 	 * 
-	 * @param entityId
-	 *            - id of entity to be updated
-	 * @param payload
-	 *            - jsonld message containing fileds to be updated with updated
-	 *            values
+	 * @param entityId - id of entity to be updated
+	 * @param payload  - jsonld message containing fileds to be updated with updated
+	 *                 values
 	 * @return RestResponse
 	 * @throws ResponseException
 	 * @throws IOException
@@ -371,10 +367,8 @@ public class EntityService {
 	/**
 	 * Method to append fields in existing Entity in system/kafka topic
 	 * 
-	 * @param entityId
-	 *            - id of entity to be appended
-	 * @param payload
-	 *            - jsonld message containing fileds to be appended
+	 * @param entityId - id of entity to be appended
+	 * @param payload  - jsonld message containing fileds to be appended
 	 * @return AppendResult
 	 * @throws ResponseException
 	 * @throws IOException
@@ -847,8 +841,7 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
 					} else {
-						response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-								e.getMessage());
+						response = new RestResponse(ErrorType.InternalError, "Internal server error");
 					}
 
 					result.addFail(new BatchFailure(entityId, response));
@@ -889,8 +882,7 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
 					} else {
-						response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-								e.getMessage());
+						response = new RestResponse(ErrorType.InternalError, "Internal server error");
 					}
 
 					result.addFail(new BatchFailure(entityId, response));
@@ -924,7 +916,7 @@ public class EntityService {
 					entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
 				} else {
 					result.addFail(new BatchFailure(entityId,
-							new RestResponse(HttpStatus.BAD_REQUEST, "Bad Request", "No Entity Id provided")));
+							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
 					continue;
 				}
 				try {
@@ -932,8 +924,7 @@ public class EntityService {
 					if (updateResult.getStatus()) {
 						result.addSuccess(entityId);
 					} else {
-						result.addFail(new BatchFailure(entityId, new RestResponse(HttpStatus.MULTI_STATUS,
-								"something went wrong during this update",
+						result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
 								objectMapper.writeValueAsString(updateResult.getJsonToAppend()) + " was not added")));
 					}
 
@@ -943,8 +934,7 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
 					} else {
-						response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-								e.getMessage());
+						response = new RestResponse(ErrorType.InternalError, "Internal server error");
 					}
 
 					result.addFail(new BatchFailure(entityId, response));
@@ -978,7 +968,7 @@ public class EntityService {
 					entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
 				} else {
 					result.addFail(new BatchFailure(entityId,
-							new RestResponse(HttpStatus.BAD_REQUEST, "Bad Request", "No Entity Id provided")));
+							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
 					continue;
 				}
 				String entityString = objectMapper.writeValueAsString(next);
@@ -1000,8 +990,7 @@ public class EntityService {
 									result.addSuccess(entityId);
 								} else {
 									result.addFail(new BatchFailure(entityId,
-											new RestResponse(HttpStatus.MULTI_STATUS,
-													"something went wrong during this update",
+											new RestResponse(ErrorType.MultiStatus,
 													objectMapper.writeValueAsString(updateResult.getJsonToAppend())
 															+ " was not added")));
 								}
@@ -1010,8 +999,7 @@ public class EntityService {
 								if (e1 instanceof ResponseException) {
 									response = new RestResponse((ResponseException) e1);
 								} else {
-									response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-											"Internal server error", e1.getMessage());
+									response = new RestResponse(ErrorType.InternalError, "Internal server error");
 								}
 
 								result.addFail(new BatchFailure(entityId, response));
@@ -1022,8 +1010,7 @@ public class EntityService {
 						}
 
 					} else {
-						response = new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-								e.getMessage());
+						response = new RestResponse(ErrorType.InternalError, "Internal server error");
 						result.addFail(new BatchFailure(entityId, response));
 					}
 
