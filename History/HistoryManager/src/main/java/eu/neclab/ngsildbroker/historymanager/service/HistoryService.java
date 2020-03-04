@@ -210,7 +210,9 @@ public class HistoryService {
 		logger.trace("replace attribute in temporal entity");
 		final JsonObject jsonObject = parser.parse(payload).getAsJsonObject();
 		String now = SerializationTools.formatter.format(Instant.now());
-
+		if(!historyDAO.entityExists(entityId)) {
+			throw new ResponseException(ErrorType.ResourceNotFound, "You cannot create an attribute on a none existing entity");
+		}
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)

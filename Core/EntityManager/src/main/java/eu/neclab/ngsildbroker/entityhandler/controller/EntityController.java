@@ -218,7 +218,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			exception.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error",
-							"Internal Server Error"));
+							exception.getMessage()));
 		}
 	}
 

@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.historymanager.repository;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -166,6 +167,15 @@ public class HistoryDAO extends StorageReaderDAO {
 		}
 		sqlWhere.append(")");
 		return sqlWhere.toString();
+	}
+
+	public boolean entityExists(String entityId) {
+		List list = readerJdbcTemplate.queryForList(
+				"Select id from temporalentity where id='"+ entityId +"';");
+		if(list == null ||list.isEmpty()) {
+			return false;
+		}
+		return true;
 	}
 	
 }
