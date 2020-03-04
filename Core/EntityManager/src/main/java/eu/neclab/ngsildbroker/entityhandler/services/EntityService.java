@@ -799,7 +799,7 @@ public class EntityService {
 		try {
 			entity = DataSerializer.getEntity(payload);
 		} catch (JsonParseException e) {
-			throw new ResponseException(ErrorType.InvalidRequest, e.getMessage());
+			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
 		}
 		List<ValidationRules> rules = new ArrayList<>();
 		rules.add(new IdValidationRule());
