@@ -36,6 +36,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.conn.params.ConnRouteParams;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
@@ -208,6 +209,8 @@ public final class HttpUtils {
 				addBody((String) body, postRequest);
 			} else if (body instanceof File) {
 				addBody((File) body, postRequest);
+			} else if (body instanceof byte[]) {
+				addBody((byte[]) body, postRequest);
 			}
 
 			request = postRequest;
@@ -251,6 +254,13 @@ public final class HttpUtils {
 			req.setEntity(fileEntity);
 		}
 
+	}
+
+	private void addBody(byte[] body, HttpEntityEnclosingRequest req) {
+		if (body != null) {
+			ByteArrayEntity bodyEntity = new ByteArrayEntity(body, ContentType.APPLICATION_JSON);
+			req.setEntity(bodyEntity);
+		}
 	}
 
 	private void addBody(String body, HttpEntityEnclosingRequest req) {
@@ -353,7 +363,7 @@ public final class HttpUtils {
 	 *             {@link HttpErrorResponseException} if something other than HTTP
 	 *             200 OK was returned
 	 */
-	public String doPost(URI uri, String body, Map<String, String> additionalHeaders) throws IOException {
+	public String doPost(URI uri, Object body, Map<String, String> additionalHeaders) throws IOException {
 		return doPost(uri, body, additionalHeaders, null, null);
 	}
 
@@ -374,7 +384,7 @@ public final class HttpUtils {
 	 *             {@link HttpErrorResponseException} if something other than HTTP
 	 *             200 OK was returned
 	 */
-	public String doPost(URI uri, String body, Map<String, String> additionalHeaders, AuthScope authScope,
+	public String doPost(URI uri, Object body, Map<String, String> additionalHeaders, AuthScope authScope,
 			UsernamePasswordCredentials credentials) throws IOException {
 		return doHTTPRequest(uri, HTTPMethod.POST, body, additionalHeaders, authScope, credentials);
 	}
@@ -746,22 +756,22 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public ResponseEntity<Object> generateReply(HttpServletRequest request, String reply) throws ResponseException {
+	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply) throws ResponseException {
 		return generateReply(request, reply, null);
 
 	}
 
-	public ResponseEntity<Object> generateReply(HttpServletRequest request, String reply,
+	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
 			HashMap<String, List<String>> additionalHeaders) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, null);
 	}
 
-	public ResponseEntity<Object> generateReply(HttpServletRequest request, String reply,
+	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
 			HashMap<String, List<String>> additionalHeaders, List<Object> additionalContext) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, additionalContext, false);
 	}
 
-	public ResponseEntity<Object> generateReply(HttpServletRequest request, String reply,
+	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
 			HashMap<String, List<String>> additionalHeaders, List<Object> additionalContext, boolean forceArrayResult)
 			throws ResponseException {
 		List<Object> requestAtContext = getAtContext(request);
@@ -869,11 +879,11 @@ public final class HttpUtils {
 		return Float.parseFloat(header.substring(begin + 2));
 	}
 
-	public ResponseEntity<Object> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders) {
+	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders) {
 		return generateReply(replyBody, additionalHeaders, HttpStatus.OK);
 	}
 
-	public ResponseEntity<Object> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,
+	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,
 			HttpStatus status) {
 		BodyBuilder builder = ResponseEntity.status(status);
 		if (additionalHeaders != null) {
@@ -884,7 +894,7 @@ public final class HttpUtils {
 
 			}
 		}
-		return builder.body(replyBody);
+		return builder.body(replyBody.getBytes());
 	}
 
 	// public static ResponseEntity<Object> generateReply(String acceptHeader,

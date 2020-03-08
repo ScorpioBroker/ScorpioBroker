@@ -62,7 +62,7 @@ public class HistoryController {
 	}
 
 	@PostMapping("/entities")
-	public ResponseEntity<Object> createTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> createTemporalEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
 			logger.trace("createTemporalEntity :: started");
@@ -72,19 +72,19 @@ public class HistoryController {
 
 			URI uri = historyService.createTemporalEntityFromBinding(resolved);
 			logger.trace("createTemporalEntity :: completed");
-			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString()).body(uri);
+			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString()).body(uri.toString().getBytes());
 		} catch (ResponseException exception) {
 			logger.error("Exception", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
 	@GetMapping("/entities")
-	public ResponseEntity<Object> retrieveTemporalEntity(HttpServletRequest request) {
+	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request) {
 		String params = request.getQueryString();
 		try {
 			logger.trace("retrieveTemporalEntity :: started");
@@ -106,16 +106,16 @@ public class HistoryController {
 			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex));
+			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
 	@GetMapping("/entities/{entityId}")
-	public ResponseEntity<Object> retrieveTemporalEntityById(HttpServletRequest request,
+	public ResponseEntity<byte[]> retrieveTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		String params = request.getQueryString();
 		try {
@@ -131,16 +131,16 @@ public class HistoryController {
 			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex));
+			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
 	@DeleteMapping("/entities/{entityId}")
-	public ResponseEntity<Object> deleteTemporalEntityById(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		try {
 			logger.trace("deleteTemporalEntityById :: started");
@@ -151,16 +151,16 @@ public class HistoryController {
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex));
+			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
 	@PostMapping("/entities/{entityId}/attrs")
-	public ResponseEntity<Object> addAttrib2TemopralEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> addAttrib2TemopralEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload) {
 		try {
 			logger.trace("addAttrib2TemopralEntity :: started");
@@ -172,16 +172,16 @@ public class HistoryController {
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex));
+			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
 	@DeleteMapping("/entities/{entityId}/attrs/{attrId}")
-	public ResponseEntity<Object> deleteAttrib2TemporalEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
 			logger.trace("deleteAttrib2TemporalEntity :: started");
@@ -192,16 +192,16 @@ public class HistoryController {
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex));
+			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
 	@PatchMapping("/entities/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<Object> modifyAttribInstanceTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> modifyAttribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId, @RequestBody(required = false) String payload) {
 		try {
@@ -218,16 +218,16 @@ public class HistoryController {
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex));
+			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
 	@DeleteMapping("/entities/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<Object> deleteAtrribInstanceTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteAtrribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId) {
 		try {
@@ -239,11 +239,11 @@ public class HistoryController {
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex));
+			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 

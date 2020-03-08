@@ -55,7 +55,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 public abstract class BaseNotificationHandler implements NotificationHandler {
 	
 	
-	protected abstract void sendReply(ResponseEntity<Object> reply, URI callback) throws Exception;
+	protected abstract void sendReply(ResponseEntity<byte[]> reply, URI callback) throws Exception;
 	private final Logger logger = LogManager.getLogger(this.getClass());
 	private SubscriptionService subscriptionManagerService;
 	protected HttpUtils httpUtils;
@@ -106,7 +106,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 							try {
 								logger.trace("Sending notification");
 								logger.debug("Json to be sent: " + jsonStr);
-								ResponseEntity<Object> reply = generateNotificationResponse(acceptHeader, jsonStr,
+								ResponseEntity<byte[]> reply = generateNotificationResponse(acceptHeader, jsonStr,
 										context);
 								logger.debug("body to be sent: " + reply.getBody().toString());
 								sendReply(reply, callback);
@@ -127,7 +127,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			// TODO handle errors for notifications
 			String jsonStr = DataSerializer.toJson(notification);
 			logger.trace("Sending notification");
-			ResponseEntity<Object> reply;
+			ResponseEntity<byte[]> reply;
 			long now = System.currentTimeMillis();
 			try {
 				reply = generateNotificationResponse(acceptHeader, jsonStr, context);
@@ -144,7 +144,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 	}
 
-	private ResponseEntity<Object> generateNotificationResponse(String acceptHeader, String body, List<Object> context)
+	private ResponseEntity<byte[]> generateNotificationResponse(String acceptHeader, String body, List<Object> context)
 			throws ResponseException {
 		HttpServletRequest request = new HttpServletRequest() {
 
@@ -570,10 +570,10 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 		};
 
-		ResponseEntity<Object> temp = httpUtils.generateReply(request, body, null, context);
+		ResponseEntity<byte[]> temp = httpUtils.generateReply(request, body, null, context);
 		JsonNode jsonTree;
 		try {
-			jsonTree = objectMapper.readTree(temp.getBody().toString());
+			jsonTree = objectMapper.readTree(temp.getBody());
 			if (jsonTree.get("data").isArray()) {
 				return temp;
 			}
@@ -584,7 +584,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 			BodyBuilder builder = ResponseEntity.status(HttpStatus.ACCEPTED);
 
-			return builder.headers(temp.getHeaders()).body(objectMapper.writeValueAsString(jsonTree));
+			return builder.headers(temp.getHeaders()).body(objectMapper.writeValueAsBytes(jsonTree));
 
 		} catch (IOException e) {
 			// Left empty intentionally

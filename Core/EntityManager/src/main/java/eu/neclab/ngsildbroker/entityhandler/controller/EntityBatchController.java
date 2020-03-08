@@ -42,7 +42,7 @@ public class EntityBatchController {
 		 httpUtils = HttpUtils.getInstance(contextResolver);
 	}
 	@PostMapping("/create")
-	public ResponseEntity<Object> createMultiple(HttpServletRequest request,
+	public ResponseEntity<byte[]> createMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
@@ -54,7 +54,7 @@ public class EntityBatchController {
 		}
 	}
 	
-	private ResponseEntity<Object> generateBatchResultReply(BatchResult result) {
+	private ResponseEntity<byte[]> generateBatchResultReply(BatchResult result) {
 //		HttpStatus status = HttpStatus.MULTI_STATUS;
 //		if(result.getFails().isEmpty()) {
 //			status = HttpStatus.OK;
@@ -66,7 +66,7 @@ public class EntityBatchController {
 		return httpUtils.generateReply(DataSerializer.toJson(result), null, status);
 	}
 	@PostMapping("/upsert")
-	public ResponseEntity<Object> upsertMultiple(HttpServletRequest request,
+	public ResponseEntity<byte[]> upsertMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
@@ -79,7 +79,7 @@ public class EntityBatchController {
 	}
 	
 	@PostMapping("/update")
-	public ResponseEntity<Object> updateMultiple(HttpServletRequest request,
+	public ResponseEntity<byte[]> updateMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
@@ -92,7 +92,7 @@ public class EntityBatchController {
 	}
 	
 	@PostMapping("/delete")
-	public ResponseEntity<Object> deleteMultiple(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteMultiple(HttpServletRequest request,
 			@RequestBody String payload) throws ResponseException{
 		try {
 //			String resolved = httpUtils.expandPayload(request, payload);

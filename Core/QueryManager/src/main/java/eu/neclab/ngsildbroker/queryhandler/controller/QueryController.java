@@ -82,7 +82,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @return
 	 */
 	@GetMapping(path = "/{entityId}")
-	public ResponseEntity<Object> getEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<byte[]> getEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
 			@RequestParam(value = "options", required = false) List<String> options) {
 		String result = null;
@@ -111,7 +111,7 @@ public class QueryController {// implements QueryHandlerInterface {
 				}
 				// TODO valid this. spec doesn't say what to do here!!!
 				if (expandedAttrs.isEmpty()) {
-					return ResponseEntity.status(HttpStatus.ACCEPTED).body("{}");
+					return ResponseEntity.status(HttpStatus.ACCEPTED).body("{}".getBytes());
 				}
 			}
 
@@ -120,16 +120,16 @@ public class QueryController {// implements QueryHandlerInterface {
 				return httpUtils.generateReply(request, result);
 			} else {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND)
-						.body(new RestResponse(ErrorType.NotFound, "Resource not found."));
+						.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
 			}
 
 		} catch (ResponseException exception) {
 			logger.error("Exception ::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
 		}
 	}
 
@@ -142,7 +142,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@GetMapping()
-	public ResponseEntity<Object> getAllEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> getAllEntity(HttpServletRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
 
 			@RequestParam(value = "limit", required = false) Integer limit,
@@ -186,7 +186,7 @@ public class QueryController {// implements QueryHandlerInterface {
 						} else {
 							return ResponseEntity.accepted()
 									.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
-									.body(allEntityResult.get(0));
+									.body(allEntityResult.get(0).getBytes());
 						}
 					} else {
 						// as per [5.7.2.4]
@@ -199,11 +199,11 @@ public class QueryController {// implements QueryHandlerInterface {
 			}
 		} catch (ResponseException exception) {
 			logger.error("Exception ::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
 		}
 	}
 
@@ -221,7 +221,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	}
 
-	public ResponseEntity<Object> generateReply(HttpServletRequest request, QueryResult qResult)
+	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult)
 			throws ResponseException {
 		String nextLink = generateNextLink(request, qResult);
 		String prevLink = generatePrevLink(request, qResult);

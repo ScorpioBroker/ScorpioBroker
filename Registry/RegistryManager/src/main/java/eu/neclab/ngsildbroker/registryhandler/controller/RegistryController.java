@@ -82,7 +82,7 @@ public class RegistryController {
 	}
 
 	// @GetMapping
-	// public ResponseEntity<Object> discoverCSource(HttpServletRequest request,
+	// public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
 	// @RequestParam HashMap<String, String> queryMap) {
 	// try {
 	// return ResponseEntity.status(HttpStatus.OK)
@@ -99,7 +99,7 @@ public class RegistryController {
 	// }
 
 	@GetMapping
-	public ResponseEntity<Object> discoverCSource(HttpServletRequest request,
+	public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
 			@RequestParam HashMap<String, String> queryMap) {
 		try {
 			logger.trace("getCSources() ::");
@@ -124,16 +124,16 @@ public class RegistryController {
 			}
 		} catch (ResponseException exception) {
 			logger.error("Exception ::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
 		}
 	}
 
 	@PostMapping
-	public ResponseEntity<Object> registerCSource(HttpServletRequest request,
+	public ResponseEntity<byte[]> registerCSource(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
@@ -149,18 +149,18 @@ public class RegistryController {
 			URI uri = csourceService.registerCSource(csourceRegistration);
 
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri)
-					.body(uri);
+					.body(uri.toString().getBytes());
 		} catch (ResponseException exception) {
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
 	@GetMapping("{registrationId}")
-	public ResponseEntity<Object> getCSourceById(HttpServletRequest request,
+	public ResponseEntity<byte[]> getCSourceById(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
@@ -168,15 +168,15 @@ public class RegistryController {
 			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(registrationId)));
 			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 		} catch (ResponseException exception) {
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
 	@PatchMapping("{registrationId}")
-	public ResponseEntity<Object> updateCSource(HttpServletRequest request,
+	public ResponseEntity<byte[]> updateCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
@@ -187,26 +187,26 @@ public class RegistryController {
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
 		}
 	}
 
 	@DeleteMapping("{registrationId}")
-	public ResponseEntity<Object> deleteCSource(@PathVariable("registrationId") String registrationId) {
+	public ResponseEntity<byte[]> deleteCSource(@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("delete CSource() ::" + registrationId);
 			csourceService.deleteCSourceRegistration(registrationId);
 			logger.debug("delete CSource() completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
 		}
 	}
 

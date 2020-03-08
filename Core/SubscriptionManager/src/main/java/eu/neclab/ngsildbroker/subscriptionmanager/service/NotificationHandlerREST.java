@@ -16,8 +16,8 @@ public class NotificationHandlerREST extends BaseNotificationHandler {
 	}
 
 	@Override
-	protected void sendReply(ResponseEntity<Object> reply, URI callback) throws Exception {
-		httpUtils.doPost(callback, reply.getBody().toString(),
+	protected void sendReply(ResponseEntity<byte[]> reply, URI callback) throws Exception {
+		httpUtils.doPost(callback, reply.getBody(),
 				reply.getHeaders().toSingleValueMap());
 		
 	}

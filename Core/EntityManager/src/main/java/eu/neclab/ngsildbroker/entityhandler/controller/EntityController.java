@@ -102,7 +102,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@PostMapping("/")
-	public ResponseEntity<Object> createEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> createEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		String result = null;
 		try {
@@ -114,21 +114,21 @@ public class EntityController {// implements EntityHandlerInterface {
 			result = entityService.createMessage(resolved);
 			logger.trace("create entity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
-					.body(new URI(result));
+					.body(new URI(result).toString().getBytes());
 		} catch (ResponseException exception) {
 			logger.error("Exception :: ", exception);
 			exception.printStackTrace();
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception));
+			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch(DateTimeParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field."));
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.").toJsonBytes());
 		} catch(JsonParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document"));
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document").toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
@@ -141,7 +141,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@PatchMapping("/{entityId}/attrs")
-	public ResponseEntity<Object> updateEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<byte[]> updateEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
@@ -155,21 +155,21 @@ public class EntityController {// implements EntityHandlerInterface {
 			if (update.getUpdateResult()) {
 				return ResponseEntity.noContent().build();
 			} else {
-				return ResponseEntity.status(HttpStatus.MULTI_STATUS).body(update.getAppendedJsonFields());
+				return ResponseEntity.status(HttpStatus.MULTI_STATUS).body(objectMapper.writeValueAsBytes(update.getAppendedJsonFields()));
 			}
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException).toJsonBytes());
 		} catch(DateTimeParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field."));
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.").toJsonBytes());
 		} catch(JsonParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document"));
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document").toJsonBytes());
 		} catch (Exception e) {
 			logger.error("Exception :: ", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
@@ -182,7 +182,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@PostMapping("/{entityId}/attrs")
-	public ResponseEntity<Object> appendEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<byte[]> appendEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload, @RequestParam(required = false, name = "options") String options) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
@@ -195,22 +195,22 @@ public class EntityController {// implements EntityHandlerInterface {
 			if (append.getAppendResult()) {
 				return ResponseEntity.noContent().build();
 			} else {
-				return ResponseEntity.status(HttpStatus.MULTI_STATUS).body(append.getAppendedJsonFields());
+				return ResponseEntity.status(HttpStatus.MULTI_STATUS).body(objectMapper.writeValueAsBytes(append.getAppendedJsonFields()));
 			}
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException).toJsonBytes());
 		} catch(DateTimeParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field."));
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.").toJsonBytes());
 		} catch(JsonParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document"));
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document").toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			exception.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
@@ -224,7 +224,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 	@PatchMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<Object> partialUpdateEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> partialUpdateEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@RequestBody String payload) {
 		try {
@@ -250,17 +250,17 @@ public class EntityController {// implements EntityHandlerInterface {
 			 */
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException).toJsonBytes());
 		} catch(DateTimeParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field."));
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.").toJsonBytes());
 		} catch(JsonParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document"));
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document").toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
@@ -273,7 +273,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 	@DeleteMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<Object> deleteAttribute(HttpServletRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<byte[]> deleteAttribute(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@PathVariable("attrId") String attrId) {
 		try {
 			logger.trace("delete attribute :: started");
@@ -283,17 +283,17 @@ public class EntityController {// implements EntityHandlerInterface {
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException).toJsonBytes());
 		} catch(DateTimeParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field."));
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.").toJsonBytes());
 		} catch(JsonParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document"));
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document").toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 
@@ -304,7 +304,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 	@DeleteMapping("/{entityId}")
-	public ResponseEntity<Object> deleteEntity(@PathVariable("entityId") String entityId) {
+	public ResponseEntity<byte[]> deleteEntity(@PathVariable("entityId") String entityId) {
 		try {
 			logger.trace("delete entity :: started");
 			entityService.deleteEntity(entityId);
@@ -312,17 +312,17 @@ public class EntityController {// implements EntityHandlerInterface {
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException responseException) {
 			logger.error("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException));
+			return ResponseEntity.status(responseException.getHttpStatus()).body(new RestResponse(responseException).toJsonBytes());
 		} catch(DateTimeParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field."));
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.").toJsonBytes());
 		} catch(JsonParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document"));
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document").toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error"));
+					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
 		}
 	}
 

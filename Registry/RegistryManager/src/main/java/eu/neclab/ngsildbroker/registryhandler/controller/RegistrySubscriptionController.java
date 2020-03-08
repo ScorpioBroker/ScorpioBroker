@@ -64,8 +64,8 @@ public class RegistrySubscriptionController {
 
 	ResponseException badRequest = new ResponseException(ErrorType.BadRequestData);
 
-	ResponseEntity<Object> badRequestResponse = ResponseEntity.status(badRequest.getHttpStatus())
-			.body(new RestResponse(badRequest));
+	ResponseEntity<byte[]> badRequestResponse = ResponseEntity.status(badRequest.getHttpStatus())
+			.body(new RestResponse(badRequest).toJsonBytes());
 	// @PostConstruct
 	// private void setupContextResolver() {
 	// this.contextResolver =
@@ -80,7 +80,7 @@ public class RegistrySubscriptionController {
 
 	
 	@PostMapping
-	public ResponseEntity<Object> subscribeRest(HttpServletRequest request,	@RequestBody String payload) throws ResponseException {
+	public ResponseEntity<byte[]> subscribeRest(HttpServletRequest request,	@RequestBody String payload) throws ResponseException {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription;
 
@@ -98,18 +98,18 @@ public class RegistrySubscriptionController {
 			URI subId = manager.subscribe(subscriptionRequest);
 			logger.trace("subscribeRest() :: completed");
 			//no absolute url only relative url
-			return ResponseEntity.created(new URI("/ngsi-ld/v1/csourceSubscriptions/" + subId.toString())).body(subId);
+			return ResponseEntity.created(new URI("/ngsi-ld/v1/csourceSubscriptions/" + subId.toString())).body(subId.toString().getBytes());
 		} catch (ResponseException e) {
 			logger.error("Exception ::",e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e));
+			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		} catch (URISyntaxException e) {
 			logger.error("Exception ::",e);
-			return ResponseEntity.status(HttpStatus.CONFLICT).body(subscription.getId());
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(subscription.getId().toString().getBytes());
 		}
 	}
 
 	@GetMapping
-	public ResponseEntity<Object> getAllSubscriptions(HttpServletRequest request,  @RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException{
+	public ResponseEntity<byte[]> getAllSubscriptions(HttpServletRequest request,  @RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException{
 		logger.trace("getAllSubscriptions() :: started");
 		List<Subscription> result = null;
 		result = manager.getAllSubscriptions(limit);
@@ -119,7 +119,7 @@ public class RegistrySubscriptionController {
 	
 	@GetMapping("{id}")
 	//(method = RequestMethod.GET, value = "/{id}")
-	public ResponseEntity<Object> getSubscriptions(HttpServletRequest request, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
+	public ResponseEntity<byte[]> getSubscriptions(HttpServletRequest request, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
 			logger.trace("call getSubscriptions() ::");
@@ -127,7 +127,7 @@ public class RegistrySubscriptionController {
 			
 		} catch (ResponseException e) {
 			logger.error("Exception ::",e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e));
+			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		}
 
 		
@@ -135,19 +135,19 @@ public class RegistrySubscriptionController {
 
 	@DeleteMapping("{id}")
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{id}")
-	public ResponseEntity<Object> deleteSubscription(@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
+	public ResponseEntity<byte[]> deleteSubscription(@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
 			manager.unsubscribe(id);
 		} catch (ResponseException e) {
 			logger.error("Exception ::",e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e));
+			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		}
 		return ResponseEntity.noContent().build();
 	}
 
 	@PatchMapping("{id}")
-	public ResponseEntity<Object> updateSubscription(HttpServletRequest request, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
+	public ResponseEntity<byte[]> updateSubscription(HttpServletRequest request, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestBody String payload) throws ResponseException {
 		logger.trace("call updateSubscription() ::");
 		List<Object> context = HttpUtils.getAtContext(request);
@@ -163,7 +163,7 @@ public class RegistrySubscriptionController {
 			manager.updateSubscription(subscription);
 		} catch (ResponseException e) {
 			logger.error("Exception ::",e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e));
+			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		}
 		return ResponseEntity.noContent().build();
 	}

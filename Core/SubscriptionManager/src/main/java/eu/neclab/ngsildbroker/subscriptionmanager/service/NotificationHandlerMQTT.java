@@ -23,7 +23,7 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler{
 	}
 
 	@Override
-	protected void sendReply(ResponseEntity<Object> reply, URI callback) throws Exception {
+	protected void sendReply(ResponseEntity<byte[]> reply, URI callback) throws Exception {
 		
 		int port = callback.getPort();
 		if(port == -1) {
@@ -31,7 +31,7 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler{
 		}
 		Mqtt3BlockingClient client = Mqtt3Client.builder().identifier(CLIENT_ID).serverHost(callback.getHost()).serverPort(port).buildBlocking();
 		client.connect();
-		client.publishWith().topic(callback.getPath().substring(1)).qos(MqttQos.AT_LEAST_ONCE).payload(reply.getBody().toString().getBytes()).send();
+		client.publishWith().topic(callback.getPath().substring(1)).qos(MqttQos.AT_LEAST_ONCE).payload(reply.getBody()).send();
 		client.disconnect();
 		
 	}

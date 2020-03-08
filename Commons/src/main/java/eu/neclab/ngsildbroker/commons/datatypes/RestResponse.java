@@ -27,13 +27,14 @@ public class RestResponse {
 	 * super(); this.status = status; this.title = title; this.details = detail;
 	 * this.type = status.getReasonPhrase(); }
 	 */
-	
+
 	public RestResponse(ErrorType errorType, String details) {
 		this.status = HttpStatus.valueOf(errorType.getCode());
 		this.title = errorType.getMessage();
 		this.details = details;
 		this.type = errorType.getErrorType();
 	}
+
 	public RestResponse(ResponseException exception) {
 		super();
 		this.status = exception.getHttpStatus();
@@ -56,6 +57,12 @@ public class RestResponse {
 
 	public String getDetail() {
 		return details;
+	}
+
+	public byte[] toJsonBytes() {
+		String result = "{\n\t\"type\":\"" + type + "\",\n\t\"title\":\"" + title + "\",\n\t\"details\":\"" + details
+				+ "\"\n}";
+		return result.getBytes();
 	}
 
 }
