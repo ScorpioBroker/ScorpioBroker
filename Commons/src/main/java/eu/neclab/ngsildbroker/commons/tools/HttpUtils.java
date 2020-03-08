@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -18,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -839,7 +842,12 @@ public final class HttpUtils {
 		if (forceArrayResult && !replyBody.startsWith("[")) {
 			replyBody = "[" + replyBody + "]";
 		}
-		return generateReply(replyBody, additionalHeaders);
+		boolean compress = false;
+		String options = request.getParameter(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+		if(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)){
+			compress = true;
+		}
+		return generateReply(replyBody, additionalHeaders, compress);
 	}
 
 	private int getContentType(float[][] foundHeaders) {
@@ -879,12 +887,12 @@ public final class HttpUtils {
 		return Float.parseFloat(header.substring(begin + 2));
 	}
 
-	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders) {
-		return generateReply(replyBody, additionalHeaders, HttpStatus.OK);
+	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders, boolean compress) {
+		return generateReply(replyBody, additionalHeaders, HttpStatus.OK, compress);
 	}
 
 	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,
-			HttpStatus status) {
+			HttpStatus status, boolean compress) {
 		BodyBuilder builder = ResponseEntity.status(status);
 		if (additionalHeaders != null) {
 			for (Entry<String, List<String>> entry : additionalHeaders.entrySet()) {
@@ -894,7 +902,32 @@ public final class HttpUtils {
 
 			}
 		}
-		return builder.body(replyBody.getBytes());
+		byte[] body;
+		if(compress) {
+			body = zipResult(replyBody);
+			builder.header(HttpHeaders.CONTENT_TYPE, "application/zip");
+		}else {
+			body = replyBody.getBytes();
+		}
+		return builder.body(body);
+	}
+
+	private byte[] zipResult(String replyBody) {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ZipOutputStream zipOutputStream = new ZipOutputStream(baos);
+		ZipEntry entry = new ZipEntry("index.json");
+		entry.setSize(replyBody.length());
+		try {
+			zipOutputStream.putNextEntry(entry);
+			zipOutputStream.write(replyBody.getBytes());
+			zipOutputStream.closeEntry();
+			zipOutputStream.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return baos.toByteArray();
 	}
 
 	// public static ResponseEntity<Object> generateReply(String acceptHeader,

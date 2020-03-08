@@ -63,7 +63,7 @@ public class EntityBatchController {
 //			status = HttpStatus.BAD_REQUEST;
 //		}
 		HttpStatus status = HttpStatus.OK;
-		return httpUtils.generateReply(DataSerializer.toJson(result), null, status);
+		return httpUtils.generateReply(DataSerializer.toJson(result), null, status, false);
 	}
 	@PostMapping("/upsert")
 	public ResponseEntity<byte[]> upsertMultiple(HttpServletRequest request,

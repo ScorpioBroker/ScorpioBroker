@@ -150,6 +150,7 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_OPTIONS = "options";
 	public final static String QUERY_PARAMETER_OPTIONS_SYSATTRS = "sysAttrs";
 	public final static String QUERY_PARAMETER_OPTIONS_KEYVALUES = "keyValues";
+	public final static String QUERY_PARAMETER_OPTIONS_COMPRESS = "compress";
 	public final static String QUERY_PARAMETER_OPTIONS_TEMPORALVALUES = "temporalValues";
 	
 	public final static String QUERY_EQUAL = "==";
