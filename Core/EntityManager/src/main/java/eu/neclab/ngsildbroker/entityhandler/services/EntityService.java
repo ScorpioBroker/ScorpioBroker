@@ -359,6 +359,10 @@ public class EntityService {
 			// write to ENTITY_WITHOUT_SYSATTRS topic
 			operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
 					entityId.getBytes(NGSIConstants.ENCODE_FORMAT), updateResult.getJsonWithoutSysAttrs());
+			operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+					entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+					objectMapper.writeValueAsBytes(getKeyValueEntity(updateResult.getFinalNode())));
+
 		}
 		logger.trace("updateMessage() :: completed");
 		return updateResult;
@@ -412,6 +416,10 @@ public class EntityService {
 			// write to ENTITY_WITHOUT_SYSATTRS topic
 			operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
 					entityId.getBytes(NGSIConstants.ENCODE_FORMAT), appendResult.getJsonWithoutSysAttrs());
+			operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+					entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+					objectMapper.writeValueAsBytes(getKeyValueEntity(appendResult.getFinalNode())));
+
 		}
 		logger.trace("appendMessage() :: completed");
 		return appendResult;
@@ -446,6 +454,9 @@ public class EntityService {
 				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), "null".getBytes(NGSIConstants.ENCODE_FORMAT));
 		operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
 				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), "null".getBytes(NGSIConstants.ENCODE_FORMAT));
+		operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), "null".getBytes(NGSIConstants.ENCODE_FORMAT));
+
 		logger.trace("deleteEntity() :: completed");
 		return true;
 	}
@@ -488,6 +499,10 @@ public class EntityService {
 			// write to ENTITY_WITHOUT_SYSATTRS topic
 			operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
 					entityId.getBytes(NGSIConstants.ENCODE_FORMAT), updateResult.getJsonWithoutSysAttrs());
+			operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+					entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+					objectMapper.writeValueAsBytes(getKeyValueEntity(updateResult.getFinalNode())));
+
 		}
 		logger.trace("partialUpdateEntity() :: completed");
 		return updateResult;
@@ -532,6 +547,10 @@ public class EntityService {
 		operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
 				entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
 				entityWithoutSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
+		operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+				entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+				objectMapper.writeValueAsBytes(getKeyValueEntity(json)));
+
 		// }
 		logger.trace("deleteAttribute() :: completed");
 		return true;
@@ -620,10 +639,10 @@ public class EntityService {
 		}
 		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
 		updateResult.setJson(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
-
+		updateResult.setFinalNode(node);
 		removeTemporalProperties(node);
 		updateResult.setJsonWithoutSysAttrs(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
-
+		
 		logger.trace("updateFields() :: completed");
 		return updateResult;
 
@@ -683,7 +702,7 @@ public class EntityService {
 
 		removeTemporalProperties(node);
 		appendResult.setJsonWithoutSysAttrs(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
-
+		appendResult.setFinalNode(node);
 		logger.trace("appendFields() :: completed");
 		return appendResult;
 	}

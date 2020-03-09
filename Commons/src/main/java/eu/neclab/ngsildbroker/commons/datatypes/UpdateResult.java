@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class UpdateResult {
 	private JsonNode jsonToAppend;
 	private JsonNode updatedJsonFields;// = new ArrayList<JsonNode>();
+	private JsonNode finalNode;
 	private boolean status = false;
 	private byte[] json;
 	private byte[] jsonWithoutSysAttrs;
@@ -17,6 +18,15 @@ public class UpdateResult {
 		super();
 		this.jsonToAppend = jsonToAppend;
 		this.updatedJsonFields=appendedJsonFields;
+	}
+
+	
+	public JsonNode getFinalNode() {
+		return finalNode;
+	}
+
+	public void setFinalNode(JsonNode finalNode) {
+		this.finalNode = finalNode;
 	}
 
 	public JsonNode getJsonToAppend() {

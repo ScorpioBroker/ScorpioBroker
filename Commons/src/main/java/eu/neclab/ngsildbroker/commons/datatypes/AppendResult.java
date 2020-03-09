@@ -6,6 +6,7 @@ public class AppendResult {
 	
 	private JsonNode jsonToAppend;
 	private JsonNode appendedJsonFields;// = new ArrayList<JsonNode>();
+	private JsonNode finalNode;
 	private boolean status=false;
 	private byte[] json;
 	private byte[] jsonWithoutSysAttrs;
@@ -18,6 +19,14 @@ public class AppendResult {
 		super();
 		this.jsonToAppend = jsonToAppend;
 		this.appendedJsonFields=appendedJsonFields;
+	}
+
+	public JsonNode getFinalNode() {
+		return finalNode;
+	}
+
+	public void setFinalNode(JsonNode finalNode) {
+		this.finalNode = finalNode;
 	}
 
 	public JsonNode getJsonToAppend() {
