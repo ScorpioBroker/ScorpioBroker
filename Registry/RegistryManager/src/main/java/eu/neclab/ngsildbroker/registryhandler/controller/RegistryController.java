@@ -94,7 +94,7 @@ public class RegistryController {
 	// return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 	// .body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server
 	// error",
-	// "Internal Server Error")));
+	// "Internal error")));
 	// }
 	// }
 
@@ -128,7 +128,7 @@ public class RegistryController {
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -155,7 +155,7 @@ public class RegistryController {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -171,7 +171,7 @@ public class RegistryController {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -191,7 +191,7 @@ public class RegistryController {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -206,7 +206,7 @@ public class RegistryController {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 

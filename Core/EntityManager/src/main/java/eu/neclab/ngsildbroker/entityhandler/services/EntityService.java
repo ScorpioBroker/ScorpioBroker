@@ -860,7 +860,7 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
 					} else {
-						response = new RestResponse(ErrorType.InternalError, "Internal server error");
+						response = new RestResponse(ErrorType.InternalError, "Internal error");
 					}
 
 					result.addFail(new BatchFailure(entityId, response));
@@ -901,7 +901,7 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
 					} else {
-						response = new RestResponse(ErrorType.InternalError, "Internal server error");
+						response = new RestResponse(ErrorType.InternalError, "Internal error");
 					}
 
 					result.addFail(new BatchFailure(entityId, response));
@@ -953,7 +953,7 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
 					} else {
-						response = new RestResponse(ErrorType.InternalError, "Internal server error");
+						response = new RestResponse(ErrorType.InternalError, "Internal error");
 					}
 
 					result.addFail(new BatchFailure(entityId, response));
@@ -1018,7 +1018,7 @@ public class EntityService {
 								if (e1 instanceof ResponseException) {
 									response = new RestResponse((ResponseException) e1);
 								} else {
-									response = new RestResponse(ErrorType.InternalError, "Internal server error");
+									response = new RestResponse(ErrorType.InternalError, "Internal error");
 								}
 
 								result.addFail(new BatchFailure(entityId, response));
@@ -1029,7 +1029,7 @@ public class EntityService {
 						}
 
 					} else {
-						response = new RestResponse(ErrorType.InternalError, "Internal server error");
+						response = new RestResponse(ErrorType.InternalError, "Internal error");
 						result.addFail(new BatchFailure(entityId, response));
 					}
 

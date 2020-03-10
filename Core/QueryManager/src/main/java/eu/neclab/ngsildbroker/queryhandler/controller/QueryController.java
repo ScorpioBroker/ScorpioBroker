@@ -129,7 +129,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -203,7 +203,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal Server Error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 

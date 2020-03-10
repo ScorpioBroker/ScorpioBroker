@@ -79,7 +79,7 @@ public class HistoryController {
 		} catch (Exception exception) {
 			logger.error("Exception", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -110,7 +110,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -135,7 +135,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -155,7 +155,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -176,7 +176,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -196,7 +196,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -222,7 +222,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 
@@ -243,7 +243,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal server error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
 		}
 	}
 

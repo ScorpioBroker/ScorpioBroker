@@ -273,7 +273,7 @@ public class EntityServiceTest {
 	@Test
 	public void deleteField404Test() throws ResponseException, Exception {
 		thrown.expect(ResponseException.class);
-		thrown.expectMessage("Not Found.");
+		thrown.expectMessage("Resource not found.");
 		
 		Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
 		entityService.deleteFields(payload.getBytes(), "notPresent");

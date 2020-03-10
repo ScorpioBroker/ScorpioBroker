@@ -177,7 +177,7 @@ public class EntityControllerTest {
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(payload))
 					.andExpect(status().isInternalServerError())
-					.andExpect(jsonPath("$.title").value("Internal server error"));
+					.andExpect(jsonPath("$.title").value("Internal error"));
 			verify(entityService,times(1)).createMessage(any());
 			verify(entityService,times(1)).validateEntity(any(), any());
 		}catch(Exception e) {
@@ -243,7 +243,7 @@ public class EntityControllerTest {
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(appendPayload))
 					.andExpect(status().isNotFound())
-					.andExpect(jsonPath("$.title").value("Not Found."));
+					.andExpect(jsonPath("$.title").value("Resource not found."));
 			verify(entityService,times(1)).appendMessage(any(), any(), any());
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -259,7 +259,7 @@ public class EntityControllerTest {
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(appendPayload))
 					.andExpect(status().isInternalServerError())
-					.andExpect(jsonPath("$.title").value("Internal server error"));
+					.andExpect(jsonPath("$.title").value("Internal error"));
 			verify(entityService,times(1)).appendMessage(any(), any(), any());
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -323,7 +323,7 @@ public class EntityControllerTest {
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload))
 					.andExpect(status().isNotFound())
-					.andExpect(jsonPath("$.title").value("Not Found."));
+					.andExpect(jsonPath("$.title").value("Resource not found."));
 			verify(entityService,times(1)).updateMessage(any(), any());
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -339,7 +339,7 @@ public class EntityControllerTest {
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload))
 					.andExpect(status().isInternalServerError())
-					.andExpect(jsonPath("$.title").value("Internal server error"));
+					.andExpect(jsonPath("$.title").value("Internal error"));
 			verify(entityService,times(1)).updateMessage(any(), any());
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -373,7 +373,7 @@ public class EntityControllerTest {
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload))
 					.andExpect(status().isNotFound())
-					.andExpect(jsonPath("$.title").value("Not Found."));
+					.andExpect(jsonPath("$.title").value("Resource not found."));
 			verify(entityService,times(1)).partialUpdateEntity(any(), any(), any());
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -405,7 +405,7 @@ public class EntityControllerTest {
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload))
 					.andExpect(status().isInternalServerError())
-					.andExpect(jsonPath("$.title").value("Internal server error"));
+					.andExpect(jsonPath("$.title").value("Internal error"));
 			verify(entityService,times(1)).partialUpdateEntity(any(), any(), any());
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -435,7 +435,7 @@ public class EntityControllerTest {
 			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}","urn:ngsi-ld:Vehicle:B9211")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 			        .andExpect(status().isNotFound())
-			        .andExpect(jsonPath("$.title").value("Not Found."));
+			        .andExpect(jsonPath("$.title").value("Resource not found."));
 			verify(entityService,times(1)).deleteEntity(any());
 		}catch(Exception e) {
 			Assert.fail();
@@ -463,7 +463,7 @@ public class EntityControllerTest {
 			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}","urn:ngsi-ld:Vehicle:B9211")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 			        .andExpect(status().isInternalServerError())
-			        .andExpect(jsonPath("$.title").value("Internal server error"));
+			        .andExpect(jsonPath("$.title").value("Internal error"));
 			verify(entityService,times(1)).deleteEntity(any());
 		}catch(Exception e) {
 			Assert.fail();
@@ -491,7 +491,7 @@ public class EntityControllerTest {
 			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}","urn:ngsi-ld:Vehicle:B9211","BrandName")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 			        .andExpect(status().isNotFound())
-			        .andExpect(jsonPath("$.title").value("Not Found."));
+			        .andExpect(jsonPath("$.title").value("Resource not found."));
 			verify(entityService,times(1)).deleteAttribute(any(),any());
 		}catch(Exception e) {
 			Assert.fail();
@@ -519,7 +519,7 @@ public class EntityControllerTest {
 			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}","urn:ngsi-ld:Vehicle:B9211","BrandName")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 			        .andExpect(status().isInternalServerError())
-			        .andExpect(jsonPath("$.title").value("Internal server error"));
+			        .andExpect(jsonPath("$.title").value("Internal error"));
 			verify(entityService,times(1)).deleteAttribute(any(),any());
 		}catch(Exception e) {
 			Assert.fail();

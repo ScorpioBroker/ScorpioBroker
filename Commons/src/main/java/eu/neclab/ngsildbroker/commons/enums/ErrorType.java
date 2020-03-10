@@ -12,7 +12,7 @@ public enum ErrorType {
 	BadRequestData(400, "http://uri.etsi.org/ngsi-ld/errors/BadRequestData", "Bad Request Data."),
 	TooComplexQuery(403, "http://uri.etsi.org/ngsi-ld/errors/TooComplexQuery", "Too complex query"),
 	TooManyResults(403, "http://uri.etsi.org/ngsi-ld/errors/TooManyResults ", "Too many results"),
-	NotFound(404, "http://uri.etsi.org/ngsi-ld/errors/ResourceNotFound", "Not Found."),
+	NotFound(404, "http://uri.etsi.org/ngsi-ld/errors/ResourceNotFound", "Resource not found."),
 
 	// ResourceNotFound(404,"Resource not found."),
 	// MethodNotAllowed(405,"Method not allowed"),
@@ -26,7 +26,7 @@ public enum ErrorType {
 	OperationNotSupported(422, "http://uri.etsi.org/ngsi-ld/errors/OperationNotSupported", "Operation not supported."),
 	UnprocessableEntity(422, "Unprocessable Entity.", "Unprocessable Entity."),
 
-	InternalError(500, "http://uri.etsi.org/ngsi-ld/errors/InternalError", "Internal error."),
+	InternalError(500, "http://uri.etsi.org/ngsi-ld/errors/InternalError", "Internal error"),
 	KafkaWriteError(500, "http://uri.etsi.org/ngsi-ld/errors/InternalError", "Kafka write exception."),
 	MultiStatus(207, "Multi status result", "Multi status result");
 
