@@ -351,6 +351,9 @@ public class SerializationTools {
 			String propKey = entry.getKey();
 			JsonElement value = entry.getValue();
 			if (propKey.equals(NGSIConstants.NGSI_LD_OBJECT)) {
+				if(value.getAsJsonArray().size() != 1) {
+					throw new JsonParseException("Relationships can only have one object");
+				}
 				try {
 					relationship.setObject(new URI(value.getAsJsonArray().get(0).getAsJsonObject()
 							.get(NGSIConstants.JSON_LD_ID).getAsString()));
