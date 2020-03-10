@@ -27,37 +27,37 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   atctxsrv:
-    image: scorpiobroker/scorpio:AtContextServer_0.9.5
+    image: scorpiobroker/scorpio:AtContextServer_0.9.7
     ports:
       - "27015"
     depends_on:
       - kafka
       - eureka
   cfgsrv:
-    image: scorpiobroker/scorpio:config-server_0.9.5
+    image: scorpiobroker/scorpio:config-server_0.9.7
     ports:
       - "8888"
     depends_on:
       - eureka
   emgr:
-    image: scorpiobroker/scorpio:EntityManager_0.9.5
+    image: scorpiobroker/scorpio:EntityManager_0.9.7
     ports:
       - "1025"
     depends_on:
       - kafka
       - eureka
   eureka:
-    image: scorpiobroker/scorpio:eureka-server_0.9.5
+    image: scorpiobroker/scorpio:eureka-server_0.9.7
     ports:
       - "8761"
   gateway:
-    image: scorpiobroker/scorpio:gateway_0.9.5
+    image: scorpiobroker/scorpio:gateway_0.9.7
     ports:
       - "9090:9090"
     depends_on:
       - eureka
   histmgr:
-    image: scorpiobroker/scorpio:HistoryManager_0.9.5
+    image: scorpiobroker/scorpio:HistoryManager_0.9.7
     ports:
       - "1040"
     depends_on:
@@ -65,7 +65,7 @@ services:
       - gateway
       - eureka
   qrymgr:
-    image: scorpiobroker/scorpio:QueryManager_0.9.5
+    image: scorpiobroker/scorpio:QueryManager_0.9.7
     ports:
       - "1026"
     depends_on:
@@ -73,7 +73,7 @@ services:
       - postgres
       - eureka
   regmgr:
-    image: scorpiobroker/scorpio:RegistryManager_0.9.5
+    image: scorpiobroker/scorpio:RegistryManager_0.9.7
     ports:
       - "1030"
     depends_on:
@@ -82,7 +82,7 @@ services:
       - gateway
       - eureka
   stomgr:
-    image: scorpiobroker/scorpio:StorageManager_0.9.5
+    image: scorpiobroker/scorpio:StorageManager_0.9.7
     ports:
       - "1029"
     depends_on:
@@ -90,7 +90,7 @@ services:
       - postgres
       - eureka
   sbsmgr:
-    image: scorpiobroker/scorpio:SubscriptionManager_0.9.5
+    image: scorpiobroker/scorpio:SubscriptionManager_0.9.7
     ports:
       - "2025"
     depends_on:
