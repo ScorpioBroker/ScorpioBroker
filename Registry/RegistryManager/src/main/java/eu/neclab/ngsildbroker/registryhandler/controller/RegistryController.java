@@ -120,7 +120,7 @@ public class RegistryController {
 			} else {
 				// spec v0.9.0 section 5.10.2.4: if neither Entity types nor Attribute names are
 				// provided, an error of BadRequestData shall be raised
-				throw new ResponseException(ErrorType.BadRequestData);
+				throw new ResponseException(ErrorType.BadRequestData, "You must provide at least type or attrs as parameter");
 			}
 		} catch (ResponseException exception) {
 			logger.error("Exception ::", exception);
