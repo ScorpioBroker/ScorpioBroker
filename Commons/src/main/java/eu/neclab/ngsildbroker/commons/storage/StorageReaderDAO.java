@@ -125,8 +125,8 @@ abstract public class StorageReaderDAO {
 					if (queryValue.indexOf(",") == -1) {
 						sqlWhereProperty = dbColumn + " " + sqlOperator + "'" + queryValue + "'";
 					} else {
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " '"
-								+ queryValue.replace(",", "' OR " + dbColumn + " " + sqlOperator + "'") + "'";
+						sqlWhereProperty = "("+dbColumn + " " + sqlOperator + " '"
+								+ queryValue.replace(",", "' OR " + dbColumn + " " + sqlOperator + "'") + "')";
 					}
 					break;
 				case NGSIConstants.QUERY_PARAMETER_GEOREL:
