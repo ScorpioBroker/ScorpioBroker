@@ -114,7 +114,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			result = entityService.createMessage(resolved);
 			logger.trace("create entity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
-					.body(new URI(result).toString().getBytes());
+					.build();
 		} catch (ResponseException exception) {
 			logger.error("Exception :: ", exception);
 			exception.printStackTrace();

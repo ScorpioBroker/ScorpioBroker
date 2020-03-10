@@ -148,8 +148,7 @@ public class RegistryController {
 			logger.debug("Csource :: " + csourceRegistration);
 			URI uri = csourceService.registerCSource(csourceRegistration);
 
-			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri)
-					.body(uri.toString().getBytes());
+			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri).build();
 		} catch (ResponseException exception) {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
