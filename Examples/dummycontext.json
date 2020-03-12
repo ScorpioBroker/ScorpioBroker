@@ -1,10 +1,6 @@
 {
 
 	"@context": {
-		"testedAt": {
-	 "@type": "https://uri.etsi.org/ngsi-ld/DateTime”,
-        "@id": "http://example.org/test/P1"
-},
 		"ngsi-ld": "https://uri.etsi.org/ngsi-ld/",
 		"id": "@id",
 		"type": "@type",
@@ -12,6 +8,10 @@
 		"object": {
 			"@id": "https://uri.etsi.org/ngsi-ld/hasObject",
 			"@type": "@id"
+		},
+		"testedAt": {
+			"@type": "https://uri.etsi.org/ngsi-ld/DateTime",
+			"@id": "http://example.org/test/P1"
 		},
 		"Property": "https://uri.etsi.org/ngsi-ld/Property",
 		"Relationship": "https://uri.etsi.org/ngsi-ld/Relationship",
