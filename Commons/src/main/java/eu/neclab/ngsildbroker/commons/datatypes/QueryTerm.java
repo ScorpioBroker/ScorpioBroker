@@ -297,16 +297,16 @@ public class QueryTerm {
 	private List<Object> getValue(BaseProperty myProperty) {
 		List<Object> result = new ArrayList<Object>();
 		if (myProperty instanceof Property) {
-			for(Object item: ((Property) myProperty).getValue()) {
-				if(item instanceof TypedValue) {
+			for (Object item : ((Property) myProperty).getValue()) {
+				if (item instanceof TypedValue) {
 					result.add(((TypedValue) item).getValue());
-				}else {
+				} else {
 					result.add(item);
 				}
 			}
 			return result;
 		} else if (myProperty instanceof Relationship) {
-			
+
 			result.add(((Relationship) myProperty).getObject().toString());
 			return result;
 		}
@@ -489,7 +489,7 @@ public class QueryTerm {
 			if (temporalEntityMode)
 				getAttribQueryForTemporalEntity(result);
 			else
-				getAttribQuery(result);
+				getAttribQueryV2(result);
 		}
 		if (hasNext()) {
 			if (nextAnd) {
@@ -645,6 +645,95 @@ public class QueryTerm {
 
 	}
 
+	private void getAttribQueryV2(StringBuilder result) throws ResponseException {
+		ArrayList<String> attribPath = getAttribPathArray();
+
+		StringBuilder attributeFilterProperty = new StringBuilder("");
+
+		String reservedDbColumn = null;
+		if (attribPath.size() == 1) {
+			// if not mapped, returns null
+			reservedDbColumn = DBConstants.NGSILD_TO_SQL_RESERVED_PROPERTIES_MAPPING.get(attribPath.get(0));
+		}
+
+		// do not use createdAt/modifiedAt db columns if value (operant) is not a
+		// date/time value
+		if (reservedDbColumn != null
+				&& (reservedDbColumn.equals(DBConstants.DBCOLUMN_CREATED_AT)
+						|| reservedDbColumn.equals(DBConstants.DBCOLUMN_MODIFIED_AT))
+				&& !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME))) {
+			reservedDbColumn = null;
+		}
+		if (reservedDbColumn != null) {
+			attributeFilterProperty.append(reservedDbColumn);
+			applyOperator(attributeFilterProperty);
+		} else {
+			/*
+			 * EXISTS (SELECT FROM
+			 * jsonb_array_elements(data#>'{https://uri.etsi.org/ngsi-ld/default-context/
+			 * friend}') as x WHERE x#> '{https://uri.etsi.org/ngsi-ld/hasObject,0,@id}' =
+			 * '"urn:person:Victoria"' OR x#>
+			 * '{https://uri.etsi.org/ngsi-ld/hasValue,0,@id}' = '"urn:person:Victoria"')
+			 */
+
+			int iElem = 0;
+			String currentSet = "data";
+			char charcount = 'a';
+			String lastAttrib;
+			for (String subPath : attribPath) {
+				attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
+				attributeFilterProperty.append(subPath);
+				if (attribute.contains("[") && iElem == 0) {
+					attributeFilterProperty.append(NGSIConstants.NGSI_LD_HAS_VALUE + ",0");
+				}
+				attributeFilterProperty.append("}') as ");
+				attributeFilterProperty.append(charcount);
+				currentSet = "" + charcount;
+				attributeFilterProperty.append(" WHERE ");
+				charcount++;
+				iElem++;
+				lastAttrib = subPath;
+			}
+			// x#> '{https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'
+			charcount--;
+			attributeFilterProperty.append(charcount);
+			attributeFilterProperty.append("#> '{");
+			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'");
+			applyOperator(attributeFilterProperty);
+			attributeFilterProperty.append(" OR ");
+			attributeFilterProperty.append(charcount);
+			attributeFilterProperty.append("#> '{");
+			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue,0,@value}'");
+			if (operant.matches(DATETIME)) {
+				attributeFilterProperty.append("::timestamp ");
+			} else if (operant.matches(DATE)) {
+				attributeFilterProperty.append("::date ");
+			} else if (operant.matches(TIME)) {
+				attributeFilterProperty.append("::time ");
+			}
+			applyOperator(attributeFilterProperty);
+			attributeFilterProperty.append(" OR ");
+			attributeFilterProperty.append(charcount);
+			attributeFilterProperty.append("#> '{");
+			attributeFilterProperty.append("0,@value}'");
+			if (operant.matches(DATETIME)) {
+				attributeFilterProperty.append("::timestamp ");
+			} else if (operant.matches(DATE)) {
+				attributeFilterProperty.append("::date ");
+			} else if (operant.matches(TIME)) {
+				attributeFilterProperty.append("::time ");
+			}
+			applyOperator(attributeFilterProperty);
+			for (int i = 0; i < attribPath.size(); i++) {
+				attributeFilterProperty.append(')');
+			}
+			// attributeFilterProperty.append(b)
+		}
+
+		result.append("(" + attributeFilterProperty.toString() + ")");
+
+	}
+
 	private ArrayList<String> getAttribPathArray() throws ResponseException {
 		ArrayList<String> attribPath = new ArrayList<String>();
 		if (attribute.contains("[")) {
@@ -662,6 +751,112 @@ public class QueryTerm {
 			attribPath.add(expandAttributeName(attribute));
 		}
 		return attribPath;
+	}
+
+	private boolean applyOperator(StringBuilder attributeFilterProperty) throws BadRequestException {
+		boolean useRelClause = false;
+
+		String typecast = "jsonb";
+		if (operant.matches(DATETIME)) {
+			typecast = "timestamp";
+		} else if (operant.matches(DATE)) {
+			typecast = "date";
+		} else if (operant.matches(TIME)) {
+			typecast = "time";
+		}
+
+		switch (operator) {
+		case NGSIConstants.QUERY_EQUAL:
+			if (operant.matches(LIST)) {
+				attributeFilterProperty.append(" in (");
+				for (String listItem : operant.split(",")) {
+					attributeFilterProperty.append("'" + listItem + "'::" + typecast + ",");
+				}
+				attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
+			} else if (operant.matches(RANGE)) {
+				String[] myRange = operant.split("\\.\\.");
+				attributeFilterProperty.append(
+						" between '" + myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast);
+			} else {
+				attributeFilterProperty.append(" = '" + operant + "'::" + typecast);
+
+			}
+			useRelClause = !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME));
+			break;
+		case NGSIConstants.QUERY_UNEQUAL:
+			if (operant.matches(LIST)) {
+				attributeFilterProperty.append(" not in (");
+				for (String listItem : operant.split(",")) {
+					attributeFilterProperty.append("'" + listItem + "'::" + typecast + ",");
+				}
+				attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
+			} else if (operant.matches(RANGE)) {
+				String[] myRange = operant.split("\\.\\.");
+				attributeFilterProperty.append(
+						" not between '" + myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast);
+			} else {
+				attributeFilterProperty.append(" <> '" + operant + "'::" + typecast);
+			}
+			useRelClause = !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME));
+			break;
+		case NGSIConstants.QUERY_GREATEREQ:
+			if (operant.matches(LIST)) {
+				throw new BadRequestException();
+			}
+			if (operant.matches(RANGE)) {
+				throw new BadRequestException();
+			}
+			attributeFilterProperty.append(" >= '" + operant + "'::" + typecast);
+			break;
+		case NGSIConstants.QUERY_LESSEQ:
+			if (operant.matches(LIST)) {
+				throw new BadRequestException();
+			}
+			if (operant.matches(RANGE)) {
+				throw new BadRequestException();
+			}
+			attributeFilterProperty.append(" <= '" + operant + "'::" + typecast);
+			break;
+		case NGSIConstants.QUERY_GREATER:
+			if (operant.matches(LIST)) {
+				throw new BadRequestException();
+			}
+			if (operant.matches(RANGE)) {
+				throw new BadRequestException();
+			}
+			attributeFilterProperty.append(" > '" + operant + "'::" + typecast);
+			break;
+		case NGSIConstants.QUERY_LESS:
+			if (operant.matches(LIST)) {
+				throw new BadRequestException();
+			}
+			if (operant.matches(RANGE)) {
+				throw new BadRequestException();
+			}
+			attributeFilterProperty.append(" < '" + operant + "'::" + typecast);
+			break;
+		case NGSIConstants.QUERY_PATTERNOP:
+			if (operant.matches(LIST)) {
+				throw new BadRequestException();
+			}
+			if (operant.matches(RANGE)) {
+				throw new BadRequestException();
+			}
+			attributeFilterProperty.append(" ~ '" + operant + "'");
+			break;
+		case NGSIConstants.QUERY_NOTPATTERNOP:
+			if (operant.matches(LIST)) {
+				throw new BadRequestException();
+			}
+			if (operant.matches(RANGE)) {
+				throw new BadRequestException();
+			}
+			attributeFilterProperty.append(" !~ '" + operant + "'");
+			break;
+		default:
+			throw new BadRequestException();
+		}
+		return useRelClause;
 	}
 
 	private boolean applyOperator(StringBuilder attributeFilterProperty, StringBuilder attributeFilterRelationship)

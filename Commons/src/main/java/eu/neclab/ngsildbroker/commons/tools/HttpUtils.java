@@ -141,7 +141,7 @@ public final class HttpUtils {
 
 		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD)) {
 			if (!payload.contains("@context")) {
-				throw new ResponseException(ErrorType.BadRequestData);
+				throw new ResponseException(ErrorType.BadRequestData, "You have to provide an @context entry in the body with Content-Type: " + AppConstants.NGB_APPLICATION_JSONLD);
 			}
 
 			ldResolved = contextResolver.expand(payload, null);

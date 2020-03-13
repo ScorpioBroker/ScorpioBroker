@@ -13,9 +13,10 @@
 	</parent>
 	<version>0.9.2-SNAPSHOT</version>
 	<modules>
+		<module>spring-cloud-gateway</module>
 		<module>gateway</module>
 		<module>eureka</module>
-		<module>config-server</module>
+		<!-- module>config-server</module -->
 	</modules>
 
 
