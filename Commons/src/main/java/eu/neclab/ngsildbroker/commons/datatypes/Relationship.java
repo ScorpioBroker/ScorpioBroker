@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author hebgen
@@ -9,10 +11,9 @@ import java.net.URI;
  */
 public class Relationship extends BaseProperty {
 
-	private URI object;
-	
+	private HashMap<String, RelationshipEntry> dataSetId2object;
 
-	public Relationship(){
+	public Relationship() {
 		type = "Relationship";
 	}
 
@@ -20,19 +21,19 @@ public class Relationship extends BaseProperty {
 
 	}
 
-	public URI getObject() {
-		return object;
+	public HashMap<String, RelationshipEntry> getEntries() {
+		return dataSetId2object;
 	}
 
-	public void setObject(URI object) {
-		this.object = object;
+	public void setObjects(HashMap<String, RelationshipEntry> objects) {
+		this.dataSetId2object = objects;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((object == null) ? 0 : object.hashCode());
+		result = prime * result + ((dataSetId2object == null) ? 0 : dataSetId2object.hashCode());
 		return result;
 	}
 
@@ -45,13 +46,17 @@ public class Relationship extends BaseProperty {
 		if (getClass() != obj.getClass())
 			return false;
 		Relationship other = (Relationship) obj;
-		if (object == null) {
-			if (other.object != null)
+		if (dataSetId2object == null) {
+			if (other.dataSetId2object != null)
 				return false;
-		} else if (!object.equals(other.object))
+		} else if (!dataSetId2object.equals(other.dataSetId2object))
 			return false;
 		return true;
 	}
 
-	
+	@Override
+	public boolean isMultiValue() {
+		return dataSetId2object.size() != 1;
+	}
+
 }

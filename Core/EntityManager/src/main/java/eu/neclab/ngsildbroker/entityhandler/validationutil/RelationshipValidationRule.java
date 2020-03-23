@@ -21,7 +21,7 @@ public class RelationshipValidationRule implements ValidationRules{
 	
 	private boolean isNullObject(Entity entity) throws ResponseException {
 		for(Relationship relation:entity.getRelationships()) {
-			if(relation.getObject()==null) {
+			if(relation.getEntries()==null) {
 				throw new ResponseException(ErrorType.BadRequestData,"Entity with a Relationship object equal to null");
 			}
 		}

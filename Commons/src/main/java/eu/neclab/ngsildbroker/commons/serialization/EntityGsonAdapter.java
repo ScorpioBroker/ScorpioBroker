@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -36,17 +37,17 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 		top.add(NGSIConstants.JSON_LD_TYPE, context.serialize(entity.getType()));
 		if (entity.getProperties() != null) {
 			for (Property property : entity.getProperties()) {
-				top.add(property.getName(), SerializationTools.getJson(property, context));
+				top.add(property.getId().toString(), SerializationTools.getJson(property, context));
 			}
 		}
 		if (entity.getRelationships() != null) {
 			for (Relationship relationship : entity.getRelationships()) {
-				top.add(relationship.getName(), SerializationTools.getJson(relationship, context));
+				top.add(relationship.getId().toString(), SerializationTools.getJson(relationship, context));
 			}
 		}
 		if (entity.getGeoProperties() != null) {
 			for (GeoProperty geoProperty : entity.getGeoProperties()) {
-				top.add(geoProperty.getName(), SerializationTools.getJson(geoProperty, context));
+				top.add(geoProperty.getId().toString(), SerializationTools.getJson(geoProperty, context));
 			}
 		}
 		if (entity.getCreatedAt() != null && entity.getCreatedAt() > 0) {
@@ -56,14 +57,14 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 			top.add(NGSIConstants.NGSI_LD_MODIFIED_AT, SerializationTools.getJson(entity.getModifiedAt(), context));
 		}
 		if (entity.getLocation() != null) {
-			top.add(entity.getLocation().getName(), SerializationTools.getJson(entity.getLocation(), context));
+			top.add(entity.getLocation().getId().toString(), SerializationTools.getJson(entity.getLocation(), context));
 		}
 		if (entity.getObservationSpace() != null) {
-			top.add(entity.getObservationSpace().getName(),
+			top.add(entity.getObservationSpace().getId().toString(),
 					SerializationTools.getJson(entity.getObservationSpace(), context));
 		}
 		if (entity.getOperationSpace() != null) {
-			top.add(entity.getOperationSpace().getName(),
+			top.add(entity.getOperationSpace().getId().toString(),
 					SerializationTools.getJson(entity.getOperationSpace(), context));
 		}
 		return top;
@@ -73,29 +74,8 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 	public Entity deserialize(JsonElement json, Type classType, JsonDeserializationContext context)
 			throws JsonParseException {
 		JsonObject top = json.getAsJsonObject();
-
 		URI id = null;
-		if (top.has(NGSIConstants.JSON_LD_ID)) {
-			try {
-				id = new URI(top.get(NGSIConstants.JSON_LD_ID).getAsString());
-			} catch (URISyntaxException e1) {
-				if (!allowIncomplete) {
-					throw new JsonParseException("ID field is not a valid URI");
-				}
-			}
-		} else {
-			if (!allowIncomplete) {
-				throw new JsonParseException("ID field is mandertory");
-			}
-		}
 		String type = null;
-		if (top.has(NGSIConstants.JSON_LD_TYPE)) {
-			type = top.get(NGSIConstants.JSON_LD_TYPE).getAsString();
-		} else {
-			if (!allowIncomplete) {
-				throw new JsonParseException("type field is mandertory");
-			}
-		}
 
 		GeoProperty location = null;
 		GeoProperty observationSpace = null;
@@ -103,82 +83,106 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 		ArrayList<Property> properties = new ArrayList<Property>();
 		ArrayList<Relationship> relationships = new ArrayList<Relationship>();
 		ArrayList<GeoProperty> geoproperties = new ArrayList<GeoProperty>();
-
+		Long createdAt = null, observedAt = null, modifiedAt = null;
 		String refToAccessControl = null;
 		for (Entry<String, JsonElement> entry : top.entrySet()) {
 			String key = entry.getKey();
-			if (key.equals(NGSIConstants.NGSI_LD_LOCATION) || key.equals(NGSIConstants.NGSI_LD_OPERATION_SPACE)
-					|| key.equals(NGSIConstants.NGSI_LD_OBSERVATION_SPACE)
-					|| key.equals(NGSIConstants.NGSI_LD_CREATED_AT) || key.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
-					|| key.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
-				continue;
-			}
-			JsonElement value = entry.getValue();
-			if (value.isJsonArray()) {
-				value = value.getAsJsonArray().get(0);
-			}
-			if (value.isJsonObject()) {
-				JsonObject objValue = value.getAsJsonObject();
+			JsonObject objValue = null;
+			switch (key) {
+			case NGSIConstants.JSON_LD_ID:
+				try {
+					id = new URI(entry.getValue().getAsString());
+				} catch (URISyntaxException e1) {
+					throw new JsonParseException("ID field is not a valid URI");
+				}
+				break;
+			case NGSIConstants.JSON_LD_TYPE:
+				type = entry.getValue().getAsString();
+				break;
+			case NGSIConstants.NGSI_LD_LOCATION:
+				location = SerializationTools.parseGeoProperty(
+						entry.getValue().getAsJsonArray(),
+						NGSIConstants.NGSI_LD_LOCATION);
+				break;
+			case NGSIConstants.NGSI_LD_OPERATION_SPACE:
+				operationSpace = SerializationTools.parseGeoProperty(
+						entry.getValue().getAsJsonArray(),
+						NGSIConstants.NGSI_LD_OPERATION_SPACE);
+				break;
+			case NGSIConstants.NGSI_LD_OBSERVATION_SPACE:
+				observationSpace = SerializationTools.parseGeoProperty(
+						entry.getValue().getAsJsonArray(),
+						NGSIConstants.NGSI_LD_OBSERVATION_SPACE);
+				break;
+			case NGSIConstants.NGSI_LD_CREATED_AT:
+				try {
+					createdAt = SerializationTools.date2Long(entry.getValue().getAsJsonArray().get(0).getAsJsonObject()
+							.get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
+				break;
+			case NGSIConstants.NGSI_LD_MODIFIED_AT:
+				try {
+					modifiedAt = SerializationTools.date2Long(entry.getValue().getAsJsonArray().get(0).getAsJsonObject()
+							.get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
+				break;
+			case NGSIConstants.NGSI_LD_OBSERVED_AT:
+				try {
+					observedAt = SerializationTools.date2Long(entry.getValue().getAsJsonArray().get(0).getAsJsonObject()
+							.get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (Exception e) {
+					throw new JsonParseException(e);
+				}
+				break;
+
+			default:
+
+				JsonArray topLevelArray = entry.getValue().getAsJsonArray();
+				objValue = topLevelArray.get(0).getAsJsonObject();
+
 				if (objValue.has(NGSIConstants.JSON_LD_TYPE)) {
 					String valueType = objValue.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().get(0).getAsString();
 					if (valueType.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
-						Property property = SerializationTools.parseProperty(objValue, key);
+						Property property = SerializationTools.parseProperty(topLevelArray, key);
 						properties.add(property);
 					} else if (valueType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
-						Relationship relationship = SerializationTools.parseRelationship(objValue, key);
+						Relationship relationship = SerializationTools.parseRelationship(topLevelArray, key);
 						relationships.add(relationship);
 					} else if (valueType.equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
-						GeoProperty geoproperty = SerializationTools.parseGeoProperty(objValue, key);
+						GeoProperty geoproperty = SerializationTools.parseGeoProperty(topLevelArray, key);
 						geoproperties.add(geoproperty);
 					} else {
 						throw new JsonParseException("Unknown top level entry provided " + key);
 					}
+				} else {
+					throw new JsonParseException("Unknown top level entry provided " + key);
 				}
-			}
-		}
 
-		if (top.has(NGSIConstants.NGSI_LD_LOCATION)) {
-			JsonObject objValue = top.getAsJsonArray(NGSIConstants.NGSI_LD_LOCATION).get(0).getAsJsonObject();
-			location = SerializationTools.parseGeoProperty(objValue, NGSIConstants.NGSI_LD_LOCATION);
+				break;
+			}
+
 		}
-		if (top.has(NGSIConstants.NGSI_LD_OPERATION_SPACE)) {
-			JsonObject objValue = top.getAsJsonArray(NGSIConstants.NGSI_LD_OPERATION_SPACE).get(0).getAsJsonObject();
-			operationSpace = SerializationTools.parseGeoProperty(objValue, NGSIConstants.NGSI_LD_OPERATION_SPACE);
+		if (id == null && !allowIncomplete) {
+			throw new JsonParseException("ID field is mandertory");
 		}
-		if (top.has(NGSIConstants.NGSI_LD_OBSERVATION_SPACE)) {
-			JsonObject objValue = top.getAsJsonArray(NGSIConstants.NGSI_LD_OBSERVATION_SPACE).get(0).getAsJsonObject();
-			observationSpace = SerializationTools.parseGeoProperty(objValue, NGSIConstants.NGSI_LD_OBSERVATION_SPACE);
+		if (type == null && !allowIncomplete) {
+			throw new JsonParseException("Type field is mandertory");
 		}
 		Entity result = new Entity(id, location, observationSpace, operationSpace, properties, refToAccessControl,
 				relationships, type, geoproperties);
-		if (top.has(NGSIConstants.NGSI_LD_CREATED_AT)) {
-			Long timestamp = null;
-			try {
-				timestamp = SerializationTools.date2Long(top.getAsJsonArray(NGSIConstants.NGSI_LD_CREATED_AT).get(0)
-						.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
-			} catch (Exception e) {
-				throw new JsonParseException(e);
-			}
-			if (timestamp != null) {
-				result.setCreatedAt(timestamp);
-			}
-
+		if (createdAt != null) {
+			result.setCreatedAt(createdAt);
 		}
-		if (top.has(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-			Long timestamp = null;
-			try {
-				timestamp = SerializationTools.date2Long(top.getAsJsonArray(NGSIConstants.NGSI_LD_MODIFIED_AT).get(0)
-						.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
-			} catch (Exception e) {
-				throw new JsonParseException(e);
-			}
-
-			if (timestamp != null) {
-				result.setModifiedAt(timestamp);
-			}
-
+		if (modifiedAt != null) {
+			result.setModifiedAt(modifiedAt);
 		}
-
+		if (observedAt != null) {
+			result.setObservedAt(observedAt);
+		}
 		return result;
 	}
 

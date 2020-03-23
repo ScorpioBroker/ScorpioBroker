@@ -55,21 +55,21 @@ public class Entity {
 				this.relationships.add((Relationship) baseProp);
 			} else if (baseProp instanceof Property) {
 				if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
-					if (((Property) baseProp).getValue() != null) {
+					if (((Property) baseProp).getEntries() != null) {
 						createdAtProp = (Property) baseProp;
-						createdAt = (Long) createdAtProp.getValue().get(0);
+						createdAt = (Long) createdAtProp.getEntries().get(0).getValue();
 					}
 
 				} else if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-					if (((Property) baseProp).getValue() != null) {
+					if (((Property) baseProp).getEntries() != null) {
 						modifiedAtProp = (Property) baseProp;
-						modifiedAt = (Long) modifiedAtProp.getValue().get(0);
+						modifiedAt = (Long) modifiedAtProp.getEntries().get(0).getValue();
 					}
 
 				} else if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
-					if (((Property) baseProp).getValue() != null) {
+					if (((Property) baseProp).getEntries() != null) {
 						observedAtProp = (Property) baseProp;
-						observedAt = (Long) observedAtProp.getValue().get(0);
+						observedAt = (Long) observedAtProp.getEntries().get(0).getValue();
 					}
 				} else {
 					this.properties.add((Property) baseProp);
@@ -96,9 +96,9 @@ public class Entity {
 			createdAtProp.setId(new URI(NGSIConstants.NGSI_LD_CREATED_AT));
 			modifiedAtProp.setId(new URI(NGSIConstants.NGSI_LD_MODIFIED_AT));
 			observedAtProp.setId(new URI(NGSIConstants.NGSI_LD_OBSERVED_AT));
-			createdAtProp.setValue(null);
-			modifiedAtProp.setValue(null);
-			observedAtProp.setValue(null);
+			createdAtProp.setEntries(null);
+			modifiedAtProp.setEntries(null);
+			observedAtProp.setEntries(null);
 			allBaseProperties.add(createdAtProp);
 			allBaseProperties.add(modifiedAtProp);
 			allBaseProperties.add(observedAtProp);
@@ -132,7 +132,7 @@ public class Entity {
 
 	public void setObservedAt(Long observedAt) {
 		this.observedAt = observedAt;
-		observedAtProp.setSingleValue(observedAt);
+		observedAtProp.setSingleEntry(new PropertyEntry("observedAt", observedAt));
 	}
 
 	public URI getId() {
@@ -231,7 +231,7 @@ public class Entity {
 	}
 
 	public void setCreatedAt(Long createdAt) {
-		createdAtProp.setSingleValue(createdAt);
+		createdAtProp.setSingleEntry(new PropertyEntry("createdAt", createdAt));
 		this.createdAt = createdAt;
 	}
 
@@ -240,7 +240,7 @@ public class Entity {
 	}
 
 	public void setModifiedAt(Long modifiedAt) {
-		modifiedAtProp.setSingleValue(modifiedAt);
+		modifiedAtProp.setSingleEntry(new PropertyEntry("modifiedAt", modifiedAt));
 		this.modifiedAt = modifiedAt;
 	}
 

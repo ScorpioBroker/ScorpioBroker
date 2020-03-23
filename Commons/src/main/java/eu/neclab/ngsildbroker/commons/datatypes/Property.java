@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -11,9 +12,9 @@ import java.util.List;
 public class Property extends BaseProperty {
 
 	
-	private String unitCode;
+	
 
-	private List<Object> value;
+	private HashMap<String, PropertyEntry> instanceId2value;
 	public Property(){
 		type = "Property";
 	}
@@ -21,35 +22,30 @@ public class Property extends BaseProperty {
 	public void finalize() throws Throwable {
 
 	}
-
-	public String getUnitCode() {
-		return unitCode;
-	}
-
-	public void setUnitCode(String unitCode) {
-		this.unitCode = unitCode;
-	}
-
-	public void setSingleValue(Object value) {
-		ArrayList<Object> temp = new ArrayList<Object>();
-		temp.add(value);
-		setValue(temp);
+	
+	public void setSingleEntry(PropertyEntry value) {
+		HashMap<String, PropertyEntry> temp = new HashMap<String, PropertyEntry>();
+		temp.put(value.getDataSetId(), value);
+		setEntries(temp);
 	}
 	
-	public List<Object> getValue() {
-		return value;
+	public HashMap<String, PropertyEntry> getEntries() {
+		return instanceId2value;
 	}
 
-	public void setValue(List<Object> value) {
-		this.value = value;
+	public void setEntries(HashMap<String, PropertyEntry> value) {
+		this.instanceId2value = value;
 	}
+
+	
+	
+
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((unitCode == null) ? 0 : unitCode.hashCode());
-		result = prime * result + ((value == null) ? 0 : value.hashCode());
+		result = prime * result + ((instanceId2value == null) ? 0 : instanceId2value.hashCode());
 		return result;
 	}
 
@@ -62,17 +58,17 @@ public class Property extends BaseProperty {
 		if (getClass() != obj.getClass())
 			return false;
 		Property other = (Property) obj;
-		if (unitCode == null) {
-			if (other.unitCode != null)
+		if (instanceId2value == null) {
+			if (other.instanceId2value != null)
 				return false;
-		} else if (!unitCode.equals(other.unitCode))
-			return false;
-		if (value == null) {
-			if (other.value != null)
-				return false;
-		} else if (!value.equals(other.value))
+		} else if (!instanceId2value.equals(other.instanceId2value))
 			return false;
 		return true;
+	}
+
+	@Override
+	public boolean isMultiValue() {
+		return instanceId2value.size() != 1;
 	}
 
 	

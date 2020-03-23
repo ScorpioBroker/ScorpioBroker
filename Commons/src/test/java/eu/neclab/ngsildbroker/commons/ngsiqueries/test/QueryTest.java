@@ -15,6 +15,7 @@ import org.junit.Test;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.Property;
+import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.BadRequestException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -62,12 +63,12 @@ public class QueryTest {
 		Property stringProp = new Property();
 
 		stringProp.setId(new URI("http://mytestprop.org/teststring"));
-
-		stringProp.setSingleValue("test");
+		PropertyEntry propEntry = new PropertyEntry("test", "test");
+		stringProp.setSingleEntry(propEntry);
 		try {
-			stringProp.setCreatedAt(SerializationTools.date2Long(dateTime));
-			stringProp.setObservedAt(SerializationTools.date2Long(dateTime));
-			stringProp.setModifiedAt(SerializationTools.date2Long(dateTime));
+			propEntry.setCreatedAt(SerializationTools.date2Long(dateTime));
+			propEntry.setObservedAt(SerializationTools.date2Long(dateTime));
+			propEntry.setModifiedAt(SerializationTools.date2Long(dateTime));
 		} catch (Exception e1) {
 			throw new AssertionError();
 		}
@@ -99,7 +100,7 @@ public class QueryTest {
 		} catch (URISyntaxException e) {
 			// left Empty intentionally
 		}
-		stringProp.setSingleValue("test");
+		stringProp.setSingleEntry(new PropertyEntry("test", "test"));
 
 		String qString = "teststring==\"test\"";
 		String qInt = "testint==4";
@@ -110,15 +111,15 @@ public class QueryTest {
 
 		Property simpleStringProp = new Property();
 		simpleStringProp.setId(new URI("http://mytestprop.org/teststring"));
-		simpleStringProp.setSingleValue("d");
+		simpleStringProp.setSingleEntry(new PropertyEntry("test", "d"));
 
 		Property intProp = new Property();
 		intProp.setId(new URI("http://mytestprop.org/testint"));
-		intProp.setSingleValue(4);
+		intProp.setSingleEntry(new PropertyEntry("test", 4));
 
 		Property doubleProp = new Property();
 		doubleProp.setId(new URI("http://mytestprop.org/testdouble"));
-		doubleProp.setSingleValue(123.456);
+		doubleProp.setSingleEntry(new PropertyEntry("test", 123.456));
 
 		Property stringListProp = new Property();
 		stringListProp.setId(new URI("http://mytestprop.org/teststring"));
@@ -126,7 +127,7 @@ public class QueryTest {
 		stringList.add("something");
 		stringList.add("todo");
 		stringList.add("test");// success
-		stringListProp.setValue(stringList);
+		stringListProp.setSingleEntry(new PropertyEntry("test", stringList));
 
 		Property intListProp = new Property();
 		intListProp.setId(new URI("http://mytestprop.org/testint"));
@@ -135,7 +136,7 @@ public class QueryTest {
 		intList.add(23);
 		intList.add(42);
 		intList.add(123);// success
-		intListProp.setValue(intList);
+		intListProp.setSingleEntry(new PropertyEntry("test", intList));
 
 		Property doubleListProp = new Property();
 		doubleListProp.setId(new URI("http://mytestprop.org/testdouble"));
@@ -143,7 +144,7 @@ public class QueryTest {
 		doubleList.add(23.45);
 		doubleList.add(42.33);
 		doubleList.add(123.456);// success
-		doubleListProp.setValue(intList);
+		doubleListProp.setSingleEntry(new PropertyEntry("test", doubleList));
 		try {
 			QueryTerm term = parser.parseQuery(qString, null);
 			term.setParamsResolver(paramResolver);
@@ -185,7 +186,7 @@ public class QueryTest {
 	public void testUnequals() throws URISyntaxException {
 		Property stringProp = new Property();
 		stringProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringProp.setSingleValue("test123");
+		stringProp.setSingleEntry(new PropertyEntry("test", "test123"));
 
 		String qString = "teststring!=\"test\"";
 		String qInt = "testint!=4";
@@ -196,15 +197,15 @@ public class QueryTest {
 
 		Property simpleStringProp = new Property();
 		simpleStringProp.setId(new URI("http://mytestprop.org/teststring"));
-		simpleStringProp.setSingleValue("f");
+		simpleStringProp.setSingleEntry(new PropertyEntry("test", "f"));
 
 		Property intProp = new Property();
 		intProp.setId(new URI("http://mytestprop.org/testint"));
-		intProp.setSingleValue(7);
+		intProp.setSingleEntry(new PropertyEntry("test", 7));
 
 		Property doubleProp = new Property();
 		doubleProp.setId(new URI("http://mytestprop.org/testdouble"));
-		doubleProp.setSingleValue(143.456);
+		doubleProp.setSingleEntry(new PropertyEntry("test", 143.456));
 
 		Property stringListFalseProp = new Property();
 		stringListFalseProp.setId(new URI("http://mytestprop.org/teststring"));
@@ -212,7 +213,7 @@ public class QueryTest {
 		stringListFalse.add("something");
 		stringListFalse.add("todo");
 		stringListFalse.add("test");// success
-		stringListFalseProp.setValue(stringListFalse);
+		stringListFalseProp.setSingleEntry(new PropertyEntry("test", stringListFalse));
 
 		Property intListFalseProp = new Property();
 		intListFalseProp.setId(new URI("http://mytestprop.org/testint"));
@@ -221,7 +222,7 @@ public class QueryTest {
 		intListFalse.add(23);
 		intListFalse.add(42);
 		intListFalse.add(123);// success
-		intListFalseProp.setValue(intListFalse);
+		intListFalseProp.setSingleEntry(new PropertyEntry("test", intListFalse));
 
 		// Property doubleListFalseProp = new Property();
 		// doubleListFalseProp.setId(new URI("http://mytestprop.org/testdouble"));
@@ -236,7 +237,7 @@ public class QueryTest {
 		stringList.add("something");
 		stringList.add("todo");
 		// stringList.add("test");//success
-		stringListProp.setValue(stringList);
+		stringListProp.setSingleEntry(new PropertyEntry("test", stringList));
 
 		Property intListProp = new Property();
 		intListProp.setId(new URI("http://mytestprop.org/testint"));
@@ -245,7 +246,7 @@ public class QueryTest {
 		intList.add(23);
 		intList.add(42);
 		// intList.add(123);//success
-		intListProp.setValue(intList);
+		intListProp.setSingleEntry(new PropertyEntry("test", intList));
 		try {
 			QueryTerm term = parser.parseQuery(qString, null);
 			term.setParamsResolver(paramResolver);
@@ -295,27 +296,27 @@ public class QueryTest {
 	public void testSmallerEquals() throws URISyntaxException {
 		Property stringProp = new Property();
 		stringProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringProp.setSingleValue("test");
+		stringProp.setSingleEntry(new PropertyEntry("test", "test"));
 
 		Property stringSProp = new Property();
 		stringSProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringSProp.setSingleValue("tes");
+		stringSProp.setSingleEntry(new PropertyEntry("test", "tes"));
 
 		Property stringBProp = new Property();
 		stringBProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringBProp.setSingleValue("test123");
+		stringBProp.setSingleEntry(new PropertyEntry("test", "test123"));
 
 		Property intProp = new Property();
 		intProp.setId(new URI("http://mytestprop.org/testint"));
-		intProp.setSingleValue(4);
+		intProp.setSingleEntry(new PropertyEntry("test", 4));
 
 		Property intSProp = new Property();
 		intSProp.setId(new URI("http://mytestprop.org/testint"));
-		intSProp.setSingleValue(3);
+		intSProp.setSingleEntry(new PropertyEntry("test", 3));
 
 		Property intBProp = new Property();
 		intBProp.setId(new URI("http://mytestprop.org/testint"));
-		intBProp.setSingleValue(5);
+		intBProp.setSingleEntry(new PropertyEntry("test", 5));
 		String qString = "teststring<=\"test\"";
 		String qInt = "testint<=4";
 		try {
@@ -340,27 +341,27 @@ public class QueryTest {
 	public void testBiggerEquals() throws URISyntaxException {
 		Property stringProp = new Property();
 		stringProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringProp.setSingleValue("test");
+		stringProp.setSingleEntry(new PropertyEntry("test", "test"));
 
 		Property stringSProp = new Property();
 		stringSProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringSProp.setSingleValue("tes");
+		stringSProp.setSingleEntry(new PropertyEntry("test", "tes"));
 
 		Property stringBProp = new Property();
 		stringBProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringBProp.setSingleValue("test123");
+		stringBProp.setSingleEntry(new PropertyEntry("test", "test123"));
 
 		Property intProp = new Property();
 		intProp.setId(new URI("http://mytestprop.org/testint"));
-		intProp.setSingleValue(4);
+		intProp.setSingleEntry(new PropertyEntry("test", 4));
 
 		Property intSProp = new Property();
 		intSProp.setId(new URI("http://mytestprop.org/testint"));
-		intSProp.setSingleValue(3);
+		intSProp.setSingleEntry(new PropertyEntry("test", 3));
 
 		Property intBProp = new Property();
 		intBProp.setId(new URI("http://mytestprop.org/testint"));
-		intBProp.setSingleValue(5);
+		intBProp.setSingleEntry(new PropertyEntry("test", 5));
 		String qString = "teststring>=\"test\"";
 		String qInt = "testint>=4";
 		try {
@@ -384,27 +385,27 @@ public class QueryTest {
 	public void testSmaller() throws URISyntaxException {
 		Property stringProp = new Property();
 		stringProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringProp.setSingleValue("test");
+		stringProp.setSingleEntry(new PropertyEntry("test", "test"));
 
 		Property stringSProp = new Property();
 		stringSProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringSProp.setSingleValue("tes");
+		stringSProp.setSingleEntry(new PropertyEntry("test", "tes"));
 
 		Property stringBProp = new Property();
 		stringBProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringBProp.setSingleValue("test123");
+		stringBProp.setSingleEntry(new PropertyEntry("test", "test123"));
 
 		Property intProp = new Property();
 		intProp.setId(new URI("http://mytestprop.org/testint"));
-		intProp.setSingleValue(4);
+		intProp.setSingleEntry(new PropertyEntry("test", 4));
 
 		Property intSProp = new Property();
 		intSProp.setId(new URI("http://mytestprop.org/testint"));
-		intSProp.setSingleValue(3);
+		intSProp.setSingleEntry(new PropertyEntry("test", 3));
 
 		Property intBProp = new Property();
 		intBProp.setId(new URI("http://mytestprop.org/testint"));
-		intBProp.setSingleValue(5);
+		intBProp.setSingleEntry(new PropertyEntry("test", 5));
 		String qString = "teststring<\"test\"";
 		String qInt = "testint<4";
 		try {
@@ -428,27 +429,27 @@ public class QueryTest {
 	public void testBigger() throws URISyntaxException {
 		Property stringProp = new Property();
 		stringProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringProp.setSingleValue("test");
+		stringProp.setSingleEntry(new PropertyEntry("test", "test"));
 
 		Property stringSProp = new Property();
 		stringSProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringSProp.setSingleValue("tes");
+		stringSProp.setSingleEntry(new PropertyEntry("test", "tes"));
 
 		Property stringBProp = new Property();
 		stringBProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringBProp.setSingleValue("test123");
+		stringBProp.setSingleEntry(new PropertyEntry("test", "test123"));
 
 		Property intProp = new Property();
 		intProp.setId(new URI("http://mytestprop.org/testint"));
-		intProp.setSingleValue(4);
+		intProp.setSingleEntry(new PropertyEntry("test", 4));
 
 		Property intSProp = new Property();
 		intSProp.setId(new URI("http://mytestprop.org/testint"));
-		intSProp.setSingleValue(3);
+		intSProp.setSingleEntry(new PropertyEntry("test", 3));
 
 		Property intBProp = new Property();
 		intBProp.setId(new URI("http://mytestprop.org/testint"));
-		intBProp.setSingleValue(5);
+		intBProp.setSingleEntry(new PropertyEntry("test", 5));
 		String qString = "teststring>\"test\"";
 		String qInt = "testint>4";
 		try {
@@ -472,11 +473,11 @@ public class QueryTest {
 	public void testPattern() throws URISyntaxException {
 		Property stringProp = new Property();
 		stringProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringProp.setSingleValue("test32");
+		stringProp.setSingleEntry(new PropertyEntry("test", "test32"));
 
 		Property stringNoMatchProp = new Property();
 		stringNoMatchProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringNoMatchProp.setSingleValue("test");
+		stringNoMatchProp.setSingleEntry(new PropertyEntry("test", "test"));
 
 		String qString = "teststring~=\\w+32";
 		try {
@@ -493,11 +494,11 @@ public class QueryTest {
 	public void testNotPattern() throws Exception {
 		Property stringProp = new Property();
 		stringProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringProp.setSingleValue("test32");
+		stringProp.setSingleEntry(new PropertyEntry("test", "test32"));
 
 		Property stringNoMatchProp = new Property();
 		stringNoMatchProp.setId(new URI("http://mytestprop.org/teststring"));
-		stringNoMatchProp.setSingleValue("test");
+		stringNoMatchProp.setSingleEntry(new PropertyEntry("test", "test"));
 
 		String qString = "teststring!~=\\w+32";
 		try {
@@ -522,7 +523,7 @@ public class QueryTest {
 		ArrayList<Object> valueList = new ArrayList<Object>();
 		valueList.add(1111);
 		value.put("http://mytestprop.org/level1", valueList);
-		testProp.setSingleValue(value);
+		testProp.setSingleEntry(new PropertyEntry("test", value));
 		try {
 			QueryTerm term = parser.parseQuery(q, null);
 			term.setParamsResolver(paramResolver);
@@ -539,33 +540,29 @@ public class QueryTest {
 			valueList = new ArrayList<Object>();
 			valueList.add(value2);
 			value.put("http://mytestprop.org/level1", valueList);
-			testProp.setSingleValue(value);
+			testProp.setSingleEntry(new PropertyEntry("test", value));
 			term = parser.parseQuery(q, null);
 			term.setParamsResolver(paramResolver);
 			assertTrue(term.calculate(testProp));
-
-			q = "testattrib.subattrib[level1][level2]==3333";
-			Property topProp = new Property();
-			topProp.setId(new URI("http://mytestprop.org/testattrib"));
-
-			testProp = new Property();
-			testProp.setId(new URI("http://mytestprop.org/subattrib"));
-			value2 = new HashMap<String, List<Object>>();
-			valueList2 = new ArrayList<Object>();
-			valueList2.add(3333);
-			value2.put("http://mytestprop.org/level2", valueList2);
-			value = new HashMap<String, List<Object>>();
-			valueList = new ArrayList<Object>();
-			valueList.add(value2);
-			value.put("http://mytestprop.org/level1", valueList);
-			testProp.setSingleValue(value);
-
-			List<Property> properties = new ArrayList<Property>();
-			properties.add(testProp);
-			topProp.setProperties(properties);
-			term = parser.parseQuery(q, null);
-			term.setParamsResolver(paramResolver);
-			assertTrue(term.calculate(topProp));
+//not a possible query at the moment
+			/*
+			 * q = "testattrib.subattrib[level1][level2]==3333"; Property topProp = new
+			 * Property(); topProp.setId(new URI("http://mytestprop.org/testattrib"));
+			 * 
+			 * testProp = new Property(); testProp.setId(new
+			 * URI("http://mytestprop.org/subattrib")); value2 = new HashMap<String,
+			 * List<Object>>(); valueList2 = new ArrayList<Object>(); valueList2.add(3333);
+			 * value2.put("http://mytestprop.org/level2", valueList2); value = new
+			 * HashMap<String, List<Object>>(); valueList = new ArrayList<Object>();
+			 * valueList.add(value2); value.put("http://mytestprop.org/level1", valueList);
+			 * PropertyEntry entry = new PropertyEntry("test", value);
+			 * testProp.setSingleEntry(entry);
+			 * 
+			 * List<Property> properties = new ArrayList<Property>();
+			 * properties.add(testProp); entry.setProperties(properties); term =
+			 * parser.parseQuery(q, null); term.setParamsResolver(paramResolver);
+			 * assertTrue(term.calculate(topProp));
+			 */
 		} catch (ResponseException e) {
 			Assert.fail(e.getLocalizedMessage());
 		}
@@ -576,31 +573,31 @@ public class QueryTest {
 		String q = "(test1==\"teststring\";(test2>=12345|test3!=\"testst123ring\"))|test4<=12345";
 		Property test1 = new Property();
 		test1.setId(new URI("http://mytestprop.org/test1"));
-		test1.setSingleValue("teststring");
+		test1.setSingleEntry(new PropertyEntry("test", "teststring"));
 		Property test1Not = new Property();
 		test1Not.setId(new URI("http://mytestprop.org/test1"));
-		test1Not.setSingleValue("teststringasdasdas");
+		test1Not.setSingleEntry(new PropertyEntry("test", "teststringasdasdas"));
 
 		Property test2 = new Property();
 		test2.setId(new URI("http://mytestprop.org/test2"));
-		test2.setSingleValue(12345);
+		test2.setSingleEntry(new PropertyEntry("test", 12345));
 		Property test2Not = new Property();
 		test2Not.setId(new URI("http://mytestprop.org/test2"));
-		test2Not.setSingleValue(1234);
+		test2Not.setSingleEntry(new PropertyEntry("test", 1234));
 
 		Property test3 = new Property();
 		test3.setId(new URI("http://mytestprop.org/test3"));
-		test3.setSingleValue("teststring");
+		test3.setSingleEntry(new PropertyEntry("test", "teststring"));
 		Property test3Not = new Property();
 		test3Not.setId(new URI("http://mytestprop.org/test3"));
-		test3Not.setSingleValue("testst123ring");
+		test3Not.setSingleEntry(new PropertyEntry("test", "testst123ring"));
 
 		Property test4 = new Property();
 		test4.setId(new URI("http://mytestprop.org/test4"));
-		test4.setSingleValue(12345);
+		test4.setSingleEntry(new PropertyEntry("test", 12345));
 		Property test4Not = new Property();
 		test4Not.setId(new URI("http://mytestprop.org/test4"));
-		test4Not.setSingleValue(123456);
+		test4Not.setSingleEntry(new PropertyEntry("test", 123456));
 
 		ArrayList<BaseProperty> allValid = new ArrayList<BaseProperty>();
 		allValid.add(test1);

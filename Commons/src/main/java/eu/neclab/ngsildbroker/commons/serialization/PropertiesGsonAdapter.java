@@ -36,7 +36,7 @@ public class PropertiesGsonAdapter implements JsonDeserializer<List<Property>>, 
 		JsonObject top = json.getAsJsonObject();
 		Set<Entry<String, JsonElement>> jsonProperties = top.entrySet();
 		for(Entry<String, JsonElement> entry: jsonProperties) {
-			result.add(SerializationTools.parseProperty(entry.getValue().getAsJsonObject(), entry.getKey()));
+			result.add(SerializationTools.parseProperty(entry.getValue().getAsJsonArray(), entry.getKey()));
 		}
 		return result;
 	}

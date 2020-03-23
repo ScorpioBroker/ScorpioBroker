@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.filosganga.geogson.model.Geometry;
 import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
 
@@ -759,13 +760,13 @@ public class EntityService {
 		// location node
 		GeoProperty geoLocationProperty = entity.getLocation();
 		if (geoLocationProperty != null) {
-			csourceRegistration.setLocation(geoLocationProperty.getGeoValue());
+			csourceRegistration.setLocation(getCoveringGeoValue(geoLocationProperty));
 		}
 
 		// Information node
-		Set<String> propertiesList = entity.getProperties().stream().map(Property::getName).collect(Collectors.toSet());
+		Set<String> propertiesList = entity.getProperties().stream().map(Property::getIdString).collect(Collectors.toSet());
 
-		Set<String> relationshipsList = entity.getRelationships().stream().map(Relationship::getName)
+		Set<String> relationshipsList = entity.getRelationships().stream().map(Relationship::getIdString)
 				.collect(Collectors.toSet());
 
 		entities.add(new EntityInfo(entity.getId(), null, entity.getType()));
@@ -782,6 +783,11 @@ public class EntityService {
 		csourceRegistration.setTimestamp(timestamp);
 		logger.trace("getCSourceRegistrationFromJson() :: completed");
 		return csourceRegistration;
+	}
+
+	private Geometry<?> getCoveringGeoValue(GeoProperty geoLocationProperty) {
+		// TODO should be done better to cover the actual area
+		return geoLocationProperty.getEntries().values().iterator().next().getGeoValue();
 	}
 
 	public URI getResourceURL(String resource) throws URISyntaxException {

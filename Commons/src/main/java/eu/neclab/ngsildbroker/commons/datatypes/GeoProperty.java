@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.HashMap;
+
 import com.github.filosganga.geogson.model.Geometry;
 
 /**
@@ -10,10 +12,8 @@ import com.github.filosganga.geogson.model.Geometry;
 public class GeoProperty extends BaseProperty {
 
 	
-	private String value;
+	HashMap<String, GeoPropertyEntry> entries = new HashMap<String, GeoPropertyEntry>();
 	
-	private Geometry<?> geoValue;
-
 	public GeoProperty(){
 //		this.type = "GeoProperty";
 	}
@@ -22,37 +22,24 @@ public class GeoProperty extends BaseProperty {
 
 	}
 
-	public String getType() {
-		return type;
+
+	
+	
+	public HashMap<String, GeoPropertyEntry> getEntries() {
+		return entries;
 	}
 
-	public void setType(String type) {
-		this.type = type;
+	public void setEntries(HashMap<String, GeoPropertyEntry> entries) {
+		this.entries = entries;
 	}
-
-	public String getValue() {
-		return value;
-	}
-
-	public void setValue(String string) {
-		this.value = string;
-	}
-
-
-	public Geometry<?> getGeoValue() {
-		return geoValue;
-	}
-
-	public void setGeoValue(Geometry<?> geoValue) {
-		this.geoValue = geoValue;
-	}
+	
+	
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((geoValue == null) ? 0 : geoValue.hashCode());
-		result = prime * result + ((value == null) ? 0 : value.hashCode());
+		int result = super.hashCode();
+		result = prime * result + ((entries == null) ? 0 : entries.hashCode());
 		return result;
 	}
 
@@ -60,22 +47,22 @@ public class GeoProperty extends BaseProperty {
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (obj == null)
+		if (!super.equals(obj))
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
 		GeoProperty other = (GeoProperty) obj;
-		if (geoValue == null) {
-			if (other.geoValue != null)
+		if (entries == null) {
+			if (other.entries != null)
 				return false;
-		} else if (!geoValue.equals(other.geoValue))
-			return false;
-		if (value == null) {
-			if (other.value != null)
-				return false;
-		} else if (!value.equals(other.value))
+		} else if (!entries.equals(other.entries))
 			return false;
 		return true;
+	}
+
+	@Override
+	public boolean isMultiValue() {
+		return entries.size() != 1;
 	}
 	
 

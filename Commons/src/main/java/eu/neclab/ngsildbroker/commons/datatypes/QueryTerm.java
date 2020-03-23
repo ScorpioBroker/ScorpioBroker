@@ -4,6 +4,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
@@ -78,6 +80,7 @@ public class QueryTerm {
 
 	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant)
 			throws ResponseException {
+
 		if (!attribute.matches(URI) && attribute.contains(".")) {
 			String[] splittedAttrib = attribute.split("\\.");
 			ArrayList<BaseProperty> newProps = new ArrayList<BaseProperty>();
@@ -85,18 +88,14 @@ public class QueryTerm {
 			if (expanded == null) {
 				return false;
 			}
-			BaseProperty prop = getProperty(properties, expanded);
-			if (prop == null) {
+			List<BaseProperty> potentialMatches = getMatchingProperties(properties, expanded);
+			if (potentialMatches == null) {
 				return false;
 			}
-
-			if (prop.getProperties() != null) {
-				newProps.addAll(prop.getProperties());
+			for (BaseProperty potentialMatch : potentialMatches) {
+				newProps.addAll(getSubAttributes(potentialMatch));
 			}
-			if (prop.getRelationships() != null) {
-				newProps.addAll(prop.getRelationships());
-			}
-			newProps.addAll(getAllNGSIBaseProperties(prop));
+			newProps.addAll(potentialMatches);
 
 			String newAttrib;
 			if (splittedAttrib.length > 2) {
@@ -110,221 +109,269 @@ public class QueryTerm {
 			if (attribute.contains("[")) {
 				compound = attribute.split("\\[");
 				attribute = compound[0];
+				compound = Arrays.copyOfRange(compound, 1, compound.length);
 			}
 			String myAttribName = expandAttributeName(attribute);
 			if (myAttribName == null) {
 				return false;
 			}
-			BaseProperty myProperty = getProperty(properties, myAttribName);
-			List<Object> value = null;
-			operant = operant.replace("\"", "");
-			if (myProperty == null) {
-				return false;
-			}
-			if (TIME_PROPS.contains(myAttribName)) {
-				try {
-					operant = SerializationTools.date2Long(operant).toString();
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
-				}
-			}
-			value = getValue(myProperty);
-			if (value == null) {
-				return false;
-			}
-			if (compound != null) {
-				value = getCompoundValue(value, compound);
-				if (value == null) {
-					return false;
-				}
-			}
-
-			if (operant.matches(RANGE)) {
-				String[] range = operant.split("\\.\\.");
-				for (Object item : value) {
-					switch (operator) {
-					case "==":
-						if (range[0].compareTo(item.toString()) <= 0 && range[1].compareTo(item.toString()) >= 0) {
-							return true;
-						}
-						break;
-					case "!=":
-						if (range[0].compareTo(item.toString()) <= 0 && range[1].compareTo(item.toString()) <= 0) {
-							return true;
-						}
-						break;
-					}
-				}
-				return false;
-
-			} else if (operant.matches(LIST)) {
-				List<String> listOfOperants = Arrays.asList(operant.split(","));
-				switch (operator) {
-				case "!=":
-					for (String listOperant : listOfOperants) {
-						if (value.contains(listOperant)) {
-							return false;
-						}
-					}
-					return true;
-				case "==":
-					for (String listOperant : listOfOperants) {
-						if (value.contains(listOperant)) {
-							return true;
-						}
-					}
-					return false;
-				default:
+			boolean finalReturnValue = false;
+			int index = NGSIConstants.SPECIAL_PROPERTIES.indexOf(myAttribName);
+			Object value;
+			List<BaseProperty> myProperties;
+			if (index == -1) {
+				myProperties = getMatchingProperties(properties, myAttribName);
+				if (myProperties == null) {
 					return false;
 				}
 			} else {
-				boolean finalReturnValue = false;
-				for (Object item : value) {
-					switch (operator) {
-					case "==":
-						if (operant.equals(item.toString())) {
-							return true;
-						}
+				myProperties = properties;
+			}
+			for (BaseProperty myProperty : myProperties) {
+				Iterator it = myProperty.getEntries().values().iterator();
+				while (it.hasNext()) {
+					BaseEntry next = (BaseEntry) it.next();
+					boolean skip = false;
+					switch (index) {
+					case 0:
+						// NGSI_LD_CREATED_AT
+						value = next.getCreatedAt();
 						break;
-					case "!=":
-						finalReturnValue = true;
-						if (operant.equals(item.toString())) {
-							return false;
-						}
+					case 1:
+						// NGSI_LD_OBSERVED_AT
+						value = next.getObservedAt();
 						break;
-					case ">=":
-						if (item.toString().compareTo(operant) >= 0) {
-							return true;
-						}
+					case 2:
+						// NGSI_LD_MODIFIED_AT
+						value = next.getModifiedAt();
 						break;
-					case "<=":
-						if (item.toString().compareTo(operant) <= 0) {
-							return true;
+					case 3:
+						// NGSI_LD_DATA_SET_ID
+						value = next.getCreatedAt();
+					case 4:
+						// NGSI_LD_UNIT_CODE
+						if (next instanceof PropertyEntry) {
+							value = ((PropertyEntry) next).getUnitCode();
 						}
-						break;
-					case ">":
-						if (item.toString().compareTo(operant) > 0) {
-							return true;
-						}
-						break;
-					case "<":
-						if (item.toString().compareTo(operant) < 0) {
-							return true;
-						}
-						break;
-					case "~=":
-						if (item.toString().matches(operant)) {
-							return true;
-						}
-						break;
-					case "!~=":
-						finalReturnValue = true;
-						if (item.toString().matches(operant)) {
-							return false;
+					default:
+
+						value = getValue(next);
+						if (compound != null) {
+							value = getCompoundValue(value, compound);
 						}
 						break;
 					}
+					if (value == null) {
+						break;
+					}
+					operant = operant.replace("\"", "");
+					if (TIME_PROPS.contains(myAttribName)) {
+						try {
+							operant = SerializationTools.date2Long(operant).toString();
+						} catch (Exception e) {
+							throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
+						}
+					}
+					if (operant.matches(RANGE)) {
+						String[] range = operant.split("\\.\\.");
+
+						switch (operator) {
+						case "==":
+							if (range[0].compareTo(value.toString()) <= 0
+									&& range[1].compareTo(value.toString()) >= 0) {
+								return true;
+							}
+							break;
+						case "!=":
+							if (range[0].compareTo(value.toString()) <= 0
+									&& range[1].compareTo(value.toString()) <= 0) {
+								return true;
+							}
+							break;
+						}
+
+						return false;
+
+					} else if (operant.matches(LIST)) {
+						List<String> listOfOperants = Arrays.asList(operant.split(","));
+						if (!(value instanceof List)) {
+							return false;
+						}
+						List<Object> myList = (List<Object>) value;
+						switch (operator) {
+						case "!=":
+							for (String listOperant : listOfOperants) {
+								if (myList.contains(listOperant)) {
+									return false;
+								}
+							}
+							return true;
+						case "==":
+							for (String listOperant : listOfOperants) {
+								if (myList.contains(listOperant)) {
+									return true;
+								}
+							}
+							return false;
+						default:
+							return false;
+						}
+					} else {
+						switch (operator) {
+						case "==":
+							if (value instanceof List) {
+								return listContains((List) value, operant);
+							}
+							if (operant.equals(value.toString())) {
+								return true;
+							}
+							break;
+						case "!=":
+							finalReturnValue = true;
+							if (value instanceof List) {
+								return !listContains((List) value, operant);
+							}
+							if (operant.equals(value.toString())) {
+								return false;
+							}
+							break;
+						case ">=":
+							if (value.toString().compareTo(operant) >= 0) {
+								return true;
+							}
+							break;
+						case "<=":
+							if (value.toString().compareTo(operant) <= 0) {
+								return true;
+							}
+							break;
+						case ">":
+							if (value.toString().compareTo(operant) > 0) {
+								return true;
+							}
+							break;
+						case "<":
+							if (value.toString().compareTo(operant) < 0) {
+								return true;
+							}
+							break;
+						case "~=":
+							if (value.toString().matches(operant)) {
+								return true;
+							}
+							break;
+						case "!~=":
+							finalReturnValue = true;
+							if (value.toString().matches(operant)) {
+								return false;
+							}
+							break;
+						}
+
+					}
+
 				}
-				return finalReturnValue;
 
 			}
+			return finalReturnValue;
+
 		}
 
 	}
 
-	private List<Property> getAllNGSIBaseProperties(BaseProperty prop) {
-		ArrayList<Property> result = new ArrayList<Property>();
-		try {
-			if (prop.getCreatedAt() != -1l) {
-				Property createdAtProp = new Property();
-				createdAtProp.setId(new URI(NGSIConstants.NGSI_LD_CREATED_AT));
-				createdAtProp.setSingleValue(prop.getCreatedAt());
-				result.add(createdAtProp);
+	private boolean listContains(List value, String operant) {
+		for (Object entry : value) {
+			if (entry.toString().equals(operant)) {
+				return true;
 			}
-			if (prop.getObservedAt() != -1l) {
-				Property observedAtProp = new Property();
-				observedAtProp.setId(new URI(NGSIConstants.NGSI_LD_OBSERVED_AT));
-				observedAtProp.setSingleValue(prop.getObservedAt());
-				result.add(observedAtProp);
-			}
+		}
+		return false;
+	}
 
-			if (prop.getModifiedAt() != -1l) {
-				Property modifiedAtProp = new Property();
-				modifiedAtProp.setId(new URI(NGSIConstants.NGSI_LD_MODIFIED_AT));
-				modifiedAtProp.setSingleValue(prop.getModifiedAt());
-				result.add(modifiedAtProp);
+	private Collection<? extends BaseProperty> getSubAttributes(BaseProperty potentialMatch) {
+		ArrayList<BaseProperty> result = new ArrayList<BaseProperty>();
+		Iterator it = potentialMatch.getEntries().values().iterator();
+		while (it.hasNext()) {
+			BaseEntry next = (BaseEntry) it.next();
+			if (next.getRelationships() != null) {
+				result.addAll(next.getRelationships());
 			}
-			if (prop instanceof Property) {
-				Property realProp = (Property) prop;
-				if (realProp.getUnitCode() != null && realProp.getUnitCode().equals("")) {
-					Property unitCodeProp = new Property();
-					unitCodeProp.setId(new URI(NGSIConstants.NGSI_LD_UNIT_CODE));
-					unitCodeProp.setSingleValue(realProp.getUnitCode());
-					result.add(unitCodeProp);
-				}
+			if (next.getProperties() != null) {
+				result.addAll(next.getProperties());
 			}
-		} catch (URISyntaxException e) {
-			// Left Empty intentionally. Should never happen since the URI constants are
-			// controlled
 		}
 		return result;
 	}
 
-	private List<Object> getCompoundValue(List<Object> value, String[] compound) throws ResponseException {
-		List<Object> toSearch = value;
-		for (int i = 1; i < compound.length; i++) {
-			ArrayList<Object> newToSearch = new ArrayList<Object>();
-			for (Object obj : toSearch) {
-				if (obj instanceof Map) {
-					@SuppressWarnings("unchecked")
-					Map<String, List<Object>> temp = (Map<String, List<Object>>) obj;
-					String key = expandAttributeName(compound[i].replaceAll("\\]", ""));
-					if (temp.containsKey(key)) {
-						newToSearch.addAll(temp.get(key));
-					}
-				} else {
-					continue;
-				}
-			}
-			toSearch = newToSearch;
-		}
-		if (toSearch.isEmpty()) {
+	/*
+	 * private List<Property> getAllNGSIBaseProperties(BaseProperty prop) {
+	 * ArrayList<Property> result = new ArrayList<Property>(); try { if
+	 * (prop.getCreatedAt() != -1l) { Property createdAtProp = new Property();
+	 * createdAtProp.setId(new URI(NGSIConstants.NGSI_LD_CREATED_AT));
+	 * createdAtProp.setSingleEntry(new PropertyEntry("createdAt",
+	 * prop.getCreatedAt())); result.add(createdAtProp); } if (prop.getObservedAt()
+	 * != -1l) { Property observedAtProp = new Property(); observedAtProp.setId(new
+	 * URI(NGSIConstants.NGSI_LD_OBSERVED_AT)); observedAtProp.setSingleEntry(new
+	 * PropertyEntry("observerAt", prop.getObservedAt()));
+	 * result.add(observedAtProp); }
+	 * 
+	 * if (prop.getModifiedAt() != -1l) { Property modifiedAtProp = new Property();
+	 * modifiedAtProp.setId(new URI(NGSIConstants.NGSI_LD_MODIFIED_AT));
+	 * modifiedAtProp.setSingleEntry(new PropertyEntry("modifiedAt",
+	 * prop.getModifiedAt())); result.add(modifiedAtProp); } if (prop instanceof
+	 * Property) { Property realProp = (Property) prop; if (realProp.getUnitCode()
+	 * != null && realProp.getUnitCode().equals("")) { Property unitCodeProp = new
+	 * Property(); unitCodeProp.setId(new URI(NGSIConstants.NGSI_LD_UNIT_CODE));
+	 * unitCodeProp.setSingleEntry(new PropertyEntry("unitCode",
+	 * realProp.getUnitCode())); result.add(unitCodeProp); } } } catch
+	 * (URISyntaxException e) { // Left Empty intentionally. Should never happen
+	 * since the URI constants are // controlled } return result; }
+	 */
+
+	private Object getCompoundValue(Object value, String[] compound) throws ResponseException {
+		if (!(value instanceof Map)) {
 			return null;
 		}
-		return toSearch;
+		Map complexValue = (Map) value;
+		String firstElement = expandAttributeName(compound[0].replaceAll("\\]", "").replaceAll("\\[", ""));
+		Object potentialResult = complexValue.get(firstElement);
+		if (potentialResult == null) {
+			return null;
+		}
+		if (potentialResult instanceof List) {
+			potentialResult = ((List) potentialResult).get(0);
+		}
+		if (compound.length == 1) {
+			return potentialResult;
+		}
+
+		return getCompoundValue(potentialResult, Arrays.copyOfRange(compound, 1, compound.length));
 	}
 
-	private List<Object> getValue(BaseProperty myProperty) {
-		List<Object> result = new ArrayList<Object>();
-		if (myProperty instanceof Property) {
-			for (Object item : ((Property) myProperty).getValue()) {
-				if (item instanceof TypedValue) {
-					result.add(((TypedValue) item).getValue());
-				} else {
-					result.add(item);
-				}
-			}
-			return result;
-		} else if (myProperty instanceof Relationship) {
-
-			result.add(((Relationship) myProperty).getObject().toString());
-			return result;
+	private Object getValue(BaseEntry myEntry) {
+		if (myEntry instanceof PropertyEntry) {
+			return ((PropertyEntry) myEntry).getValue();
+		} else if (myEntry instanceof RelationshipEntry) {
+			return ((RelationshipEntry) myEntry).getObject().toString();
 		}
 		return null;
 	}
 
-	private BaseProperty getProperty(List<BaseProperty> properties, String myAttribName) {
+	private List<BaseProperty> getMatchingProperties(List<BaseProperty> properties, String myAttribName) {
+		ArrayList<BaseProperty> result = new ArrayList<BaseProperty>();
 		if (properties == null || properties.isEmpty()) {
 			return null;
 		}
 
 		for (BaseProperty property : properties) {
 			if (property.getId().toString().equals(myAttribName)) {
-				return property;
+				result.add(property);
 			}
 		}
-
-		return null;
+		if (result.isEmpty()) {
+			return null;
+		}
+		return result;
 	}
 
 	private String expandAttributeName(String attribute) throws ResponseException {

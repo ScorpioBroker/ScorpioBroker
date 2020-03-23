@@ -79,7 +79,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_WATCHED_ATTRIBUTES_SHORT = "watchedAttributes";
 	public final static String NGSI_LD_ENTITIES_SHORT = "entities";
 	public final static String NGSI_LD_ATTRIBUTES_SHORT = "attributes";
-	
+	public final static String NGSI_LD_NAME = "https://uri.etsi.org/ngsi-ld/name";
 	public final static String NGSI_LD_THROTTLING = "https://uri.etsi.org/ngsi-ld/throttling";
 	public final static String NGSI_LD_TIME_INTERVAL = "https://uri.etsi.org/ngsi-ld/timeInterval";
 	public final static String NGSI_LD_EXPIRES = "https://uri.etsi.org/ngsi-ld/expires";
@@ -174,5 +174,5 @@ public interface NGSIConstants {
 	public static final HashMap<Integer, String> HTTP_CODE_2_NGSI_ERROR = new HashMap<Integer, String>();
 	public static final List<String> ALLOWED_GEOMETRIES = Arrays.asList("Point", "MultiPoint", "LineString","MultiLineString", "Polygon", "MultiPolygon");
 	public static final List<String> ALLOWED_GEOREL = Arrays.asList("near","equals","disjoint","intersects","within","contains","overlaps");
-	
+	public static final List<String> SPECIAL_PROPERTIES = Arrays.asList(NGSI_LD_CREATED_AT, NGSI_LD_OBSERVED_AT, NGSI_LD_MODIFIED_AT, NGSI_LD_DATA_SET_ID, NGSI_LD_UNIT_CODE);
 }

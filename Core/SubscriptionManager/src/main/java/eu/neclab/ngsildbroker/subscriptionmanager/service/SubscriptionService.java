@@ -60,6 +60,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
+import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
@@ -264,17 +265,17 @@ public class SubscriptionService implements SubscriptionManager {
 			throw new ResponseException(ErrorType.BadRequestData, "throttling  and timeInterval cannot both be set");
 		}
 		if (subscription.getTimeInterval() > 0) {
-			if(subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
+			if (subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
 				return;
 			}
 			throw new ResponseException(ErrorType.BadRequestData,
 					"watchedAttributes  and timeInterval cannot both be set");
-		}else {
-			if(subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
+		} else {
+			if (subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"watchedAttributes  and timeInterval cannot both be set");
 			}
-			
+
 		}
 
 	}
@@ -496,11 +497,11 @@ public class SubscriptionService implements SubscriptionManager {
 		// } else {
 		try {
 			String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
-			
+
 			NotificationHandler handler;
-			if(endpointProtocol.equals("mqtt")) {
+			if (endpointProtocol.equals("mqtt")) {
 				handler = notificationHandlerMQTT;
-			}else {
+			} else {
 				handler = notificationHandlerREST;
 			}
 			handler.notify(
@@ -548,7 +549,7 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 
 		for (BaseProperty property : entity.getAllBaseProperties()) {
-			if (attribNames.contains(property.getName())) {
+			if (attribNames.contains(property.getIdString())) {
 				result.add(property);
 			}
 		}
@@ -561,7 +562,7 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 		for (String attribName : subscription.getAttributeNames()) {
 			for (BaseProperty baseProp : entity.getAllBaseProperties()) {
-				if (attribName.equals(baseProp.getName())) {
+				if (attribName.equals(baseProp.getIdString())) {
 					return true;
 				}
 			}
@@ -621,88 +622,92 @@ public class SubscriptionService implements SubscriptionManager {
 		if (location == null) {
 			return false;
 		}
+		Iterator<GeoPropertyEntry> it = location.getEntries().values().iterator();
+		while (it.hasNext()) {
+			GeoPropertyEntry next = it.next();
+			if (GEO_REL_EQUALS.equals(relation)) {
+				if (next.getGeoValue() instanceof Point) {
+					List<Double> geoValueAsList = java.util.Arrays.asList(((Point) next.getGeoValue()).lon(),
+							((Point) next.getGeoValue()).lat());
 
-		if (GEO_REL_EQUALS.equals(relation)) {
-			if (location.getGeoValue() instanceof Point) {
-				List<Double> geoValueAsList = java.util.Arrays.asList(((Point) location.getGeoValue()).lon(),
-						((Point) location.getGeoValue()).lat());
+					return geoValueAsList.equals(geoQuery.getCoordinates());
+				} else {
+					// TODO
 
-				return geoValueAsList.equals(geoQuery.getCoordinates());
+					return false;
+				}
 			} else {
-				// TODO
 
-				return false;
-			}
-		} else {
+				Shape entityShape;
+				if (next.getGeoValue() instanceof Point) {
+					entityShape = shapeFactory.pointXY(((Point) next.getGeoValue()).lon(),
+							((Point) next.getGeoValue()).lat());
+				} else if (next.getGeoValue() instanceof Polygon) {
+					PolygonBuilder polygonBuilder = shapeFactory.polygon();
+					Iterator<SinglePosition> it2 = ((Polygon) next.getGeoValue()).positions().children().iterator()
+							.next().children().iterator();
+					while (it2.hasNext()) {
+						polygonBuilder.pointXY(((SinglePosition) it2).coordinates().getLon(),
+								((SinglePosition) it2).coordinates().getLat());
+					}
+					entityShape = polygonBuilder.build();
+				} else {
+					logger.error("Unsupported GeoJson type. Currently Point and Polygon are supported.");
+					return false;
+				}
+				Shape queryShape;
+				switch (geoQuery.getGeometry()) {
+				case Point: {
+					queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
+					break;
+				}
+				case Polygon: {
+					PolygonBuilder polygonBuilder = shapeFactory.polygon();
+					for (int i = 0; i < coordinates.size(); i = i + 2) {
+						polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+					}
 
-			Shape entityShape;
-			if (location.getGeoValue() instanceof Point) {
-				entityShape = shapeFactory.pointXY(((Point) location.getGeoValue()).lon(),
-						((Point) location.getGeoValue()).lat());
-			} else if (location.getGeoValue() instanceof Polygon) {
-				PolygonBuilder polygonBuilder = shapeFactory.polygon();
-				Iterator<SinglePosition> it = ((Polygon) location.getGeoValue()).positions().children().iterator()
-						.next().children().iterator();
-				while (it.hasNext()) {
-					polygonBuilder.pointXY(((SinglePosition) it).coordinates().getLon(),
-							((SinglePosition) it).coordinates().getLat());
+					queryShape = polygonBuilder.build();
+					break;
 				}
-				entityShape = polygonBuilder.build();
-			} else {
-				logger.error("Unsupported GeoJson type. Currently Point and Polygon are supported.");
-				return false;
-			}
-			Shape queryShape;
-			switch (geoQuery.getGeometry()) {
-			case Point: {
-				queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
-				break;
-			}
-			case Polygon: {
-				PolygonBuilder polygonBuilder = shapeFactory.polygon();
-				for (int i = 0; i < coordinates.size(); i = i + 2) {
-					polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+				default: {
+					return false;
 				}
+				}
+				if (GEO_REL_CONTAINS.equals(relation)) {
+					return SpatialPredicate.Contains.evaluate(entityShape, queryShape);
+				} else if (GEO_REL_DISJOINT.equals(relation)) {
+					return SpatialPredicate.IsDisjointTo.evaluate(entityShape, queryShape);
+				} else if (GEO_REL_INTERSECTS.equals(relation)) {
+					if (expandArea != -1) {
+						queryShape = queryShape.getBuffered(expandArea, queryShape.getContext());
+					}
+					return SpatialPredicate.Intersects.evaluate(entityShape, queryShape);
+				} else if (GEO_REL_NEAR.equals(relation)) {
+					Shape bufferedShape = queryShape.getBuffered(geoQuery.getGeoRelation().getMaxDistance(),
+							queryShape.getContext());
+					if (geoQuery.getGeoRelation().getMaxDistance() != null) {
+						return SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
+					} else if (geoQuery.getGeoRelation().getMinDistance() != null) {
+						return !SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
+					} else {
+						return false;
+					}
 
-				queryShape = polygonBuilder.build();
-				break;
-			}
-			default: {
-				return false;
-			}
-			}
-			if (GEO_REL_CONTAINS.equals(relation)) {
-				return SpatialPredicate.Contains.evaluate(entityShape, queryShape);
-			} else if (GEO_REL_DISJOINT.equals(relation)) {
-				return SpatialPredicate.IsDisjointTo.evaluate(entityShape, queryShape);
-			} else if (GEO_REL_INTERSECTS.equals(relation)) {
-				if (expandArea != -1) {
-					queryShape = queryShape.getBuffered(expandArea, queryShape.getContext());
-				}
-				return SpatialPredicate.Intersects.evaluate(entityShape, queryShape);
-			} else if (GEO_REL_NEAR.equals(relation)) {
-				Shape bufferedShape = queryShape.getBuffered(geoQuery.getGeoRelation().getMaxDistance(),
-						queryShape.getContext());
-				if (geoQuery.getGeoRelation().getMaxDistance() != null) {
-					return SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
-				} else if (geoQuery.getGeoRelation().getMinDistance() != null) {
-					return !SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
+				} else if (GEO_REL_OVERLAPS.equals(relation)) {
+					return SpatialPredicate.Overlaps.evaluate(entityShape, queryShape);
+				} else if (GEO_REL_WITHIN.equals(relation)) {
+					if (expandArea != -1) {
+						queryShape = queryShape.getBuffered(expandArea, queryShape.getContext());
+					}
+					return SpatialPredicate.IsWithin.evaluate(entityShape, queryShape);
 				} else {
 					return false;
 				}
-
-			} else if (GEO_REL_OVERLAPS.equals(relation)) {
-				return SpatialPredicate.Overlaps.evaluate(entityShape, queryShape);
-			} else if (GEO_REL_WITHIN.equals(relation)) {
-				if (expandArea != -1) {
-					queryShape = queryShape.getBuffered(expandArea, queryShape.getContext());
-				}
-				return SpatialPredicate.IsWithin.evaluate(entityShape, queryShape);
-			} else {
-				return false;
 			}
-		}
 
+		}
+		return false;
 	}
 
 	// private Property getPropertyByName(String name, List<Property> properties) {

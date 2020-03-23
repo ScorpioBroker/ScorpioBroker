@@ -42,8 +42,16 @@ public class ValidationUtilTest {
 		
 		String payload="  {\r\n" + 
 				"    \"http://example.org/vehicle/brandName\": [\r\n" + 
-				"      {\r\n" + 
+				"      {\r\n" +
+				"        \"@type\": [\r\n" + 
+				"          \"https://uri.etsi.org/ngsi-ld/Property\"\r\n" + 
+				"        ],\r\n" + 
+				"        \"https://uri.etsi.org/ngsi-ld/hasValue\": [\r\n" + 
+				"          {\r\n" + 
+				
 				"        \"@value\": \"Volvo\"\r\n" + 
+				"        }]\r\n" + 
+
 				"      }\r\n" + 
 				"    ],\r\n" + 
 				"    \"@id\": \"urn:ngsi-ld:Vehicle:B9211\",\r\n" + 
@@ -154,7 +162,7 @@ public class ValidationUtilTest {
 		thrown.expect(ResponseException.class);
 		thrown.expectMessage("Entity with a property value equal to null");
 		
-		entity.getProperties().get(0).setValue(null);
+		entity.getProperties().get(0).setEntries(null);
 		propertyValidation.validateEntity(entity, null);
 		
 	}
@@ -174,12 +182,12 @@ public class ValidationUtilTest {
 		thrown.expectMessage("Entity with a Relationship object equal to null");
 		
 		Relationship rel=new Relationship();
-		rel.setObject(null);
+		rel.setObjects(null);
 		ArrayList<Relationship> relsList=new ArrayList<>();
 		relsList.add(rel);
 		entity.setRelationships(relsList);
 		
-		entity.getRelationships().get(0).setObject(null);
+		entity.getRelationships().get(0).setObjects(null);
 		relationshipValidation.validateEntity(entity, null);
 		
 	}

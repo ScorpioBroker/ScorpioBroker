@@ -21,7 +21,7 @@ public class PropertyValidatioRule implements ValidationRules {
 	
 	private boolean isNullProperty(Entity entity) throws ResponseException {
 		for(Property property:entity.getProperties()) {
-			if(property.getValue()==null) {
+			if(property.getEntries()==null) {
 				throw new ResponseException(ErrorType.BadRequestData,"Entity with a property value equal to null");
 			}
 		}
