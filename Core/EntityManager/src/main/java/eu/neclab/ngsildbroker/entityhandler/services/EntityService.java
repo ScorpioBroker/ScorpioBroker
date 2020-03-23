@@ -234,7 +234,7 @@ public class EntityService {
 				} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT)
 						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isArray()
 						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).has(NGSIConstants.JSON_LD_ID)) {
-					kvJsonObject.set(entry.getKey(), attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0));
+					kvJsonObject.set(entry.getKey(), attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(NGSIConstants.JSON_LD_ID));
 				}
 			}
 		}
