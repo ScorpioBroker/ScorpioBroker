@@ -17,7 +17,7 @@ public abstract class BaseEntry {
 
 	public BaseEntry(String dataSetId) {
 		this.dataSetId = dataSetId;
-		if(this.dataSetId == null || this.dataSetId.isBlank()) {
+		if(this.dataSetId == null || this.dataSetId.trim().isEmpty()) {
 			this.dataSetId = UUID.randomUUID().toString();
 		}
 	}
@@ -26,7 +26,7 @@ public abstract class BaseEntry {
 	}
 	public void setDataSetId(String dataSetId) {
 		this.dataSetId = dataSetId;
-		if(this.dataSetId == null || this.dataSetId.isBlank()) {
+		if(this.dataSetId == null || this.dataSetId.trim().isEmpty()) {
 			this.dataSetId = UUID.randomUUID().toString();
 		}
 	}
