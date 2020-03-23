@@ -390,7 +390,7 @@ public class SerializationTools {
 			for (Entry<String, JsonElement> entry : next.entrySet()) {
 				String propKey = entry.getKey();
 				JsonElement value = entry.getValue();
-				
+
 				if (propKey.equals(NGSIConstants.NGSI_LD_OBJECT)) {
 					if (value.getAsJsonArray().size() != 1) {
 						throw new JsonParseException("Relationships have to have exactly one object");
@@ -443,19 +443,19 @@ public class SerializationTools {
 								"cannot determine type of sub attribute. please provide a valid type");
 					}
 				}
-				if (relObj == null) {
-					throw new JsonParseException("Relationships have to have exactly one object");
-				}
-				RelationshipEntry object = new RelationshipEntry(dataSetId, relObj);
-				object.setProperties(properties);
-				object.setRelationships(relationships);
-				object.setCreatedAt(createdAt);
-				object.setObservedAt(observedAt);
-				object.setModifiedAt(modifiedAt);
-				object.setName(name);
-				entries.put(object.getDataSetId(), object);
-			}
 
+			}
+			if (relObj == null) {
+				throw new JsonParseException("Relationships have to have exactly one object");
+			}
+			RelationshipEntry object = new RelationshipEntry(dataSetId, relObj);
+			object.setProperties(properties);
+			object.setRelationships(relationships);
+			object.setCreatedAt(createdAt);
+			object.setObservedAt(observedAt);
+			object.setModifiedAt(modifiedAt);
+			object.setName(name);
+			entries.put(object.getDataSetId(), object);
 		}
 		relationship.setObjects(entries);
 		return relationship;
