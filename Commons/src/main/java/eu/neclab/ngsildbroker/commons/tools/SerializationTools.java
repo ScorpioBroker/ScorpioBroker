@@ -239,6 +239,9 @@ public class SerializationTools {
 				}
 
 			}
+			if(propValue == null) {
+				throw new JsonParseException("Values cannot be null");
+			}
 			PropertyEntry propEntry = new PropertyEntry(dataSetId, propValue);
 			propEntry.setProperties(properties);
 			propEntry.setRelationships(relationships);
