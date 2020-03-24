@@ -270,12 +270,6 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 			throw new ResponseException(ErrorType.BadRequestData,
 					"watchedAttributes  and timeInterval cannot both be set");
-		} else {
-			if (subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"watchedAttributes  and timeInterval cannot both be set");
-			}
-
 		}
 
 	}
