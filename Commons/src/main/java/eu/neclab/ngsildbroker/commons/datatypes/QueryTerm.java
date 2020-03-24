@@ -533,10 +533,17 @@ public class QueryTerm {
 			firstChild.toSql(result, temporalEntityMode);
 			result.append(")");
 		} else {
-			if (temporalEntityMode)
+			if (temporalEntityMode) {
 				getAttribQueryForTemporalEntity(result);
-			else
+			} else {
 				getAttribQueryV2(result);
+				StringBuilder temp = new StringBuilder();
+				getAttribQuery(temp);
+				System.out.println("OLD");
+				System.out.println(temp.toString());
+				System.out.println("NEW");
+				System.out.println(result.toString());
+			}
 		}
 		if (hasNext()) {
 			if (nextAnd) {
@@ -743,14 +750,17 @@ public class QueryTerm {
 			}
 			// x#> '{https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'
 			charcount--;
+			if (operator.equals("==") || operator.equals("!=")) {
+				attributeFilterProperty.append(charcount);
+				attributeFilterProperty.append("#> '{");
+				attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'");
+				applyOperator(attributeFilterProperty);
+				attributeFilterProperty.append(" OR ");
+			}
+			attributeFilterProperty.append('(');
 			attributeFilterProperty.append(charcount);
 			attributeFilterProperty.append("#> '{");
-			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'");
-			applyOperator(attributeFilterProperty);
-			attributeFilterProperty.append(" OR ");
-			attributeFilterProperty.append(charcount);
-			attributeFilterProperty.append("#> '{");
-			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue,0,@value}'");
+			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue,0,@value}')");
 			if (operant.matches(DATETIME)) {
 				attributeFilterProperty.append("::timestamp ");
 			} else if (operant.matches(DATE)) {
@@ -760,9 +770,10 @@ public class QueryTerm {
 			}
 			applyOperator(attributeFilterProperty);
 			attributeFilterProperty.append(" OR ");
+			attributeFilterProperty.append('(');
 			attributeFilterProperty.append(charcount);
 			attributeFilterProperty.append("#> '{");
-			attributeFilterProperty.append("0,@value}'");
+			attributeFilterProperty.append("0,@value}')");
 			if (operant.matches(DATETIME)) {
 				attributeFilterProperty.append("::timestamp ");
 			} else if (operant.matches(DATE)) {

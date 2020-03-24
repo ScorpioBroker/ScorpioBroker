@@ -282,6 +282,9 @@ public class SerializationTools {
 			if (jsonObj.has(NGSIConstants.JSON_LD_VALUE) && jsonObj.has(NGSIConstants.JSON_LD_TYPE)) {
 				Object objValue;
 				JsonPrimitive atValue = jsonObj.get(NGSIConstants.JSON_LD_VALUE).getAsJsonPrimitive();
+				if (atValue.isJsonNull()) {
+					throw new JsonParseException("Values cannot be null");
+				}
 				if (atValue.isBoolean()) {
 					objValue = atValue.getAsBoolean();
 				} else if (atValue.isNumber()) {
@@ -296,6 +299,9 @@ public class SerializationTools {
 			}
 			if (jsonObj.has(NGSIConstants.JSON_LD_VALUE)) {
 				JsonPrimitive atValue = jsonObj.get(NGSIConstants.JSON_LD_VALUE).getAsJsonPrimitive();
+				if (atValue.isJsonNull()) {
+					throw new JsonParseException("Values cannot be null");
+				}
 				if (atValue.isBoolean()) {
 					return atValue.getAsBoolean();
 				}
