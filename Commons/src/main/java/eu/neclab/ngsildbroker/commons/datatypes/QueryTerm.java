@@ -537,12 +537,6 @@ public class QueryTerm {
 				getAttribQueryForTemporalEntity(result);
 			} else {
 				getAttribQueryV2(result);
-				StringBuilder temp = new StringBuilder();
-				getAttribQuery(temp);
-				System.out.println("OLD");
-				System.out.println(temp.toString());
-				System.out.println("NEW");
-				System.out.println(result.toString());
 			}
 		}
 		if (hasNext()) {
@@ -733,7 +727,7 @@ public class QueryTerm {
 			int iElem = 0;
 			String currentSet = "data";
 			char charcount = 'a';
-			String lastAttrib;
+			String lastAttrib = null;
 			for (String subPath : attribPath) {
 				attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
 				attributeFilterProperty.append(subPath);
@@ -748,9 +742,12 @@ public class QueryTerm {
 				iElem++;
 				lastAttrib = subPath;
 			}
+
 			// x#> '{https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'
 			charcount--;
-			if (operator.equals("==") || operator.equals("!=")) {
+			if (operator.equals(NGSIConstants.QUERY_EQUAL) || operator.equals(NGSIConstants.QUERY_UNEQUAL)
+					|| operator.equals(NGSIConstants.QUERY_PATTERNOP)
+					|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
 				attributeFilterProperty.append(charcount);
 				attributeFilterProperty.append("#> '{");
 				attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'");
@@ -759,7 +756,12 @@ public class QueryTerm {
 			}
 			attributeFilterProperty.append('(');
 			attributeFilterProperty.append(charcount);
-			attributeFilterProperty.append("#> '{");
+			attributeFilterProperty.append("#>");
+			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
+					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
+				attributeFilterProperty.append(">");
+			}
+			attributeFilterProperty.append(" '{");
 			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue,0,@value}')");
 			if (operant.matches(DATETIME)) {
 				attributeFilterProperty.append("::timestamp ");
@@ -770,10 +772,26 @@ public class QueryTerm {
 			}
 			applyOperator(attributeFilterProperty);
 			attributeFilterProperty.append(" OR ");
-			attributeFilterProperty.append('(');
-			attributeFilterProperty.append(charcount);
-			attributeFilterProperty.append("#> '{");
-			attributeFilterProperty.append("0,@value}')");
+			if (TIME_PROPS.contains(lastAttrib)) {
+				attributeFilterProperty.append('(');
+				attributeFilterProperty.append((char)(charcount - 1));
+				attributeFilterProperty.append("#>>");
+				attributeFilterProperty.append(" '{");
+				attributeFilterProperty.append(lastAttrib);
+				attributeFilterProperty.append(",0,@value}')");
+
+			} else {
+				attributeFilterProperty.append('(');
+				attributeFilterProperty.append(charcount);
+				attributeFilterProperty.append("#>");
+				if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
+						|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
+					attributeFilterProperty.append(">");
+				}
+				attributeFilterProperty.append(" '{");
+				attributeFilterProperty.append("0,@value}')");
+			}
+
 			if (operant.matches(DATETIME)) {
 				attributeFilterProperty.append("::timestamp ");
 			} else if (operant.matches(DATE)) {
