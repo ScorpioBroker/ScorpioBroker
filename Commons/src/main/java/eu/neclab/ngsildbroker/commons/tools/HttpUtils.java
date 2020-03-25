@@ -840,6 +840,9 @@ public final class HttpUtils {
 
 		additionalHeaders.put(HttpHeaders.CONTENT_TYPE, temp);
 		if (forceArrayResult && !replyBody.startsWith("[")) {
+			if(replyBody.equals("{ }") || replyBody.equals("{}") ) {
+				replyBody = "[]";
+			}
 			replyBody = "[" + replyBody + "]";
 		}
 		boolean compress = false;
