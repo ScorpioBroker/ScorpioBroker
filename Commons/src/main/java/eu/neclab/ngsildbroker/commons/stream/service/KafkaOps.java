@@ -67,11 +67,11 @@ public class KafkaOps {
 
 	public boolean pushToKafka(MessageChannel messageChannel, byte[] key, byte[] payload) throws ResponseException {
 		try {
-		boolean result = messageChannel
-				.send(MessageBuilder.withPayload(payload).setHeader(KafkaHeaders.MESSAGE_KEY, key)
-						.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON).build());
-		return result;
-		}catch(Exception e) {
+			boolean result = messageChannel
+					.send(MessageBuilder.withPayload(payload).setHeader(KafkaHeaders.MESSAGE_KEY, key)
+							.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON).build());
+			return result;
+		} catch (Exception e) {
 			throw new ResponseException(ErrorType.KafkaWriteError, e.getMessage());
 		}
 	}
@@ -256,8 +256,6 @@ public class KafkaOps {
 		return props;
 	}
 
-
-
 	@SuppressWarnings("deprecation")
 	// TODO replace poll method... needs subscription listener when replaced
 	public byte[] getMessage(String topicname, String key, int partition, long offset) {
@@ -326,12 +324,12 @@ public class KafkaOps {
 			consumer.close();
 		}
 	}
-	
+
 	public String getMessageKey(Message<?> message) {
 		Object key = message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
 //		if(key instanceof String) {
 //			System.err.println("----------------------ITS A STRING -------------------");
-			return (String) key;
+		return (String) key;
 //		}else {
 //			return new String((byte[]) key);
 //		}

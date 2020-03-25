@@ -32,6 +32,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -173,6 +174,12 @@ public final class HttpUtils {
 		}
 	}
 
+	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
+			AuthScope authScope, UsernamePasswordCredentials credentials) throws IOException {
+		ErrorAwareResponseHandler handler = new ErrorAwareResponseHandler();
+		return doHTTPRequest(uri, method, body, additionalHeaders, authScope, credentials, handler);
+	}
+
 	/**
 	 * Perform an HTTP request using a disposable HTTP client.
 	 * 
@@ -184,7 +191,8 @@ public final class HttpUtils {
 	 */
 
 	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
-			AuthScope authScope, UsernamePasswordCredentials credentials) throws IOException {
+			AuthScope authScope, UsernamePasswordCredentials credentials, ResponseHandler<String> handler)
+			throws IOException {
 		DefaultHttpClient httpClient = new DefaultHttpClient();
 		HttpParams params = httpClient.getParams();
 		params.setParameter("http.socket.timeout", REQ_TIMEOUT_MS);
@@ -240,7 +248,6 @@ public final class HttpUtils {
 			addHeaders(additionalHeaders, request);
 		}
 		try {
-			ErrorAwareResponseHandler handler = new ErrorAwareResponseHandler();
 			return httpClient.execute(request, handler);
 		} finally {
 			httpClient.getConnectionManager().shutdown();
@@ -288,7 +295,19 @@ public final class HttpUtils {
 	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doGet(URI uri) throws IOException {
-		return doGet(uri, null, null);
+		return doGet(uri, null, null, null, null);
+	}
+	
+	public String doGet(URI uri, ResponseHandler<String> handler) throws IOException {
+		return doGet(uri, null, handler);
+	}
+
+	public String doGet(URI uri, Map<String, String> headers) throws IOException {
+		return doGet(uri, headers, null);
+	}
+
+	public String doGet(URI uri, Map<String, String> headers, ResponseHandler<String> handler) throws IOException {
+		return doGet(uri, headers, null, null, handler);
 	}
 
 	/**
@@ -303,7 +322,25 @@ public final class HttpUtils {
 	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doGet(URI uri, AuthScope authScope, UsernamePasswordCredentials credentials) throws IOException {
-		return doHTTPRequest(uri, HTTPMethod.GET, null, null, authScope, credentials);
+		return doGet(uri, null, authScope, credentials, null);
+	}
+
+	public String doGet(URI uri, AuthScope authScope, UsernamePasswordCredentials credentials,
+			ResponseHandler<String> handler) throws IOException {
+		return doGet(uri, null, authScope, credentials, handler);
+	}
+
+	public String doGet(URI uri, Map<String, String> headers, AuthScope authScope,
+			UsernamePasswordCredentials credentials) throws IOException {
+		return doGet(uri, headers, authScope, credentials, null);
+	}
+
+	public String doGet(URI uri, Map<String, String> headers, AuthScope authScope,
+			UsernamePasswordCredentials credentials, ResponseHandler<String> handler) throws IOException {
+		if (handler == null) {
+			return doHTTPRequest(uri, HTTPMethod.GET, null, headers, authScope, credentials);
+		}
+		return doHTTPRequest(uri, HTTPMethod.GET, null, headers, authScope, credentials, handler);
 	}
 
 	/**
