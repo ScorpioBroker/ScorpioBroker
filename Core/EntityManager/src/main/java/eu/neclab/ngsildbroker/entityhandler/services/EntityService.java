@@ -189,9 +189,11 @@ public class EntityService {
 
 		boolean result = operations.pushToKafka(producerChannels.createWriteChannel(),
 				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT), payload.getBytes(NGSIConstants.ENCODE_FORMAT));
-		/*
-		 * if (!result) { throw new ResponseException(ErrorType.KafkaWriteError); }
-		 */
+
+		if (!result) {
+			throw new ResponseException(ErrorType.KafkaWriteError);
+		}
+
 		// write to ENTITY topic after ENTITY_CREATE success.
 		operations.pushToKafka(this.producerChannels.entityWriteChannel(),
 				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT), payload.getBytes(NGSIConstants.ENCODE_FORMAT));
@@ -234,7 +236,8 @@ public class EntityService {
 				} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT)
 						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isArray()
 						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).has(NGSIConstants.JSON_LD_ID)) {
-					kvJsonObject.set(entry.getKey(), attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(NGSIConstants.JSON_LD_ID));
+					kvJsonObject.set(entry.getKey(),
+							attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(NGSIConstants.JSON_LD_ID));
 				}
 			}
 		}
@@ -643,7 +646,7 @@ public class EntityService {
 		updateResult.setFinalNode(node);
 		removeTemporalProperties(node);
 		updateResult.setJsonWithoutSysAttrs(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
-		
+
 		logger.trace("updateFields() :: completed");
 		return updateResult;
 
@@ -730,7 +733,7 @@ public class EntityService {
 		return objectNode.toString().getBytes(NGSIConstants.ENCODE_FORMAT);
 	}
 
-	public boolean registerContext(byte[] id, byte[] payload) throws URISyntaxException, IOException {
+	public boolean registerContext(byte[] id, byte[] payload) throws URISyntaxException, IOException, ResponseException {
 		logger.trace("registerContext() :: started");
 		MessageChannel messageChannel = producerChannels.contextRegistryWriteChannel();
 		CSourceRegistration contextRegistryPayload = this.getCSourceRegistrationFromJson(payload);
@@ -739,7 +742,7 @@ public class EntityService {
 		return true;
 	}
 
-	private void updateContext(byte[] id, byte[] payload) {
+	private void updateContext(byte[] id, byte[] payload) throws ResponseException {
 		logger.trace("updateContext() :: started");
 		MessageChannel messageChannel = producerChannels.contextUpdateWriteChannel();
 		this.operations.pushToKafka(messageChannel, id, payload);
@@ -764,7 +767,8 @@ public class EntityService {
 		}
 
 		// Information node
-		Set<String> propertiesList = entity.getProperties().stream().map(Property::getIdString).collect(Collectors.toSet());
+		Set<String> propertiesList = entity.getProperties().stream().map(Property::getIdString)
+				.collect(Collectors.toSet());
 
 		Set<String> relationshipsList = entity.getRelationships().stream().map(Relationship::getIdString)
 				.collect(Collectors.toSet());

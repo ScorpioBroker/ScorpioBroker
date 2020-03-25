@@ -636,7 +636,6 @@ public class QueryTest {
 			assertTrue(term.calculate(orStillValid2));
 			assertFalse(term.calculate(notValid1));
 			assertFalse(term.calculate(notValid2));
-			System.out.println(term.toSql());
 		} catch (ResponseException e) {
 			Assert.fail(e.getLocalizedMessage());
 		}

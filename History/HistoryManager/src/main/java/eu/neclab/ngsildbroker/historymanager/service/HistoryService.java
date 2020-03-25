@@ -163,7 +163,7 @@ public class HistoryService {
 	}
 	
 	private void pushAttributeToKafka(String entityId, String entityType, String entityCreatedAt, String entityModifiedAt, 
-			String attributeId, String elementValue, Boolean createTemporalEntityIfNotExists, Boolean overwriteOp) {
+			String attributeId, String elementValue, Boolean createTemporalEntityIfNotExists, Boolean overwriteOp) throws ResponseException {
 		String messageKey;
 		TemporalEntityStorageKey tesk = new TemporalEntityStorageKey(entityId);
 		if (createTemporalEntityIfNotExists != null && createTemporalEntityIfNotExists) {
@@ -183,7 +183,7 @@ public class HistoryService {
 				elementValue.getBytes());
 	}
 
-	private void pushAttributeToKafka(String id, String entityModifiedAt, String attributeId, String elementValue) {
+	private void pushAttributeToKafka(String id, String entityModifiedAt, String attributeId, String elementValue) throws ResponseException {
 		pushAttributeToKafka(id, null, null, entityModifiedAt, attributeId, elementValue, null, null);
 	}
 

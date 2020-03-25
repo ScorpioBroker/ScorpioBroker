@@ -426,7 +426,7 @@ public class QueryService {
 		return result;
 	}
 
-	private void writeFullResultToKafka(String qToken, List<String> aggregatedResult) throws IOException {
+	private void writeFullResultToKafka(String qToken, List<String> aggregatedResult) throws IOException, ResponseException {
 		// write to byte array
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DataOutputStream out = new DataOutputStream(baos);

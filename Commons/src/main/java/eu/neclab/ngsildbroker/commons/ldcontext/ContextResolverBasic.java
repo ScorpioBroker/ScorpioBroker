@@ -484,8 +484,13 @@ public class ContextResolverBasic {
 		}
 		// sorted.add(DEFAULT_CONTEXT_URL);
 		sorted.add(CORE_CONTEXT_URL);
-		kafkaOps.pushToKafka(producerChannel.atContextWriteChannel(), (hash + "").getBytes(),
-				DataSerializer.toJson(sorted).getBytes());
+		try {
+			kafkaOps.pushToKafka(producerChannel.atContextWriteChannel(), (hash + "").getBytes(),
+					DataSerializer.toJson(sorted).getBytes());
+		} catch (ResponseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return AT_CONTEXT_BASE_URL + hash;
 	}
 

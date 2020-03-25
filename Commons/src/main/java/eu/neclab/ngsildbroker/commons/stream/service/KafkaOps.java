@@ -44,6 +44,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityDetails;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 @Component
 public class KafkaOps {
@@ -63,11 +65,15 @@ public class KafkaOps {
 
 	// private final static Logger logger = LoggerFactory.getLogger(KafkaOps.class);
 
-	public boolean pushToKafka(MessageChannel messageChannel, byte[] key, byte[] payload) {
+	public boolean pushToKafka(MessageChannel messageChannel, byte[] key, byte[] payload) throws ResponseException {
+		try {
 		boolean result = messageChannel
 				.send(MessageBuilder.withPayload(payload).setHeader(KafkaHeaders.MESSAGE_KEY, key)
 						.setHeader(MessageHeaders.CONTENT_TYPE, MimeTypeUtils.APPLICATION_JSON).build());
 		return result;
+		}catch(Exception e) {
+			throw new ResponseException(ErrorType.KafkaWriteError, e.getMessage());
+		}
 	}
 
 	public void createTopic(String topicName) {

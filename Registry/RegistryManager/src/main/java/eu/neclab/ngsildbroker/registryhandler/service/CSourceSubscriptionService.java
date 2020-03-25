@@ -246,7 +246,7 @@ public class CSourceSubscriptionService {
 
 	}
 
-	private void syncToMessageBus(SubscriptionRequest subscriptionRequest) {
+	private void syncToMessageBus(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		String id = subscriptionRequest.getSubscription().getId().toString();
 		if (!this.kafkaOps.isMessageExists(id, KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC)) {
 			this.kafkaOps.pushToKafka(producerChannel.csourceSubscriptionWriteChannel(), id.getBytes(),

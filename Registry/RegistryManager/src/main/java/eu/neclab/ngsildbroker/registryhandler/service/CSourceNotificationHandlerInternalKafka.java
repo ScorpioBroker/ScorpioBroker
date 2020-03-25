@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.CSourceNotificationHandler;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
@@ -31,7 +32,12 @@ public class CSourceNotificationHandlerInternalKafka implements CSourceNotificat
 		}
 		
 		byte[] body = DataSerializer.toJson(temp).getBytes();
-		this.kafkaOps.pushToKafka(cSourceProducerChannel.csourceNotificationWriteChannel(),id, body);
+		try {
+			this.kafkaOps.pushToKafka(cSourceProducerChannel.csourceNotificationWriteChannel(),id, body);
+		} catch (ResponseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 	}
 

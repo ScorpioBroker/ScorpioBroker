@@ -274,7 +274,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	}
 
-	private void syncToMessageBus(SubscriptionRequest subscription) {
+	private void syncToMessageBus(SubscriptionRequest subscription) throws ResponseException {
 		if (!this.kafkaOps.isMessageExists(subscription.getSubscription().getId().toString(),
 				KafkaConstants.SUBSCRIPTIONS_TOPIC)) {
 			this.kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),

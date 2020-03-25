@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import com.google.gson.Gson;
 
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 
 
@@ -41,7 +42,7 @@ public class AtContext {
 		}
 	}
 	
-	public void addContext(String id, List<Object> context) {
+	public void addContext(String id, List<Object> context) throws ResponseException {
 		
 		this.id2Contextes.put(id, context);
 		saveContext(id);
@@ -64,7 +65,7 @@ public class AtContext {
 
 	
 	
-	private void saveContext(String id) {
+	private void saveContext(String id) throws ResponseException {
 		kafkaOps.pushToKafka(producerChannel.atContextWriteChannel(), id.getBytes(), gson.toJson(id2Contextes.get(id)).getBytes());
 		
 	}

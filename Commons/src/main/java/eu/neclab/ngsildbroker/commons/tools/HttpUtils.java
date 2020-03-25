@@ -141,7 +141,9 @@ public final class HttpUtils {
 
 		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD)) {
 			if (!payload.contains("@context")) {
-				throw new ResponseException(ErrorType.BadRequestData, "You have to provide an @context entry in the body with Content-Type: " + AppConstants.NGB_APPLICATION_JSONLD);
+				throw new ResponseException(ErrorType.BadRequestData,
+						"You have to provide an @context entry in the body with Content-Type: "
+								+ AppConstants.NGB_APPLICATION_JSONLD);
 			}
 
 			ldResolved = contextResolver.expand(payload, null);
@@ -157,8 +159,7 @@ public final class HttpUtils {
 	/**
 	 * Set the HTTP Proxy that will be used for all future requests.
 	 * 
-	 * @param httpProxy
-	 *            a URL with the HTTP proxy
+	 * @param httpProxy a URL with the HTTP proxy
 	 */
 	public static void setHttpProxy(URL httpProxy) {
 		if (httpProxy != null) {
@@ -175,14 +176,11 @@ public final class HttpUtils {
 	/**
 	 * Perform an HTTP request using a disposable HTTP client.
 	 * 
-	 * @param httpClient
-	 *            the HTTP client
+	 * @param httpClient the HTTP client
 	 * @return the body of the message
-	 * @throws IOException
-	 *             if an error occurs during the request
-	 * @throws HttpErrorResponseException
-	 *             if a non 2xx response code is returned (this is an unchecked
-	 *             exception!)
+	 * @throws IOException                if an error occurs during the request
+	 * @throws HttpErrorResponseException if a non 2xx response code is returned
+	 *                                    (this is an unchecked exception!)
 	 */
 
 	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
@@ -283,13 +281,11 @@ public final class HttpUtils {
 	/**
 	 * Perform a GET request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
+	 * @param uri the URI to do the request on
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doGet(URI uri) throws IOException {
 		return doGet(uri, null, null);
@@ -298,17 +294,13 @@ public final class HttpUtils {
 	/**
 	 * Perform a GET request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
-	 * @param authScope
-	 *            the authentication scope
-	 * @param credentials
-	 *            the authentication credentials
+	 * @param uri         the URI to do the request on
+	 * @param authScope   the authentication scope
+	 * @param credentials the authentication credentials
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doGet(URI uri, AuthScope authScope, UsernamePasswordCredentials credentials) throws IOException {
 		return doHTTPRequest(uri, HTTPMethod.GET, null, null, authScope, credentials);
@@ -317,15 +309,12 @@ public final class HttpUtils {
 	/**
 	 * Perform a PUT request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
-	 * @param body
-	 *            the request body
+	 * @param uri  the URI to do the request on
+	 * @param body the request body
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doPut(URI uri, String body) throws IOException {
 		return doPut(uri, body, null, null);
@@ -334,19 +323,14 @@ public final class HttpUtils {
 	/**
 	 * Perform a PUT request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
-	 * @param body
-	 *            the request body
-	 * @param authScope
-	 *            the authentication scope
-	 * @param credentials
-	 *            the authentication credentials
+	 * @param uri         the URI to do the request on
+	 * @param body        the request body
+	 * @param authScope   the authentication scope
+	 * @param credentials the authentication credentials
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doPut(URI uri, String body, AuthScope authScope, UsernamePasswordCredentials credentials)
 			throws IOException {
@@ -356,15 +340,12 @@ public final class HttpUtils {
 	/**
 	 * Perform a POST request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
-	 * @param body
-	 *            the request body
+	 * @param uri  the URI to do the request on
+	 * @param body the request body
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doPost(URI uri, Object body, Map<String, String> additionalHeaders) throws IOException {
 		return doPost(uri, body, additionalHeaders, null, null);
@@ -373,19 +354,14 @@ public final class HttpUtils {
 	/**
 	 * Perform a POST request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
-	 * @param body
-	 *            the request body
-	 * @param authScope
-	 *            the authentication scope
-	 * @param credentials
-	 *            the authentication credentials
+	 * @param uri         the URI to do the request on
+	 * @param body        the request body
+	 * @param authScope   the authentication scope
+	 * @param credentials the authentication credentials
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doPost(URI uri, Object body, Map<String, String> additionalHeaders, AuthScope authScope,
 			UsernamePasswordCredentials credentials) throws IOException {
@@ -395,13 +371,11 @@ public final class HttpUtils {
 	/**
 	 * Perform a DELETE request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
+	 * @param uri the URI to do the request on
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doDelete(URI uri) throws IOException {
 		return doDelete(uri, null, null);
@@ -410,17 +384,13 @@ public final class HttpUtils {
 	/**
 	 * Perform a POST request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
-	 * @param authScope
-	 *            the authentication scope
-	 * @param credentials
-	 *            the authentication credentials
+	 * @param uri         the URI to do the request on
+	 * @param authScope   the authentication scope
+	 * @param credentials the authentication credentials
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doDelete(URI uri, AuthScope authScope, UsernamePasswordCredentials credentials) throws IOException {
 		return doHTTPRequest(uri, HTTPMethod.DELETE, null, null, authScope, credentials);
@@ -429,13 +399,11 @@ public final class HttpUtils {
 	/**
 	 * Perform a HEAD request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
+	 * @param uri the URI to do the request on
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doHead(URI uri) throws IOException {
 		return doHead(uri, null, null);
@@ -444,17 +412,13 @@ public final class HttpUtils {
 	/**
 	 * Perform a HEAD request on the URI.
 	 * 
-	 * @param uri
-	 *            the URI to do the request on
-	 * @param authScope
-	 *            the authentication scope
-	 * @param credentials
-	 *            the authentication credentials
+	 * @param uri         the URI to do the request on
+	 * @param authScope   the authentication scope
+	 * @param credentials the authentication credentials
 	 * @return the body of the response
-	 * @throws IOException
-	 *             generally if a communication problem occurs or specifically an
-	 *             {@link HttpErrorResponseException} if something other than HTTP
-	 *             200 OK was returned
+	 * @throws IOException generally if a communication problem occurs or
+	 *                     specifically an {@link HttpErrorResponseException} if
+	 *                     something other than HTTP 200 OK was returned
 	 */
 	public String doHead(URI uri, AuthScope authScope, UsernamePasswordCredentials credentials) throws IOException {
 		return doHTTPRequest(uri, HTTPMethod.HEAD, null, null, authScope, credentials);
@@ -464,11 +428,9 @@ public final class HttpUtils {
 	 * Read and decode the request's body using the encoding specified in the
 	 * request.
 	 * 
-	 * @param req
-	 *            the request to read
+	 * @param req the request to read
 	 * @return a String with the body
-	 * @throws IOException
-	 *             if a connection error occurs
+	 * @throws IOException if a connection error occurs
 	 */
 	public static String getBody(HttpServletRequest req) throws IOException {
 		BufferedReader reader = null;
@@ -492,11 +454,9 @@ public final class HttpUtils {
 	 * Read and decode the response's body using the encoding in the response. If no
 	 * encoding is found, UTF-8 is used.
 	 * 
-	 * @param res
-	 *            the response object
+	 * @param res the response object
 	 * @return the body of the response
-	 * @throws IOException
-	 *             if a communication problem occurs
+	 * @throws IOException if a communication problem occurs
 	 */
 	public static String getBody(HttpResponse res) throws IOException {
 		return EntityUtils.toString(res.getEntity(), "UTF-8");
@@ -507,8 +467,7 @@ public final class HttpUtils {
 	 * connection succeeds, regardless of the status code (potentially an error)
 	 * received.
 	 * 
-	 * @param remoteURI
-	 *            the URI to check
+	 * @param remoteURI the URI to check
 	 * @return true if the server serving URI responds at all
 	 */
 	public boolean isReachable(URI remoteURI) {
@@ -542,10 +501,8 @@ public final class HttpUtils {
 	 * <a href="http://en.wikipedia.org/wiki/HTTP_response_splitting">HTTP Response
 	 * Splitting attacks</a>
 	 * 
-	 * @param req
-	 *            the request (needed due to the origin and methods it requires)
-	 * @param resp
-	 *            the response with the right CORS headers
+	 * @param req  the request (needed due to the origin and methods it requires)
+	 * @param resp the response with the right CORS headers
 	 */
 	private static void enableCORS(HttpServletRequest req, HttpServletResponse resp) {
 		// Sanitize the origin
@@ -569,12 +526,9 @@ public final class HttpUtils {
 	/**
 	 * Send the given response with a 200 OK status.
 	 * 
-	 * @param req
-	 *            the request object
-	 * @param response
-	 *            the response body
-	 * @param resp
-	 *            the response object
+	 * @param req      the request object
+	 * @param response the response body
+	 * @param resp     the response object
 	 */
 	public static void sendResponse(HttpServletRequest req, String response, HttpServletResponse resp) {
 		enableCORS(req, resp);
@@ -592,14 +546,10 @@ public final class HttpUtils {
 	 * reason. The body is HTML formatted and contains the message.
 	 * 
 	 * 
-	 * @param req
-	 *            the request object
-	 * @param errorCode
-	 *            the status code
-	 * @param message
-	 *            reason for the error
-	 * @param resp
-	 *            the response object
+	 * @param req       the request object
+	 * @param errorCode the status code
+	 * @param message   reason for the error
+	 * @param resp      the response object
 	 * 
 	 */
 	public static void sendError(HttpServletRequest req, int errorCode, String message, HttpServletResponse resp) {
@@ -616,8 +566,7 @@ public final class HttpUtils {
 	 * Get the path out of the URL from this request, trimming out slashes (both at
 	 * the beginning and end) and turning nulls into empty paths.
 	 * 
-	 * @param req
-	 *            the request object
+	 * @param req the request object
 	 * @return the clean path
 	 */
 	public static String getCleanPath(HttpServletRequest req) {
@@ -645,14 +594,11 @@ public final class HttpUtils {
 	/**
 	 * Download the file pointed by the given URI and save it into the target file.
 	 * 
-	 * @param uri
-	 *            the URI of the file to download
-	 * @param target
-	 *            local file to store the download into
-	 * @throws IOException
-	 *             if a communication error occurs. Specifically throw an
-	 *             {@link HttpErrorResponseException} if anything but a 200 OK is
-	 *             returned.
+	 * @param uri    the URI of the file to download
+	 * @param target local file to store the download into
+	 * @throws IOException if a communication error occurs. Specifically throw an
+	 *                     {@link HttpErrorResponseException} if anything but a 200
+	 *                     OK is returned.
 	 */
 	public void downloadFile(URI uri, File target) throws IOException {
 		downloadFile(uri, target, null, null);
@@ -661,18 +607,13 @@ public final class HttpUtils {
 	/**
 	 * Download the file pointed by the given URI and save it into the target file.
 	 * 
-	 * @param uri
-	 *            the URI of the file to download
-	 * @param target
-	 *            local file to store the download into
-	 * @param authScope
-	 *            the authentication scope
-	 * @param credentials
-	 *            username and password credentials for Basic authentication
-	 * @throws IOException
-	 *             if a communication error occurs. Specifically throw an
-	 *             {@link HttpErrorResponseException} if anything but a 200 OK is
-	 *             returned.
+	 * @param uri         the URI of the file to download
+	 * @param target      local file to store the download into
+	 * @param authScope   the authentication scope
+	 * @param credentials username and password credentials for Basic authentication
+	 * @throws IOException if a communication error occurs. Specifically throw an
+	 *                     {@link HttpErrorResponseException} if anything but a 200
+	 *                     OK is returned.
 	 */
 
 	public void downloadFile(URI uri, File target, AuthScope authScope, UsernamePasswordCredentials credentials)
@@ -840,14 +781,15 @@ public final class HttpUtils {
 
 		additionalHeaders.put(HttpHeaders.CONTENT_TYPE, temp);
 		if (forceArrayResult && !replyBody.startsWith("[")) {
-			if(replyBody.equals("{ }") || replyBody.equals("{}") ) {
+			if (replyBody.equals("{ }") || replyBody.equals("{}")) {
 				replyBody = "[]";
+			} else {
+				replyBody = "[" + replyBody + "]";
 			}
-			replyBody = "[" + replyBody + "]";
 		}
 		boolean compress = false;
 		String options = request.getParameter(NGSIConstants.QUERY_PARAMETER_OPTIONS);
-		if(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)){
+		if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
 			compress = true;
 		}
 		return generateReply(replyBody, additionalHeaders, compress);
@@ -890,7 +832,8 @@ public final class HttpUtils {
 		return Float.parseFloat(header.substring(begin + 2));
 	}
 
-	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders, boolean compress) {
+	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,
+			boolean compress) {
 		return generateReply(replyBody, additionalHeaders, HttpStatus.OK, compress);
 	}
 
@@ -906,10 +849,10 @@ public final class HttpUtils {
 			}
 		}
 		byte[] body;
-		if(compress) {
+		if (compress) {
 			body = zipResult(replyBody);
 			builder.header(HttpHeaders.CONTENT_TYPE, "application/zip");
-		}else {
+		} else {
 			body = replyBody.getBytes();
 		}
 		return builder.body(body);
@@ -929,7 +872,7 @@ public final class HttpUtils {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		return baos.toByteArray();
 	}
 
