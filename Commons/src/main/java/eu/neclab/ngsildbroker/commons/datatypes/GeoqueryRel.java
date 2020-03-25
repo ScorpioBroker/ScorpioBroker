@@ -16,10 +16,10 @@ public class GeoqueryRel {
 	public GeoqueryRel(GeoRelation georel) {
 		super();
 		this.georelOp = georel.getRelation();
-		if(georel.getMaxDistance() != null && georel.getMaxDistance() > 0) {
+		if(georel.getMaxDistance() != null && (double) georel.getMaxDistance() > 0) {
 			this.distanceType = NGSIConstants.GEO_REL_MAX_DISTANCE;
 			this.distanceValue = "" + georel.getMaxDistance();
-		}else if(georel.getMinDistance() != null && georel.getMaxDistance() > 0) {
+		}else if(georel.getMinDistance() != null && (double) georel.getMaxDistance() > 0) {
 			this.distanceType = NGSIConstants.GEO_REL_MIN_DISTANCE;
 			this.distanceValue = "" + georel.getMinDistance();
 		}

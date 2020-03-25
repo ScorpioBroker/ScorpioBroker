@@ -106,10 +106,17 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				geoRel.setRelation(relSplit[0]);
 				for (int i = 1; i < relSplit.length; i++) {
 					String[] temp = relSplit[i].split("==");
+					Object distance;
+					try {
+						distance = Integer.parseInt(temp[1]);
+					}catch(NumberFormatException e) {
+						distance = Double.parseDouble(temp[1]);
+					}
 					if (temp[0].equalsIgnoreCase("maxDistance")) {
-						geoRel.setMaxDistance(Double.parseDouble(temp[1]));
+						
+						geoRel.setMaxDistance(distance);
 					} else if (temp[0].equalsIgnoreCase("minDistance")) {
-						geoRel.setMinDistance(Double.parseDouble(temp[1]));
+						geoRel.setMinDistance(distance);
 					}
 				}
 				geoQuery.setGeoRelation(geoRel);

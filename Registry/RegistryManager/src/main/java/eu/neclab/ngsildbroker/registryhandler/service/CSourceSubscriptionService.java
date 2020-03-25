@@ -606,7 +606,7 @@ public class CSourceSubscriptionService {
 				}
 				return SpatialPredicate.Intersects.evaluate(entityShape, queryShape);
 			} else if (GEO_REL_NEAR.equals(relation)) {
-				Shape bufferedShape = queryShape.getBuffered(geoQuery.getGeoRelation().getMaxDistance(),
+				Shape bufferedShape = queryShape.getBuffered((double) geoQuery.getGeoRelation().getMaxDistance(),
 						queryShape.getContext());
 				if (geoQuery.getGeoRelation().getMaxDistance() != null) {
 					return SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
@@ -660,10 +660,10 @@ public class CSourceSubscriptionService {
 		if (origRelString.equals(GEO_REL_NEAR)) {
 			if (origRel.getMinDistance() != null) {
 				newRel.setRelation(GEO_REL_WITHIN);
-				return !evaluateGeoQuery(regGeoQuery, geoValue, origRel.getMinDistance());
+				return !evaluateGeoQuery(regGeoQuery, geoValue, (double) origRel.getMinDistance());
 			} else if (origRel.getMaxDistance() != null) {
 				newRel.setRelation(GEO_REL_INTERSECTS);
-				return evaluateGeoQuery(regGeoQuery, geoValue, origRel.getMaxDistance());
+				return evaluateGeoQuery(regGeoQuery, geoValue, (double) origRel.getMaxDistance());
 			}
 		} else if (origRelString.equals(GEO_REL_CONTAINS)) {
 			newRel.setRelation(origRelString);

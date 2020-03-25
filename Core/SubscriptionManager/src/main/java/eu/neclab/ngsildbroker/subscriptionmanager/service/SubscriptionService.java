@@ -678,7 +678,7 @@ public class SubscriptionService implements SubscriptionManager {
 					}
 					return SpatialPredicate.Intersects.evaluate(entityShape, queryShape);
 				} else if (GEO_REL_NEAR.equals(relation)) {
-					Shape bufferedShape = queryShape.getBuffered(geoQuery.getGeoRelation().getMaxDistance(),
+					Shape bufferedShape = queryShape.getBuffered((double) geoQuery.getGeoRelation().getMaxDistance(),
 							queryShape.getContext());
 					if (geoQuery.getGeoRelation().getMaxDistance() != null) {
 						return SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);

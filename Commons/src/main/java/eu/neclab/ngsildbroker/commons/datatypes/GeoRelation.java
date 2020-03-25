@@ -7,8 +7,8 @@ package eu.neclab.ngsildbroker.commons.datatypes;
  */
 public class GeoRelation {
 
-	private Double maxDistance;
-	private Double minDistance;
+	private Object maxDistance;
+	private Object minDistance;
 	private String relation;
 
 	public GeoRelation() {
@@ -19,19 +19,19 @@ public class GeoRelation {
 
 	}
 
-	public Double getMaxDistance() {
+	public Object getMaxDistance() {
 		return maxDistance;
 	}
 
-	public void setMaxDistance(Double maxDistance) {
+	public void setMaxDistance(Object maxDistance) {
 		this.maxDistance = maxDistance;
 	}
 
-	public Double getMinDistance() {
+	public Object getMinDistance() {
 		return minDistance;
 	}
 
-	public void setMinDistance(Double minDistance) {
+	public void setMinDistance(Object minDistance) {
 		this.minDistance = minDistance;
 	}
 
@@ -50,21 +50,13 @@ public class GeoRelation {
 			result.append(";");
 			result.append("maxDistance");
 			result.append("==");
-			if (maxDistance % 1 == 0) {
-				result.append(maxDistance.intValue());
-			} else {
-				result.append(maxDistance);
-			}
+			result.append(maxDistance);
 		}
 		if (minDistance != null) {
 			result.append(";");
 			result.append("minDistance");
 			result.append("==");
-			if (minDistance % 1 == 0) {
-				result.append(minDistance.intValue());
-			} else {
-				result.append(minDistance);
-			}
+			result.append(minDistance);
 		}
 		return result.toString();
 

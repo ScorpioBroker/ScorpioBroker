@@ -13,7 +13,6 @@ import com.netflix.discovery.shared.Application;
 public class MicroServiceUtils {
 	private final static Logger logger = LogManager.getLogger(MicroServiceUtils.class);
 	
-	
 	public static String getResourceURL(EurekaClient eurekaClient, String resource) {
 		logger.trace("getSubscriptionResourceURL() :: started");
 		Application application = eurekaClient.getApplication("gateway");
