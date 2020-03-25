@@ -678,11 +678,13 @@ public class SubscriptionService implements SubscriptionManager {
 					}
 					return SpatialPredicate.Intersects.evaluate(entityShape, queryShape);
 				} else if (GEO_REL_NEAR.equals(relation)) {
-					Shape bufferedShape = queryShape.getBuffered((double) geoQuery.getGeoRelation().getMaxDistance(),
-							queryShape.getContext());
 					if (geoQuery.getGeoRelation().getMaxDistance() != null) {
+						Shape bufferedShape = queryShape.getBuffered(geoQuery.getGeoRelation().getMaxDistanceAsDouble(),
+								queryShape.getContext());
 						return SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
 					} else if (geoQuery.getGeoRelation().getMinDistance() != null) {
+						Shape bufferedShape = queryShape.getBuffered(geoQuery.getGeoRelation().getMinDistanceAsDouble(),
+								queryShape.getContext());
 						return !SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
 					} else {
 						return false;
