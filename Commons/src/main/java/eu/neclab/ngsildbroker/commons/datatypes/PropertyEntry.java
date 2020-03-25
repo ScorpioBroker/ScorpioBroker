@@ -12,7 +12,7 @@ public class PropertyEntry extends BaseEntry{
 	
 	public PropertyEntry(String dataSetId, Object value) {
 		super(dataSetId);
-		this.value = value;
+		this.value = value; 
 		this.type = NGSIConstants.NGSI_LD_PROPERTY;
 	}
 	
