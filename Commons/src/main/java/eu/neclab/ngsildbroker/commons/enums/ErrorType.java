@@ -8,7 +8,7 @@ package eu.neclab.ngsildbroker.commons.enums;
 public enum ErrorType {
 
 	None(200, "none", "none"),
-	InvalidRequest(400, "http://uri.etsi.org/ngsi-ld/errors/InvalidRequest", "Invalid request."),
+	InvalidRequest(406, "http://uri.etsi.org/ngsi-ld/errors/InvalidRequest", "Invalid request."),
 	BadRequestData(400, "http://uri.etsi.org/ngsi-ld/errors/BadRequestData", "Bad Request Data."),
 	TooComplexQuery(403, "http://uri.etsi.org/ngsi-ld/errors/TooComplexQuery", "Too complex query"),
 	TooManyResults(403, "http://uri.etsi.org/ngsi-ld/errors/TooManyResults ", "Too many results"),
