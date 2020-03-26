@@ -42,7 +42,7 @@ install:
 
 before_script:
   - cd $TRAVIS_BUILD_DIR
-  - mvn clean package -DskipDefault -PbuildForTest -B
+  - mvn clean package -DskipDefault -DskipTests -PbuildForTest -B
   - java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
   #- java -jar ./SpringCloudModules/config-server/target/config-server.jar &
   - sleep 10
