@@ -124,9 +124,8 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			}
 
 		} else {
-			// TODO handle errors for notifications
 			String jsonStr = DataSerializer.toJson(notification);
-			logger.trace("Sending notification");
+			logger.info("Sending notification");
 			ResponseEntity<byte[]> reply;
 			long now = System.currentTimeMillis();
 			try {
