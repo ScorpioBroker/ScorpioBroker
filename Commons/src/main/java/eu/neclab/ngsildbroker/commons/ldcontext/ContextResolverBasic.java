@@ -431,24 +431,19 @@ public class ContextResolverBasic {
 	private CompactedJson compact(Object json, Map<String, Object> context, List<Object> rawContext)
 			throws ResponseException {
 		// validateAndCleanContext(context);
-		List<Object> fullContext = new ArrayList<Object>();
-		if (context != null && !context.isEmpty()) {
-			fullContext.add(context);
-		}
-		fullContext.add(CORE_CONTEXT_URL_STR);
-		// fullContext.add(BASE_CONTEXT);
 		CompactedJson result = new CompactedJson();
 		int hash = json.hashCode();
 		if (context.containsKey(IS_FULL_VALID)) {
 			result.setContextUrl((String) rawContext.get(0));
 		} else {
-			result.setContextUrl(generateAtContextServing(rawContext, hash));
 			rawContext.add(CORE_CONTEXT_URL_STR);
+			result.setContextUrl(generateAtContextServing(rawContext, hash));
+			
 		}
 		context.remove(IS_FULL_VALID);
 		try {
 
-			Map<String, Object> tempResult = JsonLdProcessor.compact(json, fullContext, defaultOptions);
+			Map<String, Object> tempResult = JsonLdProcessor.compact(json, rawContext, defaultOptions);
 			unprotectGeoProps(tempResult);
 //			unprotectLocationFromRegistry(tempResult);
 			if (tempResult.containsKey("@graph")) {
