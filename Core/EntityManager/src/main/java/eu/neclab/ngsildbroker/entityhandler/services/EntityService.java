@@ -949,7 +949,7 @@ public class EntityService {
 					continue;
 				}
 				try {
-					UpdateResult updateResult = updateMessage(entityId, objectMapper.writeValueAsString(next));
+					AppendResult updateResult = appendMessage(entityId, objectMapper.writeValueAsString(next), null);
 					if (updateResult.getStatus()) {
 						result.addSuccess(entityId);
 					} else {
@@ -1011,9 +1011,9 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						ResponseException responseException = ((ResponseException) e);
 						if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
-							UpdateResult updateResult;
+							AppendResult updateResult;
 							try {
-								updateResult = updateMessage(entityId, entityString);
+								updateResult = appendMessage(entityId, entityString, null);
 
 								if (updateResult.getStatus()) {
 									result.addSuccess(entityId);
