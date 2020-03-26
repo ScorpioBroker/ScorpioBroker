@@ -175,4 +175,6 @@ public interface NGSIConstants {
 	public static final List<String> ALLOWED_GEOMETRIES = Arrays.asList("Point", "MultiPoint", "LineString","MultiLineString", "Polygon", "MultiPolygon");
 	public static final List<String> ALLOWED_GEOREL = Arrays.asList("near","equals","disjoint","intersects","within","contains","overlaps");
 	public static final List<String> SPECIAL_PROPERTIES = Arrays.asList(NGSI_LD_CREATED_AT, NGSI_LD_OBSERVED_AT, NGSI_LD_MODIFIED_AT, NGSI_LD_DATA_SET_ID, NGSI_LD_UNIT_CODE);
+	public static final String MQTT_QOS = "mqtt_qos";
+	public static final String MQTT_VERSION = "mqtt_version";
 }

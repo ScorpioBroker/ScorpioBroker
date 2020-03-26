@@ -118,7 +118,7 @@ public class IntervalNotificationHandler {
 						System.currentTimeMillis(), subscription.getId(), entities, null, null, 0, true);
 				notificationHandler.notify(notification, subscription.getNotification().getEndPoint().getUri(),
 						subscription.getNotification().getEndPoint().getAccept(), subscription.getId().toString(),
-						subscriptionRequest.getContext(), 0);
+						subscriptionRequest.getContext(), 0, null);
 			} catch (URISyntaxException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

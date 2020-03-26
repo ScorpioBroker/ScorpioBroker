@@ -55,7 +55,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 public abstract class BaseNotificationHandler implements NotificationHandler {
 	
 	
-	protected abstract void sendReply(ResponseEntity<byte[]> reply, URI callback) throws Exception;
+	protected abstract void sendReply(ResponseEntity<byte[]> reply, URI callback, Map<String, String> clientSettings) throws Exception;
 	private final Logger logger = LogManager.getLogger(this.getClass());
 	private SubscriptionService subscriptionManagerService;
 	protected HttpUtils httpUtils;
@@ -74,7 +74,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 	@Override
 	public void notify(Notification notification, URI callback, String acceptHeader, String subId, List<Object> context,
-			int throttling) {
+			int throttling, Map<String, String> clientSettings) {
 
 		ArrayList<String> subIds = new ArrayList<String>();
 		subIds.add(subId);
@@ -109,7 +109,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 								ResponseEntity<byte[]> reply = generateNotificationResponse(acceptHeader, jsonStr,
 										context);
 								logger.debug("body to be sent: " + reply.getBody().toString());
-								sendReply(reply, callback);
+								sendReply(reply, callback, clientSettings);
 								subscriptionManagerService.reportSuccessfulNotification(subId, now);
 							} catch (Exception e) {
 								logger.error("Exception ::", e);
@@ -132,7 +132,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			try {
 				reply = generateNotificationResponse(acceptHeader, jsonStr, context);
 				logger.info(reply.getBody().toString());
-				sendReply(reply, callback);
+				sendReply(reply, callback, clientSettings);
 				subscriptionManagerService.reportNotification(subId, now);
 			} catch (Exception e) {
 				logger.error("Exception ::", e);
