@@ -239,7 +239,7 @@ public class SerializationTools {
 				}
 
 			}
-			if(propValue == null) {
+			if (propValue == null) {
 				throw new JsonParseException("Values cannot be null");
 			}
 			PropertyEntry propEntry = new PropertyEntry(dataSetId, propValue);
@@ -271,7 +271,15 @@ public class SerializationTools {
 	private static Object getHasValue(JsonElement element) {
 		if (element.isJsonArray()) {
 			JsonArray array = element.getAsJsonArray();
-			return getHasValue(array.get(0));
+			ArrayList<Object> result = new ArrayList<Object>();
+			array.forEach(new Consumer<JsonElement>() {
+				@Override
+				public void accept(JsonElement t) {
+					result.add(getHasValue(t));
+
+				}
+			});
+			return result;
 		} else if (element.isJsonObject()) {
 			JsonObject jsonObj = element.getAsJsonObject();
 			if (jsonObj.has(NGSIConstants.JSON_LD_VALUE) && jsonObj.has(NGSIConstants.JSON_LD_TYPE)) {
@@ -319,7 +327,9 @@ public class SerializationTools {
 		} else {
 			// should never be the case... but just in case store the element as string
 			// representation
-			return element.getAsString();
+			ArrayList<String> result = new ArrayList<String>();
+			result.add(element.getAsString());
+			return result;
 		}
 
 	}
@@ -537,23 +547,27 @@ public class SerializationTools {
 
 	@SuppressWarnings("unchecked")
 	private static JsonElement getJson(Object value, JsonSerializationContext context) {
-		JsonObject obj;
+		JsonElement result;
 		if (value instanceof Map) {
-			obj = getComplexValue((Map<String, List<Object>>) value, context);
-		}
-		// else if(value instanceof List) {
-		// should never happen
-		// }
-		else {
+			return getComplexValue((Map<String, List<Object>>) value, context);
+		} else if (value instanceof List) {
+			List<Object> myList = (List<Object>) value;
+			JsonArray myArray = new JsonArray();
+			for (Object object : myList) {
+				myArray.add(getJson(object, context));
+			}
+			result = myArray;
+		} else {
+
 			if (value instanceof TypedValue) {
 				return context.serialize(value);
 			}
-			obj = new JsonObject();
-			obj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(value));
+			result = new JsonObject();
+			((JsonObject) result).add(NGSIConstants.JSON_LD_VALUE, context.serialize(value));
 
 		}
 
-		return obj;
+		return result;
 	}
 
 	private static JsonObject getComplexValue(Map<String, List<Object>> value, JsonSerializationContext context) {
