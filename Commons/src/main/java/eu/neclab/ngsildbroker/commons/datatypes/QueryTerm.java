@@ -818,7 +818,7 @@ public class QueryTerm {
 				attribPath.add(expandAttributeName(subPart));
 			}
 		} else if (attribute.matches(URI)) {
-			attribPath.add(attribute);
+			attribPath.add(expandAttributeName(attribute));
 		} else if (attribute.contains(".")) {
 			for (String subPart : attribute.split("\\.")) {
 				attribPath.add(expandAttributeName(subPart));

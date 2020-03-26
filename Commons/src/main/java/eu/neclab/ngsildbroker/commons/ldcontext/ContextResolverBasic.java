@@ -12,6 +12,8 @@ import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -31,7 +33,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 @Component
 public class ContextResolverBasic {
-
+	private final static Logger logger = LogManager.getLogger(ContextResolverBasic.class);
 	private URI CORE_CONTEXT_URL;
 	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	private String CORE_CONTEXT_URL_STR;
@@ -164,9 +166,8 @@ public class ContextResolverBasic {
 
 	}
 
-	
-
-	private Object getProperGeoJson(Object value, ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
+	private Object getProperGeoJson(Object value, ArrayList<Object> usedContext)
+			throws JsonGenerationException, IOException {
 		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
 		compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
 		String geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
@@ -233,11 +234,12 @@ public class ContextResolverBasic {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
 			if (key.equals(NGSIConstants.NGSI_LD_LOCATION)) {
-				if(((List)mapValue).get(0) instanceof Map) {
-					Map temp = (Map)((List)mapValue).get(0);
+				if (((List) mapValue).get(0) instanceof Map) {
+					Map temp = (Map) ((List) mapValue).get(0);
 					if (temp.get(NGSIConstants.JSON_LD_TYPE) != null) {
-						if(!((List)temp.get(NGSIConstants.JSON_LD_TYPE)).get(0).equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
-							//we are in a location entry of registry as this is not a geo property
+						if (!((List) temp.get(NGSIConstants.JSON_LD_TYPE)).get(0)
+								.equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
+							// we are in a location entry of registry as this is not a geo property
 							mapEntry.setValue(getProperGeoJson(mapValue, usedContext));
 							continue;
 						}
@@ -325,27 +327,29 @@ public class ContextResolverBasic {
 		boolean typeFound = false;
 		Object value = null;
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
-			
+
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
 			if (key.equals(NGSIConstants.JSON_LD_CONTEXT)) {
 				continue;
 			}
 			if (key.equals(NGSIConstants.NGSI_LD_LOCATION_SHORT)) {
-				if(mapValue instanceof String) {
+				if (mapValue instanceof String) {
 					mapEntry.setValue(JsonUtils.fromString((String) mapValue));
 					continue;
 				}
 			}
-			if(key.equals(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES_SHORT) || key.equals(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT) || key.equals(NGSIConstants.NGSI_LD_ENTITIES_SHORT)) {
-				if(!(mapValue instanceof List)) {
+			if (key.equals(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES_SHORT)
+					|| key.equals(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT)
+					|| key.equals(NGSIConstants.NGSI_LD_ENTITIES_SHORT)) {
+				if (!(mapValue instanceof List)) {
 					ArrayList<Object> temp = new ArrayList<Object>();
 					temp.add(mapValue);
 					mapEntry.setValue(temp);
 				}
 				continue;
 			}
-			
+
 			if (NGSIConstants.QUERY_PARAMETER_TYPE.equals(key) && (mapValue instanceof String)) {
 
 				if (NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT.equals(mapValue)) {
@@ -438,7 +442,7 @@ public class ContextResolverBasic {
 		} else {
 			rawContext.add(CORE_CONTEXT_URL_STR);
 			result.setContextUrl(generateAtContextServing(rawContext, hash));
-			
+
 		}
 		context.remove(IS_FULL_VALID);
 		try {
@@ -456,7 +460,7 @@ public class ContextResolverBasic {
 				}
 				result.setCompactedWithContext(JsonUtils.toPrettyString(toCompact));
 			} else {
-				
+
 				tempResult.put(NGSIConstants.JSON_LD_CONTEXT, rawContext);
 				result.setCompactedWithContext(JsonUtils.toPrettyString(tempResult));
 				tempResult.remove(NGSIConstants.JSON_LD_CONTEXT);
@@ -469,8 +473,6 @@ public class ContextResolverBasic {
 		}
 		return result;
 	}
-
-	
 
 	private String generateAtContextServing(List<Object> rawContext, int hash) {
 		ArrayList<Object> sorted = new ArrayList<Object>();
@@ -509,11 +511,13 @@ public class ContextResolverBasic {
 						result.put(IS_FULL_VALID, true);
 					} else {
 						try {
-						result.putAll(getRemoteContext(entry.toString()));
-						} catch(ResponseException e) {
-							//this can happen as not all "remote" entries are really remote contexts 
-							//print error to show up in log and add "remote" as is to used context
-							e.printStackTrace();
+							result.putAll(getRemoteContext(entry.toString()));
+						} catch (ResponseException e) {
+							// this can happen as not all "remote" entries are really remote contexts
+							// print error to show up in log and add "remote" as is to used context
+							logger.warn(
+									"Failed to get a remote context. This can happen as you can also just give a url. Check the error!"
+											+ e.getMessage());
 						}
 					}
 				} else if (entry instanceof Map) {
