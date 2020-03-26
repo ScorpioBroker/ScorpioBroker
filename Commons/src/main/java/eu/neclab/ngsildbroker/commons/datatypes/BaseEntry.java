@@ -17,16 +17,18 @@ public abstract class BaseEntry {
 
 	public BaseEntry(String dataSetId) {
 		this.dataSetId = dataSetId;
-		if(this.dataSetId == null || this.dataSetId.trim().isEmpty()) {
+		if (this.dataSetId == null || this.dataSetId.trim().isEmpty()) {
 			this.dataSetId = UUID.randomUUID().toString();
 		}
 	}
+
 	public String getDataSetId() {
 		return dataSetId;
 	}
+
 	public void setDataSetId(String dataSetId) {
 		this.dataSetId = dataSetId;
-		if(this.dataSetId == null || this.dataSetId.trim().isEmpty()) {
+		if (this.dataSetId == null || this.dataSetId.trim().isEmpty()) {
 			this.dataSetId = UUID.randomUUID().toString();
 		}
 	}
@@ -44,7 +46,11 @@ public abstract class BaseEntry {
 	}
 
 	public void setObservedAt(Long observedAt) {
-		this.observedAt = observedAt;
+		if (observedAt == null) {
+			this.observedAt = -1l;
+		} else {
+			this.observedAt = observedAt;
+		}
 	}
 
 	public List<Property> getProperties() {
@@ -92,7 +98,11 @@ public abstract class BaseEntry {
 	}
 
 	public void setCreatedAt(Long createdAt) {
-		this.createdAt = createdAt;
+		if (createdAt == null) {
+			this.createdAt = -1l;
+		} else {
+			this.createdAt = createdAt;
+		}
 	}
 
 	public long getModifiedAt() {
@@ -100,7 +110,11 @@ public abstract class BaseEntry {
 	}
 
 	public void setModifiedAt(Long modifiedAt) {
-		this.modifiedAt = modifiedAt;
+		if (createdAt == null) {
+			this.modifiedAt = -1l;
+		} else {
+			this.modifiedAt = modifiedAt;
+		}
 	}
 
 }

@@ -271,15 +271,7 @@ public class SerializationTools {
 	private static Object getHasValue(JsonElement element) {
 		if (element.isJsonArray()) {
 			JsonArray array = element.getAsJsonArray();
-			ArrayList<Object> result = new ArrayList<Object>();
-			array.forEach(new Consumer<JsonElement>() {
-				@Override
-				public void accept(JsonElement t) {
-					result.add(getHasValue(t));
-
-				}
-			});
-			return result;
+			return getHasValue(array.get(0));
 		} else if (element.isJsonObject()) {
 			JsonObject jsonObj = element.getAsJsonObject();
 			if (jsonObj.has(NGSIConstants.JSON_LD_VALUE) && jsonObj.has(NGSIConstants.JSON_LD_TYPE)) {
@@ -327,9 +319,7 @@ public class SerializationTools {
 		} else {
 			// should never be the case... but just in case store the element as string
 			// representation
-			ArrayList<String> result = new ArrayList<String>();
-			result.add(element.getAsString());
-			return result;
+			return element.getAsString();
 		}
 
 	}
@@ -479,7 +469,7 @@ public class SerializationTools {
 		JsonArray observedArray = new JsonArray();
 		JsonObject observedObj = new JsonObject();
 		observedObj.add(NGSIConstants.JSON_LD_VALUE,
-				context.serialize(informatter.format(Instant.ofEpochMilli(timestamp))));
+				context.serialize(formatter.format(Instant.ofEpochMilli(timestamp))));
 		observedObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
 		observedArray.add(observedObj);
 		return observedArray;

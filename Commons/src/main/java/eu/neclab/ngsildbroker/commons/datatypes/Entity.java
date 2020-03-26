@@ -57,19 +57,19 @@ public class Entity {
 				if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
 					if (((Property) baseProp).getEntries() != null) {
 						createdAtProp = (Property) baseProp;
-						createdAt = (Long) createdAtProp.getEntries().get(0).getValue();
+						createdAt = (Long) createdAtProp.getEntries().values().iterator().next().getValue();
 					}
 
 				} else if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
 					if (((Property) baseProp).getEntries() != null) {
 						modifiedAtProp = (Property) baseProp;
-						modifiedAt = (Long) modifiedAtProp.getEntries().get(0).getValue();
+						modifiedAt = (Long) modifiedAtProp.getEntries().values().iterator().next().getValue();
 					}
 
 				} else if (baseProp.id.toString().equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
 					if (((Property) baseProp).getEntries() != null) {
 						observedAtProp = (Property) baseProp;
-						observedAt = (Long) observedAtProp.getEntries().get(0).getValue();
+						observedAt = (Long) observedAtProp.getEntries().values().iterator().next().getValue();
 					}
 				} else {
 					this.properties.add((Property) baseProp);
