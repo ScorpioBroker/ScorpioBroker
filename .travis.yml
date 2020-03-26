@@ -32,7 +32,7 @@ install:
   - cd ..
   - mkdir testsuite
   - cd testsuite
-  - curl -LO https://github.com/FIWARE/NGSI-LD_TestSuite/archive/master.zip
+  - curl -LO https://github.com/ScorpioBroker/NGSI-LD_TestSuite/archive/master.zip
   - shasum -a 256 master.zip
   - unzip -q master.zip
   - rm master.zip
