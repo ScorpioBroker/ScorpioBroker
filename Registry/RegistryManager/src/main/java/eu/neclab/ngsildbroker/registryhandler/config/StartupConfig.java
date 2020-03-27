@@ -70,10 +70,10 @@ public class StartupConfig {
 	@PostConstruct
 	public void init() {
 
-		logger.info("registering broker with parent :: " + parentUrl);
+		logger.debug("registering broker with parent :: " + parentUrl);
 		// abort registration in case of fedration broker (SELF)
 		if ("SELF".equalsIgnoreCase(parentUrl)) {
-			logger.info("Parent Broker settings detected abort registration.");
+			logger.debug("Parent Broker settings detected abort registration.");
 			return;
 		}
 		if (parentUrl == null || geom == null) {
@@ -119,12 +119,12 @@ public class StartupConfig {
 		try {
 			// set headers
 
-			logger.info("payload ::" + payload);
+			logger.debug("payload ::" + payload);
 
 			// call
 			restTemplate.postForObject(parentUri, entity, String.class);
 
-			logger.info("Broker registered with parent at :" + parentUrl);
+			logger.debug("Broker registered with parent at :" + parentUrl);
 		} catch (HttpClientErrorException | HttpServerErrorException httpClientOrServerExc) {
 			logger.error("status code::" + httpClientOrServerExc.getStatusCode());
 			logger.error("Message::" + httpClientOrServerExc.getMessage());
@@ -132,7 +132,7 @@ public class StartupConfig {
 				logger.error("Broker registration failed due to parent broker.");
 			}
 			if (HttpStatus.CONFLICT.equals(httpClientOrServerExc.getStatusCode())) {
-				logger.info("Broker already registered with parent. Attempting patch");
+				logger.debug("Broker already registered with parent. Attempting patch");
 				try {
 				restTemplate.patchForObject(parentPatchUri, entity, String.class);
 				} catch (Exception e) {

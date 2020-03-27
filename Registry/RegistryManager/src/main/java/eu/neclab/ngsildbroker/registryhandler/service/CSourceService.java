@@ -278,8 +278,8 @@ public class CSourceService {
 //	public void handleEntityCreate(Message<?> message) {
 //		String payload = new String((byte[]) message.getPayload());
 //		String key = operations.getMessageKey(message);
-//		logger.info("key received ::::: " + key);
-//		logger.info("Received message: {} :::: " + payload);
+//		logger.debug("key received ::::: " + key);
+//		logger.debug("Received message: {} :::: " + payload);
 //	}
 
 	@KafkaListener(topics = "${csource.registry.topic}", groupId = "regmanger") // (CSourceConsumerChannel.contextRegistryReadChannel)

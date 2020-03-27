@@ -163,7 +163,7 @@ public class EntityService {
 	 */
 	public String createMessage(String payload) throws ResponseException, Exception {
 		// get message channel for ENTITY_CREATE topic.
-		logger.info("createMessage() :: started");
+		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
 		JsonNode json = SerializationTools.parseJson(objectMapper, payload);
 		JsonNode id = json.get(NGSIConstants.JSON_LD_ID);
@@ -172,7 +172,7 @@ public class EntityService {
 		if (id == null || type == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		logger.info("entity id " + id.asText());
+		logger.debug("entity id " + id.asText());
 		// check in-memory hashmap for id
 		if (entityTopicMap.isExist(id.asText())) {
 			throw new ResponseException(ErrorType.AlreadyExists);
@@ -208,7 +208,7 @@ public class EntityService {
 				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
 				objectMapper.writeValueAsBytes(getKeyValueEntity(json)));
 
-		logger.info("createMessage() :: completed");
+		logger.debug("createMessage() :: completed");
 		return id.asText();
 	}
 

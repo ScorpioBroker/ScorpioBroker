@@ -126,12 +126,12 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 		} else {
 			String jsonStr = DataSerializer.toJson(notification);
-			logger.info("Sending notification");
+			logger.debug("Sending notification");
 			ResponseEntity<byte[]> reply;
 			long now = System.currentTimeMillis();
 			try {
 				reply = generateNotificationResponse(acceptHeader, jsonStr, context);
-				logger.info(new String(reply.getBody()));
+				logger.debug(new String(reply.getBody()));
 				sendReply(reply, callback, clientSettings);
 				subscriptionManagerService.reportNotification(subId, now);
 			} catch (Exception e) {

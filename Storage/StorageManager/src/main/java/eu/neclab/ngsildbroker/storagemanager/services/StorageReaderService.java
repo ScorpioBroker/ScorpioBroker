@@ -50,7 +50,7 @@ public class StorageReaderService {
 		 * @Header(KafkaHeaders.TIMESTAMP) String producerTimestamp,
 		 * 
 		 * @Header(KafkaHeaders.TIMESTAMP_TYPE) String producerTimestampType
-		 * logger.info("Producer timestamp: " + producerTimestamp + " (" +
+		 * logger.debug("Producer timestamp: " + producerTimestamp + " (" +
 		 * producerTimestampType + ")");
 		 * 
 		 */

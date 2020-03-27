@@ -293,9 +293,9 @@ public class QueryService {
 		// get consumer record
 		ConsumerRecord<String, byte[]> consumerRecord = sendAndReceive.get();
 		// return consumer value
-		logger.info("getFromContextRegistry() :: completed");
+		logger.debug("getFromContextRegistry() :: completed");
 		contextRegistryData = new String((byte[]) consumerRecord.value());
-		logger.info("getFromContextRegistry() data broker list::" + contextRegistryData);
+		logger.debug("getFromContextRegistry() data broker list::" + contextRegistryData);
 		return contextRegistryData;
 	}
 
