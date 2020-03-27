@@ -199,7 +199,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@Override
 	public URI subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
-
+		logger.info("Subscribe got called " + subscriptionRequest.getSubscription().toString());
 		Subscription subscription = subscriptionRequest.getSubscription();
 		validateSub(subscription);
 		if (subscription.getId() == null) {
@@ -414,7 +414,7 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleCreate(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
 		String key = kafkaOps.getMessageKey(message);
-		logger.debug("Create got called: " + payload);
+		logger.info("Create got called: " + payload);
 		logger.debug(key);
 		checkSubscriptionsWithCreate(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
