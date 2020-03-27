@@ -6,6 +6,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -130,7 +131,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			long now = System.currentTimeMillis();
 			try {
 				reply = generateNotificationResponse(acceptHeader, jsonStr, context);
-				logger.info(reply.getBody().toString());
+				logger.info(Arrays.toString(reply.getBody()));
 				sendReply(reply, callback, clientSettings);
 				subscriptionManagerService.reportNotification(subId, now);
 			} catch (Exception e) {

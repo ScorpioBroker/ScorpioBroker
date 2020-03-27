@@ -105,6 +105,16 @@ public class NotificationParam {
 	public void setFormat(Format format) {
 		this.format = format;
 	}
+
+
+
+	@Override
+	public String toString() {
+		return "NotificationParam [attributeNames=" + attributeNames + ", endPoint=" + endPoint + ", format=" + format
+				+ ", timesSent=" + timesSent + ", lastNotification=" + lastNotification
+				+ ", lastSuccessfulNotification=" + lastSuccessfulNotification + ", lastFailedNotification="
+				+ lastFailedNotification + "]";
+	}
 	
 
 }
