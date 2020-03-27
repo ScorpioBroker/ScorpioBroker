@@ -35,13 +35,13 @@ public class Query extends BaseOperation {
 	}
 
 
-	private List<String> attributeNames;
-	private List<EntityInfo> entities = new ArrayList<EntityInfo>();
-	private String ldContext;
-	private LDGeoQuery ldGeoQuery;
-	private String ldQuery;
-	private LDTemporalQuery ldTempQuery;
-	private List<URI> requestorList;
+	protected List<String> attributeNames;
+	protected List<EntityInfo> entities = new ArrayList<EntityInfo>();
+	protected String ldContext;
+	protected LDGeoQuery ldGeoQuery;
+	protected String ldQuery;
+	protected LDTemporalQuery ldTempQuery;
+	protected List<URI> requestorList;
 
 	
 	

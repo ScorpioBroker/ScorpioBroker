@@ -178,8 +178,13 @@ public class Subscription extends Query {
 	public String toString() {
 		return "Subscription [description=" + description + ", expires=" + expires + ", id=" + id + ", name=" + name
 				+ ", notification=" + notification + ", status=" + status + ", throttling=" + throttling
-				+ ", timeInterval=" + timeInterval + ", type=" + type + ", customFlags=" + customFlags + "]";
+				+ ", timeInterval=" + timeInterval + ", type=" + type + ", internal=" + internal + ", queryTerm="
+				+ queryTerm + ", attributeNames=" + attributeNames + ", entities=" + entities + ", ldContext="
+				+ ldContext + ", ldGeoQuery=" + ldGeoQuery + ", ldQuery=" + ldQuery + ", ldTempQuery=" + ldTempQuery
+				+ ", requestorList=" + requestorList + ", customFlags=" + customFlags + "]";
 	}
+
+	
 	
 	
 
