@@ -66,4 +66,9 @@ public class EntityInfo {
 
 	}
 
+	@Override
+	public String toString() {
+		return "EntityInfo [id=" + id + ", idPattern=" + idPattern + ", type=" + type + "]";
+	}
+	
 }
