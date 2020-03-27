@@ -131,7 +131,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			long now = System.currentTimeMillis();
 			try {
 				reply = generateNotificationResponse(acceptHeader, jsonStr, context);
-				logger.info(Arrays.toString(reply.getBody()));
+				logger.info(new String(reply.getBody()));
 				sendReply(reply, callback, clientSettings);
 				subscriptionManagerService.reportNotification(subId, now);
 			} catch (Exception e) {
