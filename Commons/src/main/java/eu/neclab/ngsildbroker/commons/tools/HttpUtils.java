@@ -12,6 +12,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -23,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import javax.net.ssl.SSLContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -41,8 +45,13 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.params.ConnRouteParams;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
@@ -52,7 +61,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.params.HttpParams;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,10 +195,9 @@ public final class HttpUtils {
 	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
 			AuthScope authScope, UsernamePasswordCredentials credentials) throws IOException {
 		ErrorAwareResponseHandler handler = new ErrorAwareResponseHandler();
-		return doHTTPRequest(uri, method, body, additionalHeaders, authScope, credentials, handler);
+		return doHTTPRequest2(uri, method, body, additionalHeaders, authScope, credentials, handler);
 	}
 
-	
 	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
 			AuthScope authScope, UsernamePasswordCredentials credentials, ResponseHandler<String> handler)
 			throws IOException {
@@ -253,6 +263,7 @@ public final class HttpUtils {
 
 		}
 	}
+
 	/**
 	 * Perform an HTTP request using a disposable HTTP client.
 	 * 
@@ -266,29 +277,15 @@ public final class HttpUtils {
 	private String doHTTPRequest2(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
 			AuthScope authScope, UsernamePasswordCredentials credentials, ResponseHandler<String> handler)
 			throws IOException {
-		HttpClientBuilder temp = HttpClients.custom().setHostnameVerifier(AllowAllHostnameVerifier.INSTANCE);
-		if (credentials != null) {
-			BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-			credentialsProvider.setCredentials(authScope, credentials);
-			temp = temp.setDefaultCredentialsProvider(credentialsProvider);
-		}
-		if (httpProxy != null) {
-			temp = temp.setProxy(httpProxy);
-		}
 
-		temp.setConnectionTimeToLive(REQ_TIMEOUT_MS.longValue(), TimeUnit.MILLISECONDS);
-		CloseableHttpClient httpClient = temp.build();
-		//DefaultHttpClient httpClient = new DefaultHttpClient();
-		HttpParams params = httpClient.getParams();
-		params.setParameter("http.socket.timeout", REQ_TIMEOUT_MS);
-		params.setParameter("http.connection.timeout", REQ_TIMEOUT_MS);
-		params.setParameter("http.connection-manager.timeout", REQ_TIMEOUT_MS.longValue());
-		params.setParameter("http.protocol.head-body-timeout", REQ_TIMEOUT_MS);
-
-				
-		
+		CloseableHttpClient httpClient;
+		try {
+			httpClient = getClient(authScope, credentials);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 		HttpRequestBase request;
-
 		switch (method) {
 		case GET:
 			request = new HttpGet(uri);
@@ -331,10 +328,30 @@ public final class HttpUtils {
 		try {
 			return httpClient.execute(request, handler);
 		} finally {
-			httpClient.getConnectionManager().shutdown();
 			httpClient.close();
 
 		}
+	}
+
+	private CloseableHttpClient getClient(AuthScope authScope, UsernamePasswordCredentials credentials)
+			throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+		SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, (x509CertChain, authType) -> true)
+				.build();
+		HttpClientBuilder temp = HttpClientBuilder.create().setSSLContext(sslContext)
+				.setConnectionManager(new PoolingHttpClientConnectionManager(RegistryBuilder
+						.<ConnectionSocketFactory>create().register("http", PlainConnectionSocketFactory.INSTANCE)
+						.register("https", new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE))
+						.build()));
+		if (credentials != null) {
+			BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+			credentialsProvider.setCredentials(authScope, credentials);
+			temp.setDefaultCredentialsProvider(credentialsProvider);
+		}
+		if (httpProxy != null) {
+			temp.setProxy(httpProxy);
+		}
+
+		return temp.build();
 	}
 
 	private void addBody(File body, HttpEntityEnclosingRequest req) {
@@ -378,7 +395,7 @@ public final class HttpUtils {
 	public String doGet(URI uri) throws IOException {
 		return doGet(uri, null, null, null, null);
 	}
-	
+
 	public String doGet(URI uri, ResponseHandler<String> handler) throws IOException {
 		return doGet(uri, null, handler);
 	}
