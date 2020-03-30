@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -32,6 +33,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -40,11 +42,16 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.conn.params.ConnRouteParams;
+import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -193,19 +200,27 @@ public final class HttpUtils {
 	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
 			AuthScope authScope, UsernamePasswordCredentials credentials, ResponseHandler<String> handler)
 			throws IOException {
-		DefaultHttpClient httpClient = new DefaultHttpClient();
+		HttpClientBuilder temp = HttpClients.custom().setHostnameVerifier(AllowAllHostnameVerifier.INSTANCE);
+		if (credentials != null) {
+			BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+			credentialsProvider.setCredentials(authScope, credentials);
+			temp = temp.setDefaultCredentialsProvider(credentialsProvider);
+		}
+		if (httpProxy != null) {
+			temp = temp.setProxy(httpProxy);
+		}
+
+		temp.setConnectionTimeToLive(REQ_TIMEOUT_MS.longValue(), TimeUnit.MILLISECONDS);
+		CloseableHttpClient httpClient = temp.build();
+		//DefaultHttpClient httpClient = new DefaultHttpClient();
 		HttpParams params = httpClient.getParams();
 		params.setParameter("http.socket.timeout", REQ_TIMEOUT_MS);
 		params.setParameter("http.connection.timeout", REQ_TIMEOUT_MS);
 		params.setParameter("http.connection-manager.timeout", REQ_TIMEOUT_MS.longValue());
 		params.setParameter("http.protocol.head-body-timeout", REQ_TIMEOUT_MS);
 
-		if (httpProxy != null) {
-			params.setParameter(ConnRouteParams.DEFAULT_PROXY, httpProxy);
-		}
-		if (credentials != null) {
-			httpClient.getCredentialsProvider().setCredentials(authScope, credentials);
-		}
+				
+		
 		HttpRequestBase request;
 
 		switch (method) {
