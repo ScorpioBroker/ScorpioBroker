@@ -187,6 +187,72 @@ public final class HttpUtils {
 		return doHTTPRequest(uri, method, body, additionalHeaders, authScope, credentials, handler);
 	}
 
+	
+	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
+			AuthScope authScope, UsernamePasswordCredentials credentials, ResponseHandler<String> handler)
+			throws IOException {
+		DefaultHttpClient httpClient = new DefaultHttpClient();
+		HttpParams params = httpClient.getParams();
+		params.setParameter("http.socket.timeout", REQ_TIMEOUT_MS);
+		params.setParameter("http.connection.timeout", REQ_TIMEOUT_MS);
+		params.setParameter("http.connection-manager.timeout", REQ_TIMEOUT_MS.longValue());
+		params.setParameter("http.protocol.head-body-timeout", REQ_TIMEOUT_MS);
+
+		if (httpProxy != null) {
+			params.setParameter(ConnRouteParams.DEFAULT_PROXY, httpProxy);
+		}
+		if (credentials != null) {
+			httpClient.getCredentialsProvider().setCredentials(authScope, credentials);
+		}
+		HttpRequestBase request;
+
+		switch (method) {
+		case GET:
+			request = new HttpGet(uri);
+			break;
+		case POST:
+			HttpPost postRequest = new HttpPost(uri);
+			if (body instanceof String) {
+				addBody((String) body, postRequest);
+			} else if (body instanceof File) {
+				addBody((File) body, postRequest);
+			} else if (body instanceof byte[]) {
+				addBody((byte[]) body, postRequest);
+			}
+
+			request = postRequest;
+			break;
+		case PUT:
+			HttpPut putRequest = new HttpPut(uri);
+			if (body instanceof String) {
+				addBody((String) body, putRequest);
+			} else if (body instanceof File) {
+				addBody((File) body, putRequest);
+			}
+
+			request = putRequest;
+			break;
+		case DELETE:
+			request = new HttpDelete(uri);
+			break;
+		case HEAD:
+			request = new HttpHead(uri);
+			break;
+		default:
+			httpClient.close();
+			throw new AssertionError("Unknown method: " + method);
+		}
+		if (additionalHeaders != null && !additionalHeaders.isEmpty()) {
+			addHeaders(additionalHeaders, request);
+		}
+		try {
+			return httpClient.execute(request, handler);
+		} finally {
+			httpClient.getConnectionManager().shutdown();
+			httpClient.close();
+
+		}
+	}
 	/**
 	 * Perform an HTTP request using a disposable HTTP client.
 	 * 
@@ -197,7 +263,7 @@ public final class HttpUtils {
 	 *                                    (this is an unchecked exception!)
 	 */
 
-	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
+	private String doHTTPRequest2(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
 			AuthScope authScope, UsernamePasswordCredentials credentials, ResponseHandler<String> handler)
 			throws IOException {
 		HttpClientBuilder temp = HttpClients.custom().setHostnameVerifier(AllowAllHostnameVerifier.INSTANCE);
