@@ -499,7 +499,7 @@ public class ContextResolverBasic {
 
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new ResponseException(ErrorType.InvalidRequest);
+			throw new ResponseException(ErrorType.InvalidRequest, e.getMessage());
 		}
 		return result;
 	}
