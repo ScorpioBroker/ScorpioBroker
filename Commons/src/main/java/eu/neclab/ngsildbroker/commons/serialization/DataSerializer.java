@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
+import com.github.filosganga.geogson.jts.JtsAdapterFactory;
 import com.github.filosganga.geogson.model.Geometry;
+import com.github.filosganga.geogson.model.MultiPolygon;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -88,6 +90,7 @@ public class DataSerializer {
 		builder.registerTypeAdapter(GeoValue.class, new GeoValueGsonAdapter());
 		builder.registerTypeAdapter(BatchResult.class, new BatchResultGsonAdapter());
 		builder.registerTypeAdapterFactory(new GeometryAdapterFactory());
+		builder.registerTypeAdapterFactory(new JtsAdapterFactory());
 		builder.registerTypeAdapter(Notification.class, new NotificationGsonAdapter());
 		builder.registerTypeAdapter(TypedValue.class, new TypedValueGsonAdapter());
 		builder.registerTypeAdapter(SerializationTypes.entitiesType, new EntitiesGsonAdapter());

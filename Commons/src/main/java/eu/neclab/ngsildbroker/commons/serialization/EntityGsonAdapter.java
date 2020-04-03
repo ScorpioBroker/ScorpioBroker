@@ -12,6 +12,7 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
@@ -67,6 +68,9 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 			top.add(entity.getOperationSpace().getId().toString(),
 					SerializationTools.getJson(entity.getOperationSpace(), context));
 		}
+		if (entity.getName() != null) {
+			top.add(NGSIConstants.NGSI_LD_NAME, new JsonPrimitive(entity.getName()));
+		}
 		return top;
 	}
 
@@ -76,7 +80,7 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 		JsonObject top = json.getAsJsonObject();
 		URI id = null;
 		String type = null;
-
+		String name = null;
 		GeoProperty location = null;
 		GeoProperty observationSpace = null;
 		GeoProperty operationSpace = null;
@@ -100,18 +104,15 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 				type = entry.getValue().getAsString();
 				break;
 			case NGSIConstants.NGSI_LD_LOCATION:
-				location = SerializationTools.parseGeoProperty(
-						entry.getValue().getAsJsonArray(),
+				location = SerializationTools.parseGeoProperty(entry.getValue().getAsJsonArray(),
 						NGSIConstants.NGSI_LD_LOCATION);
 				break;
 			case NGSIConstants.NGSI_LD_OPERATION_SPACE:
-				operationSpace = SerializationTools.parseGeoProperty(
-						entry.getValue().getAsJsonArray(),
+				operationSpace = SerializationTools.parseGeoProperty(entry.getValue().getAsJsonArray(),
 						NGSIConstants.NGSI_LD_OPERATION_SPACE);
 				break;
 			case NGSIConstants.NGSI_LD_OBSERVATION_SPACE:
-				observationSpace = SerializationTools.parseGeoProperty(
-						entry.getValue().getAsJsonArray(),
+				observationSpace = SerializationTools.parseGeoProperty(entry.getValue().getAsJsonArray(),
 						NGSIConstants.NGSI_LD_OBSERVATION_SPACE);
 				break;
 			case NGSIConstants.NGSI_LD_CREATED_AT:
@@ -138,7 +139,10 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 					throw new JsonParseException(e);
 				}
 				break;
-
+			case NGSIConstants.NGSI_LD_NAME:
+				name = entry.getValue().getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE)
+						.getAsString();
+				break;
 			default:
 
 				JsonArray topLevelArray = entry.getValue().getAsJsonArray();
@@ -182,6 +186,9 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 		}
 		if (observedAt != null) {
 			result.setObservedAt(observedAt);
+		}
+		if (name != null) {
+			result.setName(name);
 		}
 		return result;
 	}

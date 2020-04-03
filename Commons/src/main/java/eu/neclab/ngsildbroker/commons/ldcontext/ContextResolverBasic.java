@@ -199,6 +199,20 @@ public class ContextResolverBasic {
 			topLevelContainerList.add(polyContainerList);
 			compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, topLevelContainerList);
 			break;
+		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:	
+			ArrayList<Object> multitopLevelContainerList = new ArrayList<Object>();
+			ArrayList<Object> multimidLevelContainerList = new ArrayList<Object>();
+			ArrayList<Object> multipolyContainerList = new ArrayList<Object>();
+			for (int i = 0; i < geoValues.size(); i += 2) {
+				ArrayList<Object> container = new ArrayList<Object>();
+				container.add(geoValues.get(i));
+				container.add(geoValues.get(i + 1));
+				multipolyContainerList.add(container);
+			}
+			multimidLevelContainerList.add(multipolyContainerList);
+			multitopLevelContainerList.add(multimidLevelContainerList);
+			compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, multitopLevelContainerList);
+			break;
 		default:
 			break;
 		}
@@ -300,6 +314,22 @@ public class ContextResolverBasic {
 				topLevelContainerList.add(polyContainerList);
 				compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, topLevelContainerList);
 				break;
+			case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+				ArrayList<Object> multiTopLevelContainerList = new ArrayList<Object>();
+				ArrayList<Object> multiMidLevelContainerList = new ArrayList<Object>();
+				ArrayList<Object> multiPolyContainerList = new ArrayList<Object>();
+				for (int i = 0; i < geoValues.size(); i += 2) {
+					ArrayList<Object> container = new ArrayList<Object>();
+					container.add(geoValues.get(i));
+					container.add(geoValues.get(i + 1));
+					multiPolyContainerList.add(container);
+				}
+				multiMidLevelContainerList.add(multiPolyContainerList);
+				multiTopLevelContainerList.add(multiMidLevelContainerList);
+				
+				compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, multiTopLevelContainerList);
+				break;
+			
 			default:
 				break;
 			}

@@ -26,7 +26,7 @@ public class Entity {
 	private Long createdAt;
 	private Long modifiedAt;
 	private Long observedAt;
-
+	private String name;
 	private List<BaseProperty> allBaseProperties = new ArrayList<BaseProperty>();
 	private Property createdAtProp = new Property();
 	private Property modifiedAtProp = new Property();
@@ -133,6 +133,16 @@ public class Entity {
 	public void setObservedAt(Long observedAt) {
 		this.observedAt = observedAt;
 		observedAtProp.setSingleEntry(new PropertyEntry("observedAt", observedAt));
+	}
+	
+	
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public URI getId() {
