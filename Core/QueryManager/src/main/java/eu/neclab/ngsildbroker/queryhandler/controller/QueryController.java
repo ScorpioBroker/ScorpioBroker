@@ -38,6 +38,7 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import eu.neclab.ngsildbroker.queryhandler.utils.Validator;
+import jdk.internal.joptsimple.internal.Strings;
 
 @RestController
 @RequestMapping("/ngsi-ld/v1/entities")
@@ -179,10 +180,24 @@ public class QueryController {// implements QueryHandlerInterface {
 						originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
 					}
 					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(paramMap, linkHeaders);
-					qp.setKeyValues((options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)));
-					qp.setIncludeSysAttrs((options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)));
 					if (qp == null) // invalid query
 						throw new ResponseException(ErrorType.InvalidRequest);
+					qp.setKeyValues((options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)));
+					qp.setIncludeSysAttrs((options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)));
+					if (attrs != null) {
+						qp.setAttrs(Strings.join(attrs, ","));
+					}
+					/*
+					 * List<Object> linkHeaders = HttpUtils.parseLinkHeader(request,
+					 * NGSIConstants.HEADER_REL_LDCONTEXT);
+					 * 
+					 * for (String attrib : attrs) { try {
+					 * expandedAttrs.add(paramsResolver.expandAttribute(attrib, linkHeaders)); }
+					 * catch (ResponseException exception) { continue; } } // TODO valid this.
+					 * specdoesn't say what to do here!!! if (expandedAttrs.isEmpty()) { return
+					 * ResponseEntity.status(HttpStatus.ACCEPTED).body("{}".getBytes()); } }
+					 */
+					
 					checkParamsForValidity(qp);
 					QueryResult qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
 							qToken, showServices);
