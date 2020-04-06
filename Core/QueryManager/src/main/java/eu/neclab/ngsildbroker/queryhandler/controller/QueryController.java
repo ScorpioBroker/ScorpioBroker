@@ -69,7 +69,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	private HttpUtils httpUtils;
 
-	private final byte[] emptyResult = { '[', ']' };
+	private final byte[] emptyResult = { '{', '}' };
 
 	@PostConstruct
 	private void setup() {
