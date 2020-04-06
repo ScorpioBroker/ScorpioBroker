@@ -185,7 +185,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					QueryResult qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
 							qToken, showServices);
 
-					return generateReply(request, qResult);
+					return generateReply(request, qResult, !retrieve);
 
 				} else {
 
@@ -231,7 +231,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	}
 
-	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult)
+	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult, boolean forceArray)
 			throws ResponseException {
 		String nextLink = generateNextLink(request, qResult);
 		String prevLink = generatePrevLink(request, qResult);
@@ -249,7 +249,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		}
 
 		return httpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
-				additionalHeaders, null, true);
+				additionalHeaders, null, forceArray);
 	}
 
 	private String generateNextLink(HttpServletRequest request, QueryResult qResult) {
