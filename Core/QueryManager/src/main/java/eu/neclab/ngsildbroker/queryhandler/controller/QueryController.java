@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
@@ -68,6 +69,8 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	private HttpUtils httpUtils;
 
+	private final byte[] emptyResult = { '[', ']' };
+
 	@PostConstruct
 	private void setup() {
 		httpUtils = HttpUtils.getInstance(contextResolver);
@@ -85,53 +88,53 @@ public class QueryController {// implements QueryHandlerInterface {
 	public ResponseEntity<byte[]> getEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
 			@RequestParam(value = "options", required = false) List<String> options) {
-		String result = null;
-		try {
-			logger.trace("getEntity() ::query operation by kafka ::");
-
-			if (!request.getParameterMap().isEmpty() && attrs == null && options == null) {
-				throw new ResponseException(ErrorType.InvalidRequest);
-			}
-
-			boolean includeSysAttrs = (options != null
-					&& options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS));
-			boolean keyValues = (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES));
-			ArrayList<String> expandedAttrs = new ArrayList<String>();
-
-			if (attrs != null) {
-
-				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
-
-				for (String attrib : attrs) {
-					try {
-						expandedAttrs.add(paramsResolver.expandAttribute(attrib, linkHeaders));
-					} catch (ResponseException exception) {
-						continue;
-					}
-				}
-				// TODO valid this. spec doesn't say what to do here!!!
-				if (expandedAttrs.isEmpty()) {
-					return ResponseEntity.status(HttpStatus.ACCEPTED).body("{}".getBytes());
-				}
-			}
-
-			result = queryService.retrieveEntity(entityId, expandedAttrs, keyValues, includeSysAttrs);
-			if (result != "null" && !result.isEmpty()) {
-				return httpUtils.generateReply(request, result);
-			} else {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND)
-						.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
-			}
-
-		} catch (ResponseException exception) {
-			logger.error("Exception ::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception exception) {
-			logger.error("Exception ::", exception);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
+		HashMap<String, String[]> paramMap = new HashMap<String, String[]>();
+		paramMap.put(NGSIConstants.QUERY_PARAMETER_ID, new String[] { entityId });
+		ResponseEntity<byte[]> result = getQueryData(request, originalQuery, paramMap, attrs, null, null, null, options,
+				false, true);
+		if (Arrays.equals(emptyResult, result.getBody())) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
 		}
-	}
+		return result;
+		/*
+		 * String result = null; try {
+		 * logger.trace("getEntity() ::query operation by kafka ::");
+		 * 
+		 * if (!request.getParameterMap().isEmpty() && attrs == null && options == null)
+		 * { throw new ResponseException(ErrorType.InvalidRequest); }
+		 * 
+		 * boolean includeSysAttrs = (options != null &&
+		 * options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)); boolean
+		 * keyValues = (options != null &&
+		 * options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES));
+		 * ArrayList<String> expandedAttrs = new ArrayList<String>();
+		 * 
+		 * if (attrs != null) {
+		 * 
+		 * List<Object> linkHeaders = HttpUtils.parseLinkHeader(request,
+		 * NGSIConstants.HEADER_REL_LDCONTEXT);
+		 * 
+		 * for (String attrib : attrs) { try {
+		 * expandedAttrs.add(paramsResolver.expandAttribute(attrib, linkHeaders)); }
+		 * catch (ResponseException exception) { continue; } } // TODO valid this. spec
+		 * doesn't say what to do here!!! if (expandedAttrs.isEmpty()) { return
+		 * ResponseEntity.status(HttpStatus.ACCEPTED).body("{}".getBytes()); } }
+		 * 
+		 * result = queryService.retrieveEntity(entityId, expandedAttrs, keyValues,
+		 * includeSysAttrs); if (result != "null" && !result.isEmpty()) { return
+		 * httpUtils.generateReply(request, result); } else { return
+		 * ResponseEntity.status(HttpStatus.NOT_FOUND) .body(new
+		 * RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes()); }
+		 * 
+		 * } catch (ResponseException exception) { logger.error("Exception ::",
+		 * exception); return ResponseEntity.status(exception.getHttpStatus()).body(new
+		 * RestResponse(exception).toJsonBytes()); } catch (Exception exception) {
+		 * logger.error("Exception ::", exception); return
+		 * ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR) .body(new
+		 * RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes()); }
+		 */ }
 
 	/**
 	 * Method(GET) for fetching all entities by kafka and other geo query operation
@@ -144,12 +147,18 @@ public class QueryController {// implements QueryHandlerInterface {
 	@GetMapping()
 	public ResponseEntity<byte[]> getAllEntity(HttpServletRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
-
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(name = "services", required = false) Boolean showServices) {
+		return getQueryData(request, request.getQueryString(), request.getParameterMap(), attrs, limit, offset, qToken,
+				options, showServices, false);
+	}
+
+	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
+			Map<String, String[]> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
+			List<String> options, Boolean showServices, boolean retrieve) {
 
 		if (limit == null) {
 			limit = defaultLimit;
@@ -160,15 +169,16 @@ public class QueryController {// implements QueryHandlerInterface {
 
 		try {
 			logger.trace("getAllEntity() ::");
-			String originalQueryParams = request.getQueryString();
 
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
-			if (request.getRequestURI().equals(MY_REQUEST_URL) || request.getRequestURI().equals(MY_REQUEST_URL_ALT)) {
-				if (originalQueryParams != null) {
-					Validator.validate(request.getParameterMap(), maxLimit);
-					originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
-
-					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
+			if (retrieve || request.getRequestURI().equals(MY_REQUEST_URL)
+					|| request.getRequestURI().equals(MY_REQUEST_URL_ALT)) {
+				if (retrieve || originalQueryParams != null) {
+					Validator.validate(request.getParameterMap(), maxLimit, retrieve);
+					if (originalQueryParams != null) {
+						originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
+					}
+					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(paramMap, linkHeaders);
 					if (qp == null) // invalid query
 						throw new ResponseException(ErrorType.InvalidRequest);
 					checkParamsForValidity(qp);

@@ -30,9 +30,9 @@ public class Validator {
 
 
 
-	public static void validate(Map<String, String[]> parameterMap, int maxLimit) throws ResponseException{
+	public static void validate(Map<String, String[]> parameterMap, int maxLimit, boolean ignoreType) throws ResponseException{
 		
-		if(!parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_TYPE) && !parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_ATTRS)) {
+		if(!ignoreType && !parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_TYPE) && !parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_ATTRS)) {
 			throw new ResponseException(ErrorType.BadRequestData, "Missing mandatory minimum parameter " + NGSIConstants.QUERY_PARAMETER_TYPE + " or " + NGSIConstants.QUERY_PARAMETER_ATTRS);
 		}
 		for (String key : parameterMap.keySet()) {

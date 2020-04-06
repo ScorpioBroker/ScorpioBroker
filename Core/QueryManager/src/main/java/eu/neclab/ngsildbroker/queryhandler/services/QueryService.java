@@ -135,7 +135,7 @@ public class QueryService {
 	private void setup() {
 		kafkaTemplate.setReplyTimeout(replyTimeout);
 	}
-
+	
 	/**
 	 * Method is used for get entity based on entity id or attributes
 	 * 
