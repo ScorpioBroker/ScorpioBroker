@@ -179,6 +179,8 @@ public class QueryController {// implements QueryHandlerInterface {
 						originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
 					}
 					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(paramMap, linkHeaders);
+					qp.setKeyValues((options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)));
+					qp.setIncludeSysAttrs((options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)));
 					if (qp == null) // invalid query
 						throw new ResponseException(ErrorType.InvalidRequest);
 					checkParamsForValidity(qp);
