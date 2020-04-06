@@ -69,8 +69,8 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	private HttpUtils httpUtils;
 
-	private final byte[] emptyResult = { '{', '}' };
-
+	private final byte[] emptyResult1 = { '{', ' ', '}' };
+	private final byte[] emptyResult2 = { '{', '}' };
 	@PostConstruct
 	private void setup() {
 		httpUtils = HttpUtils.getInstance(contextResolver);
@@ -93,7 +93,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		paramMap.put(NGSIConstants.QUERY_PARAMETER_ID, new String[] { entityId });
 		ResponseEntity<byte[]> result = getQueryData(request, originalQuery, paramMap, attrs, null, null, null, options,
 				false, true);
-		if (Arrays.equals(emptyResult, result.getBody())) {
+		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
 		}
