@@ -486,7 +486,7 @@ public class EntityService {
 		if (originalJson == null) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
-		JsonNode originalJsonNode = objectMapper.readTree(originalJson);
+		//JsonNode originalJsonNode = objectMapper.readTree(originalJson);
 
 		UpdateResult updateResult = this.updateFields(originalJson, objectMapper.readTree(payload), attrId);
 		byte[] finalJson = updateResult.getJson();
