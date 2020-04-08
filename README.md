@@ -1,4 +1,4 @@
-# ![Alt text](./controllers_brief.svg)<img src="./img/ScorpioLogo.svg" width="160"> Scorpio NGSI-LD Broker
+# Scorpio NGSI-LD Broker <img src="./img/ScorpioLogo.svg" width="160">
 
 [![FIWARE Core](https://nexus.lab.fiware.org/static/badges/chapters/core.svg)](https://www.fiware.org/developers/catalogue/)
 [![License: BSD-4-Clause](https://img.shields.io/badge/license-BSD%204%20Clause-blue.svg)](https://spdx.org/licenses/BSD-4-Clause.html)
