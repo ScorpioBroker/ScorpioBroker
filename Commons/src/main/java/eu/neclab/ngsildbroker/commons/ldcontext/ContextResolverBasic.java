@@ -23,6 +23,8 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.core.RDFDataset;
+import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -72,21 +74,49 @@ public class ContextResolverBasic {
 	public static void main(String[] args) throws Exception {
 		ContextResolverBasic bla = new ContextResolverBasic();
 		List<Object> contextLinks = null;
-		String body = "{\r\n" + "  \"@context\":[\r\n" + "    {\r\n"
-				+ "      \"Vehicle\":\"http://example.org/vehicle/Vehicle\",\r\n" +
-				// " \"brandName\":\"http://example.org/vehicle/brandName\",\r\n" +
-				"      \"speed\":\"http://example.org/vehicle/speed\",\r\n" + "      \"isParked\":{\r\n"
-				+ "        \"@type\":\"@id\",\r\n" + "        \"@id\":\"http://example.org/common/isParked\"\r\n"
-				+ "      },\r\n" + "      \"providedBy\": {\r\n" + "        \"@type\": \"@id\",\r\n"
-				+ "        \"@id\": \"http://example.org/common/providedBy\"\r\n" + "      }    \r\n" + "    }\r\n"
-				+ "  ],\r\n" + "  \"id\":\"urn:ngsi-ld:Vehicle:A4583\",\r\n" + "  \"type\":\"Vehicle\",\r\n"
-				+ "  \"brandName\":{\r\n" + "    \"type\":\"Property\",\r\n" + "    \"value\":\"Mercedes\"\r\n"
-				+ "  },\r\n" + "  \"isParked\":{\r\n" + "    \"type\":\"Relationship\",\r\n"
-				+ "    \"object\":\"urn:ngsi-ld:OffStreetParking:Downtown1\",\r\n"
-				+ "    \"observedAt\":\"2017-07-29T12:00:04\",\r\n" + "    \"providedBy\":{\r\n"
-				+ "      \"type\":\"Relationship\",\r\n" + "      \"object\":\"urn:ngsi-ld:Person:Bob\"\r\n"
-				+ "    }\r\n" + "  }\r\n" + "}";
-		System.out.println(bla.expand(body, contextLinks));
+		String body = "{\n" + 
+				"    \"@id\": \"urn:ngsi-ld:T4:906\",\n" + 
+				"    \"@type\": [\n" + 
+				"        \"https://uri.etsi.org/ngsi-ld/default-context/T\"\n" + 
+				"    ],\n" + 
+				"    \"https://uri.etsi.org/ngsi-ld/createdAt\": [\n" + 
+				"        {\n" + 
+				"            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n" + 
+				"            \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + 
+				"        }\n" + 
+				"    ],\n" + 
+				"    \"https://uri.etsi.org/ngsi-ld/modifiedAt\": [\n" + 
+				"        {\n" + 
+				"            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n" + 
+				"            \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + 
+				"        }\n" + 
+				"    ],\n" + 
+				"    \"https://uri.etsi.org/ngsi-ld/default-context/P1\": [\n" + 
+				"        {\n" + 
+				"            \"@type\": [\n" + 
+				"                \"https://uri.etsi.org/ngsi-ld/Property\"\n" + 
+				"            ],\n" + 
+				"            \"https://uri.etsi.org/ngsi-ld/hasValue\": [\n" + 
+				"                {\n" + 
+				"                    \"@value\": 1234\n" + 
+				"                }\n" + 
+				"            ],\n" + 
+				"            \"https://uri.etsi.org/ngsi-ld/createdAt\": [\n" + 
+				"                {\n" + 
+				"                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n" + 
+				"                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + 
+				"                }\n" + 
+				"            ],\n" + 
+				"            \"https://uri.etsi.org/ngsi-ld/modifiedAt\": [\n" + 
+				"                {\n" + 
+				"                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n" + 
+				"                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + 
+				"                }\n" + 
+				"            ]\n" + 
+				"        }\n" + 
+				"    ]\n" + 
+				"}";
+		System.out.println(bla.getRDF(body));
 	}
 
 	public ContextResolverBasic(String atContextBaseUrl) {
@@ -423,7 +453,25 @@ public class ContextResolverBasic {
 		}
 
 	}
-
+	
+	/**
+	 * @param body expanded json ld version
+	 * @return rdf representation of entity/entities
+	 * @throws ResponseException 
+	 */
+	public String getRDF(String body) throws ResponseException {
+		try {
+			RDFDataset rdf = (RDFDataset) JsonLdProcessor.toRDF(JsonUtils.fromString(body), defaultOptions);
+			
+			return RDFDatasetUtils.toNQuads(rdf);
+		} catch (JsonParseException e) {
+			e.printStackTrace();
+			throw new ResponseException(ErrorType.InvalidRequest);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ResponseException(ErrorType.InvalidRequest);
+		}
+	}
 	public CompactedJson compact(String body, List<Object> contextLinks) throws ResponseException {
 		try {
 			Object json = JsonUtils.fromString(body);

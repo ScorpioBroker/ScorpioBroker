@@ -857,11 +857,7 @@ public final class HttpUtils {
 		if (additionalContext != null) {
 			requestAtContext.addAll(additionalContext);
 		}
-		CompactedJson compacted = contextResolver.compact(reply, requestAtContext);
-		ArrayList<String> temp = new ArrayList<String>();
-		if (additionalHeaders == null) {
-			additionalHeaders = new HashMap<String, List<String>>();
-		}
+
 		String replyBody;
 		Enumeration<String> tempHeaders = request.getHeaders(HttpHeaders.ACCEPT);
 		ArrayList<String> acceptHeaders = new ArrayList<String>();
@@ -869,7 +865,8 @@ public final class HttpUtils {
 			String next = tempHeaders.nextElement();
 			acceptHeaders.addAll(Arrays.asList(next.split(",")));
 		}
-		float[][] foundHeaders = new float[3][2];
+
+		float[][] foundHeaders = new float[4][2];
 
 		for (String header : acceptHeaders) {
 			if (header.contains(AppConstants.NGB_APPLICATION_JSONLD)) {
@@ -885,8 +882,16 @@ public final class HttpUtils {
 				foundHeaders[2][0] = 1;
 				foundHeaders[2][1] = getQ(header);
 			}
+			if (header.contains(AppConstants.NGB_APPLICATION_NQUADS)) {
+				foundHeaders[3][0] = 1;
+				foundHeaders[3][1] = getQ(header);
+			}
 		}
-
+		CompactedJson compacted = contextResolver.compact(reply, requestAtContext);
+		ArrayList<String> temp = new ArrayList<String>();
+		if (additionalHeaders == null) {
+			additionalHeaders = new HashMap<String, List<String>>();
+		}
 		int sendingContentType = getContentType(foundHeaders);
 		switch (sendingContentType) {
 		case 1:
@@ -908,6 +913,10 @@ public final class HttpUtils {
 			} else {
 				replyBody = compacted.getCompactedWithContext();
 			}
+			break;
+		case 3:
+			temp.add(AppConstants.NGB_APPLICATION_NQUADS);
+			replyBody = contextResolver.getRDF(reply);
 			break;
 		case -1:
 		default:
@@ -956,6 +965,10 @@ public final class HttpUtils {
 				type = 2;
 			}
 		}
+		if (foundHeaders[3][0] == 1) {
+			type = 3;
+		}
+
 		return type;
 	}
 
