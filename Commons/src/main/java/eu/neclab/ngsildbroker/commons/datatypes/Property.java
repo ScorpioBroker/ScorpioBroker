@@ -14,7 +14,7 @@ public class Property extends BaseProperty {
 	
 	
 
-	private HashMap<String, PropertyEntry> instanceId2value;
+	private HashMap<String, PropertyEntry> dataSetId2value;
 	public Property(){
 		type = "Property";
 	}
@@ -30,11 +30,11 @@ public class Property extends BaseProperty {
 	}
 	
 	public HashMap<String, PropertyEntry> getEntries() {
-		return instanceId2value;
+		return dataSetId2value;
 	}
 
 	public void setEntries(HashMap<String, PropertyEntry> value) {
-		this.instanceId2value = value;
+		this.dataSetId2value = value;
 	}
 
 	
@@ -45,7 +45,7 @@ public class Property extends BaseProperty {
 	public int hashCode() {
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((instanceId2value == null) ? 0 : instanceId2value.hashCode());
+		result = prime * result + ((dataSetId2value == null) ? 0 : dataSetId2value.hashCode());
 		return result;
 	}
 
@@ -58,17 +58,17 @@ public class Property extends BaseProperty {
 		if (getClass() != obj.getClass())
 			return false;
 		Property other = (Property) obj;
-		if (instanceId2value == null) {
-			if (other.instanceId2value != null)
+		if (dataSetId2value == null) {
+			if (other.dataSetId2value != null)
 				return false;
-		} else if (!instanceId2value.equals(other.instanceId2value))
+		} else if (!dataSetId2value.equals(other.dataSetId2value))
 			return false;
 		return true;
 	}
 
 	@Override
 	public boolean isMultiValue() {
-		return instanceId2value.size() != 1;
+		return dataSetId2value.size() != 1;
 	}
 
 	
