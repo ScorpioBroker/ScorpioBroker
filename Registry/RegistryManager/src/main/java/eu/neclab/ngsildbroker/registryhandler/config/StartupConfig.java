@@ -121,8 +121,8 @@ public class StartupConfig {
 		HttpEntity<String> entity = new HttpEntity<String>(payload, headers);
 		try {
 			// set headers
-
-			logger.debug("payload ::" + payload);
+			logger.info("registering with fed broker " + parentUrl);
+			logger.info("payload ::" + payload);
 
 			// call
 			restTemplate.postForObject(parentUri, entity, String.class);
