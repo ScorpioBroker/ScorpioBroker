@@ -39,6 +39,7 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
+import eu.neclab.ngsildbroker.registryhandler.config.StartupConfig;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 
@@ -56,6 +57,9 @@ public class CSourceService {
 	KafkaOps operations;
 	@Autowired
 	ObjectMapper objectMapper;
+	
+	@Autowired
+	StartupConfig startupConfig;
 
 	@Autowired
 	CSourceDAO csourceDAO;
@@ -172,7 +176,16 @@ public class CSourceService {
 		csourceSubService.checkSubscriptions(prevCSourceRegistration, newCSourceRegistration);
 		this.operations.pushToKafka(messageChannel, registrationId.getBytes(),
 				DataSerializer.toJson(newCSourceRegistration).getBytes());
+		handleFed();
 		return true;
+	}
+
+	private void handleFed() {
+		new Thread() {
+			public void run() {
+				startupConfig.handleUpdatedTypesForFed();
+			};
+		}.start();
 	}
 
 	public URI registerCSource(CSourceRegistration csourceRegistration) throws ResponseException, Exception {
@@ -202,7 +215,7 @@ public class CSourceService {
 			logger.error("Invalid expire date!");
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-
+//TODO replace this with a database only attempt
 		if (this.operations.isMessageExists(id, this.CSOURCE_TOPIC)) {
 			byte[] messageBytes = this.operations.getMessage(id, this.CSOURCE_TOPIC);
 			JsonNode messgeJson = objectMapper.createObjectNode();
@@ -219,7 +232,7 @@ public class CSourceService {
 		if (!csourceRegistration.isInternal()) {
 			csourceSubService.checkSubscriptions(csourceRegistration, TriggerReason.newlyMatching);
 		}
-
+		handleFed();
 		return idUri;
 	}
 
@@ -268,6 +281,7 @@ public class CSourceService {
 		CSourceRegistration csourceRegistration = objectMapper.readValue(originalJson, CSourceRegistration.class);
 		this.csourceSubService.checkSubscriptions(csourceRegistration, TriggerReason.noLongerMatching);
 		this.operations.pushToKafka(messageChannel, registrationId.getBytes(), "null".getBytes());
+		handleFed();
 		return true;
 		// TODO: [push to other DELETE TOPIC]
 	}

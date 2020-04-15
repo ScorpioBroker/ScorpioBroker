@@ -3,6 +3,8 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.util.List;
 import java.util.UUID;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+
 public abstract class BaseEntry {
 	protected String name;
 	protected Long observedAt = -1l;
@@ -18,7 +20,7 @@ public abstract class BaseEntry {
 	public BaseEntry(String dataSetId) {
 		this.dataSetId = dataSetId;
 		if (this.dataSetId == null || this.dataSetId.trim().isEmpty()) {
-			this.dataSetId = UUID.randomUUID().toString();
+			this.dataSetId = NGSIConstants.DEFAULT_DATA_SET_ID;
 		}
 	}
 

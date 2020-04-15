@@ -20,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -34,7 +35,7 @@ import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 
-@Component
+@Service
 public class StartupConfig {
 
 	@Autowired
@@ -62,6 +63,8 @@ public class StartupConfig {
 	ObjectMapper objectMapper;
 	@Autowired
 	CSourceDAO cSourceDAO;
+	boolean registered = false;
+	private String currentRegistration = null;
 	// String s="\"type\": \"Polygon\",\"coordinates\": [[[100.0, 0.0],[101.0,
 	// 0.0],[101.0, 1.0],[100.0, 1.0],[100.0, 0.0] ] ]";
 
@@ -100,7 +103,7 @@ public class StartupConfig {
 				return;
 			}
 		}
-		if(!parentUrl.endsWith("/")) {
+		if (!parentUrl.endsWith("/")) {
 			parentUrl += "/";
 		}
 		URI parentUri;
@@ -123,7 +126,7 @@ public class StartupConfig {
 
 			// call
 			restTemplate.postForObject(parentUri, entity, String.class);
-
+			registered = true;
 			logger.debug("Broker registered with parent at :" + parentUrl);
 		} catch (HttpClientErrorException | HttpServerErrorException httpClientOrServerExc) {
 			logger.error("status code::" + httpClientOrServerExc.getStatusCode());
@@ -134,12 +137,12 @@ public class StartupConfig {
 			if (HttpStatus.CONFLICT.equals(httpClientOrServerExc.getStatusCode())) {
 				logger.debug("Broker already registered with parent. Attempting patch");
 				try {
-				restTemplate.patchForObject(parentPatchUri, entity, String.class);
+					restTemplate.patchForObject(parentPatchUri, entity, String.class);
 				} catch (Exception e) {
 					logger.error("patching failed");
 				}
 			}
-		} catch(Exception e) {
+		} catch (Exception e) {
 			logger.error("failed to register with parent completly", e);
 		}
 
@@ -154,9 +157,42 @@ public class StartupConfig {
 				+ LocalDateTime.now() + "\"\r\n" + "	}\r\n" + "}";
 		// @formatter:on
 	}
+	
+	public void handleUpdatedTypesForFed() {
+		if(!registered) {
+			return;
+		}
+		// don't know a better way. wait a moment for the database to actually change.
+		try {
+			Thread.sleep(200);
+		} catch (InterruptedException e) {
+			// unchanged intentional
+			e.printStackTrace();
+		}
+		String current = this.currentRegistration;
+		if (!current.equals(getCSInformationNode())) {
+			String payload = "{\"information\": " + getCSInformationNode() + "}";
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
+			HttpEntity<String> entity = new HttpEntity<String>(payload, headers);
+			try {
+				URI parentPatchUri = new URI(parentUrl + id);
+				logger.debug("payload ::" + payload);
+				// call
+				restTemplate.patchForObject(parentPatchUri, entity, String.class);
+				logger.debug("Broker registered with parent at :" + parentUrl);
+			} catch (HttpClientErrorException | HttpServerErrorException httpClientOrServerExc) {
+				logger.error("status code::" + httpClientOrServerExc.getStatusCode());
+				logger.error("Message::" + httpClientOrServerExc.getMessage());
+			} catch (Exception e) {
+				logger.error("failed to update registery with parent completly", e.getMessage());
+			}
+
+		}
+	}
 
 	private String getCSInformationNode() {
-
+		String resultString = null;
 		if (reginfo != null) {
 			return reginfo;
 		}
@@ -167,16 +203,19 @@ public class StartupConfig {
 			types = cSourceDAO.getAllTypes();
 		}
 		if (types.isEmpty()) {
-			return "[]";
-		}
-		StringBuilder result = new StringBuilder("[{\"entities\": [");
+			resultString = "[]";
+		} else {
+			StringBuilder result = new StringBuilder("[{\"entities\": [");
 
-		for (String type : types) {
-			result.append("{\"type\": \"" + type + "\"},");
+			for (String type : types) {
+				result.append("{\"type\": \"" + type + "\"},");
+			}
+			result.deleteCharAt(result.length() - 1);
+			result.append("]}]");
+			resultString = result.toString();
 		}
-		result.deleteCharAt(result.length() - 1);
-		result.append("]}]");
-		return result.toString();
+		this.currentRegistration = resultString;
+		return resultString;
 
 		//
 		// Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
