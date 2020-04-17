@@ -27,23 +27,24 @@ import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 @RestController
 @RequestMapping("/ngsi-ld/v1/entityOperations")
 public class EntityBatchController {
-	
+
 	@Autowired
 	EntityService entityService;
-	
+
 	@Autowired
 	@Qualifier("emconRes")
 	ContextResolverBasic contextResolver;
 
-	
 	HttpUtils httpUtils;
+
 	@PostConstruct
 	private void setup() {
-		 httpUtils = HttpUtils.getInstance(contextResolver);
+		httpUtils = HttpUtils.getInstance(contextResolver);
 	}
+
 	@PostMapping("/create")
-	public ResponseEntity<byte[]> createMultiple(HttpServletRequest request,
-			@RequestBody String payload) throws ResponseException{
+	public ResponseEntity<byte[]> createMultiple(HttpServletRequest request, @RequestBody String payload)
+			throws ResponseException {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
@@ -53,23 +54,27 @@ public class EntityBatchController {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 	}
-	
+
 	private ResponseEntity<byte[]> generateBatchResultReply(BatchResult result, HttpStatus okStatus) {
 		HttpStatus status = HttpStatus.MULTI_STATUS;
 		String body = DataSerializer.toJson(result);
-		if(result.getFails().isEmpty()) {
+		if (result.getFails().isEmpty()) {
 			status = okStatus;
 			body = null;
 		}
-		if(result.getSuccess().isEmpty()) {
+		if (result.getSuccess().isEmpty()) {
 			status = HttpStatus.BAD_REQUEST;
 		}
-		
+
+		if (body == null) {
+			return ResponseEntity.status(status).build();
+		}
 		return httpUtils.generateReply(body, null, status, false);
 	}
+
 	@PostMapping("/upsert")
-	public ResponseEntity<byte[]> upsertMultiple(HttpServletRequest request,
-			@RequestBody String payload) throws ResponseException{
+	public ResponseEntity<byte[]> upsertMultiple(HttpServletRequest request, @RequestBody String payload)
+			throws ResponseException {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
@@ -79,10 +84,10 @@ public class EntityBatchController {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 	}
-	
+
 	@PostMapping("/update")
-	public ResponseEntity<byte[]> updateMultiple(HttpServletRequest request,
-			@RequestBody String payload) throws ResponseException{
+	public ResponseEntity<byte[]> updateMultiple(HttpServletRequest request, @RequestBody String payload)
+			throws ResponseException {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
@@ -92,13 +97,13 @@ public class EntityBatchController {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 	}
-	
+
 	@PostMapping("/delete")
-	public ResponseEntity<byte[]> deleteMultiple(HttpServletRequest request,
-			@RequestBody String payload) throws ResponseException{
+	public ResponseEntity<byte[]> deleteMultiple(HttpServletRequest request, @RequestBody String payload)
+			throws ResponseException {
 		try {
 //			String resolved = httpUtils.expandPayload(request, payload);
-			//it's an array of uris which is not json-ld so no expanding here  
+			// it's an array of uris which is not json-ld so no expanding here
 			BatchResult result = entityService.deleteMultipleMessage(payload);
 			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (ResponseException e) {
