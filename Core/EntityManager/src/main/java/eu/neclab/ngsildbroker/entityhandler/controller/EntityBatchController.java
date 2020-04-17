@@ -48,22 +48,24 @@ public class EntityBatchController {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.createMultipleMessage(resolved);
-			return generateBatchResultReply(result);
+			return generateBatchResultReply(result, HttpStatus.OK);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 	}
 	
-	private ResponseEntity<byte[]> generateBatchResultReply(BatchResult result) {
-//		HttpStatus status = HttpStatus.MULTI_STATUS;
-//		if(result.getFails().isEmpty()) {
-//			status = HttpStatus.OK;
-//		}
-//		if(result.getSuccess().isEmpty()) {
-//			status = HttpStatus.BAD_REQUEST;
-//		}
-		HttpStatus status = HttpStatus.OK;
-		return httpUtils.generateReply(DataSerializer.toJson(result), null, status, false);
+	private ResponseEntity<byte[]> generateBatchResultReply(BatchResult result, HttpStatus okStatus) {
+		HttpStatus status = HttpStatus.MULTI_STATUS;
+		String body = DataSerializer.toJson(result);
+		if(result.getFails().isEmpty()) {
+			status = okStatus;
+			body = null;
+		}
+		if(result.getSuccess().isEmpty()) {
+			status = HttpStatus.BAD_REQUEST;
+		}
+		
+		return httpUtils.generateReply(body, null, status, false);
 	}
 	@PostMapping("/upsert")
 	public ResponseEntity<byte[]> upsertMultiple(HttpServletRequest request,
@@ -72,7 +74,7 @@ public class EntityBatchController {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.upsertMultipleMessage(resolved);
-			return generateBatchResultReply(result);
+			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
@@ -85,7 +87,7 @@ public class EntityBatchController {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.updateMultipleMessage(resolved);
-			return generateBatchResultReply(result);
+			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
@@ -98,7 +100,7 @@ public class EntityBatchController {
 //			String resolved = httpUtils.expandPayload(request, payload);
 			//it's an array of uris which is not json-ld so no expanding here  
 			BatchResult result = entityService.deleteMultipleMessage(payload);
-			return generateBatchResultReply(result);
+			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (ResponseException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
