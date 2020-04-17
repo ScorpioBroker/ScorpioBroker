@@ -23,7 +23,7 @@ install:
   - psql -U postgres -c "alter role ngb superuser;"
   - mkdir kafka
   - cd kafka
-  - wget http://ftp-stud.hs-esslingen.de/pub/Mirrors/ftp.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
+  - wget https://archive.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
   - tar -xzf kafka_2.12-2.2.0.tgz
   - kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties > /dev/null 2>&1 &
   - sleep 12
