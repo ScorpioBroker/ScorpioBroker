@@ -49,7 +49,7 @@ public class EntityBatchController {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload);
 			BatchResult result = entityService.createMultipleMessage(resolved);
-			return generateBatchResultReply(result, HttpStatus.OK);
+			return generateBatchResultReply(result, HttpStatus.CREATED);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
