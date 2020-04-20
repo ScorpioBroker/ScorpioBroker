@@ -202,7 +202,7 @@ public class StartupConfig {
 		} else {
 			types = cSourceDAO.getAllTypes();
 		}
-		if (types.isEmpty()) {
+		if (types==null || types.isEmpty()) {
 			resultString = "[]";
 		} else {
 			StringBuilder result = new StringBuilder("[{\"entities\": [");
