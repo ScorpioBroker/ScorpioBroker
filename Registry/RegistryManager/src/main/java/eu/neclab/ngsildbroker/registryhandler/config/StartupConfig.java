@@ -51,7 +51,7 @@ public class StartupConfig {
 	String reginfo;
 	@Value("${broker.parent.location.url:SELF}")
 	String parentUrl;
-	@Value("${broker.customEndpoint:}")
+	@Value("${broker.customEndpoint:#{null}}")
 	String customEndpoint;
 	@Value("${broker.regOnlyLocal:#{false}}")
 	boolean localOnlyAutoReg;
@@ -90,7 +90,8 @@ public class StartupConfig {
 			return;
 		}
 		String endpoint;
-		if (!customEndpoint.isEmpty()) {
+		if (customEndpoint != null && !customEndpoint.isEmpty()) {
+			logger.info("using custom endpoint " + customEndpoint);
 			endpoint = customEndpoint;
 		} else {
 			// TODO this has to be changed because the registry manager just straight up
