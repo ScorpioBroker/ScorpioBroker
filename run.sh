@@ -10,4 +10,4 @@ cd $sgwdir
 java -jar $sgwjar &
 cd ..
 cd $scrdir
-java -jar $scrjar 
+java -jar $scrjar $*

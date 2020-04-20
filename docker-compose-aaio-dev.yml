@@ -33,3 +33,6 @@ services:
     depends_on:
       - kafka
       - postgres
+    environment:
+      spring_args: --broker.parent.location.url=http://192.168.42.202:9090/ngsi-ld/v1/csourceRegistrations/ --broker.geoCoverage="{\\\"type\\\":\\\"Polygon\\\",\\\"coordinates\\\": [[[100.0, 0.0],[101.0, 0.0],[101.0, 1.0],[100.0, 1.0],[100.0, 0.0] ] ]}"
+    

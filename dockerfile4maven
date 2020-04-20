@@ -40,7 +40,7 @@ ENV sgwdir sgw
 ENV sgwjar ${JAR_FILE_RUN_SGW}
 ENV scrdir scr
 ENV scrjar ${JAR_FILE_RUN_SCR}
-
+ENV spring_args ""
 COPY run.sh ./
 
-CMD bash ./run.sh
+CMD bash ./run.sh ${spring_args}
