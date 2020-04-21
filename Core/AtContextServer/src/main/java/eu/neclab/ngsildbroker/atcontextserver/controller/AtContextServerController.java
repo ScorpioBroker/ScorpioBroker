@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.atcontextserver.controller;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -10,8 +9,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.google.common.io.Files;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContext;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
@@ -40,7 +39,7 @@ public class AtContextServerController {
 	@PostConstruct
 	private void setup() {
 		try {
-			coreContext = Files.readString(resourceLoader.getResource("classpath:ngsi-ld-core-context.jsonld").getFile().toPath());
+			coreContext = new String(Files.asByteSource(resourceLoader.getResource("classpath:ngsi-ld-core-context.jsonld").getFile()).read());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
