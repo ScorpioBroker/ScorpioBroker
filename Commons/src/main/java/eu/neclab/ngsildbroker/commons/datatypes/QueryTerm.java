@@ -774,12 +774,22 @@ public class QueryTerm {
 			attributeFilterProperty.append(" OR ");
 			if (TIME_PROPS.contains(lastAttrib)) {
 				attributeFilterProperty.append('(');
-				attributeFilterProperty.append((char)(charcount - 1));
+				attributeFilterProperty.append((char) (charcount - 1));
 				attributeFilterProperty.append("#>>");
 				attributeFilterProperty.append(" '{");
 				attributeFilterProperty.append(lastAttrib);
 				attributeFilterProperty.append(",0,@value}')");
 
+			} else if (lastAttrib.equals(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+				attributeFilterProperty.append('(');
+				attributeFilterProperty.append(charcount);
+				attributeFilterProperty.append("#>");
+				if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
+						|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
+					attributeFilterProperty.append(">");
+				}
+				attributeFilterProperty.append(" '{");
+				attributeFilterProperty.append("@id}')");
 			} else {
 				attributeFilterProperty.append('(');
 				attributeFilterProperty.append(charcount);
@@ -790,7 +800,7 @@ public class QueryTerm {
 				}
 				attributeFilterProperty.append(" '{");
 				attributeFilterProperty.append("@value}')");
-				
+
 			}
 
 			if (operant.matches(DATETIME)) {
@@ -800,18 +810,6 @@ public class QueryTerm {
 			} else if (operant.matches(TIME)) {
 				attributeFilterProperty.append("::time ");
 			}
-			applyOperator(attributeFilterProperty);
-			
-			
-			attributeFilterProperty.append(" OR (");
-			attributeFilterProperty.append(charcount);
-			attributeFilterProperty.append("#>");
-			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
-					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-				attributeFilterProperty.append(">");
-			}
-			attributeFilterProperty.append(" '{");
-			attributeFilterProperty.append("@id}')");
 			applyOperator(attributeFilterProperty);
 			for (int i = 0; i < attribPath.size(); i++) {
 				attributeFilterProperty.append(')');
