@@ -68,6 +68,8 @@ public class ContextResolverBasic {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
+			//core context not reachable 
+			//CORE_CONTEXT_URL = new URI(AT_CONTEXT_BASE_URL + 
 		}
 	}
 

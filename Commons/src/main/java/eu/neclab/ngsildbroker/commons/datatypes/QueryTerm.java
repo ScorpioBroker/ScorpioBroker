@@ -789,7 +789,8 @@ public class QueryTerm {
 					attributeFilterProperty.append(">");
 				}
 				attributeFilterProperty.append(" '{");
-				attributeFilterProperty.append("0,@value}')");
+				attributeFilterProperty.append("@value}')");
+				
 			}
 
 			if (operant.matches(DATETIME)) {
@@ -800,10 +801,21 @@ public class QueryTerm {
 				attributeFilterProperty.append("::time ");
 			}
 			applyOperator(attributeFilterProperty);
+			
+			
+			attributeFilterProperty.append(" OR (");
+			attributeFilterProperty.append(charcount);
+			attributeFilterProperty.append("#>");
+			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
+					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
+				attributeFilterProperty.append(">");
+			}
+			attributeFilterProperty.append(" '{");
+			attributeFilterProperty.append("@id}')");
+			applyOperator(attributeFilterProperty);
 			for (int i = 0; i < attribPath.size(); i++) {
 				attributeFilterProperty.append(')');
 			}
-			// attributeFilterProperty.append(b)
 		}
 
 		result.append("(" + attributeFilterProperty.toString() + ")");
