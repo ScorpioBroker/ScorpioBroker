@@ -4,6 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
+SPHINXPROJ    = ScorpioBroker
 SOURCEDIR     = .
 BUILDDIR      = _build
 

@@ -9,6 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
+set SPHINXPROJ=ScorpioBroker
 
 if "%1" == "" goto help
 
