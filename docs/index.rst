@@ -5,7 +5,7 @@ Scorpio NGSI-LD Broker
 .. figure:: https://nexus.lab.fiware.org/repository/raw/public/badges/chapters/core.svg
   :target: https://www.fiware.org/developers/catalogue/ 
 .. figure:: https://nexus.lab.fiware.org/repository/raw/public/badges/stackoverflow/fiware.svg
-  :target: https://stackoverflow.com/questions/tagged/fiware/
+  :targe: https://stackoverflow.com/questions/tagged/fiware/
 
 Scorpio  an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India.
 
