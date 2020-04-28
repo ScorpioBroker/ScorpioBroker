@@ -1,0 +1,39 @@
+*****************************************
+Architecture
+*****************************************
+
+The deployment architecture leverages the Spring Cloud framework that address lots of Micro-services concerns(e.g. scaling, monitoring, fault tolerant, highly available, secure, decoupled etc. ) and kafka based distributed and scalable message queue infrastructure to provide high performance on message processing for huge number of context requests which is usual in the IoT domain.
+
+It covers the high level operations (Http based REST with method POST/GET/DELETE/PATCH) request flow from external world to NGB system.  The external request is served through a unified service API gateway interface that exposes a single ip/port combination to be used for all services that NGB system can provides. In reality each of the NGB service will be implemented as a micro-service that can be deployed as an independent standalone unit in distributed computing environment. That API gateway routes all the incoming requests to the specific Micro-services with the help of registration & discovery service. Once the request reaches at micro-service based on the operation requirement it uses(pub/sub) kafka topics (message queues) for real time storage and for providing intercommunication among different micro-services (based on requirement) over message queues.
+
+.. figure:: figures/architecture.png
+
+- **Application**: End user/domain applications leverage IoT Broker to provide the required information about IoT infrastructure. This applications can query, subscribe, update context information to/from the IoT Broker as per their requirements.
+- **IoT Entities**: These are the physical IoT devices installed to perform specific functions. In order to send their information about their function, they needs to access IoT Broker either directly or via some IoT gateway or NGSI-LD adapter.
+- **Consumers**: These are the IoT entities or applications that consumes the data of context source.
+- **Producers**: These are the IoT entities, context source or applications that produces the context data to the IoT Broker.
+- **Service API Gateway**: This is the proxy gateway for the external world to access the internal services of NGB system exposed via REST based HTTP interfaces. All internal NGB related services can be accessed through this service gateway using its single IP & port (which are usually static) and extending the service name in the URL. Thus user does not need to take care of (or learn or use) the IP and Port  of every service which often changes dynamically. This makes the life more easy, especially in a case when multiple services (or micro-service) are running under one system. This is easily solved by the use of proxy gateway(i.e. service API gateway) for all the back-end services.
+- **Rest Interface**: These are the HTTP based interface for the external entities/applications to consume in order to do certain operation on IoT Broker. The external interface would be visible through Service API gateway and internal interface mapping to each requested service would be discovered through service registration & discovery module.
+- **Service Discovery & Registration**: This component allows registration of any service (web service/micro-service) with it so that any client using discovery functionality of this component can determine the location of a service instance to which it wants to send requests. So in short, a service registry & discovery implements a database of services, their instances and their locations. Service instances gets registered with the service registry on startup and deregistered on shutdown. Client of the service, query the service registry, which discovers the available instances of a service. A service registry might also invoke a service instance’s health check API to verify that it is able to handle requests.
+- **Entity Manager**: This component will handle all entity related CRUD operations with the help of other components of NGB.
+- **LD Context Resolver**: This component is responsible for resolving NGSI_LD context in to json structured message in order to be further processed by other components on NGB.
+- **Subscription & Notification Manager**: This component is responsible for handling CRUD operations related to entities and/or csource subscription & notification.
+- **Query Manager**: This component will handle simple or complex query (Geo query based on NGSI-LD context) operations of NGB system. 
+- **Storage Manager**: This component will be responsible for fetching data from message brokers and then transforming them in to relevant schema format in order to persist in DB tables. Additionally this manager will also provide interfaces for complex queries to DB e.g. Geo query or cross domain entity context relationship queries.
+- **Context Registry Manager**: This component will be responsible for providing interfaces for CRUD operations of csource registration/query/ subscription.
+- **Health Check & Monitoring**: This component will be responsible to monitor the health of running services & infrastructure.
+- **Message Bus Handler**: Every module of NGB may needs to communicate with the bus for the inter-module exchange of messages. This interface is provided by the message bus  handler.
+- **Storage Connectors**: The NGB needs to store certain information in different DB formats. So storage connectors (using any type of message broker methodology) provide the way to connect to those storage (which may be present locally or remotely). For e.g. the the entity information could be stored/streamed into different type of storage e.g. MySQL, PostgreSQL, Bigdata etc. These connectors could also be implemented for storage resiliency purposes.
+- **Context Registry Connector**: IoT Broker needs to communicate to context registry in order to know about the registered context sources (brokers/providers) and the type of data model they support. The context registry connector will allow the message broker mechanism to connect the context registry that may be running locally  or remotely in federated mode.
+- **Storage**: This is the actual storage (e.g. Postgres/Postgis) where in the data would be persisted. 
+- **Context Registry**: This is the component which will be responsible for saving the registration of the context sources/producers. 
+
+*****************************************
+Deployment Architecture
+*****************************************
+
+This section is covering the deployment architecture of NGB which is using different technologies stack.  
+
+.. figure:: figures/deploymentarchitecture.png
+
+The deployment architecture leverages the Spring Cloud framework that address lots of Micro-services concerns(e.g. scaling, monitoring, fault tolerant, highly available, secure, decoupled etc. ) and kafka based distributed and scalable message queue infrastructure to provide high performance on message processing for huge number of context requests which is usual in the IoT domain. The deployment architecture covers the high level operations (Http based REST with method POST/GET/DELETE/PATCH) request flow from external world to NGB system.  The external request is served through a unified service api gateway interface that exposes a single ip/port combination to be used for all services that NGB system can provides. In reality each of the NGB service will be implemented as a micro-service that can be deployed as an independent standalone unit in distributed computing environment. That API gateway routes all the incoming requests to the specific Micro-services with the help of registration & discovery service. Once the request reaches at micro-service based on the operation requirement it uses(pub/sub) kafka topics (message queues) for real time storage and for providing intercommunication among different micro-services (based on requirement) over message queues.

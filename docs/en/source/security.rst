@@ -5,7 +5,7 @@ NGB system will also be responsible for any of the Identity & authentication man
 
 A new Authentication & Authorization service compliant to OAuth2.0 specs has been introduced that will provide the application layer security to the entire NGB components & services.
 
-.. figure:: figures/Architecture.png
+.. figure:: figures/security.png
 
 *****************************************
 Security - Functional Request Flow

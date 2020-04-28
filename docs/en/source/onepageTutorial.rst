@@ -75,7 +75,7 @@ Eclipse installation
 
 
 *****************************************
-JDK Setup
+JRE Setup
 *****************************************
 
 - Start the JRE installation and hit the “Change destination folder” checkbox, then click 'Install.'
@@ -173,10 +173,7 @@ Step 3)
  1.You will be prompted to desired Postgre version and operating system. Select the latest 
  Postgre version and OS as per your environment
 
- 2.Click the Download Button
-
-Download will begin
-
+ 2.Click the Download Button,Download will begin
 
 Step 4) Open the downloaded exe and Click next on the install welcome screen.
 
@@ -190,14 +187,14 @@ Step 5)
 
 Step 6)
 
- 1.You may choose the components you want to install in your system. You may uncheck Stack Builder
+ 1.You can choose the components you want to install in your system. You may uncheck Stack Builder
 
- 2.Click Next
+ 2.Click on Next
 
 
 Step 7)
 
- 1.You may change the data location
+ 1.You can change the data location
 
  2.Click Next
 
@@ -218,7 +215,8 @@ Step 9)
 
 Step 10)
 
- 1.Check the pre-installation summary:
+ 1.Check the pre-installation summary.
+
  2.Click Next
 
 
@@ -246,6 +244,8 @@ Step 14) You will see pgAdmin homepage
 
 Step 15) Click on Servers > Postgre SQL 10 in the left tree
 
+.. figure:: figures/dbconfig-1.png
+
 Step 16)
 
  1.Enter super user password set during installation
@@ -254,6 +254,7 @@ Step 16)
 
 Step 17) You will see the Dashboard
 
+.. figure:: figures/dbconfig-2.png
 
 That's it to Postgre SQL installation.
 
@@ -266,61 +267,61 @@ C:\Program Files (x86)\PostgreSQL\10\data
 
 1.Edit the pg_hba.conf file :
 
-sudo vim /etc/postgresql/9.1/main/pg_hba.conf
+ *sudo vim /etc/postgresql/9.1/main/pg_hba.conf*
+
 And change "peer" to "md5" on the line concerning postgres :
 local      all     postgres     peer md5
 
-
+.. figure:: figures/dbconfig-3.png
 
 2.Restart the database :
 
-Then create a database "ngb":
+- Then create a database "ngb":
 
-postgres=# create database ngb;
+ *postgres=# create database ngb;*
 
-Create a user "ngb" and make him a superuser:
+- Create a user "ngb" and make him a superuser:
 
-postgres=# create user ngb with encrypted password 'ngb';
+ *postgres=# create user ngb with encrypted password 'ngb';*
 
-postgres=# alter user ngb with superuser;
+ *postgres=# alter user ngb with superuser;*
 
-Grant privileges on database:
+- Grant privileges on database:
 
-postgres=# grant all privileges on database ngb to ngb;
+ *postgres=# grant all privileges on database ngb to ngb;*
 
-Also create an own database/schema for the Postgis extension:
+- Also create an own database/schema for the Postgis extension:
 
-postgres=# CREATE DATABASE gisdb;
+ *postgres=# CREATE DATABASE gisdb;*
 
-postgres=# \connect gisdb;
+ *postgres=# \connect gisdb;*
 
-postgres=# CREATE SCHEMA postgis;
+ *postgres=# CREATE SCHEMA postgis;*
 
-postgres=# ALTER DATABASE gisdb SET search_path=public, postgis, contrib;
+ *postgres=# ALTER DATABASE gisdb SET search_path=public, postgis, contrib;*
 
-postgres=# \connect gisdb;
+ *postgres=# \connect gisdb;*
 
-postgres=# CREATE EXTENSION postgis SCHEMA postgis;
+ *postgres=# CREATE EXTENSION postgis SCHEMA postgis;*
 
-Now First Run eureka in SpringCloudModule 
-By java Application 
+- Now First Run eureka in SpringCloudModule By java Application 
+
+.. figure:: figures/dbconfig-4.png
  
 2.
 Open Browser and open url--http://localhost:8761/
 
+.. figure:: figures/dbconfig-4.png
 
-Now Run config-server in SpringCloudModules
-
-
-Check on Eureka Server config-server is up or not
-
-Now Run gatway in SpringCloudModules
+- Run config-server in SpringCloudModules
 
 
-Check on Eureka Server gatway is up or not
+- Check on Eureka Server config-server is up or not
 
+- Run gatway in SpringCloudModules
 
-Now Run all manager in core module (entitymanager, subscriptionmanager…….)
+- Check on Eureka Server gatway is up or not
 
+- Run all manager in core module (entitymanager, subscriptionmanager…….)
 
-Check on Eureka Server entity manager is up or not
+- Check on Eureka Server entity manager is up or not
