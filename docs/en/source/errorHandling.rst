@@ -1,7 +1,6 @@
 ***********************
 Error Handler
 ***********************
-[from document 4.3]
 
 This section will provide info on the error handling mechanism for the NGB system .
 

@@ -6,7 +6,7 @@ One of this is making these devices interact with each other,where each device m
 
 Scorpio broker is a java based pub-sub service designed and developed for the **FIWARE** platform, build on the top of **spring boot architecture** using **NGSI-LD** concepts.
 scorpio broker allow you to collect,process,notify and store the Iot data with dynamic context with the use of linked data concepts .
-It make use of the **microservice based architecture** which has its own advantages over the existing Iot brokers such as scalability , cross-technology integration etc.[from the advantage of micro services]
+It make use of the **microservice based architecture** which has its own advantages over the existing Iot brokers such as scalability , cross-technology integration etc.
 
 NGB based on NGSI-LD offers unique feature of Link data context that provides self-contained (or referenced) **dynamic schema definition** (i.e. the context) for contained data in each message/entity.
 Thus allows the NGB core processing to be still remain unified even it gets dynamic context driven data as its input from different types of data sources coupled(or designed for) with different schemas. 
@@ -15,7 +15,7 @@ Key advantages of NGB over other brokers:
 
 - Uses micro-service architecture which enhace the performance drastically.
 
-- The NGB architecture is designed & implemented as a scalable, highly available and load balanced.[document 4.6 line 2]
+- The NGB architecture is designed & implemented as a scalable, highly available and load balanced.
 
 - Use of Ld which give us the leverage of dynamic context.
 
@@ -23,9 +23,9 @@ Key advantages of NGB over other brokers:
 
 - It provides failover resilency.
 
-- It provides load balancing to distribute load on distributed infrastructure.[document 6.1 point 3]
+- It provides load balancing to distribute load on distributed infrastructure.
 
-- It is modular enough to offer low coupling and high cohesion by design.[document 6.1 point 4]
+- It is modular enough to offer low coupling and high cohesion by design.
 
-- It offers different storage integration without changing the application logic time and again.[document 6.1 point 5]
+- It offers different storage integration without changing the application logic time and again.
 

@@ -6,13 +6,13 @@ This Section will give you the high level over view of the basic architecture of
 *****************************************
 Architecture Overview
 *****************************************
-[from document 3.1 and 3.2]
+
 
 The deployment architecture leverages the Spring Cloud framework that address lots of Micro-services concerns(e.g. scaling, monitoring, fault tolerant, highly available, secure, decoupled etc. ) and kafka based distributed and scalable message queue infrastructure to provide high performance on message processing for huge number of context requests which is usual in the IoT domain.
 
 It covers the high level operations (Http based REST with method POST/GET/DELETE/PATCH) request flow from external world to NGB system.  The external request is served through a unified service API gateway interface that exposes a single ip/port combination to be used for all services that NGB system can provides. In reality each of the NGB service will be implemented as a micro-service that can be deployed as an independent standalone unit in distributed computing environment. That API gateway routes all the incoming requests to the specific Micro-services with the help of registration & discovery service. Once the request reaches at micro-service based on the operation requirement it uses(pub/sub) kafka topics (message queues) for real time storage and for providing intercommunication among different micro-services (based on requirement) over message queues.
 
-.. figure:: figures/Architecture.png
+.. figure:: figures/architecture.png
 
 - **Application**: End user/domain applications leverage IoT Broker to provide the required information about IoT infrastructure. This applications can query, subscribe, update context information to/from the IoT Broker as per their requirements.
 - **IoT Entities**: These are the physical IoT devices installed to perform specific functions. In order to send their information about their function, they needs to access IoT Broker either directly or via some IoT gateway or NGSI-LD adapter.
@@ -64,7 +64,6 @@ Eclipse installation
 
  The new Eclipse Installer shows the packages available to Eclipse users. You can search for the package you want to install or scroll through the list.Select and click on the package you want to install.
 
-.. figure:: figures/.png
 
 - **Select your installation folder**
 
@@ -74,7 +73,6 @@ Eclipse installation
 
  Once the installation is complete you can now launch Eclipse. The Eclipse Installer has done it's work. Happy coding.
 
-.. figure:: figures/.png
 
 *****************************************
 JDK Setup
@@ -82,6 +80,7 @@ JDK Setup
 
 - Start the JRE installation and hit the “Change destination folder” checkbox, then click 'Install.'
 
+.. figure:: figures/jre-1.png
 
 - Change the installation directory to any path without spaces in the folder name. E.g. C:\Java\jre1.8.0_xx\. (By default it will be C:\Program Files\Java\jre1.8.0_xx), then click 'Next.'
 
@@ -91,7 +90,7 @@ JDK Setup
 
 - Hit the New User Variable button in the User variables section, then type JAVA_HOME in Variable name and give your jre path in the Variable value. It should look like the below image:
 
-.. figure:: figures/.png
+.. figure:: figures/jre-2.png
 
  (Java path and version may change according to the version of Kafka you are using)
 
@@ -101,12 +100,12 @@ JDK Setup
 
 - Edit the path and type “;%JAVA_HOME%\bin” at the end of the text already written there, just like the image below:
 
-.. figure:: figures/.png
+.. figure:: figures/jre-3.png
 
 
 - To confirm the Java installation, just open cmd and type “java –version.” You should be able to see the version of Java you just installed.
 
-.. figure:: figures/.png
+.. figure:: figures/jre-4.png
 
 If your command prompt somewhat looks like the image above, you are good to go. Otherwise, you need to recheck whether your setup version matches the correct OS architecture (x86, x64), or if the environment variables path is correct.
 
@@ -128,7 +127,7 @@ ZooKeeper Installation
 7. Run ZooKeeper by opening a new cmd and type zkserver.
 8. You will see the command prompt with some details, like the image below:
 
-.. figure:: figures/.png
+.. figure:: figures/zookee.png
 
 
 *****************************************

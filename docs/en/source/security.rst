@@ -34,4 +34,4 @@ Security - Functional Request Flow
 8.The back-end resource service is also enabled with security feature (if not error will be thrown for the coming secure request). It receives the request and read the security context out of it and now validate (based on some extracted info) the same with the Auth service to know if this is a valid token/request with the given privileges. Auth service responds backs and back-end service decides now whether the local security configuration and the auth service based access permissions are matching. 
 
 9.If the access permissions/privileges are matched for the incoming request, then it respond back with the requested resources to the user/browser. In case, it does not match the security criteria than it reverts with the error message and reason why its being denied.
-L
+
