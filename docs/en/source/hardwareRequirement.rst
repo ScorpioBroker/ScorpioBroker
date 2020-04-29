@@ -50,16 +50,8 @@ At Yahoo!, ZooKeeper is usually deployed on dedicated RHEL boxes, with dual-core
 Recommendations for Kafka
 *****************************************
 
-- Kafka Broker Node: eight cores, 64 GB to128 GB of RAM, two or more 8-TB SAS/SSD disks, and a 10- Gige Nic .
+**Kafka brokers** use both the JVM heap and the OS page cache. The JVM heap is used for replication of partitions between brokers and for log compaction. Replication requires 1MB (default replica.max.fetch.size) for each partition on the broker. In Apache Kafka 0.10.1 (Confluent Platform 3.1), we added a new configuration (replica.fetch.response.max.bytes) that limits the total RAM used for replication to 10MB, to avoid memory and garbage collection issues when the number of partitions on a broker is high. For log compaction, calculating the required memory is more complicated and we recommend referring to the Kafka documentation if you are using this feature. For small to medium-sized deployments, 4GB heap size is usually sufficient. In addition, it is highly recommended that consumers always read from memory, i.e. from data that was written to Kafka and is still stored in the OS page cache. The amount of memory this requires depends on the rate at this data is written and how far behind you expect consumers to get. If you write 20GB per hour per broker and you allow brokers to fall 3 hours behind in normal scenario, you will want to reserve 60GB to the OS page cache. In cases where consumers are forced to read from disk, performance will drop significantly
 
-- Minimum of three Kafka broker nodes
+**Kafka Connect** itself does not use much memory, but some connectors buffer data internally for efficiency. If you run multiple connectors that use buffering, you will want to increase the JVM heap size to 1GB or higher.
 
-- Hardware Profile: More RAM and faster speed disks are better; 10 Gige Nic is ideal.
-
-- 75 MB/sec per node is a conservative estimate ( can go much higher if more RAM and reduced lag between writing/reading and therefore 10GB Nic is required ).
-
-- With a minimum of three nodes in your cluster, you can expect 225 MB/sec data transfer.
-
-- You can perform additional further sizing by using the following formula:
-
-num_brokers = desired_throughput (MB/sec) / 75
+**Consumers** use at least 2MB per consumer and up to 64MB in cases of large responses from brokers (typical for bursty traffic). Producers will have a buffer of 64MB each. Start by allocating 1GB RAM and add 64MB for each producer and 16MB for each consumer planned.

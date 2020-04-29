@@ -13,7 +13,7 @@ Thus allows the NGB core processing to be still remain unified even it gets dyna
 
 Key advantages of NGB over other brokers:
 
-- Uses micro-service architecture which enhace the performance drastically.
+- Uses micro-service architecture which enhance the performance drastically.
 
 - The NGB architecture is designed & implemented as a scalable, highly available and load balanced.
 
@@ -21,7 +21,7 @@ Key advantages of NGB over other brokers:
 
 - Usage of kafka,allowing us the robust pub-sub service with the facility of scaling with no down time.
 
-- It provides failover resilency.
+- It provides fail-over resiliency.
 
 - It provides load balancing to distribute load on distributed infrastructure.
 
