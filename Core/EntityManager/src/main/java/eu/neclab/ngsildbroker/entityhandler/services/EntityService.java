@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.Array;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -514,7 +515,7 @@ public class EntityService {
 
 	}
 
-	public boolean deleteAttribute(String entityId, String attrId) throws ResponseException, Exception {
+	public boolean deleteAttribute(String entityId, String attrId,String datasetId) throws ResponseException, Exception {
 		logger.trace("deleteAttribute() :: started");
 		// get message channel for ENTITY_APPEND topic
 		MessageChannel messageChannel = producerChannels.deleteWriteChannel();
@@ -535,7 +536,7 @@ public class EntityService {
 		}
 		JsonNode originalJsonNode = objectMapper.readTree(originalJson);
 
-		byte[] finalJson = this.deleteFields(originalJson, attrId);
+		byte[] finalJson = this.deleteFields(originalJson, attrId,datasetId);
 		// pubilsh updated message
 		boolean result = this.operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
 				finalJson);
@@ -607,22 +608,42 @@ public class EntityService {
 				continue;
 			}
 			logger.trace("field: " + field);
+			System.out.println("field:"+field);
 			if (attrId != null) { // partial update
 				logger.trace("attrId: " + attrId);
 				JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
+				ArrayNode myArray = (ArrayNode) innerNode;
 				if (innerNode != null) {
-					((ObjectNode) innerNode.get(0)).replace(field, jsonToUpdate.get(field));
-					((ObjectNode) updateResult.getAppendedJsonFields()).set(attrId, innerNode);
-					logger.trace("appended json fields (partial): " + updateResult.getAppendedJsonFields().toString());
-					updateResult.setStatus(true);
+					if (!field.equalsIgnoreCase(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						((ObjectNode) innerNode.get(0)).replace(field, jsonToUpdate.get(field));
+						((ObjectNode) updateResult.getAppendedJsonFields()).set(attrId, innerNode);
+						logger.trace(
+								"appended json fields (partial): " + updateResult.getAppendedJsonFields().toString());
+						updateResult.setStatus(true);
+					} else {
+						for(int i =0; i<myArray.size(); i++) {
+							String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+									.get(NGSIConstants.JSON_LD_ID).asText();
+							String datasetId = jsonToUpdate.get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+									.get(NGSIConstants.JSON_LD_ID).asText();
+
+							if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
+								System.out.println("if block");
+								((ObjectNode) innerNode.get(i)).replace(field, jsonToUpdate.get(field));
+								((ObjectNode) updateResult.getAppendedJsonFields()).set(attrId, innerNode);
+								logger.trace("appended json fields (partial): "
+										+ updateResult.getAppendedJsonFields().toString());
+								updateResult.setStatus(true);
+							}
+						}
+					}
 				}
 
 			} else if (node.has(field)) {
 
 				JsonNode originalNode = ((ArrayNode) objectNode.get(field)).get(0);
 				JsonNode attrNode = jsonToUpdate.get(field).get(0);
-				String createdAt = now;
-
+				String createdAt = now;   
 				// keep original createdAt value if present in the original json
 				if ((originalNode instanceof ObjectNode)
 						&& ((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
@@ -630,6 +651,7 @@ public class EntityService {
 					createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).get(0))
 							.get(NGSIConstants.JSON_LD_VALUE).asText();
 				}
+				
 				setTemporalProperties(attrNode, createdAt, now, true);
 
 				// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
@@ -647,7 +669,6 @@ public class EntityService {
 		updateResult.setFinalNode(node);
 		removeTemporalProperties(node);
 		updateResult.setJsonWithoutSysAttrs(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
-
 		logger.trace("updateFields() :: completed");
 		return updateResult;
 
@@ -721,14 +742,27 @@ public class EntityService {
 	 * @throws IOException
 	 * @throws ResponseException
 	 */
-	public byte[] deleteFields(byte[] originalJsonObject, String attrId) throws Exception, ResponseException {
+	public byte[] deleteFields(byte[] originalJsonObject, String attrId, String datasetId)
+			throws Exception, ResponseException {
 		logger.trace("deleteFields() :: started");
 		JsonNode node = objectMapper.readTree(new String(originalJsonObject));
 		ObjectNode objectNode = (ObjectNode) node;
-		if (objectNode.has(attrId)) {
-			objectNode.remove(attrId);
+		JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
+		ArrayNode myArray = (ArrayNode) innerNode;
+		if (datasetId != null) {
+			for (int i = 0; i < myArray.size(); i++) {
+				String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+						.get(NGSIConstants.JSON_LD_ID).asText();
+				if (payloadDatasetId.equals(datasetId)) {
+					myArray.remove(i);
+				}
+			}
 		} else {
-			throw new ResponseException(ErrorType.NotFound);
+			if (objectNode.has(attrId)) {
+				objectNode.remove(attrId);
+			} else {
+				throw new ResponseException(ErrorType.NotFound);
+			}
 		}
 		logger.trace("deleteFields() :: completed");
 		return objectNode.toString().getBytes(NGSIConstants.ENCODE_FORMAT);
@@ -1051,5 +1085,5 @@ public class EntityService {
 		} catch (IOException e) {
 			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
 		}
-	}
+	}	
 }

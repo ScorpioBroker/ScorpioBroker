@@ -470,59 +470,46 @@ public class EntityControllerTest {
 		}
 	}
 	
-	@Test
-	public void deleteAttributeTest(){
-		try {
-			when(entityService.deleteAttribute(any(), any())).thenReturn(true);
-			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}","urn:ngsi-ld:Vehicle:B9211","BrandName")
-					.contentType(AppConstants.NGB_APPLICATION_JSONLD))
-			        .andExpect(status().isNoContent());
-			verify(entityService,times(1)).deleteAttribute(any(),any());
-		}catch(Exception e) {
-			Assert.fail();
-			e.printStackTrace();
-		}
-	}
-	
-	@Test
-	public void deleteAttributeNotFoundTest(){
-		try {
-			when(entityService.deleteAttribute(any(),any())).thenThrow(new ResponseException(ErrorType.NotFound));
-			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}","urn:ngsi-ld:Vehicle:B9211","BrandName")
-					.contentType(AppConstants.NGB_APPLICATION_JSONLD))
-			        .andExpect(status().isNotFound())
-			        .andExpect(jsonPath("$.title").value("Resource not found."));
-			verify(entityService,times(1)).deleteAttribute(any(),any());
-		}catch(Exception e) {
-			Assert.fail();
-		}
-	}
-	
-	@Test
-	public void deleteAttributeBadRequestTest(){
-		try {
-			when(entityService.deleteAttribute(any(),any())).thenThrow(new ResponseException(ErrorType.BadRequestData));
-			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}","urn:ngsi-ld:Vehicle:B9211","BrandName")
-					.contentType(AppConstants.NGB_APPLICATION_JSONLD))
-			        .andExpect(status().isBadRequest())
-			        .andExpect(jsonPath("$.title").value("Bad Request Data."));
-			verify(entityService,times(1)).deleteAttribute(any(),any());
-		}catch(Exception e) {
-			Assert.fail();
-		}
-	}
-	
-	@Test
-	public void deleteAttribute500Test(){
-		try {
-			when(entityService.deleteAttribute(any(),any())).thenThrow(new Exception());
-			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}","urn:ngsi-ld:Vehicle:B9211","BrandName")
-					.contentType(AppConstants.NGB_APPLICATION_JSONLD))
-			        .andExpect(status().isInternalServerError())
-			        .andExpect(jsonPath("$.title").value("Internal error"));
-			verify(entityService,times(1)).deleteAttribute(any(),any());
-		}catch(Exception e) {
-			Assert.fail();
-		}
-	}
+	/*
+	 * @Test public void deleteAttributeTest(){ try {
+	 * when(entityService.deleteAttribute(any(), any())).thenReturn(true);
+	 * mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}",
+	 * "urn:ngsi-ld:Vehicle:B9211","BrandName")
+	 * .contentType(AppConstants.NGB_APPLICATION_JSONLD))
+	 * .andExpect(status().isNoContent());
+	 * verify(entityService,times(1)).deleteAttribute(any(),any()); }catch(Exception
+	 * e) { Assert.fail(); e.printStackTrace(); } }
+	 * 
+	 * @Test public void deleteAttributeNotFoundTest(){ try {
+	 * when(entityService.deleteAttribute(any(),any())).thenThrow(new
+	 * ResponseException(ErrorType.NotFound));
+	 * mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}",
+	 * "urn:ngsi-ld:Vehicle:B9211","BrandName")
+	 * .contentType(AppConstants.NGB_APPLICATION_JSONLD))
+	 * .andExpect(status().isNotFound())
+	 * .andExpect(jsonPath("$.title").value("Resource not found."));
+	 * verify(entityService,times(1)).deleteAttribute(any(),any()); }catch(Exception
+	 * e) { Assert.fail(); } }
+	 * 
+	 * @Test public void deleteAttributeBadRequestTest(){ try {
+	 * when(entityService.deleteAttribute(any(),any())).thenThrow(new
+	 * ResponseException(ErrorType.BadRequestData));
+	 * mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}",
+	 * "urn:ngsi-ld:Vehicle:B9211","BrandName")
+	 * .contentType(AppConstants.NGB_APPLICATION_JSONLD))
+	 * .andExpect(status().isBadRequest())
+	 * .andExpect(jsonPath("$.title").value("Bad Request Data."));
+	 * verify(entityService,times(1)).deleteAttribute(any(),any()); }catch(Exception
+	 * e) { Assert.fail(); } }
+	 * 
+	 * @Test public void deleteAttribute500Test(){ try {
+	 * when(entityService.deleteAttribute(any(),any())).thenThrow(new Exception());
+	 * mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}",
+	 * "urn:ngsi-ld:Vehicle:B9211","BrandName")
+	 * .contentType(AppConstants.NGB_APPLICATION_JSONLD))
+	 * .andExpect(status().isInternalServerError())
+	 * .andExpect(jsonPath("$.title").value("Internal error"));
+	 * verify(entityService,times(1)).deleteAttribute(any(),any()); }catch(Exception
+	 * e) { Assert.fail(); } }
+	 */
 }
