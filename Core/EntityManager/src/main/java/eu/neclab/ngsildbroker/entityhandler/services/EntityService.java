@@ -564,11 +564,11 @@ public class EntityService {
 
 	/**
 	 * Method to merge/update fields in original Entitiy
-	 * 
 	 * @param originalJsonObject
 	 * @param jsonToUpdate
+	 * @param attrId
 	 * @return
-	 * @throws IOException
+	 * @throws Exception
 	 * @throws ResponseException
 	 */
 	public UpdateResult updateFields(byte[] originalJsonObject, JsonNode jsonToUpdate, String attrId)
@@ -579,89 +579,98 @@ public class EntityService {
 		UpdateResult updateResult = new UpdateResult(jsonToUpdate, resultJson);
 		JsonNode node = objectMapper.readTree(new String(originalJsonObject));
 		ObjectNode objectNode = (ObjectNode) node;
-		if (attrId != null) { // partial update, remove original instanceid and update temporal properties
-			// remove instanceId from original json, if exists
-			if (objectNode.get(attrId) == null) {
-				throw new ResponseException(ErrorType.NotFound, "Provided attribute is not present");
-			}
-			JsonNode originalNode = ((ArrayNode) objectNode.get(attrId)).get(0);
-			if (((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
-				((ObjectNode) originalNode).remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
-			}
-			// keep original createdAt value if present in the original json
-			String createdAt = now;
-			if (((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
-					&& ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).isArray()) {
-				createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).get(0))
-						.get(NGSIConstants.JSON_LD_VALUE).asText();
-			}
-			// insert/replace modifiedAt field
-			setTemporalProperties(jsonToUpdate, createdAt, now, true);
-		}
 		Iterator<String> it = jsonToUpdate.fieldNames();
-		while (it.hasNext()) {
-			String field = it.next();
-			// TOP level updates of context id or type are ignored
-			if (field.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT)
-					|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
-					|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)) {
-				continue;
+		if (!jsonToUpdate.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+			System.out.println("if condition");
+			if (attrId != null) { // partial update, remove original instanceid and update temporal properties
+				// remove instanceId from original json, if exists
+				if (objectNode.get(attrId) == null) {
+					throw new ResponseException(ErrorType.NotFound, "Provided attribute is not present");
+				}
+				JsonNode originalNode = ((ArrayNode) objectNode.get(attrId)).get(0);
+				if (((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
+					((ObjectNode) originalNode).remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
+				}
+				// keep original createdAt value if present in the original json
+				String createdAt = now;
+				if (((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
+						&& ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).isArray()) {
+					createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).get(0))
+							.get(NGSIConstants.JSON_LD_VALUE).asText();
+				}
+				// insert/replace modifiedAt field
+				setTemporalProperties(jsonToUpdate, createdAt, now, true);
 			}
-			logger.trace("field: " + field);
-			System.out.println("field:"+field);
-			if (attrId != null) { // partial update
-				logger.trace("attrId: " + attrId);
-				JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
-				ArrayNode myArray = (ArrayNode) innerNode;
-				if (innerNode != null) {
-					if (!field.equalsIgnoreCase(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+			while (it.hasNext()) {
+				String field = it.next();
+				// TOP level updates of context id or type are ignored
+				if (field.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT)
+						|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
+						|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)) {
+					continue;
+				}
+				logger.trace("field: " + field);
+				if (attrId != null) { // partial update
+					logger.trace("attrId: " + attrId);
+					JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
+					if (innerNode != null) {
 						((ObjectNode) innerNode.get(0)).replace(field, jsonToUpdate.get(field));
 						((ObjectNode) updateResult.getAppendedJsonFields()).set(attrId, innerNode);
 						logger.trace(
 								"appended json fields (partial): " + updateResult.getAppendedJsonFields().toString());
 						updateResult.setStatus(true);
-					} else {
-						for(int i =0; i<myArray.size(); i++) {
-							String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
-									.get(NGSIConstants.JSON_LD_ID).asText();
-							String datasetId = jsonToUpdate.get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
-									.get(NGSIConstants.JSON_LD_ID).asText();
+					}
 
-							if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
-								System.out.println("if block");
-								((ObjectNode) innerNode.get(i)).replace(field, jsonToUpdate.get(field));
-								((ObjectNode) updateResult.getAppendedJsonFields()).set(attrId, innerNode);
-								logger.trace("appended json fields (partial): "
-										+ updateResult.getAppendedJsonFields().toString());
-								updateResult.setStatus(true);
-							}
+				} else if (node.has(field)) {
+
+					JsonNode originalNode = ((ArrayNode) objectNode.get(field)).get(0);
+					JsonNode attrNode = jsonToUpdate.get(field).get(0);
+					String createdAt = now;
+
+					// keep original createdAt value if present in the original json
+					if ((originalNode instanceof ObjectNode)
+							&& ((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
+							&& ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).isArray()) {
+						createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT)
+								.get(0)).get(NGSIConstants.JSON_LD_VALUE).asText();
+					}
+					setTemporalProperties(attrNode, createdAt, now, true);
+
+					// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
+					// present ...
+					objectNode.replace(field, jsonToUpdate.get(field));
+					((ObjectNode) updateResult.getAppendedJsonFields()).set(field, jsonToUpdate.get(field));
+					logger.trace("appended json fields: " + updateResult.getAppendedJsonFields().toString());
+					updateResult.setStatus(true);
+				} else {
+					// throw new ResponseException(ErrorType.NotFound);
+				}
+			}
+		} else {
+			JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
+			ArrayNode myArray = (ArrayNode) innerNode;
+			for (int i = 0; i < myArray.size(); i++) {
+				String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+						.get(NGSIConstants.JSON_LD_ID).asText();
+				String datasetId = jsonToUpdate.get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+						.get(NGSIConstants.JSON_LD_ID).asText();
+				if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
+					Iterator<String> payloadfield = jsonToUpdate.fieldNames();
+					while (payloadfield.hasNext()) {
+						String field = payloadfield.next();
+						// TOP level updates of context id or type are ignored
+						if (field.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT)
+								|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
+								|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)) {
+							continue;
 						}
+						logger.trace("field: " + field);
+						((ObjectNode) innerNode.get(i)).replace(field, jsonToUpdate.get(field));
+						logger.trace(
+								"appended json fields (partial): " + updateResult.getAppendedJsonFields().toString());
+						updateResult.setStatus(true);
 					}
 				}
-
-			} else if (node.has(field)) {
-
-				JsonNode originalNode = ((ArrayNode) objectNode.get(field)).get(0);
-				JsonNode attrNode = jsonToUpdate.get(field).get(0);
-				String createdAt = now;   
-				// keep original createdAt value if present in the original json
-				if ((originalNode instanceof ObjectNode)
-						&& ((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
-						&& ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).isArray()) {
-					createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).get(0))
-							.get(NGSIConstants.JSON_LD_VALUE).asText();
-				}
-				
-				setTemporalProperties(attrNode, createdAt, now, true);
-
-				// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
-				// present ...
-				objectNode.replace(field, jsonToUpdate.get(field));
-				((ObjectNode) updateResult.getAppendedJsonFields()).set(field, jsonToUpdate.get(field));
-				logger.trace("appended json fields: " + updateResult.getAppendedJsonFields().toString());
-				updateResult.setStatus(true);
-			} else {
-				// throw new ResponseException(ErrorType.NotFound);
 			}
 		}
 		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
