@@ -28,3 +28,5 @@
 
     systemOverview.rst
     callFlow.rst
+    Roadmap.rst
+    API_walkthrough.rst

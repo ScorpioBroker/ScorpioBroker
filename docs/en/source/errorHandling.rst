@@ -7,7 +7,7 @@ This section will provide info on the error handling mechanism for the NGB syste
 Listed below are the events of the system:
 
 .. list-table::  **Error Handling** 
-   :widths: 5 15 35 15 10 2
+   :widths: 5 15 35 15 10 20
    :header-rows: 1
 
    * - S.No.				
