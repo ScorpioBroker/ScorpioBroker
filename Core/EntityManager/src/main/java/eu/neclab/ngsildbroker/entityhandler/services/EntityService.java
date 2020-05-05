@@ -579,9 +579,7 @@ public class EntityService {
 		UpdateResult updateResult = new UpdateResult(jsonToUpdate, resultJson);
 		JsonNode node = objectMapper.readTree(new String(originalJsonObject));
 		ObjectNode objectNode = (ObjectNode) node;
-		Iterator<String> it = jsonToUpdate.fieldNames();
 		if (!jsonToUpdate.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-			System.out.println("if condition");
 			if (attrId != null) { // partial update, remove original instanceid and update temporal properties
 				// remove instanceId from original json, if exists
 				if (objectNode.get(attrId) == null) {
@@ -601,6 +599,7 @@ public class EntityService {
 				// insert/replace modifiedAt field
 				setTemporalProperties(jsonToUpdate, createdAt, now, true);
 			}
+			Iterator<String> it = jsonToUpdate.fieldNames();
 			while (it.hasNext()) {
 				String field = it.next();
 				// TOP level updates of context id or type are ignored
@@ -649,12 +648,14 @@ public class EntityService {
 		} else {
 			JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
 			ArrayNode myArray = (ArrayNode) innerNode;
+			String availableDatasetId = null;
 			for (int i = 0; i < myArray.size(); i++) {
 				String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
 						.get(NGSIConstants.JSON_LD_ID).asText();
 				String datasetId = jsonToUpdate.get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
 						.get(NGSIConstants.JSON_LD_ID).asText();
 				if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
+					availableDatasetId = "available";
 					Iterator<String> payloadfield = jsonToUpdate.fieldNames();
 					while (payloadfield.hasNext()) {
 						String field = payloadfield.next();
@@ -671,6 +672,9 @@ public class EntityService {
 						updateResult.setStatus(true);
 					}
 				}
+			}
+			if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
+				throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
 			}
 		}
 		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
@@ -758,13 +762,18 @@ public class EntityService {
 		ObjectNode objectNode = (ObjectNode) node;
 		JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
 		ArrayNode myArray = (ArrayNode) innerNode;
+		String availableDatasetId = null;
 		if (datasetId != null) {
 			for (int i = 0; i < myArray.size(); i++) {
 				String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
 						.get(NGSIConstants.JSON_LD_ID).asText();
 				if (payloadDatasetId.equals(datasetId)) {
+					availableDatasetId = "available";
 					myArray.remove(i);
 				}
+			}
+			if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
+				throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
 			}
 		} else {
 			if (objectNode.has(attrId)) {
