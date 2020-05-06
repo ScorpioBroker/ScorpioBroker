@@ -650,6 +650,7 @@ public class EntityService {
 			ArrayNode myArray = (ArrayNode) innerNode;
 			String availableDatasetId = null;
 			for (int i = 0; i < myArray.size(); i++) {
+				if(myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 				String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
 						.get(NGSIConstants.JSON_LD_ID).asText();
 				String datasetId = jsonToUpdate.get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
@@ -673,6 +674,7 @@ public class EntityService {
 					}
 				}
 			}
+		  }
 			if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
 				throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
 			}
@@ -765,12 +767,14 @@ public class EntityService {
 		String availableDatasetId = null;
 		if (datasetId != null) {
 			for (int i = 0; i < myArray.size(); i++) {
+				if(myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 				String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
 						.get(NGSIConstants.JSON_LD_ID).asText();
 				if (payloadDatasetId.equals(datasetId)) {
 					availableDatasetId = "available";
 					myArray.remove(i);
 				}
+			  }
 			}
 			if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
 				throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
