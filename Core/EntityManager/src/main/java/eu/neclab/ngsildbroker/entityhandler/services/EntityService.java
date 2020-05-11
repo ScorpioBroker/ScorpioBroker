@@ -1086,7 +1086,7 @@ public class EntityService {
 		}
 	}	
 
-	public void setFieldValue(Iterator<String> it, JsonNode innerNode, JsonNode jsonToUpdate, UpdateResult updateResult,
+	private void setFieldValue(Iterator<String> it, JsonNode innerNode, JsonNode jsonToUpdate, UpdateResult updateResult,
 			int i) {
 		while (it.hasNext()) {
 			String field = it.next();
