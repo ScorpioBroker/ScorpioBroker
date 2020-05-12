@@ -111,7 +111,7 @@ class NGSIClient:
     return
   def append(self, entityId, attribName, newValue, atContext, overwrite=True):
     return
-  def delete(self, entityId, attribName, atContext):
+  def delete(self, entityId, attribName = None, atContext = None):
     url = self.baseURL + "entities/" + urllib.parse.quote(entityId) + "/"
     header = self.getHeaderForAtContext(atContext)
     if(attribName):
