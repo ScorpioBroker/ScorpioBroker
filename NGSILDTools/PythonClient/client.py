@@ -80,7 +80,7 @@ class NGSIClient:
     self.addAttribs(createBody, relationships, False)
     headers = self.getHeaderForAtContext(atContext)
     self.doPost(url, headers, createBody)
-  def getEntity(self, entityId, atContext):
+  def getEntity(self, entityId, atContext=None):
     header = self.getHeaderForAtContext(atContext)
     url = self.baseURL + "entities/" + entityId
     return self.doGet(url, header)
