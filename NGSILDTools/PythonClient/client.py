@@ -7,7 +7,7 @@ from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 import threading
 
-class NGSIClient:
+class NGSILDClient:
   def __init__(self, baseURL, notificationIp = None, notificationPort = 27150, addSuffix = True):
     #print("blaaa")
     if(baseURL[:-1] != '/'):
