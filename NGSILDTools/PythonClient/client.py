@@ -134,10 +134,22 @@ class NGSILDClient:
       url = url + "coordinates=" + urllib.parse.quote(coordinates) + "&"
     if(geoproperty):
       url = url + "geoproperty=" + urllib.parse.quote(geoproperty) + "&"  
-    return self.doGet(url[:-1], self.getHeaderForAtContext(atContext))    
-  def update(self, entityId, attribName, newValue, atContext):
+    return self.doGet(url[:-1], self.getHeaderForAtContext(atContext))
+  def update(self, entityId, properties=None, relationships=None, atContext=None):
+    url = self.baseURL + "entities/" + entityId + "/attrs"
+    body = {}
+    addAttribs(body, properties, "Property")
+    addAttribs(body, relationships, "Relationship")
+    self.doPatch(url, self.getHeaderForAtContext(atContext), body)
     return
-  def append(self, entityId, attribName, newValue, atContext, overwrite=True):
+  def append(self, entityId, properties=None, relationships=None, atContext=None, noOverwrite=False):
+    url = self.baseURL + "entities/" + entityId + "/attrs"
+    if(noOverwrite):
+      url += "?options=noOverwrite"
+    body = {}
+    addAttribs(body, properties, "Property")
+    addAttribs(body, relationships, "Relationship")
+    self.doPost(url, self.getHeaderForAtContext(atContext), body)
     return
   def delete(self, entityId, attribName = None, atContext = None):
     url = self.baseURL + "entities/" + urllib.parse.quote(entityId) + "/"
@@ -201,7 +213,6 @@ class NGSILDClient:
     result = response.read()
     return json.loads(result)
   def doPost(self, url, headers, body, method = "POST"):
-    print(str(body))
     req = Request(url, json.dumps(body).encode('utf-8'), headers, method=method)
     response = urlopen(req)
     result = response.read()
