@@ -6,6 +6,7 @@ import socket
 from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 import threading
+import uuid
 
 class NGSILDClient:
   def __init__(self, baseURL, notificationIp = None, notificationPort = 27150, addSuffix = True):
@@ -25,14 +26,15 @@ class NGSILDClient:
     #print("blib")
     self.subscriptionIds = []  
     self.server = MyServer(('', notificationPort), MyHandler)
-    thread = threading.Thread(target = self.server.serve_forever)
-    thread.start()
+    self.thread = threading.Thread(target = self.server.serve_forever)
+    self.thread.start()
     #print("blob")
     return    
   def shutdown(self):
     for subId in self.subscriptionIds:
       self.unsubscribe(subId)
     self.server.shutdown()
+    self.thread.kill()
   def getLocalhost(self):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
@@ -44,7 +46,9 @@ class NGSILDClient:
     finally:
         s.close()
     return IP
-  def createLocationEntry(self, createBody, coordinates):
+  def createLocationEntry(self, createBody, coordinates, locationName = 'location'):
+    createBody[locationName] = self.createLocationEntry(coordinates)
+  def createLocationEntry(self, coordinates):
     hashMapBecauseStupidPythonCantDoSwitch = { 1: "Point", 2: "LineString", 3: "Polygon", 4: "MultiPolygon"}
     depth = 1
     temp = coordinates[0]
@@ -54,20 +58,43 @@ class NGSILDClient:
     temp = {}
     temp['type'] = 'GeoProperty'
     temp['value'] = {'type': hashMapBecauseStupidPythonCantDoSwitch[depth], 'value': coordinates}
-    createBody['location'] = temp
-    
-  def addAttribs(self, createBody, attribs, properties = True):
+    return temp
+  def addAttribs(self, createBody, attribs, attribType = "Property"):
     if(not attribs):
       return
     for key, value in attribs.items():
-      temp = {}
-      if(properties):
-        temp['type'] = 'Property'
+      if(type(value)==list):
+        container = []
+        for multivalue in value:
+          temp = {}
+          temp['type'] = attribType
+          if(type(multivalue) == dict and "datasetId" in multivalue):
+            datasetId = multivalue['datasetId']
+            realValue = multivalue['value']
+          else:
+            realValue = multivalue
+            datasetId = uuid.uuid1().urn
+          if(attribType=="Property"):
+            temp['value'] = multivalue
+          elif(attribType=="Relationship"):
+            temp['object'] = multivalue
+          elif(attribType=="GeoProperty"):
+            temp['value'] = createLocationEntry(multivalue)
+          temp['datasetId'] = datasetId
+          container.append(temp)
+        createBody[key] = container
       else:
-        temp['type'] = 'Relationship'
-      temp['value'] = value
-      createBody[key] = temp
-  def createEntity(self, entityId, entityType, properties=None, relationships=None, coordinates=None, description=None, atContext=None):
+        temp = {}
+        temp['type'] = attribType
+        if(attribType=="Property"):
+          temp['value'] = value
+        elif(attribType=="Relationship"):
+          temp['object'] = value
+        elif(attribType=="GeoProperty"):
+          temp['value'] = createLocationEntry(value)
+        createBody[key] = temp
+      
+  def createEntity(self, entityId, entityType, properties=None, relationships=None, geoProperty=None, coordinates=None, description=None, atContext=None):
     createBody = {}
     createBody['id'] = entityId
     createBody['type'] = entityType
@@ -77,7 +104,8 @@ class NGSILDClient:
     if(description):
       createBody['description'] = description
     self.addAttribs(createBody, properties)
-    self.addAttribs(createBody, relationships, False)
+    self.addAttribs(createBody, relationships, "Relationship")
+    self.addAttribs(createBody, geoProperty, "GeoProperty")
     headers = self.getHeaderForAtContext(atContext)
     self.doPost(url, headers, createBody)
   def getEntity(self, entityId, atContext=None):
@@ -173,7 +201,7 @@ class NGSILDClient:
     result = response.read()
     return json.loads(result)
   def doPost(self, url, headers, body, method = "POST"):
-    #print(str(body))
+    print(str(body))
     req = Request(url, json.dumps(body).encode('utf-8'), headers, method=method)
     response = urlopen(req)
     result = response.read()
