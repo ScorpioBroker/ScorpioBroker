@@ -180,4 +180,5 @@ public interface NGSIConstants {
 	public static final String MQTT_VERSION = "mqtt_version";
 	public static final String DEFAULT_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/default-data-set-id";
 	public static final String DEFAULT_DATA_SET_ID_VALUE = "######@@";
+	public final static String QUERY_PARAMETER_DELETE_ALL  = "deleteAll";
 }

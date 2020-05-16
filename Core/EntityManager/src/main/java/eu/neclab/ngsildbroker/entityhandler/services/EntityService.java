@@ -510,7 +510,7 @@ public class EntityService {
 
 	}
 
-	public boolean deleteAttribute(String entityId, String attrId,String datasetId) throws ResponseException, Exception {
+	public boolean deleteAttribute(String entityId, String attrId,String datasetId,String deleteAll) throws ResponseException, Exception {
 		logger.trace("deleteAttribute() :: started");
 		// get message channel for ENTITY_APPEND topic
 		MessageChannel messageChannel = producerChannels.deleteWriteChannel();
@@ -522,7 +522,7 @@ public class EntityService {
 		if (entityDetails == null) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
-		// get entity from ENTITY topic.
+		// get entity from ENTITY topic.,
 		byte[] originalJson = this.operations.getMessage(this.ENTITY_TOPIC, entityId, entityDetails.getPartition(),
 				entityDetails.getOffset());
 		// check whether exists.
@@ -531,7 +531,7 @@ public class EntityService {
 		}
 		JsonNode originalJsonNode = objectMapper.readTree(originalJson);
 
-		byte[] finalJson = this.deleteFields(originalJson, attrId,datasetId);
+		byte[] finalJson = this.deleteFields(originalJson, attrId, datasetId, deleteAll);
 		// pubilsh updated message
 		boolean result = this.operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
 				finalJson);
@@ -734,7 +734,7 @@ public class EntityService {
 	 * @throws IOException
 	 * @throws ResponseException
 	 */
-	public byte[] deleteFields(byte[] originalJsonObject, String attrId, String datasetId)
+	public byte[] deleteFields(byte[] originalJsonObject, String attrId, String datasetId, String deleteAll)
 			throws Exception, ResponseException {
 		logger.trace("deleteFields() :: started");
 		JsonNode node = objectMapper.readTree(new String(originalJsonObject));
@@ -742,26 +742,49 @@ public class EntityService {
 		JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
 		ArrayNode myArray = (ArrayNode) innerNode;
 		String availableDatasetId = null;
-		if (datasetId != null) {
-			for (int i = 0; i < myArray.size(); i++) {
-				if(myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-				String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
-						.get(NGSIConstants.JSON_LD_ID).asText();
-				if (payloadDatasetId.equals(datasetId)) {
-					availableDatasetId = "available";
-					myArray.remove(i);
+		if (objectNode.has(attrId)) {
+			if (datasetId != null && !datasetId.isEmpty()) {
+				for (int i = 0; i < myArray.size(); i++) {
+					if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+								.get(NGSIConstants.JSON_LD_ID).asText();
+						if (payloadDatasetId.equals(datasetId)) {
+							availableDatasetId = "available";
+							myArray.remove(i);
+						}
+					}
 				}
-			  }
-			}
-			if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
-				throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
+				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
+					throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
+				}
+
+			} else if (deleteAll != null && !deleteAll.isEmpty()) {
+				if (deleteAll.equals("true")) {
+					if (objectNode.has(attrId)) {
+						objectNode.remove(attrId);
+					} else {
+						throw new ResponseException(ErrorType.NotFound);
+					}
+				} else {
+					throw new ResponseException(ErrorType.InvalidRequest, "request is not valid");
+				}
+			} else {
+				for (int i = 0; i < myArray.size(); i++) {
+					if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+								.get(NGSIConstants.JSON_LD_ID).asText();
+						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID_VALUE)) {
+							availableDatasetId = "available";
+							myArray.remove(i);
+						}
+					}
+				}
+				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
+					throw new ResponseException(ErrorType.NotFound, "Default attribute instance is not present");
+				}
 			}
 		} else {
-			if (objectNode.has(attrId)) {
-				objectNode.remove(attrId);
-			} else {
-				throw new ResponseException(ErrorType.NotFound);
-			}
+			throw new ResponseException(ErrorType.NotFound, "Attribute is not present");
 		}
 		logger.trace("deleteFields() :: completed");
 		return objectNode.toString().getBytes(NGSIConstants.ENCODE_FORMAT);

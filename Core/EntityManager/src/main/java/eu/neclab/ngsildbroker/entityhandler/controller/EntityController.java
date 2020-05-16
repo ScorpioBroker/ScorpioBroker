@@ -31,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
+import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
 
 /**
  * 
@@ -262,11 +263,13 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@DeleteMapping("/{entityId}/attrs/{attrId}")
 	public ResponseEntity<byte[]> deleteAttribute(HttpServletRequest request, @PathVariable("entityId") String entityId,
-			@PathVariable("attrId") String attrId,@RequestParam(value = "datasetId", required = false) String datasetId) {
+			@PathVariable("attrId") String attrId,@RequestParam(value = "datasetId", required = false) String datasetId,
+			@RequestParam(value = "deleteAll", required = false) String deleteAll) {
 		try {
 			logger.trace("delete attribute :: started");
+			Validator.validate(request.getParameterMap());
 			String expandedAttrib = paramsResolver.expandAttribute(attrId, HttpUtils.getAtContext(request));
-			entityService.deleteAttribute(entityId, expandedAttrib,datasetId);
+			entityService.deleteAttribute(entityId, expandedAttrib,datasetId,deleteAll);
 			logger.trace("delete attribute :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException responseException) {
