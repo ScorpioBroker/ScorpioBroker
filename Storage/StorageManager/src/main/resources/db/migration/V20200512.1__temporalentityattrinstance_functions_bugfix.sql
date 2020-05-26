@@ -1,3 +1,6 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+
 -- trigger to automatically extract pre-defined ngsi-ld members and store them in regular fields (for query performance)
 CREATE OR REPLACE FUNCTION temporalentityattrinstance_extract_jsonb_fields() RETURNS trigger AS $_$
     DECLARE 
@@ -9,13 +12,14 @@ CREATE OR REPLACE FUNCTION temporalentityattrinstance_extract_jsonb_fields() RET
 			
             
             --IF (NEW.data#>>'{https://uri.etsi.org/ngsi-ld/instanceId,0,@id}' IS null) THEN            
-            SELECT uuid_in(md5(random()::text || clock_timestamp()::text)::cstring) INTO l_instance_id;  --system generated value for instance id          
-             NEW.instanceid = l_instance_id; --- DEFAULT gen_random_uuid();
+            --SELECT uuid_in(md5(random()::text || clock_timestamp()::text)::cstring) INTO l_instance_id;  --system generated value for instance id  
+           -- SELECT concat('urn',':', 'ngsi-ld',':',uuid_generate_v4()) INTO l_instance_id ;  --system generated value for instance id          
+             --NEW.instanceid = l_instance_id; --- DEFAULT gen_random_uuid();
             -- ELSE            
-            --NEW.instanceid = NEW.data#>>'{https://uri.etsi.org/ngsi-ld/instanceId,0,@id}';
+            NEW.instanceid = NEW.data#>>'{https://uri.etsi.org/ngsi-ld/instanceId,0,@id}';
             --END IF;
             
-            
+           
             
             
             NEW.createdat = (NEW.data#>>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}')::TIMESTAMP;
