@@ -30,3 +30,6 @@
     callFlow.rst
     Roadmap.rst
     API_walkthrough.rst
+    docker.rst
+    troubleshooting.rst
+    

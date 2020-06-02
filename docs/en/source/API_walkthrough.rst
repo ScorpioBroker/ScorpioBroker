@@ -11,7 +11,7 @@
    * - 1.
      - http://ip:port/ngsi-ld/v1/subscriptions						
      - Subscription
-     - To add subscription in the NG Broker
+     - To add subscription in the Scorpio Broker
      - POST
 
    * - 2.
@@ -39,13 +39,13 @@
      - DELETE	
 
    * - 6.
-     - http://ip:port/ngsi-ld/v1//csources									
+     - http://ip:port/ngsi-ld/v1/csources									
      - Context Source Registration
-     - To add register a csource in the NG Broker
+     - To add register a csource in the Scorpio Broker
      - POST
 
    * - 7.
-     - http://ip:port/ngsi-ld/v1//csources								
+     - http://ip:port/ngsi-ld/v1/csources								
      - Context Source Registration
      - To retrieve list of Context Source which are  registered
      - GET
@@ -71,7 +71,7 @@
    * - 11.
      - http://ip:port/ngsi-ld/v1/csourceSubscriptions									
      - Context Source Registration Subscription
-     - To add subscription for csource in the NG Broker(device)
+     - To add subscription for csource in the Scorpio Broker(device)
      - POST
 
    * - 12.
