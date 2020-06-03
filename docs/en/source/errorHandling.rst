@@ -4,67 +4,70 @@ Error Handler
 
 This section will provide info on the error handling mechanism for the Scorpio Broker system.
 
-Listed below are the events of the system:
+Listed below are the events of the system
 
-.. list-table::  **Error Handling** 
-   :widths: 5 15 35 15 10 20
-   :header-rows: 1
+.. list-table::  **Error Handling** 
+   :widths: 5 15 35 15 10 20
+   :header-rows: 1
 
-   * - S.No.				
-     - Operation/Event
-     - Scenario Description
-     - Responsible  Module
-     - Error Code/ Response
-     - Action
-     
-   * - 1.
-     - InvalidRequest				
-     - The request associated to the operation is syntactically invalid or includes wrong content
-     - REST Controller
-     - HTTP 400
-     - Log the error & notify the requestor
+   * - S.No.				
+     - Operation/Event 	 		 
+     - Scenario Description
+     - Responsible  Module
+     - Error Code/ Response
+     - Action
+      
+   * - 1.
+     - InvalidRequest								
+     - The request associated to the operation is syntactically invalid or includes wrong content	
+     - REST Controller
+     - HTTP 400
+     - Log the error & notify the requestor
 
-   * - 2.
-     - BadRequestData				
-     - The request includes input data which does not meet the requirements of the operation
-     - REST Controller
-     - HTTP 400
-     - Log the error & notify the requestor
+   * - 2.
+     - BadRequestData								
+     - The request includes input data which does not meet the requirements of the operation	
+     - REST Controller
+     - HTTP 400
+     - Log the error & notify the requestor
 
-   * - 3.		
-     - AlreadyExists				
-     - The referred element already exists
-     - REST Controller
-     - HTTP 409
-     - Log the error & notify the requestor
+   * - 3.
+     - AlreadyExists								
+     - The referred element already exists	
+     - REST Controller
+     - HTTP 409
+     - Log the error & notify the requestor
 
-   * - 4.				
-     - OperationNotSupported				
-     - The operation is not supported
-     - REST Controller
-     - HTTP 422
-     - Log the error & notify the requestor
-	 
-   * - 5.				
-     - ResourceNotFound				
-     - The referred resource has not been found
-     - REST Controller
-     - HTTP 404
-     - Log the error & notify the requestor
-	 
-   * - 6.				
-     - InternalError				
-     - There has been an error during the operation execution	
-     - REST Controller
-     - HTTP 500
-     - Log the error & notify the requestor
-	 
-   * - 7.				
-     - Method Not Allowed				
-     - There has been an error when a client invokes a wrong HTTP verb over a resource	
-     - REST Controller
-     - HTTP 405
-     - Log the error & notify the requestor
+   * - 4.
+     - OperationNotSupported								
+     - The operation is not supported	
+     - REST Controller
+     - HTTP 422
+     - Log the error & notify the requestor
+
+   * - 5.
+     - ResourceNotFound								
+     - The referred resource has not been found	
+     - REST Controller
+     - HTTP 404
+     - Log the error & notify the requestor
+
+   * - 6.
+     - InternalError								
+     - There has been an error during the operation execution	
+     - REST Controller
+     - HTTP 500
+     - Log the error & notify the requestor
+
+   * - 7.
+     - Method Not Allowed								
+     - There has been an error when a client invokes a wrong HTTP verb over a resource	
+     - REST Controller
+     - HTTP 405
+     - Log the error & notify the requestor
+
+
+
 
 Please note the errors can also be categorized into following categories for different exceptions that can occur internally to the implementation logic as well:
 

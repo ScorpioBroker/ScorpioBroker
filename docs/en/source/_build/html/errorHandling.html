@@ -9,6 +9,8 @@
     <title>4. Error Handler &#8212; ScorpioBroker  documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
@@ -33,24 +35,23 @@
             
   <div class="section" id="error-handler">
 <h1>4. Error Handler<a class="headerlink" href="#error-handler" title="Permalink to this headline">¶</a></h1>
-<p>[from document 4.3]</p>
-<p>This section will provide info on the error handling mechanism for the NGB system .</p>
-<p>Listed below are the events of the system:</p>
+<p>This section will provide info on the error handling mechanism for the Scorpio Broker system.</p>
+<p>Listed below are the events of the system</p>
 <table border="1" class="colwidths-given docutils" id="id1">
 <caption><span class="caption-text"><strong>Error Handling</strong></span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
 <colgroup>
-<col width="6%" />
-<col width="18%" />
-<col width="43%" />
-<col width="18%" />
-<col width="12%" />
-<col width="2%" />
+<col width="5%" />
+<col width="15%" />
+<col width="35%" />
+<col width="15%" />
+<col width="10%" />
+<col width="20%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">S.No.</th>
 <th class="head">Operation/Event</th>
 <th class="head">Scenario Description</th>
-<th class="head">Responsible  Module</th>
+<th class="head">Responsible &nbsp;Module</th>
 <th class="head">Error Code/ Response</th>
 <th class="head">Action</th>
 </tr>
@@ -129,17 +130,13 @@
 </tbody>
 </table>
 <p>Please note the errors can also be categorized into following categories for different exceptions that can occur internally to the implementation logic as well:</p>
-<blockquote>
-<div><p>1.Low criticality are those which involve the errors that should be handled by the software logic, and are due to some configuration issues and should not require anything like reset, reboot of the system.</p>
-<p>2.Medium Criticality are those which will be tried for the software logic handling but it may need system reset, chip reset and may interrupt system significantly.</p>
-<p>3.High Criticality are the hardware based error which should not occur and if occur may need system reset.</p>
-</div></blockquote>
-<p>Fail safe mechanisms for the different category of errors:</p>
-<blockquote>
-<div><p>a.For the Low criticality of the errors logging will be performed, retry will be performed and error will be handled by means of rollback and sending failure to the upper layers.</p>
-<p>b.For the High Criticality errors, an emergency errors will be logged further recommending a reboot.</p>
-<p>c.For the Medium criticality errors logging, retry mechanisms will be implemented further logging emergency logs to the system and recommend a reboot to the administrator.</p>
-</div></blockquote>
+<p>&nbsp;1. Low criticality is those which involve the errors that should be handled by the software logic, and are due to some configuration issues and should not require anything like reset, a reboot of the system.</p>
+<p>&nbsp;2. Medium Criticality is those which will be tried for the software logic handling but it may need system reset, chip reset and may interrupt system significantly.</p>
+<p>&nbsp;3. High Criticality is the hardware-based error that should not occur and if occur may need system reset.</p>
+<p>Fail-safe mechanisms for the different category of errors:</p>
+<p>&nbsp;a. For the Low criticality of the errors, logging will be performed, the retry will be performed and error will be handled by means of rollback and sending failure to the upper layers.</p>
+<p>&nbsp;b.For the High Criticality errors, emergency errors will be logged further recommending a reboot.</p>
+<p>&nbsp;c.For the Medium criticality errors logging, retry mechanisms will be implemented further logging emergency logs to the system and recommend a reboot to the administrator.</p>
 <p>During the initialization, failure will be logged as emergency and error will be returned to the calling program</p>
 </div>
 
@@ -181,7 +178,7 @@
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, NECTI.
+      &copy;2020, NECTI + NLE.
       
       |
       Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>

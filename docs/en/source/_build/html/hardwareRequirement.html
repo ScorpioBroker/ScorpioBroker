@@ -9,6 +9,8 @@
     <title>1. Java 8 System Requirements &#8212; ScorpioBroker  documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
@@ -16,7 +18,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="4. Error Handler" href="errorHandling.html" />
-    <link rel="prev" title="1. Beginners Guide" href="onepageTutorial.html" />
+    <link rel="prev" title="1. Installation Guide" href="onepageTutorial.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -73,20 +75,14 @@
 <h1>2. ZooKeeper Requirements<a class="headerlink" href="#zookeeper-requirements" title="Permalink to this headline">¶</a></h1>
 <p>ZooKeeper runs in Java, release 1.6 or greater (JDK 6 or greater).
 It runs as an ensemble of ZooKeeper servers.
-Three ZooKeeper servers is the minimum recommended size for an ensemble, and we also recommend that they run on separate machines.
+Three ZooKeeper servers are the minimum recommended size for an ensemble, and we also recommend that they run on separate machines.
 At Yahoo!, ZooKeeper is usually deployed on dedicated RHEL boxes, with dual-core processors, 2GB of RAM, and 80GB IDE hard drives.</p>
 </div>
 <div class="section" id="recommendations-for-kafka">
 <h1>3. Recommendations for Kafka<a class="headerlink" href="#recommendations-for-kafka" title="Permalink to this headline">¶</a></h1>
-<ul class="simple">
-<li>Kafka Broker Node: eight cores, 64 GB to128 GB of RAM, two or more 8-TB SAS/SSD disks, and a 10- Gige Nic .</li>
-<li>Minimum of three Kafka broker nodes</li>
-<li>Hardware Profile: More RAM and faster speed disks are better; 10 Gige Nic is ideal.</li>
-<li>75 MB/sec per node is a conservative estimate ( can go much higher if more RAM and reduced lag between writing/reading and therefore 10GB Nic is required ).</li>
-<li>With a minimum of three nodes in your cluster, you can expect 225 MB/sec data transfer.</li>
-<li>You can perform additional further sizing by using the following formula:</li>
-</ul>
-<p>num_brokers = desired_throughput (MB/sec) / 75</p>
+<p><strong>Kafka brokers</strong> use both the JVM heap and the OS page cache. The JVM heap is used for the replication of partitions between brokers and for log compaction. Replication requires 1MB (default replica.max.fetch.size) for each partition on the broker. In Apache Kafka 0.10.1 (Confluent Platform 3.1), we added a new configuration (replica.fetch.response.max.bytes) that limits the total RAM used for replication to 10MB, to avoid memory and garbage collection issues when the number of partitions on a broker is high. For log compaction, calculating the required memory is more complicated and we recommend referring to the Kafka documentation if you are using this feature. For small to medium-sized deployments, 4GB heap size is usually sufficient. In addition, it is highly recommended that consumers always read from memory, i.e. from data that was written to Kafka and is still stored in the OS page cache. The amount of memory this requires depends on the rate at which this data is written and how far behind you expect consumers to get. If you write 20GB per hour per broker and you allow brokers to fall 3 hours behind in normal scenario, you will want to reserve 60GB to the OS page cache. In cases where consumers are forced to read from disk, performance will drop significantly</p>
+<p><strong>Kafka Connect</strong> itself does not use much memory, but some connectors buffer data internally for efficiency. If you run multiple connectors that use buffering, you will want to increase the JVM heap size to 1GB or higher.</p>
+<p><strong>Consumers</strong> use at least 2MB per consumer and up to 64MB in cases of large responses from brokers (typical for bursty traffic). Producers will have a buffer of 64MB each. Start by allocating 1GB RAM and add 64MB for each producer and 16MB for each consumer planned.</p>
 </div>
 
 
@@ -105,7 +101,7 @@ At Yahoo!, ZooKeeper is usually deployed on dedicated RHEL boxes, with dual-core
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="onepageTutorial.html" title="previous chapter">1. Beginners Guide</a></li>
+      <li>Previous: <a href="onepageTutorial.html" title="previous chapter">1. Installation Guide</a></li>
       <li>Next: <a href="errorHandling.html" title="next chapter">4. Error Handler</a></li>
   </ul></li>
 </ul>
@@ -134,7 +130,7 @@ At Yahoo!, ZooKeeper is usually deployed on dedicated RHEL boxes, with dual-core
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2020, NECTI.
+      &copy;2020, NECTI + NLE.
       
       |
       Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>

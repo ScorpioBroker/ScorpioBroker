@@ -1,40 +1,4 @@
 *****************************************
-Beginners Guide
-*****************************************
-This Section will give you a high-level overview of the basic architecture of the Scorpio broker with a brief description of every component of the Scorpio broker. This section also covers the step by step guide to set up the Scorpio broker environment.
-
-*****************************************
-Architecture Overview
-*****************************************
-
-
-The deployment architecture leverages the Spring Cloud framework that addresses lots of Micro-services concerns(e.g. scaling, monitoring, fault-tolerant, highly available, secure, decoupled, etc. ) and Kafka based distributed and scalable message queue infrastructure to provide high performance on message processing for a huge number of context requests which is usual in the IoT domain.
-
-It covers the high-level operations (Http based REST with method POST/GET/DELETE/PATCH) request flow from the external world to the Scorpio Broker system.  The external request is served through a unified service API gateway interface that exposes a single IP/port combination to be used for all services that the Scorpio Broker system can provide. In reality, each of the Scorpio Broker services will be implemented as a micro-service that can be deployed as an independent standalone unit in a distributed computing environment. That API gateway routes all the incoming requests to the specific Micro-services with the help of registration & discovery service. Once the request reaches at micro-service based on the operation requirement it uses(pub/sub) Kafka topics (message queues) for real-time storage and for providing intercommunication among different micro-services (based on requirement) over message queues.
-
-.. figure:: figures/architecture.png
-
-- **Application**: End-user/domain applications leverage IoT Broker to provide the required information about IoT infrastructure. This application can query, subscribe, update context information to/from the IoT Broker as per their requirements.
-- **IoT Entities**: These are the physical IoT devices installed to perform specific functions. In order to send their information about their function, they need to access IoT Broker either directly or via some IoT gateway or NGSI-LD adapter.
-- **Consumers**: These are the IoT entities or applications that consume the data of context sources.
-- **Producers**: These are the IoT entities, context source, or applications that produce the context data to the IoT Broker.
-- **Service API Gateway**: This is the proxy gateway for the external world to access the internal services of the Scorpio Broker system exposed via REST-based HTTP interfaces. All internal Scorpio Broker related services can be accessed through this service gateway using its single IP & port (which are usually static) and extending the service name in the URL. Thus the user does not need to take care of (or learn or use) the IP and Port of every service which often changes dynamically. This makes life easier, especially in a case when multiple services (or micro-service) are running under one system. This is easily solved by the use of proxy gateway(i.e. service API gateway) for all the back-end services.
-- **Rest Interface**: These are the HTTP based interface for the external entities/applications to consume in order to do certain operations on IoT Broker. The external interface would be visible through the Service API gateway and internal interface mapping to each requested service would be discovered through the service registration & discovery module.
-- **Service Discovery & Registration**: This component allows registration of any service (web service/micro-service) with it so that any client using discovery functionality of this component can determine the location of a service instance to which it wants to send requests. So in short, a service registry & discovery implements a database of services, their instances, and their locations. Service instances get registered with the service registry on startup and deregistered on shutdown. A client of the service, query the service registry, which discovers the available instances of a service. A service registry might also invoke a service instance’s health check API to verify that it is able to handle requests.
-- **Entity Manager**: This component will handle all entity related CRUD operations with the help of other components of the Scorpio Broker.
-- **LD Context Resolver**: This component is responsible for resolving NGSI_LD context into JSON structured message in order to be further processed by other components on Scorpio Broker.
-- **Subscription & Notification Manager**: This component is responsible for handling CRUD operations related to entities and/or csource subscription & notification.
-- **Query Manager**: This component will handle simple or complex queries (Geo query based on NGSI-LD context) operations of the Scorpio Broker system. 
-- **Storage Manager**: This component will be responsible for fetching data from message brokers and then transforming them into relevant schema format in order to persist in DB tables. Additionally, this manager will also provide interfaces for complex queries to DB e.g. Geo query or cross-domain entity context relationship queries.
-- **Context Registry Manager**: This component will be responsible for providing interfaces for CRUD operations of csource registration/query/ subscription.
-- **Health Check & Monitoring**: This component will be responsible to monitor the health of running services & infrastructure.
-- **Message Bus Handler**: Every module of Scorpio Broker may need to communicate with the bus for the inter-module exchange of messages. This interface is provided by the message bus handler.
-- **Storage Connectors**: The Scorpio Broker needs to store certain information in different DB formats. So storage connectors (using any type of message broker methodology) provide the way to connect to that storage (which may be present locally or remotely). For e.g. the entity information could be stored/streamed into a different type of storage e.g. MySQL, PostgreSQL, Bigdata, etc. These connectors could also be implemented for storage resiliency purposes.
-- **Context Registry Connector**: IoT Broker needs to communicate to the context registry in order to know about the registered context sources (brokers/providers) and the type of data model they support. The context registry connector will allow the message broker mechanism to connect the context registry that may be running locally or remotely in federated mode.
-- **Storage**: This is the actual storage (e.g. Postgres/Postgis) wherein the data would be persisted. 
-- **Context Registry**: This is the component that will be responsible for saving the registration of the context sources/producers. 
-
-*****************************************
 Installation Guide
 *****************************************
 
@@ -45,9 +9,14 @@ In order to set-up the environment of Scorpio broker, the following dependency n
 3. ZooKeeper.
 4. Apache Kafka.
 
+
 *****************************************
+Windows
+*****************************************
+
+
 Eclipse installation
-*****************************************
+############################
 
 - **Download the Eclipse Installer.**:
 
@@ -72,9 +41,8 @@ Eclipse installation
  Once the installation is complete you can now launch Eclipse. The Eclipse Installer has done its work. Happy coding.
 
 
-*****************************************
 JRE Setup
-*****************************************
+##############
 
 - Start the JRE installation and hit the “Change destination folder” checkbox, then click 'Install.'
 
@@ -83,20 +51,39 @@ JRE Setup
 - Change the installation directory to any path without spaces in the folder name. E.g. C:\Java\jre1.8.0_xx\. (By default it will be C:\Program Files\Java\jre1.8.0_xx), then click 'Next.'
 
 
-- Now open the system environment variables dialogue by opening Control Panel -> System -> Advanced system settings -> Environment Variables.
+After you've installed Java in Windows, you must set the  JAVA_HOME  environment variable to point to the Java installation directory.
 
+**Set the JAVA_HOME Variable**
 
-- Hit the New User Variable button in the User variables section, then type JAVA_HOME in Variable name and give your JRE path in the Variable value. It should look like the below image:
+To set the JAVA_HOME variable:
+
+1. Find out where Java is installed. If you didn't change the path during installation, it will be something like this:
+
+ *C:\Program Files\Java\jdk1.8.0_65*
+
+2. - In Windows 7 right-click **My Computer** and select **Properties** > **Advanced**.
+
+  OR
+
+ - In Windows 8 go to **Control Panel** > **System** > **Advanced System Settings**.
+
+3. Click the Environment Variables button.
+
+4. Under System Variables, click New.
+
+5. In the User Variable Name field, enter: **JAVA_HOME**
+
+6. In the User Variable Value field, enter your JDK  path.
 
 .. figure:: figures/jre-2.png
 
  (Java path and version may change according to the version of Kafka you are using)
 
-- Now click OK.
+7. Now click OK.
 
-- Search for a Path variable in the “System Variable” section in the “Environment Variables” dialogue box you just opened.
+8. Search for a Path variable in the “System Variable” section in the “Environment Variables” dialogue box you just opened.
 
-- Edit the path and type “;%JAVA_HOME%\bin” at the end of the text already written there, just like the image below:
+9. Edit the path and type *;%JAVA_HOME%\bin* at the end of the text already written there, just like the image below:
 
 .. figure:: figures/jre-3.png
 
@@ -107,9 +94,9 @@ JRE Setup
 
 If your command prompt somewhat looks like the image above, you are good to go. Otherwise, you need to recheck whether your setup version matches the correct OS architecture (x86, x64), or if the environment variables path is correct.
 
-*****************************************
+
 ZooKeeper Installation
-*****************************************
+############################
 
 
 1. Go to your ZooKeeper config directory. For me its C:\zookeeper-3.4.7\conf
@@ -118,8 +105,8 @@ ZooKeeper Installation
 4. Find and edit dataDir=/tmp/zookeeper to :\zookeeper-3.4.7\data  
 5. Add an entry in the System Environment Variables as we did for Java.
 
- a. Add ZOOKEEPER_HOME = C:\zookeeper-3.4.7 to the System Variables.
- b. Edit the System Variable named “Path” and add ;%ZOOKEEPER_HOME%\bin; 
+ a. Add ZOOKEEPER_HOME = C:\zookeeper-3.4.7 to the System Variables.
+ b. Edit the System Variable named “Path” and add ;%ZOOKEEPER_HOME%\bin; 
 
 6. You can change the default Zookeeper port in zoo.cfg file (Default port 2181).
 7. Run ZooKeeper by opening a new cmd and type zkserver.
@@ -128,9 +115,8 @@ ZooKeeper Installation
 .. figure:: figures/zookee.png
 
 
-*****************************************
 Setting Up Kafka
-*****************************************
+############################
 
 1. Go to your Kafka config directory. For example:- **C:\kafka_2.11-0.9.0.0\config**
 2. Edit the file “server.properties.”
@@ -140,9 +126,9 @@ Setting Up Kafka
 
 **Note**: For running Kafka, zookeepers should run first. At the time of closing Kafka, zookeeper should be closed first than Kafka.
 
-*****************************************
+
 Running a Kafka Server
-*****************************************
+############################
 
 Important: Please ensure that your ZooKeeper instance is up and running before starting a Kafka server.
 
@@ -152,9 +138,9 @@ Important: Please ensure that your ZooKeeper instance is up and running before s
 
  **.\bin\windows\kafka-server-start.bat .\config\server.properties**
 
-*****************************************
+
 Setting up PostgreSQL
-*****************************************
+############################
 
 Step 1) Go to https://www.postgresql.org/download and select O.S., it's Windows for me.
 
@@ -245,69 +231,7 @@ Step 17) You will see the Dashboard
 
 That's it to Postgre SQL installation.
 
-
 *****************************************
-configure postgresql for the first time
+Linux
 *****************************************
- 
-C:\Program Files (x86)\PostgreSQL\10\data
 
-1.Edit the pg_hba.conf file :
-
- *sudo vim /etc/postgresql/9.1/main/pg_hba.conf*
-
-And change "peer" to "md5" on the line concerning Postgres :
-local      all     Postgres     peer md5
-
-.. figure:: figures/dbconfig-3.png
-
-2.Restart the database :
-
-- Then create a database "Scorpio":
-
- *postgres=# create database Scorpio;*
-
-- Create a user "Scorpio" and make him a superuser:
-
- *postgres=# create user Scorpio with encrypted password 'Scorpio';*
-
- *postgres=# alter user Scorpio with superuser;*
-
-- Grant privileges on the database:
-
- *postgres=# grant all privileges on database Scorpio to Scorpio;*
-
-- Also, create an own database/schema for the Postgis extension:
-
- *postgres=# CREATE DATABASE gisdb;*
-
- *postgres=# \connect gisdb;*
-
- *postgres=# CREATE SCHEMA postgis;*
-
- *postgres=# ALTER DATABASE gisdb SET search_path=public, postgis, contrib;*
-
- *postgres=# \connect gisdb;*
-
- *postgres=# CREATE EXTENSION postgis SCHEMA postgis;*
-
-- Now First Run eureka in SpringCloudModule By java Application 
-
-.. figure:: figures/dbconfig-4.png
- 
-2.
-Open Browser and open url--http://localhost:8761/
-
-.. figure:: figures/dbconfig-4.png
-
-- Run config-server in SpringCloudModules
-
-- Check on Eureka Server config-server is up or not
-
-- Run gateway in SpringCloudModules
-
-- Check on Eureka Server gateway is up or not
-
-- Run all managers in the core module (entity manager, subscription-manager…….)
-
-- Check on Eureka Server entity manager is up or not
