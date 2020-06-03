@@ -777,6 +777,9 @@ public class EntityService {
 							availableDatasetId = "available";
 							myArray.remove(i);
 						}
+					} else {
+						availableDatasetId = "NotAvailable";
+						myArray.remove(i);
 					}
 				}
 				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
