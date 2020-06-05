@@ -1,11 +1,23 @@
 *****************************************
+Basic Guide
+*****************************************
+
+Architectural Overview
+############################
+Scorpio Broker is a reference implementation of NGSI-LD APIs. Scorpio Broker provides an implementation of REST API endpoints for various data context operations that conform to NGSI-LD API specification. Scorpio Broker component has been implemented based on modular, Microservices oriented, scalable, secure by design, easy to monitor/debug, fault-tolerant, and highly available architecture. Scorpio Broker based on NGSI-LD offers a unique feature of Link data context that provides self-contained (or referenced) dynamic schema definition (i.e. the context) for contained data in each message/entity. Thus allows the Scorpio Broker core processing to still remain unified even it gets dynamic context-driven data as its input from different types of data sources coupled(or designed for) with different schemas.
+
+.. figure:: figures/architecture.png
+
+The basic architecture of the Scorpio Broker consists of five layers, the first layer consists of the Scorpio Broker clients which act as the producers and consumers. The second layer act as an interface between the Scorpio Broker and the external world this layer comprises the NGSI-LD Compliant Interfaces, Service API Gateway, and Service Discovery & Registration. The third layer contains all the micro-services and is responsible for the majority of tasks like entity CRUD operations etc. The fourth layer acts as the interface which connects different micro-services from the storage. The fifth layer is a Resources layer which acts as the storage for Scorpio Broker.
+
+*****************************************
 Installation Guide
 *****************************************
 
 In order to set-up the environment of Scorpio broker, the following dependency needs to be configured:-
 
 1. Eclipse.
-2. Server JRE.
+2. Server JDK.
 3. ZooKeeper.
 4. Apache Kafka.
 
@@ -41,14 +53,14 @@ Eclipse installation
  Once the installation is complete you can now launch Eclipse. The Eclipse Installer has done its work. Happy coding.
 
 
-JRE Setup
+JDK Setup
 ##############
 
-- Start the JRE installation and hit the “Change destination folder” checkbox, then click 'Install.'
+- Start the JDK installation and hit the “Change destination folder” checkbox, then click 'Install.'
 
-.. figure:: figures/jre-1.png
+.. figure:: figures/jdk-1.png
 
-- Change the installation directory to any path without spaces in the folder name. E.g. C:\Java\jre1.8.0_xx\. (By default it will be C:\Program Files\Java\jre1.8.0_xx), then click 'Next.'
+- Change the installation directory to any path without spaces in the folder name.
 
 
 After you've installed Java in Windows, you must set the  JAVA_HOME  environment variable to point to the Java installation directory.
@@ -75,8 +87,6 @@ To set the JAVA_HOME variable:
 
 6. In the User Variable Value field, enter your JDK  path.
 
-.. figure:: figures/jre-2.png
-
  (Java path and version may change according to the version of Kafka you are using)
 
 7. Now click OK.
@@ -85,12 +95,12 @@ To set the JAVA_HOME variable:
 
 9. Edit the path and type *;%JAVA_HOME%\bin* at the end of the text already written there, just like the image below:
 
-.. figure:: figures/jre-3.png
+.. figure:: figures/jdk-3.png
 
 
 - To confirm the Java installation, just open cmd and type “java –version.” You should be able to see the version of Java you just installed.
 
-.. figure:: figures/jre-4.png
+.. figure:: figures/jdk-4.png
 
 If your command prompt somewhat looks like the image above, you are good to go. Otherwise, you need to recheck whether your setup version matches the correct OS architecture (x86, x64), or if the environment variables path is correct.
 
@@ -234,4 +244,3 @@ That's it to Postgre SQL installation.
 *****************************************
 Linux
 *****************************************
-
