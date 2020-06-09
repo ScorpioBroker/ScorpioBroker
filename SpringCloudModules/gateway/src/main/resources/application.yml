@@ -59,6 +59,9 @@ security:
 #Zuul routing rules for microservices.
 zuul:
   ignored-services: '*'
+  ribbon:
+    eager-load:
+      enabled: true
   semaphore:
     maxSemaphores: 60000
   host:

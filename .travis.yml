@@ -45,11 +45,11 @@ before_script:
   - mvn clean package -DskipTests -DskipDefault -PbuildForTest -B
   - java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
   #- java -jar ./SpringCloudModules/config-server/target/config-server.jar &
-  - sleep 10
-  - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar > /dev/null 2>&1 &
-  - sleep 10
+  #- sleep 10
   - java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar > /dev/null 2>&1 &
-  - sleep 100
+  - sleep 15
+  - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar > /dev/null 2>&1 &
+  - sleep 30
   - while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done
   
 script:
