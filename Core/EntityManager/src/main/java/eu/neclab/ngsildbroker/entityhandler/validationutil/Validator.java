@@ -14,6 +14,11 @@ public class Validator {
 		validParams.add(NGSIConstants.QUERY_PARAMETER_DELETE_ALL);
 	}
 
+	/**
+	 * Validate the query parameter and call this method from EntityController class.
+	 * @param parameterMap
+	 * @throws ResponseException
+	 */
 	public static void validate(Map<String, String[]> parameterMap) throws ResponseException {
 		for (String key : parameterMap.keySet()) {
 			if (!validParams.contains(key)) {

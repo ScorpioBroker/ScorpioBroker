@@ -197,6 +197,9 @@ public class EntityServiceTest {
 		updatePartialDefaultAttributesPayload=null;
 	}
 
+	/**
+	 * this method is use for create the entity
+	 */
 	@Test
 	public void createMessageTest(){
 		try {
@@ -222,6 +225,11 @@ public class EntityServiceTest {
 		
 	}
 
+	/**
+	 * this method is validate the entity if already exist
+	 * @throws ResponseException
+	 * @throws Exception
+	 */
 	@Test
 	public void createMessageThrowsAlreadyExistTest() throws ResponseException, Exception {
 		thrown.expect(ResponseException.class);
@@ -241,6 +249,9 @@ public class EntityServiceTest {
 		
 	}
 	
+	/**
+	 * this method is use for update the entity
+	 */
 	@Test
 	public void updateMessageTest(){
 		try {
@@ -264,6 +275,9 @@ public class EntityServiceTest {
 		
 	}
 	
+	/**
+	 * this method is use for append the field or attribute in entity
+	 */
 	@Test
 	public void appendFieldTest(){
 		try {
@@ -278,6 +292,9 @@ public class EntityServiceTest {
 		}
 	}
 	
+	/**
+	 * this method is use for the update attribute field
+	 */
 	@Test
 	public void updateAttributeFieldTest() {
 		try {
@@ -293,7 +310,9 @@ public class EntityServiceTest {
 		}
 	}
 	
-	
+	/**
+	 * this method is use for the update partial attribute field
+	 */
 	@Test
 	public void updatePartialAttributeFieldTest() {
 		try {
@@ -309,6 +328,9 @@ public class EntityServiceTest {
 		}
 	}
 	
+	/**
+	 * this method is use for the update partial default attribute field
+	 */
 	@Test
 	public void updatePartialDefaultAttributeFieldTest() {
 		try {
@@ -322,6 +344,9 @@ public class EntityServiceTest {
 		}
 	}
 	
+	/**
+	 * this method is use for the datasetId is exist in case of delete the attribute instance
+	 */
 	@Test
 	public void deleteAttributeInstanceIfDatasetIdExistTest() {
 		try {
@@ -332,6 +357,9 @@ public class EntityServiceTest {
 		}
 	}
 	
+	/**
+	 * this method is use for all delete the attribute
+	 */
 	@Test
 	public void deleteAllAttributeInstanceTest() {
 		try {

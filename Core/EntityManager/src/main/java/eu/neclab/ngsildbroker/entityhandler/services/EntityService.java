@@ -582,7 +582,6 @@ public class EntityService {
 			if (((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
 				((ObjectNode) originalNode).remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
 			}
-			Iterator<String> it = jsonToUpdate.fieldNames();
 			JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
 			ArrayNode myArray = (ArrayNode) innerNode;
 			String availableDatasetId = null;
@@ -743,6 +742,7 @@ public class EntityService {
 		ArrayNode myArray = (ArrayNode) innerNode;
 		String availableDatasetId = null;
 		if (objectNode.has(attrId)) {
+			//below condition remove the existing datasetId
 			if (datasetId != null && !datasetId.isEmpty()) {
 				for (int i = 0; i < myArray.size(); i++) {
 					if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
@@ -757,7 +757,7 @@ public class EntityService {
 				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
 					throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
 				}
-
+              // below condition remove all the datasetId 
 			} else if (deleteAll != null && !deleteAll.isEmpty()) {
 				if (deleteAll.equals("true")) {
 					if (objectNode.has(attrId)) {
@@ -769,6 +769,7 @@ public class EntityService {
 					throw new ResponseException(ErrorType.InvalidRequest, "request is not valid");
 				}
 			} else {
+				// below condition remove the default datasetId
 				for (int i = 0; i < myArray.size(); i++) {
 					if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 						String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
@@ -1112,6 +1113,14 @@ public class EntityService {
 		}
 	}	
 
+	/**
+	 * this method use for update the value of jsonNode.
+	 * @param it
+	 * @param innerNode
+	 * @param jsonToUpdate
+	 * @param updateResult
+	 * @param i
+	 */
 	private void setFieldValue(Iterator<String> it, JsonNode innerNode, JsonNode jsonToUpdate, UpdateResult updateResult,
 			int i) {
 		while (it.hasNext()) {

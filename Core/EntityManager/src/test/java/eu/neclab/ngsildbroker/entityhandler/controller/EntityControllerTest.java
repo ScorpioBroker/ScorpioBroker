@@ -128,7 +128,10 @@ public class EntityControllerTest {
 		partialUpdatePayload=null;
 		partialUpdateDefaultCasePayload=null;
 	}
-
+    
+	/**
+	 * this method is use for create the entity
+	 */
 	@Test
 	public void createEntityTest() {
 		try {
@@ -144,6 +147,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for the entity if entity already exist
+	 */
 	@Test
 	public void createEntityAlreadyExistTest() {
 		try {
@@ -158,6 +164,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate for the bad request if create the entity 
+	 */
 	@Test
 	public void createEntityBadRequestTest() {
 		try {
@@ -173,6 +182,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate for throw the exception if create the entity
+	 */
 	@Test
 	public void createEntity500ExceptionTest() {
 		try {
@@ -188,6 +200,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for append  the attribute in entity
+	 */
 	@Test
 	public void appendEntityNoContentTest() {
 		try {
@@ -204,6 +219,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for append the attribute in entity for multi status
+	 */
 	@Test
 	public void appendEntityMultiStatusTest() {
 		try {
@@ -219,6 +237,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate the bad request if append the attribute in entity
+	 */
 	@Test
 	public void appendEntityBadRequestTest() {
 		try {
@@ -235,6 +256,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate the data not found  if append the attribute in entity
+	 */
 	@Test
 	public void appendEntityNotFoundTest() {
 		try {
@@ -250,6 +274,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate throw the exception if append the attribute in entity
+	 */
 	@Test
 	public void appendEntity500Test() {
 		try {
@@ -265,6 +292,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for update the entity
+	 */
 	@Test
 	public void updateEntityNoContentTest() {
 		try {
@@ -281,6 +311,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for update the entity for multi status
+	 */
 	@Test
 	public void updateEntityMultiStatusTest() {
 		try {
@@ -296,6 +329,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate the bad request if entity update
+	 */
 	@Test
 	public void updateEntityBadRequestTest() {
 		try {
@@ -310,6 +346,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate the data not found if entity update
+	 */
 	@Test
 	public void updateEntityNotFoundTest() {
 		try {
@@ -324,7 +363,10 @@ public class EntityControllerTest {
 			Assert.fail();
 		}
 	}
-
+	
+	/**
+	 * this method is validate throw the exception if entity update
+	 */
 	@Test
 	public void updateEntity500Test() {
 		try {
@@ -340,6 +382,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for partial update the attribute
+	 */
 	@Test
 	public void partialUpdateAttributeIfDatasetIdExistNoContentTest() {
 		try {
@@ -356,6 +401,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for partial update the attribute if datasetId is not exist 
+	 */
 	@Test
 	public void partialUpdateAttributeIfDatasetIdIsNotExistTest() {
 		try {
@@ -372,6 +420,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate the bad request in partial update attribute 
+	 */
 	@Test
 	public void partialUpdateAttributeBadRequestTest() {
 		try {
@@ -388,6 +439,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for partial update attribute default datasetId
+	 */
 	@Test
 	public void partialUpdateAttributeDefaultDatasetIdCaseTest() {
 		try {
@@ -404,6 +458,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate for the not found in partial update attribute default datasetId 
+	 */
 	@Test
 	public void partialUpdateAttributeDefaultDatasetIdCaseNotFoundTest() {
 		try {
@@ -420,6 +477,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate throw the exception in case of partial update attribute
+	 */
 	@Test
 	public void partialUpdateAttribute500Test() {
 		try {
@@ -435,6 +495,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for delete the entity
+	 */
 	@Test
 	public void deleteEntityTest() {
 		try {
@@ -448,6 +511,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate the not found if delete the entity
+	 */
 	@Test
 	public void deleteEntityNotFoundTest() {
 		try {
@@ -461,6 +527,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate the bad request if delete the entity
+	 */
 	@Test
 	public void deleteEntityBadRequestTest() {
 		try {
@@ -474,6 +543,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate throw exception if delete the entity
+	 */
 	@Test
 	public void deleteEntity500Test() {
 		try {
@@ -487,6 +559,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate for the datasetId is not exist in case of delete attribute instance
+	 */
 	@Test
 	public void deleteAttributeInstanceIfDatasetIdExistTest() {
 		try {
@@ -502,6 +577,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate for the datasetId is not exist in case of delete attribute instance
+	 */
 	@Test
 	public void deleteAttributeInstanceIfDatasetIdNotExistTest() {
 		try {
@@ -517,6 +595,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+     * this method is validate  for bad request in case of delete attribute
+     */
 	@Test
 	public void deleteAttributeInstanceBadRequestTest() {
 		try {
@@ -532,6 +613,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+     * this method is validate default instance exist in case of delete attribute
+     */
 	@Test
 	public void deleteAttributeDefaultInstanceIfExistTest() {
 		try {
@@ -546,7 +630,10 @@ public class EntityControllerTest {
 			e.printStackTrace();
 		}
 	}
-
+	
+    /**
+     * this method is validate default instance not exist in case of delete attribute
+     */
 	@Test
 	public void deleteAttributeDefaultInstanceNotExistTest() {
 		try {
@@ -562,6 +649,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate not found in case of delete attribute
+	 */
 	@Test
 	public void deleteAttributeNotFoundTest() {
 		try {
@@ -577,6 +667,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for all the delete attribute 
+	 */
 	@Test
 	public void deleteAllAttributeInstanceTest() {
 		try {
@@ -591,6 +684,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate the bad request in case of delete all attribute
+	 */
 	@Test
 	public void deleteAllAttributeInstanceBadRequestTest() {
 		try {
@@ -605,6 +701,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate for bad request in case of delete attribute
+	 */
 	@Test
 	public void deleteAttributeBadRequestTest() {
 		try {
@@ -620,6 +719,9 @@ public class EntityControllerTest {
 		}
 	}
 
+	/**
+	 * this method is validate throw the exception in case of delete attribute
+	 */
 	@Test
 	public void deleteAttribute500Test() {
 		try {
