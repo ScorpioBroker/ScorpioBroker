@@ -7,6 +7,7 @@
 <br>
 [![Documentation badge](https://img.shields.io/readthedocs/scorpio.svg)](https://scorpio.readthedocs.io/en/latest/?badge=latest)
 ![Status](https://nexus.lab.fiware.org/static/badges/statuses/incubating.svg)
+![Travis-CI](https://travis-ci.org/ScorpioBroker/ScorpioBroker.svg?branch=master)
 
 Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India.
 
