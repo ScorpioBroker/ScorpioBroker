@@ -295,8 +295,10 @@ public class HistoryService {
 
 		// get original createdAt
 		String createdAt = now;
+		String instanceIdAdd = null;
+		final JsonArray jsonArray = parser.parse(historyDAO.getListAsJsonArray(entityList)).getAsJsonArray();
 		try {
-			final JsonArray jsonArray = parser.parse(historyDAO.getListAsJsonArray(entityList)).getAsJsonArray();
+			
 			createdAt = jsonArray.get(0).getAsJsonObject().get(resolvedAttrId).getAsJsonArray().get(0).getAsJsonObject()
 					.get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray().get(0).getAsJsonObject()
 					.get(NGSIConstants.JSON_LD_VALUE).getAsString();
@@ -335,6 +337,11 @@ public class HistoryService {
 							throw new ResponseException(ErrorType.InvalidRequest,
 									"instanceId in payload and in URL must be the same");
 						}
+					} else {
+						instanceIdAdd = jsonArray.get(0).getAsJsonObject().get(resolvedAttrId).getAsJsonArray().get(0).getAsJsonObject()
+								.get(NGSIConstants.NGSI_LD_INSTANCE_ID).getAsJsonArray().get(0).getAsJsonObject()
+								.get(NGSIConstants.JSON_LD_ID).getAsString();
+								jsonElement = setTemporalPropertyinstanceId(jsonElement, NGSIConstants.NGSI_LD_INSTANCE_ID, instanceIdAdd);
 					}
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, now);
