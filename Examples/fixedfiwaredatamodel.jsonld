@@ -1,0 +1,62 @@
+{
+	"@context": {
+		"address": "https://schema.org/address",
+		"image": "https://schema.org/image",
+		"fullnessThreshold": "https://uri.fiware.org/ns/data-models#fullnessThreshold",
+		"status": {
+			"@id": "https://uri.fiware.org/ns/data-models#status"
+		},
+		"actuationHours": "https://uri.fiware.org/ns/data-models#actuationHours",
+		"cargoWeight": "https://uri.fiware.org/ns/data-models#cargoWeight",
+		"category": {
+			"@id": "https://uri.fiware.org/ns/data-models#category",
+			"@type": "@id",
+			"@container": "@list"
+		},
+		"color": "https://uri.fiware.org/ns/data-models#color",
+		"dataProvider": "https://uri.fiware.org/ns/data-models#dataProvider",
+		"dateLastCleaning": "https://uri.fiware.org/ns/data-models#dateLastCleaning",
+		"dateLastEmptying": "https://uri.fiware.org/ns/data-models#dateLastEmptying",
+		"dateServiceStarted": "https://uri.fiware.org/ns/data-models#dateServiceStarted",
+		"fillingLevel": "https://uri.fiware.org/ns/data-models#fillingLevel",
+		"methaneConcentration": "https://uri.fiware.org/ns/data-models#methaneConcentration",
+		"nextActuationDeadline": "https://uri.fiware.org/ns/data-models#nextActuationDeadline",
+		"nextCleaningDeadline": "https://uri.fiware.org/ns/data-models#nextCleaningDeadline",
+		"owner": {
+			"@id": "https://uri.fiware.org/ns/data-models#owner",
+			"@type": "@id"
+		},
+		"refDevice": {
+			"@id": "https://uri.fiware.org/ns/data-models#refDevice",
+			"@type": "@id"
+		},
+		"refWasteContainer": {
+			"@id": "https://uri.fiware.org/ns/data-models#refWasteContainer",
+			"@type": "@id"
+		},
+		"refWasteContainerIsle": {
+			"@id": "https://uri.fiware.org/ns/data-models#refWasteContainerIsle",
+			"@type": "@id"
+		},
+		"refWasteContainerModel": {
+			"@id": "https://uri.fiware.org/ns/data-models#refWasteContainerModel",
+			"@type": "@id"
+		},
+		"regulation": "https://uri.fiware.org/ns/data-models#regulation",
+		"responsible": "https://uri.fiware.org/ns/data-models#responsible",
+		"serialNumber": "https://uri.fiware.org/ns/data-models#serialNumber",
+		"source": "https://uri.fiware.org/ns/data-models#source",
+		"storedWasteCode": "https://uri.fiware.org/ns/data-models#storedWasteCode",
+		"storedWasteKind": {
+			"@id": "https://uri.fiware.org/ns/data-models#storedWasteKind",
+			"@type": "@id",
+			"@container": "@list"
+		},
+		"storedWasteOrigin": {
+			"@id": "https://uri.fiware.org/ns/data-models#storedWasteOrigin",
+			"@type": "@id",
+			"@container": "@list"
+		},
+		"temperature": "https://uri.fiware.org/ns/data-models#temperature"
+	}
+}
