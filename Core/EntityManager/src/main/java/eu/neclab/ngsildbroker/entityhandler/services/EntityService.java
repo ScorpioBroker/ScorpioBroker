@@ -598,7 +598,7 @@ public class EntityService {
 									updateResult, i);
 						}
 					} else {
-						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID_VALUE)) {
+						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
 							setFieldValue(jsonToUpdate.fieldNames(), ((ArrayNode) objectNode.get(attrId)), jsonToUpdate,
 									updateResult, i);
 						}
@@ -606,10 +606,10 @@ public class EntityService {
 				} else {
 					if (jsonToUpdate.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 						((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_DATA_SET_ID).addObject()
-								.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID_VALUE);
+								.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
 					} else {
 						((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_DATA_SET_ID).addObject()
-								.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID_VALUE);
+								.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
 						setFieldValue(jsonToUpdate.fieldNames(), ((ArrayNode) objectNode.get(attrId)), jsonToUpdate,
 								updateResult, i);
 					}
@@ -774,7 +774,7 @@ public class EntityService {
 					if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 						String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
 								.get(NGSIConstants.JSON_LD_ID).asText();
-						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID_VALUE)) {
+						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
 							availableDatasetId = "available";
 							myArray.remove(i);
 						}
