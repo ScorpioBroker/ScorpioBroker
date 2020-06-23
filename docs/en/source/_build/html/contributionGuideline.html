@@ -1,0 +1,151 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>9. Branch Management Guidelines &#8212; ScorpioBroker  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="10. API Walkthrough" href="API_walkthrough.html" />
+    <link rel="prev" title="3. Entity Create/Update/Append" href="callFlow.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="branch-management-guidelines">
+<h1>9. Branch Management Guidelines<a class="headerlink" href="#branch-management-guidelines" title="Permalink to this headline">¶</a></h1>
+<div class="figure">
+<img alt="_images/gitGuideline.jpg" src="_images/gitGuideline.jpg" />
+</div>
+<p>The community can have two main branches with an infinite lifetime:</p>
+<ol class="arabic simple">
+<li><strong>Master branch</strong>: This is a highly stable branch that is always production-ready and contains the last release version of source code in production.</li>
+<li><strong>Development branch</strong>: Derived from the master branch, the development branch serves as a branch for integrating different features planned for an upcoming release. This branch may or may not be as stable as the master branch. It is where developers collaborate and merge feature branches. All of the changes should be merged back into the master somehow and then tagged with a release number.</li>
+</ol>
+<p>Apart from those two primary branches, there are other branches in the workflow:</p>
+<ul class="simple">
+<li><strong>Feature Branch</strong>: Forked from the development branch for feature development i.e. enhancement or documentation. Merged back to the development branch after feature development or enhancement implementation.</li>
+<li><strong>Bug Branch</strong>: Ramify from the development branch. Merged back to the development branch after bug fixing.</li>
+<li><strong>Hotfix branch</strong>: Hotfix branches are created from the master branch. It is the current production release running live and causing troubles due to a severe bug. But changes in development are yet unstable. We may then branch off a hotfix branch and start fixing the problem. It should be the rarest occasion, in case only critical bugs.</li>
+</ul>
+<p><strong>Note</strong>: Only NLE and NECTI members have the privilege to create and merge the Hotfix branch.</p>
+<table border="1" class="colwidths-given docutils" id="id1">
+<caption><span class="caption-text"><strong>Branch naming convention</strong></span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="20%" />
+<col width="50%" />
+<col width="30%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Branch</th>
+<th class="head">Branches naming guideline</th>
+<th class="head">Remarks</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Feature branches</td>
+<td>Must branch from: <em>development</em>. Must merge back into:&nbsp;<em>development</em>. Branch naming convention:&nbsp;<em>feature-feature_id</em></td>
+<td><em>feature_id</em> is the Github issue id from <strong>https://github.com/ScorpioBroker/ScorpioBroker/issues</strong></td>
+</tr>
+<tr class="row-odd"><td>Bug Branches</td>
+<td>Must branch from: <em>development</em>. Must merge back into:&nbsp;<em>development</em>. Branch naming convention:&nbsp;<em>bug-bug_id</em></td>
+<td><em>bug_id</em> is the Github issue id from <strong>https://github.com/ScorpioBroker/ScorpioBroker/issues</strong></td>
+</tr>
+<tr class="row-even"><td>Hotfix Branches</td>
+<td>Must branch from: <em>master branch</em>. Must merge back into: <em>master branch</em>. Branch naming convention: <em>hotfix-bug number</em>.</td>
+<td><em>Bug number</em> is the Github issue id from <strong>https://github.com/ScorpioBroker/ScorpioBroker/issues</strong>       .</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="permissions-to-the-branches">
+<h2>9.1. Permissions to the branches:<a class="headerlink" href="#permissions-to-the-branches" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><strong>Master</strong> - We tend to very strict that only NLE members and privileged members of NECTI can merge on the Master branch and accept the pull requests. Pull requests to master can be raised by only NECTI OR NLE members.</li>
+<li><strong>Development</strong> - Any community member can raise the pull request to the development branch but it should be reviewed by NLE or NECTI members. Development branches commits will be moved to the master branch only when all the test cases written under NGSI-LD test suites, will run successfully.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">9. Branch Management Guidelines</a><ul>
+<li><a class="reference internal" href="#permissions-to-the-branches">9.1. Permissions to the branches:</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="callFlow.html" title="previous chapter">3. Entity Create/Update/Append</a></li>
+      <li>Next: <a href="API_walkthrough.html" title="next chapter">10. API Walkthrough</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/contributionGuideline.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NECTI + NLE.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/contributionGuideline.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
