@@ -26,6 +26,8 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -49,7 +51,8 @@ public class ContextResolverBasic {
 
 	private JsonLdOptions defaultOptions = new JsonLdOptions();
 
-	private String AT_CONTEXT_BASE_URL = "http://localhost:9090/ngsi-ld/atcontext/";
+	@Value("${atcontext.baseurl:http://localhost:9090/ngsi-ld/contextes/}")
+	private String AT_CONTEXT_BASE_URL;
 	private HttpUtils httpUtils = HttpUtils.getInstance(this);
 	private Map<String, Object> CORE_CONTEXT;
 	// private Map<String, Object> DEFAULT_CONTEXT;
@@ -65,11 +68,23 @@ public class ContextResolverBasic {
 			CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 			BASE_CONTEXT.putAll(CORE_CONTEXT);
 		} catch (URISyntaxException e) {
-			e.printStackTrace();
+			//left empty intentionally 
+			//controlled uri 
+			throw new AssertionError(CORE_CONTEXT_URL + " is not a valid uri. Aborting! core context has to be available");
 		} catch (IOException e) {
-			e.printStackTrace();
 			//core context not reachable 
-			//CORE_CONTEXT_URL = new URI(AT_CONTEXT_BASE_URL + 
+			try {
+				CORE_CONTEXT_URL = new URI(AT_CONTEXT_BASE_URL + AppConstants.CORE_CONTEXT_URL_SUFFIX);
+				String json = httpUtils.doGet(CORE_CONTEXT_URL);
+				CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
+				BASE_CONTEXT.putAll(CORE_CONTEXT);
+			} catch (URISyntaxException e1) {
+				//left empty intentionally 
+				//controlled uri 
+				throw new AssertionError(AT_CONTEXT_BASE_URL + "ngsi-ld-core-context is not a valid uri.  Aborting! core context has to be available");
+			} catch (IOException e1) {
+				throw new AssertionError("Neither the default core context is reachable nore the internal webserver.  Aborting! core context has to be available");
+			}
 		}
 	}
 
