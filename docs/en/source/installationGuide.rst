@@ -1,28 +1,43 @@
 *****************************************
-Basic Guide
-*****************************************
-
-Architectural Overview
-############################
-Scorpio Broker is a reference implementation of NGSI-LD APIs. Scorpio Broker provides an implementation of REST API endpoints for various data context operations that conform to NGSI-LD API specification. Scorpio Broker component has been implemented based on modular, Microservices oriented, scalable, secure by design, easy to monitor/debug, fault-tolerant, and highly available architecture. Scorpio Broker based on NGSI-LD offers a unique feature of Link data context that provides self-contained (or referenced) dynamic schema definition (i.e. the context) for contained data in each message/entity. Thus allows the Scorpio Broker core processing to still remain unified even it gets dynamic context-driven data as its input from different types of data sources coupled(or designed for) with different schemas.
-
-.. figure:: figures/architecture.png
-
-The basic architecture of the Scorpio Broker consists of five layers, the first layer consists of the Scorpio Broker clients which act as the producers and consumers. The second layer act as an interface between the Scorpio Broker and the external world this layer comprises the NGSI-LD Compliant Interfaces, Service API Gateway, and Service Discovery & Registration. The third layer contains all the micro-services and is responsible for the majority of tasks like entity CRUD operations etc. The fourth layer acts as the interface which connects different micro-services from the storage. The fifth layer is a Resources layer which acts as the storage for Scorpio Broker.
-
-*****************************************
 Installation Guide
 *****************************************
 
 In order to set-up the environment of Scorpio broker, the following dependency needs to be configured:-
 
-1. Server JDK.
-2. Apache Kafka.
-3. PostgreSQL
+1. Eclipse.
+2. Server JDK.
+3. Apache Kafka.
+4. PostgreSQL
 
-*****************************************
+
 Windows
 *****************************************
+
+Eclipse installation
+############################
+
+- **Download the Eclipse Installer.**:
+
+ Download Eclipse Installer from http://www.eclipse.org/downloads.Eclipse is hosted on many mirrors around the world. Please select the one closest to you and start to download the Installer.
+
+- **Start the Eclipse Installer executable**:
+
+ For Windows users, after the Eclipse Installer, the executable has finished downloading it should be available in your download directory. Start the Eclipse Installer executable. You may get a security warning to run this file. If the Eclipse Foundation is the Publisher, you are good to select Run.
+
+ For Mac and Linux users, you will still need to unzip the download to create the Installer. Start the Installer once it is available.
+
+- **Select the package to install**:
+
+ The new Eclipse Installer shows the packages available to Eclipse users. You can search for the package you want to install or scroll through the list. Select and click on the package you want to install.
+
+- **Select your installation folder**
+
+ Specify the folder where you want Eclipse to be installed. The default folder will be in your User directory. Select the ‘Install’ button to begin the installation.
+
+- **Launch Eclipse**
+
+ Once the installation is complete you can now launch Eclipse. The Eclipse Installer has done its work. Happy coding.
+
 
 JDK Setup
 ##############
@@ -97,6 +112,7 @@ Important: Please ensure that your ZooKeeper instance is up and running before s
 2. Open a command prompt here by pressing Shift + right-click and choose the “Open command window here” option).
 3. Now type **.\bin\windows\kafka-server-start.bat .\config\server.properties** and press Enter,then
 4. Type **.\bin\windows\kafka-server-start.bat .\config\server.properties** in new command window and hit enter.
+
 
 Setting up PostgreSQL
 ############################
@@ -190,6 +206,6 @@ Step 17) You will see the Dashboard
 
 That's it to Postgre SQL installation.
 
-*****************************************
+
 Linux
 *****************************************
