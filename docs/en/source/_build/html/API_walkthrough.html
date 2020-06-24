@@ -1,0 +1,320 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>10. API Walkthrough &#8212; ScorpioBroker  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="11. Getting a docker container" href="docker.html" />
+    <link rel="prev" title="9. Branch Management Guidelines" href="contributionGuideline.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="api-walkthrough">
+<h1>10. API Walkthrough<a class="headerlink" href="#api-walkthrough" title="Permalink to this headline">¶</a></h1>
+<table border="1" class="colwidths-given docutils" id="id1">
+<caption><span class="caption-text"><strong>API List</strong></span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="5%" />
+<col width="30%" />
+<col width="15%" />
+<col width="35%" />
+<col width="15%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">S.No.</th>
+<th class="head">External Interface</th>
+<th class="head">Module name</th>
+<th class="head">Description</th>
+<th class="head">Http verb</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><ol class="first last arabic simple">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/entities">http://ip:port/ngsi-ld/v1/entities</a></td>
+<td>Entity</td>
+<td>To create entity.</td>
+<td>POST</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="2">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/entities">http://ip:port/ngsi-ld/v1/entities</a>/{entityId}/attrs</td>
+<td>Entity</td>
+<td>To add attributes to an entity.</td>
+<td>POST</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="3">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/entities">http://ip:port/ngsi-ld/v1/entities</a></td>
+<td>Entity   .</td>
+<td>To retrieve the list of existing entity</td>
+<td>GET</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="4">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/entities">http://ip:port/ngsi-ld/v1/entities</a>/{entityId}</td>
+<td>Entity</td>
+<td>To retrieve an entity by its ID</td>
+<td>GET</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="5">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/entities">http://ip:port/ngsi-ld/v1/entities</a>/{entityId}/attrs</td>
+<td>Entity</td>
+<td>To update the attributes of an entity.</td>
+<td>PATCH</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="6">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/entities">http://ip:port/ngsi-ld/v1/entities</a>/{entityId}/attrs /{attrId}</td>
+<td>Entity</td>
+<td>To partially update an attribute</td>
+<td>PATCH</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="7">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/entities">http://ip:port/ngsi-ld/v1/entities</a>/{entityId}</td>
+<td>Entity</td>
+<td>To delete an entity by its ID</td>
+<td>DELETE</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="8">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/entities">http://ip:port/ngsi-ld/v1/entities</a>/{entityId}/attrs /{attrId}</td>
+<td>Entity</td>
+<td>To delete an attribute.</td>
+<td>DELETE</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="9">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/subscriptions">http://ip:port/ngsi-ld/v1/subscriptions</a></td>
+<td>Subscription</td>
+<td>To add subscription in the Scorpio Broker</td>
+<td>POST</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="10">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/subscriptions">http://ip:port/ngsi-ld/v1/subscriptions</a></td>
+<td>Subscription</td>
+<td>To retrieve subscription list</td>
+<td>GET</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="11">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/subscriptions">http://ip:port/ngsi-ld/v1/subscriptions</a>/{subscriptionID}</td>
+<td>Subscription</td>
+<td>To retrieve subscription details of a particular subscription</td>
+<td>GET</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="12">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/subscriptions">http://ip:port/ngsi-ld/v1/subscriptions</a>/{subscriptionID}</td>
+<td>Subscription</td>
+<td>To update the already existing subscription.</td>
+<td>PATCH</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="13">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/subscriptions">http://ip:port/ngsi-ld/v1/subscriptions</a>/{subscriptionID}</td>
+<td>Subscription</td>
+<td>To delete a subscription</td>
+<td>DELETE</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="14">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csources">http://ip:port/ngsi-ld/v1/csources</a></td>
+<td>Context Source Registration</td>
+<td>To add register a csource in the Scorpio Broker</td>
+<td>POST</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="15">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csources">http://ip:port/ngsi-ld/v1/csources</a></td>
+<td>Context Source Registration</td>
+<td>To retrieve list of Context Source which are  registered</td>
+<td>GET</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="16">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csources">http://ip:port/ngsi-ld/v1/csources</a>/{registrationId}</td>
+<td>Context Source Registration</td>
+<td>To retrieve subscription details of a particular csource registration</td>
+<td>GET</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="17">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csources">http://ip:port/ngsi-ld/v1/csources</a>/{registrationId}</td>
+<td>Context Source Registration</td>
+<td>To update the already existing csource registration.</td>
+<td>PATCH</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="18">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csources">http://ip:port/ngsi-ld/v1/csources</a>/{registrationId}</td>
+<td>Context Source Registration</td>
+<td>To delete a resgistration.</td>
+<td>DELETE</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="19">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csourceSubscriptions">http://ip:port/ngsi-ld/v1/csourceSubscriptions</a></td>
+<td>Context Source Registration Subscription</td>
+<td>To add subscription for csource in the Scorpio Broker(device)</td>
+<td>POST</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="20">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csourceSubscriptions">http://ip:port/ngsi-ld/v1/csourceSubscriptions</a></td>
+<td>Context Source Registration Subscription</td>
+<td>To retrieve the subscription list of context registration.</td>
+<td>GET</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="21">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csourceSubscriptions">http://ip:port/ngsi-ld/v1/csourceSubscriptions</a>/{subscriptionId}</td>
+<td>Context Source Registration Subscription</td>
+<td>To retrieve subscription details of  csource registration by id</td>
+<td>GET</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="22">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csourceSubscriptions">http://ip:port/ngsi-ld/v1/csourceSubscriptions</a>/{subscriptionId}</td>
+<td>Context Source Registration Subscription</td>
+<td>To update the subscription of csource registration.</td>
+<td>PATCH</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="23">
+<li></li>
+</ol>
+</td>
+<td><a class="reference external" href="http://ip:port/ngsi-ld/v1/csourceSubscriptions">http://ip:port/ngsi-ld/v1/csourceSubscriptions</a>/{subscriptionId}</td>
+<td>Context Source Registration Subscription</td>
+<td>To delete the subscription of csource registration.</td>
+<td>DELETE</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="contributionGuideline.html" title="previous chapter">9. Branch Management Guidelines</a></li>
+      <li>Next: <a href="docker.html" title="next chapter">11. Getting a docker container</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/API_walkthrough.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NECTI + NLE.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/API_walkthrough.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
