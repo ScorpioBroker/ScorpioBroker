@@ -1,0 +1,124 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>5. Security Architecture &#8212; ScorpioBroker  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. Architecture" href="systemOverview.html" />
+    <link rel="prev" title="4. Error Handler" href="errorHandling.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="security-architecture">
+<h1>5. Security Architecture<a class="headerlink" href="#security-architecture" title="Permalink to this headline">¶</a></h1>
+<p>Scorpio Broker system will also be responsible for any of the Identity &amp; authentication management security. This will include authentication &amp; authorization of requests, users, role base protected resources to access in Scorpio Broker security realm.</p>
+<p>A new Authentication &amp; Authorization service compliant to OAuth2.0 specs has been introduced that will provide the application layer security to the entire Scorpio Broker components &amp; services.</p>
+<div class="figure">
+<img alt="_images/security.png" src="_images/security.png" />
+</div>
+</div>
+<div class="section" id="security-functional-request-flow">
+<h1>6. Security - Functional Request Flow<a class="headerlink" href="#security-functional-request-flow" title="Permalink to this headline">¶</a></h1>
+<ol class="arabic simple">
+<li>Browser/end user sends a resource request which is protected to the Scorpio Broker system using the API gateway REST interface.</li>
+<li>API Gateway checks if the security feature is enabled.</li>
+</ol>
+<p>&nbsp;a. If yes then, it checks if the request is already authenticated and already has some existing session.</p>
+<p>&nbsp;- If it does not find any session, then it forwards the request to Authentication &amp; Authorization services. Or</p>
+<p>&nbsp;- If it finds any existing session than it reuses the same session for the authentication purpose and routes the request to the back-end resource service.</p>
+<p>&nbsp;b.If no security is enabled then, it bypasses security check and routes the request to the back-end resource service which is responsible to render the resource against the given request.</p>
+<ol class="arabic simple" start="3">
+<li>Now when the request comes at Authentication &amp; Authorization (Auth in short) service, it responds to the original requester i.e. user/browser with a login form to present their identity based on credentials it has been issued to access the resource.</li>
+<li>So now the user submits the login form with its credential to Auth service. Auth services validate the user credentials based on its Account details and now responded with successful login auth code &amp; also the redirect U to which the user can redirect to fetch its resource request.</li>
+<li>User/Browser now redirects at the redirect URL which is in our case is again the API gateway URL with the auth_code that it has received from the Auth service.</li>
+<li>Now API gateway again checks the session where it finds the existing session context but now this time since it receives the auth_code in the request so it uses that auth_code and requests the token from Auth service acting as a client on user’s behalf. Auth service based on auth code recognized that it is already logged-in validated user and reverts back with the access token to the API gateway.</li>
+<li>The API gateway upon receiving the token (with in the same security session context), now relays/routes to the back-end resource service for the original requested resource/operation.</li>
+<li>The back-end resource service is also enabled with security features (if not error will be thrown for the coming secure request). It receives the request and reads the security context out of it and now validates (based on some extracted info) the same with the Auth service to know if this is a valid token/request with the given privileges. Auth service response backs and back-end service decide now whether the local security configuration and the auth service-based access permissions are matching.</li>
+<li>If the access permissions/privileges are matched for the incoming request, then it responds back with the requested resources to the user/browser. In case, it does not match the security criteria than it reverts with the error message and reason why it’s being denied.</li>
+</ol>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">5. Security Architecture</a></li>
+<li><a class="reference internal" href="#security-functional-request-flow">6. Security - Functional Request Flow</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="errorHandling.html" title="previous chapter">4. Error Handler</a></li>
+      <li>Next: <a href="systemOverview.html" title="next chapter">1. Architecture</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/security.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NECTI + NLE.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/security.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

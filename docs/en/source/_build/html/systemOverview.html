@@ -1,0 +1,132 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>1. Architecture &#8212; ScorpioBroker  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="3. Entity Create/Update/Append" href="callFlow.html" />
+    <link rel="prev" title="5. Security Architecture" href="security.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="architecture">
+<h1>1. Architecture<a class="headerlink" href="#architecture" title="Permalink to this headline">¶</a></h1>
+<p>The deployment architecture leverages the Spring Cloud framework that addresses lots of Micro-services concerns(e.g. scaling, monitoring, fault-tolerant, highly available, secure, decoupled, etc. ) and Kafka based distributed and scalable message queue infrastructure to provide high performance on message processing for a huge number of context requests which is usual in the IoT domain.</p>
+<p>It covers the high-level operations (HTTP based REST with method POST/GET/DELETE/PATCH) request flow from the external world to the Scorpio Broker system. &nbsp;The external request is served through a unified service API gateway interface that exposes a single IP/port combination to be used for all services that the Scorpio Broker system can provide. In reality, each of the Scorpio Broker services have been implemented as a micro-service that can be deployed as an independent standalone unit in a distributed computing environment. ThE API gateway routes all the incoming requests to the specific Micro-services with the help of THE registration &amp; discovery service. Once the request reaches a micro-service based on the operation requirement it uses(pub/sub) Kafka topics (message queues) for real-time storage and for providing intercommunication among different micro-services (based on requirement) over message queues.</p>
+<div class="figure">
+<img alt="_images/architecture.png" src="_images/architecture.png" />
+</div>
+<ul class="simple">
+<li><strong>Application</strong>: End-user/domain applications leverage Scorpio Broker to provide the required information about IoT infrastructure. This application&nbsp;can query, subscribe, update context information to/from the Scorpio Broker as per their requirements.</li>
+<li><strong>Consumers</strong>: These are the IoT entities or applications that consume the data of Scorpio Broker.</li>
+<li><strong>Producers</strong>: These are the IoT entities, context source, or applications that produce the context data to the Scorpio Broker.</li>
+<li><strong>Service API Gateway</strong>: This is the proxy gateway for the external world to access the internal services of the Scorpio Broker system exposed via REST-based HTTP interfaces. All internal Scorpio Broker related services can be accessed through this service gateway using its single IP &amp; port (which are usually static) and extending the service name in the URL. Thus&nbsp;the user does not need to take care of (or learn or use) the IP and Port of every service which often changes dynamically. This makes life easier, especially in a case when multiple services (or micro-service) are running under one system. This is easily solved by the use of proxy gateway(i.e. service API gateway) for all the back-end services.</li>
+<li><strong>Rest Interface</strong>: These are the HTTP based interfaces for the external entities/applications to consume in order to execute certain operations on Scorpio Broker. The external interface would be visible through the Service API gateway and internal interface mapping to each requested service would be discovered through the service registration &amp; discovery module.</li>
+<li><strong>Service Discovery &amp; Registration</strong>: This component allows registration of any service (web service/micro-service) with it so that any client using discovery functionality of this component can determine the location of a service instance to which it wants to send requests. So in short, a service registry &amp; discovery implements a database of services, their instances, and their locations. Service instances get registered with the service registry on startup and deregistered on shutdown. A client&nbsp;of the service, query the service registry, which discovers the available instances of a service. A service registry might also invoke a service instance’s health check API to verify that it is able to handle requests.</li>
+<li><strong>Entity Manager</strong>: This component handles all entity related CRUD operations with the help of other components of the Scorpio Broker.</li>
+<li><strong>LD Context Resolver</strong>: This component is responsible for expanding the NGSI-LD document based on the JSON-LD &#64;context for further processing by the other components of the Scorpio Broker.</li>
+<li><strong>Subscription &amp; Notification Manager</strong>: This component is responsible for handling CRUD operations related to entities and/or csource subscription &amp; notification.</li>
+<li><strong>Query Manager</strong>: This component handles simple or complex queries (e.g. geo-query) to the Scorpio Broker.</li>
+<li><strong>Storage Manager</strong>: This component is responsible for fetching data from the message broker and then transforming them into relevant schema format in order to persist in DB tables. Additionally, this manager also provides interfaces for complex queries to the DB e.g. Geo query or cross-domain entity context relationship queries.</li>
+<li><strong>Context Registry Manager</strong>: This component is responsible for providing interfaces for CRUD operations of csource registration/query/ subscription.</li>
+<li><strong>Health Check &amp; Monitoring</strong>: This component is responsible for monitoring the health of running services &amp; infrastructure.</li>
+<li><strong>Message Bus Handler</strong>: Every module of the Scorpio Broker may need to communicate with the bus for the inter-module exchange of messages. This interface is provided by the message bus handler.</li>
+<li><strong>Storage Connectors</strong>: The Scorpio Broker needs to store certain information in different DB formats. So storage connectors (using any type of message broker methodology) provide the way to connect to those storage systems (which may be present locally or remotely). For example, the&nbsp;entity information could be stored in/streamed to a different types of storage systems e.g. MySQL, PostgreSQL, Bigdata, etc. These connectors could also be implemented for storage resiliency purposes.</li>
+<li><strong>Context Registry Connector</strong>: Scorpio Broker needs to communicate to the context registry in order to know about the registered context sources (brokers/providers) and the type of data model they support. The context registry connector allows the message broker mechanism to connect to the context registry that may be running locally or remotely in federated mode.</li>
+<li><strong>Storage</strong>: This is the actual storage (e.g. Postgres/Postgis) where data is persisted.</li>
+<li><strong>Context Registry</strong>: This is the component which is responsible for saving the registration of the context sources/producers.</li>
+</ul>
+</div>
+<div class="section" id="deployment-architecture">
+<h1>2. Deployment Architecture<a class="headerlink" href="#deployment-architecture" title="Permalink to this headline">¶</a></h1>
+<p>This section is covering the deployment architecture of the Scorpio Broker which is using different technologies stack.</p>
+<div class="figure">
+<img alt="_images/deploymentarchitecture.png" src="_images/deploymentarchitecture.png" />
+</div>
+<p>The deployment architecture leverages the Spring Cloud framework that addresses lots of Micro-services concerns(e.g. scaling, monitoring, fault-tolerant, highly available, secure, decoupled, etc. ) and Kafka based distributed and scalable message queue infrastructure to provide high performance on message processing for a huge number of context requests which is usual in the IoT domain. The deployment architecture covers the high-level operations (Http based REST with method POST/GET/DELETE/PATCH) request flow from the external world to the Scorpio Broker system. &nbsp;The external request is served through a unified service API gateway interface that exposes a single IP/port combination to be used for all services that the Scorpio Broker system can provide. In reality, each of the Scorpio Broker services will be implemented as a micro-service that can be deployed as an independent standalone unit in a distributed computing environment. That API gateway routes all the incoming requests to the specific Micro-services with the help of registration &amp; discovery service. Once the request reaches at micro-service based on the operation requirement it uses(pub/sub) Kafka topics (message queues) for real-time storage and for providing intercommunication among different micro-services (based on requirement) over message queues.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1. Architecture</a></li>
+<li><a class="reference internal" href="#deployment-architecture">2. Deployment Architecture</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="security.html" title="previous chapter">5. Security Architecture</a></li>
+      <li>Next: <a href="callFlow.html" title="next chapter">3. Entity Create/Update/Append</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/systemOverview.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NECTI + NLE.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/systemOverview.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

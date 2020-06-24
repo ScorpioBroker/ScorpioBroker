@@ -541,7 +541,7 @@ public class ContextResolverBasic {
 		}
 		context.remove(IS_FULL_VALID);
 		try {
-
+			cleanExpandedJson(json);
 			Map<String, Object> tempResult = JsonLdProcessor.compact(json, rawContext, defaultOptions);
 			unprotectGeoProps(tempResult);
 //			unprotectLocationFromRegistry(tempResult);
@@ -567,6 +567,31 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.InvalidRequest, e.getMessage());
 		}
 		return result;
+	}
+
+	private void cleanExpandedJson(Object json) {
+		if(json instanceof List) {
+			List tempList = (List)json;
+			for(Object entry: tempList) {
+				cleanExpandedJson(entry);
+			}
+		}else if(json instanceof Map) {
+			Map tempMap = (Map)json;
+			Iterator<Entry> it = tempMap.entrySet().iterator();
+			while(it.hasNext()) {
+				Entry next = it.next();
+				Object key = next.getKey();
+				Object value = next.getValue();
+				if(NGSIConstants.NGSI_LD_DATA_SET_ID.equals(key) && NGSIConstants.DEFAULT_DATA_SET_ID.equals(((Map)((List)value).get(0)).get(NGSIConstants.JSON_LD_ID))) {
+					it.remove();
+					continue;
+				}
+				if(value instanceof Map || value instanceof List) {
+					cleanExpandedJson(value);
+				}
+			}
+		}
+		 
 	}
 
 	private String generateAtContextServing(List<Object> rawContext, int hash) {
