@@ -90,7 +90,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 *            jsonld message
 	 * @return ResponseEntity object
 	 */
-	@PostMapping("/")
+	@PostMapping
 	public ResponseEntity<byte[]> createEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		String result = null;
