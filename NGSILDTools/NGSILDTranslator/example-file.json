@@ -1,0 +1,22 @@
+{
+	"source": {
+		"type": "importFromFile",
+		"from": "C:\\Users\\hebgen\\Desktop\\al6.GeoJson",
+		"isList": true,
+		"contentIndex": "features"
+	},
+	"translate": {
+		"*": {
+			"id": "$$urn:cities:.properties.id",
+			"name": "properties.name",
+			"type.&&&&": "city",
+			"location.type.&&&&": "GeoProperty",
+			"location.value": "geometry",
+			"@context.0.&&&&": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+		}
+	},
+	"to": "http://localhost:9090",
+	"toHeaders": {
+		"Content-Type": "Application/ld+json"
+	}
+}
