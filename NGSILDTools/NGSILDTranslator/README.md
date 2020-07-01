@@ -35,7 +35,7 @@ The Translator allows to generically translate JSON inputs with the target to ge
 General structure:
 In general the structure is that the lefthand describes the keys for the NGSI-LD Entity entry and righthand the values based on the input document. For this mapping a set of translation syntax is available. 
  - .(dot) is used to index sublevel of the mapping. level1.level2 equals to a JSON entry of {"level1": {"level2":"somevalue"}}
- - digits between dots are used to index an arrays in an JSON entry. level1.4.level3 is equal to {"level1": ["entry1","entry2","entry3","entry4",{"level3":"fithvalue i want"}]}
+ - digits between dots are used to index an arrays in an JSON entry. level1.4.level3 is equal to {"level1": ["entry1","entry2","entry3","entry4",{"level3":"fifth value i want"}]}
  - * can only be used on the righthand and has to be followed by another sublevel. It means the first entry in an array which has the sublevel. This can be usefull for handling unsorted arrays where your entry moves randomly with each call.
  - $$ can only be used on the righthand and has to be followed by a dot. It is used to prefix the input data. The following dot indicates the end of the prefix and after it can be considered as root for the input document.
  - &&&& can only be used on the lefthand and has to be at the end of a key and be preceded by a dot. It means that the righthand is the actual value for this entry and not an index for the input document. 
