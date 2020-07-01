@@ -65,7 +65,7 @@ If you want a fallback to be used you can use "_". So e.g.
 
 These are two toplevel entries. Which are ldHost and ldHeaders. ldHeaders should contain at least Content-Type to either application/json or application/ld+json.
 
-
+### Example
 The following example shows mapping a GeoJSON document to an NGSI-LD Entity. 
 Translator config:
 ```json
