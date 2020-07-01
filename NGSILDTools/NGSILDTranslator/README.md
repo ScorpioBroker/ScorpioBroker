@@ -43,19 +43,23 @@ In general the structure is that the lefthand describes the keys for the NGSI-LD
 In the case you only have one structure in your incomming documents you can put your one mapping into a subentry "*" and it will be used for all incomming documents. 
 However there might be the case that you have a varying structure in your incomming documents which require a different mapping but you can give a clear key to identify those. 
 In that case you can define an entry "type" on the toplevel of translate. Which is an index of your incomming document. So e.g. 
+```json
 {"translate": {
    "type": "typeId",
    "232": {... translation...},
    "234": {... translation...}
 }
+```
 Means in your incomming document the Translator checks the value of the field typeId and if it's 232 the first translation will be used and if it's 234 the second.
 If you want a fallback to be used you can use "_". So e.g.
+```json
 {"translate": {
    "type": "typeId",
    "232": {... translation...},
    "234": {... translation...},
    "_": {... fallback translation...},
 }
+```
 
 ### NGSI-LD endpoint:
 
@@ -64,6 +68,7 @@ These are two toplevel entries. Which are ldHost and ldHeaders. ldHeaders should
 
 The following example shows mapping a GeoJSON document to an NGSI-LD Entity. 
 Translator config:
+```json
 {
 	"source": {
 		"type": "pull",
@@ -94,7 +99,9 @@ Translator config:
 		"Content-Type": "Application/ld+json"
 	}
 }
+```
 Example data:
+```json
 {
 	"type": "FeatureCollection",
 	"features": [{
@@ -114,10 +121,12 @@ Example data:
 	.......
 	]
 }
+```
 As you can see we are only interested in the features entry so the contentIndex is set to features. As the features are an array isList is set to true and since there is only one structure translate has one subentry "*".
 Since we use the FIWARE schema in this example the @context arrays first entry is statically set to the url of the schema as well as the type is set to https://uri.fiware.org/ns/data-models#tunnel
 
 This generates an Entity which looks like this
+```json
 {
 	"id": "urn:smartcity:heidelberg:tunnel.0",
 	"type": "https://uri.fiware.org/ns/data-models#tunnel",
@@ -130,6 +139,6 @@ This generates an Entity which looks like this
 	},
 	"@context": ["https://schema.lab.fiware.org/ld/context.jsonld"]
 }
-
-
+```
+## Starting
 To start the Translator run it with 'python translator.py <configfile>'
