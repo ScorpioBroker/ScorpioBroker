@@ -1,8 +1,10 @@
+#NGSI-LD Translator
 The NGSI-LD Translator is a Python based NGSI-LD Context Producer for various HTTP interactions with a JSON based payload.
 
+##Configuration
 The Translator can be configured through a JSON configuration file. This contains 3 main topics
 
-Source:
+###Source:
 The Translator supports 3 types of sources. It can act as datasink for a system which sends notifications. It can continously poll an HTTP source and it can read a file.
 This is set by the type parameter which can be:
  - subscribe
@@ -28,7 +30,7 @@ Depending on the type different settings are expected:
  - importFromFile:
    - from, local filesystem place of the file, e.g. "C:\\Users\\hebgen\\Desktop\\al6.GeoJson"
 
-Translate:
+###Translate:
 The Translator allows to generically translate JSON inputs with the target to generate a NGSI-LD Entity. In order to achieve this a set of translation possibilities is provided.
 General structure:
 In general the structure is that the lefthand describes the keys for the NGSI-LD Entity entry and righthand the values based on the input document. For this mapping a set of translation syntax is available. 
@@ -55,7 +57,7 @@ If you want a fallback to be used you can use "_". So e.g.
    "_": {... fallback translation...},
 }
 
-NGSI-LD endpoint:
+###NGSI-LD endpoint:
 
 These are two toplevel entries. Which are ldHost and ldHeaders. ldHeaders should contain at least Content-Type to either application/json or application/ld+json.
 
