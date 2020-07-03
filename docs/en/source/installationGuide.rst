@@ -44,6 +44,8 @@ JDK Setup
 
 - Start the JDK installation and hit the “Change destination folder” checkbox, then click 'Install.'
 
+**Note:-** Recommended version is JDK-11. Scorpio Broker is developed and tested with this version only.
+
 .. figure:: figures/jdk-1.png
 
 - Change the installation directory to any path without spaces in the folder name.
@@ -57,7 +59,7 @@ To set the JAVA_HOME variable:
 
 1. Find out where Java is installed. If you didn't change the path during installation, it will be something like this:
 
- *C:\Program Files\Java\jdk1.8.0_65*
+ *C:\Program Files\Java\jdk1.version_detail*
 
 2. - In Windows 7 right-click **My Computer** and select **Properties** > **Advanced**.
 
@@ -100,7 +102,7 @@ Setting Up Kafka
 4. If your ZooKeeper is running on some other machine or cluster you can edit “zookeeper.connect:2181” to your custom IP and port. For this demo, we are using the same machine so there's no need to change. Also the Kafka port and broker.id are configurable in this file. Leave other settings as is.
 5. Your Kafka will run on default port 9092 and connect to ZooKeeper’s default port, 2181.
 
-**Note**: For running Kafka, zookeepers should run first. At the time of closing Kafka, zookeeper should be closed first than Kafka.
+**Note**: For running Kafka, zookeepers should run first. At the time of closing Kafka, zookeeper should be closed first than Kafka. Recommended version of kafka is kafka_2.12-2.1.0.
 
 
 Running a Kafka Server
@@ -117,7 +119,7 @@ Important: Please ensure that your ZooKeeper instance is up and running before s
 Setting up PostgreSQL
 ############################
 
-Step 1) Go to https://www.postgresql.org/download and select O.S., it's Windows for me.
+Step 1) Go to https://www.postgresql.org/download.
 
 
 Step 2) You are given two options:-
