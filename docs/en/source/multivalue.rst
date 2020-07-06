@@ -111,6 +111,6 @@ In order to create the entity with the multi-value attribute, we can hit the end
 
  If we want to delete all the attribute instance with the given attribute name, then we need to make DELETE request with the URL **http://<IP Address>:<port>/ngsi-ld/v1/entities/entityId/attrs/attrsId?deleteAll=true** .
 
-3. Query Operation
+4. Query Operation
 =====================
  In order to retrieve the entity details, make a GET request with URL **http://<IP Address>:<port>/ngsi-ld/v1/entities/**, and we will get all the instance of the required attribute.
