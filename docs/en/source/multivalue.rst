@@ -3,7 +3,7 @@ Multi-value Attribute
 *************************
 
 Multi-value Attribute is a feature through which an Entity can simultaneously have Attributes with more than one instance.
-In the case of Properties, there may be more than one source at a time that provides a Property instance, e.g. based on independent sensor measurements with different quality characteristics.
+In the case of Properties, there may be more than one source at a time that provides a Property value, e.g. based on independent sensor measurements with different quality characteristics.
 
 For example: take a speedometer and a GPS both providing the current speed of a car or take a thermometer or an infrared camera both provides the temperature of the body.
 
@@ -14,7 +14,8 @@ To be able to explicitly manage such multi-attributes, the optional datasetId pr
 
 
 CRUD Operations
------------------------------
+--------------------
+
 
 If a datasetId is provided when creating, updating, appending or deleting Attributes, only instances with the same datasetId are affected, leaving instances with another datasetId or an instance without a datasetId untouched.
 If no datasetId is provided, it is considered as the default Attribute instance. It is not required to explicitly provide this default datasetId, but even if not present it is treated as if this default datasetId was present in the request(s).
@@ -25,8 +26,8 @@ Note:-There can only be one default Attribute instance for an Attribute with a g
 When requesting Entity information, if there are multiple instances of matching Attributes these are returned as arrays of Attributes respectively, instead of a single Attribute element. The datasetId of the default Attribute instance is never explicitly included in responses.
 In case of conflicting information for an Attribute, where a datasetId is duplicated, but there are differences in the other attribute data, the one with the most recent observedAt DateTime, if present, and otherwise the one with the most recent modifiedAt DateTime shall be provided.
 
-Create Operation
-------------------
+1. Create Operation
+=========================
 In order to create the entity with the multi-value attribute, we can hit the endpoint **http://<IP Address>:<port>/ngsi-ld/v1/entities/**  with the given payload.
 
 .. code-block:: JSON
@@ -41,7 +42,7 @@ In order to create the entity with the multi-value attribute, we can hit the end
   "speed":[{
     "type":"Property",
     "value": 55,
-    "datasetId": "urn:ngsi-ld:Property:speedometerA4567-speed", //dataset id is defined
+    "datasetId": "urn:ngsi-ld:Property:speedometerA4567-speed",
     "source":{
       "type":"Property",
       "value": "Speedometer"
@@ -72,8 +73,8 @@ In order to create the entity with the multi-value attribute, we can hit the end
   }    
  }
 
-Update Operation
-------------------
+2. Update Operation
+======================
 - **Update the attribute instance value based on datasetId**
 
  We can update the value of the particular instance by sending the datasetId in the body and making the PATCH request at **http://<IP Address>:<port>/ngsi-ld/v1/entities/entityId/attrs/attrsId**
@@ -95,8 +96,8 @@ Update Operation
    "value":"21"
  }
 
-Delete Operation
---------------------
+3. Delete Operation
+=====================
 
 - **Delete the default attribute instance**
 
@@ -108,4 +109,8 @@ Delete Operation
 
 - **Delete all the attribute instance with the given attribute name**
 
- If we want to delete all the attribute instance with the given attribute name, then we need to make DELETE request with the URL **http://<IP Address>:<port>/ngsi-ld/v1/entities/entityId/attrs/attrsId?deleteAll=true** 
+ If we want to delete all the attribute instance with the given attribute name, then we need to make DELETE request with the URL **http://<IP Address>:<port>/ngsi-ld/v1/entities/entityId/attrs/attrsId?deleteAll=true** .
+
+3. Query Operation
+=====================
+ In order to retrieve the entity details, make a GET request with URL **http://<IP Address>:<port>/ngsi-ld/v1/entities/**, and we will get all the instance of the required attribute.

@@ -20,7 +20,7 @@ In order to set-up the environment of Scorpio broker, the following dependency n
 2. Apache Kafka.
 3. PostgreSQL
 
-*****************************************
+
 Windows
 *****************************************
 
@@ -193,6 +193,5 @@ Step 17) You will see the Dashboard
 
 That's it to Postgre SQL installation.
 
-*****************************************
 Linux
 *****************************************
