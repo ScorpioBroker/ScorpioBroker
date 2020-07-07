@@ -33,7 +33,7 @@ In order to create the entity with the multi-value attribute, we can hit the end
 .. code-block:: JSON
 
  {
-  "id":"urn:ngsi-ld:Vehicle:A101",
+  "id":"urn:ngsi-ld:Vehicle:A135",
   "type":"Vehicle",
   "brandName":{
     "type":"Property",
@@ -48,30 +48,25 @@ In order to create the entity with the multi-value attribute, we can hit the end
       "value": "Speedometer"
     }
   },
-  {
+   {
     "type":"Property",
-    "value": 60,
+    "value": 11,
+     "datasetId": "urn:ngsi-ld:Property:speedometerA4567-speed111",
     "source":{
       "type":"Property",
       "value": "GPS"
     }
-  },
-  {
+    },
+    {
     "type":"Property",
-    "value": 52.5,
-    "datasetId": "urn:ngsi-ld:Property1111-speed",
+    "value": 10,
     "source":{
       "type":"Property",
-      "value": "GPS_NEW"
+      "value": "GPS"
     }
-  }],
-  "createdAt":"2017-07-29T12:00:04Z",
-  "modifiedAt" : "2017-07-29T12:00:04Z",
-  "location":{
-    "type":"GeoProperty",
-    "value":"{ \"type\":\"Point\", \"coordinates\":[ -8.5, 41.2 ] }"
-  }    
+  }]
  }
+
 
 2. Update Operation
 ======================
@@ -82,9 +77,10 @@ In order to create the entity with the multi-value attribute, we can hit the end
 .. code-block:: JSON
 
  {
-   "value":"20",
-   "datasetId": "urn:ngsi-ld:Property:speedometerA4567-speed"
- }  
+      "value":"27",
+      "datasetId":"urn:ngsi-ld:Property:speedometerA4567-speed"
+ }
+  
 
 - **Update the default attribute instance value based on attribute name**
 
@@ -93,7 +89,7 @@ In order to create the entity with the multi-value attribute, we can hit the end
 .. code-block:: JSON
 
  {
-   "value":"21"
+   "value":"27"
  }
 
 3. Delete Operation
