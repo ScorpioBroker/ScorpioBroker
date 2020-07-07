@@ -51,7 +51,7 @@ In order to create the entity with the multi-value attribute, we can hit the end
    {
     "type":"Property",
     "value": 11,
-     "datasetId": "urn:ngsi-ld:Property:speedometerA4567-speed111",
+     "datasetId": "urn:ngsi-ld:Property:gpsA4567-speed",
     "source":{
       "type":"Property",
       "value": "GPS"
@@ -62,11 +62,10 @@ In order to create the entity with the multi-value attribute, we can hit the end
     "value": 10,
     "source":{
       "type":"Property",
-      "value": "GPS"
+      "value": "CAMERA"
     }
   }]
  }
-
 
 2. Update Operation
 ======================
