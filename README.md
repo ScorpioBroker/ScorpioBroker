@@ -357,11 +357,11 @@ Scorpio has two sets of tests. We use JUnit for unit tests and the FIWARE NGSI-L
 ### Running unit tests
 A lot of the logic within Scorpio is intertwined with Kafka. Hence a lot of the unit tests require a running Kafka instance. 
 Start the Kafka server and zookeeper as described in the Installation chapter.
-You can run tests explicitly through Maven with goal test by running 
+You can run tests explicitly through Maven with the goal test by running 
 ```console
 mvn test
 ```
-Unless you add a -DskipTests to your Maven command tests will also be run with the goals package, install, verify and deploy.
+Unless you add a -DskipTests to your Maven command, tests will also be run with the goals package, install, verify and deploy.
 You can run all the tests by running the Maven command from the root directory or individual tests by running the Maven command in the corresponding directory.
 ### FIWARE NGSI-LD Testsuite
 In order to run the Testsuite you have to have a running instance of Scorpio as described in the Start the components chapter or use the dockercontainer
