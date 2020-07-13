@@ -446,7 +446,12 @@ This activity has received funding from the European Union’s Horizon 2020 rese
 
 ### Autopilot
 Part of the development was done in and for the [AUTOPILOT project for Automated driving Progressed by Internet Of Things](https://autopilot-project.eu/) <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/autopilot.png" width="160">
-
+## Code of conduct
+As part of FIWARE we try our best to adhear to the [FIWARE Code of Conduct](https://www.fiware.org/foundation/code-of-conduct/) and expect the same from contributors. 
+This includes pull requests, issues, comments, code and in code comments. 
+As hosts of this repo we limit communication here purely to Scorpio and NGSI-LD related topics. 
+We are all humans coming from different cultural backgrounds. We all have our different quirks, habits and mannerisms. We will give everyone the benefit of doubt that communication is done with good intentions in mind. 
+However if someone is repeatedly trying to provoke, attack a person, shift discussions or ridicule someone we WILL make use of our house right and put an end to this.
 ## License
 
 Scorpio is licensed under [BSD-4-Clause](https://spdx.org/licenses/BSD-4-Clause.html).
