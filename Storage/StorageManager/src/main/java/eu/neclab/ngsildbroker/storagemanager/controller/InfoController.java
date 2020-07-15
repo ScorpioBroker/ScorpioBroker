@@ -79,7 +79,7 @@ public class InfoController {
 
 	HttpUtils httpUtils = HttpUtils.getInstance(null);
 
-	@GetMapping("/")
+	@GetMapping
 	public ResponseEntity<Object> getDefault() {
 		return ResponseEntity.status(HttpStatus.ACCEPTED)
 				.body("available subresources:\n/types\n/localtypes\n/stats\n/health");
