@@ -14,9 +14,8 @@ Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Eur
 This project is part of [FIWARE](https://www.fiware.org/). For more information check the FIWARE Catalogue entry for
 [Core Context](https://github.com/Fiware/catalogue/tree/master/core).
 
-The current [roadmap can be found here](./docs/roadmap.md)
-| :books: [Documentation](https://scorpio.rtfd.io/) | :mortar_board: [Academy](https://fiware-academy.readthedocs.io/en/latest/core/scorpio) | :whale: [Docker Hub](https://hub.docker.com/r/scorpiobroker/scorpio/) |
-| ------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| :books: [Documentation](https://scorpio.rtfd.io/) | :mortar_board: [Academy](https://fiware-academy.readthedocs.io/en/latest/core/scorpio) | :whale: [Docker Hub](https://hub.docker.com/r/scorpiobroker/scorpio/) | :clipboard: [Roadmap](./docs/roadmap.md) |
+| ------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- |
 
 ## Content
 
@@ -24,6 +23,8 @@ The current [roadmap can be found here](./docs/roadmap.md)
 -   [Installation](#installation)
 -   [Usage](#usage)
 -   [Tests](#tests)
+-   [Credit where credit is due](#credit-where-credit-is-due)
+-   [Code of conduct](#code-of-conduct)
 -   [License](#license)
 
 ## Background
@@ -446,18 +447,21 @@ This activity has received funding from the European Union’s Horizon 2020 rese
 
 ### Autopilot
 Part of the development was done in and for the [AUTOPILOT project for Automated driving Progressed by Internet Of Things](https://autopilot-project.eu/) <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/autopilot.png" width="160">
+## Credit where credit is due
+We like to thank everyone who has contributed to Scorpio. This goes for the entire Scorpio Devlopment Team as well as all external contributor.
+For a complete list have a look at the [CREDITS](./CREDITS) file.
 ## Code of conduct
 
 As part of the FIWARE Community we try our best to adhere to the [FIWARE Code of Conduct](https://www.fiware.org/foundation/code-of-conduct/) and expect the same from contributors. 
 
 This includes pull requests, issues, comments, code and in code comments. 
 
-As hosts of this repo we limit communication here purely to Scorpio and NGSI-LD related topics. 
+As owner of this repo we limit communication here purely to Scorpio and NGSI-LD related topics. 
 
 We are all humans coming from different cultural backgrounds. We all have our different quirks, habits and mannerisms. Therefor misunderstandings can happen. We will give everyone the benefit of doubt that communication is done with good intentions in mind trying to advance Scorpio and NGSI-LD. We expect the same from contributors.
 However if someone is repeatedly trying to provoke, attack a person, shift discussions or ridicule someone we WILL make use of our house right and put an end to this.
 
-If there is a dispute to be resolved we as hosts have the final word.
+If there is a dispute to be resolved we as owners of this repo have the final word.
 ## License
 
 Scorpio is licensed under [BSD-4-Clause](https://spdx.org/licenses/BSD-4-Clause.html).
