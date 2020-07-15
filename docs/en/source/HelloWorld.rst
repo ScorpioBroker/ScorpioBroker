@@ -8,55 +8,31 @@ Generally speaking you can Create entities which is like the hello world program
 
  {
     "id": "urn:ngsi-ld:testunit:123",
-
     "type": "AirQualityObserved",
-
     "dateObserved": {
-
         "type": "Property",
-
         "value": {
-
             "@type": "DateTime",
-
             "@value": "2018-08-07T12:00:00Z"
-
         }
-
     },
-
     "NO2": {
         "type": "Property",
-
         "value": 22,
-
         "unitCode": "GP",
-
         "accuracy": {
-
             "type": "Property",
-
             "value": 0.95
-
         }
-
     },
-
     "refPointOfInterest": {
         "type": "Relationship",
-
         "object": "urn:ngsi-ld:PointOfInterest:RZ:MainSquare"
-
     },
-
     "@context": [
-
         "https://schema.lab.fiware.org/ld/context",
-
         "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
-
     ]
-
  }
 
 In the given example the @context is in the payload therefore you have to set the ContentType header to application/ld+json
