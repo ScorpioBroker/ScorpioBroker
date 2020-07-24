@@ -202,7 +202,7 @@ public class EntityService {
 				String entityWithoutSysAttrs;
 				try {
 					entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
-					pushToDB(id.asText(), withSysAttrs, entityWithoutSysAttrs, getKeyValueEntity(json).asText());
+					pushToDB(id.asText(), withSysAttrs, entityWithoutSysAttrs, objectMapper.writeValueAsString(getKeyValueEntity(json)));
 				} catch (JsonProcessingException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
