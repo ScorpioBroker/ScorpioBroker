@@ -9,7 +9,9 @@ broker:
   parent:
     location:
       url: SELF
-      
+logging:
+  level:
+    root: ERROR      
 query:
   result:
     topic: QUERY_RESULT
