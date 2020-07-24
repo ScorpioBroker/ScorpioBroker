@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
@@ -33,6 +34,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -187,42 +189,71 @@ public class EntityService {
 		if (entityTopicMap.isExist(id.asText())) {
 			throw new ResponseException(ErrorType.AlreadyExists);
 		}
-		removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
-		String entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
+		
 
 		String now = SerializationTools.formatter.format(Instant.now());
 		setTemporalProperties(json, now, now, false);
 		payload = objectMapper.writeValueAsString(json);
 
-		registerContext(id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
-				payload.getBytes(NGSIConstants.ENCODE_FORMAT));
-		// TODO use or remove ... why is the check below commented
-
-		boolean result = operations.pushToKafka(producerChannels.createWriteChannel(),
-				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT), payload.getBytes(NGSIConstants.ENCODE_FORMAT));
-
-		if (!result) {
-			throw new ResponseException(ErrorType.KafkaWriteError);
-		}
 		String withSysAttrs = payload;
 		new Thread() {
 			public void run() {
-				pushToDB(id.asText(), withSysAttrs, entityWithoutSysAttrs, getKeyValueEntity(json).asText());
+				removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
+				String entityWithoutSysAttrs;
+				try {
+					entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
+					pushToDB(id.asText(), withSysAttrs, entityWithoutSysAttrs, getKeyValueEntity(json).asText());
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			};
+		}.start();
+		new Thread() {
+			public void run() {
+
+				try {
+					registerContext(id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+							withSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
+					operations.pushToKafka(producerChannels.createWriteChannel(),
+							id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+							withSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (URISyntaxException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ResponseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				// TODO use or remove ... why is the check below commented
+
+				
 			};
 		}.start();
 
-		// write to ENTITY topic after ENTITY_CREATE success.
-		operations.pushToKafka(this.producerChannels.entityWriteChannel(),
-				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT), payload.getBytes(NGSIConstants.ENCODE_FORMAT));
-
-		// write to ENTITY_WITHOUT_SYSATTRS topic
-		operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
-				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
-				entityWithoutSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
-		// write to KVENTITY topic
-		operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
-				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
-				objectMapper.writeValueAsBytes(getKeyValueEntity(json)));
+		/*
+		 * // write to ENTITY topic after ENTITY_CREATE success.
+		 * operations.pushToKafka(this.producerChannels.entityWriteChannel(),
+		 * id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * payload.getBytes(NGSIConstants.ENCODE_FORMAT));
+		 * 
+		 * // write to ENTITY_WITHOUT_SYSATTRS topic
+		 * operations.pushToKafka(this.producerChannels.
+		 * entityWithoutSysAttrsWriteChannel(),
+		 * id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * entityWithoutSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT)); // write to
+		 * KVENTITY topic
+		 * operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+		 * id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * objectMapper.writeValueAsBytes(getKeyValueEntity(json)));
+		 */
 
 		logger.debug("createMessage() :: completed");
 		return id.asText();
