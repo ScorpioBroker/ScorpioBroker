@@ -46,92 +46,78 @@ public class StorageWriterService {
 	@Autowired
 	private KafkaListenerEndpointRegistry kafkaListenerEndpoint;
 
-	@KafkaListener(containerFactory = "kafkaListenerContainerFactoryManualOffsetCommit", topics = "${entity.topic}", groupId = "entityWriter")
-	public void writeEntity(@Payload byte[] message, Acknowledgment acknowledgment,
-			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key, @Header(KafkaHeaders.OFFSET) Long offset)
-			throws Exception {
-		logger.trace("Listener entityWriter, Thread ID: " + Thread.currentThread().getId());
-		logger.debug("Received key: " + key);
-		if (!entityListenerOk) // this test is needed because listenerContainer.stop() does not work properly
-								// during boot time (probably because of concurrency)
-			return;
-		logger.debug("Received offset: " + offset.toString());
-		String payload = new String(message);
-		logger.debug("Received message: " + payload);
-		logger.trace("Writing data...");
-		if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, key, payload)) {
-			acknowledgment.acknowledge();
-			logger.trace("Kafka offset commited");
-		} else {
-			if (entityStopListenerIfDbFails) {
-				entityListenerOk = false;
-				logger.error("DB failed, not processing any new messages");
-				MessageListenerContainer listenerContainer = kafkaListenerEndpoint
-						.getListenerContainer(ENTITY_LISTENER_ID);
-				listenerContainer.stop();
-			}
-		}
-
-		logger.trace("Writing is complete");
-	}
-
-	@KafkaListener(containerFactory = "kafkaListenerContainerFactoryManualOffsetCommit", topics = "${entity.withoutSysAttrs.topic}", groupId = "entityWithoutSysAttrsWriter")
-	public void writeEntityWithoutSysAttrs(@Payload byte[] message, Acknowledgment acknowledgment,
-			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key, @Header(KafkaHeaders.OFFSET) Long offset)
-			throws Exception {
-		logger.trace("Listener entityWithoutSysAttrsWriter, Thread ID: " + Thread.currentThread().getId());
-		logger.debug("Received key: " + key);
-		if (!entityListenerOk) // this test is needed because listenerContainer.stop() does not work properly
-								// during boot time (probably because of concurrency)
-			return;
-		logger.debug("Received offset: " + offset.toString());
-		String payload = new String(message);
-		logger.debug("Received message: " + payload);
-		logger.trace("Writing data...");
-		if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS, key,
-				payload)) {
-			acknowledgment.acknowledge();
-			logger.trace("Kafka offset commited");
-		} else {
-			if (entityStopListenerIfDbFails) {
-				entityListenerOk = false;
-				logger.error("DB failed, not processing any new messages");
-				MessageListenerContainer listenerContainer = kafkaListenerEndpoint
-						.getListenerContainer(ENTITY_WITHOUT_SYSATTRS_LISTENER_ID);
-				listenerContainer.stop();
-			}
-		}
-		logger.trace("Writing is complete");
-	}
-
-	@KafkaListener(containerFactory = "kafkaListenerContainerFactoryManualOffsetCommit", topics = "${entity.keyValues.topic}", groupId = "kvEntityWriter")
-	public void writeKeyValueEntity(@Payload byte[] message, Acknowledgment acknowledgment,
-			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key, @Header(KafkaHeaders.OFFSET) Long offset)
-			throws Exception {
-		logger.trace("Listener kvEntityWriter, Thread ID: " + Thread.currentThread().getId());
-		logger.debug("Received key: " + key);
-		if (!entityListenerOk) // this test is needed because listenerContainer.stop() does not work properly
-								// during boot time (probably because of concurrency)
-			return;
-		logger.debug("Received offset: " + offset.toString());
-		String payload = new String(message);
-		logger.debug("Received message: " + payload);
-		logger.trace("Writing data...");
-		if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_KVDATA, key, payload)) {
-			acknowledgment.acknowledge();
-			logger.trace("Kafka offset commited");
-		} else {
-			if (entityStopListenerIfDbFails) {
-				entityListenerOk = false;
-				logger.error("DB failed, not processing any new messages");
-				MessageListenerContainer listenerContainer = kafkaListenerEndpoint
-						.getListenerContainer(KVENTITY_LISTENER_ID);
-				listenerContainer.stop();
-			}
-		}
-		logger.trace("Writing is complete");
-	}
-
+	/*
+	 * @KafkaListener(containerFactory =
+	 * "kafkaListenerContainerFactoryManualOffsetCommit", topics =
+	 * "${entity.topic}", groupId = "entityWriter") public void writeEntity(@Payload
+	 * byte[] message, Acknowledgment acknowledgment,
+	 * 
+	 * @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String
+	 * key, @Header(KafkaHeaders.OFFSET) Long offset) throws Exception {
+	 * logger.trace("Listener entityWriter, Thread ID: " +
+	 * Thread.currentThread().getId()); logger.debug("Received key: " + key); if
+	 * (!entityListenerOk) // this test is needed because listenerContainer.stop()
+	 * does not work properly // during boot time (probably because of concurrency)
+	 * return; logger.debug("Received offset: " + offset.toString()); String payload
+	 * = new String(message); logger.debug("Received message: " + payload);
+	 * logger.trace("Writing data..."); if (storageWriterDao != null &&
+	 * storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA,
+	 * key, payload)) { acknowledgment.acknowledge();
+	 * logger.trace("Kafka offset commited"); } else { if
+	 * (entityStopListenerIfDbFails) { entityListenerOk = false;
+	 * logger.error("DB failed, not processing any new messages");
+	 * MessageListenerContainer listenerContainer = kafkaListenerEndpoint
+	 * .getListenerContainer(ENTITY_LISTENER_ID); listenerContainer.stop(); } }
+	 * 
+	 * logger.trace("Writing is complete"); }
+	 * 
+	 * @KafkaListener(containerFactory =
+	 * "kafkaListenerContainerFactoryManualOffsetCommit", topics =
+	 * "${entity.withoutSysAttrs.topic}", groupId = "entityWithoutSysAttrsWriter")
+	 * public void writeEntityWithoutSysAttrs(@Payload byte[] message,
+	 * Acknowledgment acknowledgment,
+	 * 
+	 * @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String
+	 * key, @Header(KafkaHeaders.OFFSET) Long offset) throws Exception {
+	 * logger.trace("Listener entityWithoutSysAttrsWriter, Thread ID: " +
+	 * Thread.currentThread().getId()); logger.debug("Received key: " + key); if
+	 * (!entityListenerOk) // this test is needed because listenerContainer.stop()
+	 * does not work properly // during boot time (probably because of concurrency)
+	 * return; logger.debug("Received offset: " + offset.toString()); String payload
+	 * = new String(message); logger.debug("Received message: " + payload);
+	 * logger.trace("Writing data..."); if (storageWriterDao != null &&
+	 * storageWriterDao.store(DBConstants.DBTABLE_ENTITY,
+	 * DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS, key, payload)) {
+	 * acknowledgment.acknowledge(); logger.trace("Kafka offset commited"); } else {
+	 * if (entityStopListenerIfDbFails) { entityListenerOk = false;
+	 * logger.error("DB failed, not processing any new messages");
+	 * MessageListenerContainer listenerContainer = kafkaListenerEndpoint
+	 * .getListenerContainer(ENTITY_WITHOUT_SYSATTRS_LISTENER_ID);
+	 * listenerContainer.stop(); } } logger.trace("Writing is complete"); }
+	 * 
+	 * @KafkaListener(containerFactory =
+	 * "kafkaListenerContainerFactoryManualOffsetCommit", topics =
+	 * "${entity.keyValues.topic}", groupId = "kvEntityWriter") public void
+	 * writeKeyValueEntity(@Payload byte[] message, Acknowledgment acknowledgment,
+	 * 
+	 * @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String
+	 * key, @Header(KafkaHeaders.OFFSET) Long offset) throws Exception {
+	 * logger.trace("Listener kvEntityWriter, Thread ID: " +
+	 * Thread.currentThread().getId()); logger.debug("Received key: " + key); if
+	 * (!entityListenerOk) // this test is needed because listenerContainer.stop()
+	 * does not work properly // during boot time (probably because of concurrency)
+	 * return; logger.debug("Received offset: " + offset.toString()); String payload
+	 * = new String(message); logger.debug("Received message: " + payload);
+	 * logger.trace("Writing data..."); if (storageWriterDao != null &&
+	 * storageWriterDao.store(DBConstants.DBTABLE_ENTITY,
+	 * DBConstants.DBCOLUMN_KVDATA, key, payload)) { acknowledgment.acknowledge();
+	 * logger.trace("Kafka offset commited"); } else { if
+	 * (entityStopListenerIfDbFails) { entityListenerOk = false;
+	 * logger.error("DB failed, not processing any new messages");
+	 * MessageListenerContainer listenerContainer = kafkaListenerEndpoint
+	 * .getListenerContainer(KVENTITY_LISTENER_ID); listenerContainer.stop(); } }
+	 * logger.trace("Writing is complete"); }
+	 */
 	@KafkaListener(containerFactory = "kafkaListenerContainerFactoryManualOffsetCommit", topics = "${csource.topic}", id = CSOURCE_LISTENER_ID, groupId = "csourceWriter", containerGroup = "csourceWriter-container")
 	public void writeCSource(@Payload byte[] message, Acknowledgment acknowledgment,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key, @Header(KafkaHeaders.OFFSET) Long offset)

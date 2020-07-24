@@ -38,7 +38,7 @@ csources:
   registration:
     topic: CONTEXT_REGISTRY
 defaultLimit: 50
-directDbConnection: false 
+directDbConnection: true 
 entity:
   append:
     topic: ENTITY_APPEND
