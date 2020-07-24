@@ -22,7 +22,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
-@Repository
+@Repository("emstorage")
 @ConditionalOnProperty(value="writer.enabled", havingValue = "true", matchIfMissing = false)
 public class StorageWriterDAO {
 	

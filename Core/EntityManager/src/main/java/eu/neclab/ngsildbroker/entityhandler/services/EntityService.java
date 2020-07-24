@@ -104,6 +104,7 @@ public class EntityService {
 	int maxDeleteBatch;
 
 	@Autowired
+	@Qualifier("emstorage")
 	StorageWriterDAO storageWriterDao;
 
 	@Autowired
