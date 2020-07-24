@@ -74,7 +74,7 @@ kafka:
   
 defaultLimit: 50
 maxLimit: 500
-directDbConnection: false 
+directDbConnection: true 
 #if directDbConnection is false then properties below are not used {{{
 
 

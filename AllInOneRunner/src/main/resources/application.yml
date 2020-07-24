@@ -8,10 +8,7 @@ broker:
   id: FedBroker1
   parent:
     location:
-      url: SELF
-logging:
-  level:
-    root: ERROR      
+      url: SELF      
 query:
   result:
     topic: QUERY_RESULT

@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,9 +24,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.listener.MessageListenerContainer;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -36,6 +41,7 @@ import com.github.filosganga.geogson.model.Geometry;
 import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
 
+import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchFailure;
@@ -96,6 +102,9 @@ public class EntityService {
 	int maxUpsertBatch;
 	@Value("${batchoperations.maxnumber.delete:-1}")
 	int maxDeleteBatch;
+
+	@Autowired
+	StorageWriterDAO storageWriterDao;
 
 	@Autowired
 	@Qualifier("emops")
@@ -194,6 +203,12 @@ public class EntityService {
 		if (!result) {
 			throw new ResponseException(ErrorType.KafkaWriteError);
 		}
+		String withSysAttrs = payload;
+		new Thread() {
+			public void run() {
+				pushToDB(id.asText(), withSysAttrs, entityWithoutSysAttrs, getKeyValueEntity(json).asText());
+			};
+		}.start();
 
 		// write to ENTITY topic after ENTITY_CREATE success.
 		operations.pushToKafka(this.producerChannels.entityWriteChannel(),
@@ -210,6 +225,30 @@ public class EntityService {
 
 		logger.debug("createMessage() :: completed");
 		return id.asText();
+	}
+
+	private void pushToDB(String key, String payload, String withoutSysAttrs, String kv) {
+		logger.debug("Received message: " + payload);
+		logger.trace("Writing data...");
+		try {
+			if (storageWriterDao != null
+					&& storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, key, payload)) {
+
+				logger.trace("Writing is complete");
+			}
+			if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_ENTITY,
+					DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS, key, withoutSysAttrs)) {
+				logger.trace("Writing is complete");
+			}
+			if (storageWriterDao != null
+					&& storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_KVDATA, key, kv)) {
+				logger.trace("Writing is complete");
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 	// public String createMessageTest(String payload) throws ResponseException {
@@ -486,7 +525,7 @@ public class EntityService {
 		if (originalJson == null) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
-		//JsonNode originalJsonNode = objectMapper.readTree(originalJson);
+		// JsonNode originalJsonNode = objectMapper.readTree(originalJson);
 
 		UpdateResult updateResult = this.updateFields(originalJson, objectMapper.readTree(payload), attrId);
 		byte[] finalJson = updateResult.getJson();
@@ -734,7 +773,8 @@ public class EntityService {
 		return objectNode.toString().getBytes(NGSIConstants.ENCODE_FORMAT);
 	}
 
-	public boolean registerContext(byte[] id, byte[] payload) throws URISyntaxException, IOException, ResponseException {
+	public boolean registerContext(byte[] id, byte[] payload)
+			throws URISyntaxException, IOException, ResponseException {
 		logger.trace("registerContext() :: started");
 		MessageChannel messageChannel = producerChannels.contextRegistryWriteChannel();
 		CSourceRegistration contextRegistryPayload = this.getCSourceRegistrationFromJson(payload);
