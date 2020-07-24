@@ -104,7 +104,7 @@ public class QueryService {
 	@Value("${maxLimit}")
 	int maxLimit = 500;
 
-	@Autowired(required = false)
+	@Autowired
 	QueryDAO queryDAO;
 	
 	@Value("${directDbConnection}")
