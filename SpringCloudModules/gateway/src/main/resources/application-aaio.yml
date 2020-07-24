@@ -19,7 +19,10 @@ query-manager:
   request-path: /ngsi-ld/v1/entities
   target-service: aio-runner
   http-method: GET
-
+entity-manager:
+  request-path: /ngsi-ld/v1/entities
+  target-service: aio-runner
+  http-method: POST
 spring:
   application:
     name: gateway
