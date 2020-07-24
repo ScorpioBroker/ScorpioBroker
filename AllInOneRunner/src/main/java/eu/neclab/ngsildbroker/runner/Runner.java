@@ -9,8 +9,9 @@ import org.springframework.context.annotation.FilterType;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {
-		"eu.neclab.ngsildbroker.*" }, excludeFilters = @Filter(type = FilterType.REGEX, pattern = {
-				"eu.neclab.ngsildbroker.commons.*" }))
+		"eu.neclab.ngsildbroker.*" }, excludeFilters = {@Filter(type = FilterType.REGEX, pattern = {
+				"eu.neclab.ngsildbroker.commons.*" }),@Filter(type = FilterType.REGEX, pattern = {
+				"eu.neclab.ngsildbroker.storagemanager.*" })})
 //@Import(KafkaConfig.class)
 public class Runner {
 

@@ -109,4 +109,6 @@ zuul:
       sensitiveHeaders:
       path: /test/**
       serviceId: testmanager
-
+logging:
+  level:
+    root: ERROR
