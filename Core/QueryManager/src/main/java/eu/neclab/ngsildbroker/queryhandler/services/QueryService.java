@@ -412,29 +412,21 @@ public class QueryService {
 			}
 			// logger.trace("aggregated");
 			// aggregatedResult.forEach(e -> logger.debug(e));
-			if (aggregatedResult.size() > limit) {
-				qToken = generateToken();
-				String writeToken = qToken;
-				int end = offset + limit;
-				if (end > aggregatedResult.size()) {
-					end = aggregatedResult.size();
-				}
-				realResult = aggregatedResult.subList(offset, end);
-				dataLeft = aggregatedResult.size() - end;
-				new Thread() {
-					public void run() {
-						try {
-							writeFullResultToKafka(writeToken, aggregatedResult);
-						} catch (IOException e) {
-							
-						} catch (ResponseException e) {
-							
-						}
-					};
-				}.start();
-			} else {
-				realResult = aggregatedResult;
-			}
+			/*
+			 * if (aggregatedResult.size() > limit) { qToken = generateToken(); String
+			 * writeToken = qToken; int end = offset + limit; if (end >
+			 * aggregatedResult.size()) { end = aggregatedResult.size(); } realResult =
+			 * aggregatedResult.subList(offset, end); dataLeft = aggregatedResult.size() -
+			 * end; new Thread() { public void run() { try {
+			 * writeFullResultToKafka(writeToken, aggregatedResult); } catch (IOException e)
+			 * {
+			 * 
+			 * } catch (ResponseException e) {
+			 * 
+			 * } }; }.start(); } else {
+			 */
+			realResult = aggregatedResult;
+			// }
 		} else
 
 		{
