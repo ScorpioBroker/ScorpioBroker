@@ -328,6 +328,8 @@ public class QueryService {
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
 		List<String> realResult;
+		qp.setLimit(limit);
+		qp.setOffSet(offset);
 		int dataLeft = 0;
 		if (qToken == null) {
 			ExecutorService executorService = Executors.newFixedThreadPool(2);
@@ -335,6 +337,7 @@ public class QueryService {
 			Future<List<String>> futureStorageManager = executorService.submit(new Callable<List<String>>() {
 				public List<String> call() throws Exception {
 					logger.trace("Asynchronous Callable storage manager");
+					//TAKE CARE OF PAGINATION HERE
 					if (queryDAO != null) {
 						return queryDAO.query(qp);
 					} else {
@@ -425,11 +428,9 @@ public class QueryService {
 			 * 
 			 * } }; }.start(); } else {
 			 */
-			realResult = aggregatedResult;
-			// }
-		} else
-
-		{
+				realResult = aggregatedResult;
+			//}
+		} else {
 			// read from byte array
 			byte[] data = operations.getMessage(qToken, KafkaConstants.PAGINATION_TOPIC);
 			if (data == null) {

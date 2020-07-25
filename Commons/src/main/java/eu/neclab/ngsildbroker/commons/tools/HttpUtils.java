@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -850,6 +852,63 @@ public final class HttpUtils {
 		return generateReply(request, reply, additionalHeaders, additionalContext, false);
 	}
 
+	public static void main(String[] args) {
+		Pattern p = Pattern.compile("([\\w\\/\\+]+)(\\s*\\;\\s*q=(\\d\\.\\d))?");
+		Matcher m = p.matcher("application/json, application/ld+json; q=0.8");
+		float q = 1;
+		String app = null;
+		String result = null;
+		while (m.find()) {
+			String floatString = m.group(3);
+			float newQ = 1;
+			if (floatString != null) {
+				newQ = Float.parseFloat(floatString);
+			}
+			if (result != null && (newQ <= q)) {
+				continue;
+			}
+			app = m.group(0);
+			if (app.equalsIgnoreCase("application/ld+json") || app.equalsIgnoreCase("application/*")
+					|| app.equalsIgnoreCase("*/*")) {
+				result = "application/ld+json";
+			} else if (app.equalsIgnoreCase("application/json")) {
+				result = "application/json";
+			}
+
+		}
+		System.out.println(result);
+	}
+
+	private int parseAcceptHeader(Enumeration<String> acceptHeader) {
+		
+		Pattern p = Pattern.compile("([\\w\\/\\+]+)(\\s*\\;\\s*q=(\\d\\.\\d))?");
+		Matcher m = p.matcher("application/json, application/ld+json; q=0.8");
+		float q = 1;
+		String app = null;
+		int result = -1;
+		while (m.find()) {
+			String floatString = m.group(3);
+			float newQ = 1;
+			if (floatString != null) {
+				newQ = Float.parseFloat(floatString);
+			}
+			if (result != -1 && (newQ <= q)) {
+				continue;
+			}
+			app = m.group(0);
+			if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD) || app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_GENERIC)
+					|| app.equalsIgnoreCase(AppConstants.NGB_GENERIC_GENERIC)) {
+				result = 2;
+			} else if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON)) {
+				result = 1;
+			} else if(app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_NQUADS)) {
+				result = 3;
+			}
+
+		}
+		return result;
+
+	}
 	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
 			HashMap<String, List<String>> additionalHeaders, List<Object> additionalContext, boolean forceArrayResult)
 			throws ResponseException {
@@ -859,40 +918,14 @@ public final class HttpUtils {
 		}
 
 		String replyBody;
-		Enumeration<String> tempHeaders = request.getHeaders(HttpHeaders.ACCEPT);
-		ArrayList<String> acceptHeaders = new ArrayList<String>();
-		while (tempHeaders.hasMoreElements()) {
-			String next = tempHeaders.nextElement();
-			acceptHeaders.addAll(Arrays.asList(next.split(",")));
-		}
+		
 
-		float[][] foundHeaders = new float[4][2];
-
-		for (String header : acceptHeaders) {
-			if (header.contains(AppConstants.NGB_APPLICATION_JSONLD)) {
-				foundHeaders[0][0] = 1;
-				foundHeaders[0][1] = getQ(header);
-			}
-			if (header.contains(AppConstants.NGB_APPLICATION_JSON)) {
-				foundHeaders[1][0] = 1;
-				foundHeaders[1][1] = getQ(header);
-			}
-			if (header.contains(AppConstants.NGB_APPLICATION_GENERIC)
-					|| header.contains(AppConstants.NGB_GENERIC_GENERIC)) {
-				foundHeaders[2][0] = 1;
-				foundHeaders[2][1] = getQ(header);
-			}
-			if (header.contains(AppConstants.NGB_APPLICATION_NQUADS)) {
-				foundHeaders[3][0] = 1;
-				foundHeaders[3][1] = getQ(header);
-			}
-		}
 		CompactedJson compacted = contextResolver.compact(reply, requestAtContext);
 		ArrayList<String> temp = new ArrayList<String>();
 		if (additionalHeaders == null) {
 			additionalHeaders = new HashMap<String, List<String>>();
 		}
-		int sendingContentType = getContentType(foundHeaders);
+		int sendingContentType = parseAcceptHeader(request.getHeaders(HttpHeaders.ACCEPT));
 		switch (sendingContentType) {
 		case 1:
 			temp.add(AppConstants.NGB_APPLICATION_JSON);
@@ -939,46 +972,6 @@ public final class HttpUtils {
 		return generateReply(replyBody, additionalHeaders, compress);
 	}
 
-	private int getContentType(float[][] foundHeaders) {
-		int type = -1;
-		float currentWeight = -1;
-		if (foundHeaders[0][0] == 1) {
-			type = 2;
-			currentWeight = foundHeaders[0][1];
-		}
-		if (foundHeaders[1][0] == 1) {
-			if (type != -1) {
-				if (foundHeaders[1][1] > currentWeight) {
-					type = 1;
-				}
-			} else {
-				type = 1;
-				currentWeight = foundHeaders[1][1];
-			}
-		}
-		if (foundHeaders[2][0] == 1) {
-			if (type != -1) {
-				if (foundHeaders[2][1] > currentWeight) {
-					type = 2;
-				}
-			} else {
-				type = 2;
-			}
-		}
-		if (foundHeaders[3][0] == 1) {
-			type = 3;
-		}
-
-		return type;
-	}
-
-	private float getQ(String header) {
-		int begin = header.indexOf("q=");
-		if (begin == -1) {
-			return 1;
-		}
-		return Float.parseFloat(header.substring(begin + 2));
-	}
 
 	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,
 			boolean compress) {

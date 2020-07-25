@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.util.ReflectionUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
@@ -31,20 +32,22 @@ abstract public class StorageReaderDAO {
 		readerJdbcTemplate.execute("SELECT 1"); // create connection pool and connect to database
 	}
 
+	
 	public List<String> query(QueryParams qp) {
-		List<String> entitiesList = new ArrayList<String>();
+		
 		try {
 			String sqlQuery = translateNgsildQueryToSql(qp);
 			logger.info("NGSI-LD to SQL: " + sqlQuery);
-			List<Map<String, Object>> list = readerJdbcTemplate.queryForList(sqlQuery);
-			for (Map<String, Object> row : list) {
-				entitiesList.add(row.get("data").toString());
-			}
+			//SqlRowSet result = readerJdbcTemplate.queryForRowSet(sqlQuery);
+			
+			return readerJdbcTemplate.queryForList(sqlQuery,String.class);
+			
+
 		} catch (Exception e) {
 			logger.error("Exception ::", e);
 			e.printStackTrace();
 		}
-		return entitiesList;
+		return new ArrayList<String>();
 
 	}
 
@@ -179,8 +182,18 @@ abstract public class StorageReaderDAO {
 					+ expandedAttributeList + "))";
 		}
 		String sqlQuery = "SELECT " + dataColumn + " as data FROM " + DBConstants.DBTABLE_ENTITY + " ";
-		if (fullSqlWhereProperty.length() > 0)
+		if (fullSqlWhereProperty.length() > 0) {
 			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " 1=1 ";
+		}
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+				
+		if(limit != -1) {
+			sqlQuery += "LIMIT " + limit + " "; 
+		}
+		if(offSet != -1) {
+			sqlQuery += "OFFSET " + offSet + " "; 
+		}
 		// order by ?
 
 		return sqlQuery;
