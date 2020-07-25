@@ -62,7 +62,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	@Value("${defaultLimit}")
 	int defaultLimit = 50;
 	@Value("${maxLimit}")
-	int maxLimit = 500;
+	int maxLimit = 1000;
 
 	@Value("${ngb.debugmode}")
 	boolean debug = false;

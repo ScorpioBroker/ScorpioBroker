@@ -62,6 +62,7 @@ public class CSourceService {
 	StartupConfig startupConfig;
 
 	@Autowired
+	@Qualifier("rmcsourcedao")
 	CSourceDAO csourceDAO;
 
 	@Autowired

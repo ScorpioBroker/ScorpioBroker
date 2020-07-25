@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registryhandler.repository;
+package eu.neclab.ngsildbroker.queryhandler.repository;
 
 import java.sql.SQLException;
 import java.util.Collections;
@@ -19,7 +19,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 
-@Repository("rmcsourcedao")
+@Repository("qmcsourcedao")
 public class CSourceDAO extends StorageReaderDAO {
 
 	private final static Logger logger = LogManager.getLogger(CSourceDAO.class);

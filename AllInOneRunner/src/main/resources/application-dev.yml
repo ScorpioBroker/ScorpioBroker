@@ -14,9 +14,6 @@ query:
   result:
     topic: QUERY_RESULT
   topic: QUERY
-logging:
-  level:
-    root: ERROR
 
 csource:
   stopListenerIfDbFails: false
