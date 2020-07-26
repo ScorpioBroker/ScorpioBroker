@@ -30,7 +30,7 @@ public class NotificationController {
 	@RequestMapping(method=RequestMethod.POST, value = "/{id}")
 	public void notify(HttpServletRequest req, @RequestBody String payload, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = false) String id) {
 		try {
-			subscriptionManager.remoteNotify(id, DataSerializer.getNotification(resolver.expand(payload, HttpUtils.getAtContext(req))));
+			subscriptionManager.remoteNotify(id, DataSerializer.getNotification(resolver.expand(payload, HttpUtils.getAtContext(req),true)));
 		} catch (ResponseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

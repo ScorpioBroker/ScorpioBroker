@@ -114,18 +114,7 @@ public class ContextResolverBasic {
 				+ "                {\n" + "                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
 				+ "                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "                }\n"
 				+ "            ]\n" + "        }\n" + "    ]\n" + "}";
-		System.out.println(bla.expand("{\n" + "	\"id\": \"ABC\",\n" + "	\"type\": \"Vehicle1\",\n"
-				+ "	\"brandName\": {\n" + "		\"type\": \"Property\",\n" + "		\"value\": \"Mercedes\"\n"
-				+ "	},\n" + "	\"isParked\": {\n" + "		\"type\": \"Relationship\",\n"
-				+ "		\"object\": \"urn:ngsi-ld:OffStreetParking:Downtown1\",\n"
-				+ "		\"observedAt\": \"2017-07-29T12:00:04Z\",\n" + "		\"providedBy\": {\n"
-				+ "			\"type\": \"Relationship\",\n" + "			\"object\": \"urn:ngsi-ld:Person:Bob\"\n"
-				+ "		}\n" + "	},\n" + "	\"speed\": {\n" + "		\"type\": \"Property\",\n"
-				+ "		\"value\": 80\n" + "	},\n" + "	\"createdAt\": \"2017-07-29T12:00:04Z\",\n"
-				+ "	\"location\": {\n" + "		\"type\": \"GeoProperty\",\n" + "		\"value\": {\n"
-				+ "			\"type\": \"Point\",\n" + "			\"coordinates\": [-8.5, 41.2]\n" + "		}\n"
-				+ "	},\n" + "	\"@context\" : \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\"\n" + "}",
-				contextLinks));
+		/**/
 	}
 
 	public ContextResolverBasic(String atContextBaseUrl) {
@@ -139,11 +128,11 @@ public class ContextResolverBasic {
 
 	}
 
-	public String expand(String body, List<Object> contextLinks) throws ResponseException {
+	public String expand(String body, List<Object> contextLinks, boolean check) throws ResponseException {
 		try {
 			Object obj = JsonUtils.fromString(body);
 			if (obj instanceof Map) {
-				return expand((Map<String, Object>) obj, contextLinks);
+				return expand((Map<String, Object>) obj, contextLinks, check);
 			}
 			if (obj instanceof List) {
 				List<Object> list = (List<Object>) obj;
@@ -152,7 +141,7 @@ public class ContextResolverBasic {
 				}
 				StringBuilder result = new StringBuilder("[");
 				for (Object listObj : list) {
-					result.append(expand((Map<String, Object>) listObj, contextLinks));
+					result.append(expand((Map<String, Object>) listObj, contextLinks, check));
 					result.append(",");
 				}
 				result.setCharAt(result.length() - 1, ']');
@@ -165,7 +154,7 @@ public class ContextResolverBasic {
 		}
 	}
 
-	public String expand(Map<String, Object> json, List<Object> contextLinks) throws ResponseException {
+	public String expand(Map<String, Object> json, List<Object> contextLinks, boolean check) throws ResponseException {
 		try {
 			Object tempCtx = json.get(NGSIConstants.JSON_LD_CONTEXT);
 			List<Object> context;
@@ -193,7 +182,9 @@ public class ContextResolverBasic {
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
 			List<Object> expanded = JsonLdProcessor.expand(json);
 			// if(!
-			preFlightCheck(expanded, usedContext, true);
+			if (check) {
+				preFlightCheck(expanded, usedContext, true);
+			}
 			// ) {
 			// throw new ResponseException(ErrorType.BadRequestData,"Entity without an
 			// attribute is not allowed");
@@ -246,12 +237,12 @@ public class ContextResolverBasic {
 			}
 			if (NGSIConstants.JSON_LD_TYPE.equals(key)) {
 				hasType = true;
-				if(mapValue instanceof List) {
+				if (mapValue instanceof List) {
 					validateUri((String) ((List) mapValue).get(0));
-				}else if(mapValue instanceof String) {
+				} else if (mapValue instanceof String) {
 					validateUri((String) mapValue);
 				}
-				
+
 				if (!(mapValue instanceof String)
 						&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
 					geoTypeFound = true;
@@ -277,7 +268,7 @@ public class ContextResolverBasic {
 				}
 			}
 		}
-		if((hasValue ^ hasType) && !root) {
+		if ((hasValue ^ hasType) && !root) {
 			throw new ResponseException(ErrorType.UnprocessableEntity, "You can't have attributes without a value");
 		}
 		if (geoTypeFound) {

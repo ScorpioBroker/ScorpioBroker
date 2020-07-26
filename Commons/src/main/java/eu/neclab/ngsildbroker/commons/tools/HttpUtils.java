@@ -158,7 +158,7 @@ public final class HttpUtils {
 
 		if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON)) {
 
-			ldResolved = contextResolver.expand(payload, linkHeaders);
+			ldResolved = contextResolver.expand(payload, linkHeaders, true);
 
 		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD)) {
 			if (!payload.contains("@context")) {
@@ -167,7 +167,7 @@ public final class HttpUtils {
 								+ AppConstants.NGB_APPLICATION_JSONLD);
 			}
 
-			ldResolved = contextResolver.expand(payload, null);
+			ldResolved = contextResolver.expand(payload, null, true);
 
 		} else {
 			throw new ResponseException(ErrorType.BadRequestData,

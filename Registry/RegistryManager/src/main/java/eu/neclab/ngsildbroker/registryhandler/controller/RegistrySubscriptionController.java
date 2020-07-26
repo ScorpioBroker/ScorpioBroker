@@ -86,7 +86,7 @@ public class RegistrySubscriptionController {
 
 
 		List<Object> context = HttpUtils.getAtContext(request);
-		String resolved = contextResolver.expand(payload, context);
+		String resolved = contextResolver.expand(payload, context, true);
 		
 		subscription = DataSerializer.getSubscription(resolved);
 		if (resolved == null || subscription == null) {
@@ -151,7 +151,7 @@ public class RegistrySubscriptionController {
 			@RequestBody String payload) throws ResponseException {
 		logger.trace("call updateSubscription() ::");
 		List<Object> context = HttpUtils.getAtContext(request);
-		String resolved = contextResolver.expand(payload, context);
+		String resolved = contextResolver.expand(payload, context, true);
 		Subscription subscription = DataSerializer.getSubscription(resolved);
 		if(subscription.getId() == null) {
 			subscription.setId(id);
