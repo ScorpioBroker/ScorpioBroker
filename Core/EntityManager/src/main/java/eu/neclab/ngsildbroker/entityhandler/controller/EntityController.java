@@ -106,7 +106,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			@RequestBody(required = false) String payload) {
 		String result = null;
 		try {
-			//HttpUtils.doPreflightCheck(request, payload);
+			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("create entity :: started");
 			String resolved = httpUtils.expandPayload(request, payload);
 			//entityService.validateEntity(resolved, request);

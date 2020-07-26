@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
 
@@ -57,7 +58,7 @@ public class ContextResolverBasic {
 	private Map<String, Object> CORE_CONTEXT;
 	// private Map<String, Object> DEFAULT_CONTEXT;
 	private Map<String, Object> BASE_CONTEXT = new HashMap<String, Object>();
-
+	Pattern forbiddenChars = Pattern.compile("[\\<\\\"\\'\\=\\;\\(\\)\\>\\?\\*]", Pattern.CASE_INSENSITIVE);
 	private static final String IS_FULL_VALID = "ajksd7868";
 
 	@PostConstruct
@@ -68,22 +69,25 @@ public class ContextResolverBasic {
 			CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 			BASE_CONTEXT.putAll(CORE_CONTEXT);
 		} catch (URISyntaxException e) {
-			//left empty intentionally 
-			//controlled uri 
-			throw new AssertionError(CORE_CONTEXT_URL + " is not a valid uri. Aborting! core context has to be available");
+			// left empty intentionally
+			// controlled uri
+			throw new AssertionError(
+					CORE_CONTEXT_URL + " is not a valid uri. Aborting! core context has to be available");
 		} catch (IOException e) {
-			//core context not reachable 
+			// core context not reachable
 			try {
 				CORE_CONTEXT_URL = new URI(AT_CONTEXT_BASE_URL + AppConstants.CORE_CONTEXT_URL_SUFFIX);
 				String json = httpUtils.doGet(CORE_CONTEXT_URL);
 				CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 				BASE_CONTEXT.putAll(CORE_CONTEXT);
 			} catch (URISyntaxException e1) {
-				//left empty intentionally 
-				//controlled uri 
-				throw new AssertionError(AT_CONTEXT_BASE_URL + "ngsi-ld-core-context is not a valid uri.  Aborting! core context has to be available");
+				// left empty intentionally
+				// controlled uri
+				throw new AssertionError(AT_CONTEXT_BASE_URL
+						+ "ngsi-ld-core-context is not a valid uri.  Aborting! core context has to be available");
 			} catch (IOException e1) {
-				throw new AssertionError("Neither the default core context is reachable nore the internal webserver.  Aborting! core context has to be available");
+				throw new AssertionError(
+						"Neither the default core context is reachable nore the internal webserver.  Aborting! core context has to be available");
 			}
 		}
 	}
@@ -91,49 +95,55 @@ public class ContextResolverBasic {
 	public static void main(String[] args) throws Exception {
 		ContextResolverBasic bla = new ContextResolverBasic();
 		List<Object> contextLinks = null;
-		String body = "{\n" + 
-				"    \"@id\": \"urn:ngsi-ld:T4:906\",\n" + 
-				"    \"@type\": [\n" + 
-				"        \"https://uri.etsi.org/ngsi-ld/default-context/T\"\n" + 
-				"    ],\n" + 
-				"    \"https://uri.etsi.org/ngsi-ld/createdAt\": [\n" + 
-				"        {\n" + 
-				"            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n" + 
-				"            \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + 
-				"        }\n" + 
-				"    ],\n" + 
-				"    \"https://uri.etsi.org/ngsi-ld/modifiedAt\": [\n" + 
-				"        {\n" + 
-				"            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n" + 
-				"            \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + 
-				"        }\n" + 
-				"    ],\n" + 
-				"    \"https://uri.etsi.org/ngsi-ld/default-context/P1\": [\n" + 
-				"        {\n" + 
-				"            \"@type\": [\n" + 
-				"                \"https://uri.etsi.org/ngsi-ld/Property\"\n" + 
-				"            ],\n" + 
-				"            \"https://uri.etsi.org/ngsi-ld/hasValue\": [\n" + 
-				"                {\n" + 
-				"                    \"@value\": 1234\n" + 
-				"                }\n" + 
-				"            ],\n" + 
-				"            \"https://uri.etsi.org/ngsi-ld/createdAt\": [\n" + 
-				"                {\n" + 
-				"                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n" + 
-				"                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + 
-				"                }\n" + 
-				"            ],\n" + 
-				"            \"https://uri.etsi.org/ngsi-ld/modifiedAt\": [\n" + 
-				"                {\n" + 
-				"                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n" + 
-				"                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + 
-				"                }\n" + 
-				"            ]\n" + 
-				"        }\n" + 
-				"    ]\n" + 
-				"}";
-		System.out.println(bla.getRDF(body));
+		String body = "{\n" + "    \"@id\": \"urn:ngsi-ld:T4:906\",\n" + "    \"@type\": [\n"
+				+ "        \"https://uri.etsi.org/ngsi-ld/default-context/T\"\n" + "    ],\n"
+				+ "    \"https://uri.etsi.org/ngsi-ld/createdAt\": [\n" + "        {\n"
+				+ "            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
+				+ "            \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "        }\n" + "    ],\n"
+				+ "    \"https://uri.etsi.org/ngsi-ld/modifiedAt\": [\n" + "        {\n"
+				+ "            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
+				+ "            \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "        }\n" + "    ],\n"
+				+ "    \"https://uri.etsi.org/ngsi-ld/default-context/P1\": [\n" + "        {\n"
+				+ "            \"@type\": [\n" + "                \"https://uri.etsi.org/ngsi-ld/Property\"\n"
+				+ "            ],\n" + "            \"https://uri.etsi.org/ngsi-ld/hasValue\": [\n"
+				+ "                {\n" + "                    \"@value\": 1234\n" + "                }\n"
+				+ "            ],\n" + "            \"https://uri.etsi.org/ngsi-ld/createdAt\": [\n"
+				+ "                {\n" + "                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
+				+ "                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "                }\n"
+				+ "            ],\n" + "            \"https://uri.etsi.org/ngsi-ld/modifiedAt\": [\n"
+				+ "                {\n" + "                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
+				+ "                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "                }\n"
+				+ "            ]\n" + "        }\n" + "    ]\n" + "}";
+		System.out.println(bla.expand("{\n" + 
+				"	\"id\": \"ABC\",\n" + 
+				"	\"type\": \"Vehicle1\",\n" + 
+				"	\"brandName\": {\n" + 
+				"		\"type\": \"Property\",\n" + 
+				"		\"value\": \"Mercedes\"\n" + 
+				"	},\n" + 
+				"	\"isParked\": {\n" + 
+				"		\"type\": \"Relationship\",\n" + 
+				"		\"object\": \"urn:ngsi-ld:OffStreetParking:Downtown1\",\n" + 
+				"		\"observedAt\": \"2017-07-29T12:00:04Z\",\n" + 
+				"		\"providedBy\": {\n" + 
+				"			\"type\": \"Relationship\",\n" + 
+				"			\"object\": \"urn:ngsi-ld:Person:Bob\"\n" + 
+				"		}\n" + 
+				"	},\n" + 
+				"	\"speed\": {\n" + 
+				"		\"type\": \"Property\",\n" + 
+				"		\"value\": 80\n" + 
+				"	},\n" + 
+				"	\"createdAt\": \"2017-07-29T12:00:04Z\",\n" + 
+				"	\"location\": {\n" + 
+				"		\"type\": \"GeoProperty\",\n" + 
+				"		\"value\": {\n" + 
+				"			\"type\": \"Point\",\n" + 
+				"			\"coordinates\": [-8.5, 41.2]\n" + 
+				"		}\n" + 
+				"	},\n" + 
+				"	\"@context\" : \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\"\n" + 
+				"}", contextLinks));
 	}
 
 	public ContextResolverBasic(String atContextBaseUrl) {
@@ -200,7 +210,10 @@ public class ContextResolverBasic {
 
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
 			List<Object> expanded = JsonLdProcessor.expand(json);
-			protectGeoProps(expanded, usedContext);
+			if(!preFlightCheck(expanded, usedContext)) {
+				throw new ResponseException(ErrorType.BadRequestData,"Entity without an attribute is not allowed");
+			}
+//			protectGeoProps(expanded, usedContext);
 //			protectLocationFromSubs(expanded, usedContext);
 			if (expanded.isEmpty()) {
 				return "";
@@ -211,6 +224,93 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.InvalidRequest);
 		}
 
+	}
+
+	private boolean preFlightCheck(List<Object> expanded, ArrayList<Object> usedContext) throws JsonGenerationException, ResponseException, IOException {
+		boolean hasAttributes = false;
+		for (Object entry : expanded) {
+			if (entry instanceof Map) {
+				hasAttributes = hasAttributes || preFlightCheck((Map<String, Object>) entry, usedContext);
+			} else if (entry instanceof List) {
+				hasAttributes = hasAttributes || preFlightCheck((List) entry, usedContext);
+			} else {
+				// don't care for now i think
+			}
+		}
+		return hasAttributes;
+	}
+
+	private boolean preFlightCheck(Map<String, Object> objMap, ArrayList<Object> usedContext) throws ResponseException, JsonGenerationException, IOException {
+		boolean geoTypeFound = false;
+		Object value = null;
+		boolean hasAttributes = false;
+		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
+			String key = mapEntry.getKey();
+			Object mapValue = mapEntry.getValue();
+			if (NGSIConstants.JSON_LD_ID.equals(key)) {
+				validateId((String) mapValue);
+			}else if (NGSIConstants.NGSI_LD_LOCATION.equals(key)) {
+				hasAttributes = true;
+				protectLocationEntry(mapValue, mapEntry, usedContext);
+			}else if (NGSIConstants.JSON_LD_TYPE.equals(key) && !(mapValue instanceof String)
+					&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
+				geoTypeFound = true;
+			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
+				value = checkHasValue(mapValue);
+			} else {
+				if(forbiddenChars.matcher(key).find()) {
+					throw new ResponseException(ErrorType.BadRequestData,"Forbidden characters in payload body");
+				}
+				if(!NGSIConstants.JSON_LD_TYPE.equals(key)) {
+					hasAttributes = true;
+				}
+				
+				if (mapValue instanceof Map) {
+					hasAttributes = hasAttributes || preFlightCheck((Map<String, Object>) mapValue, usedContext);
+				} else if (mapValue instanceof List) {
+					hasAttributes = hasAttributes || preFlightCheck((List) mapValue, usedContext);
+				}
+			}
+		}
+		if(geoTypeFound) {
+			protectGeoProp(objMap, value, usedContext);
+		}
+		return hasAttributes;
+	}
+
+	private Object checkHasValue(Object mapValue) throws ResponseException {
+		if (mapValue == null) {
+			throw new ResponseException(ErrorType.UnprocessableEntity);
+		}
+		if (mapValue instanceof List) {
+			List tempList = (List) mapValue;
+			if (!tempList.isEmpty())
+				return tempList.get(0);
+		}
+		return mapValue;
+	}
+
+	private void protectLocationEntry(Object mapValue, Entry<String, Object> mapEntry, ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
+		if (((List) mapValue).get(0) instanceof Map) {
+			Map temp = (Map) ((List) mapValue).get(0);
+			if (temp.get(NGSIConstants.JSON_LD_TYPE) != null) {
+				if (!((List) temp.get(NGSIConstants.JSON_LD_TYPE)).get(0)
+						.equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
+					// we are in a location entry of registry as this is not a geo property
+					mapEntry.setValue(getProperGeoJson(mapValue, usedContext));
+				}
+			}
+		}
+		
+	}
+
+	private void validateId(String mapValue) throws ResponseException {
+		try {
+			new URI(mapValue);
+		} catch (URISyntaxException e) {
+			throw new ResponseException(ErrorType.BadRequestData,"id is not a URI");
+		}
+		
 	}
 
 	private Object getProperGeoJson(Object value, ArrayList<Object> usedContext)
@@ -246,7 +346,7 @@ public class ContextResolverBasic {
 			topLevelContainerList.add(polyContainerList);
 			compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, topLevelContainerList);
 			break;
-		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:	
+		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
 			ArrayList<Object> multitopLevelContainerList = new ArrayList<Object>();
 			ArrayList<Object> multimidLevelContainerList = new ArrayList<Object>();
 			ArrayList<Object> multipolyContainerList = new ArrayList<Object>();
@@ -272,59 +372,9 @@ public class ContextResolverBasic {
 		return tempList;
 	}
 
-	private void protectGeoProps(List<Object> expanded, ArrayList<Object> usedContext)
-			throws JsonGenerationException, JsonLdError, IOException {
-		for (Object entry : expanded) {
-			if (entry instanceof Map) {
 
-				protectGeoProps((Map<String, Object>) entry, usedContext);
-			} else if (entry instanceof List) {
-				protectGeoProps((List) entry, usedContext);
-			} else {
-				// don't care for now i think
-			}
-		}
-
-	}
-
-	private void protectGeoProps(Map<String, Object> objMap, ArrayList<Object> usedContext)
-			throws JsonGenerationException, JsonLdError, IOException {
-		boolean typeFound = false;
-		Object value = null;
-		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
-			String key = mapEntry.getKey();
-			Object mapValue = mapEntry.getValue();
-			if (key.equals(NGSIConstants.NGSI_LD_LOCATION)) {
-				if (((List) mapValue).get(0) instanceof Map) {
-					Map temp = (Map) ((List) mapValue).get(0);
-					if (temp.get(NGSIConstants.JSON_LD_TYPE) != null) {
-						if (!((List) temp.get(NGSIConstants.JSON_LD_TYPE)).get(0)
-								.equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
-							// we are in a location entry of registry as this is not a geo property
-							mapEntry.setValue(getProperGeoJson(mapValue, usedContext));
-							continue;
-						}
-					}
-				}
-			}
-			if (NGSIConstants.JSON_LD_TYPE.equals(key) && !(mapValue instanceof String)
-					&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
-				typeFound = true;
-			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
-				if (mapValue != null && mapValue instanceof List) {
-					List tempList = (List) mapValue;
-					if (!tempList.isEmpty())
-						value = tempList.get(0);
-				}
-			} else {
-				if (mapValue instanceof Map) {
-					protectGeoProps((Map<String, Object>) mapValue, usedContext);
-				} else if (mapValue instanceof List) {
-					protectGeoProps((List) mapValue, usedContext);
-				}
-			}
-		}
-		if (typeFound && value != null) {
+	
+	private void protectGeoProp(Map<String, Object> objMap, Object value, ArrayList<Object> usedContext) throws JsonGenerationException, IOException{
 			Object potentialStringValue = ((Map) value).get(NGSIConstants.JSON_LD_VALUE);
 			if (potentialStringValue != null) {
 				return;
@@ -373,10 +423,10 @@ public class ContextResolverBasic {
 				}
 				multiMidLevelContainerList.add(multiPolyContainerList);
 				multiTopLevelContainerList.add(multiMidLevelContainerList);
-				
+
 				compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, multiTopLevelContainerList);
 				break;
-			
+
 			default:
 				break;
 			}
@@ -389,7 +439,7 @@ public class ContextResolverBasic {
 			objMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, tempList);
 		}
 
-	}
+	
 
 	private void unprotectGeoProps(Object json) throws JsonParseException, IOException {
 		if (json instanceof Map) {
@@ -470,16 +520,16 @@ public class ContextResolverBasic {
 		}
 
 	}
-	
+
 	/**
 	 * @param body expanded json ld version
 	 * @return rdf representation of entity/entities
-	 * @throws ResponseException 
+	 * @throws ResponseException
 	 */
 	public String getRDF(String body) throws ResponseException {
 		try {
 			RDFDataset rdf = (RDFDataset) JsonLdProcessor.toRDF(JsonUtils.fromString(body), defaultOptions);
-			
+
 			return RDFDatasetUtils.toNQuads(rdf);
 		} catch (JsonParseException e) {
 			e.printStackTrace();
@@ -489,6 +539,7 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.InvalidRequest);
 		}
 	}
+
 	public CompactedJson compact(String body, List<Object> contextLinks) throws ResponseException {
 		try {
 			Object json = JsonUtils.fromString(body);
