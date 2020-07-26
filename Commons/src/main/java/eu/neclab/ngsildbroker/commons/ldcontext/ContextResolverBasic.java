@@ -232,9 +232,9 @@ public class ContextResolverBasic {
 		boolean hasAttributes = false;
 		for (Object entry : expanded) {
 			if (entry instanceof Map) {
-				hasAttributes = hasAttributes || preFlightCheck((Map<String, Object>) entry, usedContext);
+				hasAttributes = preFlightCheck((Map<String, Object>) entry, usedContext) || hasAttributes;
 			} else if (entry instanceof List) {
-				hasAttributes = hasAttributes || preFlightCheck((List) entry, usedContext);
+				hasAttributes = preFlightCheck((List) entry, usedContext) || hasAttributes;
 			} else {
 				// don't care for now i think
 			}
@@ -268,9 +268,9 @@ public class ContextResolverBasic {
 				 */
 				
 				if (mapValue instanceof Map) {
-					hasAttributes = hasAttributes || preFlightCheck((Map<String, Object>) mapValue, usedContext);
+					hasAttributes = preFlightCheck((Map<String, Object>) mapValue, usedContext) || hasAttributes ;
 				} else if (mapValue instanceof List) {
-					hasAttributes = hasAttributes || preFlightCheck((List) mapValue, usedContext);
+					hasAttributes = preFlightCheck((List) mapValue, usedContext) || hasAttributes ;
 				}
 			}
 		}
@@ -289,7 +289,7 @@ public class ContextResolverBasic {
 			if (!tempList.isEmpty())
 				return tempList.get(0);
 		}
-		return mapValue;
+		return null;
 	}
 
 	private void protectLocationEntry(Object mapValue, Entry<String, Object> mapEntry, ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
