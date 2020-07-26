@@ -880,38 +880,48 @@ public final class HttpUtils {
 	}
 
 	private int parseAcceptHeader(Enumeration<String> acceptHeaders) {
-		int result = -1;
+		float q = 1;
+		int appGroup = -1;
+
 		while (acceptHeaders.hasMoreElements()) {
 			String header = acceptHeaders.nextElement();
-			Pattern p = Pattern.compile("([\\w\\/\\+\\*]+)(\\s*\\;\\s*q=(\\d\\.\\d))?");
-			Matcher m = p.matcher(header);
-			float q = 1;
-			String app = null;
-
+			Pattern p = Pattern.compile(
+					"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
+			Matcher m = p.matcher(header.toLowerCase());
 			while (m.find()) {
-				String floatString = m.group(3);
+				String floatString = m.group(8);
 				float newQ = 1;
+				int newAppGroup = -2;
 				if (floatString != null) {
 					newQ = Float.parseFloat(floatString);
 				}
-				if (result != -1 && (newQ <= q)) {
+				if (appGroup != -1 && (newQ < q)) {
 					continue;
 				}
-				app = m.group(0);
-				if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD)
-						|| app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_GENERIC)
-						|| app.equalsIgnoreCase(AppConstants.NGB_GENERIC_GENERIC)) {
-					result = 2;
-				} else if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON)) {
-					result = 1;
-				} else if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_NQUADS)) {
-					result = 3;
+				for (int i = 2; i <= 6; i++) {
+					if (m.group(i) == null) {
+						continue;
+					}
+					newAppGroup = i;
+					break;
 				}
-
+				if (newAppGroup > appGroup) {
+					appGroup = newAppGroup;
+				}
 			}
 		}
-		return result;
-
+		switch (appGroup) {
+		case 2:
+		case 3:
+		case 5:
+			return 2; // application/ld+json
+		case 4:
+			return 1; // application/json
+		case 6:
+			return 3;// application/n-quads
+		default:
+			return -1;// error
+		}
 	}
 
 	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
