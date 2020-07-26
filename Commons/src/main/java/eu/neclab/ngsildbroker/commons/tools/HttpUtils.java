@@ -854,7 +854,7 @@ public final class HttpUtils {
 
 	public static void main(String[] args) {
 		Pattern p = Pattern.compile("([\\w\\/\\+]+)(\\s*\\;\\s*q=(\\d\\.\\d))?");
-		Matcher m = p.matcher("application/json, application/ld+json; q=0.8");
+		Matcher m = p.matcher("*/*");
 		float q = 1;
 		String app = null;
 		String result = null;
@@ -883,7 +883,7 @@ public final class HttpUtils {
 		int result = -1;
 		while (acceptHeaders.hasMoreElements()) {
 			String header = acceptHeaders.nextElement();
-			Pattern p = Pattern.compile("([\\w\\/\\+]+)(\\s*\\;\\s*q=(\\d\\.\\d))?");
+			Pattern p = Pattern.compile("([\\w\\/\\+\\*]+)(\\s*\\;\\s*q=(\\d\\.\\d))?");
 			Matcher m = p.matcher(header);
 			float q = 1;
 			String app = null;
