@@ -237,7 +237,8 @@ public class ContextResolverBasic {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
 			if (NGSIConstants.JSON_LD_ID.equals(key)) {
-				validateId((String) mapValue);
+				validateUri((String) mapValue);
+				hasValue = true;
 			} else if (NGSIConstants.NGSI_LD_LOCATION.equals(key)) {
 				if (protectRegistrationLocationEntry(mapValue, mapEntry, usedContext)) {
 					continue;
@@ -245,6 +246,7 @@ public class ContextResolverBasic {
 			}
 			if (NGSIConstants.JSON_LD_TYPE.equals(key)) {
 				hasType = true;
+				validateUri((String) mapValue);
 				if (!(mapValue instanceof String)
 						&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
 					geoTypeFound = true;
@@ -252,7 +254,7 @@ public class ContextResolverBasic {
 			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
 				value = checkHasValue(mapValue);
 				hasValue = true;
-			} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(key)) {
+			} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(key) || NGSIConstants.JSON_LD_VALUE.equals(key)) {
 				hasValue = true;
 			} else {
 				if (forbiddenChars.matcher(key).find()) {
@@ -306,7 +308,7 @@ public class ContextResolverBasic {
 		return false;
 	}
 
-	private void validateId(String mapValue) throws ResponseException {
+	private void validateUri(String mapValue) throws ResponseException {
 		try {
 			if (!new URI(mapValue).isAbsolute()) {
 				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
