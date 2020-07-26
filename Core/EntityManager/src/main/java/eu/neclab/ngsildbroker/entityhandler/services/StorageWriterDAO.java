@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Repository;
@@ -48,7 +49,26 @@ public class StorageWriterDAO {
         writerTransactionTemplate = new TransactionTemplate(transactionManager);
 	}
     
-	public boolean store(String tableName, String columnName, String key, String value) throws SQLException {		
+	public boolean store(String tableName, String columnName, String key, String value){		
+		try {
+			String sql;
+			int n = 0;
+			if (!value.equals("null")) {
+				sql = "INSERT INTO "+tableName+" (id, "+columnName+") VALUES (?, ?::jsonb)";				
+				n = writerJdbcTemplate.update(sql, key, value);
+			} else {
+				sql = "DELETE FROM "+tableName+" WHERE id = ?";				
+				n = writerJdbcTemplate.update(sql, key);
+			}
+			logger.trace("Rows affected: " + Integer.toString(n));
+			return true; //(n>0);
+		} catch (DataAccessException e) {
+			logger.error("Exception ::",e);
+			e.printStackTrace();
+		}		
+		return false;		
+	}
+	public boolean override(String tableName, String columnName, String key, String value) throws SQLException {		
 		try {
 			String sql;
 			int n = 0;
@@ -66,7 +86,7 @@ public class StorageWriterDAO {
 			e.printStackTrace();
 		}		
 		return false;		
-	}	
+	}
 	
 	public boolean storeTemporalEntity(String key, String value) throws SQLException {		
 		try {

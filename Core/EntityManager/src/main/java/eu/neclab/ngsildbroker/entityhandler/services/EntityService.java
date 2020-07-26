@@ -105,9 +105,13 @@ public class EntityService {
 	@Value("${batchoperations.maxnumber.delete:-1}")
 	int maxDeleteBatch;
 
+	boolean directDB = true;
 	@Autowired
 	@Qualifier("emstorage")
 	StorageWriterDAO storageWriterDao;
+
+	@Autowired
+	EntityInfoDAO entityInfoDAO;
 
 	@Autowired
 	@Qualifier("emops")
@@ -138,6 +142,7 @@ public class EntityService {
 
 	LocalDateTime start;
 	LocalDateTime end;
+	private Set<String> entityIds;
 
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
 
@@ -156,6 +161,9 @@ public class EntityService {
 	// construct in-memory
 	@PostConstruct
 	private void loadStoredEntitiesDetails() throws IOException {
+		synchronized (this.entityIds) {
+			this.entityIds = entityInfoDAO.getAllIds();
+		}
 		Map<String, EntityDetails> entities = this.operations.getAllEntitiesDetails();
 		logger.trace("filling in-memory hashmap started:");
 		for (EntityDetails entity : entities.values()) {
@@ -178,23 +186,24 @@ public class EntityService {
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
 		JsonNode json = SerializationTools.parseJson(objectMapper, payload);
-		JsonNode id = json.get(NGSIConstants.JSON_LD_ID);
+		JsonNode idNode = json.get(NGSIConstants.JSON_LD_ID);
 		JsonNode type = json.get(NGSIConstants.JSON_LD_TYPE);
 		// null id and type check
-		if (id == null || type == null) {
+		if (idNode == null || type == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		logger.debug("entity id " + id.asText());
+		String id = idNode.asText();
+		logger.debug("entity id " + id);
 		// check in-memory hashmap for id
-		if (entityTopicMap.isExist(id.asText())) {
-			throw new ResponseException(ErrorType.AlreadyExists);
+		synchronized (id) {
+			if (this.entityIds.contains(id)) {
+				throw new ResponseException(ErrorType.AlreadyExists);
+			}
+			this.entityIds.add(id);
 		}
-		
-
 		String now = SerializationTools.formatter.format(Instant.now());
 		setTemporalProperties(json, now, now, false);
 		payload = objectMapper.writeValueAsString(json);
-
 		String withSysAttrs = payload;
 		new Thread() {
 			public void run() {
@@ -202,22 +211,23 @@ public class EntityService {
 				String entityWithoutSysAttrs;
 				try {
 					entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
-					pushToDB(id.asText(), withSysAttrs, entityWithoutSysAttrs, objectMapper.writeValueAsString(getKeyValueEntity(json)));
+					pushToDB(id, withSysAttrs, entityWithoutSysAttrs,
+							objectMapper.writeValueAsString(getKeyValueEntity(json)));
 				} catch (JsonProcessingException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
+
 			};
 		}.start();
 		new Thread() {
 			public void run() {
 
 				try {
-					registerContext(id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+					registerContext(id.getBytes(NGSIConstants.ENCODE_FORMAT),
 							withSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
 					operations.pushToKafka(producerChannels.createWriteChannel(),
-							id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+							id.getBytes(NGSIConstants.ENCODE_FORMAT),
 							withSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
 				} catch (UnsupportedEncodingException e) {
 					// TODO Auto-generated catch block
@@ -234,7 +244,6 @@ public class EntityService {
 				}
 				// TODO use or remove ... why is the check below commented
 
-				
 			};
 		}.start();
 
@@ -256,30 +265,27 @@ public class EntityService {
 		 */
 
 		logger.debug("createMessage() :: completed");
-		return id.asText();
+		return id;
 	}
 
 	private void pushToDB(String key, String payload, String withoutSysAttrs, String kv) {
 		logger.debug("Received message: " + payload);
 		logger.trace("Writing data...");
-		try {
-			if (storageWriterDao != null
-					&& storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, key, payload)) {
 
-				logger.trace("Writing is complete");
-			}
-			if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_ENTITY,
-					DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS, key, withoutSysAttrs)) {
-				logger.trace("Writing is complete");
-			}
-			if (storageWriterDao != null
-					&& storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_KVDATA, key, kv)) {
-				logger.trace("Writing is complete");
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		if (storageWriterDao != null
+				&& storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, key, payload)) {
+
+			logger.trace("Writing is complete");
 		}
+		if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_ENTITY,
+				DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS, key, withoutSysAttrs)) {
+			logger.trace("Writing is complete");
+		}
+		if (storageWriterDao != null
+				&& storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_KVDATA, key, kv)) {
+			logger.trace("Writing is complete");
+		}
+		//removeId on failure
 
 	}
 

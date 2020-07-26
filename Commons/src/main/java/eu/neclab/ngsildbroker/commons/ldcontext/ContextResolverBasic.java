@@ -210,9 +210,11 @@ public class ContextResolverBasic {
 
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
 			List<Object> expanded = JsonLdProcessor.expand(json);
-			if(!preFlightCheck(expanded, usedContext)) {
-				throw new ResponseException(ErrorType.BadRequestData,"Entity without an attribute is not allowed");
-			}
+			//if(!
+			preFlightCheck(expanded, usedContext);
+			//) {
+			//	throw new ResponseException(ErrorType.BadRequestData,"Entity without an attribute is not allowed");
+			//}
 //			protectGeoProps(expanded, usedContext);
 //			protectLocationFromSubs(expanded, usedContext);
 			if (expanded.isEmpty()) {
@@ -261,9 +263,9 @@ public class ContextResolverBasic {
 				if(forbiddenChars.matcher(key).find()) {
 					throw new ResponseException(ErrorType.BadRequestData,"Forbidden characters in payload body");
 				}
-				if(!NGSIConstants.JSON_LD_TYPE.equals(key)) {
-					hasAttributes = true;
-				}
+				/*
+				 * if(!NGSIConstants.JSON_LD_TYPE.equals(key)) { hasAttributes = true; }
+				 */
 				
 				if (mapValue instanceof Map) {
 					hasAttributes = hasAttributes || preFlightCheck((Map<String, Object>) mapValue, usedContext);
