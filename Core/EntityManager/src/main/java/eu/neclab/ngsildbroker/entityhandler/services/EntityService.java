@@ -286,7 +286,7 @@ public class EntityService {
 				&& storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_KVDATA, key, kv)) {
 			logger.trace("Writing is complete");
 		}
-		//removeId on failure
+		// removeId on failure
 
 	}
 
@@ -516,31 +516,41 @@ public class EntityService {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		// get entity details from in-memory hashmap
-		EntityDetails entityDetails = entityTopicMap.get(entityId);
-		if (entityDetails == null) {
-			throw new ResponseException(ErrorType.NotFound);
+		synchronized (this.entityIds) {
+			if (!this.entityIds.remove(entityId)) {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+			if (directDB) {
+				storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, entityId, null);
+			}
 		}
-		// get entity from entity topic
-		byte[] originalJson = this.operations.getMessage(this.ENTITY_TOPIC, entityId, entityDetails.getPartition(),
-				entityDetails.getOffset());
-		// check whether exists.
-		if (originalJson == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		// TODO use or remove ... why is the check below commented
-		boolean result = this.operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-				originalJson);
-		/*
-		 * if (!result) { throw new ResponseException(ErrorType.KafkaWriteError); }
-		 */
-		operations.pushToKafka(this.producerChannels.entityWriteChannel(),
-				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), "null".getBytes(NGSIConstants.ENCODE_FORMAT));
-		operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
-				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), "null".getBytes(NGSIConstants.ENCODE_FORMAT));
-		operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
-				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), "null".getBytes(NGSIConstants.ENCODE_FORMAT));
 
-		logger.trace("deleteEntity() :: completed");
+		/*
+		 * EntityDetails entityDetails = entityTopicMap.get(entityId); if (entityDetails
+		 * == null) { throw new ResponseException(ErrorType.NotFound); } // get entity
+		 * from entity topic byte[] originalJson =
+		 * this.operations.getMessage(this.ENTITY_TOPIC, entityId,
+		 * entityDetails.getPartition(), entityDetails.getOffset()); // check whether
+		 * exists. if (originalJson == null) { throw new
+		 * ResponseException(ErrorType.NotFound); } // TODO use or remove ... why is the
+		 * check below commented boolean result =
+		 * this.operations.pushToKafka(messageChannel,
+		 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT), originalJson);
+		 * 
+		 * if (!result) { throw new ResponseException(ErrorType.KafkaWriteError); }
+		 * 
+		 * operations.pushToKafka(this.producerChannels.entityWriteChannel(),
+		 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * "null".getBytes(NGSIConstants.ENCODE_FORMAT));
+		 * operations.pushToKafka(this.producerChannels.
+		 * entityWithoutSysAttrsWriteChannel(),
+		 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * "null".getBytes(NGSIConstants.ENCODE_FORMAT));
+		 * operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+		 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * "null".getBytes(NGSIConstants.ENCODE_FORMAT));
+		 * 
+		 */ logger.trace("deleteEntity() :: completed");
 		return true;
 	}
 
