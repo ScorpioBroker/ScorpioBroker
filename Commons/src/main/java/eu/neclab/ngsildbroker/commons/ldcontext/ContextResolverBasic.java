@@ -270,7 +270,7 @@ public class ContextResolverBasic {
 				}
 			}
 		}
-		if(hasValue || hasType) {
+		if(hasValue ^ hasType) {
 			throw new ResponseException(ErrorType.UnprocessableEntity, "You can't have attributes without a value");
 		}
 		if (geoTypeFound) {
