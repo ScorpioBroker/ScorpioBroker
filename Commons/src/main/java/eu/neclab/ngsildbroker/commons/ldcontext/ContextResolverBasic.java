@@ -252,9 +252,12 @@ public class ContextResolverBasic {
 			if (NGSIConstants.JSON_LD_ID.equals(key)) {
 				validateId((String) mapValue);
 			}else if (NGSIConstants.NGSI_LD_LOCATION.equals(key)) {
-				hasAttributes = true;
-				protectLocationEntry(mapValue, mapEntry, usedContext);
-			}else if (NGSIConstants.JSON_LD_TYPE.equals(key) && !(mapValue instanceof String)
+				if(protectRegistrationLocationEntry(mapValue, mapEntry, usedContext)) {
+					continue;
+				}
+					
+			}
+			if (NGSIConstants.JSON_LD_TYPE.equals(key) && !(mapValue instanceof String)
 					&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
 				geoTypeFound = true;
 			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
@@ -292,7 +295,7 @@ public class ContextResolverBasic {
 		return null;
 	}
 
-	private void protectLocationEntry(Object mapValue, Entry<String, Object> mapEntry, ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
+	private boolean protectRegistrationLocationEntry(Object mapValue, Entry<String, Object> mapEntry, ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
 		if (((List) mapValue).get(0) instanceof Map) {
 			Map temp = (Map) ((List) mapValue).get(0);
 			if (temp.get(NGSIConstants.JSON_LD_TYPE) != null) {
@@ -300,10 +303,11 @@ public class ContextResolverBasic {
 						.equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
 					// we are in a location entry of registry as this is not a geo property
 					mapEntry.setValue(getProperGeoJson(mapValue, usedContext));
+					return true;
 				}
 			}
 		}
-		
+		return false;
 	}
 
 	private void validateId(String mapValue) throws ResponseException {
