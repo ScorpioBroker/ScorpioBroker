@@ -114,36 +114,18 @@ public class ContextResolverBasic {
 				+ "                {\n" + "                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
 				+ "                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "                }\n"
 				+ "            ]\n" + "        }\n" + "    ]\n" + "}";
-		System.out.println(bla.expand("{\n" + 
-				"	\"id\": \"ABC\",\n" + 
-				"	\"type\": \"Vehicle1\",\n" + 
-				"	\"brandName\": {\n" + 
-				"		\"type\": \"Property\",\n" + 
-				"		\"value\": \"Mercedes\"\n" + 
-				"	},\n" + 
-				"	\"isParked\": {\n" + 
-				"		\"type\": \"Relationship\",\n" + 
-				"		\"object\": \"urn:ngsi-ld:OffStreetParking:Downtown1\",\n" + 
-				"		\"observedAt\": \"2017-07-29T12:00:04Z\",\n" + 
-				"		\"providedBy\": {\n" + 
-				"			\"type\": \"Relationship\",\n" + 
-				"			\"object\": \"urn:ngsi-ld:Person:Bob\"\n" + 
-				"		}\n" + 
-				"	},\n" + 
-				"	\"speed\": {\n" + 
-				"		\"type\": \"Property\",\n" + 
-				"		\"value\": 80\n" + 
-				"	},\n" + 
-				"	\"createdAt\": \"2017-07-29T12:00:04Z\",\n" + 
-				"	\"location\": {\n" + 
-				"		\"type\": \"GeoProperty\",\n" + 
-				"		\"value\": {\n" + 
-				"			\"type\": \"Point\",\n" + 
-				"			\"coordinates\": [-8.5, 41.2]\n" + 
-				"		}\n" + 
-				"	},\n" + 
-				"	\"@context\" : \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\"\n" + 
-				"}", contextLinks));
+		System.out.println(bla.expand("{\n" + "	\"id\": \"ABC\",\n" + "	\"type\": \"Vehicle1\",\n"
+				+ "	\"brandName\": {\n" + "		\"type\": \"Property\",\n" + "		\"value\": \"Mercedes\"\n"
+				+ "	},\n" + "	\"isParked\": {\n" + "		\"type\": \"Relationship\",\n"
+				+ "		\"object\": \"urn:ngsi-ld:OffStreetParking:Downtown1\",\n"
+				+ "		\"observedAt\": \"2017-07-29T12:00:04Z\",\n" + "		\"providedBy\": {\n"
+				+ "			\"type\": \"Relationship\",\n" + "			\"object\": \"urn:ngsi-ld:Person:Bob\"\n"
+				+ "		}\n" + "	},\n" + "	\"speed\": {\n" + "		\"type\": \"Property\",\n"
+				+ "		\"value\": 80\n" + "	},\n" + "	\"createdAt\": \"2017-07-29T12:00:04Z\",\n"
+				+ "	\"location\": {\n" + "		\"type\": \"GeoProperty\",\n" + "		\"value\": {\n"
+				+ "			\"type\": \"Point\",\n" + "			\"coordinates\": [-8.5, 41.2]\n" + "		}\n"
+				+ "	},\n" + "	\"@context\" : \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\"\n" + "}",
+				contextLinks));
 	}
 
 	public ContextResolverBasic(String atContextBaseUrl) {
@@ -210,11 +192,12 @@ public class ContextResolverBasic {
 
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
 			List<Object> expanded = JsonLdProcessor.expand(json);
-			//if(!
+			// if(!
 			preFlightCheck(expanded, usedContext);
-			//) {
-			//	throw new ResponseException(ErrorType.BadRequestData,"Entity without an attribute is not allowed");
-			//}
+			// ) {
+			// throw new ResponseException(ErrorType.BadRequestData,"Entity without an
+			// attribute is not allowed");
+			// }
 //			protectGeoProps(expanded, usedContext);
 //			protectLocationFromSubs(expanded, usedContext);
 			if (expanded.isEmpty()) {
@@ -228,7 +211,8 @@ public class ContextResolverBasic {
 
 	}
 
-	private boolean preFlightCheck(List<Object> expanded, ArrayList<Object> usedContext) throws JsonGenerationException, ResponseException, IOException {
+	private boolean preFlightCheck(List<Object> expanded, ArrayList<Object> usedContext)
+			throws JsonGenerationException, ResponseException, IOException {
 		boolean hasAttributes = false;
 		for (Object entry : expanded) {
 			if (entry instanceof Map) {
@@ -242,42 +226,54 @@ public class ContextResolverBasic {
 		return hasAttributes;
 	}
 
-	private boolean preFlightCheck(Map<String, Object> objMap, ArrayList<Object> usedContext) throws ResponseException, JsonGenerationException, IOException {
+	private boolean preFlightCheck(Map<String, Object> objMap, ArrayList<Object> usedContext)
+			throws ResponseException, JsonGenerationException, IOException {
 		boolean geoTypeFound = false;
 		Object value = null;
+		boolean hasType = false;
+		boolean hasValue = false;
 		boolean hasAttributes = false;
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
 			if (NGSIConstants.JSON_LD_ID.equals(key)) {
 				validateId((String) mapValue);
-			}else if (NGSIConstants.NGSI_LD_LOCATION.equals(key)) {
-				if(protectRegistrationLocationEntry(mapValue, mapEntry, usedContext)) {
+			} else if (NGSIConstants.NGSI_LD_LOCATION.equals(key)) {
+				if (protectRegistrationLocationEntry(mapValue, mapEntry, usedContext)) {
 					continue;
 				}
-					
 			}
-			if (NGSIConstants.JSON_LD_TYPE.equals(key) && !(mapValue instanceof String)
-					&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
-				geoTypeFound = true;
+			if (NGSIConstants.JSON_LD_TYPE.equals(key)) {
+				hasType = true;
+				if (!(mapValue instanceof String)
+						&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
+					geoTypeFound = true;
+				}
 			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
 				value = checkHasValue(mapValue);
+				hasValue = true;
+			} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(key)) {
+				hasValue = true;
 			} else {
-				if(forbiddenChars.matcher(key).find()) {
-					throw new ResponseException(ErrorType.BadRequestData,"Forbidden characters in payload body");
+				if (forbiddenChars.matcher(key).find()) {
+					throw new ResponseException(ErrorType.BadRequestData, "Forbidden characters in payload body");
 				}
+				hasAttributes = true;
 				/*
 				 * if(!NGSIConstants.JSON_LD_TYPE.equals(key)) { hasAttributes = true; }
 				 */
-				
+
 				if (mapValue instanceof Map) {
-					hasAttributes = preFlightCheck((Map<String, Object>) mapValue, usedContext) || hasAttributes ;
+					hasAttributes = preFlightCheck((Map<String, Object>) mapValue, usedContext) || hasAttributes;
 				} else if (mapValue instanceof List) {
-					hasAttributes = preFlightCheck((List) mapValue, usedContext) || hasAttributes ;
+					hasAttributes = preFlightCheck((List) mapValue, usedContext) || hasAttributes;
 				}
 			}
 		}
-		if(geoTypeFound) {
+		if(hasAttributes || hasType) {
+			throw new ResponseException(ErrorType.UnprocessableEntity);
+		}
+		if (geoTypeFound) {
 			protectGeoProp(objMap, value, usedContext);
 		}
 		return hasAttributes;
@@ -295,12 +291,12 @@ public class ContextResolverBasic {
 		return null;
 	}
 
-	private boolean protectRegistrationLocationEntry(Object mapValue, Entry<String, Object> mapEntry, ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
+	private boolean protectRegistrationLocationEntry(Object mapValue, Entry<String, Object> mapEntry,
+			ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
 		if (((List) mapValue).get(0) instanceof Map) {
 			Map temp = (Map) ((List) mapValue).get(0);
 			if (temp.get(NGSIConstants.JSON_LD_TYPE) != null) {
-				if (!((List) temp.get(NGSIConstants.JSON_LD_TYPE)).get(0)
-						.equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
+				if (!((List) temp.get(NGSIConstants.JSON_LD_TYPE)).get(0).equals(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
 					// we are in a location entry of registry as this is not a geo property
 					mapEntry.setValue(getProperGeoJson(mapValue, usedContext));
 					return true;
@@ -312,11 +308,13 @@ public class ContextResolverBasic {
 
 	private void validateId(String mapValue) throws ResponseException {
 		try {
-			new URI(mapValue);
+			if (!new URI(mapValue).isAbsolute()) {
+				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+			}
 		} catch (URISyntaxException e) {
-			throw new ResponseException(ErrorType.BadRequestData,"id is not a URI");
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 		}
-		
+
 	}
 
 	private Object getProperGeoJson(Object value, ArrayList<Object> usedContext)
@@ -378,74 +376,71 @@ public class ContextResolverBasic {
 		return tempList;
 	}
 
-
-	
-	private void protectGeoProp(Map<String, Object> objMap, Object value, ArrayList<Object> usedContext) throws JsonGenerationException, IOException{
-			Object potentialStringValue = ((Map) value).get(NGSIConstants.JSON_LD_VALUE);
-			if (potentialStringValue != null) {
-				return;
-			}
-
-			Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
-			compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
-			String geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
-			List geoValues = (List) compactedFull.get(NGSIConstants.GEO_JSON_COORDINATES);
-			switch (geoType) {
-			case NGSIConstants.GEO_TYPE_POINT:
-				// nothing to be done here point is ok like this
-				break;
-			case NGSIConstants.GEO_TYPE_LINESTRING:
-				ArrayList<Object> containerList = new ArrayList<Object>();
-				for (int i = 0; i < geoValues.size(); i += 2) {
-					ArrayList<Object> container = new ArrayList<Object>();
-					container.add(geoValues.get(i));
-					container.add(geoValues.get(i + 1));
-					containerList.add(container);
-				}
-				compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, containerList);
-				break;
-
-			case NGSIConstants.GEO_TYPE_POLYGON:
-				ArrayList<Object> topLevelContainerList = new ArrayList<Object>();
-				ArrayList<Object> polyContainerList = new ArrayList<Object>();
-				for (int i = 0; i < geoValues.size(); i += 2) {
-					ArrayList<Object> container = new ArrayList<Object>();
-					container.add(geoValues.get(i));
-					container.add(geoValues.get(i + 1));
-					polyContainerList.add(container);
-				}
-				topLevelContainerList.add(polyContainerList);
-				compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, topLevelContainerList);
-				break;
-			case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
-				ArrayList<Object> multiTopLevelContainerList = new ArrayList<Object>();
-				ArrayList<Object> multiMidLevelContainerList = new ArrayList<Object>();
-				ArrayList<Object> multiPolyContainerList = new ArrayList<Object>();
-				for (int i = 0; i < geoValues.size(); i += 2) {
-					ArrayList<Object> container = new ArrayList<Object>();
-					container.add(geoValues.get(i));
-					container.add(geoValues.get(i + 1));
-					multiPolyContainerList.add(container);
-				}
-				multiMidLevelContainerList.add(multiPolyContainerList);
-				multiTopLevelContainerList.add(multiMidLevelContainerList);
-
-				compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, multiTopLevelContainerList);
-				break;
-
-			default:
-				break;
-			}
-			String proctedValue = JsonUtils.toString(compactedFull);
-			// temp.replace("\"", "\\\"");
-			ArrayList<Object> tempList = new ArrayList<Object>();
-			Map<String, Object> tempMap = new HashMap<String, Object>();
-			tempMap.put(NGSIConstants.JSON_LD_VALUE, proctedValue);
-			tempList.add(tempMap);
-			objMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, tempList);
+	private void protectGeoProp(Map<String, Object> objMap, Object value, ArrayList<Object> usedContext)
+			throws JsonGenerationException, IOException {
+		Object potentialStringValue = ((Map) value).get(NGSIConstants.JSON_LD_VALUE);
+		if (potentialStringValue != null) {
+			return;
 		}
 
-	
+		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
+		compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
+		String geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
+		List geoValues = (List) compactedFull.get(NGSIConstants.GEO_JSON_COORDINATES);
+		switch (geoType) {
+		case NGSIConstants.GEO_TYPE_POINT:
+			// nothing to be done here point is ok like this
+			break;
+		case NGSIConstants.GEO_TYPE_LINESTRING:
+			ArrayList<Object> containerList = new ArrayList<Object>();
+			for (int i = 0; i < geoValues.size(); i += 2) {
+				ArrayList<Object> container = new ArrayList<Object>();
+				container.add(geoValues.get(i));
+				container.add(geoValues.get(i + 1));
+				containerList.add(container);
+			}
+			compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, containerList);
+			break;
+
+		case NGSIConstants.GEO_TYPE_POLYGON:
+			ArrayList<Object> topLevelContainerList = new ArrayList<Object>();
+			ArrayList<Object> polyContainerList = new ArrayList<Object>();
+			for (int i = 0; i < geoValues.size(); i += 2) {
+				ArrayList<Object> container = new ArrayList<Object>();
+				container.add(geoValues.get(i));
+				container.add(geoValues.get(i + 1));
+				polyContainerList.add(container);
+			}
+			topLevelContainerList.add(polyContainerList);
+			compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, topLevelContainerList);
+			break;
+		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+			ArrayList<Object> multiTopLevelContainerList = new ArrayList<Object>();
+			ArrayList<Object> multiMidLevelContainerList = new ArrayList<Object>();
+			ArrayList<Object> multiPolyContainerList = new ArrayList<Object>();
+			for (int i = 0; i < geoValues.size(); i += 2) {
+				ArrayList<Object> container = new ArrayList<Object>();
+				container.add(geoValues.get(i));
+				container.add(geoValues.get(i + 1));
+				multiPolyContainerList.add(container);
+			}
+			multiMidLevelContainerList.add(multiPolyContainerList);
+			multiTopLevelContainerList.add(multiMidLevelContainerList);
+
+			compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, multiTopLevelContainerList);
+			break;
+
+		default:
+			break;
+		}
+		String proctedValue = JsonUtils.toString(compactedFull);
+		// temp.replace("\"", "\\\"");
+		ArrayList<Object> tempList = new ArrayList<Object>();
+		Map<String, Object> tempMap = new HashMap<String, Object>();
+		tempMap.put(NGSIConstants.JSON_LD_VALUE, proctedValue);
+		tempList.add(tempMap);
+		objMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, tempList);
+	}
 
 	private void unprotectGeoProps(Object json) throws JsonParseException, IOException {
 		if (json instanceof Map) {
