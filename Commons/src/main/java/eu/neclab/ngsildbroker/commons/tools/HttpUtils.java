@@ -879,36 +879,41 @@ public final class HttpUtils {
 		System.out.println(result);
 	}
 
-	private int parseAcceptHeader(Enumeration<String> acceptHeader) {
-		
-		Pattern p = Pattern.compile("([\\w\\/\\+]+)(\\s*\\;\\s*q=(\\d\\.\\d))?");
-		Matcher m = p.matcher("application/json, application/ld+json; q=0.8");
-		float q = 1;
-		String app = null;
+	private int parseAcceptHeader(Enumeration<String> acceptHeaders) {
 		int result = -1;
-		while (m.find()) {
-			String floatString = m.group(3);
-			float newQ = 1;
-			if (floatString != null) {
-				newQ = Float.parseFloat(floatString);
-			}
-			if (result != -1 && (newQ <= q)) {
-				continue;
-			}
-			app = m.group(0);
-			if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD) || app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_GENERIC)
-					|| app.equalsIgnoreCase(AppConstants.NGB_GENERIC_GENERIC)) {
-				result = 2;
-			} else if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON)) {
-				result = 1;
-			} else if(app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_NQUADS)) {
-				result = 3;
-			}
+		while (acceptHeaders.hasMoreElements()) {
+			String header = acceptHeaders.nextElement();
+			Pattern p = Pattern.compile("([\\w\\/\\+]+)(\\s*\\;\\s*q=(\\d\\.\\d))?");
+			Matcher m = p.matcher(header);
+			float q = 1;
+			String app = null;
 
+			while (m.find()) {
+				String floatString = m.group(3);
+				float newQ = 1;
+				if (floatString != null) {
+					newQ = Float.parseFloat(floatString);
+				}
+				if (result != -1 && (newQ <= q)) {
+					continue;
+				}
+				app = m.group(0);
+				if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD)
+						|| app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_GENERIC)
+						|| app.equalsIgnoreCase(AppConstants.NGB_GENERIC_GENERIC)) {
+					result = 2;
+				} else if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON)) {
+					result = 1;
+				} else if (app.equalsIgnoreCase(AppConstants.NGB_APPLICATION_NQUADS)) {
+					result = 3;
+				}
+
+			}
 		}
 		return result;
 
 	}
+
 	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
 			HashMap<String, List<String>> additionalHeaders, List<Object> additionalContext, boolean forceArrayResult)
 			throws ResponseException {
@@ -918,7 +923,6 @@ public final class HttpUtils {
 		}
 
 		String replyBody;
-		
 
 		CompactedJson compacted = contextResolver.compact(reply, requestAtContext);
 		ArrayList<String> temp = new ArrayList<String>();
@@ -971,7 +975,6 @@ public final class HttpUtils {
 		}
 		return generateReply(replyBody, additionalHeaders, compress);
 	}
-
 
 	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,
 			boolean compress) {
