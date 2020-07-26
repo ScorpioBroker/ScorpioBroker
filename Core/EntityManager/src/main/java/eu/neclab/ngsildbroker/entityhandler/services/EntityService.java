@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +143,7 @@ public class EntityService {
 
 	LocalDateTime start;
 	LocalDateTime end;
-	private Set<String> entityIds;
+	private Set<String> entityIds = new HashSet<String>();
 
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
 
