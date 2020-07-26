@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Repository;
@@ -10,6 +11,7 @@ import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 @Repository
 public class EntityInfoDAO extends StorageReaderDAO {
 	public Set<String> getAllIds() {
-		return new HashSet<String>(readerJdbcTemplate.queryForList("SELECT id FROM entity", String.class));
+		List<String> tempList = readerJdbcTemplate.queryForList("SELECT id FROM entity", String.class);
+		return new HashSet<String>(tempList);
 	}
 }

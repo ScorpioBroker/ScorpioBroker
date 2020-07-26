@@ -196,7 +196,7 @@ public class EntityService {
 		String id = idNode.asText();
 		logger.debug("entity id " + id);
 		// check in-memory hashmap for id
-		synchronized (id) {
+		synchronized (this.entityIds) {
 			if (this.entityIds.contains(id)) {
 				throw new ResponseException(ErrorType.AlreadyExists);
 			}
