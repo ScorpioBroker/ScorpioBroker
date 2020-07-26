@@ -193,7 +193,7 @@ public class ContextResolverBasic {
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
 			List<Object> expanded = JsonLdProcessor.expand(json);
 			// if(!
-			preFlightCheck(expanded, usedContext);
+			preFlightCheck(expanded, usedContext, true);
 			// ) {
 			// throw new ResponseException(ErrorType.BadRequestData,"Entity without an
 			// attribute is not allowed");
@@ -211,14 +211,14 @@ public class ContextResolverBasic {
 
 	}
 
-	private boolean preFlightCheck(List<Object> expanded, ArrayList<Object> usedContext)
+	private boolean preFlightCheck(List<Object> expanded, ArrayList<Object> usedContext, boolean root)
 			throws JsonGenerationException, ResponseException, IOException {
 		boolean hasAttributes = false;
 		for (Object entry : expanded) {
 			if (entry instanceof Map) {
-				hasAttributes = preFlightCheck((Map<String, Object>) entry, usedContext) || hasAttributes;
+				hasAttributes = preFlightCheck((Map<String, Object>) entry, usedContext, root) || hasAttributes;
 			} else if (entry instanceof List) {
-				hasAttributes = preFlightCheck((List) entry, usedContext) || hasAttributes;
+				hasAttributes = preFlightCheck((List) entry, usedContext, root) || hasAttributes;
 			} else {
 				// don't care for now i think
 			}
@@ -226,7 +226,7 @@ public class ContextResolverBasic {
 		return hasAttributes;
 	}
 
-	private boolean preFlightCheck(Map<String, Object> objMap, ArrayList<Object> usedContext)
+	private boolean preFlightCheck(Map<String, Object> objMap, ArrayList<Object> usedContext, boolean root)
 			throws ResponseException, JsonGenerationException, IOException {
 		boolean geoTypeFound = false;
 		Object value = null;
@@ -264,13 +264,13 @@ public class ContextResolverBasic {
 				 */
 
 				if (mapValue instanceof Map) {
-					hasAttributes = preFlightCheck((Map<String, Object>) mapValue, usedContext) || hasAttributes;
+					hasAttributes = preFlightCheck((Map<String, Object>) mapValue, usedContext, false) || hasAttributes;
 				} else if (mapValue instanceof List) {
-					hasAttributes = preFlightCheck((List) mapValue, usedContext) || hasAttributes;
+					hasAttributes = preFlightCheck((List) mapValue, usedContext, false) || hasAttributes;
 				}
 			}
 		}
-		if(hasValue ^ hasType) {
+		if((hasValue ^ hasType) && !root) {
 			throw new ResponseException(ErrorType.UnprocessableEntity, "You can't have attributes without a value");
 		}
 		if (geoTypeFound) {
