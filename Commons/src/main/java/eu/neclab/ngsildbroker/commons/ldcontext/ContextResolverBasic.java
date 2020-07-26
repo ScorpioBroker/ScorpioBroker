@@ -246,7 +246,12 @@ public class ContextResolverBasic {
 			}
 			if (NGSIConstants.JSON_LD_TYPE.equals(key)) {
 				hasType = true;
-				validateUri((String) mapValue);
+				if(mapValue instanceof List) {
+					validateUri((String) ((List) mapValue).get(0));
+				}else if(mapValue instanceof String) {
+					validateUri((String) mapValue);
+				}
+				
 				if (!(mapValue instanceof String)
 						&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
 					geoTypeFound = true;
