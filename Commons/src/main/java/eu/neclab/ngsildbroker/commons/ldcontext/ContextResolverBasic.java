@@ -219,11 +219,17 @@ public class ContextResolverBasic {
 
 	private boolean preFlightCheck(Map<String, Object> objMap, ArrayList<Object> usedContext, boolean root, int calledEndpoint)
 			throws ResponseException, JsonGenerationException, IOException {
-		boolean geoTypeFound = false;
+		
 		Object value = null;
-		boolean hasType = false;
+		
 		boolean hasValue = false;
+		boolean hasObject = false;
+		boolean hasAtValue = false;
 		boolean hasAttributes = false;
+		boolean isProperty = false;
+		boolean isRelationship = false;
+		boolean isDatetime = false;
+		boolean isGeoProperty = false;
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
@@ -236,22 +242,39 @@ public class ContextResolverBasic {
 				}
 			}
 			if (NGSIConstants.JSON_LD_TYPE.equals(key)) {
-				hasType = true;
+				String type = null;
 				if (mapValue instanceof List) {
-					validateUri((String) ((List) mapValue).get(0));
+					type = validateUri((String) ((List) mapValue).get(0));
 				} else if (mapValue instanceof String) {
-					validateUri((String) mapValue);
+					type = validateUri((String) mapValue);
 				}
-
-				if (!(mapValue instanceof String)
-						&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(((List) mapValue).get(0))) {
-					geoTypeFound = true;
+				if(type == null) {
+					continue;
+				}
+				switch (type) {
+				case NGSIConstants.NGSI_LD_GEOPROPERTY:
+					isGeoProperty = true;
+					break;
+				case NGSIConstants.NGSI_LD_PROPERTY:
+					isProperty = true;
+					break;
+				case NGSIConstants.NGSI_LD_RELATIONSHIP:
+					isRelationship = true;
+					break;
+				case NGSIConstants.NGSI_LD_DATE_TIME:
+					isDatetime = true;
+					break;
+				default:
+					break;
 				}
 			} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(key)) {
 				value = checkHasValue(mapValue);
 				hasValue = true;
-			} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(key) || NGSIConstants.JSON_LD_VALUE.equals(key)) {
-				hasValue = true;
+				 
+			} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(key)){
+				hasObject = true;
+			} else if (NGSIConstants.JSON_LD_VALUE.equals(key)){
+				hasAtValue = true;
 			} else {
 				if (forbiddenChars.matcher(key).find()) {
 					throw new ResponseException(ErrorType.BadRequestData, "Forbidden characters in payload body");
@@ -268,10 +291,17 @@ public class ContextResolverBasic {
 				}
 			}
 		}
-		if ((hasValue ^ hasType) && !root && (calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID )) {
-			throw new ResponseException(ErrorType.UnprocessableEntity, "You can't have attributes without a value");
+		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID ) && (isProperty ^ hasValue)) {
+			throw new ResponseException(ErrorType.BadRequestData, "You can't have properties without a value");
 		}
-		if (geoTypeFound) {
+		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID ) && (isRelationship ^ hasObject)) {
+			throw new ResponseException(ErrorType.BadRequestData, "You can't have relationships without an object");
+		}
+		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID ) && (isDatetime ^ hasAtValue)) {
+			throw new ResponseException(ErrorType.BadRequestData, "You can't have an empty datetime entry");
+		}
+
+		if (isGeoProperty) {
 			protectGeoProp(objMap, value, usedContext);
 		}
 		return hasAttributes;
@@ -279,7 +309,7 @@ public class ContextResolverBasic {
 
 	private Object checkHasValue(Object mapValue) throws ResponseException {
 		if (mapValue == null) {
-			throw new ResponseException(ErrorType.UnprocessableEntity);
+			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		if (mapValue instanceof List) {
 			List tempList = (List) mapValue;
@@ -304,11 +334,12 @@ public class ContextResolverBasic {
 		return false;
 	}
 
-	private void validateUri(String mapValue) throws ResponseException {
+	private String validateUri(String mapValue) throws ResponseException {
 		try {
 			if (!new URI(mapValue).isAbsolute()) {
 				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 			}
+			return mapValue;
 		} catch (URISyntaxException e) {
 			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 		}
