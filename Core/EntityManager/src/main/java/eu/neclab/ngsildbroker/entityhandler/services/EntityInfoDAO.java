@@ -14,4 +14,9 @@ public class EntityInfoDAO extends StorageReaderDAO {
 		List<String> tempList = readerJdbcTemplate.queryForList("SELECT id FROM entity", String.class);
 		return new HashSet<String>(tempList);
 	}
+
+	public String getEntity(String entityId) {
+		List<String> tempList = readerJdbcTemplate.queryForList("SELECT data FROM entity WHERE id='" + entityId + "'", String.class);
+		return tempList.get(0);
+	}
 }
