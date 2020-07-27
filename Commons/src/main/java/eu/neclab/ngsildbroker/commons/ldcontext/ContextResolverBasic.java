@@ -291,13 +291,13 @@ public class ContextResolverBasic {
 				}
 			}
 		}
-		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID ) && (isProperty ^ hasValue)) {
+		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID ) && (isProperty && !hasValue)) {
 			throw new ResponseException(ErrorType.BadRequestData, "You can't have properties without a value");
 		}
-		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID ) && (isRelationship ^ hasObject)) {
+		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID ) && (isRelationship && !hasObject)) {
 			throw new ResponseException(ErrorType.BadRequestData, "You can't have relationships without an object");
 		}
-		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID ) && (isDatetime ^ hasAtValue)) {
+		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID ) && (isDatetime && !hasAtValue)) {
 			throw new ResponseException(ErrorType.BadRequestData, "You can't have an empty datetime entry");
 		}
 
