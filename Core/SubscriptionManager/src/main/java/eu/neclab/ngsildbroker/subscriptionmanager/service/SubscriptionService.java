@@ -124,6 +124,9 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@Autowired
 	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
+	
+	@Autowired
+	SubscriptionInfoDAO subscriptionInfoDAO;
 
 	@Value("${query.topic}")
 	String requestTopic;
@@ -134,6 +137,8 @@ public class SubscriptionService implements SubscriptionManager {
 	@Autowired
 	@Qualifier("smparamsResolver")
 	ParamsResolver paramsResolver;
+	
+	boolean directDB = true;
 
 	private final SubscriptionManagerProducerChannel producerChannel;
 
@@ -565,9 +570,11 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private Entity generateDataFromBaseOp(Entity deltaInfo, Subscription subscription) throws ResponseException {
-
-		byte[] msg = kafkaOps.getMessage(deltaInfo.getId().toString(), KafkaConstants.ENTITY_TOPIC);
-		Entity entity = DataSerializer.getEntity(new String(msg));
+		String entityBody = null;
+		if(directDB) {
+			entityBody = subscriptionInfoDAO.getEntity(deltaInfo.getId().toString());
+		}
+		Entity entity = DataSerializer.getEntity(entityBody);
 		if (!shouldFire(deltaInfo, subscription)) {
 			return null;
 		}
