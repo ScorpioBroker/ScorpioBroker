@@ -503,7 +503,7 @@ public class QueryService {
 					JsonNode jsonNode = objectMapper.readTree(response);
 					for (int i = 0; i <= jsonNode.size(); i++) {
 						if (jsonNode.get(i) != null && !jsonNode.isNull()) {
-							String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true);// , linkHeaders);
+							String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true, AppConstants.ENTITIES_URL_ID);// , linkHeaders);
 							entitiesList.add(payload);
 						}
 					}

@@ -128,11 +128,11 @@ public class ContextResolverBasic {
 
 	}
 
-	public String expand(String body, List<Object> contextLinks, boolean check) throws ResponseException {
+	public String expand(String body, List<Object> contextLinks, boolean check, int endPoint) throws ResponseException {
 		try {
 			Object obj = JsonUtils.fromString(body);
 			if (obj instanceof Map) {
-				return expand((Map<String, Object>) obj, contextLinks, check);
+				return expand((Map<String, Object>) obj, contextLinks, check, endPoint);
 			}
 			if (obj instanceof List) {
 				List<Object> list = (List<Object>) obj;
@@ -141,7 +141,7 @@ public class ContextResolverBasic {
 				}
 				StringBuilder result = new StringBuilder("[");
 				for (Object listObj : list) {
-					result.append(expand((Map<String, Object>) listObj, contextLinks, check));
+					result.append(expand((Map<String, Object>) listObj, contextLinks, check, endPoint));
 					result.append(",");
 				}
 				result.setCharAt(result.length() - 1, ']');
@@ -154,7 +154,7 @@ public class ContextResolverBasic {
 		}
 	}
 
-	public String expand(Map<String, Object> json, List<Object> contextLinks, boolean check) throws ResponseException {
+	public String expand(Map<String, Object> json, List<Object> contextLinks, boolean check, int endPoint) throws ResponseException {
 		try {
 			Object tempCtx = json.get(NGSIConstants.JSON_LD_CONTEXT);
 			List<Object> context;
@@ -183,7 +183,7 @@ public class ContextResolverBasic {
 			List<Object> expanded = JsonLdProcessor.expand(json);
 			// if(!
 			if (check) {
-				preFlightCheck(expanded, usedContext, true);
+				preFlightCheck(expanded, usedContext, true, endPoint);
 			}
 			// ) {
 			// throw new ResponseException(ErrorType.BadRequestData,"Entity without an
@@ -202,14 +202,14 @@ public class ContextResolverBasic {
 
 	}
 
-	private boolean preFlightCheck(List<Object> expanded, ArrayList<Object> usedContext, boolean root)
+	private boolean preFlightCheck(List<Object> expanded, ArrayList<Object> usedContext, boolean root, int calledEndpoint)
 			throws JsonGenerationException, ResponseException, IOException {
 		boolean hasAttributes = false;
 		for (Object entry : expanded) {
 			if (entry instanceof Map) {
-				hasAttributes = preFlightCheck((Map<String, Object>) entry, usedContext, root) || hasAttributes;
+				hasAttributes = preFlightCheck((Map<String, Object>) entry, usedContext, root, calledEndpoint) || hasAttributes;
 			} else if (entry instanceof List) {
-				hasAttributes = preFlightCheck((List) entry, usedContext, root) || hasAttributes;
+				hasAttributes = preFlightCheck((List) entry, usedContext, root, calledEndpoint) || hasAttributes;
 			} else {
 				// don't care for now i think
 			}
@@ -217,7 +217,7 @@ public class ContextResolverBasic {
 		return hasAttributes;
 	}
 
-	private boolean preFlightCheck(Map<String, Object> objMap, ArrayList<Object> usedContext, boolean root)
+	private boolean preFlightCheck(Map<String, Object> objMap, ArrayList<Object> usedContext, boolean root, int calledEndpoint)
 			throws ResponseException, JsonGenerationException, IOException {
 		boolean geoTypeFound = false;
 		Object value = null;
@@ -262,13 +262,13 @@ public class ContextResolverBasic {
 				 */
 
 				if (mapValue instanceof Map) {
-					hasAttributes = preFlightCheck((Map<String, Object>) mapValue, usedContext, false) || hasAttributes;
+					hasAttributes = preFlightCheck((Map<String, Object>) mapValue, usedContext, false, calledEndpoint) || hasAttributes;
 				} else if (mapValue instanceof List) {
-					hasAttributes = preFlightCheck((List) mapValue, usedContext, false) || hasAttributes;
+					hasAttributes = preFlightCheck((List) mapValue, usedContext, false, calledEndpoint) || hasAttributes;
 				}
 			}
 		}
-		if ((hasValue ^ hasType) && !root) {
+		if ((hasValue ^ hasType) && !root && (calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID )) {
 			throw new ResponseException(ErrorType.UnprocessableEntity, "You can't have attributes without a value");
 		}
 		if (geoTypeFound) {

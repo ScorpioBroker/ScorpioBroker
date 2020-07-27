@@ -141,7 +141,7 @@ public class RegistryController {
 
 			this.validate(payload);
 
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
 
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
@@ -180,7 +180,7 @@ public class RegistryController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.debug("update CSource() ::" + registrationId);
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
 
 			csourceService.updateCSourceRegistration(registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);

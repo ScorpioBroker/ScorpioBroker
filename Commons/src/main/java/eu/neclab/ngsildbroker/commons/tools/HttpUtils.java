@@ -145,7 +145,7 @@ public final class HttpUtils {
 
 	}
 
-	public String expandPayload(HttpServletRequest request, String payload)
+	public String expandPayload(HttpServletRequest request, String payload, int endPoint)
 			throws ResponseException, MalformedURLException, UnsupportedEncodingException {
 
 		String ldResolved = null;
@@ -158,7 +158,7 @@ public final class HttpUtils {
 
 		if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON)) {
 
-			ldResolved = contextResolver.expand(payload, linkHeaders, true);
+			ldResolved = contextResolver.expand(payload, linkHeaders, true, endPoint);
 
 		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD)) {
 			if (!payload.contains("@context")) {
@@ -167,7 +167,7 @@ public final class HttpUtils {
 								+ AppConstants.NGB_APPLICATION_JSONLD);
 			}
 
-			ldResolved = contextResolver.expand(payload, null, true);
+			ldResolved = contextResolver.expand(payload, null, true, endPoint);
 
 		} else {
 			throw new ResponseException(ErrorType.BadRequestData,

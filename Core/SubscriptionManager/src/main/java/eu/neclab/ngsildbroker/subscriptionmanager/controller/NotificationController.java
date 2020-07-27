@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -30,7 +31,7 @@ public class NotificationController {
 	@RequestMapping(method=RequestMethod.POST, value = "/{id}")
 	public void notify(HttpServletRequest req, @RequestBody String payload, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = false) String id) {
 		try {
-			subscriptionManager.remoteNotify(id, DataSerializer.getNotification(resolver.expand(payload, HttpUtils.getAtContext(req),true)));
+			subscriptionManager.remoteNotify(id, DataSerializer.getNotification(resolver.expand(payload, HttpUtils.getAtContext(req),true, AppConstants.SUBSCRIPTIONS_URL_ID)));
 		} catch (ResponseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

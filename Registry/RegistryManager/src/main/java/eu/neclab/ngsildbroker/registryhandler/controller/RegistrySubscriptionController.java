@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.discovery.EurekaClient;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
@@ -86,7 +87,7 @@ public class RegistrySubscriptionController {
 
 
 		List<Object> context = HttpUtils.getAtContext(request);
-		String resolved = contextResolver.expand(payload, context, true);
+		String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
 		
 		subscription = DataSerializer.getSubscription(resolved);
 		if (resolved == null || subscription == null) {
@@ -151,7 +152,7 @@ public class RegistrySubscriptionController {
 			@RequestBody String payload) throws ResponseException {
 		logger.trace("call updateSubscription() ::");
 		List<Object> context = HttpUtils.getAtContext(request);
-		String resolved = contextResolver.expand(payload, context, true);
+		String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
 		Subscription subscription = DataSerializer.getSubscription(resolved);
 		if(subscription.getId() == null) {
 			subscription.setId(id);

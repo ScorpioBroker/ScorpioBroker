@@ -95,7 +95,7 @@ public class SubscriptionController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
-			String resolved = contextResolver.expand(payload, context, true);
+			String resolved = contextResolver.expand(payload, context, true, AppConstants.SUBSCRIPTIONS_URL_ID);
 			try {
 				subscription = DataSerializer.getSubscription(resolved);
 			} catch (Exception e) {
@@ -172,7 +172,7 @@ public class SubscriptionController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
-			String resolved = contextResolver.expand(payload, context, true);
+			String resolved = contextResolver.expand(payload, context, true, AppConstants.SUBSCRIPTIONS_URL_ID);
 			Subscription subscription = DataSerializer.getSubscription(resolved);
 			if (subscription.getId() == null) {
 				subscription.setId(id);
