@@ -247,7 +247,7 @@ public class EntityServiceTest {
 			Mockito.doReturn(blankNode).when(objectMapper).createObjectNode();
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
 			
-			UpdateResult updateResult=entityService.updateFields(payload.getBytes(),updateJsonNode , null);
+			UpdateResult updateResult=entityService.updateFields(payload,updateJsonNode , null);
 			
 			Assert.assertTrue(updateResult.getStatus());
 			Assert.assertEquals(updateJsonNode, updateResult.getJsonToAppend());
@@ -262,7 +262,7 @@ public class EntityServiceTest {
 			Mockito.doReturn(blankNode).when(objectMapper).createObjectNode();
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
 			
-			AppendResult appendResult=entityService.appendFields(payload.getBytes(), updateJsonNode, " ");
+			AppendResult appendResult=entityService.appendFields(payload, updateJsonNode, " ");
 			
 			Assert.assertTrue(appendResult.getStatus());
 		}catch(Exception ex) {
