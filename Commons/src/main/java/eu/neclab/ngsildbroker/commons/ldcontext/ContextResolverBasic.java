@@ -130,7 +130,7 @@ public class ContextResolverBasic {
 		StringBuilder regex = new StringBuilder();
 		regex.append("([\\<\\\"\\'\\=\\;\\(\\)\\>\\?\\*])");
 		for (String payloadItem : NGSIConstants.NGSI_LD_PAYLOAD_KEYS) {
-			regex.append("(" + payloadItem + ")|");
+			regex.append("|(" + payloadItem + ")");
 		}
 		
 		attributeChecker = Pattern.compile(regex.toString());
@@ -336,7 +336,7 @@ public class ContextResolverBasic {
 			// Custom Attribute which isn't default prefixed
 			return -1;
 		}
-		for (int i = 1; i <= NGSIConstants.NGSI_LD_PAYLOAD_KEYS.length + 2; i++) {
+		for (int i = 1; i <= m.groupCount(); i++) {
 			if (m.group(i) == null) {
 				continue;
 			}
