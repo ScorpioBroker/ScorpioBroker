@@ -54,7 +54,7 @@ public class StorageWriterDAO {
 		try {
 			String sql;
 			int n = 0;
-			if (!value.equals("null")) {
+			if (value != null && !value.equals("null")) {
 				sql = "INSERT INTO "+tableName+" (id, "+columnName+") VALUES (?, ?::jsonb) ON CONFLICT(id) DO UPDATE SET "+columnName+" = EXCLUDED."+columnName;				
 				n = writerJdbcTemplate.update(sql, key, value);
 			} else {
