@@ -274,14 +274,14 @@ public class EntityServiceTest {
 		thrown.expectMessage("Resource not found.");
 		
 		Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
-		entityService.deleteFields(payload.getBytes(), "notPresent");
+		entityService.deleteFields(payload, "notPresent");
 	}
 	
 	@Test
 	public void deleteFieldTest() {
 		try {
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
-			entityService.deleteFields(payload.getBytes(), "http://example.org/vehicle/speed");
+			entityService.deleteFields(payload, "http://example.org/vehicle/speed");
 		}catch(Exception ex) {
 			Assert.fail();
 		}
