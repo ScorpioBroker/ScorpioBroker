@@ -177,6 +177,7 @@ public class ContextResolverBasic {
 			// fullContext.remove(IS_FULL_VALID);
 			ArrayList<Object> usedContext = new ArrayList<Object>();
 			usedContext.addAll(context);
+			usedContext.remove(CORE_CONTEXT_URL_STR);
 			usedContext.add(BASE_CONTEXT);
 
 			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
