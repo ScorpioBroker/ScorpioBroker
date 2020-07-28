@@ -641,10 +641,14 @@ public class CSourceSubscriptionService {
 	}
 
 	@KafkaListener(topics = "${submanager.subscription.topic}", groupId = "csourcemanager")
-	public void handleInternalSub(Message<byte[]> message) throws Exception {
+	public void handleInternalSub(Message<byte[]> message) {
 		SubscriptionRequest internalSub = DataSerializer.getSubscriptionRequest(new String(message.getPayload()));
 		internalSub.getSubscription().setInternal(true);
-		subscribe(internalSub);
+		try {
+			subscribe(internalSub);
+		} catch (ResponseException e) {
+			logger.error(e);
+		}
 	}
 
 	private boolean evaluateRegGeoQuery(LDGeoQuery subGeoQuery, Geometry<?> geoValue) {

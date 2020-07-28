@@ -157,6 +157,8 @@ public class SubscriptionService implements SubscriptionManager {
 
 	HttpUtils httpUtils;
 
+	private Map<String, Object> ids2Type;
+
 	// @Value("${notification.port}")
 	// String REMOTE_NOTIFICATION_PORT;
 
@@ -166,7 +168,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@PostConstruct
 	private void setup() {
-
+		this.ids2Type = subscriptionInfoDAO.getIds2Type();
 		httpUtils = HttpUtils.getInstance(contextResolverService);
 		notificationHandlerREST = new NotificationHandlerREST(this, contextResolverService, objectMapper);
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, queryResultTopic,
@@ -426,6 +428,11 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private void checkSubscriptionsWithCreate(String key, String payload, long messageTime) {
 		Entity create = DataSerializer.getEntity(payload);
+		synchronized (this.ids2Type) {
+			this.ids2Type.put(key, create.getType());
+		}
+		
+		
 		ArrayList<Subscription> subsToCheck = new ArrayList<Subscription>();
 		subsToCheck.addAll(this.idBasedSubscriptions.get(key));
 		subsToCheck.addAll(this.typeBasedSubscriptions.get(create.getType()));
@@ -792,6 +799,7 @@ public class SubscriptionService implements SubscriptionManager {
 	// @StreamListener(SubscriptionManagerConsumerChannel.deleteReadChannel)
 	@KafkaListener(topics = "${entity.delete.topic}", groupId = "submanager")
 	public void handleDelete(Message<byte[]> message) throws Exception {
+		this.ids2Type.remove(kafkaOps.getMessageKey(message));
 		// checkSubscriptionsWithDelete(new String((byte[])
 		// message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)),
 		// new String(message.getPayload()));
@@ -895,17 +903,14 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private String getTypeForId(String key) {
-		byte[] json = kafkaOps.getMessage(key, KafkaConstants.ENTITY_TOPIC);
-		if (json == null) {
-			return "";
-		}
-		try {
-			return objectMapper.readTree(json).get(JSON_LD_TYPE).get(0).asText("");
-		} catch (IOException e) {
-			logger.error("Exception ::", e);
-			e.printStackTrace();
-		}
-		return "";
+		return (String) this.ids2Type.get(key);
+		/*
+		 * //this has to be db handled byte[] json = kafkaOps.getMessage(key,
+		 * KafkaConstants.ENTITY_TOPIC); if (json == null) { return ""; } try { return
+		 * objectMapper.readTree(json).get(JSON_LD_TYPE).get(0).asText(""); } catch
+		 * (IOException e) { logger.error("Exception ::", e); e.printStackTrace(); }
+		 * return "";
+		 */
 	}
 
 	@Override
