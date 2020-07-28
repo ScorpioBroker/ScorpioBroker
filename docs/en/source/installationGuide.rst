@@ -61,11 +61,11 @@ To set the JAVA_HOME variable:
 
  *C:\Program Files\Java\jdk1.version_detail*
 
-2. - In Windows 7 right-click **My Computer** and select **Properties** > **Advanced**.
+2. - In Windows 8/10 go to **Control Panel** > **System** > **Advanced System Settings**.
 
   OR
 
- - In Windows 8 go to **Control Panel** > **System** > **Advanced System Settings**.
+ - In Windows 7 right-click **My Computer** and select **Properties** > **Advanced**.
 
 3. Click the Environment Variables button.
 
