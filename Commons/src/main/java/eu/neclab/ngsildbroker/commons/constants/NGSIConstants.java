@@ -104,6 +104,8 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_LAST_FAILURE = "https://uri.etsi.org/ngsi-ld/lastFailure ";
 	public final static String NGSI_LD_LAST_SUCCESS = "https://uri.etsi.org/ngsi-ld/lastSuccess";
 	public final static String NGSI_LD_TIMES_SEND = "https://uri.etsi.org/ngsi-ld/timesSent";
+	public final static String NGSI_LD_UNIT_CODE = "https://uri.etsi.org/ngsi-ld/unitCode";
+	public final static String NGSI_LD_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/datasetId";
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_DEFAULT_PREFIX, NGSI_LD_HAS_VALUE, NGSI_LD_HAS_OBJECT, JSON_LD_VALUE, NGSI_LD_LOCATION, NGSI_LD_CREATED_AT,
@@ -114,7 +116,7 @@ public interface NGSIConstants {
 			NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL, NGSI_LD_EXPIRES, NGSI_LD_STATUS, NGSI_LD_DESCRIPTION,
 			NGSI_LD_GEO_REL, NGSI_LD_TIME_STAMP, NGSI_LD_TIMESTAMP_START, NGSI_LD_TIMESTAMP_END,
 			NGSI_LD_SUBSCRIPTION_ID, NGSI_LD_NOTIFIED_AT, NGSI_LD_DATA, NGSI_LD_INTERNAL, NGSI_LD_LAST_NOTIFICATION,
-			NGSI_LD_LAST_FAILURE, NGSI_LD_LAST_SUCCESS, NGSI_LD_TIMES_SEND };
+			NGSI_LD_LAST_FAILURE, NGSI_LD_LAST_SUCCESS, NGSI_LD_TIMES_SEND, NGSI_LD_UNIT_CODE, NGSI_LD_DATA_SET_ID };
 
 	public final static String GEO_JSON_COORDINATES = "coordinates";
 	public final static String GEO_JSON_TYPE = "type";
@@ -173,9 +175,8 @@ public interface NGSIConstants {
 	public final static String QUERY_NOTPATTERNOP = "!~=";
 	// public final static String CHECK_QUERY_STRING_URI = "/";
 
-	public static final String NGSI_LD_UNIT_CODE = "https://uri.etsi.org/ngsi-ld/unitCode";
-	public static final String NGSI_LD_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/datasetId";
 
+	 
 	public static final String ALLOWED_IN_DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss[.SSSSSS][.SSSSS][.SSSS][.SSS][.SS][.S]'Z'";
 	public static final String ALLOWED_OUT_DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]'Z'";
 	public static final String DEFAULT_FORGIVING_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
