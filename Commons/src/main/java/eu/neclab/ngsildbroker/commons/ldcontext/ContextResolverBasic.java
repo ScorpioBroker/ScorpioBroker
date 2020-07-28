@@ -336,7 +336,7 @@ public class ContextResolverBasic {
 			// Custom Attribute which isn't default prefixed
 			return -1;
 		}
-		for (int i = 1; i <= m.groupCount(); i++) {
+		for (int i = 1; i <= NGSIConstants.NGSI_LD_PAYLOAD_KEYS.length + 2; i++) {
 			if (m.group(i) == null) {
 				continue;
 			}
