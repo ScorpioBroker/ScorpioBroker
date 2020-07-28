@@ -128,13 +128,12 @@ public class ContextResolverBasic {
 	public ContextResolverBasic() {
 		super();
 		StringBuilder regex = new StringBuilder();
-		regex.append("([\\<\\\"\\'\\=\\;\\(\\)\\>\\?\\*])");
+		regex.append(NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX);
 		for (String payloadItem : NGSIConstants.NGSI_LD_PAYLOAD_KEYS) {
-			regex.append("|(" + payloadItem + ")");
+			regex.append("|(" + payloadItem.replace("/", "\\/").replace(".", "\\.") + ")");
 		}
-		
+
 		attributeChecker = Pattern.compile(regex.toString());
-		
 
 	}
 
@@ -252,7 +251,7 @@ public class ContextResolverBasic {
 			// (@id)|(@type)|(@context)|(https://uri.etsi.org/ngsi-ld/default-context/)|(https://uri.etsi.org/ngsi-ld/hasValue)|(https://uri.etsi.org/ngsi-ld/hasObject)|(https://uri.etsi.org/ngsi-ld/location)|(https://uri.etsi.org/ngsi-ld/createdAt)|(https://uri.etsi.org/ngsi-ld/modifiedAt)|(https://uri.etsi.org/ngsi-ld/observedAt)|(https://uri.etsi.org/ngsi-ld/observationSpace)|(https://uri.etsi.org/ngsi-ld/operationSpace)|(https://uri.etsi.org/ngsi-ld/attributes)|(https://uri.etsi.org/ngsi-ld/information)|(https://uri.etsi.org/ngsi-ld/instanceId)|(https://uri.etsi.org/ngsi-ld/coordinates)|(https://uri.etsi.org/ngsi-ld/idPattern)|(https://uri.etsi.org/ngsi-ld/entities)|(https://uri.etsi.org/ngsi-ld/geometry)|(https://uri.etsi.org/ngsi-ld/geoQ)|(https://uri.etsi.org/ngsi-ld/accept)|(https://uri.etsi.org/ngsi-ld/uri)|(https://uri.etsi.org/ngsi-ld/endpoint)|(https://uri.etsi.org/ngsi-ld/format)|(https://uri.etsi.org/ngsi-ld/notification)|(https://uri.etsi.org/ngsi-ld/q)|(https://uri.etsi.org/ngsi-ld/watchedAttributes)|(https://uri.etsi.org/ngsi-ld/name)|(https://uri.etsi.org/ngsi-ld/throttling)|(https://uri.etsi.org/ngsi-ld/timeInterval)|(https://uri.etsi.org/ngsi-ld/expires)|(https://uri.etsi.org/ngsi-ld/status)|(https://uri.etsi.org/ngsi-ld/description)|(https://uri.etsi.org/ngsi-ld/georel)|(https://uri.etsi.org/ngsi-ld/timestamp)|(https://uri.etsi.org/ngsi-ld/start)|(https://uri.etsi.org/ngsi-ld/end)|(https://uri.etsi.org/ngsi-ld/subscriptionId)|(https://uri.etsi.org/ngsi-ld/notifiedAt)|(https://uri.etsi.org/ngsi-ld/data)|(https://uri.etsi.org/ngsi-ld/internal)|(https://uri.etsi.org/ngsi-ld/lastNotification)|(https://uri.etsi.org/ngsi-ld/lastFailure
 			// )|(https://uri.etsi.org/ngsi-ld/lastSuccess)|(https://uri.etsi.org/ngsi-ld/timesSent)|([\<\"\'\=\;\(\)\>\?\*])
 			if (keyType == 1) {
-				throw new ResponseException(ErrorType.BadRequestData, "Forbidden characters in payload body");
+				throw new ResponseException(ErrorType.BadRequestData, "Forbidden characters in JSON key. Forbidden Characters are " + NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS);
 			} else if (keyType == -1 || keyType == 5 || keyType == 9) {
 				if (keyType == 9) {
 					if (protectRegistrationLocationEntry(mapValue, mapEntry, usedContext)) {
@@ -332,17 +331,19 @@ public class ContextResolverBasic {
 
 	private int checkKey(String key) {
 		Matcher m = attributeChecker.matcher(key);
-		if (!m.find()) {
-			// Custom Attribute which isn't default prefixed
-			return -1;
-		}
-		for (int i = 1; i <= m.groupCount(); i++) {
-			if (m.group(i) == null) {
-				continue;
+		int result = 10000;
+		while (m.find()) {
+			for (int i = 1; i <= m.groupCount(); i++) {
+				if (m.group(i) == null) {
+					continue;
+				}
+				if (result > i) {
+					result = i;
+					break;
+				}
 			}
-			return i;
 		}
-		return -1;
+		return result;
 	}
 
 	private Object checkHasValue(Object mapValue) throws ResponseException {

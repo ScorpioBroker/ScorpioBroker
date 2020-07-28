@@ -117,7 +117,7 @@ public interface NGSIConstants {
 			NGSI_LD_GEO_REL, NGSI_LD_TIME_STAMP, NGSI_LD_TIMESTAMP_START, NGSI_LD_TIMESTAMP_END,
 			NGSI_LD_SUBSCRIPTION_ID, NGSI_LD_NOTIFIED_AT, NGSI_LD_DATA, NGSI_LD_INTERNAL, NGSI_LD_LAST_NOTIFICATION,
 			NGSI_LD_LAST_FAILURE, NGSI_LD_LAST_SUCCESS, NGSI_LD_TIMES_SEND, NGSI_LD_UNIT_CODE, NGSI_LD_DATA_SET_ID };
-
+	
 	public final static String GEO_JSON_COORDINATES = "coordinates";
 	public final static String GEO_JSON_TYPE = "type";
 
@@ -193,4 +193,6 @@ public interface NGSIConstants {
 	public static final String MQTT_VERSION = "mqtt_version";
 	public static final String DEFAULT_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/default-data-set-id";
 	public static final String NGSI_LD_ENDPOINT_REGEX = ".*\\\"https\\:\\/\\/uri\\.etsi\\.org\\/ngsi-ld\\/endpoint\\\"\\W*\\:\\W*\\[\\W*\\{\\W*\\@value\\\"\\:\\W*\\\"(http(s)*:\\/\\/[\\w\\.\\:\\/]*)\\\".*";
+	public static final String NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX = "([\\<\\\"\\'\\=\\;\\(\\)\\>\\?\\*])";
+	public static final String NGSI_LD_FORBIDDEN_KEY_CHARS = "<,\",',=,;,(,),>,?,*";
 }
