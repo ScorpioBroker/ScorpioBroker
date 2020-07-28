@@ -560,7 +560,20 @@ public class EntityService {
 				storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, entityId, null);
 			}
 		}
-
+		new Thread() {
+			public void run() {
+				try {
+					operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+							"{}".getBytes());
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ResponseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			};
+		}.start();
 		/*
 		 * EntityDetails entityDetails = entityTopicMap.get(entityId); if (entityDetails
 		 * == null) { throw new ResponseException(ErrorType.NotFound); } // get entity

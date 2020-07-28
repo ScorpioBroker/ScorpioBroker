@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -15,8 +16,12 @@ public class SubscriptionInfoDAO extends StorageReaderDAO {
 		List<String> tempList = readerJdbcTemplate.queryForList("SELECT id FROM entity", String.class);
 		return new HashSet<String>(tempList);
 	}
-	public Map<String, Object> getIds2Type() {
-		Map<String, Object> result = readerJdbcTemplate.queryForMap("SELECT id, type FROM entity");
+	public Map<String, String> getIds2Type() {
+		List<Map<String, Object>> temp = readerJdbcTemplate.queryForList("SELECT id, type FROM entity");
+		HashMap<String, String> result = new HashMap<String, String>();
+		for(Map<String, Object> entry: temp) {
+			result.put(entry.get("id").toString(), entry.get("type").toString());
+		}
 		return result;
 	}
 	public String getEntity(String entityId) {

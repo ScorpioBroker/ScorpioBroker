@@ -124,7 +124,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@Autowired
 	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
-	
+
 	@Autowired
 	SubscriptionInfoDAO subscriptionInfoDAO;
 
@@ -137,7 +137,7 @@ public class SubscriptionService implements SubscriptionManager {
 	@Autowired
 	@Qualifier("smparamsResolver")
 	ParamsResolver paramsResolver;
-	
+
 	boolean directDB = true;
 
 	private final SubscriptionManagerProducerChannel producerChannel;
@@ -157,7 +157,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	HttpUtils httpUtils;
 
-	private Map<String, Object> ids2Type;
+	private Map<String, String> ids2Type;
 
 	// @Value("${notification.port}")
 	// String REMOTE_NOTIFICATION_PORT;
@@ -431,8 +431,7 @@ public class SubscriptionService implements SubscriptionManager {
 		synchronized (this.ids2Type) {
 			this.ids2Type.put(key, create.getType());
 		}
-		
-		
+
 		ArrayList<Subscription> subsToCheck = new ArrayList<Subscription>();
 		subsToCheck.addAll(this.idBasedSubscriptions.get(key));
 		subsToCheck.addAll(this.typeBasedSubscriptions.get(create.getType()));
@@ -578,7 +577,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private Entity generateDataFromBaseOp(Entity deltaInfo, Subscription subscription) throws ResponseException {
 		String entityBody = null;
-		if(directDB) {
+		if (directDB) {
 			entityBody = subscriptionInfoDAO.getEntity(deltaInfo.getId().toString());
 		}
 		Entity entity = DataSerializer.getEntity(entityBody);
@@ -903,7 +902,9 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private String getTypeForId(String key) {
-		return (String) this.ids2Type.get(key);
+		synchronized (this.ids2Type) {
+			return (String) this.ids2Type.get(key);
+		}
 		/*
 		 * //this has to be db handled byte[] json = kafkaOps.getMessage(key,
 		 * KafkaConstants.ENTITY_TOPIC); if (json == null) { return ""; } try { return
