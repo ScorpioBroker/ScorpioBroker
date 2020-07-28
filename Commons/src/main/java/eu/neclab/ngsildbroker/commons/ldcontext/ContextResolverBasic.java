@@ -253,7 +253,12 @@ public class ContextResolverBasic {
 			// )|(https://uri.etsi.org/ngsi-ld/lastSuccess)|(https://uri.etsi.org/ngsi-ld/timesSent)|([\<\"\'\=\;\(\)\>\?\*])
 			if (keyType == forbiddenCharIndex) {
 				throw new ResponseException(ErrorType.BadRequestData, "Forbidden characters in payload body");
-			} else if (keyType == -1 || keyType == 4) {
+			} else if (keyType == -1 || keyType == 4 || keyType == 8) {
+				if (keyType == 8) {
+					if (protectRegistrationLocationEntry(mapValue, mapEntry, usedContext)) {
+						continue;
+					}
+				}
 				if (mapValue instanceof Map) {
 					hasAttributes = preFlightCheck((Map<String, Object>) mapValue, usedContext, false, calledEndpoint,
 							true) || hasAttributes;
@@ -299,10 +304,6 @@ public class ContextResolverBasic {
 				hasObject = true;
 			} else if (keyType == 7) {
 				hasAtValue = true;
-			} else if (keyType == 8) {
-				if (protectRegistrationLocationEntry(mapValue, mapEntry, usedContext)) {
-					continue;
-				}
 			}
 		}
 		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID)
@@ -318,8 +319,9 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.BadRequestData, "You can't have an empty datetime entry");
 		}
 
-		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID) && (customKey && !((isProperty && hasValue) || (isRelationship && hasObject) || (isDatetime && hasAtValue)
-				|| (isGeoProperty && hasValue)))) {
+		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID)
+				&& (customKey && !((isProperty && hasValue) || (isRelationship && hasObject)
+						|| (isDatetime && hasAtValue) || (isGeoProperty && hasValue)))) {
 			throw new ResponseException(ErrorType.BadRequestData, "Unknown entry");
 		}
 		if (isGeoProperty) {
