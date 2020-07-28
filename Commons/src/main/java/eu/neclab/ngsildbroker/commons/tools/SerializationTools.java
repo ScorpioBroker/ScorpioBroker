@@ -400,7 +400,7 @@ public class SerializationTools {
 				String propKey = entry.getKey();
 				JsonElement value = entry.getValue();
 
-				if (propKey.equals(NGSIConstants.NGSI_LD_OBJECT)) {
+				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 					if (value.getAsJsonArray().size() != 1) {
 						throw new JsonParseException("Relationships have to have exactly one object");
 					}
@@ -590,7 +590,7 @@ public class SerializationTools {
 			JsonObject objValue = new JsonObject();
 			objValue.add(NGSIConstants.JSON_LD_ID, context.serialize(entry.getObject()));
 			value.add(objValue);
-			top.add(NGSIConstants.NGSI_LD_OBJECT, value);
+			top.add(NGSIConstants.NGSI_LD_HAS_OBJECT, value);
 			if (entry.getObservedAt() > 0) {
 				top.add(NGSIConstants.NGSI_LD_OBSERVED_AT, getJson(entry.getObservedAt(), context));
 			}

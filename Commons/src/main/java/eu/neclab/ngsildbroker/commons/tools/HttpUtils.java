@@ -105,6 +105,8 @@ public final class HttpUtils {
 	private HttpHost httpProxy = null;
 
 	private ContextResolverBasic contextResolver;
+	private Pattern headerPattern = Pattern.compile(
+			"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
 
 	private HttpUtils(ContextResolverBasic contextResolver) {
 		this.contextResolver = contextResolver;
@@ -885,9 +887,8 @@ public final class HttpUtils {
 
 		while (acceptHeaders.hasMoreElements()) {
 			String header = acceptHeaders.nextElement();
-			Pattern p = Pattern.compile(
-					"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
-			Matcher m = p.matcher(header.toLowerCase());
+			
+			Matcher m = headerPattern.matcher(header.toLowerCase());
 			while (m.find()) {
 				String floatString = m.group(8);
 				float newQ = 1;
