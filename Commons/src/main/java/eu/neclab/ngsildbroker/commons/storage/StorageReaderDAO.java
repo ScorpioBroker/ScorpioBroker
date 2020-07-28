@@ -9,6 +9,7 @@ import javax.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.util.ReflectionUtils;
@@ -43,6 +44,9 @@ abstract public class StorageReaderDAO {
 			return readerJdbcTemplate.queryForList(sqlQuery,String.class);
 			
 
+		} catch(DataIntegrityViolationException e) {
+			//Empty result don't worry
+			return new ArrayList<String>();
 		} catch (Exception e) {
 			logger.error("Exception ::", e);
 			e.printStackTrace();
