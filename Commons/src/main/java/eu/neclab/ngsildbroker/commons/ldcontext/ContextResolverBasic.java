@@ -318,8 +318,8 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.BadRequestData, "You can't have an empty datetime entry");
 		}
 
-		if (customKey && !((isProperty && hasValue) || (isRelationship && hasObject) || (isDatetime && hasAtValue)
-				|| (isGeoProperty && hasValue))) {
+		if ((calledEndpoint == AppConstants.ENTITIES_URL_ID || calledEndpoint == AppConstants.HISTORY_URL_ID) && (customKey && !((isProperty && hasValue) || (isRelationship && hasObject) || (isDatetime && hasAtValue)
+				|| (isGeoProperty && hasValue)))) {
 			throw new ResponseException(ErrorType.BadRequestData, "Unknown entry");
 		}
 		if (isGeoProperty) {
