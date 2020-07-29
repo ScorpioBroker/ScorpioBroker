@@ -8,7 +8,8 @@ broker:
   id: FedBroker1
   parent:
     location:
-      url: SELF      
+      url: SELF
+      
 query:
   result:
     topic: QUERY_RESULT
@@ -38,7 +39,7 @@ csources:
   registration:
     topic: CONTEXT_REGISTRY
 defaultLimit: 50
-directDbConnection: true 
+directDbConnection: false 
 entity:
   append:
     topic: ENTITY_APPEND
@@ -178,10 +179,10 @@ spring:
 writer:
   datasource:
     hikari:
-      connectionTimeout: 60000
-      idleTimeout: 60000
+      connectionTimeout: 30000
+      idleTimeout: 30000
       maxLifetime: 2000000
-      maximumPoolSize: 50
+      maximumPoolSize: 20
       minimumIdle: 5
       poolName: SpringBootHikariCP_Writer
     password: ngb

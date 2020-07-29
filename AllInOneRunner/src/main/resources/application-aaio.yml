@@ -14,6 +14,8 @@ query:
   result:
     topic: QUERY_RESULT
   topic: QUERY
+
+
 csource:
   stopListenerIfDbFails: false
   topic: CONTEXT_SOURCE
@@ -32,7 +34,7 @@ csources:
   registration:
     topic: CONTEXT_REGISTRY
 defaultLimit: 50
-directDbConnection: true
+directDbConnection: false 
 entity:
   append:
     topic: ENTITY_APPEND
@@ -82,7 +84,7 @@ reader:
       connectionTimeout: 30000
       idleTimeout: 30000
       maxLifetime: 2000000
-      maximumPoolSize: 30
+      maximumPoolSize: 20
       minimumIdle: 5
       poolName: SpringBootHikariCP_Reader
     password: ngb
@@ -156,7 +158,7 @@ spring:
       connectionTimeout: 30000
       idleTimeout: 30000
       maxLifetime: 2000000
-      maximumPoolSize: 10
+      maximumPoolSize: 20
       minimumIdle: 5
       poolName: SpringBootHikariCP
     password: ngb
@@ -177,10 +179,10 @@ spring:
 writer:
   datasource:
     hikari:
-      connectionTimeout: 60000
-      idleTimeout: 60000
+      connectionTimeout: 30000
+      idleTimeout: 30000
       maxLifetime: 2000000
-      maximumPoolSize: 50
+      maximumPoolSize: 20
       minimumIdle: 5
       poolName: SpringBootHikariCP_Writer
     password: ngb

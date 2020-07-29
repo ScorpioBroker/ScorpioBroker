@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -218,7 +219,7 @@ public class EntityService {
 							objectMapper.writeValueAsString(getKeyValueEntity(json)));
 				} catch (JsonProcessingException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					logger.error(e);
 				}
 
 			};
@@ -272,21 +273,27 @@ public class EntityService {
 	}
 
 	private void pushToDB(String key, String payload, String withoutSysAttrs, String kv) {
-		logger.debug("Received message: " + payload);
-		logger.trace("Writing data...");
+		boolean success = false;
+		while (!success) {
+			try {
+				logger.debug("Received message: " + payload);
+				logger.trace("Writing data...");
+				if (storageWriterDao != null && storageWriterDao.storeEntity(key, payload, withoutSysAttrs, kv)) {
 
-		if (storageWriterDao != null
-				&& storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, key, payload)) {
-
-			logger.trace("Writing is complete");
-		}
-		if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_ENTITY,
-				DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS, key, withoutSysAttrs)) {
-			logger.trace("Writing is complete");
-		}
-		if (storageWriterDao != null
-				&& storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_KVDATA, key, kv)) {
-			logger.trace("Writing is complete");
+					logger.trace("Writing is complete");
+				}
+				success = true;
+			} catch (SQLException e) {
+				logger.warn("SQL Exception attempting retry");
+				Random random = new Random();
+				int randomNumber = random.nextInt(4000) + 500;
+				try {
+					Thread.sleep(randomNumber);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
 		}
 		// removeId on failure
 
@@ -964,8 +971,6 @@ public class EntityService {
 			rule.validateEntity(entity, request);
 		}
 	}
-
-	
 
 	public BatchResult createMultipleMessage(String payload) throws ResponseException {
 

@@ -69,6 +69,25 @@ public class StorageWriterDAO {
 		}		
 		return false;		
 	}
+	public boolean storeEntity(String key, String value, String valueWithoutSysAttrs, String kvValue) throws SQLException{		
+		try {
+			String sql;
+			int n = 0;
+			if (value != null && !value.equals("null")) {
+				sql = "INSERT INTO "+DBConstants.DBTABLE_ENTITY+" (id, "+DBConstants.DBCOLUMN_DATA+", "+DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS+",  "+DBConstants.DBCOLUMN_KVDATA+") VALUES (?, ?::jsonb, ?::jsonb, ?::jsonb) ON CONFLICT(id) DO UPDATE SET (" + DBConstants.DBCOLUMN_DATA + ", " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA + ") = (EXCLUDED."+DBConstants.DBCOLUMN_DATA+", EXCLUDED."+DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS+",  EXCLUDED."+DBConstants.DBCOLUMN_KVDATA+")";				
+				n = writerJdbcTemplate.update(sql, key, value, valueWithoutSysAttrs, kvValue);
+			} else {
+				sql = "DELETE FROM "+DBConstants.DBTABLE_ENTITY+" WHERE id = ?";				
+				n = writerJdbcTemplate.update(sql, key);
+			}
+			logger.trace("Rows affected: " + Integer.toString(n));
+			return true; //(n>0);
+		} catch (Exception e) {
+			logger.error("Exception ::",e);
+			e.printStackTrace();
+		}		
+		return false;		
+	}
 	
 	public boolean storeTemporalEntity(String key, String value) throws SQLException {		
 		try {
