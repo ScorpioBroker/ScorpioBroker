@@ -82,7 +82,7 @@ reader:
       connectionTimeout: 30000
       idleTimeout: 30000
       maxLifetime: 2000000
-      maximumPoolSize: 20
+      maximumPoolSize: 30
       minimumIdle: 5
       poolName: SpringBootHikariCP_Reader
     password: ngb
@@ -156,7 +156,7 @@ spring:
       connectionTimeout: 30000
       idleTimeout: 30000
       maxLifetime: 2000000
-      maximumPoolSize: 20
+      maximumPoolSize: 10
       minimumIdle: 5
       poolName: SpringBootHikariCP
     password: ngb
