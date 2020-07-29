@@ -46,10 +46,10 @@ abstract public class StorageReaderDAO {
 
 		} catch(DataIntegrityViolationException e) {
 			//Empty result don't worry
+			logger.warn("SQL Result Exception::", e);
 			return new ArrayList<String>();
 		} catch (Exception e) {
 			logger.error("Exception ::", e);
-			e.printStackTrace();
 		}
 		return new ArrayList<String>();
 

@@ -177,10 +177,10 @@ spring:
 writer:
   datasource:
     hikari:
-      connectionTimeout: 30000
-      idleTimeout: 30000
+      connectionTimeout: 60000
+      idleTimeout: 60000
       maxLifetime: 2000000
-      maximumPoolSize: 20
+      maximumPoolSize: 50
       minimumIdle: 5
       poolName: SpringBootHikariCP_Writer
     password: ngb
