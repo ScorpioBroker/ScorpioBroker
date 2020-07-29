@@ -209,8 +209,8 @@ public class EntityService {
 		setTemporalProperties(json, now, now, false);
 		payload = objectMapper.writeValueAsString(json);
 		String withSysAttrs = payload;
-		new Thread() {
-			public void run() {
+		//new Thread() {
+	//		public void run() {
 				removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
 				String entityWithoutSysAttrs;
 				try {
@@ -222,8 +222,8 @@ public class EntityService {
 					logger.error(e);
 				}
 
-			};
-		}.start();
+		//	};
+		//}.start();
 		new Thread() {
 			public void run() {
 
