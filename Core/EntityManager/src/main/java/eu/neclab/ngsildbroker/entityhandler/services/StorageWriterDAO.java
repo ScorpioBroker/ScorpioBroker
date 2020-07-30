@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
@@ -72,7 +73,7 @@ public class StorageWriterDAO {
 	}
 
 	public boolean storeEntity(String key, String value, String valueWithoutSysAttrs, String kvValue)
-			throws SQLException {
+			throws SQLTransientConnectionException {
 		String sql;
 		int n = 0;
 		if (value != null && !value.equals("null")) {

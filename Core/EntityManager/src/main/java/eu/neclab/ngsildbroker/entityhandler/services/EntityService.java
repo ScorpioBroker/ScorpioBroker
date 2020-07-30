@@ -5,6 +5,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -209,21 +210,20 @@ public class EntityService {
 		setTemporalProperties(json, now, now, false);
 		payload = objectMapper.writeValueAsString(json);
 		String withSysAttrs = payload;
-		//new Thread() {
-	//		public void run() {
-				removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
-				String entityWithoutSysAttrs;
-				try {
-					entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
-					pushToDB(id, withSysAttrs, entityWithoutSysAttrs,
-							objectMapper.writeValueAsString(getKeyValueEntity(json)));
-				} catch (JsonProcessingException e) {
-					// TODO Auto-generated catch block
-					logger.error(e);
-				}
+		// new Thread() {
+		// public void run() {
+		removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
+		String entityWithoutSysAttrs;
+		try {
+			entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
+			pushToDB(id, withSysAttrs, entityWithoutSysAttrs, objectMapper.writeValueAsString(getKeyValueEntity(json)));
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			logger.error(e);
+		}
 
-		//	};
-		//}.start();
+		// };
+		// }.start();
 		new Thread() {
 			public void run() {
 
@@ -283,7 +283,7 @@ public class EntityService {
 					logger.trace("Writing is complete");
 				}
 				success = true;
-			} catch (SQLException e) {
+			} catch (SQLTransientConnectionException e) {
 				logger.warn("SQL Exception attempting retry");
 				Random random = new Random();
 				int randomNumber = random.nextInt(4000) + 500;
@@ -422,14 +422,11 @@ public class EntityService {
 		// & check if anything is changed.
 		if (updateResult.getStatus()) {
 			if (directDB) {
-				JsonNode json = updateResult.getFinalNode();
-				String withSysAttrs = objectMapper.writeValueAsString(json);
-				removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
-				String entityWithoutSysAttrs;
+				String entityWithoutSysAttrs = new String(updateResult.getJsonWithoutSysAttrs());
+				String withSysAttrs = new String(updateResult.getJson());
 				try {
-					entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
 					pushToDB(entityId, withSysAttrs, entityWithoutSysAttrs,
-							objectMapper.writeValueAsString(getKeyValueEntity(json)));
+							objectMapper.writeValueAsString(getKeyValueEntity(objectMapper.readTree(withSysAttrs))));
 				} catch (JsonProcessingException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -496,19 +493,15 @@ public class EntityService {
 		String entityBody = validateIdAndGetBody(entityId);
 		AppendResult appendResult = this.appendFields(entityBody, objectMapper.readTree(payload), overwriteOption);
 		// get entity from ENTITY topic.
-		byte[] finalJson = appendResult.getJson();
 		// pubilsh merged message
 		// check if anything is changed
 		if (appendResult.getStatus()) {
 			if (directDB) {
-				JsonNode json = appendResult.getFinalNode();
-				String withSysAttrs = objectMapper.writeValueAsString(json);
-				removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
-				String entityWithoutSysAttrs;
+				String entityWithoutSysAttrs = new String(appendResult.getJsonWithoutSysAttrs());
+				String withSysAttrs = new String(appendResult.getJson());
 				try {
-					entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
 					pushToDB(entityId, withSysAttrs, entityWithoutSysAttrs,
-							objectMapper.writeValueAsString(getKeyValueEntity(json)));
+							objectMapper.writeValueAsString(getKeyValueEntity(objectMapper.readTree(withSysAttrs))));
 				} catch (JsonProcessingException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
