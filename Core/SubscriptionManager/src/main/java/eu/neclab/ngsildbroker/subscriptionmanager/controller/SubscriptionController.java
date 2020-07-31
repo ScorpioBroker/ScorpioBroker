@@ -106,9 +106,7 @@ public class SubscriptionController {
 			if (resolved == null || subscription == null) {
 				return badRequestResponse;
 			}
-			if (subscription.getLdQuery() != null && !subscription.getLdQuery().trim().equals("")) {
-				subscription.setQueryTerm(queryParser.parseQuery(subscription.getLdQuery(), context));
-			}
+			
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
 			URI subId = manager.subscribe(subRequest);
 

@@ -218,6 +218,9 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 
 		this.subscriptionId2Subscription.put(subscription.getId().toString(), subscription);
+		if (subscription.getLdQuery() != null && !subscription.getLdQuery().trim().equals("")) {
+			subscription.setQueryTerm(queryParser.parseQuery(subscription.getLdQuery(), subscriptionRequest.getContext()));
+		}
 		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 		if (subscription.getTimeInterval() > 0) {
 			if (endpointProtocol.equals("mqtt")) {
