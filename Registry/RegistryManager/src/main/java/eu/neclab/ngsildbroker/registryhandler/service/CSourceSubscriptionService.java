@@ -643,7 +643,7 @@ public class CSourceSubscriptionService {
 
 	@KafkaListener(topics = "${submanager.subscription.topic}", groupId = "csourcemanager")
 	public void handleInternalSub(Message<byte[]> message) {
-		if (AppConstants.NULL_BYTES.equals(message.getPayload())) {
+		if (Arrays.areEqual(AppConstants.NULL_BYTES, message.getPayload())) {
 			try {
 				unsubscribe(new URI(kafkaOps.getMessageKey(message)));
 			} catch (ResponseException e) {
