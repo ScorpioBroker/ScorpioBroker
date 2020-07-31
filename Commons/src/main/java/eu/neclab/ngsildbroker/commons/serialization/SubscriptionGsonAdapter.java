@@ -174,7 +174,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 
 				}
 				if (ldObj.has(NGSIConstants.NGSI_LD_TIMES_SEND)) {
-					notifyParam.setTimesSent(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_TIMES_SEND).getAsJsonObject()
+					notifyParam.setTimesSent(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_TIMES_SEND).get(0).getAsJsonObject()
 							.get(NGSIConstants.JSON_LD_VALUE).getAsInt());
 				}
 				result.setNotification(notifyParam);
