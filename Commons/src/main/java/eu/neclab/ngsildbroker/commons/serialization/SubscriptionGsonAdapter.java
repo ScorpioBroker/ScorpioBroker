@@ -38,6 +38,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 	public Subscription deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
 			throws JsonParseException {
 		JsonObject top;
+		System.out.println("RAWWWW JSON " + json.toString());
 		if (json.isJsonArray()) {
 			top = json.getAsJsonArray().get(0).getAsJsonObject();
 		} else {
