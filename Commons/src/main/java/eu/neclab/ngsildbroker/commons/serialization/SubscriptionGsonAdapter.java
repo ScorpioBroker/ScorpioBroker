@@ -21,6 +21,7 @@ import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
@@ -139,8 +140,12 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				notifyParam.setAttributeNames(watchedAttribs);
 				EndPoint endPoint = new EndPoint();
 				JsonObject jsonEndPoint = ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_ENDPOINT).get(0).getAsJsonObject();
-				endPoint.setAccept(jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_ACCEPT).get(0).getAsJsonObject()
-						.get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				if (jsonEndPoint.has(NGSIConstants.NGSI_LD_ACCEPT)) {
+					endPoint.setAccept(jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_ACCEPT).get(0)
+							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} else {
+					endPoint.setAccept(AppConstants.NGB_APPLICATION_JSON);
+				}
 				try {
 					endPoint.setUri(new URI(jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_URI).get(0)
 							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString()));
