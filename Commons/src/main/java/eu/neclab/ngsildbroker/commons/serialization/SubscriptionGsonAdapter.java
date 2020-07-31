@@ -75,7 +75,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 					}
 					if (obj.has(NGSIConstants.JSON_LD_TYPE)) {
 						entity.setType(obj.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().get(0).getAsString());
-					}else {
+					} else {
 						throw new JsonParseException("type is a mandatory field in all entries of entities");
 					}
 					result.addEntityInfo(entity);
@@ -109,11 +109,11 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 					Object distance;
 					try {
 						distance = Integer.parseInt(temp[1]);
-					}catch(NumberFormatException e) {
+					} catch (NumberFormatException e) {
 						distance = Double.parseDouble(temp[1]);
 					}
 					if (temp[0].equalsIgnoreCase("maxDistance")) {
-						
+
 						geoRel.setMaxDistance(distance);
 					} else if (temp[0].equalsIgnoreCase("minDistance")) {
 						geoRel.setMinDistance(distance);
@@ -174,8 +174,8 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 
 				}
 				if (ldObj.has(NGSIConstants.NGSI_LD_TIMES_SEND)) {
-					notifyParam.setTimesSent(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_TIMES_SEND).get(0).getAsJsonObject()
-							.get(NGSIConstants.JSON_LD_VALUE).getAsInt());
+					notifyParam.setTimesSent(ldObj.getAsJsonArray(NGSIConstants.NGSI_LD_TIMES_SEND).get(0)
+							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsInt());
 				}
 				result.setNotification(notifyParam);
 
@@ -211,11 +211,11 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			}
 
 		}
-		if(result.getNotification() == null) {
+		if (result.getNotification() == null) {
 			throw new JsonParseException("no notification parameter provided");
 		}
 		// if (result.getId() == null) {
-		// 
+		//
 		// }
 		return result;
 	}
@@ -404,7 +404,8 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			top.add(NGSIConstants.NGSI_LD_TIME_INTERVAL, SerializationTools.getValueArray(src.getTimeInterval()));
 		}
 		if (src.getExpires() != null) {
-			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools.getValueArray(src.getExpires()));
+			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools
+					.getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpires()))));
 		}
 		if (src.getStatus() != null) {
 			top.add(NGSIConstants.NGSI_LD_STATUS, SerializationTools.getValueArray(src.getStatus()));
