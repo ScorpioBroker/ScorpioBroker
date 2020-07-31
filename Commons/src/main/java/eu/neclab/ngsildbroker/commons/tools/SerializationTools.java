@@ -101,7 +101,7 @@ public class SerializationTools {
 							}
 						} else {
 							geoValueStr = propValue.toString();
-							geoValue = DataSerializer.getGeojsonGeometry(propValue.getAsString());
+							geoValue = DataSerializer.getGeojsonGeometry(propValue.toString());
 						}
 
 					}
