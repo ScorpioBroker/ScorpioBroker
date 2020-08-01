@@ -484,7 +484,7 @@ public class ContextResolverBasic {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"Failed to parse watched attributes " + mapValue);
 				}
-			} else if (keyType == 16) {
+			} else if (keyType == 17) {
 				// THROTTELING
 				try {
 					subscription.setThrottling(
@@ -492,7 +492,7 @@ public class ContextResolverBasic {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse throtteling");
 				}
-			} else if (keyType == 17) {
+			} else if (keyType == 18) {
 				// TIMEINTERVALL
 				try {
 					subscription.setTimeInterval(
@@ -500,7 +500,7 @@ public class ContextResolverBasic {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse timeinterval");
 				}
-			} else if (keyType == 18) {
+			} else if (keyType == 19) {
 				// EXPIRES
 				try {
 					subscription.setExpires(SerializationTools.date2Long(
@@ -508,7 +508,7 @@ public class ContextResolverBasic {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse expires");
 				}
-			} else if (keyType == 19) {
+			} else if (keyType == 20) {
 				// STATUS
 				try {
 					subscription.setStatus(
@@ -516,7 +516,7 @@ public class ContextResolverBasic {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
 				}
-			} else if (keyType == 20) {
+			} else if (keyType == 21) {
 				// DESCRIPTION
 				try {
 					subscription.setDescription(
@@ -524,8 +524,8 @@ public class ContextResolverBasic {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
 				}
-			} else if (keyType == 21) {
-				// DESCRIPTION
+			} else if (keyType == 22) {
+				// isActive
 				try {
 					subscription.setActive(
 							(Boolean) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
