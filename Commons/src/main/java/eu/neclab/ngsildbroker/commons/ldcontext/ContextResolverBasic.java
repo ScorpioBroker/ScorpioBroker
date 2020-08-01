@@ -589,6 +589,9 @@ public class ContextResolverBasic {
 			}
 			watchedAttribs.add(temp);
 		}
+		if(watchedAttribs.isEmpty()) {
+			throw new ResponseException(ErrorType.BadRequestData, "Empty watched attributes entry");
+		}
 		return watchedAttribs;
 	}
 
