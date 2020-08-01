@@ -392,7 +392,11 @@ public class ContextResolverBasic {
 				throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for subscription");
 			} else if (keyType == 2) {
 				// ID
-				validateUri((String) mapValue);
+				try {
+					subscription.setId(new URI((String) mapValue));
+				} catch (URISyntaxException e) {
+					// Left empty intentionally is already checked
+				}
 			} else if (keyType == 3) {
 				// TYPE
 				String type = null;
@@ -404,6 +408,7 @@ public class ContextResolverBasic {
 				if (type == null || !type.equals(NGSIConstants.NGSI_LD_SUBSCRIPTION)) {
 					throw new ResponseException(ErrorType.BadRequestData, "No type or type is not Subscription");
 				}
+				subscription.setType(type);
 			} else if (keyType == 5) {
 				// Entities
 				List<EntityInfo> entities = new ArrayList<EntityInfo>();
