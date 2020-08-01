@@ -370,7 +370,8 @@ public class ContextResolverBasic {
 		Object value = null;
 		boolean hasEntities = false;
 		boolean hasWatchedAttributes = false;
-
+		boolean hasNotificaition = false;
+		
 		int keyType;
 		for (Entry<String, Object> mapEntry : rawSub.entrySet()) {
 			String key = mapEntry.getKey();
@@ -393,7 +394,7 @@ public class ContextResolverBasic {
 			} else if (keyType == 2) {
 				// ID
 				try {
-					subscription.setId(new URI((String) mapValue));
+					subscription.setId(new URI(validateUri((String) mapValue)));
 				} catch (URISyntaxException e) {
 					// Left empty intentionally is already checked
 				}
@@ -461,6 +462,7 @@ public class ContextResolverBasic {
 					NotificationParam notification = getNotificationParam(
 							(Map<String, Object>) ((List) mapValue).get(0));
 					subscription.setNotification(notification);
+					hasNotificaition = true;
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}
@@ -520,6 +522,14 @@ public class ContextResolverBasic {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
 				}
+			} else if (keyType == 21) {
+				// DESCRIPTION
+				try {
+					subscription.setActive(
+							(Boolean) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
+				}
 			}
 
 		}
@@ -527,6 +537,10 @@ public class ContextResolverBasic {
 		if (!hasEntities && !hasWatchedAttributes) {
 			throw new ResponseException(ErrorType.BadRequestData, "You have to specify watched attributes or entities");
 		}
+		if (!hasNotificaition) {
+			throw new ResponseException(ErrorType.BadRequestData, "You have to specify notification");
+		}
+		 
 		return subscription;
 	}
 

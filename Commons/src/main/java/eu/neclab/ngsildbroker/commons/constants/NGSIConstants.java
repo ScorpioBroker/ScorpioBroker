@@ -106,6 +106,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TIMES_SEND = "https://uri.etsi.org/ngsi-ld/timesSent";
 	public final static String NGSI_LD_UNIT_CODE = "https://uri.etsi.org/ngsi-ld/unitCode";
 	public final static String NGSI_LD_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/datasetId";
+	public final static String NGSI_LD_IS_ACTIVE = "https://uri.etsi.org/ngsi-ld/isActive";
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_DEFAULT_PREFIX, NGSI_LD_HAS_VALUE, NGSI_LD_HAS_OBJECT, JSON_LD_VALUE, NGSI_LD_LOCATION,
@@ -122,7 +123,7 @@ public interface NGSIConstants {
 			NGSI_LD_ENTITIES, NGSI_LD_ID_PATTERN, NGSI_LD_GEO_QUERY, NGSI_LD_NOTIFICATION, NGSI_LD_ATTRIBUTES,
 			NGSI_LD_ENDPOINT, NGSI_LD_ACCEPT, NGSI_LD_URI, NGSI_LD_FORMAT, NGSI_LD_QUERY, NGSI_LD_WATCHED_ATTRIBUTES,
 			NGSI_LD_TIMES_SEND, NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL, NGSI_LD_EXPIRES, NGSI_LD_STATUS,
-			NGSI_LD_DESCRIPTION, NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START };
+			NGSI_LD_DESCRIPTION, NGSI_LD_IS_ACTIVE, NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START };
 
 	public final static String GEO_JSON_COORDINATES = "coordinates";
 	public final static String GEO_JSON_TYPE = "type";
