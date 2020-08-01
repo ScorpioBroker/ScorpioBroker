@@ -371,7 +371,7 @@ public class ContextResolverBasic {
 		boolean hasEntities = false;
 		boolean hasWatchedAttributes = false;
 		boolean hasNotificaition = false;
-		
+
 		int keyType;
 		for (Entry<String, Object> mapEntry : rawSub.entrySet()) {
 			String key = mapEntry.getKey();
@@ -429,7 +429,7 @@ public class ContextResolverBasic {
 							break;
 						case NGSIConstants.JSON_LD_TYPE:
 							hasType = true;
-							entityInfo.setType(validateUri((String) ((List)entitiesEntry.getValue()).get(0)));
+							entityInfo.setType(validateUri((String) ((List) entitiesEntry.getValue()).get(0)));
 							break;
 						case NGSIConstants.NGSI_LD_ID_PATTERN:
 							entityInfo.setIdPattern(
@@ -452,6 +452,7 @@ public class ContextResolverBasic {
 					LDGeoQuery ldGeoQuery = getGeoQuery((Map<String, Object>) ((List) mapValue).get(0));
 					subscription.setLdGeoQuery(ldGeoQuery);
 				} catch (Exception e) {
+					logger.error(e);
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}
 				// geoQ
@@ -480,7 +481,8 @@ public class ContextResolverBasic {
 				try {
 					subscription.setAttributeNames(getAttribs((List<Map<String, Object>>) mapValue));
 				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse watched attributes " + mapValue);
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Failed to parse watched attributes " + mapValue);
 				}
 			} else if (keyType == 16) {
 				// THROTTELING
@@ -540,7 +542,7 @@ public class ContextResolverBasic {
 		if (!hasNotificaition) {
 			throw new ResponseException(ErrorType.BadRequestData, "You have to specify notification");
 		}
-		 
+
 		return subscription;
 	}
 
@@ -603,7 +605,7 @@ public class ContextResolverBasic {
 			}
 			watchedAttribs.add(temp);
 		}
-		if(watchedAttribs.isEmpty()) {
+		if (watchedAttribs.isEmpty()) {
 			throw new ResponseException(ErrorType.BadRequestData, "Empty watched attributes entry");
 		}
 		return watchedAttribs;
@@ -629,7 +631,16 @@ public class ContextResolverBasic {
 		ArrayList<Double> coordinates = new ArrayList<Double>();
 
 		for (Map<String, Object> entry : jsonCoordinates) {
-			coordinates.add((Double) entry.get(NGSIConstants.JSON_LD_VALUE));
+			Object tempValue = entry.get(NGSIConstants.JSON_LD_VALUE);
+			if (tempValue instanceof Double) {
+				coordinates.add((Double) tempValue);
+			} else if (tempValue instanceof Integer) {
+				coordinates.add(((Integer) tempValue).doubleValue());
+			} else if (tempValue instanceof Long) {
+				coordinates.add(((Long) tempValue).doubleValue());
+			} else {
+				throw new ResponseException(ErrorType.BadRequestData, "Failed to parse coordinates");
+			}
 
 		}
 		geoQuery.setCoordinates(coordinates);
