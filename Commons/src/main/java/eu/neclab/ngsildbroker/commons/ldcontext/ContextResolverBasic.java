@@ -443,6 +443,7 @@ public class ContextResolverBasic {
 						throw new ResponseException(ErrorType.BadRequestData, "Entities entry needs type");
 					}
 					hasEntities = true;
+					entities.add(entityInfo);
 				}
 				subscription.setEntities(entities);
 			} else if (keyType == 7) {
@@ -477,7 +478,7 @@ public class ContextResolverBasic {
 				try {
 					subscription.setAttributeNames(getAttribs((List<Map<String, Object>>) mapValue));
 				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse watched attributes");
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse watched attributes " + mapValue);
 				}
 			} else if (keyType == 16) {
 				// THROTTELING
