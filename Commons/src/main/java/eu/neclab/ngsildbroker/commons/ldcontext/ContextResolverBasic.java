@@ -3,7 +3,11 @@ package eu.neclab.ngsildbroker.commons.ldcontext;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -28,14 +32,26 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
+import eu.neclab.ngsildbroker.commons.datatypes.GeoRelation;
+import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
+import eu.neclab.ngsildbroker.commons.datatypes.LDQuery;
+import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
+import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.Format;
+import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 @Component
 public class ContextResolverBasic {
@@ -60,6 +76,7 @@ public class ContextResolverBasic {
 	// private Map<String, Object> DEFAULT_CONTEXT;
 	private Map<String, Object> BASE_CONTEXT = new HashMap<String, Object>();
 	Pattern attributeChecker;
+	Pattern subscriptionParser;
 	private static final String IS_FULL_VALID = "ajksd7868";
 
 	@PostConstruct
@@ -132,8 +149,13 @@ public class ContextResolverBasic {
 		for (String payloadItem : NGSIConstants.NGSI_LD_PAYLOAD_KEYS) {
 			regex.append("|(" + payloadItem.replace("/", "\\/").replace(".", "\\.") + ")");
 		}
-
 		attributeChecker = Pattern.compile(regex.toString());
+		regex = new StringBuilder();
+		regex.append(NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX);
+		for (String payloadItem : NGSIConstants.NGSI_LD_SUBSCRIPTON_PAYLOAD_KEYS) {
+			regex.append("|(" + payloadItem.replace("/", "\\/").replace(".", "\\.") + ")");
+		}
+		subscriptionParser = Pattern.compile(regex.toString());
 
 	}
 
@@ -163,38 +185,42 @@ public class ContextResolverBasic {
 		}
 	}
 
+	private Map<Integer, List<Object>> expand(Map<String, Object> json, List<Object> contextLinks) {
+		Object tempCtx = json.get(NGSIConstants.JSON_LD_CONTEXT);
+		List<Object> context;
+		if (tempCtx == null) {
+			context = new ArrayList<Object>();
+		} else if (tempCtx instanceof List) {
+			context = (List<Object>) tempCtx;
+		} else {
+			context = new ArrayList<Object>();
+			context.add(tempCtx);
+		}
+
+		if (contextLinks != null && !contextLinks.isEmpty()) {
+			context.addAll(contextLinks);
+		}
+		ArrayList<Object> usedContext = new ArrayList<Object>();
+		usedContext.addAll(context);
+		usedContext.remove(CORE_CONTEXT_URL_STR);
+		usedContext.add(BASE_CONTEXT);
+
+		json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
+
+		Map<Integer, List<Object>> result = new HashMap<Integer, List<Object>>();
+		result.put(1, JsonLdProcessor.expand(json));
+		result.put(2, usedContext);
+		return result;
+
+	}
+
 	public String expand(Map<String, Object> json, List<Object> contextLinks, boolean check, int endPoint)
 			throws ResponseException {
 		try {
-			Object tempCtx = json.get(NGSIConstants.JSON_LD_CONTEXT);
-			List<Object> context;
-			if (tempCtx == null) {
-				context = new ArrayList<Object>();
-			} else if (tempCtx instanceof List) {
-				context = (List<Object>) tempCtx;
-			} else {
-				context = new ArrayList<Object>();
-				context.add(tempCtx);
-			}
-
-			if (contextLinks != null && !contextLinks.isEmpty()) {
-				context.addAll(contextLinks);
-			}
-			// context.remove(CORE_CONTEXT_URL_STR);
-
-			// Map<String, Object> fullContext = getFullContext(context);
-			// // validateAndCleanContext(fullContext);
-			// fullContext.remove(IS_FULL_VALID);
-			ArrayList<Object> usedContext = new ArrayList<Object>();
-			usedContext.addAll(context);
-			usedContext.remove(CORE_CONTEXT_URL_STR);
-			usedContext.add(BASE_CONTEXT);
-
-			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
-			List<Object> expanded = JsonLdProcessor.expand(json);
 			// if(!
+			Map<Integer, List<Object>> expanded = expand(json, contextLinks);
 			if (check) {
-				preFlightCheck(expanded, usedContext, true, endPoint, false);
+				preFlightCheck(expanded.get(1), expanded.get(2), true, endPoint, false);
 			}
 			// ) {
 			// throw new ResponseException(ErrorType.BadRequestData,"Entity without an
@@ -213,8 +239,8 @@ public class ContextResolverBasic {
 
 	}
 
-	private boolean preFlightCheck(List<Object> expanded, ArrayList<Object> usedContext, boolean root,
-			int calledEndpoint, boolean customKey) throws JsonGenerationException, ResponseException, IOException {
+	private boolean preFlightCheck(List<Object> expanded, List<Object> usedContext, boolean root, int calledEndpoint,
+			boolean customKey) throws JsonGenerationException, ResponseException, IOException {
 		boolean hasAttributes = false;
 		for (Object entry : expanded) {
 			if (entry instanceof Map) {
@@ -230,7 +256,7 @@ public class ContextResolverBasic {
 		return hasAttributes;
 	}
 
-	private boolean preFlightCheck(Map<String, Object> objMap, ArrayList<Object> usedContext, boolean root,
+	private boolean preFlightCheck(Map<String, Object> objMap, List<Object> usedContext, boolean root,
 			int calledEndpoint, boolean customKey) throws ResponseException, JsonGenerationException, IOException {
 
 		Object value = null;
@@ -251,7 +277,9 @@ public class ContextResolverBasic {
 			// (@id)|(@type)|(@context)|(https://uri.etsi.org/ngsi-ld/default-context/)|(https://uri.etsi.org/ngsi-ld/hasValue)|(https://uri.etsi.org/ngsi-ld/hasObject)|(https://uri.etsi.org/ngsi-ld/location)|(https://uri.etsi.org/ngsi-ld/createdAt)|(https://uri.etsi.org/ngsi-ld/modifiedAt)|(https://uri.etsi.org/ngsi-ld/observedAt)|(https://uri.etsi.org/ngsi-ld/observationSpace)|(https://uri.etsi.org/ngsi-ld/operationSpace)|(https://uri.etsi.org/ngsi-ld/attributes)|(https://uri.etsi.org/ngsi-ld/information)|(https://uri.etsi.org/ngsi-ld/instanceId)|(https://uri.etsi.org/ngsi-ld/coordinates)|(https://uri.etsi.org/ngsi-ld/idPattern)|(https://uri.etsi.org/ngsi-ld/entities)|(https://uri.etsi.org/ngsi-ld/geometry)|(https://uri.etsi.org/ngsi-ld/geoQ)|(https://uri.etsi.org/ngsi-ld/accept)|(https://uri.etsi.org/ngsi-ld/uri)|(https://uri.etsi.org/ngsi-ld/endpoint)|(https://uri.etsi.org/ngsi-ld/format)|(https://uri.etsi.org/ngsi-ld/notification)|(https://uri.etsi.org/ngsi-ld/q)|(https://uri.etsi.org/ngsi-ld/watchedAttributes)|(https://uri.etsi.org/ngsi-ld/name)|(https://uri.etsi.org/ngsi-ld/throttling)|(https://uri.etsi.org/ngsi-ld/timeInterval)|(https://uri.etsi.org/ngsi-ld/expires)|(https://uri.etsi.org/ngsi-ld/status)|(https://uri.etsi.org/ngsi-ld/description)|(https://uri.etsi.org/ngsi-ld/georel)|(https://uri.etsi.org/ngsi-ld/timestamp)|(https://uri.etsi.org/ngsi-ld/start)|(https://uri.etsi.org/ngsi-ld/end)|(https://uri.etsi.org/ngsi-ld/subscriptionId)|(https://uri.etsi.org/ngsi-ld/notifiedAt)|(https://uri.etsi.org/ngsi-ld/data)|(https://uri.etsi.org/ngsi-ld/internal)|(https://uri.etsi.org/ngsi-ld/lastNotification)|(https://uri.etsi.org/ngsi-ld/lastFailure
 			// )|(https://uri.etsi.org/ngsi-ld/lastSuccess)|(https://uri.etsi.org/ngsi-ld/timesSent)|([\<\"\'\=\;\(\)\>\?\*])
 			if (keyType == 1) {
-				throw new ResponseException(ErrorType.BadRequestData, "Forbidden characters in JSON key. Forbidden Characters are " + NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS);
+				throw new ResponseException(ErrorType.BadRequestData,
+						"Forbidden characters in JSON key. Forbidden Characters are "
+								+ NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS);
 			} else if (keyType == -1 || keyType == 5 || keyType == 9) {
 				if (keyType == 9) {
 					if (protectRegistrationLocationEntry(mapValue, mapEntry, usedContext)) {
@@ -329,6 +357,290 @@ public class ContextResolverBasic {
 		return hasAttributes;
 	}
 
+	public Subscription expandSubscription(String body, List<Object> contextLinks) throws ResponseException {
+		Subscription subscription = new Subscription();
+
+		Map<Integer, List<Object>> expanded;
+		try {
+			expanded = expand((Map<String, Object>) JsonUtils.fromString(body), contextLinks);
+		} catch (Exception e) {
+			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse document. JSON is invalid");
+		}
+		Map<String, Object> rawSub = (Map<String, Object>) expanded.get(1).get(0);
+		Object value = null;
+		boolean hasEntities = false;
+		boolean hasWatchedAttributes = false;
+
+		int keyType;
+		for (Entry<String, Object> mapEntry : rawSub.entrySet()) {
+			String key = mapEntry.getKey();
+			Object mapValue = mapEntry.getValue();
+			keyType = checkKey(key);
+			/*
+			 * // { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT, NGSI_LD_ENTITIES,
+			 * NGSI_LD_ID_PATTERN, NGSI_LD_GEO_QUERY, NGSI_LD_NOTIFICATION,
+			 * NGSI_LD_ATTRIBUTES, NGSI_LD_ENDPOINT, NGSI_LD_ACCEPT, NGSI_LD_URI,
+			 * NGSI_LD_FORMAT, NGSI_LD_QUERY, NGSI_LD_WATCHED_ATTRIBUTES,
+			 * NGSI_LD_TIMES_SEND, NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL,
+			 * NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START }
+			 */
+			if (keyType == 1) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"Forbidden characters in JSON key. Forbidden Characters are "
+								+ NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS);
+			} else if (keyType == -1) {
+				throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for subscription");
+			} else if (keyType == 2) {
+				// ID
+				validateUri((String) mapValue);
+			} else if (keyType == 3) {
+				// TYPE
+				String type = null;
+				if (mapValue instanceof List) {
+					type = validateUri((String) ((List) mapValue).get(0));
+				} else if (mapValue instanceof String) {
+					type = validateUri((String) mapValue);
+				}
+				if (type == null || !type.equals(NGSIConstants.NGSI_LD_SUBSCRIPTION)) {
+					throw new ResponseException(ErrorType.BadRequestData, "No type or type is not Subscription");
+				}
+			} else if (keyType == 5) {
+				// Entities
+				List<EntityInfo> entities = new ArrayList<EntityInfo>();
+				List<Map<String, Object>> list = (List<Map<String, Object>>) mapValue;
+				boolean hasType;
+				for (Map<String, Object> entry : list) {
+					EntityInfo entityInfo = new EntityInfo();
+					hasType = false;
+					for (Entry<String, Object> entitiesEntry : entry.entrySet()) {
+						switch (entitiesEntry.getKey()) {
+						case NGSIConstants.JSON_LD_ID:
+							try {
+								entityInfo.setId(new URI(validateUri((String) entitiesEntry.getValue())));
+							} catch (URISyntaxException e) {
+								// Left empty intentionally is already checked
+							}
+							break;
+						case NGSIConstants.JSON_LD_TYPE:
+							hasType = true;
+							entityInfo.setType(validateUri((String) entitiesEntry.getValue()));
+							break;
+						case NGSIConstants.NGSI_LD_ID_PATTERN:
+							entityInfo.setIdPattern(
+									(String) ((Map<String, Object>) ((List) entitiesEntry.getValue()).get(0))
+											.get(NGSIConstants.JSON_LD_VALUE));
+							break;
+						default:
+							throw new ResponseException(ErrorType.BadRequestData, "Unknown entry for entities");
+						}
+					}
+					if (!hasType) {
+						throw new ResponseException(ErrorType.BadRequestData, "Entities entry needs type");
+					}
+					hasEntities = true;
+				}
+				subscription.setEntities(entities);
+			} else if (keyType == 7) {
+				try {
+					LDGeoQuery ldGeoQuery = getGeoQuery((Map<String, Object>) ((List) mapValue).get(0));
+					subscription.setLdGeoQuery(ldGeoQuery);
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
+				}
+				// geoQ
+
+			} else if (keyType == 8) {
+				// NGSI_LD_NOTIFICATION
+				try {
+					NotificationParam notification = getNotificationParam(
+							(Map<String, Object>) ((List) mapValue).get(0));
+					subscription.setNotification(notification);
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
+				}
+			} else if (keyType == 13) {
+				// NGSI_LD_QUERY
+
+				try {
+					subscription.setLdQuery(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
+				}
+			} else if (keyType == 14) {
+				// NGSI_LD_WATCHED_ATTRIBUTES
+				try {
+					subscription.setAttributeNames(getAttribs((List<Map<String, Object>>) mapValue));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse watched attributes");
+				}
+			} else if (keyType == 16) {
+				// THROTTELING
+				try {
+					subscription.setThrottling(
+							(Integer) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse throtteling");
+				}
+			} else if (keyType == 17) {
+				// TIMEINTERVALL
+				try {
+					subscription.setTimeInterval(
+							(Integer) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse timeinterval");
+				}
+			} else if (keyType == 18) {
+				// EXPIRES
+				try {
+					subscription.setExpires(SerializationTools.date2Long(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE)));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse expires");
+				}
+			} else if (keyType == 19) {
+				// STATUS
+				try {
+					subscription.setStatus(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
+				}
+			} else if (keyType == 20) {
+				// DESCRIPTION
+				try {
+					subscription.setDescription(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
+				}
+			}
+
+		}
+
+		if (!hasEntities && !hasWatchedAttributes) {
+			throw new ResponseException(ErrorType.BadRequestData, "You have to specify watched attributes or entities");
+		}
+		return subscription;
+	}
+
+	private NotificationParam getNotificationParam(Map<String, Object> map) throws Exception {
+		// Default accept
+		String accept = AppConstants.NGB_APPLICATION_JSONLD;
+		Format format = Format.normalized;
+		List<String> watchedAttribs = new ArrayList<String>();
+		NotificationParam notifyParam = new NotificationParam();
+		for (Entry<String, Object> entry : map.entrySet()) {
+			switch (entry.getKey()) {
+			case NGSIConstants.NGSI_LD_ATTRIBUTES:
+				watchedAttribs = getAttribs((List<Map<String, Object>>) entry.getValue());
+				notifyParam.setAttributeNames(watchedAttribs);
+				break;
+			case NGSIConstants.NGSI_LD_ENDPOINT:
+				EndPoint endPoint = new EndPoint();
+				for (Entry<String, Object> endPointEntry : ((List<Map<String, Object>>) entry.getValue()).get(0)
+						.entrySet()) {
+					switch (endPointEntry.getKey()) {
+					case NGSIConstants.NGSI_LD_ACCEPT:
+						accept = ((List<Map<String, String>>) endPointEntry.getValue()).get(0)
+								.get(NGSIConstants.JSON_LD_VALUE);
+						break;
+					case NGSIConstants.NGSI_LD_URI:
+						URI endPointURI = validateSubEndpoint(((List<Map<String, String>>) endPointEntry.getValue())
+								.get(0).get(NGSIConstants.JSON_LD_VALUE));
+						endPoint.setUri(endPointURI);
+						break;
+
+					default:
+						throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for endpoint");
+					}
+				}
+				endPoint.setAccept(accept);
+				notifyParam.setEndPoint(endPoint);
+				break;
+			case NGSIConstants.NGSI_LD_FORMAT:
+				String formatString = (String) ((List<Map<String, Object>>) entry.getValue()).get(0)
+						.get(NGSIConstants.JSON_LD_VALUE);
+				if (formatString.equalsIgnoreCase("keyvalues")) {
+					format = Format.keyValues;
+				}
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for notification");
+			}
+
+		}
+		notifyParam.setFormat(format);
+		return notifyParam;
+	}
+
+	private List<String> getAttribs(List<Map<String, Object>> entry) throws ResponseException {
+		ArrayList<String> watchedAttribs = new ArrayList<String>();
+		for (Map<String, Object> attribEntry : entry) {
+			String temp = (String) attribEntry.get(NGSIConstants.JSON_LD_ID);
+			if (temp.matches(NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX)) {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid character in attribute names");
+			}
+			watchedAttribs.add(temp);
+		}
+		return watchedAttribs;
+	}
+
+	private URI validateSubEndpoint(String string) throws ResponseException {
+		URI uri;
+		try {
+			uri = new URI(string);
+			if (Arrays.binarySearch(NGSIConstants.VALID_SUB_ENDPOINT_SCHEMAS, uri.getScheme()) == -1) {
+				throw new ResponseException(ErrorType.BadRequestData, "Unsupport endpoint scheme");
+			}
+		} catch (URISyntaxException e) {
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid endpoint");
+		}
+		return uri;
+	}
+
+	private LDGeoQuery getGeoQuery(Map<String, Object> map) throws Exception {
+		LDGeoQuery geoQuery = new LDGeoQuery();
+		List<Map<String, Object>> jsonCoordinates = (List<Map<String, Object>>) map
+				.get(NGSIConstants.NGSI_LD_COORDINATES);
+		ArrayList<Double> coordinates = new ArrayList<Double>();
+
+		for (Map<String, Object> entry : jsonCoordinates) {
+			coordinates.add((Double) entry.get(NGSIConstants.JSON_LD_VALUE));
+
+		}
+		geoQuery.setCoordinates(coordinates);
+		String geometry = (String) ((Map<String, Object>) ((List) map.get(NGSIConstants.NGSI_LD_GEOMETRY)).get(0))
+				.get(NGSIConstants.JSON_LD_VALUE);
+		if (geometry.equalsIgnoreCase("point")) {
+			geoQuery.setGeometry(Geometry.Point);
+		} else if (geometry.equalsIgnoreCase("polygon")) {
+			geoQuery.setGeometry(Geometry.Polygon);
+		}
+		String geoRelString = (String) ((Map<String, Object>) ((List) map.get(NGSIConstants.NGSI_LD_GEO_REL)).get(0))
+				.get(NGSIConstants.JSON_LD_VALUE);
+		String[] relSplit = geoRelString.split(";");
+		GeoRelation geoRel = new GeoRelation();
+		geoRel.setRelation(relSplit[0]);
+		for (int i = 1; i < relSplit.length; i++) {
+			String[] temp = relSplit[i].split("==");
+			Object distance;
+			try {
+				distance = Integer.parseInt(temp[1]);
+			} catch (NumberFormatException e) {
+				distance = Double.parseDouble(temp[1]);
+			}
+			if (temp[0].equalsIgnoreCase("maxDistance")) {
+
+				geoRel.setMaxDistance(distance);
+			} else if (temp[0].equalsIgnoreCase("minDistance")) {
+				geoRel.setMinDistance(distance);
+			}
+		}
+		geoQuery.setGeoRelation(geoRel);
+		return geoQuery;
+	}
+
 	private int checkKey(String key) {
 		Matcher m = attributeChecker.matcher(key);
 		int result = 10000;
@@ -359,7 +671,7 @@ public class ContextResolverBasic {
 	}
 
 	private boolean protectRegistrationLocationEntry(Object mapValue, Entry<String, Object> mapEntry,
-			ArrayList<Object> usedContext) throws JsonGenerationException, IOException {
+			List<Object> usedContext) throws JsonGenerationException, IOException {
 		if (((List) mapValue).get(0) instanceof Map) {
 			Map temp = (Map) ((List) mapValue).get(0);
 			if (temp.get(NGSIConstants.JSON_LD_TYPE) != null) {
@@ -385,7 +697,7 @@ public class ContextResolverBasic {
 
 	}
 
-	private Object getProperGeoJson(Object value, ArrayList<Object> usedContext)
+	private Object getProperGeoJson(Object value, List<Object> usedContext)
 			throws JsonGenerationException, IOException {
 		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
 		compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
@@ -444,7 +756,7 @@ public class ContextResolverBasic {
 		return tempList;
 	}
 
-	private void protectGeoProp(Map<String, Object> objMap, Object value, ArrayList<Object> usedContext)
+	private void protectGeoProp(Map<String, Object> objMap, Object value, List<Object> usedContext)
 			throws JsonGenerationException, IOException {
 		Object potentialStringValue = ((Map) value).get(NGSIConstants.JSON_LD_VALUE);
 		if (potentialStringValue != null) {
