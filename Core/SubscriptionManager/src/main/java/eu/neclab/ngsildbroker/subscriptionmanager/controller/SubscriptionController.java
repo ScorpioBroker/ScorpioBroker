@@ -95,18 +95,7 @@ public class SubscriptionController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
-			String resolved = contextResolver.expand(payload, context, true, AppConstants.SUBSCRIPTIONS_URL_ID);
-			try {
-				subscription = DataSerializer.getSubscription(resolved);
-			} catch (Exception e) {
-				logger.error("Exception ::", e);
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-						.body(("provided payload has errors.\n" + e.getMessage()).getBytes());
-			}
-			if (resolved == null || subscription == null) {
-				return badRequestResponse;
-			}
-			
+			subscription = contextResolver.expandSubscription(payload, context);
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
 			URI subId = manager.subscribe(subRequest);
 
