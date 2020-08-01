@@ -464,7 +464,7 @@ public class ContextResolverBasic {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}
-			} else if (keyType == 13) {
+			} else if (keyType == 14) {
 				// NGSI_LD_QUERY
 
 				try {
@@ -473,7 +473,7 @@ public class ContextResolverBasic {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}
-			} else if (keyType == 14) {
+			} else if (keyType == 15) {
 				// NGSI_LD_WATCHED_ATTRIBUTES
 				try {
 					subscription.setAttributeNames(getAttribs((List<Map<String, Object>>) mapValue));
