@@ -228,10 +228,10 @@ public class ContextResolverBasic {
 			// }
 //			protectGeoProps(expanded, usedContext);
 //			protectLocationFromSubs(expanded, usedContext);
-			if (expanded.isEmpty()) {
+			if (expanded.get(1).isEmpty()) {
 				return "";
 			}
-			return JsonUtils.toPrettyString(expanded.get(0));
+			return JsonUtils.toPrettyString(expanded.get(1).get(0));
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new ResponseException(ErrorType.InvalidRequest);
