@@ -273,7 +273,7 @@ public class ContextResolverBasic {
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
-			keyType = checkKey(key);
+			keyType = checkKey(key, attributeChecker);
 			// (@id)|(@type)|(@context)|(https://uri.etsi.org/ngsi-ld/default-context/)|(https://uri.etsi.org/ngsi-ld/hasValue)|(https://uri.etsi.org/ngsi-ld/hasObject)|(https://uri.etsi.org/ngsi-ld/location)|(https://uri.etsi.org/ngsi-ld/createdAt)|(https://uri.etsi.org/ngsi-ld/modifiedAt)|(https://uri.etsi.org/ngsi-ld/observedAt)|(https://uri.etsi.org/ngsi-ld/observationSpace)|(https://uri.etsi.org/ngsi-ld/operationSpace)|(https://uri.etsi.org/ngsi-ld/attributes)|(https://uri.etsi.org/ngsi-ld/information)|(https://uri.etsi.org/ngsi-ld/instanceId)|(https://uri.etsi.org/ngsi-ld/coordinates)|(https://uri.etsi.org/ngsi-ld/idPattern)|(https://uri.etsi.org/ngsi-ld/entities)|(https://uri.etsi.org/ngsi-ld/geometry)|(https://uri.etsi.org/ngsi-ld/geoQ)|(https://uri.etsi.org/ngsi-ld/accept)|(https://uri.etsi.org/ngsi-ld/uri)|(https://uri.etsi.org/ngsi-ld/endpoint)|(https://uri.etsi.org/ngsi-ld/format)|(https://uri.etsi.org/ngsi-ld/notification)|(https://uri.etsi.org/ngsi-ld/q)|(https://uri.etsi.org/ngsi-ld/watchedAttributes)|(https://uri.etsi.org/ngsi-ld/name)|(https://uri.etsi.org/ngsi-ld/throttling)|(https://uri.etsi.org/ngsi-ld/timeInterval)|(https://uri.etsi.org/ngsi-ld/expires)|(https://uri.etsi.org/ngsi-ld/status)|(https://uri.etsi.org/ngsi-ld/description)|(https://uri.etsi.org/ngsi-ld/georel)|(https://uri.etsi.org/ngsi-ld/timestamp)|(https://uri.etsi.org/ngsi-ld/start)|(https://uri.etsi.org/ngsi-ld/end)|(https://uri.etsi.org/ngsi-ld/subscriptionId)|(https://uri.etsi.org/ngsi-ld/notifiedAt)|(https://uri.etsi.org/ngsi-ld/data)|(https://uri.etsi.org/ngsi-ld/internal)|(https://uri.etsi.org/ngsi-ld/lastNotification)|(https://uri.etsi.org/ngsi-ld/lastFailure
 			// )|(https://uri.etsi.org/ngsi-ld/lastSuccess)|(https://uri.etsi.org/ngsi-ld/timesSent)|([\<\"\'\=\;\(\)\>\?\*])
 			if (keyType == 1) {
@@ -375,7 +375,7 @@ public class ContextResolverBasic {
 		for (Entry<String, Object> mapEntry : rawSub.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
-			keyType = checkKey(key);
+			keyType = checkKey(key, subscriptionParser);
 			/*
 			 * // { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT, NGSI_LD_ENTITIES,
 			 * NGSI_LD_ID_PATTERN, NGSI_LD_GEO_QUERY, NGSI_LD_NOTIFICATION,
@@ -423,7 +423,7 @@ public class ContextResolverBasic {
 							break;
 						case NGSIConstants.JSON_LD_TYPE:
 							hasType = true;
-							entityInfo.setType(validateUri((String) entitiesEntry.getValue()));
+							entityInfo.setType(validateUri((String) ((List)entitiesEntry.getValue()).get(0)));
 							break;
 						case NGSIConstants.NGSI_LD_ID_PATTERN:
 							entityInfo.setIdPattern(
@@ -641,8 +641,8 @@ public class ContextResolverBasic {
 		return geoQuery;
 	}
 
-	private int checkKey(String key) {
-		Matcher m = attributeChecker.matcher(key);
+	private int checkKey(String key, Pattern p) {
+		Matcher m = p.matcher(key);
 		int result = 10000;
 		while (m.find()) {
 			for (int i = 1; i <= m.groupCount(); i++) {
