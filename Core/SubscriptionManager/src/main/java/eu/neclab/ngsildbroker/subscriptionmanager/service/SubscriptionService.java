@@ -450,13 +450,12 @@ public class SubscriptionService implements SubscriptionManager {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getIdPattern() != null && entityInfo.getIdPattern().matches(key)) {
+				if (entityInfo.getIdPattern() != null && key.matches(entityInfo.getIdPattern())) {
 					subsToCheck.add(sub);
 					break;
 				}
 			}
 		}
-		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(key));
 		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE));
 		checkSubscriptions(subsToCheck, create, CREATE, messageTime);
 
@@ -788,7 +787,6 @@ public class SubscriptionService implements SubscriptionManager {
 				}
 			}
 		}
-		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(key));
 		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE));
 		checkSubscriptions(subsToCheck, update, UPDATE, messageTime);
 
@@ -825,13 +823,12 @@ public class SubscriptionService implements SubscriptionManager {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getIdPattern() != null && entityInfo.getIdPattern().matches(key)) {
+				if (entityInfo.getIdPattern() != null && key.matches(entityInfo.getIdPattern())) {
 					subsToCheck.add(sub);
 					break;
 				}
 			}
 		}
-		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(key));
 		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE));
 		checkSubscriptions(subsToCheck, append, APPEND, messageTime);
 
