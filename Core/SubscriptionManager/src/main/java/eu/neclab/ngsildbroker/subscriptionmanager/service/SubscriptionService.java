@@ -251,13 +251,12 @@ public class SubscriptionService implements SubscriptionManager {
 
 					@Override
 					public void run() {
-						synchronized (subscriptionId2Subscription) {
-							subscriptionId2Subscription.remove(subscription.getId().toString());
+						try {
+							unsubscribe(subscription.getId());
+						} catch (ResponseException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
 						}
-						synchronized (type2EntitiesSubscriptions) {
-							type2EntitiesSubscriptions.values().remove(subscription);
-						}
-
 					}
 				};
 				subId2TimerTask.put(subscription.getId().toString(), cancel);
@@ -749,7 +748,6 @@ public class SubscriptionService implements SubscriptionManager {
 	// return null;
 	// }
 
-	
 	@KafkaListener(topics = "${entity.update.topic}", groupId = "submanager")
 	public void handleUpdate(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
