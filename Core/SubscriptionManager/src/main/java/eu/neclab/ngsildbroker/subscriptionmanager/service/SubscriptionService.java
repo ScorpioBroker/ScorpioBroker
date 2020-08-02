@@ -782,7 +782,7 @@ public class SubscriptionService implements SubscriptionManager {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getIdPattern() != null && entityInfo.getIdPattern().matches(key)) {
+				if (entityInfo.getIdPattern() != null && key.matches(entityInfo.getIdPattern())) {
 					subsToCheck.add(sub);
 					break;
 				}
