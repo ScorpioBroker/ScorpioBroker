@@ -771,13 +771,13 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 		update.setType(type);
 		ArrayList<Subscription> subsToCheck = new ArrayList<Subscription>();
-		for (Subscription sub : this.type2EntitiesSubscriptions.get(key)) {
+		for (Subscription sub : this.type2EntitiesSubscriptions.get(type)) {
 			for (EntityInfo entityInfo : sub.getEntities()) {
 				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(type)) {
+				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(key)) {
 					subsToCheck.add(sub);
 					break;
 				}
@@ -813,13 +813,13 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 		append.setType(type);
 		ArrayList<Subscription> subsToCheck = new ArrayList<Subscription>();
-		for (Subscription sub : this.type2EntitiesSubscriptions.get(key)) {
+		for (Subscription sub : this.type2EntitiesSubscriptions.get(type)) {
 			for (EntityInfo entityInfo : sub.getEntities()) {
 				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(type)) {
+				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(key)) {
 					subsToCheck.add(sub);
 					break;
 				}
