@@ -328,6 +328,7 @@ public class ContextResolverBasic {
 				value = checkHasValue(mapValue);
 				hasValue = true;
 			} else if (keyType == 7) {
+				checkHasObject(mapValue);
 				hasObject = true;
 			} else if (keyType == 8) {
 				hasAtValue = true;
@@ -355,6 +356,20 @@ public class ContextResolverBasic {
 			protectGeoProp(objMap, value, usedContext);
 		}
 		return hasAttributes;
+	}
+
+	private void checkHasObject(Object mapValue) throws ResponseException {
+		if (mapValue == null) {
+			throw new ResponseException(ErrorType.BadRequestData);
+		}
+		if (mapValue instanceof List) {
+			List tempList = (List) mapValue;
+			if(tempList.size() != 1) {
+				throw new ResponseException(ErrorType.BadRequestData, "Only one entry per relationship is allowed");
+			}
+		}
+		
+		
 	}
 
 	public Subscription expandSubscription(String body, List<Object> contextLinks) throws ResponseException {
