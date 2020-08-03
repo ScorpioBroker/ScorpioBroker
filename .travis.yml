@@ -48,7 +48,7 @@ before_script:
   - sleep 10
   - java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar > /dev/null 2>&1 &
   - sleep 10
-  - java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar > /dev/null 2>&1 &
+  - java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar &
   - sleep 100
   - while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done
   
