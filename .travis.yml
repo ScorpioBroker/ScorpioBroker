@@ -32,7 +32,7 @@ install:
   - cd ..
   - mkdir testsuite
   - cd testsuite
-  - curl -LO https://github.com/FIWARE/NGSI-LD_TestSuite/archive/master.zip
+  - curl -LO https://github.com/ScorpioBroker/NGSI-LD_TestSuite/archive/master.zip
   - shasum -a 256 master.zip
   - unzip -q master.zip
   - rm master.zip
@@ -57,6 +57,7 @@ script:
   - cd NGSI-LD_TestSuite-master
   #- export EXCLUDED_TESTS="001|002|003|004|014|022|145|147|149|151|155|"
   #- export EXCLUDED_TESTS="055|069|070|083|109|134|158|" #last two not a valid ngsi-ld input, first three not consistend in the spec at the moment so we skipped them for now. test 83 should be obsolete by now due to the default vocab
+  
   - export TEST_ENDPOINT="http://localhost:9090"
   - export ACC_ENDPOINT="http://localhost:4444"
   - export NOTIFY_ENDPOINT="http://localhost:4444/acc"
