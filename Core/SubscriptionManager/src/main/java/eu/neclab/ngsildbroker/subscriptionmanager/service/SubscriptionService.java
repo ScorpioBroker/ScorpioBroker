@@ -507,6 +507,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private void sendNotification(List<Entity> dataList, Subscription subscription) {
 		logger.debug(DataSerializer.toJson(dataList));
+		System.out.println("SENDING NOTIFICATION: " + DataSerializer.toJson(dataList) + " \nTO SUBSCRIPTION \n" + DataSerializer.toJson(subscription));
 		// if (subscription.getTimeInterval() > 0) {
 		// try {
 		// intervalHandler.notify(new
@@ -597,13 +598,14 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private Entity generateDataFromBaseOp(Entity deltaInfo, Subscription subscription) throws ResponseException {
 		String entityBody = null;
+		if (!shouldFire(deltaInfo, subscription)) {
+			return null;
+		}
+		
 		if (directDB) {
 			entityBody = subscriptionInfoDAO.getEntity(deltaInfo.getId().toString());
 		}
 		Entity entity = DataSerializer.getEntity(entityBody);
-		if (!shouldFire(deltaInfo, subscription)) {
-			return null;
-		}
 		if (!evaluateGeoQuery(subscription.getLdGeoQuery(), entity.getLocation())) {
 			return null;
 		}

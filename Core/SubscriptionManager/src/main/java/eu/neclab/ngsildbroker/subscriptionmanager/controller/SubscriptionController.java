@@ -95,6 +95,7 @@ public class SubscriptionController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
+			System.out.println("RECEIVING SUBSCRIPTION: " + payload);
 			subscription = contextResolver.expandSubscription(payload, context);
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
 			URI subId = manager.subscribe(subRequest);
@@ -142,6 +143,7 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
+			System.out.println("DELETING SUBSCRIPTION: " + id);
 			manager.unsubscribe(id);
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
