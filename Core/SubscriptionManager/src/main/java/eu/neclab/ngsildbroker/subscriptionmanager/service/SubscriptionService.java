@@ -507,7 +507,8 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private void sendNotification(List<Entity> dataList, Subscription subscription) {
 		logger.debug(DataSerializer.toJson(dataList));
-		System.out.println("SENDING NOTIFICATION: " + DataSerializer.toJson(dataList) + " \nTO SUBSCRIPTION \n" + DataSerializer.toJson(subscription));
+		System.out.println("SENDING NOTIFICATION: " + DataSerializer.toJson(dataList) + " \nTO SUBSCRIPTION \n"
+				+ DataSerializer.toJson(subscription));
 		// if (subscription.getTimeInterval() > 0) {
 		// try {
 		// intervalHandler.notify(new
@@ -601,7 +602,7 @@ public class SubscriptionService implements SubscriptionManager {
 		if (!shouldFire(deltaInfo, subscription)) {
 			return null;
 		}
-		
+
 		if (directDB) {
 			entityBody = subscriptionInfoDAO.getEntity(deltaInfo.getId().toString());
 		}
@@ -967,19 +968,31 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	public void reportNotification(String subId, Long now) {
-		this.subscriptionId2Subscription.get(subId).getNotification().setLastNotification(new Date(now));
-		this.subscriptionId2Subscription.get(subId).getNotification().setLastSuccessfulNotification(new Date(now));
-
+		synchronized (subscriptionId2Subscription) {
+			Subscription subscription = subscriptionId2Subscription.get(subId);
+			if (subscription != null) {
+				subscription.getNotification().setLastNotification(new Date(now));
+				subscription.getNotification().setLastSuccessfulNotification(new Date(now));
+			}
+		}
 	}
 
 	public void reportFailedNotification(String subId, Long now) {
-		this.subscriptionId2Subscription.get(subId).getNotification().setLastFailedNotification(new Date(now));
-
+		synchronized (subscriptionId2Subscription) {
+			Subscription subscription = subscriptionId2Subscription.get(subId);
+			if (subscription != null) {
+				subscription.getNotification().setLastFailedNotification(new Date(now));
+			}
+		}
 	}
 
 	public void reportSuccessfulNotification(String subId, Long now) {
-		this.subscriptionId2Subscription.get(subId).getNotification().setLastSuccessfulNotification(new Date(now));
-
+		synchronized (subscriptionId2Subscription) {
+			Subscription subscription = subscriptionId2Subscription.get(subId);
+			if (subscription != null) {
+				subscription.getNotification().setLastSuccessfulNotification(new Date(now));
+			}
+		}
 	}
 
 }
