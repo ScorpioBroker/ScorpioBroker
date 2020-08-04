@@ -84,8 +84,7 @@ import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProd
 
 @Service
 public class SubscriptionService implements SubscriptionManager {
-//TODO Subscriptions needs to be split based on entityinfo or watchedattributes not id or type id pattern
-// Rewrite matching completly
+//TODO Change notification data generation so that always the changed value from kafka is definatly present in the notification not the DB version(that one could have been already updated)
 
 	private final static Logger logger = LogManager.getLogger(SubscriptionService.class);
 
