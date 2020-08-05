@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.gson.JsonArray;
@@ -143,6 +145,21 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				try {
 					endPoint.setUri(new URI(jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_URI).get(0)
 							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString()));
+					Map<String,String> infoSettingNotifier = new HashMap<String,String>();
+					if (jsonEndPoint.has(NGSIConstants.NGSI_LD_NOTIFIERINFO)
+							&& jsonEndPoint.get(NGSIConstants.NGSI_LD_NOTIFIERINFO).isJsonArray()) {
+						JsonObject info = jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_NOTIFIERINFO).get(0).getAsJsonObject();
+						String mqttQos = info.getAsJsonArray(NGSIConstants.NGSI_LD_MQTT_QOS).get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
+						String mqttVersion = info.getAsJsonArray(NGSIConstants.NGSI_LD_MQTT_VERSION).get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
+						infoSettingNotifier.put(NGSIConstants.MQTT_QOS, mqttQos);
+						infoSettingNotifier.put(NGSIConstants.MQTT_VERSION, mqttVersion);
+						endPoint.setNotifierInfo(infoSettingNotifier);
+					} //else {
+						//infoSettingNotifier.put(NGSIConstants.MQTT_QOS, NGSIConstants.DEFAULT_MQTT_QOS);
+						//infoSettingNotifier.put(NGSIConstants.MQTT_VERSION, NGSIConstants.DEFAULT__MQTT_VERSION);
+						//endPoint.setNotifierInfo(infoSettingNotifier);
+					//}
+					//endPoint.setNotifierInfo(infoSettingNotifier);
 				} catch (URISyntaxException e) {
 					throw new JsonParseException(e);
 				}
@@ -317,6 +334,33 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 							context.serialize(notification.getEndPoint().getUri().toString()));
 					tempArray.add(tempObj);
 					endPoint.add(NGSIConstants.NGSI_LD_URI, tempArray);
+					//endPointArray.add(endPoint);
+					//notificationObj.add(NGSIConstants.NGSI_LD_ENDPOINT, endPointArray);
+				}
+				if (notification.getEndPoint().getNotifierInfo() != null) {
+					
+					JsonObject notifierEndPoint = new JsonObject();
+					JsonArray notifierEndPointArray = new JsonArray();
+					 if(notification.getEndPoint().getNotifierInfo().get(NGSIConstants.MQTT_QOS) != null) {
+					    	tempArray = new JsonArray();
+							tempObj = new JsonObject();
+							tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(notification.getEndPoint().getNotifierInfo().get(NGSIConstants.MQTT_QOS)));
+							tempArray.add(tempObj);
+							notifierEndPoint.add(NGSIConstants.NGSI_LD_MQTT_QOS, tempArray);
+					    }
+				    if(notification.getEndPoint().getNotifierInfo().get(NGSIConstants.MQTT_VERSION) != null) {
+				    	tempArray = new JsonArray();
+						tempObj = new JsonObject();
+						tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(notification.getEndPoint().getNotifierInfo().get(NGSIConstants.MQTT_VERSION)));
+						tempArray.add(tempObj);
+						notifierEndPoint.add(NGSIConstants.NGSI_LD_MQTT_VERSION, tempArray);
+				    }
+				   
+				    notifierEndPointArray.add(notifierEndPoint);
+					endPoint.add(NGSIConstants.NGSI_LD_NOTIFIERINFO, notifierEndPointArray);
+					endPointArray.add(endPoint);
+					notificationObj.add(NGSIConstants.NGSI_LD_ENDPOINT, endPointArray);
+				} else {
 					endPointArray.add(endPoint);
 					notificationObj.add(NGSIConstants.NGSI_LD_ENDPOINT, endPointArray);
 				}

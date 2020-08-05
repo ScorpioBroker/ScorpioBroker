@@ -37,7 +37,13 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 	protected void sendReply(ResponseEntity<byte[]> reply, URI callback, Map<String, String> clientSettings)
 			throws Exception {
 		MqttClient client = getClient(callback, clientSettings);
-		String qosString = clientSettings.get(NGSIConstants.MQTT_QOS);
+		String qosString = null;
+		if(clientSettings != null) {
+			qosString = clientSettings.get(NGSIConstants.MQTT_QOS);
+			
+		} else {
+			qosString = NGSIConstants.DEFAULT_MQTT_QOS;
+		}
 		int qos = 1;
 		if (qosString != null) {
 			qos = Integer.parseInt(qosString);
@@ -58,7 +64,14 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 		URI baseURI = URI.create(callback.getScheme() + "://" + callback.getAuthority());
 		MqttClient result = uri2client.get(baseURI);
 		if (result == null) {
-			String mqttVersion = clientSettings.get(NGSIConstants.MQTT_VERSION);
+			String mqttVersion = null;
+			if(clientSettings != null) {
+				mqttVersion = clientSettings.get(NGSIConstants.MQTT_VERSION);
+				
+			} else {
+				mqttVersion = NGSIConstants.DEFAULT_MQTT_VERSION; 
+			}
+			
 			int port = callback.getPort();
 			if (port == -1) {
 				port = 1883;
