@@ -16,7 +16,9 @@ The tutorial uses [cUrl](https://ec.haxx.se/) commands throughout, but is also a
 Our demo application will only make use of one FIWARE component - the
 [Scorpio Broker](link to docs). Usage of the Scorpio Context Broker (with proper
 context data flowing through it) is sufficient for an application to qualify as _“Powered by FIWARE”_.
-![Deployment Architecture](deploymentarchitecture.png)
+
+![Deployment Architecture](img/deploymentarchitecture.png)
+
 The deployment architecture leverages the Spring Cloud framework that addresses lots of Micro-services concerns (e.g. scaling, monitoring, fault-tolerant, highly available, secure, decoupled, etc. ) and Kafka based distributed and scalable message queue infrastructure to provide high performance on message processing for a huge number of context requests which is usual in the IoT domain. 
 The deployment architecture covers the high-level operations (Http based REST with method POST/GET/DELETE/PATCH) request flow from the external world to the Scorpio Broker system.  The external request is served through a unified service API gateway interface that exposes a single IP/port combination to be used for all services that the Scorpio Broker system can provide. 
 In reality, each of the Scorpio Broker services will be implemented as a micro-service that can be deployed as an independent standalone unit in adistributed computing environment.
