@@ -37,36 +37,6 @@ technology which allows to different components isolated into their respective e
 -   To install Docker on Mac follow the instructions [here](https://docs.docker.com/docker-for-mac/)
 -   To install Docker on Linux follow the instructions [here](https://docs.docker.com/install/)
 
-**Docker Compose** is a tool for defining and running multi-container Docker applications. A series of `*.yaml` files
-are used configure the required services for the application. This means all container services can be brought up in a
-single command. Docker Compose is installed by default as part of Docker for Windows and Docker for Mac, however Linux
-users will need to follow the instructions found [here](https://docs.docker.com/compose/install/)
-
-You can check your current **Docker** and **Docker Compose** versions using the following commands:
-
-```bash
-docker-compose -v
-docker version
-```
-
-Please ensure that you are using Docker version 18.03 or higher and Docker Compose 1.21 or higher and upgrade if
-necessary.
-
-If using a linux distro with an outdated docker-compose, the files can be installed directly as shown:
-
-```bash
-sudo curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-```
-
-If you are using docker-compose in Ubuntu with VMware and faced the following error: _ERROR: Couldn't connect to Docker
-daemon at http+docker://localunixsocket - is it running?_
-
-It can be solved by owning the `/var/run/docker.sock` Unix socket as shown:
-
-```bash
-sudo chown $USER /var/run/docker.sock
-```
 
 ### Postman <img src="https://www.getpostman.com/favicon.ico" align="left"  height="30" width="30" style="border-right-style:solid; border-right-width:10px; border-color:transparent; background: transparent">
 
@@ -102,41 +72,25 @@ Robots, IoT Sensors or other suppliers of context data such as social media. It 
 from the context broker to alter the state of real-world objects themselves.
 
 &nbsp; 201. [Introduction to IoT Sensors](iot-sensors.md)<br/> &nbsp; 202.
-[Provisioning an IoT Agent](iot-agent.md)<br/> &nbsp; 203. [IoT over MQTT](iot-over-mqtt.md)<br/> &nbsp; 203.
-[IoT over MQTT](iot-over-mqtt.md)<br/> &nbsp; 204.
-[Using an alternative IoT Agent](https://github.com/FIWARE/tutorials.IoT-Agent-JSON)<br/> &nbsp; 205.
-[Creating a Custom IoT Agent](https://github.com/FIWARE/tutorials.Custom-IoT-Agent)<br/> &nbsp; 250.
-[Introduction to Fast-RTPS and Micro-RTPS](fast-rtps-micro-rtps.md)<br/>
+[Provisioning an IoT Agent](iot-agent.md)<br/> &nbsp; 203. [IoT over MQTT](iot-over-mqtt.md)<br/> 
 
 <h3 style="box-shadow: 0px 4px 0px 0px #233c68;">Core Context Management: History Management</h3>
 
 These tutorials show how to manipulate and store context data so it can be used for further processesing
 
-&nbsp; 301. [Persisting Context Data using Apache Flume (MongoDB, MySQL, PostgreSQL)](historic-context-flume.md)<br/>
-&nbsp; 302. [Persisting Context Data using Apache NIFI (MongoDB, MySQL, PostgreSQL)](historic-context-nifi.md)<br/>
-&nbsp; 303. [Querying Time Series Data (MongoDB)](short-term-history.md)<br/> &nbsp; 304.
-[Querying Time Series Data (Crate-DB)](time-series-data.md)<br/>
+
 
 <h3 style="box-shadow: 0px 4px 0px 0px #ff7059;">Security: Identity Management</h3>
 
 These tutorials show how to create and administer users within an application, and how to restrict access to assets, by
 assigning roles and permissions.
 
-&nbsp; 401. [Administrating Users and Organizations](identity-management.md)<br/> &nbsp; 402.
-[Managing Roles and Permissions](roles-permissions.md)<br/> &nbsp; 403.
-[Securing Application Access](securing-access.md)<br/> &nbsp; 404.
-[Securing Microservices with a PEP Proxy](pep-proxy.md)<br/> &nbsp; 405.
-[XACML Rules-based Permissions](xacml-access-rules.md)<br/> &nbsp; 406.
-[Administrating XACML via a PAP](administrating-xacml.md)<br/>
 
 <h3 style="box-shadow: 0px 4px 0px 0px #88a1ce;">Processing, Analysis and Visualization</h3>
 
 These tutorials show how to create, process, analyze or visualize context information
 
-&nbsp; 501. [Creating Application Mashups](application-mashups.md)<br/> &nbsp; 503.
-[Introduction to Media Streams](media-streams.md)<br/> &nbsp; 505.
-[Real-time Processing and Big Data Analysis](big-data-analysis.md)<br/> &nbsp; 507.
-[Cloud-Edge Computing](https://github.com/FIWARE/tutorials.Edge-Computing)<br/>
+
 
 <h3 style="box-shadow: 0px 4px 0px 0px #233c68;">NGSI-LD for NGSI-v2 Developers</h3>
 

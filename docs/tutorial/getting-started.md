@@ -1,9 +1,8 @@
 [![FIWARE Core Context Management](https://nexus.lab.fiware.org/repository/raw/public/badges/chapters/core.svg)](https://github.com/FIWARE/catalogue/blob/master/core/README.md)
 [![NGSI v2](https://img.shields.io/badge/NGSI-v2-5dc0cf.svg)](link)
 
-**Description:** This is an Introductory Tutorial to the FIWARE Platform. We will start with the data from a differnent houses of a smart city
- and create a very simple _“Powered by FIWARE”_ application by passing in the temperature of various rooms of that house.
-of each store as context data to the FIWARE context broker.
+**Description:** This is an Introductory Tutorial to the FIWARE Platform. We will start with the data from a different houses of a smart city
+ and create a very simple _“Powered by FIWARE”_ application by passing in the temperature of various rooms of that house as context data to the FIWARE context broker.
 
 The tutorial uses [cUrl](https://ec.haxx.se/) commands throughout, but is also available as
 [Postman documentation](link)
@@ -17,82 +16,95 @@ The tutorial uses [cUrl](https://ec.haxx.se/) commands throughout, but is also a
 Our demo application will only make use of one FIWARE component - the
 [Scorpio Broker](link to docs). Usage of the Scorpio Context Broker (with proper
 context data flowing through it) is sufficient for an application to qualify as _“Powered by FIWARE”_.
-
-Architecture details
+![Deployment Architecture](deploymentarchitecture.png)
+The deployment architecture leverages the Spring Cloud framework that addresses lots of Micro-services concerns (e.g. scaling, monitoring, fault-tolerant, highly available, secure, decoupled, etc. ) and Kafka based distributed and scalable message queue infrastructure to provide high performance on message processing for a huge number of context requests which is usual in the IoT domain. 
+The deployment architecture covers the high-level operations (Http based REST with method POST/GET/DELETE/PATCH) request flow from the external world to the Scorpio Broker system.  The external request is served through a unified service API gateway interface that exposes a single IP/port combination to be used for all services that the Scorpio Broker system can provide. 
+In reality, each of the Scorpio Broker services will be implemented as a micro-service that can be deployed as an independent standalone unit in adistributed computing environment.
+That API gateway routes all the incoming requests to the specific Micro-services with the help of registration & discovery service. 
+Once the request reaches at micro-service based on the operation requirement it uses(pub/sub) Kafka topics (message queues)  for real-time storage and for providing intercommunication among different micro-services (based on requirement) over message queues.
 
 ## Prerequisites
 
 ### Docker
 
-To keep things simple both components will be run using [Docker](https://www.docker.com). **Docker** is a container
-technology which allows to different components isolated into their respective environments.
+Docker is a tool designed to make it easier to create, deploy, and run applications by using containers.
+Containers allow a developer to package up an application with all of the parts it needs, such as libraries and other dependencies, and deploy it as one package
 
--   To install Docker on Windows follow the instructions [here](https://docs.docker.com/docker-for-windows/)
--   To install Docker on Mac follow the instructions [here](https://docs.docker.com/docker-for-mac/)
--   To install Docker on Linux follow the instructions [here](https://docs.docker.com/install/)
+-   To get Docker on Windows, click [here](https://docs.docker.com/docker-for-windows/)
+-   To get Docker on Mac, click [here](https://docs.docker.com/docker-for-mac/)
+-   To get Docker on Linux, click [here](https://docs.docker.com/install/)
 
-### Docker Compose (Optional)
+### Getting a docker container
 
-**Docker Compose** is a tool for defining and running multi-container Docker applications. A
-[YAML file](https://raw.githubusercontent.com/Fiware/tutorials.Getting-Started/master/docker-compose.yml) is used
-configure the required services for the application. This means all container services can be brought up in a single
-command. Docker Compose is installed by default as part of Docker for Windows and Docker for Mac, however Linux users
-will need to follow the instructions found [here](https://docs.docker.com/compose/install/)
+The current maven build supports two types of docker container
+generations from the build using maven profiles to trigger it.
 
-## Starting the containers
+The first profile is called 'docker' and can be called like this 
+```bash
+mvn clean package -DskipTests -Pdocker
+```
+this will generate individual docker containers for each microservice.
+The corresponding docker-compose file is docker-compose-dist.yml
 
-### Option 1) Using Docker commands directly
+The second profile is called 'docker-aaio' (for almost all in one). This
+will generate one single docker container for all components of the
+broker except the Kafka message bus and the Postgres database.
 
-First pull the necessary Docker images from Docker Hub and create a network for our containers to connect to:
+To get the aaio version run the maven build like this
+```bash
+mvn clean package -DskipTests -Pdocker-aaio
+```
+The corresponding docker-compose file is docker-compose-aaio.yml
+
+### General remark for the Kafka docker image and docker-compose
+
+The Kafka docker container requires you to provide the environment
+variable KAFKA\_ADVERTISED\_HOST\_NAME. This has to be changed in the
+docker-compose files to match your docker host IP. You can use 127.0.0.1
+however this will disallow you to run Kafka in a cluster mode.
+
+For further details please refer to
+<https://hub.docker.com/r/wurstmeister/kafka>
+
+### Running docker build outside of Maven
+
+If you want to have the build of the jars separated from the docker
+build you need to provide certain VARS to docker. The following list
+shows all the vars and their intended value if you run docker build from
+the root dir
 
 ```bash
-docker pull mongo:3.6
-docker pull fiware/ Scorpio
-docker network create fiware_default
+- BUILD\_DIR\_ACS = Core/AtContextServer 
+- BUILD\_DIR\_SCS = SpringCloudModules/config-server 
+- BUILD\_DIR\_SES =SpringCloudModules/eureka 
+- BUILD\_DIR\_SGW =SpringCloudModules/gateway 
+- BUILD\_DIR\_HMG = History/HistoryManager
+- BUILD\_DIR\_QMG = Core/QueryManager 
+- BUILD\_DIR\_RMG =Registry/RegistryManager 
+- BUILD\_DIR\_EMG = Core/EntityManager 
+- BUILD\_DIR\_STRMG = Storage/StorageManager 
+- BUILD\_DIR\_SUBMG =Core/SubscriptionManager
+- JAR\_FILE\_BUILD\_ACS = AtContextServer-\${project.version}.jar 
+- JAR\_FILE\_BUILD\_SCS = config-server-\${project.version}.jar 
+- JAR\_FILE\_BUILD\_SES = eureka-server-\${project.version}.jar 
+- JAR\_FILE\_BUILD\_SGW = gateway-\${project.version}.jar 
+- JAR\_FILE\_BUILD\_HMG = HistoryManager-\${project.version}.jar 
+- JAR\_FILE\_BUILD\_QMG = QueryManager-\${project.version}.jar 
+- JAR\_FILE\_BUILD\_RMG = RegistryManager-\${project.version}.jar
+- JAR\_FILE\_BUILD\_EMG = EntityManager-\${project.version}.jar 
+- JAR\_FILE\_BUILD\_STRMG = StorageManager-\${project.version}.jar 
+- JAR\_FILE\_BUILD\_SUBMG = SubscriptionManager-\${project.version}.jar
+- JAR\_FILE\_RUN\_ACS = AtContextServer.jar 
+- JAR\_FILE\_RUN\_SCS =config-server.jar 
+- JAR\_FILE\_RUN\_SES = eureka-server.jar 
+- JAR\_FILE\_RUN\_SGW = gateway.jar 
+- JAR\_FILE\_RUN\_HMG =HistoryManager.jar 
+- JAR\_FILE\_RUN\_QMG = QueryManager.jar 
+- JAR\_FILE\_RUN\_RMG = RegistryManager.jar 
+- JAR\_FILE\_RUN\_EMG =EntityManager.jar 
+- JAR\_FILE\_RUN\_STRMG = StorageManager.jar 
+- JAR\_FILE\_RUN\_SUBMG = SubscriptionManager.jar
 ```
-
-A Docker container running a [MongoDB](https://www.mongodb.com/) database can be started and connected to the network
-with the following command:
-
-```bash
-docker run -d --name=mongo-db --network=fiware_default \
-  --expose=27017 mongo:3.6 --bind_ip_all --smallfiles
-```
-
-The  Scorpio Context Broker can be started and connected to the network with the following command:
-
-```bash
-docker run -d --name fiware- Scorpio -h  Scorpio --network=fiware_default \
-  -p 1026:1026  fiware/ Scorpio -dbhost mongo-db
-```
-
-> **Note:** If you want to clean up and start again you can do so with the following commands
->
-> ```
-> docker stop fiware- Scorpio
-> docker rm fiware- Scorpio
-> docker stop mongo-db
-> docker rm mongo-db
-> docker network rm fiware_default
-> ```
-
-### Option 2) Using Docker Compose
-
-All services can be initialised from the command-line using the `docker-compose` command. Please clone the repository
-and create the necessary images by running the commands as shown:
-
-```bash
-git clone https://github.com/FIWARE/tutorials.Getting-Started.git
-cd tutorials.Getting-Started
-
-docker-compose -p fiware up -d
-```
-
-> **Note:** If you want to clean up and start again you can do so with the following command:
->
-> ```
-> docker-compose -p fiware down
-> ```
 
 ## Creating your first "Powered by FIWARE" app
 
