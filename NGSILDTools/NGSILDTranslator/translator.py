@@ -232,13 +232,34 @@ def sendToBroker(ngsiLdContent, ldHost, ldHeaders):
       print("ERROR: " + str(e2))
       return
     idsAlreadyPosted.append(entityId)
+def startKafkaConsumer(bootstrap, topic, groupId, ldHost, ldHeaders):
+  from kafka import KafkaConsumer
+  consumer = KafkaConsumer(topic,
+                         group_id=groupId,
+                         bootstrap_servers=[bootstrap],
+                         value_deserializer=lambda m: json.loads(m.decode('utf-8')))
+  while True:
+    # Response format is {TopicPartiton('topic1', 1): [msg1, msg2]}
+    try:
+      msg_pack = consumer.poll(timeout_ms=500)
+
+      for tp, messages in msg_pack.items():
+        for message in messages:
+          forwardContent(message, False)
+    except Exception as e:
+      print("ERROR: " + str(e))
+      pass
+      
 if (__name__ == "__main__"):
   configFile = sys.argv[1]
   with open(configFile) as json_file:
     config = json.load(json_file)
   idsAlreadyPosted = []
   sourceConfig = config['source']
-  translate = config["translate"]
+  translate = config["translate"]  
+  sendOut = True;
+  if('sendOut' in config):
+    sendOut = config['sendOut']
   isList = False
   contentIndex = None
   if 'isList' in sourceConfig:
@@ -260,3 +281,8 @@ if (__name__ == "__main__"):
   elif(sourceConfig['type'] == 'importFromFile'):
     file = sourceConfig["from"]
     importFile(file, ldHost, ldHeaders,isList)
+  elif(sourceConfig['type'] == 'kafka'):
+    bootstrap = sourceConfig['bootstrap']
+    topic = sourceConfig['topic']
+    groupId = sourceConfig['groupId']
+    startKafkaConsumer(bootstrap, topic, groupId, ldHost, ldHeaders)
