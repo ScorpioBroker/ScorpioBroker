@@ -1,0 +1,14 @@
+{
+	"source": {
+		"type": "kafkaAvro",
+		"bootstrap": "localhost:9092",
+		"topics": "my_topic",
+		"groupId": "something",
+		"generic": true,
+		"schemaRegistry": "http://localhost:8081",
+	},
+	"to": "http://localhost:9090",
+	"toHeaders": {
+		"Content-Type": "Application/ld+json"
+	}
+}

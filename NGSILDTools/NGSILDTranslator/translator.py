@@ -8,7 +8,7 @@ import _thread
 from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 import sys
-
+import os
 
 
 
@@ -204,14 +204,14 @@ def doNGSILDUpdate(ngsiLdContent):
     del ngsiLdContent["name"]
   req = urllib.request.Request(ldHost + "/ngsi-ld/v1/entities/" + ngsiId + "/attrs", json.dumps(ngsiLdContent).encode('utf-8'), ldHeaders, method="POST")
   response = urllib.request.urlopen(req)
-  return ngsiLdContent["id"]
+  return ngsiId
 def doNGSILDCreate(ngsiLdContent):
   req = urllib.request.Request(ldHost + "/ngsi-ld/v1/entities/", json.dumps(ngsiLdContent).encode('utf-8'), ldHeaders)
   response = urllib.request.urlopen(req)
   return ngsiLdContent["id"]
 def sendToBroker(ngsiLdContent, ldHost, ldHeaders):
-  #print("sending data")
-  #print(json.dumps(ngsiLdContent).encode('utf-8'))
+  print("sending data")
+  print(json.dumps(ngsiLdContent).encode('utf-8'))
   global idsAlreadyPosted
   if(ngsiLdContent['id'] in idsAlreadyPosted):
     doNGSILDUpdate(ngsiLdContent)
@@ -223,40 +223,86 @@ def sendToBroker(ngsiLdContent, ldHost, ldHeaders):
           try:
             entityId = doNGSILDUpdate(ngsiLdContent)
           except Exception as e:
-            print("ERROR: " + str(e))
+            print("ERROR1: " + str(e))
+            print(e)
             return
         else:
-          print("ERROR: " + str(e1))
+          print("ERROR2: " + str(e1))
+          print(e1)
           return
     except urllib.error.URLError as e2:
-      print("ERROR: " + str(e2))
+      print("ERROR3: " + str(e2))
+      print(e2)
       return
     idsAlreadyPosted.append(entityId)
-def startKafkaConsumer(bootstrap, topic, groupId, ldHost, ldHeaders):
-  from kafka import KafkaConsumer
-  consumer = KafkaConsumer(topic,
-                         group_id=groupId,
-                         bootstrap_servers=[bootstrap],
-                         value_deserializer=lambda m: json.loads(m.decode('utf-8')))
+def startKafkaConsumer(bootstrap, topics, groupId, schema, schemaRegistry, generic):
+  from confluent_kafka.avro import AvroConsumer
+  from confluent_kafka.avro.serializer import SerializerError
+  from confluent_kafka.avro.cached_schema_registry_client import CachedSchemaRegistryClient
+  import datetime
+  config = {
+      'bootstrap.servers': bootstrap,
+      'group.id': groupId}
+  if schemaRegistry:
+    config['schema.registry.url'] = schemaRegistry
+  if schema:
+    c = AvroConsumer(config, reader_value_schema=schema)
+  else:
+    c = AvroConsumer(config)
+  sr = CachedSchemaRegistryClient({
+      'url': schemaRegistry
+  })
+  c.subscribe(topics)
   while True:
-    # Response format is {TopicPartiton('topic1', 1): [msg1, msg2]}
     try:
-      msg_pack = consumer.poll(timeout_ms=500)
-
-      for tp, messages in msg_pack.items():
-        for message in messages:
-          forwardContent(message, False)
+      msg = c.poll(10)
+      if msg is None:
+        continue
+      if msg.error():
+        print("AvroConsumer error: {}".format(msg.error()))
+        continue
+      valueSchema = sr.get_latest_schema(msg.topic() + '-value')
+      if valueSchema[1].namespace != None and valueSchema[1].namespace != "":
+        schemaName = valueSchema[1].namespace + ":"
+      else:
+        schemaName = "urn:"
+      schemaName = schemaName + valueSchema[1].name
+      if generic:
+        ngsiLd = {}
+        ngsiLd['id'] = "urn:midih:mole:" + str(msg.topic())
+        ngsiLd['type'] = schemaName
+        ngsiLd['@context'] = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+        for key, value in msg.value().items():
+          temp = {}
+          temp['type'] = 'Property'
+          temp['value'] = value
+          temp['observedAt'] = datetime.datetime.fromtimestamp(msg.timestamp()[1]/1000).strftime('%Y-%m-%dT%H:%M:%SZ')
+          myKey = key
+          if myKey in ["name", "location"]:
+            myKey = "my" + myKey
+          ngsiLd[myKey] = temp
+        global ldHost
+        global ldHeaders
+        sendToBroker(ngsiLd, ldHost, ldHeaders)
+      else:
+        value = msg.value()
+        value['__schemaname'] = schemaName
+        value['__key'] = msg.key()
+        forwardContent(value, False)
     except Exception as e:
       print("ERROR: " + str(e))
-      pass
-      
-if (__name__ == "__main__"):
-  configFile = sys.argv[1]
-  with open(configFile) as json_file:
-    config = json.load(json_file)
-  idsAlreadyPosted = []
+      print(e)
+      continue
+  c.close()
+def parseConfigAndGo(config):
+  global ldHost
+  global ldHeaders
+  global translate
+  global sendOut
+  global isList
   sourceConfig = config['source']
-  translate = config["translate"]  
+  if 'translate' in config:
+    translate = config["translate"]  
   sendOut = True;
   if('sendOut' in config):
     sendOut = config['sendOut']
@@ -266,8 +312,9 @@ if (__name__ == "__main__"):
     isList = sourceConfig['isList']
   if 'contentIndex' in sourceConfig:
     contentIndex = sourceConfig['contentIndex']
-  ldHost = config["to"]
   ldHeaders = config["toHeaders"]
+  ldHost = os.getenv('NGSI_LD_TRANSLATOR_TO', config["to"])
+  print("ld host " + ldHost)
   if(sourceConfig['type'] == 'subscribe'):
     port = sourceConfig["callback"]['port']
     hostname = sourceConfig["callback"]['hostname']
@@ -281,8 +328,26 @@ if (__name__ == "__main__"):
   elif(sourceConfig['type'] == 'importFromFile'):
     file = sourceConfig["from"]
     importFile(file, ldHost, ldHeaders,isList)
-  elif(sourceConfig['type'] == 'kafka'):
-    bootstrap = sourceConfig['bootstrap']
-    topic = sourceConfig['topic']
-    groupId = sourceConfig['groupId']
-    startKafkaConsumer(bootstrap, topic, groupId, ldHost, ldHeaders)
+  elif(sourceConfig['type'] == 'kafkaAvro'):
+    bootstrap = os.getenv('NGSI_LD_TRANSLATOR_BOOTSTRAP', sourceConfig['bootstrap'])
+    topics = os.getenv('NGSI_LD_TRANSLATOR_TOPICS', sourceConfig['topics'])
+    topics = topics.split(',')
+    groupId = os.getenv('NGSI_LD_TRANSLATOR_GROUP_ID', sourceConfig['groupId'])
+    schema = None
+    if 'schema' in sourceConfig:
+      schema = sourceConfig['schema']
+    schemaRegistry = None
+    if 'schemaRegistry' in sourceConfig:
+      schemaRegistry = sourceConfig['schemaRegistry']
+    schema = os.getenv('NGSI_LD_TRANSLATOR_SCHEMA', schema)
+    schemaRegistry = os.getenv('NGSI_LD_TRANSLATOR_SCHEMA_REGISTRY', schemaRegistry)
+    
+    generic = sourceConfig['generic']
+    startKafkaConsumer(bootstrap, topics, groupId, schema, schemaRegistry, generic)
+
+if (__name__ == "__main__"):
+  configFile = sys.argv[1]
+  with open(configFile) as json_file:
+    config = json.load(json_file)
+  idsAlreadyPosted = []
+  parseConfigAndGo(config)

@@ -1,0 +1,7 @@
+FROM python:3
+
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir "confluent-kafka[avro]"
+COPY translator.py ./translator.py
+COPY config.json ./config.json
+CMD ["python", "translator.py", "config.json"]
