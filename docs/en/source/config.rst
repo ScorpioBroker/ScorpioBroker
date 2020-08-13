@@ -7,27 +7,27 @@ Description of various configuration parameters
 .. code-block:: JSON
 
  server:
-  port: 1026
+  port: XXXX
   tomcat:
     max:
-      threads: 50
+      threads: XX
 	  
 2. Entity:- Used in entity manager to define the various topics for the Kafka.
 
 .. code-block:: JSON
 
  entity:
-   topic: ENTITY
+   topic: XYZ
    create:
-    topic: ENTITY_CREATE
+    topic: XYZ
    append:
-    topic: ENTITY_APPEND
+    topic: XYZ
    update:
-    topic: ENTITY_UPDATE
+    topic: XYZ
    delete:
-    topic: ENTITY_DELETE
+    topic: XYZ
    index:
-    topic: ENTITY_INDEX
+    topic: XYZ
 
 3. batchoperations:- Used to define the limit for the various CRUD operations.
 
@@ -35,17 +35,17 @@ Description of various configuration parameters
 
  batchoperations:
    maxnumber:
-    create: 1000
-    update: 1000
-    upsert: 1000
-    delete: 1000
+    create: XXXX
+    update: XXXX
+    upsert: XXXX
+    delete: XXXX
 
 4. bootstrap:- Used to define the path for the Kafka broker.
 
 .. code-block:: JSON
 
  bootstrap:
-   servers: localhost:9092
+   servers: URL
 
 5. csources:- Used to define the topic for the context source registration.
 
@@ -61,26 +61,14 @@ Description of various configuration parameters
  append:
    overwrite: noOverwrite
 
-7. management:-
 
-.. code-block:: JSON
-
- management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-  endpoint:
-    restart:
-      enabled: true
-
-8. spring:- Used to define the basic details of the project like service name as well as to provide the configuration details for Kafka, flyway, data source, and cloud.
+7. spring:- Used to define the basic details of the project like service name as well as to provide the configuration details for Kafka, flyway, data source, and cloud.
 
 .. code-block:: JSON
 
  spring:
   application:
-    name: query-manager
+    name: serviceName
   main:
     lazy-initialization: true
   kafka:
@@ -112,7 +100,7 @@ Description of various configuration parameters
       connectionTimeout: 30000
 
 
-9. query:- Used in query manager to define the Kafka topic for data query.
+8. query:- Used in query manager to define the Kafka topic for data query.
 
 .. code-block:: JSON
 
@@ -121,21 +109,21 @@ Description of various configuration parameters
   result:
     topic: QUERY_RESULT
 
-10. atcontext:- Used to define the URL for the context.
+9. atcontext:- Used to define the URL for the context.
 
 .. code-block:: JSON
 
  atcontext:
   url: http://localhost:9090/ngsi-ld/contextes/
 
-11. Key:- Used to define the file for the deserialization.
+10. Key:- Used to define the file for the deserialization.
 
 .. code-block:: JSON
 
  key:
   deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
-12. reader:- Used to configure the database to the Scorpio broker, required to perform all the read operations.
+11. reader:- Used to configure the database to the Scorpio broker, required to perform all the read operations.
 
 .. code-block:: JSON
 
@@ -153,7 +141,7 @@ Description of various configuration parameters
       maxLifetime: 2000000
       connectionTimeout: 30000
 
-13. writer:- Used to configure the database to the Scorpio broker, required to perform all the write operations.
+12. writer:- Used to configure the database to the Scorpio broker, required to perform all the write operations.
 
 .. code-block:: JSON
 
