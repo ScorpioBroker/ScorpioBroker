@@ -605,6 +605,7 @@ public class SubscriptionService implements SubscriptionManager {
 		if (directDB) {
 			entityBody = subscriptionInfoDAO.getEntity(deltaInfo.getId().toString());
 		}
+		//HERE YOU NEED TO REPLACE THE ATTRIBUTE TO THE ONE FROM DELTA
 		Entity entity = DataSerializer.getEntity(entityBody);
 		if (!evaluateGeoQuery(subscription.getLdGeoQuery(), entity.getLocation())) {
 			return null;
