@@ -1,5 +1,4 @@
-package eu.neclab.ngsildbroker.commons.swaggerConfig;
-
+package eu.neclab.ngsildbroker.entityhandler.config;
 import java.util.Collections;
 
 import org.springframework.context.annotation.Bean;
@@ -15,7 +14,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @Configuration
 @EnableSwagger2
-public class SwaggerConfigDetails {
+public class SwaggerConfig {
     @Bean
     public Docket api() {
         return new Docket(DocumentationType.SWAGGER_2)
@@ -27,8 +26,8 @@ public class SwaggerConfigDetails {
     }
 
     private ApiInfo getApiInformation(){
-        return new ApiInfo("Scorpio Broker APIs",
-                "Description of CRUD operations",
+        return new ApiInfo("Entity Manager APIs",
+                "Contains POST,Patch and Delete Operations",
                 "1.0",
                 "API Terms of Service URL",
                 new Contact("Endpoint", "https://github.com/ScorpioBroker/ScorpioBroker", "https://github.com/ScorpioBroker/ScorpioBroker"),
@@ -38,4 +37,3 @@ public class SwaggerConfigDetails {
                 );
     }
 }
-
