@@ -2,12 +2,14 @@ package eu.neclab.ngsildbroker.queryhandler.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
+import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 
 /**
  * REST API Resource Server.
@@ -16,6 +18,7 @@ import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 @EnableWebSecurity
 @EnableResourceServer
 @EnableGlobalMethodSecurity(prePostEnabled = true) // Allow method annotations like @PreAuthorize
+@Import(SwaggerConfigDetails.class)//for swagger implementation@Import(SwaggerConfigDetails.class)
 public class QueryManagerResourceConfigurer extends ResourceServerConfigurerAdapter {
 	@Autowired
 	private ResourceConfigDetails resourceConfigDetails;
