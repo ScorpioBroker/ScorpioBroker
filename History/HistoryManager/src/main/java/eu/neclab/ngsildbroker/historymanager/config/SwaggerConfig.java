@@ -1,12 +1,10 @@
-package eu.neclab.ngsildbroker.commons.swaggerConfig;
+package eu.neclab.ngsildbroker.historymanager.config;
 
 import java.util.Collections;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
@@ -15,12 +13,9 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-
-
 @Configuration
 @EnableSwagger2
-public class SwaggerConfigDetails {
-	
+public class SwaggerConfig {
     @Bean
     public Docket api() {
         return new Docket(DocumentationType.SWAGGER_2)
@@ -32,11 +27,11 @@ public class SwaggerConfigDetails {
     }
 
     private ApiInfo getApiInformation(){
-        return new ApiInfo("Scorpio Broker APIs",
-                "Description of CRUD operations",
+        return new ApiInfo("History Manager APIs",
+                "Contains GET, PUT, PATCH and DELETE Operations",
                 "1.0",
                 "API Terms of Service URL",
-                new Contact("GitHub", AppConstants.SWAGGER_WEBSITE_LINK, AppConstants.SWAGGER_CONTACT_LINK),
+                new Contact("Endpoint", "https://github.com/ScorpioBroker/ScorpioBroker", "https://github.com/ScorpioBroker/ScorpioBroker"),
                 "API License",
                 "API License URL",
                 Collections.emptyList()

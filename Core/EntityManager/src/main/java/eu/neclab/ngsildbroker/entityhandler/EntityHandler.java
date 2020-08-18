@@ -18,7 +18,8 @@ import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
-import eu.neclab.ngsildbroker.entityhandler.config.EntityTopicMap; 
+import eu.neclab.ngsildbroker.entityhandler.config.EntityTopicMap;
+
 
 //@Component(immediate=true)
 @SpringBootApplication

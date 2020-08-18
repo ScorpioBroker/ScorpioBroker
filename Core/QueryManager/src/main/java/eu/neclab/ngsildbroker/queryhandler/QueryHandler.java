@@ -36,10 +36,14 @@ import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.queryhandler.config.QueryProducerChannel;
 
 
+
 @SpringBootApplication
 @Import({KafkaConfig.class, SwaggerConfigDetails.class})
 @EnableBinding({ AtContextProducerChannel.class, QueryProducerChannel.class})
+
 public class QueryHandler {// implements QueryHandlerInterface{
+
+
 
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
