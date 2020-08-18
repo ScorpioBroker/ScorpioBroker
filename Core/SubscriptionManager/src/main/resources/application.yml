@@ -46,7 +46,6 @@ query:
   result:
     topic: QUERY_RESULT
 
-
 spring:
   kafka:
     admin:

@@ -17,13 +17,15 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
+import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 
 //@Component(immediate=true)
 @SpringBootApplication
 @EnableBinding({ CSourceProducerChannel.class, AtContextProducerChannel.class })
-@Import(CommonKafkaConfig.class)
+@Import({CommonKafkaConfig.class, SwaggerConfigDetails.class})
 public class RegistryHandler {
 	
 	public static void main(String[] args) {

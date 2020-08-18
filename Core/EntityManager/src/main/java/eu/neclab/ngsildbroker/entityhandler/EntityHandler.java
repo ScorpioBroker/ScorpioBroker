@@ -16,6 +16,7 @@ import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityTopicMap;
 
@@ -23,7 +24,7 @@ import eu.neclab.ngsildbroker.entityhandler.config.EntityTopicMap;
 //@Component(immediate=true)
 @SpringBootApplication
 @EnableBinding({ EntityProducerChannel.class, AtContextProducerChannel.class }) // enable channel binding with topics
-@Import(CommonKafkaConfig.class)
+@Import({CommonKafkaConfig.class, SwaggerConfigDetails.class})
 public class EntityHandler {
 	public static void main(String[] args) {
 		SpringApplication.run(EntityHandler.class, args);
