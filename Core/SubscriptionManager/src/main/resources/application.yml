@@ -41,6 +41,12 @@ management:
     restart:
       enabled: true
 
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
+
+
 spring:
   kafka:
     admin:

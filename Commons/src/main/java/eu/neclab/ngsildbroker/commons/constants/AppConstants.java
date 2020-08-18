@@ -32,6 +32,10 @@ public class AppConstants {
 	
 	public final static byte[] NULL_BYTES = "null".getBytes();
 	public static final String CORE_CONTEXT_URL_SUFFIX = "ngsi-ld-core-context";
+	
+	//constants for swagger
+	public final static String SWAGGER_WEBSITE_LINK = "https://github.com/ScorpioBroker/ScorpioBroker";
+	public final static String SWAGGER_CONTACT_LINK = "https://github.com/ScorpioBroker/ScorpioBroker";
 
 
 }

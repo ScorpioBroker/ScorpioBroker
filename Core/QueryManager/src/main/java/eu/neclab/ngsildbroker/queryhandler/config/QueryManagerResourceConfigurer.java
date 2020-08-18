@@ -18,7 +18,6 @@ import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 @EnableWebSecurity
 @EnableResourceServer
 @EnableGlobalMethodSecurity(prePostEnabled = true) // Allow method annotations like @PreAuthorize
-@Import(SwaggerConfigDetails.class)//for swagger implementation@Import(SwaggerConfigDetails.class)
 public class QueryManagerResourceConfigurer extends ResourceServerConfigurerAdapter {
 	@Autowired
 	private ResourceConfigDetails resourceConfigDetails;
