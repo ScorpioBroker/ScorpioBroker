@@ -9,6 +9,14 @@ from http.server import HTTPServer
 from http.server import BaseHTTPRequestHandler
 import sys
 import os
+import io
+import struct
+class ContextStringIO(io.BytesIO):
+  def __enter__(self):
+    return self
+  def __exit__(self, *args):
+    self.close()
+    return False
 
 
 
@@ -235,38 +243,64 @@ def sendToBroker(ngsiLdContent, ldHost, ldHeaders):
       print(e2)
       return
     idsAlreadyPosted.append(entityId)
+def getAvroMessage(serializer, message):
+  with ContextStringIO(message.value()) as payload:
+    magic, schemaId = struct.unpack('>bI', payload.read(5))
+  if not message.error():
+    try:
+      if message.value() is not None:
+        decoded_value = serializer.decode_message(message.value(), is_key=False)
+        message.set_value(decoded_value)
+      if message.key() is not None:
+        decoded_key = serializer.decode_message(message.key(), is_key=True)
+        message.set_key(decoded_key)
+    except SerializerError as e:
+      raise SerializerError("Message deserialization failed for message at {} [{}] offset {}: {}".format(
+        message.topic(),
+        message.partition(),
+        message.offset(),
+        e))
+  return schemaId, message
+  
 def startKafkaConsumer(bootstrap, topics, groupId, schema, schemaRegistry, generic):
-  from confluent_kafka.avro import AvroConsumer
+  #from confluent_kafka.avro import AvroConsumer
+  from confluent_kafka import Consumer
   from confluent_kafka.avro.serializer import SerializerError
   from confluent_kafka.avro.cached_schema_registry_client import CachedSchemaRegistryClient
+  from confluent_kafka.avro.serializer.message_serializer import MessageSerializer
   import datetime
+  
   config = {
       'bootstrap.servers': bootstrap,
       'group.id': groupId}
-  if schemaRegistry:
-    config['schema.registry.url'] = schemaRegistry
-  if schema:
-    c = AvroConsumer(config, reader_value_schema=schema)
-  else:
-    c = AvroConsumer(config)
+  
+  #if schemaRegistry:
+    #config['schema.registry.url'] = schemaRegistry
+  #if schema:
+    #c = AvroConsumer(config, reader_value_schema=schema)
+  #else:
+    #c = AvroConsumer(config)
+  c = Consumer(config)
   sr = CachedSchemaRegistryClient({
       'url': schemaRegistry
   })
+  serializer = MessageSerializer(sr, None, None)
   c.subscribe(topics)
   while True:
     try:
       msg = c.poll(10)
       if msg is None:
         continue
+      schemaId, msg = getAvroMessage(serializer, msg)
       if msg.error():
         print("AvroConsumer error: {}".format(msg.error()))
         continue
-      valueSchema = sr.get_latest_schema(msg.topic() + '-value')
-      if valueSchema[1].namespace != None and valueSchema[1].namespace != "":
-        schemaName = valueSchema[1].namespace + ":"
+      valueSchema = sr.get_by_id(schemaId)
+      if valueSchema.namespace != None and valueSchema.namespace != "":
+        schemaName = valueSchema.namespace + ":"
       else:
         schemaName = "urn:"
-      schemaName = schemaName + valueSchema[1].name
+      schemaName = schemaName + valueSchema.name
       if generic:
         ngsiLd = {}
         ngsiLd['id'] = "urn:midih:mole:" + str(msg.topic())
