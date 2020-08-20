@@ -4,6 +4,10 @@ server:
 
 atcontext:
   url: http://localhost:9090/ngsi-ld/contextes/
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
 
 #Entity-Manager topics properties
 entity:

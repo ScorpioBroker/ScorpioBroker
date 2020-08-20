@@ -8,7 +8,10 @@ eureka:
 
 bootstrap:
   servers: kafka:9092
-
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
 
   
 spring:
