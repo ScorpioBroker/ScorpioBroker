@@ -582,14 +582,14 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
             
 			dataArray.add(jsonTree.get("data"));
 			((ObjectNode) jsonTree).set("data", dataArray);
-			Map<String,String> map = new HashMap<String,String>();
-			if(context!=null && !context.isEmpty()) {
-			map.put(NGSIConstants.ACCEPTED_LINK, context.get(0).toString());
-			} 
+			Map<String, String> map = new HashMap<String, String>();
+			if (context != null && !context.isEmpty()) {
+				map.put(NGSIConstants.ACCEPTED_LINK, context.get(0).toString());
+			}
 			map.put(NGSIConstants.CONTENT_TYPE, acceptHeader);
-            Map<String,Object> mapObj = new HashMap<String, Object>();
-            mapObj.put(NGSIConstants.METADATA, map);
-            mapObj.put(NGSIConstants.BODY, jsonTree);
+			Map<String, Object> mapObj = new HashMap<String, Object>();
+			mapObj.put(NGSIConstants.METADATA, map);
+			mapObj.put(NGSIConstants.BODY, jsonTree);
 			BodyBuilder builder = ResponseEntity.status(HttpStatus.ACCEPTED);
 
 			return builder.headers(temp.getHeaders()).body(objectMapper.writeValueAsBytes(mapObj));

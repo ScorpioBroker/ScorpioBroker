@@ -37,12 +37,12 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 	protected void sendReply(ResponseEntity<byte[]> reply, URI callback, Map<String, String> clientSettings)
 			throws Exception {
 		MqttClient client = getClient(callback, clientSettings);
-		String qosString = null;
+		String qosString  = null;
 		if(clientSettings != null) {
 			qosString = clientSettings.get(NGSIConstants.MQTT_QOS);
 			
 		} else {
-			qosString = NGSIConstants.DEFAULT_MQTT_QOS;
+			qosString = String.valueOf(NGSIConstants.DEFAULT_MQTT_QOS);
 		}
 		int qos = 1;
 		if (qosString != null) {
