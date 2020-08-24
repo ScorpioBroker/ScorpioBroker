@@ -14,7 +14,7 @@ making [cUrl](https://ec.haxx.se/) commands.
 [Postman documentation](https://fiware.github.io/tutorials.Working-with-Linked-Data) for the same commands is also
 available.
 
-[![Run in Postman](https://run.pstmn.io/button.svg)](need to be change)
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://github.com/ScorpioBroker/ScorpioBroker/blob/feature-80-temp/docs/en/source/Payloads/FIWARE%20Working%20with%20Linked%20Data.postman_collection.json)
 
 <hr class="core"/>
 
@@ -118,7 +118,7 @@ Therefore, the architecture will consist of three elements:
 Since all interactions between the elements are initiated by HTTP requests, the entities can be containerized and run
 from exposed ports.
 
-![](figure/tutorialArchitecture.png)
+![](figures/tutorialArchitecture.png)
 
 # Traversing Linked Data Programmatically
 

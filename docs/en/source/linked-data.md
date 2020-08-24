@@ -10,7 +10,7 @@ calls from the **NGSI-LD** interface.
 The tutorial uses [cUrl](https://ec.haxx.se/) commands throughout, but is also available as
 [Postman documentation](https://fiware.github.io/tutorials.Linked-Data/)
 
-[![Run in Postman](https://run.pstmn.io/button.svg)](need to update)
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://github.com/ScorpioBroker/ScorpioBroker/blob/feature-80-temp/docs/en/source/Payloads/FIWARE%20Linked%20Data.postman_collection.json)
 
 <hr class="core"/>
 
@@ -156,7 +156,7 @@ Our demo application will only make use of one FIWARE component - the
 [Scorpio Broker](link to docs). Usage of the Scorpio Context Broker (with proper
 context data flowing through it) is sufficient for an application to qualify as _“Powered by FIWARE”_.
 
-![Deployment Architecture](figure/deploymentarchitecture.png)
+![Deployment Architecture](figures/deploymentarchitecture.png)
 
 The deployment architecture leverages the Spring Cloud framework that addresses lots of Micro-services concerns (e.g. scaling, monitoring, fault-tolerant, highly available, secure, decoupled, etc. ) and Kafka based distributed and scalable message queue infrastructure to provide high performance on message processing for a huge number of context requests which is usual in the IoT domain. 
 The deployment architecture covers the high-level operations (Http based REST with method POST/GET/DELETE/PATCH) request flow from the external world to the Scorpio Broker system.  The external request is served through a unified service API gateway interface that exposes a single IP/port combination to be used for all services that the Scorpio Broker system can provide. 
