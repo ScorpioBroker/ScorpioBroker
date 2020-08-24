@@ -6,41 +6,23 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
+import org.mockito.Spy;									
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
-import eu.neclab.ngsildbroker.commons.datatypes.EntityDetails;
-import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
-import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.historymanager.config.ProducerChannel;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
@@ -75,8 +57,6 @@ public class HistoryServiceTest {
 	@Before
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
-		//ReflectionTestUtils.setField(historyService, "appendOverwriteFlag", "noOverwrite");
-		ObjectMapper objectMapper=new ObjectMapper();
 		uri=new URI(AppConstants.HISTORY_URL + "urn:ngsi-ld:testunit:151");
 		
 		temporalPayload="{\r\n  \"https://uri.etsi.org/ngsi-ld/default-context/airQualityLevel\" : [ "
@@ -107,6 +87,10 @@ public class HistoryServiceTest {
 				+ "\r\n}";
 	}
 	
+	/**
+	 * this method is use test "createTemporalEntityFromBinding" method of HistoryService
+	 */
+	
 	@Test
 	public void createTemporalEntityFromBindingTest() {
 		try {
@@ -117,6 +101,10 @@ public class HistoryServiceTest {
 			e.printStackTrace();
 		}		
 	}
+	
+	/**
+	 * this method is use test "createTemporalEntityFromEntity" method of HistoryService
+	 */
 	
 	@Test
 	public void createTemporalEntityFromEntityTest() {
@@ -129,8 +117,12 @@ public class HistoryServiceTest {
 		}
 	}
 	
+	/**
+	 * this method is use test "delete" method of HistoryService
+	 */
+	
 	@Test
-	public void deleteTest() {
+	public void deleteTemporalByIdTest() {
 		List<Object> linkHeaders = null;
 		try {
 			Mockito.doReturn("https://uri.etsi.org/ngsi-ld/default-context/airQualityLevel").when(paramsResolver).expandAttribute(any(),any());
@@ -141,6 +133,10 @@ public class HistoryServiceTest {
 			e.printStackTrace();
 		}		
 	}
+	
+	/**
+	 * this method is use test "addAttrib2TemporalEntity" method of HistoryService
+	 */
 	
 	@Test
 	public void addAttrib2TemporalEntityTest() {

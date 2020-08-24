@@ -10,12 +10,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -27,38 +24,23 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.integration.kafka.dsl.Kafka;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.web.client.RestTemplate;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
 import eu.neclab.ngsildbroker.historymanager.utils.Validator;
 
-//@SpringBootTest(properties= {"spring.main.allow-bean-definition-overriding=true"})
-//@RunWith(SpringRunner.class)
-///@WebMvcTest(HistoryController.class)
-//@AutoConfigureMockMvc//(secure = false)
 @RunWith(SpringRunner.class)
-@SpringBootTest(properties= {"spring.main.allow-bean-definition-overriding=true"})
+@SpringBootTest(properties = { "spring.main.allow-bean-definition-overriding=true" })
 @AutoConfigureMockMvc
 public class HistoryControllerTest {
 	@Autowired
@@ -78,15 +60,11 @@ public class HistoryControllerTest {
 
 	@Autowired
 	ContextResolverBasic contextResolver;
-	
+
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
 
-	private List<String> entities;
-	private MockRestServiceServer mockServer;
-	private String response = "";
 	private String temporalPayload;
-	private String attrPayload;
 	private URI uri;
 
 	@Before
@@ -122,6 +100,7 @@ public class HistoryControllerTest {
 	/**
 	 * this method is use for create the temporalEntity
 	 */
+
 	@Test
 	public void createTemporalEntityTest() {
 		try {
@@ -134,6 +113,10 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
+
+	/**
+	 * this method is try to create the temporalEntity having "BAD REQUEST"
+	 */
 
 	@Test
 	public void createTemporalEntityBadRequestTest() {
@@ -149,12 +132,16 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
+	/**
+	 * this method is try to create the temporalEntity having "INTERNAL SERVER
+	 * ERROR"
+	 */
+
 	@Test
 	public void createTemporalEntityInternalServerErrorTest() {
 		try {
-			when(historyService.createTemporalEntityFromBinding(any()))
-					.thenThrow(new Exception());
+			when(historyService.createTemporalEntityFromBinding(any())).thenThrow(new Exception());
 			mockMvc.perform(post("/ngsi-ld/v1/temporal/entities/").contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(temporalPayload))
 					.andExpect(status().isInternalServerError());
@@ -164,7 +151,7 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
 	/**
 	 * this method is use for update the temporalEntity
 	 */
@@ -180,7 +167,12 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
+	/**
+	 * this method is try to update the temporalEntity with "INTERNAL SERVER
+	 * ERROR"
+	 */
+
 	@Test
 	public void updateAttrByIdInternalServerError() {
 		try {
@@ -191,25 +183,31 @@ public class HistoryControllerTest {
 
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
-		}	
+		}
 	}
-	
+
+	/**
+	 * this method is try to update the temporalEntity having "BAD REQUEST"
+	 */
+
 	@Test
 	public void updateAttrByIdBadRequest() {
 		try {
-			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).addAttrib2TemporalEntity(any(), any());
+			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService)
+					.addAttrib2TemporalEntity(any(), any());
 			mockMvc.perform(post("/ngsi-ld/v1/temporal/entities/urn:ngsi-ld:testunit:151/attrs")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(temporalPayload)).andExpect(status().isBadRequest());
 
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
-		}	
+		}
 	}
 
 	/**
-	 * this method is use for modify the temporalEntity
+	 * this method is use for modify the attribute of temporalEntity
 	 */
+
 	@Test
 	public void modifyAttribInstanceTemporalEntityTest() {
 		try {
@@ -222,12 +220,18 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
+	/**
+	 * this method is try to modify the attribute of temporalEntity having
+	 * "INTERNAL SERVER ERROR"
+	 */
+
 	@Test
 	public void modifyAttribInstanceTemporalEntityInternalServerError() {
-		
+
 		try {
-			Mockito.doThrow(new Exception()).when(historyService).modifyAttribInstanceTemporalEntity(any(),any(), any(), any(), any());
+			Mockito.doThrow(new Exception()).when(historyService).modifyAttribInstanceTemporalEntity(any(), any(),
+					any(), any(), any());
 			mockMvc.perform(patch("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}/{instanceId}",
 					"urn:ngsi-ld:testunit:151", "airQualityLevel", "urn:ngsi-ld:d43aa0fe-a986-4479-9fac-35b7eba232041")
 							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
@@ -237,12 +241,18 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
+	/**
+	 * this method is try to modify the attribute of temporalEntity having "BAD
+	 * REQUEST"
+	 */
+
 	@Test
 	public void modifyAttribInstanceTemporalEntityBadRequest() {
-		
+
 		try {
-			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).modifyAttribInstanceTemporalEntity(any(),any(), any(), any(), any());
+			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService)
+					.modifyAttribInstanceTemporalEntity(any(), any(), any(), any(), any());
 			mockMvc.perform(patch("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}/{instanceId}",
 					"urn:ngsi-ld:testunit:151", "airQualityLevel", "urn:ngsi-ld:d43aa0fe-a986-4479-9fac-35b7eba232041")
 							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
@@ -254,9 +264,9 @@ public class HistoryControllerTest {
 	}
 
 	/**
-	 * this method is use for delete the temporalEntity
+	 * this method is use for delete the temporalEntity by attribute
 	 */
-	
+
 	@Test
 	public void deleteTemporalEntityByAttr() {
 		List<Object> linkHeaders = new ArrayList<>();
@@ -273,6 +283,10 @@ public class HistoryControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use to delete the temporalEntity
+	 */
+
 	@Test
 	public void deleteTemporalEntity() {
 		List<Object> linkHeaders = new ArrayList<>();
@@ -286,6 +300,11 @@ public class HistoryControllerTest {
 		}
 	}
 
+	/**
+	 * this method is try to delete the temporalEntity having "INTERNAL SERVER
+	 * ERROR"
+	 */
+
 	@Test
 	public void deleteTemporalEntityInternalServerError() {
 		List<Object> linkHeaders = null;
@@ -298,12 +317,17 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
+	/**
+	 * this method is try to delete the temporalEntity having "BAD REQUEST"
+	 */
+
 	@Test
 	public void deleteTemporalEntityBadRequest() {
 		List<Object> linkHeaders = null;
 		try {
-			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).delete(any(), any(), any(), any());
+			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).delete(any(), any(),
+					any(), any());
 			mockMvc.perform(MockMvcRequestBuilders
 					.delete("/ngsi-ld/v1/temporal/entities/{entities}", "urn:ngsi-ld:testunit:151")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isBadRequest());
@@ -311,6 +335,11 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
+
+	/**
+	 * this method is try to delete the attribute of temporalEntity having
+	 * "INTERNAL SERVER ERROR"
+	 */
 
 	@Test
 	public void deleteTemporalEntityByAttrInternalServerError() {
@@ -327,12 +356,18 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
+	/**
+	 * this method is try to delete the attribute of temporalEntity having "BAD
+	 * REQUEST"
+	 */
+
 	@Test
 	public void deleteTemporalEntityByAttrBadRequest() {
 		List<Object> linkHeaders = null;
 		try {
-			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).delete(any(), any(), any(), any());
+			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).delete(any(), any(),
+					any(), any());
 			mockMvc.perform(
 					MockMvcRequestBuilders
 							.delete("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}",
@@ -344,11 +379,17 @@ public class HistoryControllerTest {
 		}
 	}
 
+	/**
+	 * this method is used to delete the temporal entity having "Resource not
+	 * found".
+	 */
+
 	@Test
 	public void deleteTemporalEntityByAttrResourceNotFound() {
 		List<Object> linkHeaders = null;
 		try {
-			Mockito.doThrow(new ResponseException(ErrorType.NotFound)).when(historyService).delete(any(), any(), any(), any());
+			Mockito.doThrow(new ResponseException(ErrorType.NotFound)).when(historyService).delete(any(), any(), any(),
+					any());
 			mockMvc.perform(
 					MockMvcRequestBuilders
 							.delete("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}",
@@ -359,22 +400,25 @@ public class HistoryControllerTest {
 			Assert.fail(e.getMessage());
 		}
 	}
-	
+
 	/**
-	 * this method is use for get the temporalEntity
+	 * this method is used get the temporalEntity by ID.
 	 */
-	
+
 	@Test
 	public void getTemporalEntityById() {
 		try {
 
 			mockMvc.perform(get("/ngsi-ld/v1/temporal/entities/{entityId}", "urn:ngsi-ld:testunit:151")
-					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isOk())
-					.andExpect(jsonPath("$.id").value("urn:ngsi-ld:testunit:151")).andDo(print());
+					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isOk());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
 	}
+
+	/**
+	 * this method is used get the temporalEntity by time filter.
+	 */
 
 	@Test
 	public void getTemporalEntityByTimefilter() {
