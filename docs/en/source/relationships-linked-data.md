@@ -252,7 +252,7 @@ redesigned but their real intent (which resolves to a fixed FQN) could still be 
 # Architecture
 
 Our demo application will only make use of one FIWARE component - the
-[Scorpio Broker](link to docs). Usage of the Scorpio Context Broker (with proper
+[Scorpio Broker](https://scorpio.readthedocs.io/en/latest/). Usage of the Scorpio Context Broker (with proper
 context data flowing through it) is sufficient for an application to qualify as _“Powered by FIWARE”_.
 
 ![Deployment Architecture](figures/deploymentarchitecture.png)
