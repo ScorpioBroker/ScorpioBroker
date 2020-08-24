@@ -1,0 +1,611 @@
+{
+	"info": {
+		"_postman_id": "219b5883-cdc2-4dc2-8554-d22f6e13e8f8",
+		"name": "FIWARE Linked Data Subscriptions and Registrations",
+		"description": "This tutorial discusses the usage of subscriptions and registrations within NGSI-LD and highlights the similarities and\ndifferences between the equivalent NGSI-v2 and NGSI-LD operations. The tutorial is an analogue of the original\ncontext-provider and subscriptions tutorials but uses API calls from the **NGSI-LD** interface throughout.\n\nThe `docker-compose` files for this tutorial can be found on GitHub: \n\n![GitHub](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/icon/GitHub-Mark-32px.png) [FIWARE 604. Linked Data Subscriptions and Registrations](https://github.com/Fiware/tutorials.LD-Subscriptions-Registrations)\n\n\n# Understanding Linked Data Subscriptions and Registrations\n\n> “Do not repeat after me words that you do not understand. Do not merely put on a mask of my ideas, for it will be an\n> illusion and you will thereby deceive yourself.”\n>\n> ― Jiddu Krishnamurti\n\nNGSI-LD Subscriptions and Registrations provide the basic mechanism to allow the components within a Smart Linked Data\nSolution to interact with each other.\n\nAs a brief reminder, within a distributed system, subscriptions inform a third party component that a change in the\ncontext data has occurred (and the component needs to take further actions), whereas registrations tell the context\nbroker that additional context information is available from another source.\n\nBoth of these operations require that the receiving component fully understands the requests it receives, and is capable\nof creating and interpreting the resultant payloads. The differences here between NGSI-v2 and NGSI-LD operations is\nsmall, but there has been a minor amendment to facilite the incorporation of linked data concepts, and therefore the\ncontract between the various components has changed to include minor updates.\n\n## Entities within a stock management system\n\nThe relationship between our Linked Data entities is defined as shown, in addition to the existing data, the `tweets`\nattribute will be supplied by a _Context Provider_. In all other respects this model remains the same as the\n[previous tutorial](https://github.com/FIWARE/tutorials.Working-with-Linked-Data/) :\n\n![](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/entities.png)\n\n## Stock Management frontend\n\nThe simple Node.js Express application has updated to use NGSI-LD in the previous\n[tutorial](https://github.com/FIWARE/tutorials.Working-with-Linked-Data/). We will use the monitor page to watch the\nstatus of recent requests, and a two store pages to buy products. Once the services are running these pages can be\naccessed from the following URLs:\n\n#### Event Monitor\n\nThe event monitor can be found at: `http://localhost:3000/app/monitor`\n\n![FIWARE Monitor](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/monitor.png)\n\n#### Store 001\n\nStore001 can be found at: `http://localhost:3000/app/store/urn:ngsi-ld:Building:store001`\n\n![Store](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/store.png)\n\n#### Store 002\n\nStore002 can be found at: `http://localhost:3000/app/store/urn:ngsi-ld:Building:store002`\n\n![Store2](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/store2.png)\n",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Using Subscriptions with NGSI-LD",
+			"item": [
+				{
+					"name": "Create a Subscription ( Store 1) - Low Stock",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text",
+								"name": "Accept"
+							},
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text",
+								"disabled": true
+							},
+							{
+								"key": "Accept",
+								"value": "application/ld+json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"description\": \"Notify me of low stock in Store 001\",\n\t\"type\": \"Subscription\",\n\t\"entities\": [{\"type\": \"Shelf\"}],\n\t\"watchedAttributes\": [\"numberOfItems\"],\n\t\"q\": \"numberOfItems<10;locatedIn==urn:ngsi-ld:Building:store001\",\n\t\"notification\": {\n\t\t\"attributes\": [\"numberOfItems\", \"stocks\", \"locatedIn\"],\n\t\t\"format\": \"keyValues\",\n\t\t\"endpoint\": {\n\t\t\t\"uri\": \"http://tutorial:3000/subscription/low-stock-store001\",\n\t\t\t\"accept\": \"application/json\"\n\t\t}\n\t},\n   \"@context\": \"https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld\"\n}\n        "
+						},
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/subscriptions/",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"subscriptions",
+								""
+							],
+							"query": [
+								{
+									"key": "options",
+									"value": "keyValues",
+									"disabled": true
+								}
+							]
+						},
+						"description": "NGSI-LD subscriptions can be set up using the `/ngsi-ld/v1/subscriptions/` endpoint and in a similar manner to the\nNGSI-v2 `/v2/subscriptions` endpoint. The payload body is slightly different however. Firstly the linked data `@context`\nmust be present either as an attribute or in the `Link` header. If the `@context` is placed in the body the\n`Context-Type` header must state that the payload is `application/ld+json` - i.e. Linked Data plus JSON. The supplied\n`@context` will also be used when making notifications as part of the notification request.\n\nThe `type` of the NGSI-LD subscription request is always `type=Subscription`. The structure of the subscription has\nchanged. When setting up a subscription, there is no longer a separate `subject` section to the payload, entities to\nwatch and trigger conditions are now set at the same level as the `description` of the subscription.\n\n-   `condition.attrs` has been moved up a level and renamed to `watchedAttributes`\n-   `condition.expression` has been moved up a level and renamed to `q`\n\nThe `notification` section of the body states that once the conditions of the subscription have been met, a POST request\ncontaining all affected Shelf entities will be sent to the URL `http://tutorial:3000/subscription/low-stock-store001`.\nIt is now possible to amend the notification payload by requesting `notification.format=keyValues` and remove the\n`@context` from the notification body by stating `notification.endpoint.accept=application/json`. The `@context` is not\nlost, it is merely passed as a `Link` header. In summary, all of the flags within a subscription work in the same manner\nas a GET request to the context broker itself. If no flags are set, a full NGSI-LD response including the `@context` is\nreturned by default, and the payload can be reduced and amended by adding in further restriction"
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Subscription ( Store 2) - Low Stock",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Link",
+								"type": "text",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"disabled": true
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"description\": \"Notify me of low stock in Store 002\",\n\t\"type\": \"Subscription\",\n\t\"entities\": [{\"type\": \"Shelf\"}],\n\t\"watchedAttributes\": [\"numberOfItems\"],\n\t\"q\": \"numberOfItems<10;locatedIn==urn:ngsi-ld:Building:store002\",\n\t\"notification\": {\n\t\t\"attributes\": [\"numberOfItems\", \"stocks\", \"locatedIn\"],\n\t\t\"format\": \"keyValues\",\n\t\t\"endpoint\": {\n\t\t\t\"uri\": \"http://tutorial:3000/subscription/low-stock-store002\",\n\t\t\t\"accept\": \"application/json\"\n\t\t}\n\t},\n   \"@context\": \"https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld\"\n}\n        "
+						},
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/subscriptions/",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"subscriptions",
+								""
+							],
+							"query": [
+								{
+									"key": "options",
+									"value": "keyValues",
+									"disabled": true
+								}
+							]
+						},
+						"description": "This second request fires notifications to a different endpoint (URL\n`http://tutorial:3000/subscription/low-stock-store002`.) The `notification.format=normalized` and\n`notification.endpoint.accept=application/ld+json` will ensure that the `@context` is passed in the body of the\nnotification request and that the payload will consist of the expanded entities."
+					},
+					"response": []
+				},
+				{
+					"name": "Read Subscription Details",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Link",
+								"type": "text",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"disabled": true
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/subscriptions/",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"subscriptions",
+								""
+							],
+							"query": [
+								{
+									"key": "options",
+									"value": "keyValues",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Subscription details can be read by making a GET request to the `/ngsi-ld/v1/subscriptions/`. All subscription CRUD\nactions continue to be mapped to the same HTTP verbs as before. Adding the `Accept: application/json` will remove the\n`@context` element from the response body.\n\n\nThe response consists of the details of the subscriptions within the system. The parameters within the `q` attribute\nhave been expanded to use the full URIs, as internally the broker consistently uses long names. The differences between\nthe payloads offered by the two subscriptions will be discussed below."
+					},
+					"response": []
+				}
+			],
+			"description": "Goto `http://localhost:3000/app/store/urn:ngsi-ld:Building:store001` to display and interact with the Supermarket data.",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "38a4bfe9-3203-46d5-ad26-da4685f6c6db",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "cda29993-7539-442a-93f6-13f9e04ebe44",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Retrieving Subscription Events",
+			"item": [],
+			"description": "Open two tabs on a browser. Go to the event monitor (`http://localhost:3000/app/monitor`) to see the payloads that are\nreceived when a subscription fires, and then go to store001\n(`http://localhost:3000/app/store/urn:ngsi-ld:Building:store001`) and buy beer until less than 10 items are in stock.\nThe low stock message should be displayed on screen.\n\n![low-stock](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/low-stock-warehouse.png)\n\n`low-stock-store001` is fired when the Products on the shelves within Store001 are getting low, the subscription payload\ncan be seen below:\n\n![low-stock-json](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/low-stock-monitor.png)\n\nThe data within the payload consists of key-value pairs of the attributes which were specified in the request. This is\nbecause the subscription was created using the `format=keyValues` attribute. The `@context` is not present in the\npayload body since `endpoint.accept=application/json` was set. The effect is to return a `data` array in a very similar\nformat to the `v2/subscription/` payload. In addition to the `data` array, the `subscriptionId` is included in the\nresponse, along with a `notifiedAt` element which describes when the notification was fired.\n\nNow go to store002 (`http://localhost:3000/app/store/urn:ngsi-ld:Building:store002`) and buy beer until fewer than 10\nitems are in stock. The low stock message is once again displayed on screen, the payload can be seen within the event\nmonitor.\n\n![low-stock-ld](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/low-stock-monitor-ld.png)\n\nThe second subscription has been set up to pass the full normalized NGSI-LD payload along with the `@context`. This has\nbeen achieved by using the using the `format=normalized` attribute within the subscription itself, as well as setting\n`endpoint.accept=application/ld+json`, so that the `@context` is also passed with each entity.",
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Using Registrations with NGSI-LD",
+			"item": [
+				{
+					"name": "Create a registration",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": " {\n    \"type\": \"ContextSourceRegistration\",\n    \"information\": [\n        {\n            \"entities\": [\n                {\n                    \"type\": \"Building\",\n                    \"id\": \"urn:ngsi-ld:Building:store001\"\n                }\n            ],\n            \"properties\": [\n                \"tweets\"\n            ]\n        }\n    ],\n    \"endpoint\": \"http://context-provider:3000/static/tweets\"\n}"
+						},
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/csourceRegistrations/",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"csourceRegistrations",
+								""
+							]
+						},
+						"description": "All NGSI-LD Context Provider Registration actions take place on the `/ngsi-ld/v1/csourceRegistrations/` endpoint. The\nstandard CRUD mappings apply. The `@context` must be passed either as a `Link` header or within the main body of the\nrequest.\n\nThe body of the request is similar to the NGSI-v2 equivalent with the following modifications:\n\n-   The NGSI-v2 `dataProvided` object is now an array called `information`.\n-   NGSI-v2 `attrs` have been split into separate arrays of `properties` and `relationships`\n-   The NGSI-v2 `provider.url` has moved up to `endpoint`"
+					},
+					"response": []
+				},
+				{
+					"name": "Check the registration",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/ld+json",
+								"type": "text"
+							},
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/csourceRegistrations/",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"csourceRegistrations",
+								""
+							]
+						},
+						"description": "Retrieving the registration details can be made by sending a GET request to the `/ngsi-ld/v1/csourceRegistrations/`\nendpoint, along with an appropriate JSON-LD context in the `Link` header.\n\nThe response returns the details of the registration. In this case the short names of the `properties` have been\nreturned, along with the `@context`."
+					},
+					"response": []
+				},
+				{
+					"name": "Read from Store 1",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Building:store001"
+							],
+							"query": [
+								{
+									"key": "options",
+									"value": "keyValues",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Once a registration has been set up, the additional registered `properties` and `relationships` are transparently\nreturned when an requested entity is requested. For simple registrations, a request to obtain the whole entity will be\nproxied to the registered `endpoint`, for partial registrations the `properties` and `relationships` are added to the\nexisting entity held within the context broker.\n\nThe response now holds an additional `tweets` Property, which returns the values obtained from\n`http://context-provider:3000/static/tweets/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001` - i.e. the forwarding\nendpoint.\n\nThe same response data can be seen within the supermarket application itself. In practice this data has been created via\na series of requests - the context broker is responsible for the `urn:ngsi-ld:Building:store001` data, however it checks\nto see if any further information can be provided from other sources. In our case the `CSourceRegistration` indicates\nthat one further attribute _may_ be available. The broker then requests `tweets` information from the context provider,\nand provided that it responds in a timely manner, the `tweets` information is added to the resultant payload.\n\nThe supermarket application displays the received data on screen within the supermarket application itself:\n\n![tweets-1](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/tweets-1.png)"
+					},
+					"response": []
+				},
+				{
+					"name": "Read direct from Context Provider",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://{{context-provider}}/static/tweets/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001?attrs=tweets",
+							"protocol": "http",
+							"host": [
+								"{{context-provider}}"
+							],
+							"path": [
+								"static",
+								"tweets",
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Building:store001"
+							],
+							"query": [
+								{
+									"key": "options",
+									"value": "keyValues",
+									"disabled": true
+								},
+								{
+									"key": "attrs",
+									"value": "tweets"
+								}
+							]
+						},
+						"description": "Every context-provider must stand by a fixed contract. At a minimum must be able to respond to varieties of the\n`/ngsi-ld/v1/entities/<entity-id>` GET request. If the registration is limited to certain properties, this request will\nalso contain an `attrs` parameter in the query string.\n\nDependent upon the use case of the context-provider, it may or may not need to be able to interpret JSON-LD `@context` -\nin this case a request is merely returning the full `tweets` attribute.\n\nThe same request is made by the context broker itself when querying for registered attributes\n\nAs can be seen the `@context` has been returned in the request (since the `Content-Type` header was set). The rest of\nthe response resembles any standard NGSI-LD request."
+					},
+					"response": []
+				},
+				{
+					"name": "Direct Update to Context Provider",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text",
+								"name": "Accept"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \n\t\"tweets\": { \n\t\t\"type\": \"Property\", \n\t\t\"value\": [\n\t\t\t\"Space is big.\",\n\t\t\t\"You just won't believe how vastly, hugely, mind-bogglingly big it is.\",\n\t\t\t\"I mean, you may think it's a long way down the road to the chemist's, but that's just peanuts to space.\"\n\t\t] \n\t} \n}"
+						},
+						"url": {
+							"raw": "http://{{context-provider}}/static/tweets/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/attrs",
+							"protocol": "http",
+							"host": [
+								"{{context-provider}}"
+							],
+							"path": [
+								"static",
+								"tweets",
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Building:store001",
+								"attrs"
+							],
+							"query": [
+								{
+									"key": "options",
+									"value": "keyValues",
+									"disabled": true
+								}
+							]
+						},
+						"description": "For a read-write interface it is also possible to amend context data by making a PATCH request to the relevant\n`ngsi-ld/v1/entities/<entity-id>/attrs` endpoint."
+					},
+					"response": []
+				},
+				{
+					"name": "Read from Store 1",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Building:store001"
+							],
+							"query": [
+								{
+									"key": "options",
+									"value": "keyValues",
+									"disabled": true
+								}
+							]
+						},
+						"description": "If the regisitered attribute is requested from the context broker, it returns the _updated_ values obtained from\n`http://context-provider:3000/static/tweets/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001` - i.e. the forwarding\nendpoint.\n\nThis alters the response to match the values updated in the previous PATCH request.\n\nSince the context provider is responsible for supplying `tweets` information, changes in the context provider will\nalways be reflected in requests to the context-broker itself. The supermarket application is calling the context broker\nfor context regardless of origin, so the updated `tweets` data are displayed on screen within the supermarket\napplication itself:\n\n![tweets-2](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/tweets-2.png)\n\nThe context broker is therefore able to return a complete holistic picture of the current state of the world."
+					},
+					"response": []
+				},
+				{
+					"name": "Forwarded Update",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text",
+								"name": "Accept"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \n\t\"type\": \"Property\", \n\t\"value\": [\n\t\t\"This must be Thursday\",\n\t\t\"I never could get the hang of Thursdays.\"\t\n\t] \n} "
+						},
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/attrs/tweets",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Building:store001",
+								"attrs",
+								"tweets"
+							],
+							"query": [
+								{
+									"key": "options",
+									"value": "keyValues",
+									"disabled": true
+								}
+							]
+						},
+						"description": "A PATCH request to the context broker ( either `ngsi-ld/v1/entities/<entity-id>/` or\n`ngsi-ld/v1/entities/<entity-id>/attrs`) will be forwarded to the registered context provider if a registration is\nfound. It is therefore possible to alter the state of a context-provider as a side effect. Of course, not all context\nproviders are necessarily read-write, so attempting to change the attributes of forwarded context may not be fully\nrespected.\n\nIn this case however a request to PATCH `ngsi-ld/v1/entities/<entity-id>` will be successfully forwarded as a series of\n`ngsi-ld/v1/entities/<entity-id>/attrs` requests for each regsitered attribute that is found in the registration."
+					},
+					"response": []
+				},
+				{
+					"name": "Read from Store 1",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Building:store001"
+							],
+							"query": [
+								{
+									"key": "options",
+									"value": "keyValues",
+									"disabled": true
+								}
+							]
+						},
+						"description": "The result of the previous operation can be seen by retrieving the whole entity using a GET request.\n\nThis alters the response to match the values updated in the previous PATCH request which was sent to the context broker\nand then forwarded to the context provider endpoint.\n\nAs can be seen, the updated `tweets` data is also displayed within the supermarket application itself:\n\n![tweets-3](https://fiware.github.io/tutorials.LD-Subscriptions-Registrations/img/tweets-3.png)"
+					},
+					"response": []
+				}
+			],
+			"description": "Context Registrations allow some (or all) data within an entity to be provided by an external context provider. It could\nbe another full context-provider a separate micro-service which only responds to a subset of the NGSI-LD endpoints.\nHowever, there needs to be a contract created as to who supplies what.\n\nAll registrations can be subdivided into one of two types. Simple registrations where a single context provider is\nresponsible for the maintenance of the whole entity, and partial registrations where attributes are spread across\nmultiple context providers. For a simple registration, all context requests are forwarded\n\n| Request    | Action at **Context Broker**                                                | Action at **Context Provider**                                                                      |\n| ---------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |\n| **GET**    | Pass request to **Context Provider**, proxy the response back unaltered.    | Respond to context broker with the result of the GET request based on the entities held internally  |\n| **PATCH**  | Pass request to **Context Provider**, proxy back the HTTP back status code. | Update the entity within the **Context Provider**, Respond to the context broker with a status code |\n| **DELETE** | Pass request to **Context Provider**                                        | Delete the entity within the **Context Provider**, Respond to the context broker with a status code |\n\nEffectively every simple registration is saying _\"this entity is held elsewhere\"_, but the entity data can be requested\nand modified via requests to this context broker.\n\nFor partial registrations the situation is more complex\n\n| Request    | Action at **Context Broker**                                                                                                                                                                                                | Action at **Context Provider**                                                                                                       |\n| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |\n| **GET**    | Assuming an entity exists locally, pass request for additional proxied attributes to **Context Provider**, concatenate a response back for locally held attributes and additional information from the **Context Provider** | Respond to context broker with the result of the GET request based on the entities held internally                                   |\n| **PATCH**  | Update any locally held attributes, Pass update requests for additional attributes to **Context Provider**, and return **success** or **partial success** HTTP status code dependent upon the overall result.               | Update the requested attributes of the entity held within the **Context Provider**. Respond to the context broker with a status code |\n| **DELETE** | If deleting an entity, remove the complete local instance. If deleting locally held attributes remove them. If deleting attributes held in the **Context Provider**, pass request on to **Context Provider**                | Delete the entity attributes within the **Context Provider**, Respond to the context broker with a status code                       |\n\nEach partial registration is saying _\"additional augmented context for this entity is held elsewhere\"_. The entity data\ncan be requested and modified via requests to this context broker.\n\nWith normal operation, the NGSI-LD response does not expose whether data collated from multiple sources is held directly\nwithin the context broker or whether the information has been retrieved externally. It is only when an error occurs\n(e.g. timeout) that the HTTP status error code reveals that externally held information could not be retrieved or\namended.",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "ac72ad1e-22ce-400a-b39e-284b1c4499cc",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "f2fca775-2703-43e2-b588-a2aace5f0506",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "161d2877-2de6-48db-9c35-98bc41d16bc1",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "a0ec1be8-bdcc-4c50-b4a4-48c36f2528ed",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "c415f017-7801-4a12-ad13-2e3291a389ec",
+			"key": "ScorpioBroker",
+			"value": "localhost:1026"
+		},
+		{
+			"id": "03ce0e75-7e45-46cc-8c8c-06b30ae02cc1",
+			"key": "datamodels-context.jsonld",
+			"value": "https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld"
+		},
+		{
+			"id": "310ed897-c65f-493e-ba72-e9b13476d5f1",
+			"key": "device-edge",
+			"value": "localhost:1027"
+		},
+		{
+			"id": "ba8689d9-75c8-488a-bee2-62319b015d3d",
+			"key": "context-provider",
+			"value": "localhost:3000"
+		}
+	],
+	"protocolProfileBehavior": {}
+}

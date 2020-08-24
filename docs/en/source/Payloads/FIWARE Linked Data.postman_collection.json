@@ -1,0 +1,345 @@
+{
+	"info": {
+		"_postman_id": "0cac323e-4ae9-451e-af75-750adb41356a",
+		"name": "FIWARE Linked Data",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Obtaining Version Information",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{ScorpioBroker}}/version/",
+					"protocol": "http",
+					"host": [
+						"{{ScorpioBroker}}"
+					],
+					"path": [
+						"version",
+						""
+					]
+				},
+				"description": "Once the Orion Context Broker is running, You can check the status by making an HTTP request to the exposed port. \nIf the response is blank, this is usually because the MongoDB database holding the context information is not running or not connected.\n\n>**Troubleshooting:** What if the response is blank ?\n>\n> * To check that a docker container is running try\n>\n>```bash\n>docker ps\n>```\n>\n>You should see two containers running. If orion is not running, you can restart the containers as necessary."
+			},
+			"response": []
+		},
+		{
+			"name": "Creating your first Data Entity",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/ld+json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"urn:ngsi-ld:Building:store001\",\n    \"type\": \"Building\",\n    \"category\": {\n    \t\"type\": \"Property\",\n        \"value\": [\"commercial\"]\n    },\n    \"address\": {\n        \"type\": \"Property\",\n        \"value\": {\n            \"streetAddress\": \"Bornholmer Straße 65\",\n            \"addressRegion\": \"Berlin\",\n            \"addressLocality\": \"Prenzlauer Berg\",\n            \"postalCode\": \"10439\"\n        }\n    },\n    \"location\": {\n        \"type\": \"GeoProperty\",\n        \"value\": {\n             \"type\": \"Point\",\n             \"coordinates\": [13.3986, 52.5547]\n        }\n    },\n    \"name\": {\n        \"type\": \"Property\",\n        \"value\": \"Bösebrücke Einkauf\"\n    },\n    \"@context\": [\n        \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\",\n        \"https://schema.lab.fiware.org/ld/fiware-datamodels-context.jsonld\"\n    ]\n}"
+				},
+				"url": {
+					"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities",
+					"protocol": "http",
+					"host": [
+						"{{ScorpioBroker}}"
+					],
+					"path": [
+						"ngsi-ld",
+						"v1",
+						"entities"
+					]
+				},
+				"description": "## Creating Context Data\n\nAt its heart, FIWARE is a system for managing context information, so lets add some context data into the system by creating a  new entity (a store in **Berlin**). Any entity must have a `id` and `type` attributes, additional attributes are optional and will depend on the system being described. Each additional attribute should also have a defined `type` and a `value` attribute."
+			},
+			"response": []
+		},
+		{
+			"name": "Creating your Second Data Entity",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/ld+json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"urn:ngsi-ld:Building:store002\",\n    \"type\": \"Building\",\n    \"category\": {\n    \t\"type\": \"Property\",\n        \"value\": [\"commercial\"]\n    },\n    \"address\": {\n        \"type\": \"Property\",\n        \"value\": {\n            \"streetAddress\": \"Friedrichstraße 44\",\n            \"addressRegion\": \"Berlin\",\n            \"addressLocality\": \"Kreuzberg\",\n            \"postalCode\": \"10969\"\n        }\n    },\n     \"location\": {\n        \"type\": \"GeoProperty\",\n        \"value\": {\n             \"type\": \"Point\",\n              \"coordinates\": [13.3903, 52.5075]\n        }\n    },\n    \"name\": {\n        \"type\": \"Property\",\n        \"value\": \"Checkpoint Markt\"\n    },\n    \"@context\": [\n\t\t\"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\",\n        \"https://schema.lab.fiware.org/ld/fiware-datamodels-context.jsonld\"\n    ]\n}"
+				},
+				"url": {
+					"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/",
+					"protocol": "http",
+					"host": [
+						"{{ScorpioBroker}}"
+					],
+					"path": [
+						"ngsi-ld",
+						"v1",
+						"entities",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Retrieving Context Information",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Link",
+						"value": "<https://schema.lab.fiware.org/ld/context>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities?type=Building",
+					"protocol": "http",
+					"host": [
+						"{{ScorpioBroker}}"
+					],
+					"path": [
+						"ngsi-ld",
+						"v1",
+						"entities"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "Building"
+						}
+					]
+				},
+				"description": "This example returns the full data context"
+			},
+			"response": []
+		},
+		{
+			"name": "Obtain Entity Data by id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001?options=keyValues",
+					"protocol": "http",
+					"host": [
+						"{{ScorpioBroker}}"
+					],
+					"path": [
+						"ngsi-ld",
+						"v1",
+						"entities",
+						"urn:ngsi-ld:Building:store001"
+					],
+					"query": [
+						{
+							"key": "options",
+							"value": "keyValues",
+							"description": "* `keyValues` option in order to get a more compact and brief representation, including just attribute values\n* `values` option combined with a list of attribute values  `attrs`  for an ordered list of attributes only"
+						},
+						{
+							"key": "type",
+							"value": "Store",
+							"description": "Entity type, to avoid ambiguity in case there are several entities with the same entity id",
+							"disabled": true
+						},
+						{
+							"key": "attrs",
+							"value": "name",
+							"description": "Ordered list of attribute names to display",
+							"disabled": true
+						}
+					]
+				},
+				"description": "This example returns the context data of `store1`. The `id` of the entity should be unique or the `type` parameter should also be used"
+			},
+			"response": []
+		},
+		{
+			"name": "Obtain Entity Data by type",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Link",
+						"value": "<https://schema.lab.fiware.org/ld/context>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities?type=Building",
+					"protocol": "http",
+					"host": [
+						"{{ScorpioBroker}}"
+					],
+					"path": [
+						"ngsi-ld",
+						"v1",
+						"entities"
+					],
+					"query": [
+						{
+							"key": "options",
+							"value": "keyValues",
+							"description": "* `keyValues` option in order to get a more compact and brief representation, including just attribute values\n* `values` option combined with a list of attribute values  `attrs`  for an ordered list of attributes only",
+							"disabled": true
+						},
+						{
+							"key": "attrs",
+							"value": "name",
+							"description": "Ordered list of attribute names to display",
+							"disabled": true
+						},
+						{
+							"key": "type",
+							"value": "Building"
+						}
+					]
+				},
+				"description": "This example returns the data of all `Store` entities within the context data"
+			},
+			"response": []
+		},
+		{
+			"name": "Filter context data by text value",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Link",
+						"value": "<https://schema.lab.fiware.org/ld/context>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/?q=address.addressLocality==Kreuzberg&options=keyValues&type=Building",
+					"protocol": "http",
+					"host": [
+						"{{ScorpioBroker}}"
+					],
+					"path": [
+						"ngsi-ld",
+						"v1",
+						"entities",
+						""
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "address.addressLocality==Kreuzberg"
+						},
+						{
+							"key": "options",
+							"value": "keyValues",
+							"description": "* `keyValues` option in order to get a more compact and brief representation, including just attribute values\n* `values` option combined with a list of attribute values  `attrs`  for an ordered list of attributes only"
+						},
+						{
+							"key": "attrs",
+							"value": "name",
+							"description": "Ordered list of attribute names to display",
+							"disabled": true
+						},
+						{
+							"key": "type",
+							"value": "Building"
+						}
+					]
+				},
+				"description": "## Filter context data by comparing the values of an attribute\n\nThis example returns the data of all `Store` entities found in the **Kreuzberg** district of Berlin."
+			},
+			"response": []
+		},
+		{
+			"name": "Filter context data by distance",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Link",
+						"value": "<https://schema.lab.fiware.org/ld/context>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/?georel=near;maxDistance:1500&geometry=point&coords=52.5162,13.3777&type=Building&options=keyValues",
+					"protocol": "http",
+					"host": [
+						"{{ScorpioBroker}}"
+					],
+					"path": [
+						"ngsi-ld",
+						"v1",
+						"entities",
+						""
+					],
+					"query": [
+						{
+							"key": "georel",
+							"value": "near;maxDistance:1500"
+						},
+						{
+							"key": "geometry",
+							"value": "point"
+						},
+						{
+							"key": "coords",
+							"value": "52.5162,13.3777"
+						},
+						{
+							"key": "type",
+							"value": "Building",
+							"description": "Entity type, to avoid ambiguity in case there are several entities with the same entity id"
+						},
+						{
+							"key": "options",
+							"value": "keyValues",
+							"description": "* `keyValues` option in order to get a more compact and brief representation, including just attribute values\n* `values` option combined with a list of attribute values  `attrs`  for an ordered list of attributes only"
+						},
+						{
+							"key": "attrs",
+							"value": "name",
+							"description": "Ordered list of attribute names to display",
+							"disabled": true
+						}
+					]
+				},
+				"description": "## Filter context data by comparing the values of a geo:point attribute\n\nThis example returns the data of all `Store` entities found within 1.5km the **Brandenburg Gate**  in **Berlin** (*52.5162N 13.3777W*)"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "84a79af1-5a37-48a3-a1ce-2e6c2c345bad",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "b807b9c1-2bc8-40aa-b68b-3ae334bd7cb5",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "1b6ed661-35bf-4a6a-b73e-cd0e19f5fb81",
+			"key": "ScorpioBroker",
+			"value": "localhost:1026"
+		}
+	],
+	"protocolProfileBehavior": {}
+}
