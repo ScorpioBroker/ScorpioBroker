@@ -1,24 +1,17 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
-import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
-import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
-import com.hivemq.shaded.org.jetbrains.annotations.NotNull;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 
@@ -76,11 +69,11 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 			if (port == -1) {
 				port = 1883;
 			}
-			if (mqttVersion == null || mqttVersion.equals("5")) {
+			if (mqttVersion == null || mqttVersion.equals(NGSIConstants.MQTT_VERSION_5)) {
 				result = Mqtt5Client.builder().identifier(CLIENT_ID).serverHost(callback.getHost()).serverPort(port)
 						.buildBlocking();
 				((Mqtt5BlockingClient) result).connect();
-			} else {
+			} else if(mqttVersion.equals(NGSIConstants.MQTT_VERSION_3)) {
 				result = Mqtt3Client.builder().identifier(CLIENT_ID).serverHost(callback.getHost()).serverPort(port)
 						.buildBlocking();
 				((Mqtt3BlockingClient) result).connect();

@@ -189,6 +189,9 @@ public interface NGSIConstants {
 	public static final String ACCEPTED_LINK = "link";
 	public static final String METADATA = "metadata";
 	public static final String BODY = "body";
+	public static final String MQTT_VERSION_5 = "mqtt5.0";
+	public static final String MQTT_VERSION_3 = "mqtt3.1.1";
+	
 	
 	
 }
