@@ -11,7 +11,7 @@ Disclaimer:
 
 ### Short Term
 
-The following list of features are planned to be addressed in the short term, and incorporated in a next release of the product planned for September 2020:
+The following list of features are planned to be addressed in the short term, and incorporated in a next release of the product planned for September 2020 in accordance with the next FIWARE release:
 1. Issue tracking & general bugfixing: We will continue to remove existing bugs and adress the current issues
    - Active tracking of the bugs with minimal response time and well defined structure to handle the issue tickets
    - The biggest chunk will be making the temporal component of Scorpio completely compliant to the NGSI-LD specification.
