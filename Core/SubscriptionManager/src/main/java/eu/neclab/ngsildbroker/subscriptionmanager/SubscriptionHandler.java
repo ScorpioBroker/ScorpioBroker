@@ -17,11 +17,12 @@ import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 
 @SpringBootApplication
 @EnableBinding({ SubscriptionManagerProducerChannel.class, AtContextProducerChannel.class })
-@Import(KafkaConfig.class)
+@Import({KafkaConfig.class, SwaggerConfigDetails.class})
 public class SubscriptionHandler {
 
 	@Value("${atcontext.url}")

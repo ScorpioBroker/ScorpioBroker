@@ -12,9 +12,6 @@
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
 
-
-
-
 	<modules>
 		<module>EntityManager</module>
 		<module>QueryManager</module>

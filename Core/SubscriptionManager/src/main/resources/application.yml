@@ -43,6 +43,11 @@ management:
   endpoint:
     restart:
       enabled: true
+      
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
 
 spring:
   kafka:
