@@ -91,6 +91,7 @@
 			<artifactId>junit</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
 		<!-- <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>LDContextResolver</artifactId> 
 			<version>0.0.1-SNAPSHOT</version> </dependency> -->
 	</dependencies>
