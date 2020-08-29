@@ -22,7 +22,10 @@ csource:
     topic: CSOURCE_REGISTRATION
   notification:
     topic: CONTEXT_SOURCE_NOTIFICATION
-
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
 #kafka broker path
 bootstrap:
   servers: localhost:9092
@@ -40,6 +43,11 @@ management:
   endpoint:
     restart:
       enabled: true
+      
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
 
 spring:
   kafka:

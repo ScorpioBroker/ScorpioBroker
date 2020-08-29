@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.ListTopicsResult;
@@ -38,10 +37,8 @@ import org.springframework.retry.RetryOperations;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MimeTypeUtils;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityDetails;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;

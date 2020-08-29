@@ -1,24 +1,17 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
-import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
-import com.hivemq.client.mqtt.mqtt5.Mqtt5AsyncClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
-import com.hivemq.shaded.org.jetbrains.annotations.NotNull;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 
@@ -37,7 +30,13 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 	protected void sendReply(ResponseEntity<byte[]> reply, URI callback, Map<String, String> clientSettings)
 			throws Exception {
 		MqttClient client = getClient(callback, clientSettings);
-		String qosString = clientSettings.get(NGSIConstants.MQTT_QOS);
+		String qosString  = null;
+		if(clientSettings != null) {
+			qosString = clientSettings.get(NGSIConstants.MQTT_QOS);
+			
+		} else {
+			qosString = String.valueOf(NGSIConstants.DEFAULT_MQTT_QOS);
+		}
 		int qos = 1;
 		if (qosString != null) {
 			qos = Integer.parseInt(qosString);
@@ -58,16 +57,23 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 		URI baseURI = URI.create(callback.getScheme() + "://" + callback.getAuthority());
 		MqttClient result = uri2client.get(baseURI);
 		if (result == null) {
-			String mqttVersion = clientSettings.get(NGSIConstants.MQTT_VERSION);
+			String mqttVersion = null;
+			if(clientSettings != null) {
+				mqttVersion = clientSettings.get(NGSIConstants.MQTT_VERSION);
+				
+			} else {
+				mqttVersion = NGSIConstants.DEFAULT_MQTT_VERSION; 
+			}
+			
 			int port = callback.getPort();
 			if (port == -1) {
 				port = 1883;
 			}
-			if (mqttVersion == null || mqttVersion.equals("5")) {
+			if (mqttVersion == null || mqttVersion.equals(NGSIConstants.MQTT_VERSION_5)) {
 				result = Mqtt5Client.builder().identifier(CLIENT_ID).serverHost(callback.getHost()).serverPort(port)
 						.buildBlocking();
 				((Mqtt5BlockingClient) result).connect();
-			} else {
+			} else if(mqttVersion.equals(NGSIConstants.MQTT_VERSION_3)) {
 				result = Mqtt3Client.builder().identifier(CLIENT_ID).serverHost(callback.getHost()).serverPort(port)
 						.buildBlocking();
 				((Mqtt3BlockingClient) result).connect();

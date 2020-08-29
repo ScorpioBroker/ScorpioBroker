@@ -535,7 +535,7 @@ public class SubscriptionService implements SubscriptionManager {
 							subscription.getId(), dataList, null, null, 0, true),
 					subscription.getNotification().getEndPoint().getUri(),
 					subscription.getNotification().getEndPoint().getAccept(), subscription.getId().toString(),
-					subscriptionId2Context.get(subscription.getId().toString()), subscription.getThrottling(), null);
+					subscriptionId2Context.get(subscription.getId().toString()), subscription.getThrottling(), subscription.getNotification().getEndPoint().getNotifierInfo());
 		} catch (URISyntaxException e) {
 			logger.error("Exception ::", e);
 			// Left empty intentionally

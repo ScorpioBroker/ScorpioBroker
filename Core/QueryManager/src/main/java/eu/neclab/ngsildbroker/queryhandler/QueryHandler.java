@@ -32,13 +32,18 @@ import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.queryhandler.config.QueryProducerChannel;
 
 
+
 @SpringBootApplication
-@Import(KafkaConfig.class)
+@Import({KafkaConfig.class, SwaggerConfigDetails.class})
 @EnableBinding({ AtContextProducerChannel.class, QueryProducerChannel.class})
+
 public class QueryHandler {// implements QueryHandlerInterface{
+
+
 
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
