@@ -180,4 +180,18 @@ public interface NGSIConstants {
 	public static final String MQTT_VERSION = "mqtt_version";
 	public static final String DEFAULT_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/default-data-set-id";
 	public final static String QUERY_PARAMETER_DELETE_ALL  = "deleteAll";
+	public static final String NGSI_LD_NOTIFIERINFO = "https://uri.etsi.org/ngsi-ld/default-context/notifierinfo";
+	public static final String NGSI_LD_MQTT_QOS = "https://uri.etsi.org/ngsi-ld/default-context/qos";
+	public static final String NGSI_LD_MQTT_VERSION = "https://uri.etsi.org/ngsi-ld/default-context/version";
+	public static final Integer DEFAULT_MQTT_QOS = 0;
+	public static final String DEFAULT_MQTT_VERSION = "mqtt5.0";
+	public static final String CONTENT_TYPE = "contentType";
+	public static final String ACCEPTED_LINK = "link";
+	public static final String METADATA = "metadata";
+	public static final String BODY = "body";
+	public static final String MQTT_VERSION_5 = "mqtt5.0";
+	public static final String MQTT_VERSION_3 = "mqtt3.1.1";
+	
+	
+	
 }
