@@ -264,6 +264,7 @@ zuul:
       path: /test/**
       serviceId: testmanager
       stripPrefix: false
+selfhostcorecontext: http://localhost:9090/corecontext
 security:
   active: false
   oauth2:
@@ -283,6 +284,6 @@ security:
       #userInfoUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/userinfo
     # for keycloak configure
       userInfoUri: http://172.30.64.120:3000/user
-logging:
-  level:
-    root: ERROR
+#logging:
+#  level:
+#    root: ERROR
