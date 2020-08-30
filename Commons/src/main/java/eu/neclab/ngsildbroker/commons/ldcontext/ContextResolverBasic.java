@@ -71,6 +71,8 @@ public class ContextResolverBasic {
 
 	@Value("${atcontext.baseurl:http://localhost:9090/ngsi-ld/contextes/}")
 	private String AT_CONTEXT_BASE_URL;
+	@Value("${selfhostcorecontext:http://localhost:9090/corecontext}")
+	private String SELF_HOST_CORE_CONTEXT_URL;
 	private HttpUtils httpUtils = HttpUtils.getInstance(this);
 	private Map<String, Object> CORE_CONTEXT;
 	// private Map<String, Object> DEFAULT_CONTEXT;
@@ -94,15 +96,15 @@ public class ContextResolverBasic {
 		} catch (IOException e) {
 			// core context not reachable
 			try {
-				CORE_CONTEXT_URL = new URI(AT_CONTEXT_BASE_URL + AppConstants.CORE_CONTEXT_URL_SUFFIX);
+				CORE_CONTEXT_URL = new URI(SELF_HOST_CORE_CONTEXT_URL);
 				String json = httpUtils.doGet(CORE_CONTEXT_URL);
 				CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 				BASE_CONTEXT.putAll(CORE_CONTEXT);
 			} catch (URISyntaxException e1) {
 				// left empty intentionally
 				// controlled uri
-				throw new AssertionError(AT_CONTEXT_BASE_URL
-						+ "ngsi-ld-core-context is not a valid uri.  Aborting! core context has to be available");
+				throw new AssertionError(SELF_HOST_CORE_CONTEXT_URL
+						+ " is not a valid uri.  Aborting! core context has to be available");
 			} catch (IOException e1) {
 				throw new AssertionError(
 						"Neither the default core context is reachable nore the internal webserver.  Aborting! core context has to be available");

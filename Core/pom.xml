@@ -18,5 +18,6 @@
 		<module>SubscriptionManager</module>
 		<module>TestManager</module>
 		<module>AtContextServer</module>
+		<module>InfoServer</module>
 	</modules>
 </project>

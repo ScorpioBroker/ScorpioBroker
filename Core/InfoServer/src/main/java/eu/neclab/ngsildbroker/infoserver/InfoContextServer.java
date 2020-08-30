@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.atcontextserver;
+package eu.neclab.ngsildbroker.infoserver;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -19,27 +19,12 @@ import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 
 @SpringBootApplication
 @Import({KafkaConfig.class, SwaggerConfigDetails.class})
-@EnableBinding({AtContextProducerChannel.class})
-public class AtContextServer {// implements QueryHandlerInterface{
+public class InfoContextServer {// implements QueryHandlerInterface{
 
 	public static void main(String[] args) {
-		SpringApplication.run(AtContextServer.class, args);
+		SpringApplication.run(InfoContextServer.class, args);
 	}
 
-	@Bean
-	KafkaOps ops() {
-		return new KafkaOps();
-	}
-	
-	@Bean
-	AtContext atCon() {
-		return new AtContext();
-	}
-	
-	@Bean
-	RestTemplate restTemp() {
-		return new RestTemplate();
-	}
 	
 	@Bean
 	SecurityConfig securityConfig() {

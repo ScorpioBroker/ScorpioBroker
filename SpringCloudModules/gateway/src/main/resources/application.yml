@@ -111,6 +111,16 @@ zuul:
       path: /scorpio/v1/info/**
       serviceId: STORAGE-MANAGER
       stripPrefix: false
+    health:
+      sensitiveHeaders:
+      path: /health
+      serviceId: INFO-SERVER
+      stripPrefix: false
+    corecontext:
+      sensitiveHeaders:
+      path: /corecontext
+      serviceId: INFO-SERVER
+      stripPrefix: false
     test-manager:
       sensitiveHeaders:
       path: /test/**

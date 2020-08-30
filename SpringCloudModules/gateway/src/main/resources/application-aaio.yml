@@ -92,6 +92,16 @@ zuul:
       path: /scorpio/v1/info/**
       serviceId: aio-runner
       stripPrefix: false
+    health:
+      sensitiveHeaders:
+      path: /health
+      serviceId: aio-runner
+      stripPrefix: false
+    corecontext:
+      sensitiveHeaders:
+      path: /corecontext
+      serviceId: aio-runner
+      stripPrefix: false
     test-manager:
       sensitiveHeaders:
       path: /test/**

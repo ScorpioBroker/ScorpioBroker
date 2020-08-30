@@ -37,8 +37,11 @@
 		</profile>
 	</profiles>
 	<dependencies>
-
-
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>InfoServer</artifactId>
+			<version>0.9.2-SNAPSHOT</version>
+		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>AtContextServer</artifactId>
