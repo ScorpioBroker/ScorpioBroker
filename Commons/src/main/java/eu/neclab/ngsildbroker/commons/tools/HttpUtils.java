@@ -112,13 +112,18 @@ public final class HttpUtils {
 		this.contextResolver = contextResolver;
 		// Nothing to do, but make sure not more than one instance is created.
 	}
-
+	
+	//Dummy instance with out context resolving. only used for gets and posts etc.
+	private static HttpUtils NULL_INSTANCE = new HttpUtils(null);
 	/**
 	 * Returns the singleton instance of this class.
 	 * 
 	 * @return an HttpUtils instance
 	 */
 	public static HttpUtils getInstance(ContextResolverBasic contextResolver) {
+		if(contextResolver == null) {
+			return NULL_INSTANCE;
+		}
 		if (SINGLETON == null) {
 			SINGLETON = new HttpUtils(contextResolver);
 		}
