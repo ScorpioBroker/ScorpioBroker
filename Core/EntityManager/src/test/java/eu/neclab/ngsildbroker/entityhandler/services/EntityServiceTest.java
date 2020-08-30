@@ -284,7 +284,7 @@ public class EntityServiceTest {
 			Mockito.doReturn(blankNode).when(objectMapper).createObjectNode();
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
 			
-			AppendResult appendResult=entityService.appendFields(entityPayload.getBytes(), appendJsonNode, " ");
+			AppendResult appendResult=entityService.appendFields(entityPayload, appendJsonNode, " ");
 			
 			Assert.assertTrue(appendResult.getStatus());
 		}catch(Exception ex) {
@@ -302,7 +302,7 @@ public class EntityServiceTest {
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
 			
 
-			UpdateResult updateResult=entityService.updateFields(payload,updateJsonNode , null);
+			UpdateResult updateResult=entityService.updateFields(entityPayload,updateJsonNode , null);
   		Assert.assertTrue(updateResult.getStatus());
 			Assert.assertEquals(updateJsonNode, updateResult.getJsonToAppend());
 		}catch (Exception ex) {
@@ -318,29 +318,19 @@ public class EntityServiceTest {
 		try {
 			Mockito.doReturn(blankNode).when(objectMapper).createObjectNode();
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
-			AppendResult appendResult=entityService.appendFields(payload, updateJsonNode, " ");
+			AppendResult appendResult=entityService.appendFields(entityPayload, updateJsonNode, " ");
 			Assert.assertTrue(appendResult.getStatus());
 		}catch(Exception ex) {
 			Assert.fail();
 		}
 	}
 	
-	/**
-	 * this method is use for the update partial default attribute field
-	 */
-	@Test
-	public void deleteField404Test() throws ResponseException, Exception {
-		thrown.expect(ResponseException.class);
-		thrown.expectMessage("Resource not found.");
-		
-		Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
-		entityService.deleteFields(payload, "notPresent");
-  }
+
 	public void updatePartialDefaultAttributeFieldTest() {
 		try {
 			Mockito.doReturn(blankNode).when(objectMapper).createObjectNode();
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
-			UpdateResult updateResult=entityService.updateFields(entityPayload.getBytes(),updatePartialDefaultAttributesNode , "http://example.org/vehicle/speed");
+			UpdateResult updateResult=entityService.updateFields(entityPayload,updatePartialDefaultAttributesNode , "http://example.org/vehicle/speed");
 			Assert.assertTrue(updateResult.getStatus());
 			Assert.assertEquals(updatePartialDefaultAttributesNode, updateResult.getJsonToAppend());
 		}catch (Exception ex) {
@@ -348,6 +338,7 @@ public class EntityServiceTest {
 		}
 	}
 	
+
 	/**
 	 * this method is use for the datasetId is exist in case of delete the attribute instance
 	 */
@@ -355,8 +346,8 @@ public class EntityServiceTest {
 	public void deleteAttributeInstanceIfDatasetIdExistTest() {
 		try {
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
-			entityService.deleteFields(payload, "http://example.org/vehicle/speed");
-		}catch(Exception ex) {
+			entityService.deleteFields(entityPayload, "http://example.org/vehicle/speed","urn:ngsi-ld:Property:speedometerA4567-speed",null);
+		} catch (Exception ex) {
 			Assert.fail();
 		}
 	}
@@ -368,7 +359,7 @@ public class EntityServiceTest {
 	public void deleteAllAttributeInstanceTest() {
 		try {
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(String.class));
-			entityService.deleteFields(entityPayload.getBytes(), "http://example.org/vehicle/speed",null,"true");
+			entityService.deleteFields(entityPayload, "http://example.org/vehicle/speed",null,"true");
 		} catch (Exception ex) {
 			Assert.fail();
 		}

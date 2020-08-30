@@ -663,7 +663,7 @@ public class EntityService {
 		// get entity details from in-memory hashmap
 		String entityBody = validateIdAndGetBody(entityId);
 
-		JsonNode finalJson = this.deleteFields(entityBody, attrId);
+		JsonNode finalJson = this.deleteFields(entityBody, attrId, datasetId, deleteAll);
 		String finalFullEntity = objectMapper.writeValueAsString(finalJson);
 		removeTemporalProperties(finalJson);
 		String entityWithoutSysAttrs = objectMapper.writeValueAsString(finalJson);
@@ -866,7 +866,7 @@ public class EntityService {
 	 * @throws IOException
 	 * @throws ResponseException
 	 */
-	public JsonNode deleteFields(String originalJsonObject, String attrId) throws Exception, ResponseException {
+	public JsonNode deleteFields(String originalJsonObject, String attrId, String datasetId, String deleteAll) throws Exception, ResponseException {
 		logger.trace("deleteFields() :: started");
 		JsonNode node = objectMapper.readTree(originalJsonObject);
 		ObjectNode objectNode = (ObjectNode) node;
