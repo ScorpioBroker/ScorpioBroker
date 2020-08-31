@@ -19,6 +19,8 @@ public class NotificationHandlerREST extends BaseNotificationHandler {
 
 	@Override
 	protected void sendReply(ResponseEntity<byte[]> reply, URI callback, Map<String, String> clientSettings) throws Exception {
+		System.out.println("SENDING FROM REST");
+		System.out.println(new String(reply.getBody()));
 		httpUtils.doPost(callback, reply.getBody(),
 				reply.getHeaders().toSingleValueMap());
 		
