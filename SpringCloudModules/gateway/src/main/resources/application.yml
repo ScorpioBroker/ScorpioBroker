@@ -113,12 +113,12 @@ zuul:
       stripPrefix: false
     health:
       sensitiveHeaders:
-      path: /health
+      path: /health/**
       serviceId: INFO-SERVER
       stripPrefix: false
     corecontext:
       sensitiveHeaders:
-      path: /corecontext
+      path: /corecontext/**
       serviceId: INFO-SERVER
       stripPrefix: false
     test-manager:

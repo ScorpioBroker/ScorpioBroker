@@ -95,12 +95,12 @@ zuul:
       stripPrefix: false
     health:
       sensitiveHeaders:
-      path: /health
+      path: /health/**
       serviceId: aio-runner
       stripPrefix: false
     corecontext:
       sensitiveHeaders:
-      path: /corecontext
+      path: /corecontext/**
       serviceId: aio-runner
       stripPrefix: false
     test-manager:
@@ -129,4 +129,4 @@ security:
       userInfoUri: http://172.30.64.120:3000/user
 logging:
   level:
-    root: ERROR
+    root: INFO

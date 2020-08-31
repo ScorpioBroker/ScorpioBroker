@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.HttpErrorResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -27,6 +28,7 @@ public class InfoServerController {
 	private static final int SUBSCRIPTION_MANAGER = 3;
 	private static final int REGISTRY_MANAGER = 4;
 	private static final int HISTORY_MANAGER = 5;
+	HashMap<String, String> headers = new HashMap<String, String>();
 	HashMap<Integer, URI> microService2Uri = new HashMap<Integer, URI>();
 	HashMap<Integer, Integer> microService2SuccessReply = new HashMap<Integer, Integer>();
 	HashMap<Integer, Integer> microService2HttpMethod = new HashMap<Integer, Integer>();
@@ -38,15 +40,10 @@ public class InfoServerController {
 
 	{
 		try {
+			headers.put("Accept", AppConstants.NGB_APPLICATION_JSON);
 			microService2Uri.put(QUERY_MANAGER, new URI("http://localhost:9090/ngsi-ld/v1/entities/"));
 			microService2Uri.put(ENTITY_MANAGER, new URI("http://localhost:9090/ngsi-ld/v1/entities/"));
-			microService2Uri.put(STORAGE_MANAGER, new URI("http://localhost:9090/scorpio/v1/info/")); // This is a bit
-																										// useless since
-																										// this is this
-																										// controller
-																										// but hey
-																										// better than
-																										// nothing
+			microService2Uri.put(STORAGE_MANAGER, new URI("http://localhost:9090/scorpio/v1/info/")); 
 			microService2Uri.put(SUBSCRIPTION_MANAGER, new URI("http://localhost:9090/ngsi-ld/v1/subscriptions/"));
 			microService2Uri.put(REGISTRY_MANAGER, new URI("http://localhost:9090/ngsi-ld/v1/csourceRegistrations/"));
 			microService2Uri.put(HISTORY_MANAGER, new URI("http://localhost:9090/ngsi-ld/v1/temporal/entities/"));
@@ -98,7 +95,7 @@ public class InfoServerController {
 		try {
 			switch (microService2HttpMethod.get(component)) {
 			case 0:
-				httpUtils.doGet(uri);
+				httpUtils.doGet(uri, headers);
 				return "Up and running";
 			case 1:
 				httpUtils.doPost(uri, dummyMessage, null);
