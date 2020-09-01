@@ -231,7 +231,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 

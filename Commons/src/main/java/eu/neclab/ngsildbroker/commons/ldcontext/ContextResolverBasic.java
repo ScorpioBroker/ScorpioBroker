@@ -236,7 +236,7 @@ public class ContextResolverBasic {
 			return JsonUtils.toPrettyString(expanded.get(1).get(0));
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new ResponseException(ErrorType.InvalidRequest);
+			throw new ResponseException(ErrorType.InvalidRequest, e.getLocalizedMessage());
 		}
 
 	}
