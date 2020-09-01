@@ -12,7 +12,7 @@
 
 Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India. It implements the full [NGSI-LD API](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf) as specified by the ETSI Industry Specification Group on cross cutting Context Information Management ([ETSI ISG CIM](https://www.etsi.org/committee/cim)).
 
-The NGSI-LD API enables the management, access and discovery of context information. Context information consists of *entities* (e.g. a building) and their *properties* (e.g. address and geographic location) and *relationships* (e.g. has owner).
+The NGSI-LD API enables the management, access and discovery of context information. Context information consists of *entities* (e.g. a building) and their *properties* (e.g. address and geographic location) and *relationships* (e.g. owner).
 
 The functionalities of the NGSI-LD API include:
 - Create, update, append and delete context infomration.
@@ -25,7 +25,7 @@ Scorpio is a FIWARE Generic Enabler. Therefore, it can be integrated as part of 
 You can find more info at the [FIWARE developers](https://developers.fiware.org/) website and the [FIWARE](https://fiware.org/) website.
 The complete list of FIWARE GEs and Incubated FIWARE GEs can be found in the [FIWARE Catalogue](https://catalogue.fiware.org/).
 
-| :books: [Documentation](https://scorpio.rtfd.io/) | :mortar_board: [Academy](https://fiware-academy.readthedocs.io/en/latest/core/scorpio) | :whale: [Docker Hub](https://hub.docker.com/r/scorpiobroker/scorpio/) | :clipboard: [Roadmap](./docs/roadmap.md) |
+| :books: [Documentation](https://scorpio.rtfd.io/) | :mortar_board: [Academy](https://fiware-academy.readthedocs.io/en/latest/core/scorpio) | :whale: [Docker Hub](https://hub.docker.com/r/scorpiobroker/scorpio/) | :dart: [Roadmap](./docs/roadmap.md) |
 | ------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- |
 
 ## Content
@@ -40,18 +40,14 @@ The complete list of FIWARE GEs and Incubated FIWARE GEs can be found in the [FI
 
 ## Background
 
-NGSI-LD is an open API and Datamodel specification for context management
-[published by ETSI](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf).
+NGSI-LD is an open API and data model specification for context management
+[published by ETSI](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf).
 
 ## Installation
 
 Scorpio is developed in Java using SpringCloud as microservice framework and Apache Maven as build tool. Some of the
 tests require a running Apache Kafka messagebus (further instruction are in the Setup chapter). If you want to skip
 those tests you can run `mvn clean package -DskipTests` to just build the individual microservices.
-
-
-
-
 
 ### General Remarks on building
 Further down this document you will get exact build commands/arguments for the different flavors. This part will give you an overview on how the different arguments
