@@ -59,6 +59,8 @@ public class ContextResolverBasic {
 	private URI CORE_CONTEXT_URL;
 	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	private String CORE_CONTEXT_URL_STR;
+	
+	private String USED_CORE_CONTEXT_URL_STR;
 	// private URI DEFAULT_CONTEXT_URL;
 
 	@Autowired
@@ -88,6 +90,7 @@ public class ContextResolverBasic {
 			String json = httpUtils.doGet(CORE_CONTEXT_URL);
 			CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 			BASE_CONTEXT.putAll(CORE_CONTEXT);
+			USED_CORE_CONTEXT_URL_STR = CORE_CONTEXT_URL_STR;
 		} catch (URISyntaxException e) {
 			// left empty intentionally
 			// controlled uri
@@ -100,6 +103,7 @@ public class ContextResolverBasic {
 				String json = httpUtils.doGet(CORE_CONTEXT_URL);
 				CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 				BASE_CONTEXT.putAll(CORE_CONTEXT);
+				USED_CORE_CONTEXT_URL_STR = SELF_HOST_CORE_CONTEXT_URL;
 			} catch (URISyntaxException e1) {
 				// left empty intentionally
 				// controlled uri
@@ -114,26 +118,8 @@ public class ContextResolverBasic {
 
 	public static void main(String[] args) throws Exception {
 		ContextResolverBasic bla = new ContextResolverBasic();
-		List<Object> contextLinks = null;
-		String body = "{\n" + "    \"@id\": \"urn:ngsi-ld:T4:906\",\n" + "    \"@type\": [\n"
-				+ "        \"https://uri.etsi.org/ngsi-ld/default-context/T\"\n" + "    ],\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/createdAt\": [\n" + "        {\n"
-				+ "            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
-				+ "            \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "        }\n" + "    ],\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/modifiedAt\": [\n" + "        {\n"
-				+ "            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
-				+ "            \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "        }\n" + "    ],\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/default-context/P1\": [\n" + "        {\n"
-				+ "            \"@type\": [\n" + "                \"https://uri.etsi.org/ngsi-ld/Property\"\n"
-				+ "            ],\n" + "            \"https://uri.etsi.org/ngsi-ld/hasValue\": [\n"
-				+ "                {\n" + "                    \"@value\": 1234\n" + "                }\n"
-				+ "            ],\n" + "            \"https://uri.etsi.org/ngsi-ld/createdAt\": [\n"
-				+ "                {\n" + "                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
-				+ "                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "                }\n"
-				+ "            ],\n" + "            \"https://uri.etsi.org/ngsi-ld/modifiedAt\": [\n"
-				+ "                {\n" + "                    \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\n"
-				+ "                    \"@value\": \"2020-03-25T13:07:13.192373Z\"\n" + "                }\n"
-				+ "            ]\n" + "        }\n" + "    ]\n" + "}";
+		ArrayList<Object> contextLinks = new ArrayList<Object>();
+		String body = "{ \"id\": \"urn:ngsi-ld:Building:store000000001\", \"type\": \"Building\", \"category\": { \"type\": \"Property\", \"value\": [\"commercial\"] }, \"address\": { \"type\": \"Property\", \"value\": { \"streetAddress\": \"Bornholmer Straße 65\", \"addressRegion\": \"Berlin\", \"addressLocality\": \"Prenzlauer Berg\", \"postalCode\": \"10439\" }, \"verified\": { \"type\": \"Property\", \"value\": true } }, \"location\": { \"type\": \"GeoProperty\", \"value\": { \"type\": \"Point\", \"coordinates\": [13.3986, 52.5547] } }, \"name\": { \"type\": \"Property\", \"value\": \"Bösebrücke Einkauf\" }, \"@context\": [ \"https://fiware.github.io/data-models/context.jsonld\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\" ] }";
 		/**/
 	}
 
@@ -203,6 +189,7 @@ public class ContextResolverBasic {
 			context.addAll(contextLinks);
 		}
 		ArrayList<Object> usedContext = new ArrayList<Object>();
+		
 		usedContext.addAll(context);
 		usedContext.remove(CORE_CONTEXT_URL_STR);
 		usedContext.add(BASE_CONTEXT);
