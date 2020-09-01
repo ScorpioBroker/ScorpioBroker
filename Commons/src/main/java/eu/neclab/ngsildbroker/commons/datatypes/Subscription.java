@@ -22,8 +22,7 @@ public class Subscription extends Query {
 	private String type;
 	private Boolean internal = false;
 	private QueryTerm queryTerm;
-	
-
+	private boolean isActive = true;
 
 	public Subscription() {
 		super();
@@ -45,8 +44,6 @@ public class Subscription extends Query {
 		this.type = type;
 	}
 
-	
-
 	public Boolean isInternal() {
 		return internal;
 	}
@@ -59,108 +56,74 @@ public class Subscription extends Query {
 		return description;
 	}
 
-
-
 	public void setDescription(String description) {
 		this.description = description;
 	}
-
-
 
 	public Long getExpires() {
 		return expires;
 	}
 
-
-
 	public void setExpires(Long expires) {
 		this.expires = expires;
 	}
-
-
 
 	public URI getId() {
 		return id;
 	}
 
-
-
 	public void setId(URI id) {
 		this.id = id;
 	}
-
-
 
 	public String getName() {
 		return name;
 	}
 
-
-
 	public void setName(String name) {
 		this.name = name;
 	}
-
-
 
 	public NotificationParam getNotification() {
 		return notification;
 	}
 
-
-
 	public void setNotification(NotificationParam notification) {
 		this.notification = notification;
 	}
-
-
 
 	public String getStatus() {
 		return status;
 	}
 
-
-
 	public void setStatus(String status) {
 		this.status = status;
 	}
-
-
 
 	public Integer getThrottling() {
 		return throttling;
 	}
 
-
-
 	public void setThrottling(Integer throttling) {
 		this.throttling = throttling;
 	}
-
-
 
 	public Integer getTimeInterval() {
 		return timeInterval;
 	}
 
-
-
 	public void setTimeInterval(Integer timeInterval) {
 		this.timeInterval = timeInterval;
 	}
-
-
 
 	public String getType() {
 		return type;
 	}
 
-
-
 	public void setType(String type) {
 		this.type = type;
 	}
-	
+
 	public QueryTerm getQueryTerm() {
 		return queryTerm;
 	}
@@ -169,9 +132,16 @@ public class Subscription extends Query {
 		this.queryTerm = queryTerm;
 	}
 
-
 	public void finalize() throws Throwable {
 
+	}
+
+	public boolean isActive() {
+		return isActive;
+	}
+
+	public void setActive(boolean isActive) {
+		this.isActive = isActive;
 	}
 
 	@Override
@@ -183,9 +153,5 @@ public class Subscription extends Query {
 				+ ldContext + ", ldGeoQuery=" + ldGeoQuery + ", ldQuery=" + ldQuery + ", ldTempQuery=" + ldTempQuery
 				+ ", requestorList=" + requestorList + ", customFlags=" + customFlags + "]";
 	}
-
-	
-	
-	
 
 }

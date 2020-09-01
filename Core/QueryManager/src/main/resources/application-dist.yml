@@ -9,7 +9,7 @@ eureka:
     serviceUrl:
       defaultZone: http://eureka:8761/eureka/
 
-directDbConnection: false 
+directDbConnection: true 
 #if directDbConnection is false then properties below are not used {{{
 spring:
   cloud:

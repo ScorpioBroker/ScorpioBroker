@@ -84,6 +84,7 @@ import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProd
 
 @Service
 public class SubscriptionService implements SubscriptionManager {
+//TODO Change notification data generation so that always the changed value from kafka is definatly present in the notification not the DB version(that one could have been already updated)
 
 	private final static Logger logger = LogManager.getLogger(SubscriptionService.class);
 
@@ -91,6 +92,8 @@ public class SubscriptionService implements SubscriptionManager {
 	private final int APPEND = 1;
 	private final int UPDATE = 2;
 	private final int DELETE = 3;
+
+	private final String ALL_TYPES_TYPE = "()";
 
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
@@ -125,6 +128,9 @@ public class SubscriptionService implements SubscriptionManager {
 	@Autowired
 	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
 
+	@Autowired
+	SubscriptionInfoDAO subscriptionInfoDAO;
+
 	@Value("${query.topic}")
 	String requestTopic;
 
@@ -135,15 +141,15 @@ public class SubscriptionService implements SubscriptionManager {
 	@Qualifier("smparamsResolver")
 	ParamsResolver paramsResolver;
 
+	boolean directDB = true;
+
 	private final SubscriptionManagerProducerChannel producerChannel;
 
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	HashMap<String, Subscription> subscriptionId2Subscription = new HashMap<String, Subscription>();
 	HashMap<String, TimerTask> subId2TimerTask = new HashMap<String, TimerTask>();
-	ArrayListMultimap<String, Subscription> idBasedSubscriptions = ArrayListMultimap.create();
-	ArrayListMultimap<String, Subscription> typeBasedSubscriptions = ArrayListMultimap.create();
-	ArrayListMultimap<String, Subscription> idPatternBasedSubscriptions = ArrayListMultimap.create();
+	ArrayListMultimap<String, Subscription> type2EntitiesSubscriptions = ArrayListMultimap.create();
 	HashMap<Subscription, Long> sub2CreationTime = new HashMap<Subscription, Long>();
 	ArrayListMultimap<String, Object> subscriptionId2Context = ArrayListMultimap.create();
 	HashMap<String, Subscription> remoteNotifyCallbackId2InternalSub = new HashMap<String, Subscription>();
@@ -151,6 +157,8 @@ public class SubscriptionService implements SubscriptionManager {
 	String BOOTSTRAP_SERVERS;
 
 	HttpUtils httpUtils;
+
+	private Map<String, String> ids2Type;
 
 	// @Value("${notification.port}")
 	// String REMOTE_NOTIFICATION_PORT;
@@ -161,7 +169,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@PostConstruct
 	private void setup() {
-
+		this.ids2Type = subscriptionInfoDAO.getIds2Type();
 		httpUtils = HttpUtils.getInstance(contextResolverService);
 		notificationHandlerREST = new NotificationHandlerREST(this, contextResolverService, objectMapper);
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, queryResultTopic,
@@ -211,6 +219,10 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 
 		this.subscriptionId2Subscription.put(subscription.getId().toString(), subscription);
+		if (subscription.getLdQuery() != null && !subscription.getLdQuery().trim().equals("")) {
+			subscription
+					.setQueryTerm(queryParser.parseQuery(subscription.getLdQuery(), subscriptionRequest.getContext()));
+		}
 		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 		if (subscription.getTimeInterval() > 0) {
 			if (endpointProtocol.equals("mqtt")) {
@@ -221,13 +233,13 @@ public class SubscriptionService implements SubscriptionManager {
 		} else {
 			this.subscriptionId2Context.putAll(subscription.getId().toString(), subscriptionRequest.getContext());
 			this.sub2CreationTime.put(subscription, System.currentTimeMillis());
-			for (EntityInfo info : subscription.getEntities()) {
-				if (info.getId() != null) {
-					idBasedSubscriptions.put(info.getId().toString(), subscription);
-				} else if (info.getType() != null) {
-					typeBasedSubscriptions.put(info.getType(), subscription);
-				} else if (info.getIdPattern() != null) {
-					idPatternBasedSubscriptions.put(info.getIdPattern(), subscription);
+			List<EntityInfo> entities = subscription.getEntities();
+			if (entities == null || entities.isEmpty()) {
+				this.type2EntitiesSubscriptions.put(ALL_TYPES_TYPE, subscription);
+			} else {
+				for (EntityInfo info : subscription.getEntities()) {
+					this.type2EntitiesSubscriptions.put(info.getType(), subscription);
+
 				}
 
 			}
@@ -238,19 +250,12 @@ public class SubscriptionService implements SubscriptionManager {
 
 					@Override
 					public void run() {
-						synchronized (subscriptionId2Subscription) {
-							subscriptionId2Subscription.remove(subscription.getId().toString());
+						try {
+							unsubscribe(subscription.getId());
+						} catch (ResponseException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
 						}
-						synchronized (idBasedSubscriptions) {
-							idBasedSubscriptions.values().remove(subscription);
-						}
-						synchronized (typeBasedSubscriptions) {
-							typeBasedSubscriptions.values().remove(subscription);
-						}
-						synchronized (idPatternBasedSubscriptions) {
-							idPatternBasedSubscriptions.values().remove(subscription);
-						}
-
 					}
 				};
 				subId2TimerTask.put(subscription.getId().toString(), cancel);
@@ -275,12 +280,19 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private void syncToMessageBus(SubscriptionRequest subscription) throws ResponseException {
-		if (!this.kafkaOps.isMessageExists(subscription.getSubscription().getId().toString(),
-				KafkaConstants.SUBSCRIPTIONS_TOPIC)) {
-			this.kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
-					subscription.getSubscription().getId().toString().getBytes(),
-					DataSerializer.toJson(subscription).getBytes());
-		}
+		new Thread() {
+			public void run() {
+				try {
+					kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
+							subscription.getSubscription().getId().toString().getBytes(),
+							DataSerializer.toJson(subscription).getBytes());
+				} catch (ResponseException e) {
+					logger.error(e);
+				}
+
+			};
+		}.start();
+
 	}
 
 	private URI generateUniqueSubId(Subscription subscription) {
@@ -308,33 +320,33 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 		intervalHandlerREST.removeSub(id.toString());
 		intervalHandlerMQTT.removeSub(id.toString());
-		for (EntityInfo info : removedSub.getEntities()) {
-			if (info.getId() != null) {
-				synchronized (idBasedSubscriptions) {
-					idBasedSubscriptions.remove(info.getId().toString(), removedSub);
-				}
-
-			} else if (info.getType() != null) {
-				synchronized (typeBasedSubscriptions) {
-					typeBasedSubscriptions.remove(info.getType(), removedSub);
-				}
-
-			} else if (info.getIdPattern() != null) {
-				synchronized (idPatternBasedSubscriptions) {
-					idPatternBasedSubscriptions.remove(info.getIdPattern(), removedSub);
-				}
-
+		List<EntityInfo> entities = removedSub.getEntities();
+		if (entities == null || entities.isEmpty()) {
+			synchronized (type2EntitiesSubscriptions) {
+				type2EntitiesSubscriptions.remove(ALL_TYPES_TYPE, removedSub);
 			}
-			TimerTask task = subId2TimerTask.get(id.toString());
-			if (task != null) {
-				task.cancel();
+		} else {
+			for (EntityInfo info : entities) {
+				synchronized (type2EntitiesSubscriptions) {
+					type2EntitiesSubscriptions.remove(info.getType(), removedSub);
+				}
 			}
 		}
-
+		TimerTask task = subId2TimerTask.get(id.toString());
+		if (task != null) {
+			task.cancel();
+		}
 		// TODO remove remote subscription
-
-		this.kafkaOps.pushToKafka(this.producerChannel.subscriptionWriteChannel(), id.toString().getBytes(),
-				"null".getBytes());
+		new Thread() {
+			public void run() {
+				try {
+					kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(), id.toString().getBytes(),
+							"null".getBytes());
+				} catch (ResponseException e) {
+					logger.error(e);
+				}
+			};
+		}.start();
 
 	}
 
@@ -421,10 +433,28 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private void checkSubscriptionsWithCreate(String key, String payload, long messageTime) {
 		Entity create = DataSerializer.getEntity(payload);
+		synchronized (this.ids2Type) {
+			this.ids2Type.put(key, create.getType());
+		}
+
 		ArrayList<Subscription> subsToCheck = new ArrayList<Subscription>();
-		subsToCheck.addAll(this.idBasedSubscriptions.get(key));
-		subsToCheck.addAll(this.typeBasedSubscriptions.get(create.getType()));
-		subsToCheck.addAll(getPatternBasedSubs(key));
+		for (Subscription sub : this.type2EntitiesSubscriptions.get(create.getType())) {
+			for (EntityInfo entityInfo : sub.getEntities()) {
+				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
+					subsToCheck.add(sub);
+					break;
+				}
+				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(key)) {
+					subsToCheck.add(sub);
+					break;
+				}
+				if (entityInfo.getIdPattern() != null && key.matches(entityInfo.getIdPattern())) {
+					subsToCheck.add(sub);
+					break;
+				}
+			}
+		}
+		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE));
 		checkSubscriptions(subsToCheck, create, CREATE, messageTime);
 
 	}
@@ -476,6 +506,8 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private void sendNotification(List<Entity> dataList, Subscription subscription) {
 		logger.debug(DataSerializer.toJson(dataList));
+		//System.out.println("SENDING NOTIFICATION: " + DataSerializer.toJson(dataList) + " \nTO SUBSCRIPTION \n"
+		//		+ DataSerializer.toJson(subscription));
 		// if (subscription.getTimeInterval() > 0) {
 		// try {
 		// intervalHandler.notify(new
@@ -565,12 +597,16 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private Entity generateDataFromBaseOp(Entity deltaInfo, Subscription subscription) throws ResponseException {
-
-		byte[] msg = kafkaOps.getMessage(deltaInfo.getId().toString(), KafkaConstants.ENTITY_TOPIC);
-		Entity entity = DataSerializer.getEntity(new String(msg));
+		String entityBody = null;
 		if (!shouldFire(deltaInfo, subscription)) {
 			return null;
 		}
+
+		if (directDB) {
+			entityBody = subscriptionInfoDAO.getEntity(deltaInfo.getId().toString());
+		}
+		//HERE YOU NEED TO REPLACE THE ATTRIBUTE TO THE ONE FROM DELTA
+		Entity entity = DataSerializer.getEntity(entityBody);
 		if (!evaluateGeoQuery(subscription.getLdGeoQuery(), entity.getLocation())) {
 			return null;
 		}
@@ -715,16 +751,6 @@ public class SubscriptionService implements SubscriptionManager {
 	// return null;
 	// }
 
-	private Collection<? extends Subscription> getPatternBasedSubs(String key) {
-		ArrayList<Subscription> result = new ArrayList<Subscription>();
-		for (String pattern : idPatternBasedSubscriptions.keySet()) {
-			if (key.matches(pattern)) {
-				result.addAll(idPatternBasedSubscriptions.get(pattern));
-			}
-		}
-		return result;
-	}
-
 	@KafkaListener(topics = "${entity.update.topic}", groupId = "submanager")
 	public void handleUpdate(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
@@ -746,10 +772,23 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 		update.setType(type);
 		ArrayList<Subscription> subsToCheck = new ArrayList<Subscription>();
-		subsToCheck.addAll(this.idBasedSubscriptions.get(key));
-		subsToCheck.addAll(this.typeBasedSubscriptions.get(getTypeForId(key)));
-		subsToCheck.addAll(getPatternBasedSubs(key));
-
+		for (Subscription sub : this.type2EntitiesSubscriptions.get(type)) {
+			for (EntityInfo entityInfo : sub.getEntities()) {
+				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
+					subsToCheck.add(sub);
+					break;
+				}
+				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(key)) {
+					subsToCheck.add(sub);
+					break;
+				}
+				if (entityInfo.getIdPattern() != null && key.matches(entityInfo.getIdPattern())) {
+					subsToCheck.add(sub);
+					break;
+				}
+			}
+		}
+		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE));
 		checkSubscriptions(subsToCheck, update, UPDATE, messageTime);
 
 	}
@@ -775,9 +814,23 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 		append.setType(type);
 		ArrayList<Subscription> subsToCheck = new ArrayList<Subscription>();
-		subsToCheck.addAll(this.idBasedSubscriptions.get(key));
-		subsToCheck.addAll(this.typeBasedSubscriptions.get(type));
-		subsToCheck.addAll(getPatternBasedSubs(key));
+		for (Subscription sub : this.type2EntitiesSubscriptions.get(type)) {
+			for (EntityInfo entityInfo : sub.getEntities()) {
+				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
+					subsToCheck.add(sub);
+					break;
+				}
+				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(key)) {
+					subsToCheck.add(sub);
+					break;
+				}
+				if (entityInfo.getIdPattern() != null && key.matches(entityInfo.getIdPattern())) {
+					subsToCheck.add(sub);
+					break;
+				}
+			}
+		}
+		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE));
 		checkSubscriptions(subsToCheck, append, APPEND, messageTime);
 
 	}
@@ -785,6 +838,7 @@ public class SubscriptionService implements SubscriptionManager {
 	// @StreamListener(SubscriptionManagerConsumerChannel.deleteReadChannel)
 	@KafkaListener(topics = "${entity.delete.topic}", groupId = "submanager")
 	public void handleDelete(Message<byte[]> message) throws Exception {
+		this.ids2Type.remove(kafkaOps.getMessageKey(message));
 		// checkSubscriptionsWithDelete(new String((byte[])
 		// message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)),
 		// new String(message.getPayload()));
@@ -880,25 +934,25 @@ public class SubscriptionService implements SubscriptionManager {
 	private void checkSubscriptionsWithDelete(String key, String payload, long messageTime) {
 		Entity delete = DataSerializer.getEntity(payload);
 		ArrayList<Subscription> subsToCheck = new ArrayList<Subscription>();
-		subsToCheck.addAll(this.idBasedSubscriptions.get(key));
-		subsToCheck.addAll(this.typeBasedSubscriptions.get(delete.getType()));
-		subsToCheck.addAll(getPatternBasedSubs(key));
+		/*
+		 * subsToCheck.addAll(this.idBasedSubscriptions.get(key));
+		 * subsToCheck.addAll(this.typeBasedSubscriptions.get(delete.getType()));
+		 */
 		checkSubscriptions(subsToCheck, delete, DELETE, messageTime);
 
 	}
 
 	private String getTypeForId(String key) {
-		byte[] json = kafkaOps.getMessage(key, KafkaConstants.ENTITY_TOPIC);
-		if (json == null) {
-			return "";
+		synchronized (this.ids2Type) {
+			return (String) this.ids2Type.get(key);
 		}
-		try {
-			return objectMapper.readTree(json).get(JSON_LD_TYPE).get(0).asText("");
-		} catch (IOException e) {
-			logger.error("Exception ::", e);
-			e.printStackTrace();
-		}
-		return "";
+		/*
+		 * //this has to be db handled byte[] json = kafkaOps.getMessage(key,
+		 * KafkaConstants.ENTITY_TOPIC); if (json == null) { return ""; } try { return
+		 * objectMapper.readTree(json).get(JSON_LD_TYPE).get(0).asText(""); } catch
+		 * (IOException e) { logger.error("Exception ::", e); e.printStackTrace(); }
+		 * return "";
+		 */
 	}
 
 	@Override
@@ -914,19 +968,31 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	public void reportNotification(String subId, Long now) {
-		this.subscriptionId2Subscription.get(subId).getNotification().setLastNotification(new Date(now));
-		this.subscriptionId2Subscription.get(subId).getNotification().setLastSuccessfulNotification(new Date(now));
-
+		synchronized (subscriptionId2Subscription) {
+			Subscription subscription = subscriptionId2Subscription.get(subId);
+			if (subscription != null) {
+				subscription.getNotification().setLastNotification(new Date(now));
+				subscription.getNotification().setLastSuccessfulNotification(new Date(now));
+			}
+		}
 	}
 
 	public void reportFailedNotification(String subId, Long now) {
-		this.subscriptionId2Subscription.get(subId).getNotification().setLastFailedNotification(new Date(now));
-
+		synchronized (subscriptionId2Subscription) {
+			Subscription subscription = subscriptionId2Subscription.get(subId);
+			if (subscription != null) {
+				subscription.getNotification().setLastFailedNotification(new Date(now));
+			}
+		}
 	}
 
 	public void reportSuccessfulNotification(String subId, Long now) {
-		this.subscriptionId2Subscription.get(subId).getNotification().setLastSuccessfulNotification(new Date(now));
-
+		synchronized (subscriptionId2Subscription) {
+			Subscription subscription = subscriptionId2Subscription.get(subId);
+			if (subscription != null) {
+				subscription.getNotification().setLastSuccessfulNotification(new Date(now));
+			}
+		}
 	}
 
 }

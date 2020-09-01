@@ -78,6 +78,7 @@ public class QueryTerm {
 		return result;
 	}
 
+	
 	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant)
 			throws ResponseException {
 
@@ -349,12 +350,16 @@ public class QueryTerm {
 	}
 
 	private Object getValue(BaseEntry myEntry) {
+		Object value = null;
 		if (myEntry instanceof PropertyEntry) {
-			return ((PropertyEntry) myEntry).getValue();
+			value = ((PropertyEntry) myEntry).getValue();
+			if(value instanceof List) {
+				value = ((List)value).get(0);
+			}
 		} else if (myEntry instanceof RelationshipEntry) {
-			return ((RelationshipEntry) myEntry).getObject().toString();
+			value = ((RelationshipEntry) myEntry).getObject().toString();
 		}
-		return null;
+		return value;
 	}
 
 	private List<BaseProperty> getMatchingProperties(List<BaseProperty> properties, String myAttribName) {
@@ -732,7 +737,7 @@ public class QueryTerm {
 				attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
 				attributeFilterProperty.append(subPath);
 				if (attribute.contains("[") && iElem == 0) {
-					attributeFilterProperty.append(NGSIConstants.NGSI_LD_HAS_VALUE + ",0");
+					attributeFilterProperty.append(",0," + NGSIConstants.NGSI_LD_HAS_VALUE);
 				}
 				attributeFilterProperty.append("}') as ");
 				attributeFilterProperty.append(charcount);

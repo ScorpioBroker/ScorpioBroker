@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: info-server
+  main:
+    lazy-initialization: true
+    allow-bean-definition-overriding: true
+  kafka:
+    admin:
+      properties:
+        cleanup:
+          policy: compact
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+      bindings:
+         ATCONTEXT_WRITE_CHANNEL:
+          destination: ATCONTEXT
+          contentType: application/json
+
+server:
+  port: 27015
+  tomcat:
+    max:
+      threads: 20
+#Entity-Manager properties
+entity:
+  topic: ENTITY
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
+csource:
+  query:
+    topic: CONTEXT_REGISTRY_QUERY
+    
+bootstrap:
+  servers: localhost:9092
+#enable log compaction
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    restart:
+      enabled: true
+
+
+
+               
+          

@@ -20,6 +20,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
@@ -60,6 +62,7 @@ import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.queryhandler.config.QueryProducerChannel;
+import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 
 @Service
@@ -81,7 +84,7 @@ public class QueryService {
 	@Autowired
 	@Qualifier("qmops")
 	KafkaOps operations;
-	
+
 	@Autowired
 	ObjectMapper objectMapper;
 
@@ -100,13 +103,17 @@ public class QueryService {
 
 	@Value("${kafka.replytimeout}")
 	long replyTimeout = 5000;
-	
+
 	@Value("${maxLimit}")
 	int maxLimit = 500;
 
-	@Autowired(required = false)
+	@Autowired
 	QueryDAO queryDAO;
-	
+
+	@Autowired
+	@Qualifier("qmcsourcedao")
+	CSourceDAO cSourceDAO;
+
 	@Value("${directDbConnection}")
 	boolean directDbConnection;
 
@@ -117,17 +124,15 @@ public class QueryService {
 
 	@Autowired
 	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
-	
+
 	@Autowired
 	@Qualifier("qmrestTemp")
 	RestTemplate restTemplate;
-	
-	
 
 	private QueryProducerChannel producerChannels;
 
 	public QueryService(QueryProducerChannel producerChannels) {
-		
+
 		this.producerChannels = producerChannels;
 	}
 
@@ -135,7 +140,7 @@ public class QueryService {
 	private void setup() {
 		kafkaTemplate.setReplyTimeout(replyTimeout);
 	}
-	
+
 	/**
 	 * Method is used for get entity based on entity id or attributes
 	 * 
@@ -145,7 +150,8 @@ public class QueryService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public String retrieveEntity(String entityId, List<String> attrs, boolean keyValues, boolean includeSysAttrs) throws ResponseException, IOException {
+	public String retrieveEntity(String entityId, List<String> attrs, boolean keyValues, boolean includeSysAttrs)
+			throws ResponseException, IOException {
 
 		logger.trace("call retriveEntity method in QueryService class");
 		// null id check
@@ -177,14 +183,14 @@ public class QueryService {
 			((ObjectNode) entityJsonBody).set(NGSIConstants.JSON_LD_ID, entityChildJsonBody);
 			entityChildJsonBody = objectMapper.readTree(entityJson).get(NGSIConstants.JSON_LD_TYPE);
 			((ObjectNode) entityJsonBody).set(NGSIConstants.JSON_LD_TYPE, entityChildJsonBody);
-			
+
 			if (includeSysAttrs) {
 				entityChildJsonBody = objectMapper.readTree(entityJson).get(NGSIConstants.NGSI_LD_CREATED_AT);
 				((ObjectNode) entityJsonBody).set(NGSIConstants.NGSI_LD_CREATED_AT, entityChildJsonBody);
 				entityChildJsonBody = objectMapper.readTree(entityJson).get(NGSIConstants.NGSI_LD_MODIFIED_AT);
 				((ObjectNode) entityJsonBody).set(NGSIConstants.NGSI_LD_MODIFIED_AT, entityChildJsonBody);
 			}
-			
+
 			for (int i = 0; i < attrs.size(); i++) {
 				entityChildJsonBody = objectMapper.readTree(entityJson).get(attrs.get(i));
 				((ObjectNode) entityJsonBody).set(attrs.get(i), entityChildJsonBody);
@@ -195,9 +201,9 @@ public class QueryService {
 		if (keyValues && !includeSysAttrs) { // manually remove createdAt and modifiedAt at root level
 			ObjectNode objectNode = (ObjectNode) entityJsonBody;
 			objectNode.remove(NGSIConstants.NGSI_LD_CREATED_AT);
-			objectNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);	
+			objectNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
 			logger.debug("sysattrs removed");
-		}		
+		}
 
 		return entityJsonBody.toString();
 	}
@@ -259,15 +265,15 @@ public class QueryService {
 		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()));
 		RequestReplyFuture<String, byte[], byte[]> sendAndReceive = kafkaTemplate.sendAndReceive(record);
 		// get consumer record
-		ConsumerRecord<String,  byte[]> consumerRecord = sendAndReceive.get();
+		ConsumerRecord<String, byte[]> consumerRecord = sendAndReceive.get();
 		// read from byte array
 		ByteArrayInputStream bais = new ByteArrayInputStream(consumerRecord.value());
 		DataInputStream in = new DataInputStream(bais);
 		List<String> entityList = new ArrayList<String>();
 		while (in.available() > 0) {
 			entityList.add(in.readUTF());
-		}		
-		// return consumer value		
+		}
+		// return consumer value
 		logger.trace("getFromStorageManager() :: completed");
 		return entityList;
 	}
@@ -280,7 +286,7 @@ public class QueryService {
 	 * @return String
 	 * @throws Exception
 	 */
-	public String getFromContextRegistry(String contextRegistryQuery) throws Exception {
+	public List<String> getFromContextRegistry(String contextRegistryQuery) throws Exception {
 		// create producer record
 		String contextRegistryData = null;
 		logger.trace("getFromContextRegistry() :: started");
@@ -296,7 +302,7 @@ public class QueryService {
 		logger.debug("getFromContextRegistry() :: completed");
 		contextRegistryData = new String((byte[]) consumerRecord.value());
 		logger.debug("getFromContextRegistry() data broker list::" + contextRegistryData);
-		return contextRegistryData;
+		return DataSerializer.getStringList(contextRegistryData);
 	}
 
 	/**
@@ -316,13 +322,14 @@ public class QueryService {
 	 * @throws URISyntaxException
 	 * @throws Exception
 	 */
-	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders,
-			Integer limit, Integer offset, String qToken, Boolean showServices)
-			throws ResponseException, Exception {
+	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
+			Integer offset, String qToken, Boolean showServices) throws ResponseException, Exception {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
-		List<String> realResult;		
+		List<String> realResult;
+		qp.setLimit(limit);
+		qp.setOffSet(offset);
 		int dataLeft = 0;
 		if (qToken == null) {
 			ExecutorService executorService = Executors.newFixedThreadPool(2);
@@ -330,6 +337,7 @@ public class QueryService {
 			Future<List<String>> futureStorageManager = executorService.submit(new Callable<List<String>>() {
 				public List<String> call() throws Exception {
 					logger.trace("Asynchronous Callable storage manager");
+					//TAKE CARE OF PAGINATION HERE
 					if (queryDAO != null) {
 						return queryDAO.query(qp);
 					} else {
@@ -338,71 +346,96 @@ public class QueryService {
 				}
 			});
 
-			Future<String> futureContextRegistry = executorService.submit(new Callable<String>() {
-				public String call() throws Exception {
-					logger.trace("Asynchronous 1 context registry");
-					String brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
-					logger.debug("broker list from context registry::" + brokerList);
-					return brokerList;
+			Future<List<String>> futureContextRegistry = executorService.submit(new Callable<List<String>>() {
+				public List<String> call() throws Exception {
+					try {
+						List<String> fromCsources = new ArrayList<String>();
+						logger.trace("Asynchronous 1 context registry");
+						List<String> brokerList;
+						if (cSourceDAO != null) {
+							brokerList = cSourceDAO.queryExternalCsources(qp);
+						} else {
+							brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
+						}
+						Pattern p = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_REGEX);
+						Matcher m;
+						Set<Callable<String>> callablesCollection = new HashSet<Callable<String>>();
+						for (String brokerInfo : brokerList) {
+							m = p.matcher(brokerInfo);
+							m.find();
+							String uri = m.group(1);
+							logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
+							Callable<String> callable = () -> {
+								HttpHeaders headers = new HttpHeaders();
+								for (Object link : linkHeaders) {
+									headers.add("Link", "<" + link.toString()
+											+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+								}
+
+								HttpEntity entity = new HttpEntity<>(headers);
+
+								String result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
+										HttpMethod.GET, entity, String.class).getBody();
+
+								logger.debug("http call result :: ::" + result);
+								return result;
+							};
+							callablesCollection.add(callable);
+
+						}
+						fromCsources = getDataFromCsources(callablesCollection);
+						logger.debug("csource call response :: ");
+						// fromCsources.forEach(e -> logger.debug(e));
+
+						return fromCsources;
+					} catch (Exception e) {
+						e.printStackTrace();
+						logger.error(
+								"No reply from registry. Looks like you are running without a context source registry.");
+						logger.error(e.getMessage());
+						return null;
+					}
 				}
 			});
 
-			Type listType;
-			List<String> fromCsources = new ArrayList<String>();
-
 			// Csources response
-			try {
-				String csourceResultString = (String) futureContextRegistry.get();
-				listType = new TypeToken<ArrayList<CSourceRegistration>>() {
-				}.getType();
-				List<CSourceRegistration> discoveredCSources = DataSerializer
-						.getCSourceRegistrations(csourceResultString, listType);
-				List<URI> csourcesEndpointCollection = discoveredCSources.stream().map(e -> e.getEndpoint())
-						.collect(Collectors.toList());
-				logger.debug("csourcesEndpointCollection size::" + csourcesEndpointCollection.size());
-				if (csourcesEndpointCollection.size() > 0) {
-					csourcesEndpointCollection.forEach(e -> logger.debug(e.toString()));
-					fromCsources = getDataFromCsources(csourcesEndpointCollection, rawQueryString, linkHeaders);
-					logger.debug("csource call response :: ");
-					fromCsources.forEach(e->logger.debug(e));
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				logger.error("No reply from registry. Looks like you are running without a context source registry.");
-				logger.error(e.getMessage());
-			}
+
 			executorService.shutdown();
 
 			// storage response
 			logger.trace("storage task status completed :: " + futureStorageManager.isDone());
 			List<String> fromStorage = (List<String>) futureStorageManager.get();
-			
-			logger.trace("response from storage :: " );
-			fromStorage.forEach(e->logger.debug(e));
-			
+			List<String> fromCsources = (List<String>) futureContextRegistry.get();
+			// logger.trace("response from storage :: ");
+			// fromStorage.forEach(e -> logger.debug(e));
+
 			aggregatedResult.addAll(fromStorage);
 			if (fromCsources != null) {
 				aggregatedResult.addAll(fromCsources);
 			}
-			logger.trace("aggregated");
-			aggregatedResult.forEach(e->logger.debug(e));
-			if (aggregatedResult.size() > limit) {
-				qToken = generateToken();
-				writeFullResultToKafka(qToken, aggregatedResult);
-				int end = offset + limit;
-				if (end > aggregatedResult.size()) {
-					end = aggregatedResult.size();
-				}
-				realResult = aggregatedResult.subList(offset, end);
-				dataLeft = aggregatedResult.size() - end;
-			} else {
+			// logger.trace("aggregated");
+			// aggregatedResult.forEach(e -> logger.debug(e));
+			/*
+			 * if (aggregatedResult.size() > limit) { qToken = generateToken(); String
+			 * writeToken = qToken; int end = offset + limit; if (end >
+			 * aggregatedResult.size()) { end = aggregatedResult.size(); } realResult =
+			 * aggregatedResult.subList(offset, end); dataLeft = aggregatedResult.size() -
+			 * end; new Thread() { public void run() { try {
+			 * writeFullResultToKafka(writeToken, aggregatedResult); } catch (IOException e)
+			 * {
+			 * 
+			 * } catch (ResponseException e) {
+			 * 
+			 * } }; }.start(); } else {
+			 */
 				realResult = aggregatedResult;
-			}
+			//}
 		} else {
 			// read from byte array
 			byte[] data = operations.getMessage(qToken, KafkaConstants.PAGINATION_TOPIC);
-			if(data == null) {
-				throw new ResponseException(ErrorType.BadRequestData, "The provided qtoken is not valid. Provide a valid qtoken or remove the parameter to start a new query");
+			if (data == null) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"The provided qtoken is not valid. Provide a valid qtoken or remove the parameter to start a new query");
 			}
 			ByteArrayInputStream bais = new ByteArrayInputStream(data);
 			DataInputStream in = new DataInputStream(bais);
@@ -426,13 +459,14 @@ public class QueryService {
 		return result;
 	}
 
-	private void writeFullResultToKafka(String qToken, List<String> aggregatedResult) throws IOException, ResponseException {
+	private void writeFullResultToKafka(String qToken, List<String> aggregatedResult)
+			throws IOException, ResponseException {
 		// write to byte array
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DataOutputStream out = new DataOutputStream(baos);
 		for (String element : aggregatedResult) {
 			out.writeUTF(element);
-		}		
+		}
 		operations.pushToKafka(producerChannels.paginationWriteChannel(), qToken.getBytes(), baos.toByteArray());
 	}
 
@@ -452,33 +486,10 @@ public class QueryService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	private List<String> getDataFromCsources(List<URI> endpointsList, String query, List<Object> linkHeaders)
+	private List<String> getDataFromCsources(Set<Callable<String>> callablesCollection)
 			throws ResponseException, Exception {
-		logger.trace("getDataFromCsources() started ::");
-		logger.trace("endpoints discovered ::");
-		endpointsList.forEach(e -> logger.trace(e.toString()));
 		List<String> allDiscoveredEntities = new ArrayList<String>();
 		ExecutorService executorService = Executors.newFixedThreadPool(2);
-		Set<Callable<String>> callablesCollection = new HashSet<Callable<String>>();
-		for (URI uri : endpointsList) {
-			logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + query);
-			Callable<String> callable = () -> {
-				HttpHeaders headers = new HttpHeaders();
-				for(Object link: linkHeaders) {
-					headers.add("Link", "<" + link.toString() + ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-				}
-				
-				
-				HttpEntity entity = new HttpEntity<>(headers);
-				
-				String result = restTemplate.exchange(uri.toString() + "/ngsi-ld/v1/entities/?" + query, HttpMethod.GET,
-						entity, String.class).getBody();
-			
-				logger.debug("http call result :: ::" + result);
-				return result;
-			};
-			callablesCollection.add(callable);
-		}
 		List<Future<String>> futures = executorService.invokeAll(callablesCollection);
 		// TODO: why sleep?
 		// Thread.sleep(5000);
@@ -492,7 +503,7 @@ public class QueryService {
 					JsonNode jsonNode = objectMapper.readTree(response);
 					for (int i = 0; i <= jsonNode.size(); i++) {
 						if (jsonNode.get(i) != null && !jsonNode.isNull()) {
-							String payload = contextResolver.expand(jsonNode.get(i).toString(), null);//, linkHeaders);
+							String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true, AppConstants.ENTITIES_URL_ID);// , linkHeaders);
 							entitiesList.add(payload);
 						}
 					}

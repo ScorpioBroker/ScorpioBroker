@@ -30,10 +30,6 @@ public class AtContextServer {// implements QueryHandlerInterface{
 	KafkaOps ops() {
 		return new KafkaOps();
 	}
-	@Bean
-	ContextResolverBasic conRes() {
-		return new ContextResolverBasic();
-	}
 	
 	@Bean
 	AtContext atCon() {
