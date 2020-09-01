@@ -814,7 +814,8 @@ public class ContextResolverBasic {
 			return;
 		}
 
-		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
+		
+		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, CORE_CONTEXT, defaultOptions);
 		compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
 		String geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
 		List geoValues = (List) compactedFull.get(NGSIConstants.GEO_JSON_COORDINATES);
