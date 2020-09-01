@@ -530,14 +530,12 @@ public class SubscriptionService implements SubscriptionManager {
 			} else {
 				handler = notificationHandlerREST;
 			}
-			System.out.println("HANDLE IS " + handler);
 			handler.notify(
 					new Notification(EntityTools.getRandomID("notification:"), System.currentTimeMillis(),
 							subscription.getId(), dataList, null, null, 0, true),
 					subscription.getNotification().getEndPoint().getUri(),
 					subscription.getNotification().getEndPoint().getAccept(), subscription.getId().toString(),
 					subscriptionId2Context.get(subscription.getId().toString()), subscription.getThrottling(), subscription.getNotification().getEndPoint().getNotifierInfo());
-			System.out.println("NOTIFICATION IS OUT");
 		} catch (URISyntaxException e) {
 			logger.error("Exception ::", e);
 			// Left empty intentionally

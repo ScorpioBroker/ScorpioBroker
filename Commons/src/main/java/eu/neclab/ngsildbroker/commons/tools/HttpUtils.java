@@ -883,7 +883,7 @@ public final class HttpUtils {
 			}
 
 		}
-		System.out.println(result);
+		
 	}
 
 	private int parseAcceptHeader(Enumeration<String> acceptHeaders) {

@@ -11,7 +11,6 @@ public class EntityDetails {
 	
 	public EntityDetails(String key, int partition, long offset) {
 		super();
-		//System.out.println("values received :: key -"+key+", partiton id - "+partition+", offset - "+offset);
 		this.key = key;
 		this.partition = partition;
 		this.offset = offset;

@@ -97,7 +97,6 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("create entity :: started");
-			System.out.println("CREATE CALLED: " + payload + " at " + System.currentTimeMillis());
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 			//entityService.validateEntity(resolved, request);
 
@@ -137,7 +136,6 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("update entity :: started");
-			System.out.println("UPDATE: " + payload + " at " + System.currentTimeMillis());
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
 			UpdateResult update = entityService.updateMessage(entityId, resolved);
@@ -178,7 +176,6 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("append entity :: started");
-			System.out.println("APPEND CALLED: " + payload + " at " + System.currentTimeMillis());
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
 			AppendResult append = entityService.appendMessage(entityId, resolved, options);
@@ -221,7 +218,6 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("partial-update entity :: started");
-			System.out.println("PARTIAL UPDATE: " + payload + " at " + System.currentTimeMillis());
 			String expandedPayload = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
 			String expandedAttrib = paramsResolver.expandAttribute(attrId, payload, request);
@@ -300,7 +296,6 @@ public class EntityController {// implements EntityHandlerInterface {
 	public ResponseEntity<byte[]> deleteEntity(@PathVariable("entityId") String entityId) {
 		try {
 			logger.trace("delete entity :: started");
-			System.out.println("DELETE CALLED: " + entityId + " at " + System.currentTimeMillis());
 			entityService.deleteEntity(entityId);
 			logger.trace("delete entity :: completed");
 			return ResponseEntity.noContent().build();
