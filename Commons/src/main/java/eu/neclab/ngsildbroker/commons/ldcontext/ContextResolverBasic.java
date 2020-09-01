@@ -802,9 +802,18 @@ public class ContextResolverBasic {
 		}
 
 		
-		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, CORE_CONTEXT, defaultOptions);
+		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
 		compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
 		String geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
+		//This is needed because one context could map from type which wouldn't work with the used context.
+		//Used context is needed because something could map point 
+		//This is not good but new geo type will come so this can go away at some time
+		if(geoType == null) {
+			compactedFull = JsonLdProcessor.compact(value, CORE_CONTEXT, defaultOptions);
+			compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
+			geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
+			
+		}
 		List geoValues = (List) compactedFull.get(NGSIConstants.GEO_JSON_COORDINATES);
 		switch (geoType) {
 		case NGSIConstants.GEO_TYPE_POINT:

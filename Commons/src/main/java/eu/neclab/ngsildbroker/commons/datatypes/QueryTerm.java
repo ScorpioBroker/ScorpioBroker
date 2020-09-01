@@ -737,7 +737,7 @@ public class QueryTerm {
 				attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
 				attributeFilterProperty.append(subPath);
 				if (attribute.contains("[") && iElem == 0) {
-					attributeFilterProperty.append(NGSIConstants.NGSI_LD_HAS_VALUE + ",0");
+					attributeFilterProperty.append(",0," + NGSIConstants.NGSI_LD_HAS_VALUE);
 				}
 				attributeFilterProperty.append("}') as ");
 				attributeFilterProperty.append(charcount);
