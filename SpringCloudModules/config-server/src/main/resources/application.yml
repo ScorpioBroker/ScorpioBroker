@@ -18,4 +18,7 @@ eureka:
     fetchRegistry: true
 server:
   port: 8888
+logging:
+  level:
+    root: ERROR
 #spring.cloud.config.server.git.uri=https://github.com/husseinterek/spring-cloud-repo.git

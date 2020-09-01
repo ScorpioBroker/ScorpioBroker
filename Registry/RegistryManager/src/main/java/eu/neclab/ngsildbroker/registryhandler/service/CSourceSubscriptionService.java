@@ -49,6 +49,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
@@ -641,10 +642,24 @@ public class CSourceSubscriptionService {
 	}
 
 	@KafkaListener(topics = "${submanager.subscription.topic}", groupId = "csourcemanager")
-	public void handleInternalSub(Message<byte[]> message) throws Exception {
-		SubscriptionRequest internalSub = DataSerializer.getSubscriptionRequest(new String(message.getPayload()));
-		internalSub.getSubscription().setInternal(true);
-		subscribe(internalSub);
+	public void handleInternalSub(Message<byte[]> message) {
+		if (Arrays.areEqual(AppConstants.NULL_BYTES, message.getPayload())) {
+			try {
+				unsubscribe(new URI(kafkaOps.getMessageKey(message)));
+			} catch (ResponseException e) {
+				logger.error(e);
+			} catch (URISyntaxException e) {
+				logger.error(e);
+			}
+		} else {
+			SubscriptionRequest internalSub = DataSerializer.getSubscriptionRequest(new String(message.getPayload()));
+			internalSub.getSubscription().setInternal(true);
+			try {
+				subscribe(internalSub);
+			} catch (ResponseException e) {
+				logger.error(e);
+			}
+		}
 	}
 
 	private boolean evaluateRegGeoQuery(LDGeoQuery subGeoQuery, Geometry<?> geoValue) {

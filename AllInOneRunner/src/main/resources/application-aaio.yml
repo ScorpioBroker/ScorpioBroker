@@ -175,7 +175,7 @@ spring:
     lazy-initialization: true
     allow-bean-definition-overriding: true
 
-
+selfhostcorecontext: http://localhost:9090/corecontext
 writer:
   datasource:
     hikari:

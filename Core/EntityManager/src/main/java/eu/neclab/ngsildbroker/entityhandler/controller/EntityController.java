@@ -97,8 +97,8 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("create entity :: started");
-			String resolved = httpUtils.expandPayload(request, payload);
-			entityService.validateEntity(resolved, request);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
+			//entityService.validateEntity(resolved, request);
 
 			result = entityService.createMessage(resolved);
 			logger.trace("create entity :: completed");
@@ -117,7 +117,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -136,8 +136,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("update entity :: started");
-
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
 			UpdateResult update = entityService.updateMessage(entityId, resolved);
 			logger.trace("update entity :: completed");
@@ -158,7 +157,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			logger.error("Exception :: ", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -177,7 +176,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("append entity :: started");
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
 			AppendResult append = entityService.appendMessage(entityId, resolved, options);
 			logger.trace("append entity :: completed");
@@ -199,7 +198,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.error("Exception :: ", exception);
 			exception.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -219,8 +218,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("partial-update entity :: started");
-
-			String expandedPayload = httpUtils.expandPayload(request, payload);
+			String expandedPayload = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
 			String expandedAttrib = paramsResolver.expandAttribute(attrId, payload, request);
 
@@ -249,7 +247,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -284,7 +282,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -313,7 +311,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 }

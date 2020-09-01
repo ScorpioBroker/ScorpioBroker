@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -47,7 +48,7 @@ public class EntityBatchController {
 			throws ResponseException {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			BatchResult result = entityService.createMultipleMessage(resolved);
 			return generateBatchResultReply(result, HttpStatus.CREATED);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
@@ -77,7 +78,7 @@ public class EntityBatchController {
 			throws ResponseException {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			BatchResult result = entityService.upsertMultipleMessage(resolved);
 			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
@@ -90,7 +91,7 @@ public class EntityBatchController {
 			throws ResponseException {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			BatchResult result = entityService.updateMultipleMessage(resolved);
 			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
