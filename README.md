@@ -7,21 +7,24 @@
 <br>
 [![Documentation badge](https://img.shields.io/readthedocs/scorpio.svg)](https://scorpio.readthedocs.io/en/latest/?badge=latest)
 ![Status](https://nexus.lab.fiware.org/static/badges/statuses/incubating.svg)
+![Travis-CI](https://travis-ci.org/ScorpioBroker/ScorpioBroker.svg?branch=master)
 
 Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India.
 
 This project is part of [FIWARE](https://www.fiware.org/). For more information check the FIWARE Catalogue entry for
 [Core Context](https://github.com/Fiware/catalogue/tree/master/core).
 
-| :books: [Documentation](https://scorpio.rtfd.io/) | :whale: [Docker Hub](https://hub.docker.com/r/scorpiobroker/scorpio/) |
-| ------------------------------------------------- | --------------------------------------------------------------------- |
-
+| :books: [Documentation](https://scorpio.rtfd.io/) | :mortar_board: [Academy](https://fiware-academy.readthedocs.io/en/latest/core/scorpio) | :whale: [Docker Hub](https://hub.docker.com/r/scorpiobroker/scorpio/) | :clipboard: [Roadmap](./docs/roadmap.md) |
+| ------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- |
 
 ## Content
 
 -   [Background](#background)
 -   [Installation](#installation)
 -   [Usage](#usage)
+-   [Tests](#tests)
+-   [Credit where credit is due](#credit-where-credit-is-due)
+-   [Code of conduct](#code-of-conduct)
 -   [License](#license)
 
 ## Background
@@ -350,6 +353,39 @@ Link: <http://<HOSTNAME_OF_WHERE_YOU_HAVE_AN_ATCONTEXT>/aggregatedContext.jsonld
 For more detailed explaination on NGSI-LD or JSON-LD. Please look at the
 [ETSI Specification](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf) or visit
 the [JSON-LD website](https://json-ld.org/).
+## Tests
+Scorpio has two sets of tests. We use JUnit for unit tests and the FIWARE NGSI-LD Testsuite, which is npm test based, for system tests.
+### Running unit tests
+A lot of the logic within Scorpio is intertwined with Kafka. Hence a lot of the unit tests require a running Kafka instance. 
+Start the Kafka server and zookeeper as described in the Installation chapter.
+You can run tests explicitly through Maven with the goal test by running 
+```console
+mvn test
+```
+Unless you add a -DskipTests to your Maven command, tests will also be run with the goals package, install, verify and deploy.
+You can run all the tests by running the Maven command from the root directory or individual tests by running the Maven command in the corresponding directory.
+### FIWARE NGSI-LD Testsuite
+In order to run the Testsuite you have to have a running instance of Scorpio as described in the Start the components chapter or use the dockercontainer
+You can find the Testsuite here with full instructions on how to setup and start the Testsuite.
+The comprehensive version is this:
+ - Install npm on your system
+ - Download the Testsuite from [here](https://github.com/FIWARE/NGSI-LD_TestSuite/archive/master.zip) 
+ - extract the Testsuite
+ - run npm install in the Testsuite folder to install all dependencies
+ - you need to set 4 environment vars
+   - TEST_ENDPOINT, which is the broker. So default should be http://localhost:9090 for Scorpio
+   - WEB_APP_PORT, port for the Testsuite. This should match the port in all below. E.g. 4444
+   - ACC_ENDPOINT, the endpoint for the testsuit, e.g. http://localhost:4444
+   - NOTIFY_ENDPOINT, the notification endpoint for the tests. Has to end with /acc. E.g. http://localhost:4444/acc
+ - start Scorpio
+ - start the accumulator/notification endpoint by running 
+ ```console
+   node accumulator/accumulator.js &'
+ ```
+ - start the tests with 
+ ```console
+    npm test'
+ ```
 
 ### Enable CORS support
 You can enable cors support in the gateway by providing these configuration options
@@ -411,7 +447,21 @@ This activity has received funding from the European Union’s Horizon 2020 rese
 
 ### Autopilot
 Part of the development was done in and for the [AUTOPILOT project for Automated driving Progressed by Internet Of Things](https://autopilot-project.eu/) <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/autopilot.png" width="160">
+## Credit where credit is due
+We like to thank everyone who has contributed to Scorpio. This goes for the entire Scorpio Devlopment Team as well as all external contributor.
+For a complete list have a look at the [CREDITS](./CREDITS) file.
+## Code of conduct
 
+As part of the FIWARE Community we try our best to adhere to the [FIWARE Code of Conduct](https://www.fiware.org/foundation/code-of-conduct/) and expect the same from contributors. 
+
+This includes pull requests, issues, comments, code and in code comments. 
+
+As owner of this repo we limit communication here purely to Scorpio and NGSI-LD related topics. 
+
+We are all humans coming from different cultural backgrounds. We all have our different quirks, habits and mannerisms. Therefor misunderstandings can happen. We will give everyone the benefit of doubt that communication is done with good intentions in mind trying to advance Scorpio and NGSI-LD. We expect the same from contributors.
+However if someone is repeatedly trying to provoke, attack a person, shift discussions or ridicule someone we WILL make use of our house right and put an end to this.
+
+If there is a dispute to be resolved we as owners of this repo have the final word.
 ## License
 
 Scorpio is licensed under [BSD-4-Clause](https://spdx.org/licenses/BSD-4-Clause.html).
