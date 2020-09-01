@@ -506,8 +506,8 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private void sendNotification(List<Entity> dataList, Subscription subscription) {
 		logger.debug(DataSerializer.toJson(dataList));
-		System.out.println("SENDING NOTIFICATION: " + DataSerializer.toJson(dataList) + " \nTO SUBSCRIPTION \n"
-				+ DataSerializer.toJson(subscription));
+		//System.out.println("SENDING NOTIFICATION: " + DataSerializer.toJson(dataList) + " \nTO SUBSCRIPTION \n"
+		//		+ DataSerializer.toJson(subscription));
 		// if (subscription.getTimeInterval() > 0) {
 		// try {
 		// intervalHandler.notify(new
