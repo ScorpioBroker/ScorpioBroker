@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,11 +61,12 @@ public class CSourceService {
 	KafkaOps operations;
 	@Autowired
 	ObjectMapper objectMapper;
-	
+
 	@Autowired
 	StartupConfig startupConfig;
 
 	@Autowired
+	@Qualifier("rmcsourcedao")
 	CSourceDAO csourceDAO;
 
 	@Autowired
@@ -78,7 +83,9 @@ public class CSourceService {
 
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
 	Timer watchDog = new Timer(true);
-
+	private ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(50000, true);
+	
+	ThreadPoolExecutor executor = new ThreadPoolExecutor(20, 50, 600000, TimeUnit.MILLISECONDS, workQueue);
 	CSourceService(CSourceProducerChannel producerChannels) {
 
 		this.producerChannels = producerChannels;
@@ -298,16 +305,22 @@ public class CSourceService {
 
 	@KafkaListener(topics = "${csource.registry.topic}", groupId = "regmanger") // (CSourceConsumerChannel.contextRegistryReadChannel)
 	public void handleEntityRegistration(Message<?> message) {
-		CSourceRegistration csourceRegistration = DataSerializer
-				.getCSourceRegistration(new String((byte[]) message.getPayload()));
-		// objectMapper.readValue((byte[]) message.getPayload(),
-		// CSourceRegistration.class);
-		csourceRegistration.setInternal(true);
-		try {
-			this.registerCSource(csourceRegistration);
-		} catch (Exception e) {
-			logger.trace("Failed to register csource " + csourceRegistration.getId().toString(), e);
-		}
+		executor.execute(new Thread() {
+			@Override
+			public void run() {
+
+				CSourceRegistration csourceRegistration = DataSerializer
+						.getCSourceRegistration(new String((byte[]) message.getPayload()));
+				// objectMapper.readValue((byte[]) message.getPayload(),
+				// CSourceRegistration.class);
+				csourceRegistration.setInternal(true);
+				try {
+					registerCSource(csourceRegistration);
+				} catch (Exception e) {
+					logger.trace("Failed to register csource " + csourceRegistration.getId().toString(), e);
+				}
+			}
+		});
 	}
 
 	private static boolean isValidURL(String urlString) {
@@ -324,7 +337,7 @@ public class CSourceService {
 
 	// return true for future date validation
 	private boolean isValidFutureDate(Long date) {
-		
+
 		return System.currentTimeMillis() < date;
 	}
 

@@ -1,0 +1,128 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>12. Troubleshooting &#8212; ScorpioBroker  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="11. Getting a docker container" href="docker.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="troubleshooting">
+<h1>12. Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="missing-jaxb-dependencies">
+<h2>12.1. Missing JAXB dependencies<a class="headerlink" href="#missing-jaxb-dependencies" title="Permalink to this headline">¶</a></h2>
+<p>When starting the eureka-server you may be facing&nbsp;the <strong>java.lang.TypeNotPresentException: Type javax.xml.bind.JAXBContext not present</strong> exception. It’s very likely that you are running Java 11 on your machine then. Starting from Java 9 package <cite>javax.xml.bind</cite> has been marked deprecated and was finally completely removed in Java 11.</p>
+<p>In order to fix this issue and get eureka-server running you need to manually add below JAXB Maven dependencies to <cite>ScorpioBroker/SpringCloudModules/eureka/pom.xml</cite> before starting:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>&nbsp; &nbsp; …
+&nbsp; &nbsp; &lt;dependencies&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; …
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;dependency&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;groupId&gt;com.sun.xml.bind&lt;/groupId&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;artifactId&gt;jaxb-core&lt;/artifactId&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;version&gt;2.3.0.1&lt;/version&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;/dependency&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;dependency&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;groupId&gt;javax.xml.bind&lt;/groupId&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;artifactId&gt;jaxb-api&lt;/artifactId&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;version&gt;2.3.1&lt;/version&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;/dependency&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;dependency&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;groupId&gt;com.sun.xml.bind&lt;/groupId&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;artifactId&gt;jaxb-impl&lt;/artifactId&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;version&gt;2.3.1&lt;/version&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &lt;/dependency&gt;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; …
+&nbsp; &nbsp; &lt;/dependencies&gt;
+&nbsp; &nbsp; …</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">12. Troubleshooting</a><ul>
+<li><a class="reference internal" href="#missing-jaxb-dependencies">12.1. Missing JAXB dependencies</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="docker.html" title="previous chapter">11. Getting a docker container</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/troubleshooting.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NECTI + NLE.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/troubleshooting.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

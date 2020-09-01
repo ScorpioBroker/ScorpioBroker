@@ -5,6 +5,8 @@ services:
     image: zookeeper
     ports:
       - "2181"
+    logging:
+      driver: none
   kafka:
     image: wurstmeister/kafka
     hostname: kafka
@@ -14,10 +16,15 @@ services:
       KAFKA_ADVERTISED_HOST_NAME: kafka
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_LOG_RETENTION_MS: 10000
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - zookeeper
+    logging:
+      driver: none
+
   postgres:
     image: mdillon/postgis
     ports:
@@ -26,13 +33,12 @@ services:
       POSTGRES_USER: ngb
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
+    logging:
+      driver: none
   scorpio:
     image: scorpiobroker/scorpio:scorpio-aaio_0.9.2-SNAPSHOT
     ports:
       - "9090:9090"
     depends_on:
       - kafka
-      - postgres
-    environment:
-      spring_args: --broker.parent.location.url=http://192.168.42.202:9090/ngsi-ld/v1/csourceRegistrations/ --broker.geoCoverage="{\\\"type\\\":\\\"Polygon\\\",\\\"coordinates\\\": [[[100.0, 0.0],[101.0, 0.0],[101.0, 1.0],[100.0, 1.0],[100.0, 0.0] ] ]}"
-    
+      - postgres    

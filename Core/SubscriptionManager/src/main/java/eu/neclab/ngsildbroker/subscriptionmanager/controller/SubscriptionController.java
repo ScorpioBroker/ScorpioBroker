@@ -95,20 +95,8 @@ public class SubscriptionController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
-			String resolved = contextResolver.expand(payload, context);
-			try {
-				subscription = DataSerializer.getSubscription(resolved);
-			} catch (Exception e) {
-				logger.error("Exception ::", e);
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-						.body(("provided payload has errors.\n" + e.getMessage()).getBytes());
-			}
-			if (resolved == null || subscription == null) {
-				return badRequestResponse;
-			}
-			if (subscription.getLdQuery() != null && !subscription.getLdQuery().trim().equals("")) {
-				subscription.setQueryTerm(queryParser.parseQuery(subscription.getLdQuery(), context));
-			}
+			//System.out.println("RECEIVING SUBSCRIPTION: " + payload  + " at " + System.currentTimeMillis());
+			subscription = contextResolver.expandSubscription(payload, context);
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
 			URI subId = manager.subscribe(subRequest);
 
@@ -155,6 +143,7 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
+			//System.out.println("DELETING SUBSCRIPTION: " + id + " at " + System.currentTimeMillis());
 			manager.unsubscribe(id);
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
@@ -172,7 +161,7 @@ public class SubscriptionController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
-			String resolved = contextResolver.expand(payload, context);
+			String resolved = contextResolver.expand(payload, context, true, AppConstants.SUBSCRIPTIONS_URL_ID);
 			Subscription subscription = DataSerializer.getSubscription(resolved);
 			if (subscription.getId() == null) {
 				subscription.setId(id);

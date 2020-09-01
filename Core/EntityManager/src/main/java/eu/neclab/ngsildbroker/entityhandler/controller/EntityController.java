@@ -1,18 +1,13 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
-import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Collections;
-
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,12 +18,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonParseException;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
@@ -36,13 +28,10 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
-import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
+import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
 
 /**
  * 
@@ -101,15 +90,15 @@ public class EntityController {// implements EntityHandlerInterface {
 	 *            jsonld message
 	 * @return ResponseEntity object
 	 */
-	@PostMapping("/")
+	@PostMapping
 	public ResponseEntity<byte[]> createEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		String result = null;
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("create entity :: started");
-			String resolved = httpUtils.expandPayload(request, payload);
-			entityService.validateEntity(resolved, request);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
+			//entityService.validateEntity(resolved, request);
 
 			result = entityService.createMessage(resolved);
 			logger.trace("create entity :: completed");
@@ -128,7 +117,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -147,8 +136,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("update entity :: started");
-
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
 			UpdateResult update = entityService.updateMessage(entityId, resolved);
 			logger.trace("update entity :: completed");
@@ -169,7 +157,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			logger.error("Exception :: ", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -188,7 +176,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("append entity :: started");
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
 			AppendResult append = entityService.appendMessage(entityId, resolved, options);
 			logger.trace("append entity :: completed");
@@ -210,7 +198,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.error("Exception :: ", exception);
 			exception.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -230,8 +218,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("partial-update entity :: started");
-
-			String expandedPayload = httpUtils.expandPayload(request, payload);
+			String expandedPayload = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
 			String expandedAttrib = paramsResolver.expandAttribute(attrId, payload, request);
 
@@ -260,7 +247,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -274,11 +261,13 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@DeleteMapping("/{entityId}/attrs/{attrId}")
 	public ResponseEntity<byte[]> deleteAttribute(HttpServletRequest request, @PathVariable("entityId") String entityId,
-			@PathVariable("attrId") String attrId) {
+			@PathVariable("attrId") String attrId,@RequestParam(value = "datasetId", required = false) String datasetId,
+			@RequestParam(value = "deleteAll", required = false) String deleteAll) {
 		try {
 			logger.trace("delete attribute :: started");
+			Validator.validate(request.getParameterMap());
 			String expandedAttrib = paramsResolver.expandAttribute(attrId, HttpUtils.getAtContext(request));
-			entityService.deleteAttribute(entityId, expandedAttrib);
+			entityService.deleteAttribute(entityId, expandedAttrib,datasetId,deleteAll);
 			logger.trace("delete attribute :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException responseException) {
@@ -293,7 +282,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -322,8 +311,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
-
 }

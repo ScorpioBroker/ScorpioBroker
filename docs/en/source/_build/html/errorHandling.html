@@ -1,0 +1,196 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>4. Error Handler &#8212; ScorpioBroker  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. Security Architecture" href="security.html" />
+    <link rel="prev" title="1. Java 8 System Requirements" href="hardwareRequirement.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="error-handler">
+<h1>4. Error Handler<a class="headerlink" href="#error-handler" title="Permalink to this headline">¶</a></h1>
+<p>This section will provide info on the error handling mechanism for the Scorpio Broker system.</p>
+<p>Listed below are the events of the system</p>
+<table border="1" class="colwidths-given docutils" id="id1">
+<caption><span class="caption-text"><strong>Error Handling</strong></span><a class="headerlink" href="#id1" title="Permalink to this table">¶</a></caption>
+<colgroup>
+<col width="5%" />
+<col width="15%" />
+<col width="35%" />
+<col width="15%" />
+<col width="10%" />
+<col width="20%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">S.No.</th>
+<th class="head">Operation/Event</th>
+<th class="head">Scenario Description</th>
+<th class="head">Responsible &nbsp;Module</th>
+<th class="head">Error Code/ Response</th>
+<th class="head">Action</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><ol class="first last arabic simple">
+<li></li>
+</ol>
+</td>
+<td>InvalidRequest</td>
+<td>The request associated to the operation is syntactically invalid or includes wrong content</td>
+<td>REST Controller</td>
+<td>HTTP 400</td>
+<td>Log the error &amp; notify the requestor</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="2">
+<li></li>
+</ol>
+</td>
+<td>BadRequestData</td>
+<td>The request includes input data which does not meet the requirements of the operation</td>
+<td>REST Controller</td>
+<td>HTTP 400</td>
+<td>Log the error &amp; notify the requestor</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="3">
+<li></li>
+</ol>
+</td>
+<td>AlreadyExists</td>
+<td>The referred element already exists</td>
+<td>REST Controller</td>
+<td>HTTP 409</td>
+<td>Log the error &amp; notify the requestor</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="4">
+<li></li>
+</ol>
+</td>
+<td>OperationNotSupported</td>
+<td>The operation is not supported</td>
+<td>REST Controller</td>
+<td>HTTP 422</td>
+<td>Log the error &amp; notify the requestor</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="5">
+<li></li>
+</ol>
+</td>
+<td>ResourceNotFound</td>
+<td>The referred resource has not been found</td>
+<td>REST Controller</td>
+<td>HTTP 404</td>
+<td>Log the error &amp; notify the requestor</td>
+</tr>
+<tr class="row-odd"><td><ol class="first last arabic simple" start="6">
+<li></li>
+</ol>
+</td>
+<td>InternalError</td>
+<td>There has been an error during the operation execution</td>
+<td>REST Controller</td>
+<td>HTTP 500</td>
+<td>Log the error &amp; notify the requestor</td>
+</tr>
+<tr class="row-even"><td><ol class="first last arabic simple" start="7">
+<li></li>
+</ol>
+</td>
+<td>Method Not Allowed</td>
+<td>There has been an error when a client invokes a wrong HTTP verb over a resource</td>
+<td>REST Controller</td>
+<td>HTTP 405</td>
+<td>Log the error &amp; notify the requestor</td>
+</tr>
+</tbody>
+</table>
+<p>Please note the errors can also be categorized into following categories for different exceptions that can occur internally to the implementation logic as well:</p>
+<p>&nbsp;1. Low criticality is those which involve the errors that should be handled by the software logic, and are due to some configuration issues and should not require anything like reset, a reboot of the system.</p>
+<p>&nbsp;2. Medium Criticality is those which will be tried for the software logic handling but it may need system reset, chip reset and may interrupt system significantly.</p>
+<p>&nbsp;3. High Criticality is the hardware-based error that should not occur and if occur may need system reset.</p>
+<p>Fail-safe mechanisms for the different category of errors:</p>
+<p>&nbsp;a. For the Low criticality of the errors, logging will be performed, the retry will be performed and error will be handled by means of rollback and sending failure to the upper layers.</p>
+<p>&nbsp;b.For the High Criticality errors, emergency errors will be logged further recommending a reboot.</p>
+<p>&nbsp;c.For the Medium criticality errors logging, retry mechanisms will be implemented further logging emergency logs to the system and recommend a reboot to the administrator.</p>
+<p>During the initialization, failure will be logged as emergency and error will be returned to the calling program</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="hardwareRequirement.html" title="previous chapter">1. Java 8 System Requirements</a></li>
+      <li>Next: <a href="security.html" title="next chapter">5. Security Architecture</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/errorHandling.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NECTI + NLE.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/errorHandling.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

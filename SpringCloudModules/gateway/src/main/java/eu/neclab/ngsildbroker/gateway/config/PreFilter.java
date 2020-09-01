@@ -29,16 +29,29 @@ public class PreFilter extends ZuulFilter {
 	@Value("${query-manager.http-method}")
 	private String HTTP_METHOD;
 
+	@Value("${entity-manager.target-service}")
+	private String EM_TARGET_SERVICE;
+	@Value("${entity-manager.http-method}")
+	private String EM_HTTP_METHOD;
+
+	static boolean switchQMEM = true;
+
 	@Autowired
 	private LoadBalancerClient loadBalancer;
-	
+
 	/**
 	 * route GET requests to query-manager microservice
 	 */
 	@Override
 	public Object run() throws ZuulException {
 		RequestContext context = RequestContext.getCurrentContext();
-		ServiceInstance serviceInstance = loadBalancer.choose(this.TARGET_SERVICE);
+		ServiceInstance serviceInstance;
+		
+		if (switchQMEM) {
+			serviceInstance = loadBalancer.choose(this.TARGET_SERVICE);
+		} else {
+			serviceInstance = loadBalancer.choose(this.EM_TARGET_SERVICE);
+		}
 		try {
 			if (serviceInstance != null) {
 				context.setRouteHost(serviceInstance.getUri().toURL());
@@ -50,7 +63,7 @@ public class PreFilter extends ZuulFilter {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * intercept requests and all GET requests will be handled by run() method.
 	 */
@@ -60,7 +73,18 @@ public class PreFilter extends ZuulFilter {
 		HttpServletRequest request = context.getRequest();
 		String method = request.getMethod();
 		String requestURI = request.getRequestURI();
-		return HTTP_METHOD.equalsIgnoreCase(method) && requestURI.startsWith(REQUEST_PATH);
+		if (!requestURI.startsWith(REQUEST_PATH)) {
+			return false;
+		}
+		if (HTTP_METHOD.equalsIgnoreCase(method)) {
+			switchQMEM = true;
+			return true;
+		}
+		/*
+		 * if (EM_HTTP_METHOD.equalsIgnoreCase(method)) { switchQMEM = false; return
+		 * true; }
+		 */
+		return false;
 	}
 
 	@Override

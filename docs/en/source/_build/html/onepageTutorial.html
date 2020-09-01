@@ -1,0 +1,296 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>1. Installation Guide &#8212; ScorpioBroker  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. Java 8 System Requirements" href="hardwareRequirement.html" />
+    <link rel="prev" title="1. Introduction" href="introduction.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installation-guide">
+<h1>1. Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h1>
+<p>In order to set-up the environment of Scorpio broker, the following dependency needs to be configured:-</p>
+<ol class="arabic simple">
+<li>Eclipse.</li>
+<li>Server JRE.</li>
+<li>ZooKeeper.</li>
+<li>Apache Kafka.</li>
+</ol>
+</div>
+<div class="section" id="windows">
+<h1>2. Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="eclipse-installation">
+<h2>2.1. Eclipse installation<a class="headerlink" href="#eclipse-installation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><strong>Download the Eclipse Installer.</strong>:</li>
+</ul>
+<p>&nbsp;Download Eclipse Installer from&nbsp;<a class="reference external" href="http://www.eclipse.org/downloads.Eclipse">http://www.eclipse.org/downloads.Eclipse</a> is hosted on many mirrors around the world. Please select the one closest to you and start to download the Installer.</p>
+<ul class="simple">
+<li><strong>Start the Eclipse Installer executable</strong>:</li>
+</ul>
+<p>&nbsp;For Windows users, after the Eclipse Installer, the&nbsp;executable has finished downloading it should be available in your download directory. Start the Eclipse Installer executable. You may get a security warning to run this file. If the Eclipse Foundation is the Publisher, you are good to select Run.</p>
+<p>&nbsp;For Mac and Linux users, you will still need to unzip the download to create the Installer. Start the Installer once it is available.</p>
+<ul class="simple">
+<li><strong>Select the package to install</strong>:</li>
+</ul>
+<p>&nbsp;The new Eclipse Installer shows the packages available to Eclipse users. You can search for the package you want to install or scroll through the list. Select and click on the package you want to install.</p>
+<ul class="simple">
+<li><strong>Select your installation folder</strong></li>
+</ul>
+<p>&nbsp;Specify the folder where you want Eclipse to be installed. The default folder will be in your User directory. Select the ‘Install’ button to begin the installation.</p>
+<ul class="simple">
+<li><strong>Launch Eclipse</strong></li>
+</ul>
+<p>&nbsp;Once the installation is complete you can now launch Eclipse. The Eclipse Installer has done its work. Happy coding.</p>
+</div>
+<div class="section" id="jre-setup">
+<h2>2.2. JRE Setup<a class="headerlink" href="#jre-setup" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Start the JRE installation and hit the “Change destination folder” checkbox, then click ‘Install.’</li>
+</ul>
+<div class="figure">
+<img alt="_images/jre-1.png" src="_images/jre-1.png" />
+</div>
+<ul class="simple">
+<li>Change the installation directory to any path without spaces in the folder name. E.g. C:Javajre1.8.0_xx. (By default it will be C:Program FilesJavajre1.8.0_xx), then click ‘Next.’</li>
+</ul>
+<p>After you’ve&nbsp;installed Java in Windows, you must set the&nbsp;&nbsp;JAVA_HOME&nbsp;&nbsp;environment variable to point to the Java installation directory.</p>
+<p><strong>Set the JAVA_HOME Variable</strong></p>
+<p>To set the JAVA_HOME variable:</p>
+<ol class="arabic simple">
+<li>Find out where Java is installed. If you didn’t change the path during installation, it will be something like this:</li>
+</ol>
+<blockquote>
+<div><em>C:Program FilesJavajdk1.8.0_65</em></div></blockquote>
+<ol class="arabic simple" start="2">
+<li><ul class="first">
+<li>In Windows 7 right-click&nbsp;<strong>My Computer</strong>&nbsp;and select&nbsp;<strong>Properties</strong>&nbsp;&gt;&nbsp;<strong>Advanced</strong>.</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<div><blockquote>
+<div>OR</div></blockquote>
+<ul class="simple">
+<li>In Windows 8 go to&nbsp;<strong>Control Panel</strong>&nbsp;&gt;&nbsp;<strong>System</strong>&nbsp;&gt;&nbsp;<strong>Advanced System Settings</strong>.</li>
+</ul>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li>Click the&nbsp;Environment Variables&nbsp;button.</li>
+<li>Under&nbsp;System Variables, click&nbsp;New.</li>
+<li>In the User&nbsp;Variable Name&nbsp;field, enter: <strong>JAVA_HOME</strong></li>
+<li>In the&nbsp;User Variable Value&nbsp;field, enter your JDK  path.</li>
+</ol>
+<div class="figure">
+<img alt="_images/jre-2.png" src="_images/jre-2.png" />
+</div>
+<p>&nbsp;(Java path and version may change according to the version of Kafka you are using)</p>
+<ol class="arabic simple" start="7">
+<li>Now click OK.</li>
+<li>Search for a Path variable in the “System Variable” section in the “Environment Variables” dialogue box you just opened.</li>
+<li>Edit the path and type <em>;%JAVA_HOME%bin</em> at the end of the text already written there, just like the image below:</li>
+</ol>
+<div class="figure">
+<img alt="_images/jre-3.png" src="_images/jre-3.png" />
+</div>
+<ul class="simple">
+<li>To confirm the Java installation, just open cmd and type “java –version.”&nbsp;You should be able to see the version of Java you just installed.</li>
+</ul>
+<div class="figure">
+<img alt="_images/jre-4.png" src="_images/jre-4.png" />
+</div>
+<p>If your command prompt somewhat looks like the image above, you are good to go. Otherwise, you need to recheck whether your setup version matches the correct OS architecture (x86, x64), or if the environment variables path is correct.</p>
+</div>
+<div class="section" id="zookeeper-installation">
+<h2>2.3. ZooKeeper Installation<a class="headerlink" href="#zookeeper-installation" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Go to your ZooKeeper config directory. For me its&nbsp;C:zookeeper-3.4.7conf</li>
+<li>Rename file “zoo_sample.cfg” to “zoo.cfg”</li>
+<li>Open zoo.cfg in any text editor, like Notepad; I prefer Notepad++.</li>
+<li>Find and edit&nbsp;dataDir=/tmp/zookeeper to :zookeeper-3.4.7data</li>
+<li>Add an entry in the System Environment Variables as we did for Java.</li>
+</ol>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>Add&nbsp;ZOOKEEPER_HOME = C:zookeeper-3.4.7&nbsp;to the System Variables.</li>
+<li>Edit the System Variable named “Path” and&nbsp;add&nbsp;;%ZOOKEEPER_HOME%bin;</li>
+</ol>
+</div></blockquote>
+<ol class="arabic simple" start="6">
+<li>You can change the default Zookeeper port in zoo.cfg file (Default port 2181).</li>
+<li>Run ZooKeeper by opening a new cmd and type&nbsp;zkserver.</li>
+<li>You will see the command prompt with some details, like the image below:</li>
+</ol>
+<div class="figure">
+<img alt="_images/zookee.png" src="_images/zookee.png" />
+</div>
+</div>
+<div class="section" id="setting-up-kafka">
+<h2>2.4. Setting Up Kafka<a class="headerlink" href="#setting-up-kafka" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Go to your Kafka config directory. For example:-&nbsp;<strong>C:kafka_2.11-0.9.0.0config</strong></li>
+<li>Edit the file “server.properties.”</li>
+<li>Find and edit the line&nbsp;log.dirs=/tmp/kafka-logs” to “log.dir= C:kafka_2.11-0.9.0.0kafka-logs.</li>
+<li>If your ZooKeeper is running on some other machine or cluster you can edit&nbsp;“zookeeper.connect:2181”&nbsp;to your custom IP and port. For this demo, we are using the same machine so there’s no need to change. Also the Kafka port and broker.id are configurable in this file. Leave other settings as is.</li>
+<li>Your Kafka will run on default port 9092 and connect to ZooKeeper’s default port, 2181.</li>
+</ol>
+<p><strong>Note</strong>: For running Kafka, zookeepers should run first. At the time of closing Kafka, zookeeper&nbsp;should be closed first than Kafka.</p>
+</div>
+<div class="section" id="running-a-kafka-server">
+<h2>2.5. Running a Kafka Server<a class="headerlink" href="#running-a-kafka-server" title="Permalink to this headline">¶</a></h2>
+<p>Important: Please ensure that your ZooKeeper instance is up and running before starting a Kafka server.</p>
+<ol class="arabic simple">
+<li>Go to your Kafka installation directory:**&nbsp;C:kafka_2.11-0.9.0.0**</li>
+<li>Open a command prompt here by pressing&nbsp;Shift + right-click&nbsp;and choose the “Open command window here” option).</li>
+<li>Now type&nbsp;<strong>.binwindowskafka-server-start.bat .configserver.properties</strong>&nbsp;and press Enter.</li>
+</ol>
+<p>&nbsp;<strong>.binwindowskafka-server-start.bat .configserver.properties</strong></p>
+</div>
+<div class="section" id="setting-up-postgresql">
+<h2>2.6. Setting up PostgreSQL<a class="headerlink" href="#setting-up-postgresql" title="Permalink to this headline">¶</a></h2>
+<p>Step 1)&nbsp;Go to&nbsp;<a class="reference external" href="https://www.postgresql.org/download">https://www.postgresql.org/download</a>&nbsp;and select O.S., it’s Windows for me.</p>
+<p>Step 2)&nbsp;You are given two options:-</p>
+<p>&nbsp;1. Interactive Installer by EnterpriseDB
+&nbsp;2. Graphical Installer by BigSQL</p>
+<p>BigSQL currently installs pgAdmin version 3 which is deprecated. It’s best to choose EnterpriseDB which installs the latest version 4</p>
+<p>Step 3)</p>
+<p>&nbsp;1. You will be prompted to the desired Postgre version and operating system. Select the Postgres 10, as Scorpio has been tested and developed with this version.</p>
+<p>&nbsp;2. Click the Download Button, Download will begin</p>
+<p>Step 4)&nbsp;Open the downloaded .exe and Click next on the install welcome screen.</p>
+<p>Step 5)</p>
+<p>&nbsp;1. Change the Installation directory if required, else leave it to default</p>
+<p>&nbsp;2.Click Next</p>
+<p>Step 6)</p>
+<p>&nbsp;1. You can choose the components you want to install in your system. You may uncheck Stack Builder</p>
+<p>&nbsp;2. Click on Next</p>
+<p>Step 7)</p>
+<p>&nbsp;1. You can change the data location</p>
+<p>&nbsp;2.Click Next</p>
+<p>Step 8)</p>
+<p>&nbsp;1. Enter the superuser password. Make a note of it</p>
+<p>&nbsp;2.Click Next</p>
+<p>Step 9)</p>
+<p>&nbsp;1. Leave the port number as the default</p>
+<p>&nbsp;2.Click Next</p>
+<p>Step 10)</p>
+<p>&nbsp;1. Check the pre-installation summary.</p>
+<p>&nbsp;2.Click Next</p>
+<p>Step 11)&nbsp;Click the next button</p>
+<p>Step 12)&nbsp;Once install is complete you will see the Stack Builder prompt</p>
+<p>&nbsp;1. Uncheck that option. We will use Stack Builder in more advance tutorials</p>
+<p>&nbsp;2.Click Finish</p>
+<p>Step 13)&nbsp;To launch Postgre go to Start Menu and search pgAdmin 4</p>
+<p>Step 14)&nbsp;You will see pgAdmin homepage</p>
+<p>Step 15)&nbsp;Click on Servers &gt; Postgre SQL 10 in the left tree</p>
+<div class="figure">
+<img alt="_images/dbconfig-1.png" src="_images/dbconfig-1.png" />
+</div>
+<p>Step 16)</p>
+<p>&nbsp;1.Enter superuser password set during installation</p>
+<p>&nbsp;2. Click OK</p>
+<p>Step 17)&nbsp;You will see the Dashboard</p>
+<div class="figure">
+<img alt="_images/dbconfig-2.png" src="_images/dbconfig-2.png" />
+</div>
+<p>That’s it to Postgre SQL installation.</p>
+</div>
+</div>
+<div class="section" id="linux">
+<h1>3. Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h1>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1. Installation Guide</a></li>
+<li><a class="reference internal" href="#windows">2. Windows</a><ul>
+<li><a class="reference internal" href="#eclipse-installation">2.1. Eclipse installation</a></li>
+<li><a class="reference internal" href="#jre-setup">2.2. JRE Setup</a></li>
+<li><a class="reference internal" href="#zookeeper-installation">2.3. ZooKeeper Installation</a></li>
+<li><a class="reference internal" href="#setting-up-kafka">2.4. Setting Up Kafka</a></li>
+<li><a class="reference internal" href="#running-a-kafka-server">2.5. Running a Kafka Server</a></li>
+<li><a class="reference internal" href="#setting-up-postgresql">2.6. Setting up PostgreSQL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#linux">3. Linux</a></li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="introduction.html" title="previous chapter">1. Introduction</a></li>
+      <li>Next: <a href="hardwareRequirement.html" title="next chapter">1. Java 8 System Requirements</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/onepageTutorial.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NECTI + NLE.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/onepageTutorial.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
