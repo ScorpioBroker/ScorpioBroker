@@ -1,3 +1,86 @@
+***********************************
+Starting Scorpio via docker-compose 
+***********************************
+
+Start commands to copy
+######################
+
+Looking for the easiest way to start Scorpio? This is it.
+::
+
+	curl https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development/docker-compose-aaio.yml
+	sudo docker-compose -f docker-compose-aaio.yml up
+
+
+Introduction
+############
+The easiest way to start Scorpio is to use docker-compose. We provide 2 main docker-compose files which rely on dockerhub. 
+docker-compose-aaio.yml and docker-compose-dist.yml. You can use this files directly as they are to start Scorpio
+When you want to run Scorpio in the distributed variant exchange the yml file in the command above.
+
+docker-compose-aaio.yml
+#######################
+
+AAIO here stands for almost all in one. In this variant the core components of Scorpio and the Spring Cloud components are started within one container. Additional containers are only Kafka and Postgres. For testing and small to medium size deployments this is most likely what you want to use.
+
+docker-compose-dist.yml
+#######################
+
+In this variant each Scorpio component is started in a different container. This makes it highly flexible and allows you to replace individual components or to start new instances of some core components. 
+
+Configure docker image via environment variables
+################################################
+
+There are multiple ways to enter environment variables into docker. We will not got through all of them but only through the docker-compose files. However the scorpio relevant parts apply to all these variants. 
+Configuration of Scorpio is done via the Spring Cloud configuration system. For a complete overview of the used parameters and the default values have a look at the application.yml for the AllInOneRunner here, https://github.com/ScorpioBroker/ScorpioBroker/blob/development/AllInOneRunner/src/main/resources/application-aaio.yml.
+To provide a new setting you can provide those via an environment entry in the docker-compose file. The variable we want to set is called spring_args.
+Since we only want to set this option for the Scorpio container we make it a sub part of the Scorpio Container entry like this 
+::
+
+	scorpio:
+	  image: scorpiobroker/scorpio:scorpio-aaio_1.0.0
+	  ports:
+	    - "9090:9090"
+	  depends_on:
+	    - kafka
+	    - postgres
+	  environment:
+	    spring_args: --maxLimit=1000
+
+With this we would set the maximum limit for a query reply to 1000 instead of the default 500.
+
+Be quit! docker
+###############
+
+Some docker containers can be quite noisy and you don't want all of that output. The easy solution is to add this 
+::
+
+	logging:
+      driver: none
+
+in the docker-compose file to respective container config. E.g. to make Kafka quite.
+::
+
+	kafka:
+	  image: wurstmeister/kafka
+	  hostname: kafka
+	  ports:
+	    - "9092"
+	  environment:
+	    KAFKA_ADVERTISED_HOST_NAME: kafka
+	    KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+	    KAFKA_ADVERTISED_PORT: 9092
+	    KAFKA_LOG_RETENTION_MS: 10000
+	    KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
+	  volumes:
+	    - /var/run/docker.sock:/var/run/docker.sock
+	  depends_on:
+	    - zookeeper
+	  logging:
+	    driver: none
+
+
+
 ****************
 Building Scorpio
 ****************
@@ -14,7 +97,7 @@ General Remarks on Building
 
 Further down this document you will get exact build commands/arguments
 for the different flavors. This part will give you an overview on how
-the different arguments 
+the different arguments work.
 
 Maven Profiles
 --------------
