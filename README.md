@@ -122,6 +122,9 @@ For more detailed explaination on NGSI-LD or JSON-LD. Please look at the
 -  [ETSI Primer](https://www.etsi.org/deliver/etsi_gr/CIM/001_099/008/01.01.01_60/gr_CIM008v010101p.pdf)
 -  [JSON-LD website](https://json-ld.org/)
 -  [Scorpio in FIWARE Academy](https://fiware-academy.readthedocs.io/en/latest/core/scorpio/index.html)
+  -  [FIWARE 601: Introduction to Linked Data](https://fiware-tutorials.readthedocs.io/en/latest/linked-data)
+  -  [FIWARE 602: Linked Data Relationships and Data Models](https://fiware-tutorials.readthedocs.io/en/latest/relationships-linked-data)
+
 
 You can find a set of example calls, as a Postman collection, in the Examples folder. These examples use 2 Variables
 
