@@ -31,7 +31,7 @@ The complete list of FIWARE GEs and Incubated FIWARE GEs can be found in the [FI
 ## Content
 
 -   [Background](#background)
--   [Installation](#installation)
+-   [Installation](#installation-and-building)
 -   [Usage](#usage)
 -   [API Walkthrough](#api-walkthrough)
 -   [Tests](#tests)
@@ -49,7 +49,7 @@ NGSI-LD is an open API and data model specification for context management
 
 Scorpio is developed in Java using SpringCloud as microservice framework and Apache Maven as build tool. It requires Apache Kafka as a message bus and Postgres with PostGIS extensions as database.
 
-Information on how to install the software components required by Scorpio can be found in the [Installation Guide](https://github.com/ScorpioBroker/ScorpioBroker/blob/prepare_ge/docs/en/source/installationGuide.rst). For building and running Scorpio, you find instructions in the [Building and Running Scorpio Guide](https://github.com/ScorpioBroker/ScorpioBroker/blob/prepare_ge/docs/en/source/buildScorpio.rst).
+Information on how to install the software components required by Scorpio can be found in the [Installation Guide](docs/en/source/installationGuide.rst). For building and running Scorpio, you find instructions in the [Building and Running Scorpio Guide](docs/en/source/buildScorpio.rst).
 
 ## Usage
 
@@ -109,11 +109,11 @@ Link: <http://<HOSTNAME_OF_WHERE_YOU_HAVE_AN_ATCONTEXT>/aggregatedContext.jsonld
 
 ## API Walkthrough
 
-More detailed examples of what you can do with the NGSI-LD API provided by Scorpio can be found in the [API Walkthrough](https://github.com/ScorpioBroker/ScorpioBroker/blob/prepare_ge/docs/en/source/API_walkthrough.rst).
+More detailed examples of what you can do with the NGSI-LD API provided by Scorpio can be found in the [API Walkthrough](docs/en/source/API_walkthrough.rst).
 
 ## Tests
 Scorpio has two sets of tests. We use JUnit for unit tests and the FIWARE NGSI-LD Testsuite, which is npm test based, for system tests.
-Further details about testing can be found in the [Testing Guide](https://github.com/ScorpioBroker/ScorpioBroker/blob/prepare_ge/docs/en/source/testing.rst).
+Further details about testing can be found in the [Testing Guide](docs/en/source/testing.rst).
 
 ## Further resources
 
@@ -159,5 +159,6 @@ If there is a dispute to be resolved we as owners of this repo have the final wo
 ## License
 
 Scorpio is licensed under [BSD-4-Clause](https://spdx.org/licenses/BSD-4-Clause.html).
+For contributions this [contribution license](CONTRIBUTING.md) applies.
 
 © 2020 NEC
