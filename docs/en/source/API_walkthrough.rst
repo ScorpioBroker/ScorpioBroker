@@ -1,9 +1,7 @@
-******************************
-FIWARE NGSI-LD API WALKTHROUGH
-******************************
-
+************
 INTRODUCTION
-############
+************
+
 This walkthrough adopts a practical approach that we hope will help our readers to get familiar with NGSI-LD in general and the Scorpio Broker in particular - and have some fun in the process :).
 
 The walkthrough is based on the NGSI-LD Specification, that can be found in here [https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf]. --> will become gs_CIM009v010301p.pdf soon ...
