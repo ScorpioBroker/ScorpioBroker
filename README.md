@@ -157,4 +157,4 @@ If there is a dispute to be resolved we as owners of this repo have the final wo
 
 Scorpio is licensed under [BSD-4-Clause](https://spdx.org/licenses/BSD-4-Clause.html).
 
-© 2019 NEC
+© 2020 NEC
