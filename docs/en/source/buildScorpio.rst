@@ -79,11 +79,59 @@ in the docker-compose file to respective container config. E.g. to make Kafka qu
 	  logging:
 	    driver: none
 
+************************
+Configuration Parameters
+************************
+
+Scorpio uses the Spring Cloud/Boot configuration system. This is done via the application.yml files in the corresponding folders.
+The AllInOneRunner has a complete set of all available configuration options in them.
+
+Those can be overwriten via the command line or in the docker case as described above.
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|Config Option    |Description                                    |Default Value                                                                 |
++=================+===============================================+==============================================================================+
+|atcontext.url    |the url to be used for the internal context    |http://localhost:9090/ngsi-ld/contextes/                                      |
+|                 |server                                         |                                                                              |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|bootstrap.servers|the host and port of the internal kafka        |kafka:9092 (default used for docker)						 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|broker.id a      |unique id for the broker. needed for federation|Broker1									 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|broker.parent.   |url for the parent broker in a federation setup|SELF (meaning no federation)							 |
+|location.url     |						  |										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|broker.          |GeoJSON description of the coverage. used for  |empty									 |
+|geoCoverage      |registration in a federation setup.            |										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|defaultLimit     |The default limit for a query if no limit is   |50										 |
+|                 |provided					  |										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|maxLimit         |The maximum number of results in a query       |500										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|reader.datasource|If you change the postgres setup here you set  |ngb										 |
+|.hikari.password |the password					  |										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|reader.datasource|JDBC URL to postgres                           |jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_reader |
+|.hikari.url      |						  |										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|reader.datasource|username for the postgres db                   |ngb										 |
+|.hikari.username |						  |										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|writer.datasource|If you change the postgres setup here you set  |ngb										 |
+|.hikari.password |the password					  |										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|writer.datasource|JDBC URL to postgres                           |jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_writer |
+|.hikari.url      |						  |										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
+|writer.datasource|username for the postgres db                   |ngb						        			 |
+|.hikari.username |						  |										 |
++-----------------+-----------------------------------------------+------------------------------------------------------------------------------+
 
 
-****************
-Building Scorpio
-****************
+
+****************************
+Building Scorpio from source
+****************************
 
 Scorpio is developed in Java using SpringCloud as microservice framework
 and Apache Maven as build tool. Some of the tests require a running
