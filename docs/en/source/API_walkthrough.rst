@@ -19,10 +19,14 @@ STARTING THE SCORPIO BROKER FOR THE TUTORIALS
 #############################################
 In order to start the broker we recommend to use docker-compose. Get the docker-compose file from the github repo of Scorpio.
 ::
+
 	curl https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development/docker-compose-aaio.yml 
+
 and start the container with 
 ::
+
 	sudo docker-compose -f docker-compose-aaio.yml up
+
 You can also start the broker without docker. For further instructions please refer to the readme https://github.com/ScorpioBroker/ScorpioBroker/blob/development/README.md 
 
 
@@ -75,6 +79,7 @@ EOF
 
 Check that curl is installed in your system using:
 ::
+
 	which curl
 
 
@@ -91,6 +96,7 @@ NGSI-LD builds upon JSON-LD. Coming from JSON-LD there is the concecpt of a mand
 "Property": "https://uri.etsi.org/ngsi-ld/Property".
 @context entries can also be linked in via a URL in a JSON array. You can also mix this up, so this is perfectly fine.
 ::
+
 	{
 		"@context": [{
 			"myshortname": "urn:mylongname"
@@ -98,6 +104,7 @@ NGSI-LD builds upon JSON-LD. Coming from JSON-LD there is the concecpt of a mand
 		"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
 		]
 	}
+
 NGSI-LD has a core context made available at https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld. Even though it is highly recommended to always provide a full entry of all used @context entries, Scorpio and other NGSI-LD brokers will inject the core context on any entry where it is missing.
 
 APPLICAITON/JSON and APPLICATION/LD+JSON
@@ -116,6 +123,7 @@ ENTITY CREATION
 Assuming a fresh start we have an empty Scorpio Broker.
 First, we are going to create house2:smartrooms:room1. Let's assume that at entity creation time, temperature is 23 ?C and it is part of smartcity:houses:house2.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 		{
 	  "id": "house2:smartrooms:room1",
@@ -136,6 +144,7 @@ First, we are going to create house2:smartrooms:room1. Let's assume that at enti
 	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
 	}
 	EOF
+
 Apart from the id and type fields (that define the ID and type of the entity), the payload contains a set of attributes. As you can see, there are two types of attributes. Properties and Relationships. Properties directly provide a value of an attribute. Additionally there is an optional parameter unitCode which can be used to better describe the value using unit codes described in UN/CEFACT Common Codes for Units of Measurement. 
 UnitCodes should be seen as an aditional metadata provided by the producer. They are not restrictive. There is no validation on the value field.
 
@@ -145,6 +154,7 @@ Upon receipt of this request, Scorpio creates the entity in its internal databas
 
 Next, let's create house2:smartrooms:room2 in a similar way.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "house2:smartrooms:room2",
@@ -168,6 +178,7 @@ Next, let's create house2:smartrooms:room2 in a similar way.
 
 Now to complete this setup we are creating an Entity describing our house with the id smartcity:houses:house2.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 		"id": "smartcity:houses:house2",
@@ -215,11 +226,14 @@ NGSI-LD has two ways to get entities. You can either receive a specific entity u
 
 If we want to just get the house in our example we would do a GET request like this.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/smartcity%3Ahouses%3Ahouse2 -s -S -H 'Accept: application/ld+json' 
+
 Mind the url encoding here, i.e. ':' gets replaced by %3A. For consistency you should always encode your URLs. 
 
 Since we didn't provide our own @context in this request, only the parts of the core context will be replaced in the reply.
 ::
+
 	{
 		"id": "smartcity:houses:house2",
 		"type": "urn:mytypes:house",
@@ -249,12 +263,14 @@ Since we didn't provide our own @context in this request, only the parts of the 
 		}
 		"@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
 	}
+
 As you can see entrance was compacted properly since it is was prefixed from the default context specified in the core context.
 
 Assuming we are hosting our own @context file on a webserver, we can provide it via the 'Link' header.
 For convience we are using pastebin in this example 
 Our context looks like this.
 ::
+
 	{
 		"@context": [{
 			"House": "urn:mytypes:house",
@@ -264,11 +280,15 @@ Our context looks like this.
 			"isPartOf": "myuniqueuri:isPartOf"
 		}, "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
 	}
+
 We repeat this call providing our @context via the 'Link' like this 
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/smartcity%3Ahouses%3Ahouse2 -s -S -H 'Accept: application/ld+json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' 
+
 The reply now looks like this.
 ::
+
 	{
 		"id": "smartcity:houses:house2",
 		"type": "House",
@@ -298,14 +318,18 @@ The reply now looks like this.
 		},
 		"@context": [ "https://pastebin.com/raw/Mgxv2ykn" ]
 	}
+	
 Since we provide the core context in our own @context it is not added to the result.
 From here on we will use the custom @context so we can use the short names in all of our requests.
 
 You can also request an entity with a single specified attribute, using the attrs parameter. For example, to get only the location:
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/smartcity%3Ahouses%3Ahouse2/?attrs=location -s -S -H 'Accept: application/ld+json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' 
+
 Response:
 ::
+
 	{
 		"id": "smartcity:houses:house2",
 		"type": "House",
@@ -325,6 +349,7 @@ QUERY
 The second way to retrieve information is the NGSI-LD query. 
 For this example we first add a new Room which belongs to another house.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "house99:smartrooms:room42",
@@ -348,11 +373,13 @@ For this example we first add a new Room which belongs to another house.
 
 Let's assume we want to retrieve all the rooms in Scorpio. To do that we do a GET request like this
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/?type=Room -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 Note that this request has the accept header application/json, i.e. the link to the @context is returned in a link header.
 The result is
 ::
+
 	[
 	{
 	  "id": "house2:smartrooms:room1",
@@ -415,10 +442,12 @@ NGSI-LD provides a lot of ways to filter Entities from query results (and subscr
 Since we are only interested in our smartcity:houses:house2, we are using the 'q' filter on the Relatioship isPartOf. 
 (URL encoding "smartcity:houses:house2" becomes %22smartcity%3Ahouses%3Ahouse2%22)
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22 -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 The results now looks like this.
 ::
+	
 	[
 	{
 	  "id": "house2:smartrooms:room1",
@@ -459,16 +488,20 @@ The results now looks like this.
 
 Now an alternative way to get the same result would be using the idPattern parameter, which allows you to use regular expressions. This is possible in this case since we structured our IDs for the rooms.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&idPattern=house2%3Asmartrooms%3Aroom.%2A -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
-(house2%3Asmartrooms%3Aroom.%2A == house2:smartrooms:room.*)
+	(house2%3Asmartrooms%3Aroom.%2A == house2:smartrooms:room.*)
 
 LIMIT THE ATTRIBUTES
 ####################
 
 Additionally we now want to limit the result to only give us the temperature. This is done by using the attrs parameter. Attrs takes a comma seperated list. In our case since it's only one entry it looks like this.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22\&attrs=temperature -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+
 ::
+
 	[
 	{
 	  "id": "house2:smartrooms:room1",
@@ -503,10 +536,12 @@ KEYVALUES RESULTS
 #################
 Now assuming we want to limit the payload of the request even more since we are really only interested in the value of temperature and don't care about any meta information. This can be done using the keyValues option. KeyValues will return a condenced version of the Entity providing only top level attribute and their respective value or object.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22\&attrs=temperature\&options=keyValues -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 Response:
 ::
+
 	[
 	{
 	  "id": "house2:smartrooms:room1",
@@ -532,10 +567,12 @@ Taking the role of the Context Producer for the temperature for house2:smartroom
 3. Partially updating the value of the temperature.
 4. Appending a new multi value entry to temperature providing the info in degree Kelvin 
 5. Updating the specific multi value entries for temperature and Fahrenheit.
+
 UPDATE ENTITY
 You can basically update every part of an entity with two exceptions. The type and the id are immutable. An update in NGSI-LD overwrites the existing entry. This means if you update an entity with a payload which does not contain a currently existing attribute it will be removed.
 To update our room1 we will do an HTTP POST like this.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1 -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
 	{
 		"temperature": {
@@ -553,13 +590,16 @@ To update our room1 we will do an HTTP POST like this.
 	  }
 	}
 	EOF
+	
 Now this is a bit much payload to update one value and there is a risk that you might accidently delete something and we would only recommend this entity update if you really want to update a bigger part of an entity.
+
 PARTIAL UPDATE ATTRIBUTE
 ########################
 
 To take care of a single attribute update NGSI-LD provides a partial update. This is done by a POST on /entities/<entityId>/attrs/<attributeName>
 In order to update the temperature we do a POST like this 
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/temperature -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
 	{
 		"value": 26,
@@ -571,12 +611,14 @@ In order to update the temperature we do a POST like this
 		}
 	}
 	EOF
+	
 APPEND ATTRIBUTE
 ########################
 
 In order to append a new attribute to an entity you execute an HTTP PATCH command on /entities/<entityId>/attrs/ with the new attribute as payload.
 Append in NGSI-LD by default will overwrite an existing entry. If this is not desired you can add the option parameter with noOverwrite to the URL like this /entities/<entityId>/attrs?options=noOverwrite. Now if we want to add an additional entry for the humidity in room1 we do an HTTP PATCH like this. 
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs -s -S -X PATCH -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
 	{
 		"humidity": {
@@ -589,11 +631,13 @@ Append in NGSI-LD by default will overwrite an existing entry. If this is not de
 		}
 	  }
 	}
+	
 ADD A MULTIVALUE ATTRIBUTE
-########################
+##########################
 
 NGSI-LD also allows us to add new multi value entries. We will do this by adding a unique datesetId. If a datasetId is provided in an append it will only affect the entry with the given datasetId. Adding the temperature in Fahrenheit we do a PATCH call like this.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/temperature -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
 	{
 		"value": 78,8,
@@ -618,6 +662,7 @@ SUBSCRIBING TO ENTITIES
 
 In order to get the temperature of our rooms we will formulate a basic subscription which we can POST to the /ngsi-ld/v1/subscriptions endpoint.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:1",
@@ -654,6 +699,7 @@ NOTIFICATIONS
 
 Assuming that there is a temperature change in all of our rooms we will get 3 independent notifications, one for each change.
 ::
+
 	{
 		"id": "ngsildbroker:notification:-5983263741316604694",
 		"type": "Notification",
@@ -686,7 +732,9 @@ Assuming that there is a temperature change in all of our rooms we will get 3 in
 		"notifiedAt": "2020-08-07T13:53:57.640000Z",
 		"subscriptionId": "urn:subscription:1"
 	}
+
 ::
+
 	{
 		"id": "ngsildbroker:notification:-6853258236957905295",
 		"type": "Notification",
@@ -719,12 +767,12 @@ Assuming that there is a temperature change in all of our rooms we will get 3 in
 		"notifiedAt": "2020-08-07T14:00:12.475000Z",
 		"subscriptionId": "urn:subscription:1"
 	}
+	
 ::
 	{
 		"id": "ngsildbroker:notification:-7761059438747425848",
 		"type": "Notification",
-		"data": [
-			{
+		"data": [{
 				"id": "house99:smartrooms:room42",
 				"type": "urn:mytypes:room",
 				"createdAt": "2020-08-04T13:19:17.512000Z",
@@ -759,6 +807,7 @@ SUBSCRIBING TO ATTRIBUTES
 
 An alternative to get the same result in our setup is using the watchedAttributes parameter in a subscription. 
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:2",
@@ -778,6 +827,7 @@ An alternative to get the same result in our setup is using the watchedAttribute
 This works in our example but you will get notifications everytime a temperature attribute changes. So in a real life scenario probably much more than we wanted.
 You need to have at least the entities parameter (with a valid entry in the array) or the watchedAttributes parameter for a valid subscription. But you can also combine both. So if we want to be notified on every change of "temperature" in a "Room" we subscribe like this.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:3",
@@ -802,6 +852,7 @@ IDPATTERN
 
 As we get now also the "Room" from smartcity:houses:house99 but we are only in interested smartcity:houses:house2 we will use the idPattern parameter to limit the results. This is possible in our case because of our namestructure. 
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:4",
@@ -827,6 +878,7 @@ Q FILTER
 
 Similar to our query we can also use the q filter to achieve this via the isPartOf relationship. Mind here in the body there is no URL encoding.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:5",
@@ -851,6 +903,7 @@ REDUCE ATTRIBUTES
 
 Now since we still get the full Entity in our notifications we want to reduce the number of attributes. This is done by the attributes parameter in the notification entry.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:6",
@@ -873,6 +926,7 @@ Now since we still get the full Entity in our notifications we want to reduce th
 
 As you can see, we now only get the temperature when the temperature changes.
 ::
+
 	{
 		"id": "ngsildbroker:notification:-7761059438747425848",
 		"type": "Notification",
@@ -899,8 +953,10 @@ As you can see, we now only get the temperature when the temperature changes.
 		"notifiedAt": "2020-08-07T14:00:19.897000Z",
 		"subscriptionId": "urn:subscription:6"
 	}
+	
 The attributes and the watchedAttributes parameter can very well be different. If you want to know in which house a temperature changes you would subscribe like this
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:7",
@@ -925,6 +981,7 @@ GEOQ FILTER
 
 An additional filter is the geoQ parameter allowing you to define a geo query. If, for instance, we want to be informend about all Houses near to a point we would subscribe like this.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:8",
@@ -957,6 +1014,7 @@ Practically they represent settings for Scorpios notifier (notifierInfo) and add
 notifierInfo is currently only used for MQTT. 
 If you want to, for instance, pass on an oauth token you would do a subscription like this 
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:9",
@@ -982,6 +1040,7 @@ If you have a running MQTT bus available, you can also get notifications to a to
 An MQTT bus address must be provided via the URI notation of MQTT. mqtt[s]://[<username>:<password>@]<mqtt_host_name>:[<mqtt_port>]/<topicname>[[/<subtopic>]...]
 So a subscription would generally look like this.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:10",
@@ -1008,6 +1067,7 @@ Currently supported is
 "MQTT-QoS" with possible values 0, 1, 2. Default 1.
 Changing this to version 3.1.1 and QoS to 2 you would subscribe like this 
 ::
+
 	curl localhost:9090/ngsi-ld/v1/subscriptions -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	{
 	  "id": "urn:subscription:11",
@@ -1032,6 +1092,7 @@ MQTT NOTIFICATIONS
 Since MQTT is missing the header that HTTP callbacks have the format of a notification is slightly changed. Consisting of a metadata and a body entry. 
 The metadata holds what is normally delivered via HTTP headers and the body contains the normal notification payload.
 ::
+
 	{
 		"metadata": {
 			"Content-Type": "application/json"
@@ -1071,6 +1132,7 @@ The metadata holds what is normally delivered via HTTP headers and the body cont
 					"subscriptionId": "urn:subscription:1"
 				}
 	}
+	
 ****************
 BATCH OPERATIONS
 ****************
@@ -1079,6 +1141,7 @@ NGSI-LD defines 4 endpoints for 4  batch operations. You can create a batch of E
 Create, update and upsert are basically an array of the corresponding single Entity operations.
 Assuming we want to create a few rooms for house 99 we would create the entities like this
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entityOperations/create -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	[{
 			"id": "house99:smartrooms:room1",
@@ -1135,6 +1198,7 @@ Assuming we want to create a few rooms for house 99 we would create the entities
 
 Now as we did only add one temperature entry we are going to upsert the temperature for all the rooms like this.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entityOperations/upsert -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
 	[{
 			"id": "house99:smartrooms:room1",
@@ -1201,6 +1265,7 @@ Now as we did only add one temperature entry we are going to upsert the temperat
 
 Now as we are at the end let's clean up with a batch delete. A batch delete is an array of Entity IDs you want to delete.
 ::
+
 	curl localhost:9090/ngsi-ld/v1/entityOperations/delete -s -S -H 'Content-Type: application/json' -d @- <<EOF
 	[
 		"house99:smartrooms:room1",
@@ -1220,6 +1285,7 @@ For all intents and purposes an NGSI-LD Broker is by itself an NGSI-LD Context S
 Now in order to discover these Context Sources, the Context Registry is used, where Context Sources are registered in Scorpio.
 Assuming we have an external Context Source which provides information about another house, we register it in the system like this:
 ::
+
 	{
 	  "id": "urn:ngsi-ld:ContextSourceRegistration:csr1a3458",
 	  "type": "ContextSourceRegistration",
@@ -1241,7 +1307,9 @@ Now Scorpio will take the registered Context Sources which are have a matching r
 You can also independently query or subscribe to the context registry entries, quite similar to the normal query or subscription, and interact with the Context Sources independently.
 Now if we query for all registrations which provide anything of type Room like this 
 ::
+
 	curl localhost:9090/ngsi-ld/v1/csourceRegistrations/?type=Room -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' 
+
 we will get back our original registration and everything that has been registered with the type Room.
 
 CONTEXT REGISTRY USAGE FOR NORMAL QUERIES & SUBSCRIPTIONS
@@ -1252,6 +1320,7 @@ As you can see there is an entities entry similar to the one in the subscription
 If you register a type, Scorpio will only forward a request which is matching that type. Similarly the location is used to decide if a query with geo query part should be forwarded. While you shouldn't overdo it, the more details you provide in a registration the more efficiently your system will be able to determine to which context source a request should be forwarded to.
 Below you see an example with more properties set.
 ::
+
 	{
 	  "id": "urn:ngsi-ld:ContextSourceRegistration:csr1a3459",
 	  "type": "ContextSourceRegistration",
