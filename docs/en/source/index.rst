@@ -49,7 +49,7 @@ Scorpio broker implements the NGSI APIs through which the producers and consumer
     troubleshooting.rst
 .. toctree::
     :maxdepth: 1
-    :caption: FIWARE NGSI-LD API WALKTHROUGH
+    :caption: FIWARE NGSI-LD API Walkthrough
     :numbered:
 
     API_walkthrough.rst

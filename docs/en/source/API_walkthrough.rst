@@ -1,5 +1,5 @@
 ************
-INTRODUCTION
+Introduction
 ************
 
 This walkthrough adopts a practical approach that we hope will help our readers to get familiar with NGSI-LD in general and the Scorpio Broker in particular - and have some fun in the process :).
@@ -13,8 +13,9 @@ The main section is about context management. It describes the basic context bro
 It is recommended to get familiar with the theoretical concepts on which the NGSI-LD model is based before starting. E.g. entities, properties, relationships etc. Have a look at the FIWARE documentation about this, e.g. this public presentation. [... find suitable presentation]
 
 
-STARTING THE SCORPIO BROKER FOR THE TUTORIALS
+Starting the Scorpio Broker for the tutorials
 #############################################
+
 In order to start the broker we recommend to use docker-compose. Get the docker-compose file from the github repo of Scorpio.
 ::
 
@@ -28,8 +29,9 @@ and start the container with
 You can also start the broker without docker. For further instructions please refer to the readme https://github.com/ScorpioBroker/ScorpioBroker/blob/development/README.md 
 
 
-ISSUING COMMANDS TO THE BROKER
+Issuing commands to the broker
 ##############################
+
 To issue requests to the broker, you can use the curl command line tool. curl is chosen because it is almost ubiquitous in any GNU/Linux system and simplifies including examples in this document that can easily be copied and pasted. Of course, it is not mandatory to use it, you can use any REST client tool instead (e.g. RESTClient). Indeed, in a real case, you will probably interact with the Scorpio Broker using a programming language library implementing the REST client part of your application.
 
 The basic patterns for all the curl examples in this document are the following:
@@ -81,15 +83,17 @@ Check that curl is installed in your system using:
 	which curl
 
 
-NGSI-LD DATA IN 3 SENTENCES
+NGSI-LD data in 3 sentences
 ###########################
+
 NGSI-LD is based on JSON-LD. 
 Your toplevel entries are NGSI-LD Entities.
 Entities can have Properties and Relationships and Properties and Relationships can themselves also have Properties and Relationships (meta information).
 All keys in the JSON-LD document must be URIs, but there is a way to shorten it.
 
-@CONTEXT
+@context
 ########
+
 NGSI-LD builds upon JSON-LD. Coming from JSON-LD there is the concecpt of a mandatory @context entry which is used to 'translate' between expanded full URIs and a compacted short form of the URI. e.g. 
 "Property": "https://uri.etsi.org/ngsi-ld/Property".
 @context entries can also be linked in via a URL in a JSON array. You can also mix this up, so this is perfectly fine.
@@ -105,19 +109,22 @@ NGSI-LD builds upon JSON-LD. Coming from JSON-LD there is the concecpt of a mand
 
 NGSI-LD has a core context made available at https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld. Even though it is highly recommended to always provide a full entry of all used @context entries, Scorpio and other NGSI-LD brokers will inject the core context on any entry where it is missing.
 
-APPLICAITON/JSON and APPLICATION/LD+JSON
+application/json and application/ld+json
 ########################################
+
 You can provide and receive data in two different ways. The main difference between application/json and application/ld+json is where you provide or receive the mandatory @context entry. If you set the accept header or the content-type header to application/ld+json the @context entry is embedded in the JSON document as a root level entry. If it is set to application/json the @context has to be provided in a link in the header entry Link like this.
 <https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 
-CONTEXT MANAGEMENT
+Context Management
 ##################
+
 To show the use of @context, most examples in this tutorial will be done as application/ld+json having the @context entries in the body of the payload.
 At the end of this section, you will have the basic knowledge to create applications (both context producers and consumers) using the Scorpio Broker with context management operations.
 
 ***************
-ENTITY CREATION
+Entity creation
 ***************
+
 Assuming a fresh start we have an empty Scorpio Broker.
 First, we are going to create house2:smartrooms:room1. Let's assume that at entity creation time, temperature is 23 ?C and it is part of smartcity:houses:house2.
 ::
@@ -216,8 +223,9 @@ As you might have seen, we haven't provided an @context entry for 'entrance' and
 
 Apart from simple values corresponding to JSON datatypes (i.e. numbers, strings, booleans, etc.) for attribute values, complex structures or custom metadata can be used. 
 
-QUERYING & RECEIVING ENTITIES
-#############################
+*****************************
+Querying & receiving entities
+*****************************
 
 Taking the role of a consumer application, we want to access the context information stored in Scorpio. 
 NGSI-LD has two ways to get entities. You can either receive a specific entity using a GET /ngsi-ld/v1/entities/{id} request. The alternative is to query for a specific set of entities using the NGSI-LD query language.
@@ -341,7 +349,7 @@ Response:
 		"@context": [ "https://pastebin.com/raw/Mgxv2ykn" ]
 	}
 
-QUERY
+Query
 #####
 
 The second way to retrieve information is the NGSI-LD query. 
@@ -433,7 +441,7 @@ The result is
 	}
 	]
 
-FILTERING
+Filtering
 #########
 
 NGSI-LD provides a lot of ways to filter Entities from query results (and subscription notifications respectively). 
@@ -490,7 +498,7 @@ Now an alternative way to get the same result would be using the idPattern param
 	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&idPattern=house2%3Asmartrooms%3Aroom.%2A -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 	(house2%3Asmartrooms%3Aroom.%2A == house2:smartrooms:room.*)
 
-LIMIT THE ATTRIBUTES
+Limit the attributes
 ####################
 
 Additionally we now want to limit the result to only give us the temperature. This is done by using the attrs parameter. Attrs takes a comma seperated list. In our case since it's only one entry it looks like this.
@@ -530,8 +538,9 @@ Additionally we now want to limit the result to only give us the temperature. Th
 	}
 	]
 
-KEYVALUES RESULTS
+KeyValues results
 #################
+
 Now assuming we want to limit the payload of the request even more since we are really only interested in the value of temperature and don't care about any meta information. This can be done using the keyValues option. KeyValues will return a condenced version of the Entity providing only top level attribute and their respective value or object.
 ::
 
@@ -554,7 +563,7 @@ Response:
 	]
 
 *******************************************
-UPDATING AN ENTITY & APPENDING TO AN ENTITY
+Updating an entity & appending to an entity
 *******************************************
 
 NGSI-LD allows you to update entities (overwrite the current entry) but also to just append new attributes. 
@@ -566,7 +575,9 @@ Taking the role of the Context Producer for the temperature for house2:smartroom
 4. Appending a new multi value entry to temperature providing the info in degree Kelvin 
 5. Updating the specific multi value entries for temperature and Fahrenheit.
 
-UPDATE ENTITY
+Update Entity
+#############
+
 You can basically update every part of an entity with two exceptions. The type and the id are immutable. An update in NGSI-LD overwrites the existing entry. This means if you update an entity with a payload which does not contain a currently existing attribute it will be removed.
 To update our room1 we will do an HTTP POST like this.
 ::
@@ -591,7 +602,7 @@ To update our room1 we will do an HTTP POST like this.
 	
 Now this is a bit much payload to update one value and there is a risk that you might accidently delete something and we would only recommend this entity update if you really want to update a bigger part of an entity.
 
-PARTIAL UPDATE ATTRIBUTE
+Partial update attribute
 ########################
 
 To take care of a single attribute update NGSI-LD provides a partial update. This is done by a POST on /entities/<entityId>/attrs/<attributeName>
@@ -610,8 +621,8 @@ In order to update the temperature we do a POST like this
 	}
 	EOF
 	
-APPEND ATTRIBUTE
-########################
+Append attribute
+################
 
 In order to append a new attribute to an entity you execute an HTTP PATCH command on /entities/<entityId>/attrs/ with the new attribute as payload.
 Append in NGSI-LD by default will overwrite an existing entry. If this is not desired you can add the option parameter with noOverwrite to the URL like this /entities/<entityId>/attrs?options=noOverwrite. Now if we want to add an additional entry for the humidity in room1 we do an HTTP PATCH like this. 
@@ -630,7 +641,7 @@ Append in NGSI-LD by default will overwrite an existing entry. If this is not de
 	  }
 	}
 	
-ADD A MULTIVALUE ATTRIBUTE
+Add a multivalue attribute
 ##########################
 
 NGSI-LD also allows us to add new multi value entries. We will do this by adding a unique datesetId. If a datasetId is provided in an append it will only affect the entry with the given datasetId. Adding the temperature in Fahrenheit we do a PATCH call like this.
@@ -650,12 +661,12 @@ NGSI-LD also allows us to add new multi value entries. We will do this by adding
 	EOF
 
 *************
-SUBSCRIPTIONS
+Subscriptions
 *************
 
 NGSI-LD defines a subscription interface which allows you to get notifications on Entities. Subscriptions are on change subscriptions. This means you will not get a notification on an initial state of an entity as the result of a subscription. Subscriptions at the moment issue a notification when a matching Entity is created, updated or appended to. You will not get a notification when an Entity is deleted.
 
-SUBSCRIBING TO ENTITIES
+Subscribing to entities
 #######################
 
 In order to get the temperature of our rooms we will formulate a basic subscription which we can POST to the /ngsi-ld/v1/subscriptions endpoint.
@@ -680,20 +691,19 @@ In order to get the temperature of our rooms we will formulate a basic subscript
 
 As you can see entities is an array, which allows you to define multiple matching criteria for a subscription. You can subscribe by id or idPattern (regex) if you want. However a type is always mandatory in an entities entry.
 
-NOTIFICATION ENDPOINT
+Notification Endpoint
 #####################
 
 NGSI-LD currently supports two types of endpoints for subscriptions. HTTP(S) and MQTT(S). In the notification entry of a subscription you can define your endpoint with a uri and an accept MIME type. As you can see we are using an HTTP endpoint. 
 
-TESTING NOTIFICATION ENDPOINT
+Testing notification endpoint
 #############################
 
 For this example we are using Post Test Server V2 (http://ptsv2.com/). This is a public service without auth on our example. So be careful with your data. Also this service is meant for testing and debugging and NOT more. So be nice! They are giving us a good tool for development.
 Normally you can use the example just as is. However if for some reason our endpoint is deleted please just go to ptsv2.com and click on "New Random Toilet" and replace the endpoint with the POST URL provided there.
 
-*************
-NOTIFICATIONS
-*************
+Notifications
+#############
 
 Assuming that there is a temperature change in all of our rooms we will get 3 independent notifications, one for each change.
 ::
@@ -800,7 +810,8 @@ Assuming that there is a temperature change in all of our rooms we will get 3 in
 	}
 
 As you can see we are getting now always the full Entity matching the type we defined in the subscription.
-SUBSCRIBING TO ATTRIBUTES
+
+Subscribing to attributes
 #########################
 
 An alternative to get the same result in our setup is using the watchedAttributes parameter in a subscription. 
@@ -845,7 +856,8 @@ You need to have at least the entities parameter (with a valid entry in the arra
 	EOF
 
 We can now limit further down what we exactly we want to get in the notification very similar to the query.
-IDPATTERN
+
+IdPattern
 #########
 
 As we get now also the "Room" from smartcity:houses:house99 but we are only in interested smartcity:houses:house2 we will use the idPattern parameter to limit the results. This is possible in our case because of our namestructure. 
@@ -871,7 +883,7 @@ As we get now also the "Room" from smartcity:houses:house99 but we are only in i
 	EOF
  
 
-Q FILTER
+Q Filter
 ########
 
 Similar to our query we can also use the q filter to achieve this via the isPartOf relationship. Mind here in the body there is no URL encoding.
@@ -896,7 +908,7 @@ Similar to our query we can also use the q filter to achieve this via the isPart
 	}
 	EOF
 
-REDUCE ATTRIBUTES
+Reduce attributes
 #################
 
 Now since we still get the full Entity in our notifications we want to reduce the number of attributes. This is done by the attributes parameter in the notification entry.
@@ -974,7 +986,7 @@ The attributes and the watchedAttributes parameter can very well be different. I
 	}
 	EOF
 
-GEOQ FILTER
+GeoQ filter
 ###########
 
 An additional filter is the geoQ parameter allowing you to define a geo query. If, for instance, we want to be informend about all Houses near to a point we would subscribe like this.
@@ -1004,7 +1016,7 @@ An additional filter is the geoQ parameter allowing you to define a geo query. I
 	}
 	EOF
 
-ADDITIONAL ENDPOINT PARAMETERS
+Additional endpoint parameters
 ##############################
 
 The notification entry has two additional optional entries. receiverInfo and notifierInfo. They are both an array of a simple key value set.
@@ -1031,7 +1043,7 @@ If you want to, for instance, pass on an oauth token you would do a subscription
 	}
 	EOF
 
-MQTT ENDPOINT
+MQTT endpoint
 #############
 
 If you have a running MQTT bus available, you can also get notifications to a topic on MQTT. However the setup of the MQTT bus and the creation of the topic is totaly outside of the responsibilities of an NGSI-LD broker.
@@ -1056,7 +1068,7 @@ So a subscription would generally look like this.
 	}
 	EOF
 
-MQTT PARAMETERS
+MQTT parameters
 ###############
 
 MQTT has a few client settings which have to be configured. We do have some reasonable defaults here, if you don't provide it, but to be sure you better configure the client completly. These params are provided via the notifierInfo entry in endpoint.
@@ -1084,7 +1096,7 @@ Changing this to version 3.1.1 and QoS to 2 you would subscribe like this
 	}
 	EOF
 
-MQTT NOTIFICATIONS
+MQTT notifications
 ##################
 
 Since MQTT is missing the header that HTTP callbacks have the format of a notification is slightly changed. Consisting of a metadata and a body entry. 
@@ -1132,7 +1144,7 @@ The metadata holds what is normally delivered via HTTP headers and the body cont
 	}
 	
 ****************
-BATCH OPERATIONS
+Batch operations
 ****************
 
 NGSI-LD defines 4 endpoints for 4  batch operations. You can create a batch of Entity creations, updates, upserts or deletes.
@@ -1274,7 +1286,7 @@ Now as we are at the end let's clean up with a batch delete. A batch delete is a
 	EOF
 
 ****************
-CONTEXT REGISTRY
+Context Registry
 ****************
 
 Next to the create, append, update interfaces which are used by Context Producers there is another concept in NGSI-LD which is the Context Source.
@@ -1310,7 +1322,7 @@ Now if we query for all registrations which provide anything of type Room like t
 
 we will get back our original registration and everything that has been registered with the type Room.
 
-CONTEXT REGISTRY USAGE FOR NORMAL QUERIES & SUBSCRIPTIONS
+Context Registry usage for normal queries & subscriptions
 #########################################################
 
 A context registry entry can have multiple entries which are taken into consideration when normal queries or subscriptions arrive in Scorpio.
