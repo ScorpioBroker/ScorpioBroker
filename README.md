@@ -12,7 +12,7 @@
 
 Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India. It implements the full [NGSI-LD API](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf) as specified by the ETSI Industry Specification Group on cross cutting Context Information Management ([ETSI ISG CIM](https://www.etsi.org/committee/cim)).
 
-The NGSI-LD API enables the management, access and discovery of context information. Context information consists of *entities* (e.g. a building) and their *properties* (e.g. address and geographic location) and *relationships* (e.g. owner).
+The NGSI-LD API enables the management, access and discovery of context information. Context information consists of *entities* (e.g. a building) and their *properties* (e.g. address and geographic location) and *relationships* (e.g. owner). Thus Scorpio enables applications and services to request context information – what they need, when they need it and how they need it.
 
 The functionalities of the NGSI-LD API include:
 - Create, update, append and delete context infomration.
@@ -20,7 +20,7 @@ The functionalities of the NGSI-LD API include:
 - Subscribe to changes in context information and receive asynchronous notifications.
 - Register and discover sources of context information, which allows building distributed and federated deployments.
 
-Scorpio is a FIWARE Generic Enabler. Therefore, it can be integrated as part of any platform “Powered by FIWARE”. FIWARE is a curated framework of open source platform components which can be assembled together with other third-party platform components to accelerate the development of Smart Solutions.
+Scorpio is a FIWARE Generic Enabler. Therefore, it can be integrated as part of any platform “Powered by FIWARE”. FIWARE is a curated framework of open source platform components which can be assembled together with other third-party platform components to accelerate the development of Smart Solutions. The roadmap of this FIWARE GE is described [here](./docs/roadmap.md).
 
 You can find more info at the [FIWARE developers](https://developers.fiware.org/) website and the [FIWARE](https://fiware.org/) website.
 The complete list of FIWARE GEs and Incubated FIWARE GEs can be found in the [FIWARE Catalogue](https://catalogue.fiware.org/).
@@ -42,14 +42,20 @@ The complete list of FIWARE GEs and Incubated FIWARE GEs can be found in the [FI
 
 ## Background
 
-NGSI-LD is an open API and data model specification for context management
-[published by ETSI](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf).
+Scorpio is an NGSI-LD Broker that allows managing and requesting context information. It supports the following functionalities:
+- Context Producers can manage their context – creating, updating, appending and deleting context information. 
+- Context Consumers can request the context information they require, either identifying the entity or discover relevant entities by providing the entity type, possibly filtering according to property value, existing relationship and/or geographic scope provided as a GeoJSON feature. 
+- Two interaction styles are supported, a synchronous query-response, and an asynchronous subscribe / notify, where notifications can be based on a change in property or relationship, or on a fixed time interval. 
+-  Scorpio implements NGSI-LD’s optional temporal interface for requesting historic information, e.g. the property values measured within a specified time interval.
+- Scorpio supports multiple deployment configurations including centralized, distributed and federated ones. In addition to the Context Producers mentioned above, there can be Context Sources that themselves implement the NGSI-LD interface. These Context Sources can register themselves with the information they can provide on request (not the information (values) itself). A Scorpio Broker in a distributed setting can then discover the Context Sources that may have information for answering a request based on their registrations, request and aggregate the information from different Context Sources and provide it to the requesting Context Consumer. 
+- In a federated setting the Context Source can itself be an NGSI-LD Broker. Federations can be used to combine information from multiple providers that want to (partially) share information. An important difference is then typically in the granularity of the registration, e.g. “I have information about entities of entity type building within a geographic area”, instead of “I have information about Building A”
+- Scorpio supports all the mentioned deployment configurations. Thus it provides scalability and the possibility of extending scenarios in an evolutionary way. For example two separate deployments can be combined or for scalability reasons different brokers can be used – completely transparent to Context Consumers that can still use a single point of access.
 
 ## Installation and Building
 
 Scorpio is developed in Java using SpringCloud as microservice framework and Apache Maven as build tool. It requires Apache Kafka as a message bus and Postgres with PostGIS extensions as database.
 
-Information on how to install the software components required by Scorpio can be found in the [Installation Guide](docs/en/source/installationGuide.rst). For building and running Scorpio, you find instructions in the [Building and Running Scorpio Guide](docs/en/source/buildScorpio.rst).
+Information on how to install the software components required by Scorpio can be found in the [Installation Guide](./docs/en/source/installationGuide.rst). For building and running Scorpio, you find instructions in the [Building and Running Scorpio Guide](./docs/en/source/buildScorpio.rst).
 
 ## Usage
 
@@ -109,11 +115,11 @@ Link: <http://<HOSTNAME_OF_WHERE_YOU_HAVE_AN_ATCONTEXT>/aggregatedContext.jsonld
 
 ## API Walkthrough
 
-More detailed examples of what you can do with the NGSI-LD API provided by Scorpio can be found in the [API Walkthrough](docs/en/source/API_walkthrough.rst).
+More detailed examples of what you can do with the NGSI-LD API provided by Scorpio can be found in the [API Walkthrough](./docs/en/source/API_walkthrough.rst).
 
 ## Tests
 Scorpio has two sets of tests. We use JUnit for unit tests and the FIWARE NGSI-LD Testsuite, which is npm test based, for system tests.
-Further details about testing can be found in the [Testing Guide](docs/en/source/testing.rst).
+Further details about testing can be found in the [Testing Guide](./docs/en/source/testing.rst).
 
 ## Further resources
 
@@ -132,7 +138,6 @@ You can find a set of example calls, as a Postman collection, in the Examples fo
 - link, which is for the examples providing @context via the Link header. For the examples we host an example @context. Set link to https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/Examples/index.json
 
 ## Acknowledgements
-Part of the development has been founded by the EU in the AUTOPILOT project.
 
 ### EU Acknowledgetment
 This activity has received funding from the European Union’s Horizon 2020 research and innovation programme under Grant Agreement No. 731993 (Autopilot), No. 814918 (Fed4IoT) and No. 767498 (MIDIH, Open Call (MoLe). 
