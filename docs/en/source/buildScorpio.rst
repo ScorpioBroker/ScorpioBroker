@@ -87,6 +87,7 @@ Scorpio uses the Spring Cloud/Boot configuration system. This is done via the ap
 The AllInOneRunner has a complete set of all available configuration options in them.
 
 Those can be overwriten via the command line or in the docker case as described above.
+
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 | Config Option     | Description                                     | Default Value                                                                  | 
 +===================+=================================================+================================================================================+
