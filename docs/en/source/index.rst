@@ -4,7 +4,7 @@ Scorpio Broker
 
 Scorpio broker implements the NGSI APIs through which the producers and consumers can interact with each other. For Example in the typical IoT based room, various sensors like temperature sensors, light sensors, etc are connected to the central application which uses those sensors output and acts as the consumer. There can be a lot of use cases for this central application i.e Scorpio. 
 
-1. Scorpio doesn't encode the data for storing so it can be used as a data lake.
+1. Scorpio used the NGSI-LD API and informaiton model to model entities with their properties and relationships, thus forming a property graph with the enitites as the nodes. It allows finding information by discovering entities, following relationships and filtering according to properties, relationships and related meta-information. For data not directly represented in NGSI-LD like video streams or 3D models, links can be added to the model that allows consumers to directly access this information. In this way, Scorpio can provide a graph-based index to a data lake.
 
 2. Scorpio provides several interfaces for querying the stored data so easily analytics can be done on the stored data. like it can be used to predict the situation of an ecosystem. Example:- In a huge building there can be several fire sensors, temperature sensors, and smoke sensors. In case of a false fire alarm, it can be verified by the collected fire data, temperature data and smoke data of the particular area. 
 
@@ -45,7 +45,12 @@ Scorpio broker implements the NGSI APIs through which the producers and consumer
     systemOverview.rst
     callFlow.rst
     contributionGuideline.md
-    API_walkthrough.rst
     docker.rst
     troubleshooting.rst
+.. toctree::
+    :maxdepth: 1
+    :caption: FIWARE NGSI-LD API Walkthrough
+    :numbered:
+
+    API_walkthrough.rst
     

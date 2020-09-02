@@ -11,3 +11,4 @@ COPY src/main/resources/application-dist.yml ./config/application.yml
 ENV spring_args ""
 
 CMD java -jar $JAR_FILE_RUN ${spring_args}
+
