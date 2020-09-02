@@ -118,8 +118,10 @@ Further details about testing can be found in the [Testing Guide](https://github
 ## Further resources
 
 For more detailed explaination on NGSI-LD or JSON-LD. Please look at the
--  [ETSI Specification](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf) 
+-  [ETSI Specification](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf) 
+-  [ETSI Primer](https://www.etsi.org/deliver/etsi_gr/CIM/001_099/008/01.01.01_60/gr_CIM008v010101p.pdf)
 -  [JSON-LD website](https://json-ld.org/)
+-  [Scorpio in FIWARE Academy](https://fiware-academy.readthedocs.io/en/latest/core/scorpio/index.html)
 
 You can find a set of example calls, as a Postman collection, in the Examples folder. These examples use 2 Variables
 
@@ -133,7 +135,7 @@ Part of the development has been founded by the EU in the AUTOPILOT project.
 This activity has received funding from the European Union’s Horizon 2020 research and innovation programme under Grant Agreement No. 731993 (Autopilot), No. 814918 (Fed4IoT) and No. 767498 (MIDIH, Open Call (MoLe). 
 <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/flag_yellow_low.jpg" width="160">
 - [AUTOPILOT project: Automated driving Progressed by Internet Of Things](https://autopilot-project.eu/) <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/autopilot.png" width="160">
-- [Fed4IoT project: (https://fed4iot.org/)
+- [Fed4IoT project](https://fed4iot.org/)
 - [MIDIH Project](https://midih.eu/), Open Call (MoLe)
 
 ## Credit where credit is due
