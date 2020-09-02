@@ -342,12 +342,13 @@ is False. Set to true to allow all methods. If set to true it will
 override the allowmethods entry
 
 Troubleshooting
-===============
+###############
 
 Missing JAXB dependencies
 -------------------------
 
 When starting the eureka-server you may facing the
+
 **java.lang.TypeNotPresentException: Type javax.xml.bind.JAXBContext not
 present** exception. It's very likely that you are running Java 11 on
 your machine then. Starting from Java 9 package ``javax.xml.bind`` has
