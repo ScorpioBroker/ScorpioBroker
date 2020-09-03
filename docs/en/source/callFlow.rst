@@ -1,6 +1,9 @@
-*******************************
+***************
+Operation flows
+***************
+
 Entity Create/Update/Append
-*******************************
+###########################
 
 .. figure:: figures/flow-1.png
 
@@ -46,9 +49,8 @@ The context for the given payload is being stored by the LDContext resolver serv
 
  6.3.CR manager writes the updates, if any are there, into the Csource Topic.  
 
-*******************************
 Entity Subscription
-*******************************
+###################
 
 .. figure:: figures/flow-2.png
 
@@ -95,9 +97,8 @@ Limitation: In the first release of Scorpio Broker, Csource query is not support
 
 
 
-*******************************
 Query
-*******************************
+#####
 
 .. figure:: figures/flow-3.png
 
@@ -133,9 +134,8 @@ The Figure is showing the operational flow of entity subscription in the Scorpio
 
 
 
-*******************************
 Context Source Registration
-*******************************
+###########################
 
 .. figure:: figures/flow-4.png
 
@@ -170,9 +170,8 @@ The Figure is showing the operational flow of context source registration in the
 
 
 
-*******************************
 Context Source Subscription
-*******************************
+###########################
 
 .. figure:: figures/flow-5.png
 
@@ -207,9 +206,8 @@ The Figure Scorpio Broker Context Source Subscription Flow is showing the operat
 
 
 
-*******************************
 History
-*******************************
+#######
 
 .. figure:: figures/flow-6.png
 

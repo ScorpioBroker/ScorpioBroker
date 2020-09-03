@@ -1,6 +1,6 @@
-*****************************************
-Entity Creation as Hello World
-*****************************************
+*******************
+Hello World example
+*******************
 
 Generally speaking you can Create entities which is like the hello world program for Scorpio Broker by sending an HTTP POST request to *http://localhost:9090/ngsi-ld/v1/entities/* with a payload like this
 

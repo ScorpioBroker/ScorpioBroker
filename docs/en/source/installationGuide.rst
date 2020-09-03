@@ -11,10 +11,10 @@ In order to set-up the environment of Scorpio broker, the following dependency n
 
 
 Windows
-*****************************************
+#######
 
 Eclipse installation
-############################
+********************
 
 - **Download the Eclipse Installer.**:
 
@@ -40,7 +40,7 @@ Eclipse installation
 
 
 JDK Setup
-##############
+*********
 
 - Start the JDK installation and hit the “Change destination folder” checkbox, then click 'Install.'
 
@@ -94,7 +94,7 @@ If your command prompt somewhat looks like the image above, you are good to go. 
 
 
 Setting Up Kafka
-############################
+****************
 
 1. Go to your Kafka config directory. For example:- **C:\kafka_2.11-0.9.0.0\config**
 2. Edit the file “server.properties.”
@@ -106,7 +106,7 @@ Setting Up Kafka
 
 
 Running a Kafka Server
-############################
+**********************
 
 Important: Please ensure that your ZooKeeper instance is up and running before starting a Kafka server.
 
@@ -117,7 +117,7 @@ Important: Please ensure that your ZooKeeper instance is up and running before s
 
 
 Setting up PostgreSQL
-############################
+*********************
 
 Step 1) Go to https://www.postgresql.org/download.
 
@@ -209,5 +209,3 @@ Step 17) You will see the Dashboard
 That's it to Postgre SQL installation.
 
 
-Linux
-*****************************************

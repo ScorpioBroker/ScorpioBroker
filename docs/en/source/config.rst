@@ -1,7 +1,12 @@
+*****************************
+Config parameters for Scorpio
+*****************************
+
 This section covers all the basic configuration needed for the Scorpio broker. This can be used as the basic template for the various micro-services of the Scorpio.
 
 Description of various configuration parameters
-**************************************************
+###############################################
+
 1. server:- In this, the user can define the various server related parameters like **port** and the maximum **number of threads** for the internal tomcat server. This is related to the microservice communication. Be careful with changes.
 
 .. code-block:: JSON
