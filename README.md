@@ -131,6 +131,9 @@ For more detailed explaination on NGSI-LD or JSON-LD. Please look at the
   -  [FIWARE 601: Introduction to Linked Data](https://fiware-tutorials.readthedocs.io/en/latest/linked-data)
   -  [FIWARE 602: Linked Data Relationships and Data Models](https://fiware-tutorials.readthedocs.io/en/latest/relationships-linked-data)
 
+-  [FIWARE global summit: The Scorpio NGSI-LD Broker. Features and supported architectures](https://www.slideshare.net/FI-WARE/fiware-global-summit-the-scorpio-ngsild-broker-features-and-supported-architectures)
+-  [FIWARE global summit: NGSI-LD. An evolution from NGSI V2](https://www.slideshare.net/FI-WARE/fiware-global-summit-ngsild-an-evolution-from-ngsiv2)
+
 
 You can find a set of example calls, as a Postman collection, in the Examples folder. These examples use 2 Variables
 
