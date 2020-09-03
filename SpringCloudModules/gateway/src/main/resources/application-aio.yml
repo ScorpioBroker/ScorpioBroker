@@ -98,6 +98,11 @@ zuul:
       path: /health/**
       serviceId: aio-runner
       stripPrefix: false
+    version:
+      sensitiveHeaders:
+      path: /version/**
+      serviceId: aio-runner
+      stripPrefix: false
     corecontext:
       sensitiveHeaders:
       path: /corecontext/**
