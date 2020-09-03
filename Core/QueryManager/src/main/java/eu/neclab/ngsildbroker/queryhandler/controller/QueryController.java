@@ -62,7 +62,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	@Value("${defaultLimit}")
 	int defaultLimit = 50;
 	@Value("${maxLimit}")
-	int maxLimit = 500;
+	int maxLimit = 1000;
 
 	@Value("${ngb.debugmode}")
 	boolean debug = false;
@@ -231,7 +231,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 

@@ -72,13 +72,13 @@ public class DataSerializer {
 	private static Gson createGsonObject() {
 		GsonBuilder builder = new GsonBuilder();
 		registerTypes(builder);
-		return builder.create();
+		return builder.setPrettyPrinting().create();
 	}
 
 	private static Gson createSpecialGsonObject() {
 		GsonBuilder builder = new GsonBuilder();
 		builder.registerTypeAdapter(Entity.class, new EntityGsonAdapter(true));
-		return builder.create();
+		return builder.setPrettyPrinting().create();
 	}
 
 	private static void registerTypes(GsonBuilder builder) {

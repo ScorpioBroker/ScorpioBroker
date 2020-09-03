@@ -56,7 +56,15 @@ public class QueryParams {
 	private boolean keyValues;
 	@SerializedName("temporalValues")
 	@Expose
-	private boolean temporalValues;	
+	private boolean temporalValues;
+
+	@SerializedName("limit")
+	@Expose
+	private int limit = -1;
+
+	@SerializedName("offSet")
+	@Expose
+	private int offSet = -1;
 
 	public String getId() {
 		return id;
@@ -108,7 +116,8 @@ public class QueryParams {
 	public QueryParams withInstanceId(String instanceId) {
 		this.instanceId = instanceId;
 		return this;
-	}	
+	}
+
 	public String getIdPattern() {
 		return idPattern;
 	}
@@ -251,7 +260,7 @@ public class QueryParams {
 		this.includeSysAttrs = includeSysAttrs;
 		return this;
 	}
-	
+
 	public boolean getKeyValues() {
 		return keyValues;
 	}
@@ -264,7 +273,7 @@ public class QueryParams {
 		this.keyValues = keyValues;
 		return this;
 	}
-	
+
 	public boolean getTemporalValues() {
 		return temporalValues;
 	}
@@ -277,8 +286,23 @@ public class QueryParams {
 		this.temporalValues = temporalValues;
 		return this;
 	}
-		
-	
+
+	public int getLimit() {
+		return limit;
+	}
+
+	public void setLimit(int limit) {
+		this.limit = limit;
+	}
+
+	public int getOffSet() {
+		return offSet;
+	}
+
+	public void setOffSet(int offSet) {
+		this.offSet = offSet;
+	}
+
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this).append("id", id).append("type", type).append("attrs", attrs)

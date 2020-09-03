@@ -128,7 +128,7 @@ public class RegistryController {
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -141,7 +141,7 @@ public class RegistryController {
 
 			this.validate(payload);
 
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
 
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
@@ -154,7 +154,7 @@ public class RegistryController {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -170,7 +170,7 @@ public class RegistryController {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -180,7 +180,7 @@ public class RegistryController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.debug("update CSource() ::" + registrationId);
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
 
 			csourceService.updateCSourceRegistration(registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
@@ -190,7 +190,7 @@ public class RegistryController {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -205,7 +205,7 @@ public class RegistryController {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
