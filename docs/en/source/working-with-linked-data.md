@@ -193,7 +193,7 @@ Within the `lib/ngsi-ld.js` library file, the `BASE_PATH` defines the location o
 data entity is simply a wrapper around an asynchronous HTTP GET request passing the appropriate headers
 
 ```javascript
-const BASE_PATH = process.env.CONTEXT_BROKER || "http://localhost:1026/ngsi-ld/v1";
+const BASE_PATH = process.env.CONTEXT_BROKER || "http://localhost:9090/ngsi-ld/v1";
 
 function readEntity(entityId, opts, headers = {}) {
     return request({
@@ -209,7 +209,7 @@ function readEntity(entityId, opts, headers = {}) {
 The equivalent cUrl statement can be seen below:
 
 ```bash
-curl -G -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/' \
+curl -G -X GET 'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 -H 'Content-Type: application/ld+json' \
 -d 'type=Building' \
@@ -257,7 +257,7 @@ const building = await ngsiLD.readEntity(
 The equivalent cUrl statement can be seen below:
 
 ```bash
-curl -G -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/' \
+curl -G -X GET 'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 -H 'Content-Type: application/ld+json' \
 -d 'type=Building' \
@@ -301,7 +301,7 @@ function listEntities(opts, headers = {}) {
 The equivalent cUrl statement can be seen below:
 
 ```bash
-curl -G -X GET 'http://localhost:1026/ngsi-ld/v1/entities/' \
+curl -G -X GET 'http://localhost:9090/ngsi-ld/v1/entities/' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 -H 'Content-Type: application/ld+json' \
 -H 'Accept: application/json' \
@@ -345,7 +345,7 @@ let productsInStore = await ngsiLD.listEntities(
 The equivalent cUrl statement can be seen below:
 
 ```bash
-curl -G -X GET 'http://localhost:1026/ngsi-ld/v1/entities/' \
+curl -G -X GET 'http://localhost:9090/ngsi-ld/v1/entities/' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 -H 'Content-Type: application/ld+json' \
 -H 'Accept: application/json' \
@@ -382,7 +382,7 @@ const shelf = await ngsiLD.listEntities(
 The equivalent cUrl statement can be seen below:
 
 ```bash
-curl -G -X GET 'http://localhost:1026/ngsi-ld/v1/entities/' \
+curl -G -X GET 'http://localhost:9090/ngsi-ld/v1/entities/' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 -H 'Content-Type: application/ld+json' \
 -H 'Accept: application/json' \
@@ -421,7 +421,7 @@ function updateAttribute(entityId, body, headers = {}) {
 The equivalent cUrl statement can be seen below:
 
 ```bash
-curl -X PATCH 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001/attrs' \
+curl -X PATCH 'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001/attrs' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 -H 'Content-Type: application/json' \
 -d '{ "numberOfItems": { "type": "Property", "value": 10 } }'
@@ -466,7 +466,7 @@ Our Japanese context provider can create a new `Building` using the request belo
 Japanese JSON-LD `@context` file which supplies the full URIs for the attribute names and enumerations.
 
 ```bash
-curl -L -X POST 'http://localhost:1026/ngsi-ld/v1/entities/' \
+curl -L -X POST 'http://localhost:9090/ngsi-ld/v1/entities/' \
 -H 'Content-Type: application/ld+json' \
 --data-raw '{
     "id": "urn:ngsi-ld:Building:store005",
@@ -506,7 +506,7 @@ is pointing to the tutorial JSON-LD `@context` file.
 #### 2 Request:
 
 ```bash
-curl -L -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store005' \
+curl -L -X GET 'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store005' \
 -H 'Content-Type: application/ld+json' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 ```
@@ -555,7 +555,7 @@ supplied in the `Link` header.
 #### 3 Request:
 
 ```bash
-curl -L -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store003' \
+curl -L -X GET 'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store003' \
 -H 'Content-Type: application/ld+json' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/japanese-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 ```

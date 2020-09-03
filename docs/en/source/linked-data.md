@@ -307,14 +307,14 @@ If we include this context definition, it means that we will be able to use shor
 `location` for our entities, but computers will also be able to read the FQNs when comparing with other sources.
 
 To create a valid **Building** data entity in the context broker, make a POST request to the
-`http://localhost:1026/ngsi-ld/v1/entities` endpoint as shown below. It is essential that the appropriate
+`http://localhost:9090/ngsi-ld/v1/entities` endpoint as shown below. It is essential that the appropriate
 `Content-Type: application/ld+json` is also used, so that the data entity is recognized as Linked data.
 
 #### 2 Request:
 
 ```bash
 curl -iX POST \
-  http://localhost:1026/ngsi-ld/v1/entities \
+  http://localhost:9090/ngsi-ld/v1/entities \
   -H 'Content-Type: application/ld+json' \
   -d '{
     "id": "urn:ngsi-ld:Building:store001",
@@ -370,7 +370,7 @@ Each subsequent entity must have a unique `id` for the given `type`
 
 ```bash
 curl -iX POST \
-  http://localhost:1026/ngsi-ld/v1/entities/ \
+  http://localhost:9090/ngsi-ld/v1/entities/ \
   -H 'Content-Type: application/ld+json' \
   -d '{
     "id": "urn:ngsi-ld:Building:store002",
@@ -462,7 +462,7 @@ NGSI-LD and is used to filter the response. The Accept HTTP header is needed to 
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities' \
+  'http://localhost:9090/ngsi-ld/v1/entities' \
   -H 'Accept: application/ld+json' \
   -d 'type=https://uri.fiware.org/ns/data-models%23Building'
 ```
@@ -559,7 +559,7 @@ This example returns the data of `urn:ngsi-ld:Building:store001`
 ```bash
 curl -G -X GET \
   -H 'Accept: application/ld+json' \
-   'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001'
+   'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001'
 ```
 
 #### Response:
@@ -624,9 +624,9 @@ the resource in question. In the case of NGSI-LD, the metadata is a file in `app
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities' \
+  'http://localhost:9090/ngsi-ld/v1/entities' \
     -H 'Link: <https://fiware.github.io/data-models/context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
-    'http://localhost:1026/ngsi-ld/v1/entities' \
+    'http://localhost:9090/ngsi-ld/v1/entities' \
     -H 'Accept: application/ld+json' \
     -d 'type=Building' \
     -d 'options=keyValues'
@@ -687,7 +687,7 @@ the `q` parameter - if a string has spaces in it, it can be URL encoded and held
 
 ```bash
 curl -G -X GET \
-    'http://localhost:1026/ngsi-ld/v1/entities' \
+    'http://localhost:9090/ngsi-ld/v1/entities' \
     -H 'Link: <https://fiware.github.io/data-models/context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
     -H 'Accept: application/ld+json' \
     -d 'type=Building' \
@@ -745,7 +745,7 @@ done using the `q` parameter, comma separating the acceptable values.
 
 ```bash
 curl -G -X GET \
-    'http://localhost:1026/ngsi-ld/v1/entities' \
+    'http://localhost:9090/ngsi-ld/v1/entities' \
     -H 'Link: <https://fiware.github.io/data-models/context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
     -H 'Accept: application/ld+json' \
     -d 'type=Building' \
@@ -807,7 +807,7 @@ Filtering can be done using the `q` parameter - sub-attributes are annotated usi
 
 ```bash
 curl -G -X GET \
-    'http://localhost:1026/ngsi-ld/v1/entities' \
+    'http://localhost:9090/ngsi-ld/v1/entities' \
     -H 'Link: <https://fiware.github.io/data-models/context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
     -H 'Accept: application/ld+json' \
     -d 'type=Building' \
@@ -853,7 +853,7 @@ This supersedes the `mq` parameter from NGSI v2.
 
 ```bash
 curl -G -X GET \
-    'http://localhost:1026/ngsi-ld/v1/entities' \
+    'http://localhost:9090/ngsi-ld/v1/entities' \
     -H 'Link: <https://fiware.github.io/data-models/context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
     -H 'Accept: application/json' \
     -d 'type=Building' \
@@ -917,7 +917,7 @@ If another attribute is to be used, an additional `geoproperty` parameter is req
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities' \
+  'http://localhost:9090/ngsi-ld/v1/entities' \
   -H 'Link: <https://fiware.github.io/data-models/context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/json"'
   -H 'Accept: application/json' \
   -d 'type=Building' \

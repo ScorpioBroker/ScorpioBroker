@@ -2,7 +2,7 @@ This section covers all the basic configuration needed for the Scorpio broker. T
 
 Description of various configuration parameters
 **************************************************
-1. server:- In this, the user can define the various server related parameters like **port** and the maximum **number of threads** for tomcat server.
+1. server:- In this, the user can define the various server related parameters like **port** and the maximum **number of threads** for the internal tomcat server. This is related to the microservice communication. Be careful with changes.
 
 .. code-block:: JSON
 
@@ -12,7 +12,7 @@ Description of various configuration parameters
     max:
       threads: XX
 	  
-2. Entity:- Used in entity manager to define the various topics for the Kafka.
+2. Entity Topics:- These are the topics which are used for the internal communication of Scorpio on Kafka. If you change this you need to change things in the source code too.
 
 .. code-block:: JSON
 
@@ -29,7 +29,7 @@ Description of various configuration parameters
    index:
     topic: XYZ
 
-3. batchoperations:- Used to define the limit for the various CRUD operations.
+3. batchoperations:- Used to define the limit for the batch operations defined by NGSI-LD operations. This is http server config and hardware related. Change with caution.
 
 .. code-block:: JSON
 
@@ -40,21 +40,21 @@ Description of various configuration parameters
     upsert: XXXX
     delete: XXXX
 
-4. bootstrap:- Used to define the path for the Kafka broker.
+4. bootstrap:- Used to define the URL for the Kafka broker. Change only if you have changed the setup of Kafka
 
 .. code-block:: JSON
 
  bootstrap:
    servers: URL
 
-5. csources:- Used to define the topic for the context source registration.
+5. csources Topics:- These are the topics which are used for the internal communication of Scorpio on Kafka. If you change this you need to change things in the source code too.
 
 .. code-block:: JSON
 
   registration:
     topic: CONTEXT_REGISTRY
 
-6. append:- Used to define the entity append overwrite options.
+6. append:- Used to define the entity append overwrite option. Change with only with extreme caution.
 
 .. code-block:: JSON
 
@@ -62,7 +62,7 @@ Description of various configuration parameters
    overwrite: noOverwrite
 
 
-7. spring:- Used to define the basic details of the project like service name as well as to provide the configuration details for Kafka, flyway, data source, and cloud.
+7. spring:- Used to define the basic details of the project like service name as well as to provide the configuration details for Kafka, flyway, data source, and cloud. DO NOT CHANGE THOSE UNLESS YOU KNOW WHAT YOU ARE DOING!
 
 .. code-block:: JSON
 
@@ -100,7 +100,7 @@ Description of various configuration parameters
       connectionTimeout: 30000
 
 
-8. query:- Used in query manager to define the Kafka topic for data query.
+8. query Topics:- These are the topics which are used for the internal communication of Scorpio on Kafka. If you change this you need to change things in the source code too.
 
 .. code-block:: JSON
 
@@ -109,21 +109,21 @@ Description of various configuration parameters
   result:
     topic: QUERY_RESULT
 
-9. atcontext:- Used to define the URL for the context.
+9. atcontext:- Used to define the URL for served context by scorpio for scenarios where a mixed context is provided via a header.
 
 .. code-block:: JSON
 
  atcontext:
-  url: http://localhost:9090/ngsi-ld/contextes/
+  url: http://<ScorpioHost>:<ScorpioPort>/ngsi-ld/contextes/
 
-10. Key:- Used to define the file for the deserialization.
+10. Key:- Used to define the file for the deserialization. DO NOT CHANGE!
 
 .. code-block:: JSON
 
  key:
   deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
-11. reader:- Used to configure the database to the Scorpio broker, required to perform all the read operations.
+11. reader:- Used to configure the database to the Scorpio broker, required to perform all the read operations. This example is based on the default config for a local installed Postgres DB
 
 .. code-block:: JSON
 
@@ -141,7 +141,7 @@ Description of various configuration parameters
       maxLifetime: 2000000
       connectionTimeout: 30000
 
-12. writer:- Used to configure the database to the Scorpio broker, required to perform all the write operations.
+12. writer:- Used to configure the database to the Scorpio broker, required to perform all the write operations. This example is based on the default config for a local installed Postgres DB.
 
 .. code-block:: JSON
 

@@ -123,7 +123,7 @@ returned by default, and the payload can be reduced and amended by adding in fur
 #### 1 Request:
 
 ```bash
-curl -L -X POST 'http://localhost:1026/ngsi-ld/v1/subscriptions/' \
+curl -L -X POST 'http://localhost:9090/ngsi-ld/v1/subscriptions/' \
 -H 'Content-Type: application/ld+json' \
 --data-raw '{
   "description": "Notify me of low stock in Store 001",
@@ -153,7 +153,7 @@ notification request and that the payload will consist of the expanded entities.
 #### 2 Request:
 
 ```bash
-curl -L -X POST 'http://localhost:1026/ngsi-ld/v1/subscriptions/' \
+curl -L -X POST 'http://localhost:9090/ngsi-ld/v1/subscriptions/' \
 -H 'Content-Type: application/json' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 --data-raw '{
@@ -182,7 +182,7 @@ actions continue to be mapped to the same HTTP verbs as before. Adding the `Acce
 #### 3 Request:
 
 ```bash
-curl -L -X GET 'http://localhost:1026/ngsi-ld/v1/subscriptions/'
+curl -L -X GET 'http://localhost:9090/ngsi-ld/v1/subscriptions/'
 ```
 
 #### Response:
@@ -318,7 +318,7 @@ The body of the request is similar to the NGSI-v2 equivalent with the following 
 #### 4 Request:
 
 ```bash
-curl -L -X POST 'http://localhost:1026/ngsi-ld/v1/csourceRegistrations/' \
+curl -L -X POST 'http://localhost:9090/ngsi-ld/v1/csourceRegistrations/' \
 -H 'Content-Type: application/json' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 --data-raw ' {
@@ -348,7 +348,7 @@ endpoint, along with an appropriate JSON-LD context in the `Link` header.
 #### 5 Request:
 
 ```bash
-curl -L -X GET 'http://localhost:1026/ngsi-ld/v1/csourceRegistrations/' \
+curl -L -X GET 'http://localhost:9090/ngsi-ld/v1/csourceRegistrations/' \
 -H 'Accept: application/ld+json' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 ```
@@ -390,7 +390,7 @@ existing entity held within the context broker.
 #### 6 Request:
 
 ```bash
-curl -L -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001' \
+curl -L -X GET 'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 -H 'Content-Type: application/json'
 ```
@@ -537,7 +537,7 @@ If the regisitered attribute is requested from the context broker, it returns th
 endpoint.
 
 ```bash
-curl -L -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001?attrs=tweets&options=keyValues' \
+curl -L -X GET 'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001?attrs=tweets&options=keyValues' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 ```
 
@@ -581,7 +581,7 @@ In this case however a request to PATCH `ngsi-ld/v1/entities/<entity-id>` will b
 `ngsi-ld/v1/entities/<entity-id>/attrs` requests for each regsitered attribute that is found in the registration.
 
 ```bash
-curl -L -X PATCH 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/attrs/tweets' \
+curl -L -X PATCH 'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/attrs/tweets' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 -H 'Content-Type: application/json' \
 --data-raw '{
@@ -598,7 +598,7 @@ curl -L -X PATCH 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building
 The result of the previous operation can be seen by retrieving the whole entity using a GET request.
 
 ```bash
-curl -L -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001?attrs=tweets&options=keyValues' \
+curl -L -X GET 'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001?attrs=tweets&options=keyValues' \
 -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' \
 -H 'Content-Type: application/json'
 ```
