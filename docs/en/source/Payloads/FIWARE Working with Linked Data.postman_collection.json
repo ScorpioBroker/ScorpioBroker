@@ -1,0 +1,400 @@
+{
+	"info": {
+		"_postman_id": "ff9dd5e6-1458-4cb1-869b-29c940cf02f3",
+		"name": "FIWARE Working with Linked Data",
+		"description": "[![FIWARE Core Context Management](https://nexus.lab.fiware.org/repository/raw/public/badges/chapters/core.svg)](https://github.com/FIWARE/catalogue/blob/master/core/README.md)\n[![NGSI LD](https://img.shields.io/badge/NGSI-linked_data-red.svg)](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf)\n\nThis tutorial teaches FIWARE users how to architect and design a system based on **linked data** and to alter linked\ndata context programmatically. The tutorial extends the knowledge gained from the equivalent\n[NGSI-v2 tutorial](https://github.com/FIWARE/tutorials.Accessing-Context/) and enables a user understand how to write\ncode in an [NGSI-LD](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.01.01_60/gs_CIM009v010101p.pdf) capable\n[Node.js](https://nodejs.org/) [Express](https://expressjs.com/) application in order to retrieve and alter context\ndata. This removes the need to use the command-line to invoke cUrl commands.\n\nThe tutorial is mainly concerned with discussing code written in Node.js, however some of the results can be checked by\nmaking [cUrl](https://ec.haxx.se/) commands.\n\nThe `docker-compose` files for this tutorial can be found on GitHub: \n\n![GitHub](https://fiware.github.io/tutorials.Working-with-Linked-Data/icon/GitHub-Mark-32px.png) [FIWARE 603: Traversing Linked Data Programmatically](https://github.com/Fiware/tutorials.Working-with-Linked-Data)\n\n\n# Working with Linked Data Entities\n\n> -   “This is the house that Jack built.\n> -   This is the malt that lay in the house that Jack built.\n> -   This is the rat that ate the malt<br/> That lay in the house that Jack built.\n> -   This is the cat<br/> That killed the rat that ate the malt<br/> That lay in the house that Jack built.\n> -   This is the dog that chased the cat<br/> That killed the rat that ate the malt<br/> That lay in the house that\n>     Jack built.”\n>\n> ― This Is the House That Jack Built, Traditional English Nursery Rhyme\n\nNSGI-LD is an evolution of NGSI-v2, so it should not be surprising that Smart solutions based on NSGI-LD will need to\ncover the same basic scenarios as outlined in the previous NGSI-v2\n[tutorial](https://github.com/FIWARE/tutorials.Accessing-Context/) on programatic data access.\n\nNGSI-LD Linked data formalizes the structure of context entities to a greater degree, through restricting data\nattributes to be defined as either _Property_ attributes or _Relationship_ attributes only. This means that it is\npossible to traverse the context data graph with greater certainty when moving from one _Relationship_ to another. All\nthe context data entities within the system are defined by JSON-LD data models, which are formally defined by\nreferencing a context file, and this programatic definition should guarantee that the associated linked entity exists.\n\nThree basic data access scenarios for the supermaket are defined below:\n\n-   Reading Data - e.g. Give me all the data for the **Building** entity `urn:ngsi-ld:Building:store001`\n-   Aggregation - e.g. Combine the **Products** entities sold in **Building** `urn:ngsi-ld:Building:store001` and\n    display the goods for sale\n-   Altering context within the system - e.g. Make a sale of a product:\n    -   Update the daily sales records by the price of the **Product**\n    -   decrement the `numberOfItems` of the **Shelf** entity\n    -   Create a new Transaction Log record showing the sale has occurred\n    -   Raise an alert in the warehouse if less than 10 objects remain on sale\n    -   etc.\n\nFurther advanced scenarios will be covered in later tutorials\n\n## Linked Data Entities within a stock management system\n\nThe supermarket data created in the [previous tutorial](https://github.com/FIWARE/tutorials.Relationships-Linked-Data/)\nwill be loaded into the context broker. The existing relationships between the entities are defined as shown below:\n\n![](https://fiware.github.io/tutorials.Relationships-Linked-Data/img/entities-ld.png)\n\nThe **Building**, **Product**, **Shelf** and **StockOrder** entities will be used to display data on the frontend of our\ndemo application.\n\n## The teaching goal of this tutorial\n\nThe aim of this tutorial is to improve developer understanding of programmatic access of context data through defining\nand discussing a series of generic code examples covering common data access scenarios. For this purpose a simple\nNode.js Express application will be created.\n\nThe intention here is not to teach users how to write an application in Express - indeed any language could have been\nchosen. It is merely to show how **any** sample programming language could be used alter the context to achieve the\nbusiness logic goals.\n\nObviously, your choice of programming language will depend upon your own business needs - when reading the code below\nplease keep this in mind and substitute Node.js with your own programming language as appropriate.\n\n# Stock Management Frontend\n\nAll the code Node.js Express for the demo can be found within the `ngsi-ld` folder within the GitHub repository.\n[Stock Management example](https://github.com/FIWARE/tutorials.Step-by-Step/tree/master/context-provider). The\napplication runs on the following URLs:\n\n-   `http://localhost:3000/app/store/urn:ngsi-ld:Building:store001`\n-   `http://localhost:3000/app/store/urn:ngsi-ld:Building:store002`\n-   `http://localhost:3000/app/store/urn:ngsi-ld:Building:store003`\n-   `http://localhost:3000/app/store/urn:ngsi-ld:Building:store004`\n\n> :information_source: **Tip** Additionally, you can also watch the status of recent requests yourself by following the\n> container logs or viewing information on `localhost:3000/app/monitor` on a web browser.\n>\n> ![FIWARE Monitor](https://fiware.github.io/tutorials.Accessing-Context/img/monitor.png)\n\n# Prerequisites\n\n## Docker\n\nTo keep things simple all components will be run using [Docker](https://www.docker.com). **Docker** is a container\ntechnology which allows to different components isolated into their respective environments.\n\n-   To install Docker on Windows follow the instructions [here](https://docs.docker.com/docker-for-windows/)\n-   To install Docker on Mac follow the instructions [here](https://docs.docker.com/docker-for-mac/)\n-   To install Docker on Linux follow the instructions [here](https://docs.docker.com/install/)\n\n**Docker Compose** is a tool for defining and running multi-container Docker applications. A\n[YAML file](https://raw.githubusercontent.com/fiware/tutorials.Relationships-Linked-Data/master/docker-compose.yml) is\nused configure the required services for the application. This means all container services can be brought up in a\nsingle command. Docker Compose is installed by default as part of Docker for Windows and Docker for Mac, however Linux\nusers will need to follow the instructions found [here](https://docs.docker.com/compose/install/)\n\n## Cygwin\n\nWe will start up our services using a simple bash script. Windows users should download [cygwin](http://www.cygwin.com/)\nto provide a command-line functionality similar to a Linux distribution on Windows.\n\n",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Reading Linked Data",
+			"item": [
+				{
+					"name": "Retrieve a known Store",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/?type=Building&options=keyValues",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Building:store001",
+								""
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "Building"
+								},
+								{
+									"key": "options",
+									"value": "keyValues"
+								}
+							]
+						},
+						"description": "This example reads the context data of a given **Store** entity to display the results on screen. Reading entity data\ncan be done using the `ngsiLD.readEntity()` method - this will fill out the URL for the GET request and make the\nnecessary HTTP call in an asynchronous fashion:\n\n```javascript\nasync function displayStore(req, res) {\n    const store = await ngsiLD.readEntity(\n        req.params.storeId,\n        { options: \"keyValues\" },\n        ngsiLD.setHeaders(req.session.access_token, LinkHeader)\n    );\n\n    return res.render(\"store\", { title: store.name, store });\n}\n```\n\nThe function above also sends some standard HTTP Headers as part of the request - these are defined in the\n`setHeaders()` function.\n\nWithin an NGSI-LD-based system, the usual default HTTP headers would include a `Link` header to send the JSON-LD context\nand a `Content-Type` header to identify the request as `application/ld+json` (note that every NGSI-LD request is valid\nJSON_LD since NGSI-LD is a subset of JSON-LD). Other additional headers such as `X-Auth-Token` can be added to enable\nOAuth2 security.\n\n```javascript\nfunction setHeaders(accessToken, link, contentType) {\n    const headers = {};\n    if (accessToken) {\n        headers[\"X-Auth-Token\"] = accessToken;\n    }\n    if (link) {\n        headers.Link = link;\n    }\n    if (contentType) {\n        headers[\"Content-Type\"] = contentType || \"application/ld+json\";\n    }\n    return headers;\n}\n```\n\nWithin the `lib/ngsi-ld.js` library file, the `BASE_PATH` defines the location of the Orion Context Broker, reading a\ndata entity is simply a wrapper around an asynchronous HTTP GET request passing the appropriate headers\n\n```javascript\nconst BASE_PATH = process.env.CONTEXT_BROKER || \"http://localhost:1026/ngsi-ld/v1\";\n\nfunction readEntity(entityId, opts, headers = {}) {\n    return request({\n        qs: opts,\n        url: BASE_PATH + \"/entities/\" + entityId,\n        method: \"GET\",\n        headers,\n        json: true\n    });\n}\n```"
+					},
+					"response": []
+				}
+			],
+			"description": "The code under discussion can be found within the `ngsi-ld/store` controller in the\n[Git Repository](https://github.com/FIWARE/tutorials.Step-by-Step/blob/master/context-provider/controllers/ngsi-ld/store.js)\n\nGoto `http://localhost:3000/app/store/urn:ngsi-ld:Building:store001` to display and interact with the working\nSupermarket data application.\n\n### Initializing the library\n\nAs usual, the code for HTTP access can be split out from the business logic of the Supermarket application itself. The\nlower level calls have been placed into a library file, which simplifies the codebase. This needs to be included in the\nheader of the file as shown. Some constants are also required - for the Supermarket data, the `LinkHeader` is used to\ndefine location of the data models JSON-LD context as\n`https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld`.\n\n```javascript\nconst ngsiLD = require(\"../../lib/ngsi-ld\");\n\nconst LinkHeader =\n    '<https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\">';\n```",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "a0e52cd2-ce96-47ff-92d5-f3662b7fd7a4",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "0ad27612-e6c4-45b0-ac70-b32500fce319",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Aggregating and Traversing Linked Data",
+			"item": [
+				{
+					"name": "Find Shelves within a known Store",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/?type=Building&options=keyValues&attrs=furniture",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Building:store001",
+								""
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "Building"
+								},
+								{
+									"key": "options",
+									"value": "keyValues"
+								},
+								{
+									"key": "attrs",
+									"value": "furniture"
+								}
+							]
+						},
+						"description": "To access the `furniture` attribute of a known **Building** entity, a `keyValues` request is made using the `attrs`\nparameter.\n\n```javascript\nconst building = await ngsiLD.readEntity(\n    req.params.storeId,\n    {\n        type: \"Building\",\n        options: \"keyValues\",\n        attrs: \"furniture\"\n    },\n    ngsiLD.setHeaders(req.session.access_token, LinkHeader)\n);\n```\n\nThe response is a JSON Object which includes a `furniture` attribute which can be manipulated further."
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve Stocked Products from Shelves",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/?type=Shelf&options=keyValues&attrs=stocks,numberOfItems&id=urn:ngsi-ld:Shelf:unit001,urn:ngsi-ld:Shelf:unit002,urn:ngsi-ld:Shelf:unit003",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								""
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "Shelf"
+								},
+								{
+									"key": "options",
+									"value": "keyValues"
+								},
+								{
+									"key": "attrs",
+									"value": "stocks,numberOfItems"
+								},
+								{
+									"key": "id",
+									"value": "urn:ngsi-ld:Shelf:unit001,urn:ngsi-ld:Shelf:unit002,urn:ngsi-ld:Shelf:unit003"
+								}
+							]
+						},
+						"description": "To retrieve a series of **Shelf** entities, the `ngsiLD.listEntities()` function is called and filtered using the `id`\nparameter. The `id` is just a comma separated list taken from the request above.\n\n```javascript\nlet productsList = await ngsiLD.listEntities(\n    {\n        type: \"Shelf\",\n        options: \"keyValues\",\n        attrs: \"stocks,numberOfItems\",\n        id: building.furniture.join(\",\")\n    },\n    ngsiLD.setHeaders(req.session.access_token, LinkHeader)\n);\n```\n\n`listEntities()` is another function within the `lib/ngsi-ld.js` library file\n\n```javascript\nfunction listEntities(opts, headers = {}) {\n    return request({\n        qs: opts,\n        url: BASE_PATH + \"/entities\",\n        method: \"GET\",\n        headers,\n        json: true\n    });\n}\n```\n\nThe response is a JSON Array of **Shelf** entities which includes as `stocks` attribute which can be manipulated\nfurther. The code below extracts the ids for later use.\n\n```javascript\nconst stockedProducts = [];\n\nproductsList = _.groupBy(productsList, e => {\n    return e.stocks;\n});\n_.forEach(productsList, (value, key) => {\n    stockedProducts.push(key);\n});\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve Products from Shelves",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text",
+								"name": "Accept"
+							}
+						],
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/?type=Product&options=keyValues&attrs=name,price&id=urn:ngsi-ld:Product:001,urn:ngsi-ld:Product:003,urn:ngsi-ld:Product:004",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								""
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "Product"
+								},
+								{
+									"key": "options",
+									"value": "keyValues"
+								},
+								{
+									"key": "attrs",
+									"value": "name,price"
+								},
+								{
+									"key": "id",
+									"value": "urn:ngsi-ld:Product:001,urn:ngsi-ld:Product:003,urn:ngsi-ld:Product:004"
+								}
+							]
+						},
+						"description": "To retrieve a series of **Product** entities, the `ngsiLD.listEntities()` function is once again called and filtered\nusing the `id` parameter. The `id` is just a comma separated list taken from the request above.\n\n```javascript\nlet productsInStore = await ngsiLD.listEntities(\n    {\n        type: \"Product\",\n        options: \"keyValues\",\n        attrs: \"name,price\",\n        id: stockedProducts.join(\",\")\n    },\n    headers\n);\n```\n\nThe response is a JSON Array of **Product** entities which are then displayed on screen."
+					},
+					"response": []
+				}
+			],
+			"description": "To display information at the till, it is necessary to discover information about the products found within a Store.\nFrom the Data Entity diagram we can ascertain that:\n\n-   **Building** entities hold related **Shelf** information within the `furniture` _Relationship_\n-   **Shelf** entities hold related **Product** information within the `stocks` _Relationship_\n-   Products hold `name` and `price` as _Property_ attributes of the **Product** entity itself.\n\nTherefore the code for the `displayTillInfo()` method will consist of the following steps.\n\n1. Make a request to the Context Broker to _find shelves within a known store_\n2. Reduce the result to a `id` parameter and make a second request to the Context Broker to _retrieve stocked products\n   from shelves_\n3. Reduce the result to a `id` parameter and make a third request to the Context Broker to _retrieve product details for\n   selected shelves_\n\nTo users familar with database joins, it may seem strange being forced to making a series of requests like this, however\nit is necessary due to scalability issues/concerns in a large distributed setup. Direct join requests are not possible\nwith NGSI-LD.",
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Updating Linked Data",
+			"item": [
+				{
+					"name": "Find a shelf stocking a product",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/ld+json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text",
+								"name": "Accept"
+							}
+						],
+						"url": {
+							"raw": "http://{{ScorpioBroker}}/ngsi-ld/v1/entities/?type=Shelf&options=keyValues&q=numberOfItems>0;locatedIn==\"urn:ngsi-ld:Building:store001\";stocks==\"urn:ngsi-ld:Product:001\"",
+							"protocol": "http",
+							"host": [
+								"{{ScorpioBroker}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								""
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "Shelf"
+								},
+								{
+									"key": "options",
+									"value": "keyValues"
+								},
+								{
+									"key": "q",
+									"value": "numberOfItems>0;locatedIn==\"urn:ngsi-ld:Building:store001\";stocks==\"urn:ngsi-ld:Product:001\""
+								}
+							]
+						},
+						"description": "To retrieve a series of **Shelf** entities, the `ngsiLD.listEntities()` function is called. It is important to retrieve\nthe current context before amending it, so the `q` parameter is used to only retrieve a shelf from the correct store\ncontaining the correct product. This request is only possible because the **Shelf** data model has been designed to hold\n_relationships_ with both **Building** and **Product**.\n\n```javascript\nconst shelf = await ngsiLD.listEntities(\n    {\n        type: \"Shelf\",\n        options: \"keyValues\",\n        attrs: \"stocks,numberOfItems\",\n        q: 'numberOfItems>0;locatedIn==\"' + req.body.storeId + '\";stocks==\"' + req.body.productId + '\"',\n        limit: 1\n    },\n    headers\n);\n```"
+					},
+					"response": []
+				},
+				{
+					"name": "Update the state of a shelf",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Link",
+								"value": "<{{datamodels-context.jsonld}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text",
+								"name": "Accept",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"numberOfItems\": { \"type\": \"Property\", \"value\": 10 } }"
+						},
+						"url": {
+							"raw": "http://{{orion}}/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001/attrs",
+							"protocol": "http",
+							"host": [
+								"{{orion}}"
+							],
+							"path": [
+								"ngsi-ld",
+								"v1",
+								"entities",
+								"urn:ngsi-ld:Shelf:unit001",
+								"attrs"
+							]
+						},
+						"description": "To update an entity a PATCH request is made using the id of the **Shelf** returned in the previous request\n\n```javascript\nconst count = shelf[0].numberOfItems - 1;\nawait ngsiLD.updateAttribute(\n    shelf[0].id,\n    { numberOfItems: { type: \"Property\", value: count } },\n    ngsiLD.setHeaders(req.session.access_token, LinkHeader)\n);\n```\n\nThe asynchronous PATCH request is found in the `updateAttribute()` function within the `lib/ngsi-ld.js` library file\n\n```javascript\nfunction updateAttribute(entityId, body, headers = {}) {\n    return request({\n        url: BASE_PATH + \"/entities/\" + entityId + \"/attrs\",\n        method: \"PATCH\",\n        body,\n        headers,\n        json: true\n    });\n}\n```"
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "3cfa34c8-8c56-4741-beee-b59a0ec6ca65",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "02069d51-35e3-4f61-b1b5-982b2c942b80",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "59df592b-d61e-4c0d-853f-0c0b626ff558",
+			"key": "ScorpioBroker",
+			"value": "localhost:1026"
+		},
+		{
+			"id": "9f7f5df5-a853-4947-a76a-53ebedff7607",
+			"key": "datamodels-context.jsonld",
+			"value": "https://fiware.github.io/tutorials.Step-by-Step/tutorials-context.jsonld"
+		},
+		{
+			"id": "da06248c-ded2-4e04-b754-aee588cdc59c",
+			"key": "device-edge",
+			"value": "localhost:1027"
+		},
+		{
+			"id": "b481f672-d2f6-4b74-ad65-1d7558bfc2f4",
+			"key": "context-provider",
+			"value": "localhost:3000"
+		}
+	],
+	"protocolProfileBehavior": {}
+}
