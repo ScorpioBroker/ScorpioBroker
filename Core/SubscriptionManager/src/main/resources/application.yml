@@ -44,10 +44,6 @@ management:
     restart:
       enabled: true
       
-query:
-  topic: QUERY
-  result:
-    topic: QUERY_RESULT
 
 spring:
   kafka:
@@ -105,7 +101,3 @@ reader:
       poolName: SpringBootHikariCP_Reader
       maxLifetime: 2000000
       connectionTimeout: 30000
-query:
-  topic: QUERY
-  result:
-    topic: QUERY_RESULT

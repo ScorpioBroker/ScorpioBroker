@@ -116,6 +116,11 @@ zuul:
       path: /health/**
       serviceId: INFO-SERVER
       stripPrefix: false
+    version:
+      sensitiveHeaders:
+      path: /version/**
+      serviceId: INFO-SERVER
+      stripPrefix: false
     corecontext:
       sensitiveHeaders:
       path: /corecontext/**
