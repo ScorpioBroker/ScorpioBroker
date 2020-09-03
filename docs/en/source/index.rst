@@ -31,12 +31,12 @@ Scorpio broker implements the NGSI APIs through which the producers and consumer
     :caption: Developer Guide
     :numbered:
 
-	installationGuide.rst
+    installationGuide.rst
     hardwareRequirement.rst
     errorHandling.rst
     security.rst
-	HelloWorld.rst
-	multivalue.rst
+    HelloWorld.rst
+    multivalue.rst
 
 .. toctree::
     :maxdepth: 1
@@ -47,7 +47,7 @@ Scorpio broker implements the NGSI APIs through which the producers and consumer
     callFlow.rst
     contributionGuideline.md
     docker.rst
-	config.rst
+    config.rst
     troubleshooting.rst
 
 .. toctree::

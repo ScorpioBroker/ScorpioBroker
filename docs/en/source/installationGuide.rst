@@ -1,6 +1,6 @@
-*****************************************
+******************
 Installation Guide
-*****************************************
+******************
 
 In order to set-up the environment of Scorpio broker, the following dependency needs to be configured:-
 
