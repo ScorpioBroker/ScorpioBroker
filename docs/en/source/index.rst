@@ -45,7 +45,7 @@ Scorpio broker implements the NGSI APIs through which the producers and consumer
 
     systemOverview.rst
     callFlow.rst
-    contributionGuideline.md
+    contributionGuideline.rst
     docker.rst
     config.rst
     troubleshooting.rst
