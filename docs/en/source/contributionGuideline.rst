@@ -1,7 +1,11 @@
-Branch Management Guidelines
-============================
+***********************
+Contribution guidelines
+***********************
 
-![](figures/gitGuideline.jpg)
+Branch Management Guidelines
+############################
+
+.. figure:: figures/gitGuideline.jpg
 
 The community can have two main branches with an infinite lifetime:
 
@@ -34,15 +38,18 @@ workflow:
 
 **Note**: Only NLE and NECTI members have the privilege to create and
 merge the Hotfix branch.
-
++------------------+-------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------+
 | Branch           | Branches naming guideline                                                                                               | Remarks                                                                                            |
-|------------------|-------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
++==================+=========================================================================================================================+====================================================================================================+
 | Feature branches | Must branch from: *development*. Must merge back into: *development*. Branch naming convention: *feature-feature_id*    | *feature_id* is the Github issue id from **https://github.com/ScorpioBroker/ScorpioBroker/issues** |
++------------------+-------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------+
 | Bug Branches     | Must branch from: *development*. Must merge back into: *development*. Branch naming convention: *bug-bug_id*            | *bug_id* is the Github issue id from **https://github.com/ScorpioBroker/ScorpioBroker/issues**     |
++------------------+-------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------+
 | Hotfix Branches  | Must branch from: *master branch*. Must merge back into: *master branch*. Branch naming convention: *hotfix-bug number* | *Bug number* is the Github issue id from **https://github.com/ScorpioBroker/ScorpioBroker/issues** |
++------------------+-------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------+
 
-Permissions to the branches:
-----------------------------
+Permissions to the branches
+***************************
 
 -   **Master** - We tend to very strict that only NLE members and
     privileged members of NECTI can merge on the Master branch and
