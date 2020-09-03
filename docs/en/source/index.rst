@@ -57,13 +57,3 @@ Scorpio broker implements the NGSI APIs through which the producers and consumer
 
     API_walkthrough.rst
     
-#.. toctree::
-#    :maxdepth: 1
-#    :caption: Step-By-Step for NGSI-LD Adapted for Scorpio
-#    :numbered:
-#
-#    linked-data.md
-#    relationships-linked-data.md
-#    working-with-linked-data.md
-#    ld-subscriptions-registrations.md
- 
