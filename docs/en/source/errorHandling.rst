@@ -1,6 +1,6 @@
-***********************
-Error Handler
-***********************
+*************************
+Error Handling in Scorpio
+*************************
 
 This section will provide info on the error handling mechanism for the Scorpio Broker system.
 

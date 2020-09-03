@@ -1,15 +1,20 @@
-*****************************************
+*******************
+Security in Scorpio
+*******************
+
 Security Architecture
-*****************************************
+#####################
+
 Scorpio Broker system will also be responsible for any of the Identity & authentication management security. This will include authentication & authorization of requests, users, role base protected resources to access in Scorpio Broker security realm. 
 
 A new Authentication & Authorization service compliant to OAuth2.0 specs has been introduced that will provide the application layer security to the entire Scorpio Broker components & services.
 
 .. figure:: figures/security.png
 
-*****************************************
+
 Security - Functional Request Flow
-*****************************************
+##################################
+
 1. Browser/end user sends a resource request which is protected to the Scorpio Broker system using the API gateway REST interface.
 
 2. API Gateway checks if the security feature is enabled. 
