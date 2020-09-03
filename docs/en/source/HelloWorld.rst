@@ -6,6 +6,7 @@ Generally speaking you can Create entities which is like the hello world program
 
 .. code-block:: JSON
 
+ curl localhost:9090/ngsi-ld/v1/entities -s -S -H 'Content-Type: application/json' -d @-
  {
     "id": "urn:ngsi-ld:testunit:123",
     "type": "AirQualityObserved",
