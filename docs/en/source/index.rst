@@ -29,6 +29,13 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
 
 .. toctree::
     :maxdepth: 1
+    :caption: FIWARE NGSI-LD API Walkthrough
+    :numbered:
+
+    API_walkthrough.rst
+    
+.. toctree::
+    :maxdepth: 1
     :caption: Developer Guide
     :numbered:
 
@@ -38,19 +45,10 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
     security.rst
     HelloWorld.rst
     multivalue.rst
-    
-
 
 .. toctree::
     :maxdepth: 1
-    :caption: FIWARE NGSI-LD API Walkthrough
-    :numbered:
-
-    API_walkthrough.rst
-    
-.. toctree::
-    :maxdepth: 1
-    :caption: Advance User Guide
+    :caption: Advanced User Guide
     :numbered:
 
     systemOverview.rst
@@ -59,4 +57,3 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
     docker.rst
     config.rst
     troubleshooting.rst
-
