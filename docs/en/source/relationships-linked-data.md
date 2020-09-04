@@ -10,7 +10,7 @@ how to design models holding one-to-one, one-to-many and many-to-many relationsh
 The tutorial uses [cUrl](https://ec.haxx.se/) commands throughout, but is also available as
 [Postman documentation](https://fiware.github.io/tutorials.Relationships-Linked-Data/)
 
-[![Run in Postman](https://run.pstmn.io/button.svg)](https://github.com/ScorpioBroker/ScorpioBroker/blob/feature-80-temp/docs/en/source/Payloads/FIWARE%20Relationships%20using%20Linked%20Data.postman_collection.json)
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/7ae2d2d3f42bbdf59c45)
 
 <hr class="core"/>
 
@@ -287,7 +287,7 @@ It is therefore possible to request all building entities without supplying a kn
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities' \
+  'http://localhost:9090/ngsi-ld/v1/entities' \
   -d 'type=https://uri.fiware.org/ns/datamodels%23Building&options=keyValues'
 ```
 
@@ -356,7 +356,7 @@ Requesting the **Product** entities can be done by supplying the FQN of the enti
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities' \
+  'http://localhost:9090/ngsi-ld/v1/entities' \
   -d 'type=https://fiware.github.io/tutorials.Step-by-Step/schema/Product' \
   -d 'options=keyValues' \
   -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/datamodels-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
@@ -407,7 +407,7 @@ provided the full context has been supplied in the `Link` header.
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities' \
+  'http://localhost:9090/ngsi-ld/v1/entities' \
   -d 'type=Shelf' \
   -d 'options=keyValues' \
   -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/datamodels-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
@@ -462,7 +462,7 @@ below.
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001/' \
+  'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001/' \
   -d 'options=keyValues' \
   -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/datamodels-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 ```
@@ -528,7 +528,7 @@ Note that the relationship is currently unidirectional. **Shelf** ➡ **Building
 
 ```bash
 curl -X POST \
-  http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001/attrs \
+  http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001/attrs \
   -H 'Content-Type: application/ld+json' \
   -H 'fiware-servicepath: /' \
   -d '{
@@ -569,7 +569,7 @@ This example returns the context data of the Shelf entity with the `id=urn:ngsi-
 
 ```bash
 curl -X GET \
-  http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001
+  http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001
 ```
 
 #### Response:
@@ -700,7 +700,7 @@ If the `id` and `type` of a data entity are known, a specific field can be reque
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001/' \
+  'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Shelf:unit001/' \
   -d 'attrs=locatedIn' \
   -d 'options=keyValues' \
   -H 'Link: <https://fiware.github.io/tutorials.Step-by-Step/datamodels-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
@@ -726,7 +726,7 @@ is purely an instance of using the `q` parameter to filter on attribute value
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities/' \
+  'http://localhost:9090/ngsi-ld/v1/entities/' \
   -d 'type=Shelf' \
   -d 'options=keyValues' \
   -d 'attrs=locatedIn' \
@@ -759,7 +759,7 @@ This is the reciprocal relationship to the `locatedIn` attribute on **Shelf**
 
 ```bash
 curl -X POST \
-  http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/attrs \
+  http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001/attrs \
   -H 'Content-Type: application/ld+json' \
   -d '{
     "furniture": {
@@ -783,7 +783,7 @@ themselves.
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001' \
+  'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Building:store001' \
   -d 'options=keyValues' \
   -d 'attrs=furniture' \
   -H 'Accept: application/json' \
@@ -814,7 +814,7 @@ The **StockOrder** is created as a standard NGSI-LD data entity.
 
 ```bash
 curl -X POST \
-  http://localhost:1026/ngsi-ld/v1/entities/ \
+  http://localhost:9090/ngsi-ld/v1/entities/ \
   -H 'Content-Type: application/ld+json' \
   -d '{
   "id": "urn:ngsi-ld:StockOrder:001",
@@ -860,7 +860,7 @@ The query `q==orderedProduct="urn:ngsi-ld:Product:001"` is used to filter the en
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities/' \
+  'http://localhost:9090/ngsi-ld/v1/entities/' \
   -d 'type=StockOrder'
   -d 'q=orderedProduct==%22urn:ngsi-ld:Product:001%22' \
   -d 'attrs=requestedFor' \
@@ -893,7 +893,7 @@ The query `q==requestedFor="urn:ngsi-ld:Building:store001"` is used to filter th
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities/' \
+  'http://localhost:9090/ngsi-ld/v1/entities/' \
   -d 'type=StockOrder' \
   -d 'q=requestedFor==%22urn:ngsi-ld:Building:store001%22' \
   -d 'options=keyValues' \
@@ -926,7 +926,7 @@ adding the appropriate URN.
 
 ```bash
 curl -G -X GET \
-  'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:StockOrder:001' \
+  'http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:StockOrder:001' \
   -d 'options=keyValues'
 ```
 
