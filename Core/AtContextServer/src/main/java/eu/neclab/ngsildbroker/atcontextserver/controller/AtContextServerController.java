@@ -37,18 +37,16 @@ public class AtContextServerController {
 	@Autowired
 	ResourceLoader resourceLoader;
 	
-	String coreContext;
-	
-	@PostConstruct
-	private void setup() {
-		try {
-			coreContext = new String(Files.asByteSource(resourceLoader.getResource("classpath:ngsi-ld-core-context.jsonld").getFile()).read());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
+	/*
+	 * String coreContext;
+	 * 
+	 * @PostConstruct private void setup() { try { coreContext = new
+	 * String(Files.asByteSource(resourceLoader.getResource(
+	 * "classpath:ngsi-ld-core-context.jsonld").getFile()).read()); } catch
+	 * (IOException e) { // TODO Auto-generated catch block e.printStackTrace(); }
+	 * 
+	 * }
+	 */
 	 
 	/**
 	 * Method(GET) for multiple attributes separated by comma list
@@ -62,9 +60,11 @@ public class AtContextServerController {
 	public ResponseEntity<Object> getContextForEntity(HttpServletRequest request,
 			@PathVariable("contextId") String contextId) {
 		logger.trace("getAtContext() for " + contextId);
-		if(contextId.equals(AppConstants.CORE_CONTEXT_URL_SUFFIX)) {
-			return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(coreContext);
-		}
+		/*
+		 * if(contextId.equals(AppConstants.CORE_CONTEXT_URL_SUFFIX)) { return
+		 * ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(
+		 * coreContext); }
+		 */
 		List<Object> contextes = atContext.getContextes(contextId);
 		StringBuilder body = new StringBuilder("{\"@context\": ");
 

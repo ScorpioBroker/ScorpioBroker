@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -68,7 +69,7 @@ public class HistoryController {
 			logger.trace("createTemporalEntity :: started");
 			Validator.validateTemporalEntity(payload);
 
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
 			URI uri = historyService.createTemporalEntityFromBinding(resolved);
 			logger.trace("createTemporalEntity :: completed");
@@ -79,7 +80,7 @@ public class HistoryController {
 		} catch (Exception exception) {
 			logger.error("Exception", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -110,7 +111,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -135,7 +136,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -155,7 +156,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -165,7 +166,7 @@ public class HistoryController {
 		try {
 			logger.trace("addAttrib2TemopralEntity :: started");
 			logger.debug("entityId : " + entityId);
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
 			historyService.addAttrib2TemporalEntity(entityId, resolved);
 			logger.trace("addAttrib2TemopralEntity :: completed");
@@ -176,7 +177,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -196,7 +197,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -208,7 +209,7 @@ public class HistoryController {
 			logger.trace("modifyAttribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
 
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
 			// TODO : TBD- conflict between specs and implementation <mentioned no request
 			// body in specs>
@@ -222,7 +223,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
@@ -243,7 +244,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 

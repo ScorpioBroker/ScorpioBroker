@@ -1,0 +1,17 @@
+server:
+  port: 27015
+
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: kafka:9092
+
+bootstrap:
+  servers: kafka:9092
+  
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka:8761/eureka/

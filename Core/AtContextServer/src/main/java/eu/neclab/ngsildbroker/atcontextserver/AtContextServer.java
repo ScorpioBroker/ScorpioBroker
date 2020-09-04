@@ -14,10 +14,11 @@ import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 
 
 @SpringBootApplication
-@Import(KafkaConfig.class)
+@Import({KafkaConfig.class, SwaggerConfigDetails.class})
 @EnableBinding({AtContextProducerChannel.class})
 public class AtContextServer {// implements QueryHandlerInterface{
 
@@ -28,10 +29,6 @@ public class AtContextServer {// implements QueryHandlerInterface{
 	@Bean
 	KafkaOps ops() {
 		return new KafkaOps();
-	}
-	@Bean
-	ContextResolverBasic conRes() {
-		return new ContextResolverBasic();
 	}
 	
 	@Bean
