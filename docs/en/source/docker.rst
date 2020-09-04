@@ -8,7 +8,7 @@ The first profile is called 'docker' and can be called like this
 
 ::
 
-    mvn clean package -DskipTests -Pdocker
+	mvn clean package -DskipTests -Pdocker
 
 this will generate individual docker containers for each microservice. The corresponding docker-compose file is `docker-compose-dist.yml`
 
@@ -19,8 +19,8 @@ To get the aaio version run the maven build like this
 
 ::
 
-    mvn clean package -DskipTests -Pdocker-aaio
- 
+	mvn clean package -DskipTests -Pdocker-aaio
+
 The corresponding docker-compose file is `docker-compose-aaio.yml`
 
 General remark for the Kafka docker image and docker-compose
