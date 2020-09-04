@@ -5,8 +5,8 @@ Getting a docker container
 The current maven build supports two types of docker container generations from the build using maven profiles to trigger it.
 
 The first profile is called 'docker' and can be called like this
- 
-.. code-block:: bash
+
+::
 
     mvn clean package -DskipTests -Pdocker
 
@@ -17,7 +17,7 @@ The second profile is called 'docker-aaio' (for almost all in one). This will ge
 
 To get the aaio version run the maven build like this 
 
-.. code-block:: bash
+::
 
     mvn clean package -DskipTests -Pdocker-aaio
  
