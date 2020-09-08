@@ -199,7 +199,7 @@ hystrix:
           thread:
             timeoutInMilliseconds: 60000
 
-
+selfhostcorecontext: http://localhost:9090/corecontext
 #GET request configuration for QUERY-MANAGER 
 ribbon:
   ReadTimeout: 60000

@@ -1,6 +1,6 @@
-*****************************************
-Installation Guide
-*****************************************
+****************************
+Developer Installation Guide
+****************************
 
 In order to set-up the environment of Scorpio broker, the following dependency needs to be configured:-
 
@@ -11,10 +11,10 @@ In order to set-up the environment of Scorpio broker, the following dependency n
 
 
 Windows
-*****************************************
+#######
 
 Eclipse installation
-############################
+********************
 
 - **Download the Eclipse Installer.**:
 
@@ -40,7 +40,7 @@ Eclipse installation
 
 
 JDK Setup
-##############
+*********
 
 - Start the JDK installation and hit the “Change destination folder” checkbox, then click 'Install.'
 
@@ -94,7 +94,7 @@ If your command prompt somewhat looks like the image above, you are good to go. 
 
 
 Setting Up Kafka
-############################
+****************
 
 1. Go to your Kafka config directory. For example:- **C:\kafka_2.11-0.9.0.0\config**
 2. Edit the file “server.properties.”
@@ -106,7 +106,7 @@ Setting Up Kafka
 
 
 Running a Kafka Server
-############################
+**********************
 
 Important: Please ensure that your ZooKeeper instance is up and running before starting a Kafka server.
 
@@ -117,7 +117,7 @@ Important: Please ensure that your ZooKeeper instance is up and running before s
 
 
 Setting up PostgreSQL
-############################
+*********************
 
 Step 1) Go to https://www.postgresql.org/download.
 
@@ -208,6 +208,62 @@ Step 17) You will see the Dashboard
 
 That's it to Postgre SQL installation.
 
-
 Linux
-*****************************************
+#####
+JDK Setup
+*********
+To create a Java environment in your machine install the JDK, for this open the terminal, and run the following commands:-
+
+1. sudo apt-get update
+
+2. sudo apt-get install openjdk-8-jdk
+
+To check that JDK is properly installed in your machine, run the command **java -version** in your terminal if it returns the version of the JDK as 11 then it's working fine.
+
+.. figure:: figures/javaTerminal
+
+Eclipse installation
+********************
+
+To install the eclipse in your linux machine first, visit the link https://www.eclipse.org/downloads/ and select the version of eclipse based on the flavor of your linux machine.
+
+Setting Up Kafka
+****************
+
+To download the Apache Kafka in your machine run the following commands one by one in your terminal.
+
+1. mkdir kafka
+2. cd kafka
+3. wget https://archive.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
+4. tar -xzf kafka_2.12-2.2.0.tgz
+
+Once the Kafka is downloaded in your machine hit the following commands to get it run
+
+1. kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties > /dev/null 2>&1 &
+2. kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties > /dev/null 2>&1 &
+
+Setting up PostgreSQL
+*********************
+In order to download the PostgreSQL in your machine run the following commands from your terminal.
+
+1. sudo apt update
+2. sudo apt-get install postgresql-10
+3. service postgresql status
+
+The last command will give us the status of the PostgreSQL four your machine if this matches to 
+one in the picture then everything is properly installed else re-run the commands.
+.. figure:: figures/postgresTerminal
+
+Once PostgreSQL is successfully installed in your machine create the database **ngb** and change its role by running the following commands:
+
+1.	psql -U postgres -c "create database ngb;"
+2.	psql -U postgres -c "create user ngb with password 'ngb';"
+3.	psql -U postgres -c "alter database ngb owner to ngb;"
+4.	psql -U postgres -c "grant all privileges on database ngb to ngb;"
+5.	psql -U postgres -c "alter role ngb superuser;"
+6.	sudo apt install postgresql-10-postgis-2.4
+7.	sudo apt install postgresql-10-postgis-scripts
+8.	sudo -u postgres psql -U postgres -c "create extension postgis;
+
+After this your PostgreSql is ready to use for Scorpio Boker.
+

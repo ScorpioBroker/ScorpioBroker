@@ -13,12 +13,18 @@ public class AppConstants {
 
 	// entities URL for
 	public final static String ENTITES_URL = "/ngsi-ld/v1/entities/";
+	public final static int ENTITIES_URL_ID = 0;
 	// csource URL
 	public final static String CSOURCE_URL = "/ngsi-ld/v1/csourceRegistrations/";
+	public final static int CSOURCE_URL_ID = 1;
 	//history
 	public final static String HISTORY_URL="/ngsi-ld/v1/temporal/entities/";
+	public final static int HISTORY_URL_ID = 2;
 	//subscriptions
 	public final static String SUBSCRIPTIONS_URL="/ngsi-ld/v1/subscriptions/";
+	public final static int SUBSCRIPTIONS_URL_ID = 3;
+	public static final int BATCH_URL_ID = 4;
+	public final static int INTERNAL_CALL_ID = 5;
 	
 	public final static String NGB_APPLICATION_JSON="application/json";
 	public final static String NGB_APPLICATION_NQUADS="application/n-quads";
@@ -36,6 +42,7 @@ public class AppConstants {
 	//constants for swagger
 	public final static String SWAGGER_WEBSITE_LINK = "https://github.com/ScorpioBroker/ScorpioBroker";
 	public final static String SWAGGER_CONTACT_LINK = "https://github.com/ScorpioBroker/ScorpioBroker";
+
 
 
 }

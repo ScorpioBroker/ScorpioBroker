@@ -7,5 +7,6 @@ ENV JAR_FILE_RUN ${JAR_FILE_RUN}
 
 COPY target/${JAR_FILE_BUILD} ./${JAR_FILE_RUN}
 COPY src/main/resources/application-dist.yml ./config/application.yml
+ENV spring_args ""
 
-CMD java -jar $JAR_FILE_RUN
+CMD java -jar $JAR_FILE_RUN ${spring_args}

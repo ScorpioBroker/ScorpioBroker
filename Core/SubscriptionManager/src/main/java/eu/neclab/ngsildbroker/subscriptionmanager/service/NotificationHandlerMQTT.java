@@ -2,7 +2,9 @@ package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +14,7 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 
@@ -41,16 +44,49 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 		if (qosString != null) {
 			qos = Integer.parseInt(qosString);
 		}
+		byte[] payload = getPayload(reply);
 		if (client instanceof Mqtt3BlockingClient) {
 			Mqtt3BlockingClient client3 = (Mqtt3BlockingClient) client;
 			client3.publishWith().topic(callback.getPath().substring(1)).qos(MqttQos.fromCode(qos))
-					.payload(reply.getBody()).send();
+					.payload(payload).send();
 		} else {
 			Mqtt5BlockingClient client5 = (Mqtt5BlockingClient) client;
 			client5.publishWith().topic(callback.getPath().substring(1))
 					.contentType(reply.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)).qos(MqttQos.fromCode(qos))
-					.payload(reply.getBody()).send();
+					.payload(payload).send();
 		}
+	}
+
+	private byte[] getPayload(ResponseEntity<byte[]> reply) {
+		HttpHeaders headers = reply.getHeaders();
+		Map<String, String> metaData = new HashMap<String, String>();
+		StringBuilder result = new StringBuilder("{\""+NGSIConstants.METADATA+"\":{");
+		for(Entry<String, List<String>> entry: headers.entrySet()) {
+			result.append("\"");
+			result.append(entry.getKey());
+			result.append("\":");
+			if(entry.getValue().size() != 1) {
+				result.append("[");
+				for(String headerValue: entry.getValue()) {
+					result.append(headerValue + ",");
+				}
+				result.setCharAt(result.length() - 1, ']');
+			}else {
+				result.append("\"");
+				result.append(entry.getValue().get(0));
+				result.append("\"");
+			}
+			result.append(",");
+		}
+		result.setCharAt(result.length() - 1, '}');
+		result.append(",");
+		result.append("\"");
+		result.append(NGSIConstants.BODY);
+		result.append("\":{");
+		result.append(new String(reply.getBody()));
+		result.append("}");
+		result.append("}");
+		return result.toString().getBytes();
 	}
 
 	private MqttClient getClient(URI callback, Map<String, String> clientSettings) {

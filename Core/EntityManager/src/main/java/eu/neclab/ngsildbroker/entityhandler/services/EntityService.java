@@ -1,15 +1,20 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
@@ -21,10 +26,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.listener.MessageListenerContainer;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -32,6 +43,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.filosganga.geogson.model.Geometry;
 import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
+import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchFailure;
@@ -93,6 +105,14 @@ public class EntityService {
 	@Value("${batchoperations.maxnumber.delete:-1}")
 	int maxDeleteBatch;
 
+	boolean directDB = true;
+	@Autowired
+	@Qualifier("emstorage")
+	StorageWriterDAO storageWriterDao;
+
+	@Autowired
+	EntityInfoDAO entityInfoDAO;
+
 	@Autowired
 	@Qualifier("emops")
 	KafkaOps operations;
@@ -114,14 +134,17 @@ public class EntityService {
 	@Autowired
 	@Qualifier("emconRes")
 	ContextResolverBasic contextResolver;
-	@Autowired
-	@Qualifier("emtopicmap")
-	EntityTopicMap entityTopicMap;
+	/*
+	 * @Autowired
+	 * 
+	 * @Qualifier("emtopicmap") EntityTopicMap entityTopicMap;
+	 */
 
 	private final EntityProducerChannel producerChannels;
 
 	LocalDateTime start;
 	LocalDateTime end;
+	private Set<String> entityIds = new HashSet<String>();
 
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
 
@@ -140,13 +163,16 @@ public class EntityService {
 	// construct in-memory
 	@PostConstruct
 	private void loadStoredEntitiesDetails() throws IOException {
-		Map<String, EntityDetails> entities = this.operations.getAllEntitiesDetails();
-		logger.trace("filling in-memory hashmap started:");
-		for (EntityDetails entity : entities.values()) {
-			logger.trace("key :: " + entity.getKey());
-			entityTopicMap.put(entity.getKey(), entity);
+		synchronized (this.entityIds) {
+			this.entityIds = entityInfoDAO.getAllIds();
 		}
-		logger.trace("filling in-memory hashmap completed:");
+		/*
+		 * Map<String, EntityDetails> entities =
+		 * this.operations.getAllEntitiesDetails();
+		 * logger.trace("filling in-memory hashmap started:"); for (EntityDetails entity
+		 * : entities.values()) { logger.trace("key :: " + entity.getKey());
+		 * entityTopicMap.put(entity.getKey(), entity); }
+		 */logger.trace("filling in-memory hashmap completed:");
 	}
 
 	/**
@@ -162,50 +188,112 @@ public class EntityService {
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
 		JsonNode json = SerializationTools.parseJson(objectMapper, payload);
-		JsonNode id = json.get(NGSIConstants.JSON_LD_ID);
+		JsonNode idNode = json.get(NGSIConstants.JSON_LD_ID);
 		JsonNode type = json.get(NGSIConstants.JSON_LD_TYPE);
 		// null id and type check
-		if (id == null || type == null) {
+		if (idNode == null || type == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		logger.debug("entity id " + id.asText());
+		String id = idNode.asText();
+		logger.debug("entity id " + id);
 		// check in-memory hashmap for id
-		if (entityTopicMap.isExist(id.asText())) {
-			throw new ResponseException(ErrorType.AlreadyExists);
+		synchronized (this.entityIds) {
+			if (this.entityIds.contains(id)) {
+				throw new ResponseException(ErrorType.AlreadyExists);
+			}
+			this.entityIds.add(id);
 		}
-		removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
-		String entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
-
 		String now = SerializationTools.formatter.format(Instant.now());
 		setTemporalProperties(json, now, now, false);
 		payload = objectMapper.writeValueAsString(json);
-
-		registerContext(id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
-				payload.getBytes(NGSIConstants.ENCODE_FORMAT));
-		// TODO use or remove ... why is the check below commented
-
-		boolean result = operations.pushToKafka(producerChannels.createWriteChannel(),
-				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT), payload.getBytes(NGSIConstants.ENCODE_FORMAT));
-
-		if (!result) {
-			throw new ResponseException(ErrorType.KafkaWriteError);
+		String withSysAttrs = payload;
+		// new Thread() {
+		// public void run() {
+		removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
+		String entityWithoutSysAttrs;
+		try {
+			entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
+			pushToDB(id, withSysAttrs, entityWithoutSysAttrs, objectMapper.writeValueAsString(getKeyValueEntity(json)));
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			logger.error(e);
 		}
 
-		// write to ENTITY topic after ENTITY_CREATE success.
-		operations.pushToKafka(this.producerChannels.entityWriteChannel(),
-				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT), payload.getBytes(NGSIConstants.ENCODE_FORMAT));
+		// };
+		// }.start();
+		new Thread() {
+			public void run() {
 
-		// write to ENTITY_WITHOUT_SYSATTRS topic
-		operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
-				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
-				entityWithoutSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
-		// write to KVENTITY topic
-		operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
-				id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
-				objectMapper.writeValueAsBytes(getKeyValueEntity(json)));
+				try {
+					registerContext(id.getBytes(NGSIConstants.ENCODE_FORMAT),
+							withSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
+					operations.pushToKafka(producerChannels.createWriteChannel(),
+							id.getBytes(NGSIConstants.ENCODE_FORMAT),
+							withSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (URISyntaxException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ResponseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				// TODO use or remove ... why is the check below commented
+
+			};
+		}.start();
+
+		/*
+		 * // write to ENTITY topic after ENTITY_CREATE success.
+		 * operations.pushToKafka(this.producerChannels.entityWriteChannel(),
+		 * id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * payload.getBytes(NGSIConstants.ENCODE_FORMAT));
+		 * 
+		 * // write to ENTITY_WITHOUT_SYSATTRS topic
+		 * operations.pushToKafka(this.producerChannels.
+		 * entityWithoutSysAttrsWriteChannel(),
+		 * id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * entityWithoutSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT)); // write to
+		 * KVENTITY topic
+		 * operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+		 * id.asText().getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * objectMapper.writeValueAsBytes(getKeyValueEntity(json)));
+		 */
 
 		logger.debug("createMessage() :: completed");
-		return id.asText();
+		return id;
+	}
+
+	private void pushToDB(String key, String payload, String withoutSysAttrs, String kv) {
+		boolean success = false;
+		while (!success) {
+			try {
+				logger.debug("Received message: " + payload);
+				logger.trace("Writing data...");
+				if (storageWriterDao != null && storageWriterDao.storeEntity(key, payload, withoutSysAttrs, kv)) {
+
+					logger.trace("Writing is complete");
+				}
+				success = true;
+			} catch (SQLTransientConnectionException e) {
+				logger.warn("SQL Exception attempting retry");
+				Random random = new Random();
+				int randomNumber = random.nextInt(4000) + 500;
+				try {
+					Thread.sleep(randomNumber);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		}
+		// removeId on failure
+
 	}
 
 	// public String createMessageTest(String payload) throws ResponseException {
@@ -316,21 +404,7 @@ public class EntityService {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
 		MessageChannel messageChannel = producerChannels.updateWriteChannel();
-		// null id check
-		if (entityId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-		// get entity details from in-memory hashmap.
-		EntityDetails entityDetails = entityTopicMap.get(entityId);
-		if (entityDetails == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		byte[] originalJson = operations.getMessage(this.ENTITY_TOPIC, entityId, entityDetails.getPartition(),
-				entityDetails.getOffset());
-		// check whether exists.
-		if (originalJson == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
+		String entityBody = validateIdAndGetBody(entityId);
 		/*
 		 * String payloadResolved=contextResolver.applyContext(payload);
 		 * System.out.println(payloadResolved); String
@@ -340,33 +414,58 @@ public class EntityService {
 		 */
 		// update fields
 		JsonNode updateNode = objectMapper.readTree(payload);
-		UpdateResult updateResult = this.updateFields(originalJson, updateNode, null);
-		byte[] finalJson = updateResult.getJson();
+		UpdateResult updateResult = this.updateFields(entityBody, updateNode, null);
 		// pubilsh merged message
 		// & check if anything is changed.
 		if (updateResult.getStatus()) {
-			// String json = new String(finalJson);
-			// String resolved = contextResolver.expandPayload(json);
-			this.updateContext(entityId.getBytes(NGSIConstants.ENCODE_FORMAT), finalJson);
-			// TODO use or remove ... why is the check below commented
-			boolean result = this.operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-					updateResult.getAppendedJsonFields().toString().getBytes());
-			/*
-			 * if (!result) { throw new ResponseException(ErrorType.KafkaWriteError); }
-			 */
-			// write to ENTITY topic after ENTITY_UPDATE success.
-			operations.pushToKafka(this.producerChannels.entityWriteChannel(),
-					entityId.getBytes(NGSIConstants.ENCODE_FORMAT), finalJson);
-			// write to ENTITY_WITHOUT_SYSATTRS topic
-			operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
-					entityId.getBytes(NGSIConstants.ENCODE_FORMAT), updateResult.getJsonWithoutSysAttrs());
-			operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
-					entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-					objectMapper.writeValueAsBytes(getKeyValueEntity(updateResult.getFinalNode())));
+			if (directDB) {
+				String entityWithoutSysAttrs = new String(updateResult.getJsonWithoutSysAttrs());
+				String withSysAttrs = new String(updateResult.getJson());
+				try {
+					pushToDB(entityId, withSysAttrs, entityWithoutSysAttrs,
+							objectMapper.writeValueAsString(getKeyValueEntity(objectMapper.readTree(withSysAttrs))));
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 
+			}
+			new Thread() {
+				public void run() {
+					try {
+						operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+								updateResult.getAppendedJsonFields().toString().getBytes());
+						updateContext(entityId.getBytes(NGSIConstants.ENCODE_FORMAT), updateResult.getJson());
+					} catch (UnsupportedEncodingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (ResponseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				};
+			}.start();
 		}
 		logger.trace("updateMessage() :: completed");
 		return updateResult;
+	}
+
+	private String validateIdAndGetBody(String entityId) throws ResponseException {
+		// null id check
+		if (entityId == null) {
+			throw new ResponseException(ErrorType.BadRequestData);
+		}
+		// get entity details from in-memory hashmap.
+		synchronized (this.entityIds) {
+			if (!this.entityIds.contains(entityId)) {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+		}
+		String entityBody = null;
+		if (directDB) {
+			entityBody = this.entityInfoDAO.getEntity(entityId);
+		}
+		return entityBody;
 	}
 
 	/**
@@ -387,40 +486,56 @@ public class EntityService {
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		// get entity details from in-memory hashmap
-		EntityDetails entityDetails = entityTopicMap.get(entityId);
-		if (entityDetails == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
+		// get entity details
+		String entityBody = validateIdAndGetBody(entityId);
+		AppendResult appendResult = this.appendFields(entityBody, objectMapper.readTree(payload), overwriteOption);
 		// get entity from ENTITY topic.
-		byte[] originalJson = this.operations.getMessage(this.ENTITY_TOPIC, entityId, entityDetails.getPartition(),
-				entityDetails.getOffset());
-		// check whether exists.
-		if (originalJson == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		// merge fields
-		AppendResult appendResult = this.appendFields(originalJson, objectMapper.readTree(payload), overwriteOption);
-		byte[] finalJson = appendResult.getJson();
 		// pubilsh merged message
 		// check if anything is changed
 		if (appendResult.getStatus()) {
-			boolean result = this.operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-					objectMapper.writeValueAsBytes(appendResult.getJsonToAppend()));
-			// System.out.println(result);
-			if (!result) {
-				throw new ResponseException(ErrorType.KafkaWriteError);
-			}
-			// write to ENTITY topic after ENTITY_APPEND success.
-			operations.pushToKafka(this.producerChannels.entityWriteChannel(),
-					entityId.getBytes(NGSIConstants.ENCODE_FORMAT), finalJson);
-			// write to ENTITY_WITHOUT_SYSATTRS topic
-			operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
-					entityId.getBytes(NGSIConstants.ENCODE_FORMAT), appendResult.getJsonWithoutSysAttrs());
-			operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
-					entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-					objectMapper.writeValueAsBytes(getKeyValueEntity(appendResult.getFinalNode())));
+			if (directDB) {
+				String entityWithoutSysAttrs = new String(appendResult.getJsonWithoutSysAttrs());
+				String withSysAttrs = new String(appendResult.getJson());
+				try {
+					pushToDB(entityId, withSysAttrs, entityWithoutSysAttrs,
+							objectMapper.writeValueAsString(getKeyValueEntity(objectMapper.readTree(withSysAttrs))));
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 
+			}
+			new Thread() {
+				public void run() {
+					try {
+						operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+								objectMapper.writeValueAsBytes(appendResult.getJsonToAppend()));
+					} catch (UnsupportedEncodingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (JsonProcessingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (ResponseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				};
+			}.start();
+
+			/*
+			 * // write to ENTITY topic after ENTITY_APPEND success.
+			 * operations.pushToKafka(this.producerChannels.entityWriteChannel(),
+			 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT), finalJson); // write to
+			 * ENTITY_WITHOUT_SYSATTRS topic operations.pushToKafka(this.producerChannels.
+			 * entityWithoutSysAttrsWriteChannel(),
+			 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+			 * appendResult.getJsonWithoutSysAttrs());
+			 * operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+			 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+			 * objectMapper.writeValueAsBytes(getKeyValueEntity(appendResult.getFinalNode())
+			 * ));
+			 */
 		}
 		logger.trace("appendMessage() :: completed");
 		return appendResult;
@@ -434,31 +549,54 @@ public class EntityService {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		// get entity details from in-memory hashmap
-		EntityDetails entityDetails = entityTopicMap.get(entityId);
-		if (entityDetails == null) {
-			throw new ResponseException(ErrorType.NotFound);
+		synchronized (this.entityIds) {
+			if (!this.entityIds.remove(entityId)) {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+			if (directDB) {
+				storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, entityId, null);
+			}
 		}
-		// get entity from entity topic
-		byte[] originalJson = this.operations.getMessage(this.ENTITY_TOPIC, entityId, entityDetails.getPartition(),
-				entityDetails.getOffset());
-		// check whether exists.
-		if (originalJson == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		// TODO use or remove ... why is the check below commented
-		boolean result = this.operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-				originalJson);
+		new Thread() {
+			public void run() {
+				try {
+					operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+							"{}".getBytes());
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ResponseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			};
+		}.start();
 		/*
+		 * EntityDetails entityDetails = entityTopicMap.get(entityId); if (entityDetails
+		 * == null) { throw new ResponseException(ErrorType.NotFound); } // get entity
+		 * from entity topic byte[] originalJson =
+		 * this.operations.getMessage(this.ENTITY_TOPIC, entityId,
+		 * entityDetails.getPartition(), entityDetails.getOffset()); // check whether
+		 * exists. if (originalJson == null) { throw new
+		 * ResponseException(ErrorType.NotFound); } // TODO use or remove ... why is the
+		 * check below commented boolean result =
+		 * this.operations.pushToKafka(messageChannel,
+		 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT), originalJson);
+		 * 
 		 * if (!result) { throw new ResponseException(ErrorType.KafkaWriteError); }
-		 */
-		operations.pushToKafka(this.producerChannels.entityWriteChannel(),
-				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), "null".getBytes(NGSIConstants.ENCODE_FORMAT));
-		operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
-				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), "null".getBytes(NGSIConstants.ENCODE_FORMAT));
-		operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
-				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), "null".getBytes(NGSIConstants.ENCODE_FORMAT));
-
-		logger.trace("deleteEntity() :: completed");
+		 * 
+		 * operations.pushToKafka(this.producerChannels.entityWriteChannel(),
+		 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * "null".getBytes(NGSIConstants.ENCODE_FORMAT));
+		 * operations.pushToKafka(this.producerChannels.
+		 * entityWithoutSysAttrsWriteChannel(),
+		 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * "null".getBytes(NGSIConstants.ENCODE_FORMAT));
+		 * operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
+		 * entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+		 * "null".getBytes(NGSIConstants.ENCODE_FORMAT));
+		 * 
+		 */ logger.trace("deleteEntity() :: completed");
 		return true;
 	}
 
@@ -470,39 +608,44 @@ public class EntityService {
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		// get entity details from in-memory hashmap
-		EntityDetails entityDetails = entityTopicMap.get(entityId);
-		if (entityDetails == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		// get entity from ENTITY topic.
-		byte[] originalJson = this.operations.getMessage(this.ENTITY_TOPIC, entityId, entityDetails.getPartition(),
-				entityDetails.getOffset());
-		// check whether exists.
-		if (originalJson == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		//JsonNode originalJsonNode = objectMapper.readTree(originalJson);
+		// get entity details
+		String entityBody = validateIdAndGetBody(entityId);
+		// JsonNode originalJsonNode = objectMapper.readTree(originalJson);
 
-		UpdateResult updateResult = this.updateFields(originalJson, objectMapper.readTree(payload), attrId);
-		byte[] finalJson = updateResult.getJson();
+		UpdateResult updateResult = this.updateFields(entityBody, objectMapper.readTree(payload), attrId);
 		// pubilsh merged message
 		// check if anything is changed.
 		if (updateResult.getStatus()) {
-			boolean result = this.operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-					updateResult.getAppendedJsonFields().toString().getBytes());
-			if (!result) {
-				throw new ResponseException(ErrorType.KafkaWriteError);
+			if (directDB) {
+				JsonNode json = updateResult.getFinalNode();
+				String withSysAttrs = objectMapper.writeValueAsString(json);
+				removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
+				String entityWithoutSysAttrs;
+				try {
+					entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
+					pushToDB(entityId, withSysAttrs, entityWithoutSysAttrs,
+							objectMapper.writeValueAsString(getKeyValueEntity(json)));
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
 			}
-			// write to ENTITY topic after ENTITY_UPDATE success.
-			operations.pushToKafka(this.producerChannels.entityWriteChannel(),
-					entityId.getBytes(NGSIConstants.ENCODE_FORMAT), finalJson);
-			// write to ENTITY_WITHOUT_SYSATTRS topic
-			operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
-					entityId.getBytes(NGSIConstants.ENCODE_FORMAT), updateResult.getJsonWithoutSysAttrs());
-			operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
-					entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-					objectMapper.writeValueAsBytes(getKeyValueEntity(updateResult.getFinalNode())));
+			new Thread() {
+				public void run() {
+					try {
+						operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+								updateResult.getAppendedJsonFields().toString().getBytes());
+						updateContext(entityId.getBytes(NGSIConstants.ENCODE_FORMAT), updateResult.getJson());
+					} catch (UnsupportedEncodingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (ResponseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				};
+			}.start();
 
 		}
 		logger.trace("partialUpdateEntity() :: completed");
@@ -518,41 +661,31 @@ public class EntityService {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		// get entity details from in-memory hashmap
-		EntityDetails entityDetails = entityTopicMap.get(entityId);
-		if (entityDetails == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		// get entity from ENTITY topic.,
-		byte[] originalJson = this.operations.getMessage(this.ENTITY_TOPIC, entityId, entityDetails.getPartition(),
-				entityDetails.getOffset());
-		// check whether exists.
-		if (originalJson == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		JsonNode originalJsonNode = objectMapper.readTree(originalJson);
+		String entityBody = validateIdAndGetBody(entityId);
 
-		byte[] finalJson = this.deleteFields(originalJson, attrId, datasetId, deleteAll);
+		JsonNode finalJson = this.deleteFields(entityBody, attrId, datasetId, deleteAll);
+		String finalFullEntity = objectMapper.writeValueAsString(finalJson);
+		removeTemporalProperties(finalJson);
+		String entityWithoutSysAttrs = objectMapper.writeValueAsString(finalJson);
+		String kvEntity = objectMapper.writeValueAsString(getKeyValueEntity(finalJson));
+		pushToDB(entityId, finalFullEntity, entityWithoutSysAttrs, kvEntity);
+
 		// pubilsh updated message
-		boolean result = this.operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-				finalJson);
-		if (!result) {
-			throw new ResponseException(ErrorType.KafkaWriteError);
-		}
-		// write to ENTITY topic after ENTITY_UPDATE success.
-		operations.pushToKafka(this.producerChannels.entityWriteChannel(),
-				entityId.getBytes(NGSIConstants.ENCODE_FORMAT), finalJson);
-		// write to ENTITY_WITHOUT_SYSATTRS topic
-		JsonNode json = SerializationTools.parseJson(objectMapper, new String(finalJson));
-		removeTemporalProperties(json);
-		String entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
-		operations.pushToKafka(this.producerChannels.entityWithoutSysAttrsWriteChannel(),
-				entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-				entityWithoutSysAttrs.getBytes(NGSIConstants.ENCODE_FORMAT));
-		operations.pushToKafka(this.producerChannels.kvEntityWriteChannel(),
-				entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-				objectMapper.writeValueAsBytes(getKeyValueEntity(json)));
+		new Thread() {
+			public void run() {
+				try {
+					operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
+							finalFullEntity.getBytes());
+				} catch (UnsupportedEncodingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ResponseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			};
+		}.start();
 
-		// }
 		logger.trace("deleteAttribute() :: completed");
 		return true;
 	}
@@ -566,13 +699,13 @@ public class EntityService {
 	 * @throws Exception
 	 * @throws ResponseException
 	 */
-	public UpdateResult updateFields(byte[] originalJsonObject, JsonNode jsonToUpdate, String attrId)
+	public UpdateResult updateFields(String originalJsonObject, JsonNode jsonToUpdate, String attrId)
 			throws Exception, ResponseException {
 		logger.trace("updateFields() :: started");
 		String now = SerializationTools.formatter.format(Instant.now());
 		JsonNode resultJson = objectMapper.createObjectNode();
 		UpdateResult updateResult = new UpdateResult(jsonToUpdate, resultJson);
-		JsonNode node = objectMapper.readTree(new String(originalJsonObject));
+		JsonNode node = objectMapper.readTree(originalJsonObject);
 		ObjectNode objectNode = (ObjectNode) node;
 		if (attrId != null) {
 			if (objectNode.get(attrId) == null) {
@@ -673,13 +806,13 @@ public class EntityService {
 	 * @return AppendResult
 	 * @throws IOException
 	 */
-	public AppendResult appendFields(byte[] originalJsonObject, JsonNode jsonToAppend, String overwriteOption)
+	public AppendResult appendFields(String originalJsonObject, JsonNode jsonToAppend, String overwriteOption)
 			throws Exception {
 		logger.trace("appendFields() :: started");
 		String now = SerializationTools.formatter.format(Instant.now());
 		JsonNode resultJson = objectMapper.createObjectNode();
 		AppendResult appendResult = new AppendResult(jsonToAppend, resultJson);
-		JsonNode node = objectMapper.readTree(new String(originalJsonObject));
+		JsonNode node = objectMapper.readTree(originalJsonObject);
 		ObjectNode objectNode = (ObjectNode) node;
 		Iterator<String> it = jsonToAppend.fieldNames();
 		while (it.hasNext()) {
@@ -733,10 +866,9 @@ public class EntityService {
 	 * @throws IOException
 	 * @throws ResponseException
 	 */
-	public byte[] deleteFields(byte[] originalJsonObject, String attrId, String datasetId, String deleteAll)
-			throws Exception, ResponseException {
+	public JsonNode deleteFields(String originalJsonObject, String attrId, String datasetId, String deleteAll) throws Exception, ResponseException {
 		logger.trace("deleteFields() :: started");
-		JsonNode node = objectMapper.readTree(new String(originalJsonObject));
+		JsonNode node = objectMapper.readTree(originalJsonObject);
 		ObjectNode objectNode = (ObjectNode) node;
 		JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
 		ArrayNode myArray = (ArrayNode) innerNode;
@@ -791,10 +923,11 @@ public class EntityService {
 			throw new ResponseException(ErrorType.NotFound, "Attribute is not present");
 		}
 		logger.trace("deleteFields() :: completed");
-		return objectNode.toString().getBytes(NGSIConstants.ENCODE_FORMAT);
+		return objectNode;
 	}
 
-	public boolean registerContext(byte[] id, byte[] payload) throws URISyntaxException, IOException, ResponseException {
+	public boolean registerContext(byte[] id, byte[] payload)
+			throws URISyntaxException, IOException, ResponseException {
 		logger.trace("registerContext() :: started");
 		MessageChannel messageChannel = producerChannels.contextRegistryWriteChannel();
 		CSourceRegistration contextRegistryPayload = this.getCSourceRegistrationFromJson(payload);
@@ -862,21 +995,18 @@ public class EntityService {
 		return new URI(uri.toString() + "/" + resource);
 	}
 
-	@KafkaListener(topics = "${entity.topic}", groupId = "entitymanager")
-	public void updateTopicDetails(Message<byte[]> message) throws IOException {
-		logger.trace("updateTopicDetails() :: started");
-		String key = operations.getMessageKey(message);
-		int partitionId = (int) message.getHeaders().get(KafkaHeaders.RECEIVED_PARTITION_ID);
-		long offset = (long) message.getHeaders().get(KafkaHeaders.OFFSET);
-		JsonNode entityJsonBody = objectMapper.readTree(message.getPayload());
-		boolean isDeletedMsg = entityJsonBody.isNull();
-		if (isDeletedMsg) {
-			entityTopicMap.remove(key);
-		} else {
-			entityTopicMap.put(key, new EntityDetails(key, partitionId, offset));
-		}
-		logger.trace("updateTopicDetails() :: completed");
-	}
+	/*
+	 * @KafkaListener(topics = "${entity.topic}", groupId = "entitymanager") public
+	 * void updateTopicDetails(Message<byte[]> message) throws IOException {
+	 * logger.trace("updateTopicDetails() :: started"); String key =
+	 * operations.getMessageKey(message); int partitionId = (int)
+	 * message.getHeaders().get(KafkaHeaders.RECEIVED_PARTITION_ID); long offset =
+	 * (long) message.getHeaders().get(KafkaHeaders.OFFSET); JsonNode entityJsonBody
+	 * = objectMapper.readTree(message.getPayload()); boolean isDeletedMsg =
+	 * entityJsonBody.isNull(); if (isDeletedMsg) { entityTopicMap.remove(key); }
+	 * else { entityTopicMap.put(key, new EntityDetails(key, partitionId, offset));
+	 * } logger.trace("updateTopicDetails() :: completed"); }
+	 */
 
 	public void validateEntity(String payload, HttpServletRequest request) throws ResponseException {
 		Entity entity;
@@ -894,11 +1024,6 @@ public class EntityService {
 		for (ValidationRules rule : rules) {
 			rule.validateEntity(entity, request);
 		}
-	}
-
-	boolean isEntityExist(String id) {
-		boolean result = entityTopicMap.isExist(id);
-		return result;
 	}
 
 	public BatchResult createMultipleMessage(String payload) throws ResponseException {
@@ -931,7 +1056,7 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
 					} else {
-						response = new RestResponse(ErrorType.InternalError, "Internal error");
+						response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 					}
 
 					result.addFail(new BatchFailure(entityId, response));
@@ -972,7 +1097,7 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
 					} else {
-						response = new RestResponse(ErrorType.InternalError, "Internal error");
+						response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 					}
 
 					result.addFail(new BatchFailure(entityId, response));
@@ -1024,7 +1149,7 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
 					} else {
-						response = new RestResponse(ErrorType.InternalError, "Internal error");
+						response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 					}
 
 					result.addFail(new BatchFailure(entityId, response));
@@ -1089,7 +1214,7 @@ public class EntityService {
 								if (e1 instanceof ResponseException) {
 									response = new RestResponse((ResponseException) e1);
 								} else {
-									response = new RestResponse(ErrorType.InternalError, "Internal error");
+									response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
 								}
 
 								result.addFail(new BatchFailure(entityId, response));
@@ -1100,7 +1225,7 @@ public class EntityService {
 						}
 
 					} else {
-						response = new RestResponse(ErrorType.InternalError, "Internal error");
+						response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 						result.addFail(new BatchFailure(entityId, response));
 					}
 
