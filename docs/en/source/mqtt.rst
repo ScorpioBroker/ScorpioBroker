@@ -9,7 +9,7 @@ The syntax of an MQTT endpoint URI is **mqtt[s]://[<username>][:<password>]@<hos
 Username and password can be optionally specified as part of the endpoint URI. If the port is not explicitly specified, the default MQTT port is **1883** for MQTT over TCP and **8883** for MQTTS,
 For the MQTT protocol, there are currently two versions supported, **MQTTv3.1.1** and **MQTTv5.0**.
 
-.. figure:: figures/MQTT.png
+.. figure:: figures/MQTT.jpg
 
 The flow of Scorpio broker notification via MQTT:-
 
