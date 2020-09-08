@@ -26,10 +26,10 @@ To start the MQTT broker follow the below step:-
 4. Subscribe the topic.
 
 Operations
-------------------
+############
 
 1. Entity Creation
-=========================
+*********************
 
 To create the entity, hit the endpoint **http://<IP Address>:<port>/ngsi-ld/v1/entities/** with the given payload.
 
@@ -71,7 +71,7 @@ To create the entity, hit the endpoint **http://<IP Address>:<port>/ngsi-ld/v1/e
  }
 
 2. Subscription
-=========================
+*********************
 
 To subscribe to the entity, hit the endpoint **http://<IP Address>:<port>/ ngsi-ld/v1/subscriptions/** with the given payload.
 
@@ -101,7 +101,7 @@ To subscribe to the entity, hit the endpoint **http://<IP Address>:<port>/ ngsi-
  }
 
 3. Notification
-=========================
+*********************
 
 If we update the value of the attribute and making the PATCH request at  **http://<IP Address>:<port>/ngsi-ld/v1/entities/entityId/attrs**
 
