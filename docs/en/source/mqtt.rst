@@ -1,8 +1,10 @@
-*********
-MQTT
-*********
+******************
+MQTT Notifications
+******************
 
-Replace with “MQTT support in Scorpio would only include sending a notification to an MQTT subscriber”. MQTT publishes a message to the topic and clients who have subscribed to the topic, get a notification A subscription received via HTTP specifies an MQTT endpoint in the "notification.endpoint.uri" member of the subscription and the MQTT notification binding is supported by the NGSI-LD implementation, notifications related to this subscription shall be sent via the MQTT protocol.
+MQTT is a pub/sub based message bus and works with topics. For more detailed information please visit https://mqtt.org/.
+NGSI-LD allows you to receive notifications via MQTT. 
+A subscription received via HTTP specifies an MQTT endpoint in the "notification.endpoint.uri" member of the subscription and the MQTT notification binding is supported by the NGSI-LD implementation, notifications related to this subscription shall be sent via the MQTT protocol.
 
 The syntax of an MQTT endpoint URI is **mqtt[s]://[<username>][:<password>]@<host>[:<port>]/<topic>[/<subtopic>]*** and follows an existing convention for representing an MQTT endpoint as a URI.
 
