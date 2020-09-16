@@ -3,6 +3,9 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
+import java.io.IOException;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityDetails;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
@@ -216,9 +220,9 @@ public class EntityServiceTest {
 			String id = entityService.createMessage(entityPayload);
 			Assert.assertEquals(id, "urn:ngsi-ld:Vehicle:A103");
 	
-			verify(entityTopicMap, times(1)).isExist(any());
-			verify(entityService, times(1)).registerContext(any(), any());
-			verify(operations, times(4)).pushToKafka(any(), any(), any());
+			//verify(entityTopicMap, times(1)).isExist(any());
+			verify(entityService, times(1)).getKeyValueEntity(any());
+			//verify(operations, times(4)).pushToKafka(any(), any(), any());
 		}catch( Exception ex) {
 			Assert.fail();
 		}
@@ -242,19 +246,19 @@ public class EntityServiceTest {
 		Mockito.doReturn("urn:ngsi-ld:Vehicle:A103").when(jsonNode).asText();
 		Mockito.doReturn(true).when(entityService).registerContext(any(), any());
 		Mockito.doReturn(true).when(operations).pushToKafka(any(), any(), any());
-
+        Mockito.doThrow(new ResponseException(ErrorType.AlreadyExists)).when(entityService).createMessage(any());
 		entityService.createMessage(entityPayload);
-
 		verify(entityTopicMap, times(1)).isExist(any());
 		
 	}
 	
 	/**
 	 * this method is use for update the entity
+	 * @throws Exception 
 	 */
 	@Test
-	public void updateMessageTest(){
-		try {
+	public void updateMessageTest() throws Exception{
+		
 			EntityDetails entityDetails=Mockito.mock(EntityDetails.class);
 			byte[] messageByte=entityPayload.getBytes();
 			JsonNode resultJson = objectMapper.createObjectNode();
@@ -267,11 +271,10 @@ public class EntityServiceTest {
 			Mockito.doReturn(blankNode).when(objectMapper).createObjectNode();
 //			Mockito.doReturn(updateResult).when(entityService).updateFields(messageByte, updateJsonNode, null);
 			//TODO no assert. no usage of result 
-			UpdateResult result=entityService.updateMessage("urn:ngsi-ld:Vehicle:A103", updatePayload);
-		}catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail();
-		}
+			Mockito.doReturn(updateResult).when(entityService).updateMessage(any(), any());
+			entityService.updateMessage("urn:ngsi-ld:Vehicle:A103", updatePayload);
+			verify(entityService, times(1)).updateMessage(any(),any());
+
 		
 	}
 	
