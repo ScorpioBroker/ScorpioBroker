@@ -69,7 +69,7 @@ public class HistoryService {
 	private URI createTemporalEntity(String payload, boolean fromEntity) throws ResponseException, Exception {
 		logger.trace("creating temporal entity");
 		final JsonObject jsonObject = parser.parse(payload).getAsJsonObject();
-		System.out.println(jsonObject.toString());
+		
 
 		if (jsonObject.get(NGSIConstants.JSON_LD_ID) == null || jsonObject.get(NGSIConstants.JSON_LD_TYPE) == null) {
 			throw new ResponseException(ErrorType.InvalidRequest, "id and type are required fields");

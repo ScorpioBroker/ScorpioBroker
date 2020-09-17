@@ -84,9 +84,7 @@ public class QueryParser {
 		String operator4 = "<=";
 		String operant4 = "12345";
 		String q = "(" + attribName1 + operator1 + operant1 + ";(" + attribName2 + operator2 + operant2 + "|" + attribName3 + operator3 + operant3 + "))|" + attribName4 + operator4 + operant4;
-		System.out.println(q);
 		QueryTerm term = test.parseQuery(q, null);
-		System.out.println(term);
 		// Pattern.compile(test.queryTermUnequal).matcher("brandName!=\"Mercedes\"").group();
 
 	}
