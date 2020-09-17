@@ -963,24 +963,12 @@ public final class HttpUtils {
 			}
 			links.add("<" + compacted.getContextUrl()
 					+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-			if (forceArrayResult && !replyBody.startsWith("[")) {
-				if (replyBody.equals("{ }") || replyBody.equals("{}")) {
-					replyBody = "[]";
-				} else {
-					replyBody = "[" + replyBody + "]";
-				}
-			}
+			replyBody = replyEmptyChecks(replyBody, compacted, forceArrayResult);
 			break;
 		case 2:
 			temp.add(AppConstants.NGB_APPLICATION_JSONLD);
 			replyBody = compacted.getCompactedWithContext();
-			if (forceArrayResult && !replyBody.startsWith("[")) {
-				if (replyBody.equals("{ }") || replyBody.equals("{}")) {
-					replyBody = "[]";
-				} else {
-					replyBody = "[" + replyBody + "]";
-				}
-			}
+			replyBody = replyEmptyChecks(replyBody, compacted, forceArrayResult);
 			break;
 		case 3:
 			temp.add(AppConstants.NGB_APPLICATION_NQUADS);
@@ -995,10 +983,7 @@ public final class HttpUtils {
 		default:
 			throw new ResponseException(ErrorType.InvalidRequest, "Provided accept types are not supported");
 		}
-		if (compacted.getCompacted() == null || compacted.getCompacted().isEmpty()
-				|| compacted.getCompacted().trim().equals("{ }") || compacted.getCompacted().trim().equals("{}")) {
-			replyBody = "{ }";
-		}
+		
 		additionalHeaders.put(HttpHeaders.CONTENT_TYPE, temp);
 		
 		boolean compress = false;
@@ -1007,6 +992,21 @@ public final class HttpUtils {
 			compress = true;
 		}
 		return generateReply(replyBody, additionalHeaders, compress);
+	}
+
+	private String replyEmptyChecks(String replyBody, CompactedJson compacted, boolean forceArrayResult) {
+		if (compacted.getCompacted() == null || compacted.getCompacted().isEmpty()
+				|| compacted.getCompacted().trim().equals("{ }") || compacted.getCompacted().trim().equals("{}")) {
+			replyBody = "{ }";
+		}
+		if (forceArrayResult && !replyBody.startsWith("[")) {
+			if (replyBody.equals("{ }") || replyBody.equals("{}")) {
+				replyBody = "[]";
+			} else {
+				replyBody = "[" + replyBody + "]";
+			}
+		}
+		return null;
 	}
 
 	private String getGeoPropertyFromHeader(HttpServletRequest request) {
