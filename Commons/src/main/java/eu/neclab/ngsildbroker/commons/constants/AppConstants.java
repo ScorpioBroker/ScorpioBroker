@@ -28,6 +28,7 @@ public class AppConstants {
 	
 	public final static String NGB_APPLICATION_JSON="application/json";
 	public final static String NGB_APPLICATION_NQUADS="application/n-quads";
+	public final static String NGB_APPLICATION_GEOJSON="application/geo+json";
 	public final static String NGB_APPLICATION_JSONLD="application/ld+json";
 	public final static String NGB_APPLICATION_GENERIC ="application/*";
 	public final static String NGB_GENERIC_GENERIC ="*/*";

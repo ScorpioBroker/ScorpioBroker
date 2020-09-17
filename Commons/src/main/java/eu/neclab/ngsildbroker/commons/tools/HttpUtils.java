@@ -74,6 +74,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.github.jsonldjava.utils.JsonUtils;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -106,22 +109,23 @@ public final class HttpUtils {
 
 	private ContextResolverBasic contextResolver;
 	private Pattern headerPattern = Pattern.compile(
-			"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
+			"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads)|(application\\/geo\\+json))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
 
 	private HttpUtils(ContextResolverBasic contextResolver) {
 		this.contextResolver = contextResolver;
 		// Nothing to do, but make sure not more than one instance is created.
 	}
-	
-	//Dummy instance with out context resolving. only used for gets and posts etc.
+
+	// Dummy instance with out context resolving. only used for gets and posts etc.
 	private static HttpUtils NULL_INSTANCE = new HttpUtils(null);
+
 	/**
 	 * Returns the singleton instance of this class.
 	 * 
 	 * @return an HttpUtils instance
 	 */
 	public static HttpUtils getInstance(ContextResolverBasic contextResolver) {
-		if(contextResolver == null) {
+		if (contextResolver == null) {
 			return NULL_INSTANCE;
 		}
 		if (SINGLETON == null) {
@@ -883,7 +887,7 @@ public final class HttpUtils {
 			}
 
 		}
-		
+
 	}
 
 	private int parseAcceptHeader(Enumeration<String> acceptHeaders) {
@@ -892,10 +896,10 @@ public final class HttpUtils {
 
 		while (acceptHeaders.hasMoreElements()) {
 			String header = acceptHeaders.nextElement();
-			
+
 			Matcher m = headerPattern.matcher(header.toLowerCase());
 			while (m.find()) {
-				String floatString = m.group(8);
+				String floatString = m.group(9);
 				float newQ = 1;
 				int newAppGroup = -2;
 				if (floatString != null) {
@@ -904,7 +908,7 @@ public final class HttpUtils {
 				if (appGroup != -1 && (newQ < q)) {
 					continue;
 				}
-				for (int i = 2; i <= 6; i++) {
+				for (int i = 2; i <= 7; i++) {
 					if (m.group(i) == null) {
 						continue;
 					}
@@ -925,6 +929,8 @@ public final class HttpUtils {
 			return 1; // application/json
 		case 6:
 			return 3;// application/n-quads
+		case 7:
+			return 4;// application/geojson
 		default:
 			return -1;// error
 		}
@@ -957,39 +963,105 @@ public final class HttpUtils {
 			}
 			links.add("<" + compacted.getContextUrl()
 					+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+			if (forceArrayResult && !replyBody.startsWith("[")) {
+				if (replyBody.equals("{ }") || replyBody.equals("{}")) {
+					replyBody = "[]";
+				} else {
+					replyBody = "[" + replyBody + "]";
+				}
+			}
 			break;
 		case 2:
 			temp.add(AppConstants.NGB_APPLICATION_JSONLD);
-			if (compacted.getCompacted() == null || compacted.getCompacted().isEmpty()
-					|| compacted.getCompacted().trim().equals("{ }") || compacted.getCompacted().trim().equals("{}")) {
-				replyBody = "{ }";
-			} else {
-				replyBody = compacted.getCompactedWithContext();
+			replyBody = compacted.getCompactedWithContext();
+			if (forceArrayResult && !replyBody.startsWith("[")) {
+				if (replyBody.equals("{ }") || replyBody.equals("{}")) {
+					replyBody = "[]";
+				} else {
+					replyBody = "[" + replyBody + "]";
+				}
 			}
 			break;
 		case 3:
 			temp.add(AppConstants.NGB_APPLICATION_NQUADS);
 			replyBody = contextResolver.getRDF(reply);
 			break;
+		case 4:
+			temp.add(AppConstants.NGB_APPLICATION_GEOJSON);
+			replyBody = getGeoJson(compacted, forceArrayResult, getGeoPropertyFromHeader(request));
+			break;
+
 		case -1:
 		default:
 			throw new ResponseException(ErrorType.InvalidRequest, "Provided accept types are not supported");
 		}
-
-		additionalHeaders.put(HttpHeaders.CONTENT_TYPE, temp);
-		if (forceArrayResult && !replyBody.startsWith("[")) {
-			if (replyBody.equals("{ }") || replyBody.equals("{}")) {
-				replyBody = "[]";
-			} else {
-				replyBody = "[" + replyBody + "]";
-			}
+		if (compacted.getCompacted() == null || compacted.getCompacted().isEmpty()
+				|| compacted.getCompacted().trim().equals("{ }") || compacted.getCompacted().trim().equals("{}")) {
+			replyBody = "{ }";
 		}
+		additionalHeaders.put(HttpHeaders.CONTENT_TYPE, temp);
+		
 		boolean compress = false;
 		String options = request.getParameter(NGSIConstants.QUERY_PARAMETER_OPTIONS);
 		if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
 			compress = true;
 		}
 		return generateReply(replyBody, additionalHeaders, compress);
+	}
+
+	private String getGeoPropertyFromHeader(HttpServletRequest request) {
+		String result = request.getHeader(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
+		if(result == null) {
+			return NGSIConstants.NGSI_LD_LOCATION_SHORT;
+		}
+		return result;
+	}
+
+	private String getGeoJson(CompactedJson compacted, boolean forceArrayResult, String geoProperty) {
+		Object compactedObj = compacted.getCompactedObject();
+		HashMap<String, Object> result;
+		if(compactedObj instanceof List || forceArrayResult) {
+			result = new HashMap<String, Object>();
+			result.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.GEO_JSON_FEATURE_COLLECTION);
+			ArrayList<Object> features = new ArrayList<Object>();
+			if(compactedObj instanceof List) {
+				List tempList = (List)compactedObj;
+				for(Object entry: tempList) {
+					features.add(getGeoJsonFeature((Map<String, Object>)entry, geoProperty));
+				}
+			}else {
+				features.add(getGeoJsonFeature((Map<String, Object>)compactedObj, geoProperty));
+			}
+			result.put(NGSIConstants.GEO_JSON_FEATURES, features);
+		}else {
+			result = getGeoJsonFeature((Map<String, Object>)compactedObj, geoProperty);
+		}
+		
+		try {
+			return JsonUtils.toPrettyString(result);
+		} catch (JsonGenerationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return "";
+	}
+
+	private HashMap<String, Object> getGeoJsonFeature(Map<String, Object> compactedObj, String geoProperty) {
+		HashMap<String, Object> result = new HashMap<String, Object>();
+		result.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.GEO_JSON_FEATURE);
+		result.put(NGSIConstants.QUERY_PARAMETER_ID, compactedObj.remove(NGSIConstants.QUERY_PARAMETER_ID));
+		Object geoProp = compactedObj.remove(geoProperty);
+		HashMap<String, Object> geometryValue = null;
+		if(geoProp != null) {
+			geometryValue = (HashMap<String, Object>) ((Map<String, Object>)geoProp).get(NGSIConstants.VALUE);
+		}
+		result.put(NGSIConstants.GEO_JSON_GEOMETRY, geometryValue);
+		result.put(NGSIConstants.JSON_LD_CONTEXT, compactedObj.remove(NGSIConstants.JSON_LD_CONTEXT));
+		result.put(NGSIConstants.GEO_JSON_PROPERTIES, compactedObj);
+		return result;
 	}
 
 	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,

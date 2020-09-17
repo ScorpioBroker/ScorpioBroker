@@ -129,7 +129,13 @@ public interface NGSIConstants {
 	public final static String GEO_JSON_TYPE = "type";
 
 	public final static String VALUE = "value";
-
+	
+	//GeoJSON constants
+	public final static String GEO_JSON_FEATURE = "Feature";
+	public final static String GEO_JSON_FEATURE_COLLECTION = "FeatureCollection";
+	public final static String GEO_JSON_FEATURES = "features";
+	public final static String GEO_JSON_GEOMETRY = "geometry";
+	public final static String GEO_JSON_PROPERTIES = "properties";
 	// Entity validation attribute types
 	public final static String VALID_NGSI_ATTRIBUTE_TYPES = "Relationship,Property,DateTime";
 
@@ -146,6 +152,7 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_QUERY = "q";
 	public final static String QUERY_PARAMETER_GEOREL = "georel";
 	public final static String QUERY_PARAMETER_GEOMETRY = "geometry";
+	public final static String QUERY_PARAMETER_GEOMETRY_PROPERTY = "geometryProperty";
 	public final static String QUERY_PARAMETER_COORDINATES = "coordinates";
 	public final static String QUERY_PARAMETER_GEOPROPERTY = "geoproperty";
 	public final static String QUERY_PARAMETER_TIMEREL = "timerel";

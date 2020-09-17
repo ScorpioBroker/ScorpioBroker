@@ -1034,12 +1034,14 @@ public class ContextResolverBasic {
 					entry.put(NGSIConstants.JSON_LD_CONTEXT, rawContext);
 				}
 				result.setCompactedWithContext(JsonUtils.toPrettyString(toCompact));
+				result.setCompactedObject(toCompact);
 			} else {
-
 				tempResult.put(NGSIConstants.JSON_LD_CONTEXT, rawContext);
 				result.setCompactedWithContext(JsonUtils.toPrettyString(tempResult));
 				tempResult.remove(NGSIConstants.JSON_LD_CONTEXT);
 				result.setCompacted(JsonUtils.toPrettyString(tempResult));
+				tempResult.put(NGSIConstants.JSON_LD_CONTEXT, rawContext);
+				result.setCompactedObject(tempResult);
 			}
 
 		} catch (IOException e) {

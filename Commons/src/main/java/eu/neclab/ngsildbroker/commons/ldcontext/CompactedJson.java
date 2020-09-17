@@ -5,9 +5,14 @@ public class CompactedJson {
 	private String compacted;
 	private String compactedWithContext;
 	private String contextUrl;
+	private Object compactedObject;
 	
 	
 	
+
+	public Object getCompactedObject() {
+		return compactedObject;
+	}
 
 	public String getCompacted() {
 		return compacted;
@@ -31,6 +36,11 @@ public class CompactedJson {
 
 	public void setContextUrl(String contextUrl) {
 		this.contextUrl = contextUrl;
+	}
+
+	public void setCompactedObject(Object compactedObject) {
+		this.compactedObject = compactedObject;
+		
 	}
 
 	
