@@ -1006,7 +1006,7 @@ public final class HttpUtils {
 				replyBody = "[" + replyBody + "]";
 			}
 		}
-		return null;
+		return replyBody;
 	}
 
 	private String getGeoPropertyFromHeader(HttpServletRequest request) {
