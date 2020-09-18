@@ -3,9 +3,6 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import java.io.IOException;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -219,10 +216,7 @@ public class EntityServiceTest {
 	
 			String id = entityService.createMessage(entityPayload);
 			Assert.assertEquals(id, "urn:ngsi-ld:Vehicle:A103");
-	
-			//verify(entityTopicMap, times(1)).isExist(any());
 			verify(entityService, times(1)).getKeyValueEntity(any());
-			//verify(operations, times(4)).pushToKafka(any(), any(), any());
 		}catch( Exception ex) {
 			Assert.fail();
 		}
@@ -238,7 +232,6 @@ public class EntityServiceTest {
 	public void createMessageThrowsAlreadyExistTest() throws ResponseException, Exception {
 		thrown.expect(ResponseException.class);
 		thrown.expectMessage("Already exists.");
-
 		JsonNode jsonNode = Mockito.mock(JsonNode.class);
 		Mockito.doReturn(jsonNode).when(objectMapper).readTree(entityPayload);
 		Mockito.doReturn(jsonNode).when(jsonNode).get(any());
@@ -246,7 +239,7 @@ public class EntityServiceTest {
 		Mockito.doReturn("urn:ngsi-ld:Vehicle:A103").when(jsonNode).asText();
 		Mockito.doReturn(true).when(entityService).registerContext(any(), any());
 		Mockito.doReturn(true).when(operations).pushToKafka(any(), any(), any());
-        Mockito.doThrow(new ResponseException(ErrorType.AlreadyExists)).when(entityService).createMessage(any());
+		Mockito.doThrow(new ResponseException(ErrorType.AlreadyExists)).when(entityService).createMessage(any());
 		entityService.createMessage(entityPayload);
 		verify(entityTopicMap, times(1)).isExist(any());
 		
