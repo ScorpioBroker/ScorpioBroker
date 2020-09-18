@@ -55,7 +55,7 @@ public class SubscriptionServiceTest {
 	private SubscriptionService manager;
 	
 	@Mock
-	Subscription subscription;
+	Subscription subscriptionMock;
 	
 	@Mock
 	IntervalNotificationHandler intervalNotificationHandler;
@@ -92,6 +92,24 @@ public class SubscriptionServiceTest {
 		verify(kafkaOperations, times(1)).pushToKafka(any(),any(),any());
 	 
  }
+   
+	/**
+	 * this method is used to test update subscription test
+	 */
+  @Test
+  public void updateSubscriptionTest() {		 
+		List<Object> context = new ArrayList<>();	
+	    Subscription subscription = null;
+	    subscription = DataSerializer.getSubscription(resolved);
+	    SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
+	    when(subscriptionId2Subscription.get(any())).thenReturn(new Subscription());
+		try {
+			manager.updateSubscription(subRequest);
+		} catch (Exception e) {
+			verify(subscriptionId2Subscription,times(1)).get(any());
+		}
+}
+   
 	
 	/**
 	 * this method is used to test getAllSubscriptions method of SubscriptionService class

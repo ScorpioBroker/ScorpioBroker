@@ -10,6 +10,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,10 +28,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -62,26 +67,29 @@ public class SubscriptionControllerTest {
 
 	@Before	
 	public void setup() throws Exception {
-		//subscriptionController =new SubscriptionController();
-		//mockMvc = MockMvcBuilders.standaloneSetup(subscriptionController).build();
 		MockitoAnnotations.initMocks(this);
 		
 		//@formatter:off
 		
-		subscriptionEntityPayload= "{\r\n\"id\": \"urn:ngsi-ld:Subscription:211\","
-				+ "\r\n\"type\": \"Subscription\","
-				+ "\r\n\"entities\": [{"
-				+ "\r\n          \"id\": \"urn:ngsi-ld:Vehicle:A10002\","
-				+ "\r\n          \"type\": \"Vehicle\"\r\n        }],"
+		subscriptionEntityPayload="{\r\n\"id\": \"urn:ngsi-ld:Subscription:17\","
+				+ "\r\n\"type\": \"Subscription\",\r\n\"entities\": [{"
+				+ "\r\n          \"id\": \"urn:ngsi-ld:Vehicle:A143\","
+				+ "\r\n          \"type\": \"Vehicle\""
+				+ "\r\n        }],"
+				+ "\r\n\"watchedAttributes\": [\"brandName\"],"
+				+ "\r\n        \"q\":\"brandName!=Mercedes\","
 				+ "\r\n\"notification\": {"
 				+ "\r\n  \"attributes\": [\"brandName\"],"
 				+ "\r\n  \"format\": \"keyValues\","
 				+ "\r\n  \"endpoint\": {"
-				+ "\r\n   \"uri\": \"http://172.30.76.56:1880/test1\","
-				+ "\r\n   \"accept\": \"application/json\""
+				+ "\r\n   \"uri\": \"mqtt://localhost:1883/notify\","
+				+ "\r\n   \"accept\": \"application/json\","
+				+ "\r\n    \"notifierinfo\": {"
+				+ "\r\n      \"version\" : \"mqtt5.0\",\r\n      \"qos\" : 0\r\n    }"
 				+ "\r\n  }"
 				+ "\r\n}"
-				+ "\r\n}";
+				+ "\r\n}"
+				+ "\r\n";
 		
 		//@formatter:on
 	}
@@ -145,6 +153,25 @@ public class SubscriptionControllerTest {
 							andExpect(jsonPath("$.title").value("Already exists."));
 		} catch (Exception e) {
 			Assert.fail();
+		}
+	}
+	
+	/**
+	 * this method is used get the subscribe entity by ID.
+	 */
+
+	@Test
+	public void getSubscriptionEntityTest() {
+		try {
+			List<Object> context = new ArrayList<>();	
+		    Subscription subscription = null;
+		    subscription = DataSerializer.getSubscription(subscriptionEntityPayload);
+		    when(subscriptionService.getSubscription(any())).thenReturn(subscription);
+			mockMvc.perform(get("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:211")
+					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isOk());
+			verify(subscriptionService, times(1)).getSubscription(any());
+           } catch (Exception e) {
+        	   e.printStackTrace();
 		}
 	}
 	
