@@ -71,8 +71,10 @@ public class SubscriptionControllerTest {
 		
 		//@formatter:off
 		
-		subscriptionEntityPayload="{\r\n\"id\": \"urn:ngsi-ld:Subscription:17\","
-				+ "\r\n\"type\": \"Subscription\",\r\n\"entities\": [{"
+		subscriptionEntityPayload="{"
+				+ "\r\n\"id\": \"urn:ngsi-ld:Subscription:211\","
+				+ "\r\n\"type\": \"Subscription\","
+				+ "\r\n\"entities\": [{"
 				+ "\r\n          \"id\": \"urn:ngsi-ld:Vehicle:A143\","
 				+ "\r\n          \"type\": \"Vehicle\""
 				+ "\r\n        }],"
@@ -85,11 +87,12 @@ public class SubscriptionControllerTest {
 				+ "\r\n   \"uri\": \"mqtt://localhost:1883/notify\","
 				+ "\r\n   \"accept\": \"application/json\","
 				+ "\r\n    \"notifierinfo\": {"
-				+ "\r\n      \"version\" : \"mqtt5.0\",\r\n      \"qos\" : 0\r\n    }"
+				+ "\r\n      \"version\" : \"mqtt5.0\","
+				+ "\r\n      \"qos\" : 0"
+				+ "\r\n    }"
 				+ "\r\n  }"
 				+ "\r\n}"
-				+ "\r\n}"
-				+ "\r\n";
+				+ "\r\n}";
 		
 		//@formatter:on
 	}
