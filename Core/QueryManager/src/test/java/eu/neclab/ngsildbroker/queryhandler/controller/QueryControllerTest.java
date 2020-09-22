@@ -202,12 +202,12 @@ public class QueryControllerTest {
 			Mockito.doReturn(entity).when(queryService).retrieveEntity(any(String.class), any(List.class),
 					any(boolean.class), any(boolean.class));
 //			Mockito.doReturn(responseEntity).when(qc).generateReply(any(), any(), any());
-
+			QueryResult result = new QueryResult(entities, null, ErrorType.None, -1, true);
+			Mockito.doReturn(result).when(queryService).getData(any(), any(), any(), any(), any(), any(), any());
 			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A100").accept(AppConstants.NGB_APPLICATION_JSON))
 					.andExpect(status().isOk()).andExpect(jsonPath("$.id").value("urn:ngsi-ld:Vehicle:A100"));
 //					.andExpect(redirectedUrl(linkHeader)).andDo(print());
-			verify(queryService, times(1)).retrieveEntity(any(String.class), any(List.class), any(boolean.class),
-					any(boolean.class));
+			verify(queryService, times(1)).getData(any(), any(), any(), any(), any(), any(), any());
 //			verify(qc, times(1)).generateReply(any(), any(), any());
 
 		} catch (Exception e) {
@@ -222,12 +222,13 @@ public class QueryControllerTest {
 
 			Mockito.doReturn("null").when(queryService).retrieveEntity(any(String.class), any(List.class),
 					any(boolean.class), any(boolean.class));
+			//QueryResult result = new QueryResult(entities, null, ErrorType.None, -1, true);
+			Mockito.doThrow(new ResponseException(ErrorType.NotFound)).when(queryService).getData(any(), any(), any(), any(), any(), any(), any());
 
 			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A100").accept(AppConstants.NGB_APPLICATION_JSON))
 					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."))
 					.andDo(print());
-			verify(queryService, times(1)).retrieveEntity(any(String.class), any(List.class), any(boolean.class),
-					any(boolean.class));
+			verify(queryService, times(1)).getData(any(), any(), any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -261,15 +262,15 @@ public class QueryControllerTest {
 					any(boolean.class), any(boolean.class));
 //			Mockito.doReturn(entityContext).when(contextResolver).getContext(any());
 //			Mockito.doReturn(responseEntity).when(qc).generateReply(any(), any(), any());
-
+			QueryResult result = new QueryResult(entities, null, ErrorType.None, -1, true);
+			Mockito.doReturn(result).when(queryService).getData(any(), any(), any(), any(), any(), any(), any());
 			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}?attrs=brandName", "urn:ngsi-ld:Vehicle:A100")
 					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isOk())
 					.andExpect(jsonPath("$.id").value("urn:ngsi-ld:Vehicle:A100")).andDo(print());
 			// verify(HttpUtils.parseLinkHeader(any(HttpServletRequest.class),
 			// NGSIConstants.HEADER_REL_LDCONTEXT));
 
-			Mockito.verify(queryService, times(1)).retrieveEntity(any(String.class), any(List.class),
-					any(boolean.class), any(boolean.class));
+			Mockito.verify(queryService, times(1)).getData(any(), any(), any(), any(), any(), any(), any());
 //			Mockito.verify(qc, times(1)).generateReply(any(), any(), any());
 
 		} catch (Exception e) {
@@ -281,8 +282,10 @@ public class QueryControllerTest {
 	public void getAttrsFailureTest() {
 		try {
 			// when(queryService.retrieveEntity(any(),any(),any(),any())).thenReturn(entity);
-			Mockito.doReturn("null").when(queryService).retrieveEntity(any(String.class), any(List.class),
-					any(boolean.class), any(boolean.class));
+			//Mockito.doReturn("null").when(queryService).retrieveEntity(any(String.class), any(List.class),
+				//	any(boolean.class), any(boolean.class));
+			//QueryResult result = new QueryResult(entities, null, ErrorType.None, -1, true);
+			Mockito.doThrow(new ResponseException(ErrorType.NotFound)).when(queryService).getData(any(), any(), any(), any(), any(), any(), any());
 			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}?attrs=brandName", "urn:ngsi-ld:Vehicle:A100")
 					.accept(AppConstants.NGB_APPLICATION_JSON)).andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.title").value("Resource not found.")).andDo(print());
@@ -290,6 +293,7 @@ public class QueryControllerTest {
 			// NGSIConstants.HEADER_REL_LDCONTEXT));
 			// Mockito.verify(queryService,times(1)).retrieveEntity(any(String.class),
 			// any(List.class), any(boolean.class), any(boolean.class));
+			verify(queryService, times(1)).getData(any(), any(), any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -302,12 +306,11 @@ public class QueryControllerTest {
 		try {
 			Mockito.doThrow(responseException).when(queryService).retrieveEntity(any(String.class), any(List.class),
 					any(boolean.class), any(boolean.class));
-
+			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(queryService).getData(any(), any(), any(), any(), any(), any(), any());
 			mockMvc.perform(get("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A100").accept(AppConstants.NGB_APPLICATION_JSON))
 					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."))
 					.andDo(print());
-			verify(queryService, times(1)).retrieveEntity(any(String.class), any(List.class), any(boolean.class),
-					any(boolean.class));
+			verify(queryService, times(1)).getData(any(), any(), any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
