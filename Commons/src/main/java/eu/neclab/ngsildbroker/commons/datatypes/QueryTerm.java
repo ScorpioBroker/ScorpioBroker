@@ -78,11 +78,11 @@ public class QueryTerm {
 		return result;
 	}
 
-	
 	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant)
 			throws ResponseException {
-
-		if (!attribute.matches(URI) && attribute.indexOf('.') < attribute.indexOf('[')) {
+		int indexDot = attribute.indexOf('.');
+		int indexBracket = attribute.indexOf('[');
+		if (!attribute.matches(URI) && indexDot != -1 && (indexBracket == -1 || (indexDot < indexBracket))) {
 			String[] splittedAttrib = attribute.split("\\.");
 			ArrayList<BaseProperty> newProps = new ArrayList<BaseProperty>();
 			String expanded = expandAttributeName(splittedAttrib[0]);
@@ -107,7 +107,7 @@ public class QueryTerm {
 			return calculate(newProps, newAttrib, operator, operant);
 		} else {
 			String[] compound = null;
-			if (attribute.contains("[")) {
+			if (indexBracket != -1 ) {
 				attribute.replace("[", "").replace("]", "");
 				compound = attribute.split("\\.");
 				attribute = compound[0];
@@ -354,8 +354,8 @@ public class QueryTerm {
 		Object value = null;
 		if (myEntry instanceof PropertyEntry) {
 			value = ((PropertyEntry) myEntry).getValue();
-			if(value instanceof List) {
-				value = ((List)value).get(0);
+			if (value instanceof List) {
+				value = ((List) value).get(0);
 			}
 		} else if (myEntry instanceof RelationshipEntry) {
 			value = ((RelationshipEntry) myEntry).getObject().toString();
