@@ -140,7 +140,6 @@ public class EntityControllerTest {
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload)).andExpect(status().isCreated())
 					.andExpect(redirectedUrl("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101"));
 			verify(entityService, times(1)).createMessage(any());
-			verify(entityService, times(1)).validateEntity(any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -158,7 +157,6 @@ public class EntityControllerTest {
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
 					.andExpect(status().isConflict()).andExpect(jsonPath("$.title").value("Already exists."));
 			verify(entityService, times(1)).createMessage(any());
-			verify(entityService, times(1)).validateEntity(any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}
@@ -175,7 +173,6 @@ public class EntityControllerTest {
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
 					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
 			verify(entityService, times(1)).createMessage(any());
-			verify(entityService, times(1)).validateEntity(any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -193,7 +190,6 @@ public class EntityControllerTest {
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
 					.andExpect(status().isInternalServerError()).andExpect(jsonPath("$.title").value("Internal error"));
 			verify(entityService, times(1)).createMessage(any());
-			verify(entityService, times(1)).validateEntity(any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();

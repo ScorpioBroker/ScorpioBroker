@@ -469,7 +469,7 @@ public class ContextResolverBasic {
 					subscription.setNotification(notification);
 					hasNotificaition = true;
 				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse notification parameter.\n" + e.getMessage());
 				}
 			} else if (keyType == 14) {
 				// NGSI_LD_QUERY
@@ -555,7 +555,10 @@ public class ContextResolverBasic {
 		String accept = AppConstants.NGB_APPLICATION_JSONLD;
 		Format format = Format.normalized;
 		List<String> watchedAttribs = new ArrayList<String>();
+		String mqttVersion= null;
+		Integer qos = null;
 		NotificationParam notifyParam = new NotificationParam();
+		Map<String,String>notifierInfo = new HashMap<String,String>();
 		for (Entry<String, Object> entry : map.entrySet()) {
 			switch (entry.getKey()) {
 			case NGSIConstants.NGSI_LD_ATTRIBUTES:
@@ -576,12 +579,38 @@ public class ContextResolverBasic {
 								.get(0).get(NGSIConstants.JSON_LD_VALUE));
 						endPoint.setUri(endPointURI);
 						break;
+                    
+					case NGSIConstants.NGSI_LD_NOTIFIERINFO:
 
+						for (Entry<String, Object> endPointNotifier : ((List<Map<String, Object>>) endPointEntry
+								.getValue()).get(0).entrySet()) {
+							switch (endPointNotifier.getKey()) {
+							case NGSIConstants.NGSI_LD_MQTT_VERSION:
+								mqttVersion = validateSubNotifierInfoMqttVersion(
+										((List<Map<String, String>>) endPointNotifier.getValue()).get(0)
+												.get(NGSIConstants.JSON_LD_VALUE));
+								notifierInfo.put(NGSIConstants.MQTT_VERSION, mqttVersion);
+								break;
+							case NGSIConstants.NGSI_LD_MQTT_QOS:
+								qos = validateSubNotifierInfoQos(
+										((List<Map<String, Integer>>) endPointNotifier.getValue()).get(0)
+												.get(NGSIConstants.JSON_LD_VALUE));
+								notifierInfo.put(NGSIConstants.MQTT_QOS, String.valueOf(qos));
+								break;
+							default:
+								notifierInfo.put(NGSIConstants.MQTT_VERSION, NGSIConstants.DEFAULT_MQTT_VERSION);
+								notifierInfo.put(NGSIConstants.MQTT_QOS,String.valueOf(NGSIConstants.DEFAULT_MQTT_QOS));
+							}
+						}
+						endPoint.setNotifierInfo(notifierInfo);
+						break;
+				   	
 					default:
 						throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for endpoint");
 					}
 				}
 				endPoint.setAccept(accept);
+				//endPoint.setNotifierInfo(notifierInfo);
 				notifyParam.setEndPoint(endPoint);
 				break;
 			case NGSIConstants.NGSI_LD_FORMAT:
@@ -1179,6 +1208,28 @@ public class ContextResolverBasic {
 			}
 
 		}
+	}
+	
+	private String validateSubNotifierInfoMqttVersion(String string) throws ResponseException {
+		try {
+			if (!Arrays.asList(NGSIConstants.VALID_MQTT_VERSION).contains(string)) {
+				throw new ResponseException(ErrorType.BadRequestData, "Unsupport Mqtt version");
+			}
+		} catch (Exception e) {
+			throw new ResponseException(ErrorType.BadRequestData, "Unsupport Mqtt version");
+		}
+		return string;
+	}
+
+	private int validateSubNotifierInfoQos(Integer qos) throws ResponseException {
+		try {
+			if (!Arrays.asList(NGSIConstants.VALID_QOS).contains(qos)) {
+				throw new ResponseException(ErrorType.BadRequestData, "Unsupport Qos");
+			}
+		} catch (Exception e) {
+			throw new ResponseException(ErrorType.BadRequestData, "Unsupport Qos");
+		}
+		return qos;
 	}
 
 }
