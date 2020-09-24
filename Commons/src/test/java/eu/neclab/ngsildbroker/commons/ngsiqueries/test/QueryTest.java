@@ -178,7 +178,9 @@ public class QueryTest {
 			term.setParamsResolver(paramResolver);
 			assertFalse(term.calculate(intListProp));
 		} catch (ResponseException e) {
+			e.printStackTrace();
 			Assert.fail(e.getLocalizedMessage());
+			
 		}
 	}
 
@@ -529,7 +531,7 @@ public class QueryTest {
 			term.setParamsResolver(paramResolver);
 			assertTrue(term.calculate(testProp));
 
-			q = "testattrib[level1][level2]==2222";
+			q = "testattrib[level1.level2]==2222";
 			testProp = new Property();
 			testProp.setId(new URI("http://mytestprop.org/testattrib"));
 			HashMap<String, List<Object>> value2 = new HashMap<String, List<Object>>();

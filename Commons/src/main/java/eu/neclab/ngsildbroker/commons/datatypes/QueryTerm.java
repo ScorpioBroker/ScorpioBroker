@@ -107,11 +107,9 @@ public class QueryTerm {
 			return calculate(newProps, newAttrib, operator, operant);
 		} else {
 			String[] compound = null;
-			if (indexBracket != -1 ) {
-				attribute.replace("[", "").replace("]", "");
-				compound = attribute.split("\\.");
-				attribute = compound[0];
-				compound = Arrays.copyOfRange(compound, 1, compound.length);
+			if (indexBracket != -1) {
+				compound = attribute.substring(indexBracket+1,attribute.length()-1).split("\\.");
+				attribute = attribute.substring(0, indexBracket);
 			}
 			String myAttribName = expandAttributeName(attribute);
 			if (myAttribName == null) {
@@ -355,7 +353,12 @@ public class QueryTerm {
 		if (myEntry instanceof PropertyEntry) {
 			value = ((PropertyEntry) myEntry).getValue();
 			if (value instanceof List) {
-				value = ((List) value).get(0);
+				List myList = ((List) value);
+				if (myList.size() == 1) {
+					value = ((List) value).get(0);
+				} else {
+					return value;
+				}
 			}
 		} else if (myEntry instanceof RelationshipEntry) {
 			value = ((RelationshipEntry) myEntry).getObject().toString();
