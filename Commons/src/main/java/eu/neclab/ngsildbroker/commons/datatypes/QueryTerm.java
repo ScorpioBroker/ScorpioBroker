@@ -82,7 +82,7 @@ public class QueryTerm {
 	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant)
 			throws ResponseException {
 
-		if (!attribute.matches(URI) && attribute.contains(".")) {
+		if (!attribute.matches(URI) && attribute.indexOf('.') < attribute.indexOf('[')) {
 			String[] splittedAttrib = attribute.split("\\.");
 			ArrayList<BaseProperty> newProps = new ArrayList<BaseProperty>();
 			String expanded = expandAttributeName(splittedAttrib[0]);
@@ -108,7 +108,8 @@ public class QueryTerm {
 		} else {
 			String[] compound = null;
 			if (attribute.contains("[")) {
-				compound = attribute.split("\\[");
+				attribute.replace("[", "").replace("]", "");
+				compound = attribute.split("\\.");
 				attribute = compound[0];
 				compound = Arrays.copyOfRange(compound, 1, compound.length);
 			}
@@ -334,7 +335,7 @@ public class QueryTerm {
 			return null;
 		}
 		Map complexValue = (Map) value;
-		String firstElement = expandAttributeName(compound[0].replaceAll("\\]", "").replaceAll("\\[", ""));
+		String firstElement = expandAttributeName(compound[0]);
 		Object potentialResult = complexValue.get(firstElement);
 		if (potentialResult == null) {
 			return null;
