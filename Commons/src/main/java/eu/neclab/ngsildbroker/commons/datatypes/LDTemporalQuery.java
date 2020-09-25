@@ -11,9 +11,9 @@ import eu.neclab.ngsildbroker.commons.enums.TemporalRelation;
  */
 public class LDTemporalQuery {
 
-	private Date endTime;
+	private Date endTimeAt;
 	private TemporalRelation temprel;
-	private Date time;
+	private Date timeAt;
 	private String timeProperty = "observedAt";
 
 	public LDTemporalQuery(){
@@ -24,12 +24,12 @@ public class LDTemporalQuery {
 
 	}
 
-	public Date getEndTime() {
-		return endTime;
+	public Date getEndTimeAt() {
+		return endTimeAt;
 	}
 
-	public void setEndTime(Date endTime) {
-		this.endTime = endTime;
+	public void setEndTimeAt(Date endTimeAt) {
+		this.endTimeAt = endTimeAt;
 	}
 
 	public TemporalRelation getTemprel() {
@@ -41,11 +41,11 @@ public class LDTemporalQuery {
 	}
 
 	public Date getTime() {
-		return time;
+		return timeAt;
 	}
 
-	public void setTime(Date time) {
-		this.time = time;
+	public void setTimeAt(Date timeAt) {
+		this.timeAt = timeAt;
 	}
 
 	public String getTimeProperty() {

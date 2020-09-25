@@ -60,7 +60,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ATTRIBUTES = "https://uri.etsi.org/ngsi-ld/attributes";
 	public final static String NGSI_LD_DATE_TIME = "https://uri.etsi.org/ngsi-ld/DateTime";
 	public final static String NGSI_LD_DATE = "https://uri.etsi.org/ngsi-ld/Date";
-	public final static String NGSI_LD_TIME = "https://uri.etsi.org/ngsi-ld/Time";
+	public final static String NGSI_LD_TIME = "https://uri.etsi.org/ngsi-ld/TimeAt";
 	public final static String NGSI_LD_INFORMATION = "https://uri.etsi.org/ngsi-ld/information";
 	public final static String NGSI_LD_RELATIONSHIPS = "https://uri.etsi.org/ngsi-ld/relationships";
 	public final static String NGSI_LD_PROPERTIES = "https://uri.etsi.org/ngsi-ld/properties";
@@ -89,8 +89,8 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_DESCRIPTION = "http://purl.org/dc/terms/description";
 	public final static String NGSI_LD_GEO_REL = "https://uri.etsi.org/ngsi-ld/georel";
 	public final static String NGSI_LD_TIME_STAMP = "https://uri.etsi.org/ngsi-ld/timestamp";
-	public final static String NGSI_LD_TIMESTAMP_START = "https://uri.etsi.org/ngsi-ld/start";
-	public final static String NGSI_LD_TIMESTAMP_END = "https://uri.etsi.org/ngsi-ld/end";
+	public final static String NGSI_LD_TIMESTAMP_START = "https://uri.etsi.org/ngsi-ld/startAt";
+	public final static String NGSI_LD_TIMESTAMP_END = "https://uri.etsi.org/ngsi-ld/endAt";
 	public final static String NGSI_LD_POLYOGN = "https://uri.etsi.org/ngsi-ld/Polygon";
 	public final static String NGSI_LD_POINT = "https://uri.etsi.org/ngsi-ld/Point";
 	public final static String NGSI_LD_LINESTRING = "https://uri.etsi.org/ngsi-ld/LineString";
@@ -154,8 +154,8 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_OFFSET = "offset";
 	public final static String QUERY_PARAMETER_LIMIT = "limit";
 	public final static String QUERY_PARAMETER_QTOKEN = "qtoken";
-	public final static String QUERY_PARAMETER_TIME = "time";
-	public final static String QUERY_PARAMETER_ENDTIME = "endTime";
+	public final static String QUERY_PARAMETER_TIME = "timeAt";
+	public final static String QUERY_PARAMETER_ENDTIME = "endTimeAt";
 	public final static String QUERY_PARAMETER_TIMEPROPERTY = "timeproperty";
 	public final static String QUERY_PARAMETER_LOCATION = "location";
 	public final static String QUERY_PARAMETER_CREATED_AT = "createdAt";

@@ -154,7 +154,7 @@ public class StartupConfig {
 		// @formatter:off
 		return "{\r\n" + "	\"id\": \"" + id + "\",\r\n" + "	\"type\": \"ContextSourceRegistration\",\r\n"
 				+ "	\"information\": " + getCSInformationNode() + ",\r\n" + "	\"endpoint\": \"" + endpoint + "\",\r\n"
-				+ "	\"location\": \"" + geom + "\",\r\n" + "	\"timestamp\": {\r\n" + "		\"start\": \""
+				+ "	\"location\": \"" + geom + "\",\r\n" + "	\"timestamp\": {\r\n" + "		\"startAt\": \""
 				+ LocalDateTime.now() + "\"\r\n" + "	}\r\n" + "}";
 		// @formatter:on
 	}

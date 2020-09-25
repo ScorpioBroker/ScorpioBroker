@@ -117,11 +117,11 @@ public class CSourceRegistrationGsonAdapter
 		if (src.getTimestamp() != null) {
 			jsonArray = new JsonArray();
 			JsonObject timestampObject = new JsonObject();
-			if (src.getTimestamp().getStart() != null) {
+			if (src.getTimestamp().getStartAt() != null) {
 				JsonArray temp2 = new JsonArray();
 				jsonObject = new JsonObject();
 
-				Date date = src.getTimestamp().getStart();
+				Date date = src.getTimestamp().getStartAt();
 				Instant current = date.toInstant();
 				LocalDateTime ldt = LocalDateTime.ofInstant(current, ZoneId.systemDefault());
 
@@ -257,7 +257,7 @@ public class CSourceRegistrationGsonAdapter
 					LocalDateTime localdatetime = LocalDateTime.parse(dateTime.trim());
 					Instant instant = localdatetime.atZone(ZoneId.systemDefault()).toInstant();
 					Date startDate = Date.from(instant);
-					result.getTimestamp().setStart(startDate);
+					result.getTimestamp().setStartAt(startDate);
 				}
 				if (timestampObject.has(NGSIConstants.NGSI_LD_TIMESTAMP_END)) {
 					String dateTime = timestampObject.get(NGSIConstants.NGSI_LD_TIMESTAMP_END).getAsJsonArray().get(0)

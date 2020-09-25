@@ -96,7 +96,7 @@ public class HistoryController {
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
 			if (qp == null) // invalid query
 				throw new ResponseException(ErrorType.InvalidRequest);
-			if (qp.getTimerel() == null || qp.getTime() == null) {
+			if (qp.getTimerel() == null || qp.getTimeAt() == null) {
 				throw new ResponseException(ErrorType.BadRequestData, "Time filter is required");
 			}
 			if (qp.getType() == null && qp.getAttrs() == null) {

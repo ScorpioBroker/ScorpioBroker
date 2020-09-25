@@ -142,8 +142,8 @@ public class EntityService {
 
 	private final EntityProducerChannel producerChannels;
 
-	LocalDateTime start;
-	LocalDateTime end;
+	LocalDateTime startAt;
+	LocalDateTime endAt;
 	private Set<String> entityIds = new HashSet<String>();
 
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
@@ -977,7 +977,7 @@ public class EntityService {
 		// location node.
 
 		TimeInterval timestamp = new TimeInterval();
-		timestamp.setStart(new Date());
+		timestamp.setStartAt(new Date());
 		csourceRegistration.setTimestamp(timestamp);
 		logger.trace("getCSourceRegistrationFromJson() :: completed");
 		return csourceRegistration;

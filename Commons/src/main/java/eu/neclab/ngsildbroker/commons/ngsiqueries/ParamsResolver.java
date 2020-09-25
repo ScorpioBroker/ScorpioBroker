@@ -177,11 +177,11 @@ public class ParamsResolver {
 					break;
 				case NGSIConstants.QUERY_PARAMETER_TIMEREL:
 					String timerel = queryValue;
-					String time = "";
+					String timeAt = "";
 					String timeproperty = "";
-					String endTime = "";
+					String endTimeAt = "";
 					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME) != null)
-						time = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME)[0];
+						timeAt = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME)[0];
 					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY) != null) {
 						timeproperty = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY)[0];
 						timeproperty = expandAttribute(timeproperty, linkHeaders);
@@ -189,20 +189,20 @@ public class ParamsResolver {
 						timeproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY;
 					}
 					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_ENDTIME) != null)
-						endTime = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_ENDTIME)[0];
+						endTimeAt = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_ENDTIME)[0];
 
-					if (time.isEmpty()) {
+					if (timeAt.isEmpty()) {
 						throw new ResponseException(ErrorType.BadRequestData, "Time is empty");
 					}
-					if (timerel.equals(NGSIConstants.TIME_REL_BETWEEN) && endTime.isEmpty()) {
+					if (timerel.equals(NGSIConstants.TIME_REL_BETWEEN) && endTimeAt.isEmpty()) {
 						throw new ResponseException(ErrorType.BadRequestData,
-								"Timerel is between but endTime is empty");
+								"Timerel is between but endTimeAt is empty");
 					}
 
 					qp.setTimerel(timerel);
-					qp.setTime(time);
+					qp.setTimeAt(timeAt);
 					qp.setTimeproperty(timeproperty);
-					qp.setEndTime(endTime);
+					qp.setEndTimeAt(endTimeAt);
 					break;
 				case NGSIConstants.QUERY_PARAMETER_QUERY:
 					qp.setQ(queryParser.parseQuery(queryValue, linkHeaders).toSql(temporalEntityFormat));
@@ -291,9 +291,9 @@ public class ParamsResolver {
 		logger.debug("link: " + context);
 		String jsonLdAttribute = getJsonLdAttribute(attribute, context);
 		logger.debug("jsonLdAttribute: " + jsonLdAttribute);
-		LocalDateTime start = LocalDateTime.now();
+		LocalDateTime startAt = LocalDateTime.now();
 		String jsonLdAttributeResolved = contextResolver.expand(jsonLdAttribute, context, false, AppConstants.INTERNAL_CALL_ID);
-		LocalDateTime end = LocalDateTime.now();
+		LocalDateTime endAt = LocalDateTime.now();
 
 		logger.debug("jsonLdAttributeResolved: " + jsonLdAttributeResolved);
 		JsonParser parser = new JsonParser();
