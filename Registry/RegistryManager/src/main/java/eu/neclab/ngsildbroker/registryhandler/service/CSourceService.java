@@ -218,7 +218,7 @@ public class CSourceService {
 			logger.error("Information is empty!");
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		if (csourceRegistration.getExpires() != null && !isValidFutureDate(csourceRegistration.getExpires())) {
+		if (csourceRegistration.getExpiresAt() != null && !isValidFutureDate(csourceRegistration.getExpiresAt())) {
 			logger.error("Invalid expire date!");
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
@@ -259,7 +259,7 @@ public class CSourceService {
 	}
 
 	public void csourceTimerTask(CSourceRegistration csourceReg) {
-		if (csourceReg.getExpires() != null) {
+		if (csourceReg.getExpiresAt() != null) {
 			TimerTask cancel = new TimerTask() {
 				@Override
 				public void run() {
@@ -273,7 +273,7 @@ public class CSourceService {
 				}
 			};
 			regId2TimerTask.put(csourceReg.getId().toString(), cancel);
-			watchDog.schedule(cancel, csourceReg.getExpires() - System.currentTimeMillis());
+			watchDog.schedule(cancel, csourceReg.getExpiresAt() - System.currentTimeMillis());
 		}
 	}
 

@@ -156,8 +156,8 @@ public class CSourceRegistrationGsonAdapter
 			top.add(NGSIConstants.NGSI_LD_LOCATION, jsonArray);			
 		}
 		
-		if(src.getExpires()!=null) {
-			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools.getJson(src.getExpires(), context));
+		if(src.getExpiresAt()!=null) {
+			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools.getJson(src.getExpiresAt(), context));
 		}
 		
 		return top;
@@ -270,7 +270,7 @@ public class CSourceRegistrationGsonAdapter
 			}else if(key.equals(NGSIConstants.NGSI_LD_EXPIRES)) {
 				String expires=value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 				try {
-					result.setExpires(SerializationTools.date2Long(expires));
+					result.setExpiresAt(SerializationTools.date2Long(expires));
 				} catch (Exception e) {
 					throw new JsonParseException(e.getMessage());
 				}

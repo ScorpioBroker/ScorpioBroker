@@ -57,7 +57,7 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 public class ContextResolverBasic {
 	private final static Logger logger = LogManager.getLogger(ContextResolverBasic.class);
 	private URI CORE_CONTEXT_URL;
-	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld}")
 	private String CORE_CONTEXT_URL_STR;
 	
 	private String USED_CORE_CONTEXT_URL_STR;
@@ -507,7 +507,7 @@ public class ContextResolverBasic {
 			} else if (keyType == 19) {
 				// EXPIRES
 				try {
-					subscription.setExpires(SerializationTools.date2Long(
+					subscription.setExpiresAt(SerializationTools.date2Long(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE)));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse expires");
@@ -533,6 +533,14 @@ public class ContextResolverBasic {
 				try {
 					subscription.setActive(
 							(Boolean) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
+				}
+			} else if (keyType == 25) {
+				// Name
+				try {
+					subscription.setSubscriptionName(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
 				}

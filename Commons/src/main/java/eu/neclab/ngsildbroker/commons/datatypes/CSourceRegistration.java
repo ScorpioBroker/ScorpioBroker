@@ -14,7 +14,7 @@ public class CSourceRegistration {
 
 	private String description;
 	private URI endpoint;
-	private Long expires;
+	private Long expiresAt;
 	private URI id;
 
 	private List<Information> information;
@@ -47,8 +47,8 @@ public class CSourceRegistration {
 		if (updateBean.getEndpoint() != null) {
 			this.setEndpoint(updateBean.getEndpoint());
 		}
-		if (updateBean.getExpires() != null) {
-			this.setExpires(updateBean.getExpires());
+		if (updateBean.getExpiresAt() != null) {
+			this.setExpiresAt(updateBean.getExpiresAt());
 		}
 		if (updateBean.getId() != null) {
 			this.setId(updateBean.getId());
@@ -97,12 +97,12 @@ public class CSourceRegistration {
 		this.endpoint = endpoint;
 	}
 
-	public Long getExpires() {
-		return expires;
+	public Long getExpiresAt() {
+		return expiresAt;
 	}
 
-	public void setExpires(Long expires) {
-		this.expires = expires;
+	public void setExpiresAt(Long expiresAt) {
+		this.expiresAt = expiresAt;
 	}
 
 	public URI getId() {
@@ -155,7 +155,7 @@ public class CSourceRegistration {
 
 	@Override
 	public String toString() {
-		return "CSourceRegistration [description=" + description + ", endpoint=" + endpoint + ", expires=" + expires
+		return "CSourceRegistration [description=" + description + ", endpoint=" + endpoint + ", expiresAt=" + expiresAt
 				+ ", id=" + id + ", information=" + information + ", location=" + location + ", name=" + name
 				+ ", timestamp=" + timestamp + ", type=" + type + "]";
 	}
@@ -166,7 +166,7 @@ public class CSourceRegistration {
 		int result = 1;
 		result = prime * result + ((description == null) ? 0 : description.hashCode());
 		result = prime * result + ((endpoint == null) ? 0 : endpoint.hashCode());
-		result = prime * result + ((expires == null) ? 0 : expires.hashCode());
+		result = prime * result + ((expiresAt == null) ? 0 : expiresAt.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result + ((information == null) ? 0 : information.hashCode());
 		result = prime * result + ((location == null) ? 0 : location.hashCode());
@@ -195,10 +195,10 @@ public class CSourceRegistration {
 				return false;
 		} else if (!endpoint.equals(other.endpoint))
 			return false;
-		if (expires == null) {
-			if (other.expires != null)
+		if (expiresAt == null) {
+			if (other.expiresAt != null)
 				return false;
-		} else if (!expires.equals(other.expires))
+		} else if (!expiresAt.equals(other.expiresAt))
 			return false;
 		if (id == null) {
 			if (other.id != null)

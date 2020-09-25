@@ -30,12 +30,13 @@ public interface NGSIConstants {
 	public final static String CSOURCE_INFORMATION = "information";
 	public final static String CSOURCE_DESCRIPTION = "description";
 	public final static String CSOURCE_ENDPOINT = "endpoint";
-	public final static String CSOURCE_EXPIRES = "expires";
+	public final static String CSOURCE_EXPIRES = "expiresAt";
 	public final static String CSOURCE_NAME = "name";
 	public final static String CSOURCE_TYPE = "type";
 	public final static String CSOURCE_TIMESTAMP = "timestamp";
 	public final static String CSOURCE_COORDINATES = "coordinates";
-
+	public final static String SUBSCRIPTION_NAME = "subscriptionName";
+	
 	public final static String OBJECT = "object";
 	public final static String JSON_LD_ID = "@id";
 	public final static String JSON_LD_TYPE = "@type";
@@ -80,11 +81,12 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ENTITIES_SHORT = "entities";
 	public final static String NGSI_LD_ATTRIBUTES_SHORT = "attributes";
 	public final static String NGSI_LD_NAME = "https://uri.etsi.org/ngsi-ld/name";
+	public final static String NGSI_LD_SUBSCRIPTION_NAME = "https://uri.etsi.org/ngsi-ld/subscriptionName";
 	public final static String NGSI_LD_THROTTLING = "https://uri.etsi.org/ngsi-ld/throttling";
 	public final static String NGSI_LD_TIME_INTERVAL = "https://uri.etsi.org/ngsi-ld/timeInterval";
-	public final static String NGSI_LD_EXPIRES = "https://uri.etsi.org/ngsi-ld/expires";
+	public final static String NGSI_LD_EXPIRES = "https://uri.etsi.org/ngsi-ld/expiresAt";
 	public final static String NGSI_LD_STATUS = "https://uri.etsi.org/ngsi-ld/status";
-	public final static String NGSI_LD_DESCRIPTION = "https://uri.etsi.org/ngsi-ld/description";
+	public final static String NGSI_LD_DESCRIPTION = "http://purl.org/dc/terms/description";
 	public final static String NGSI_LD_GEO_REL = "https://uri.etsi.org/ngsi-ld/georel";
 	public final static String NGSI_LD_TIME_STAMP = "https://uri.etsi.org/ngsi-ld/timestamp";
 	public final static String NGSI_LD_TIMESTAMP_START = "https://uri.etsi.org/ngsi-ld/start";
@@ -123,7 +125,7 @@ public interface NGSIConstants {
 			NGSI_LD_ENTITIES, NGSI_LD_ID_PATTERN, NGSI_LD_GEO_QUERY, NGSI_LD_NOTIFICATION, NGSI_LD_ATTRIBUTES,
 			NGSI_LD_ENDPOINT, NGSI_LD_ACCEPT, NGSI_LD_URI, NGSI_LD_FORMAT, NGSI_LD_QUERY, NGSI_LD_WATCHED_ATTRIBUTES,
 			NGSI_LD_TIMES_SEND, NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL, NGSI_LD_EXPIRES, NGSI_LD_STATUS,
-			NGSI_LD_DESCRIPTION, NGSI_LD_IS_ACTIVE, NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START };
+			NGSI_LD_DESCRIPTION, NGSI_LD_IS_ACTIVE, NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START, NGSI_LD_SUBSCRIPTION_NAME };
 
 	public final static String GEO_JSON_COORDINATES = "coordinates";
 	public final static String GEO_JSON_TYPE = "type";
