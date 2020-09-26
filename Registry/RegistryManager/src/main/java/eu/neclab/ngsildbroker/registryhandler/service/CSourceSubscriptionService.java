@@ -426,7 +426,7 @@ public class CSourceSubscriptionService {
 
 		CSourceRegistration reg = new CSourceRegistration();
 		reg.setDescription(regEntry.getDescription());
-		reg.setName(regEntry.getName());
+		reg.setRegistrationName(regEntry.getRegistrationName());
 		reg.setEndpoint(regEntry.getEndpoint());
 		reg.setExpiresAt(regEntry.getExpiresAt());
 		reg.setId(regEntry.getId());
@@ -486,17 +486,17 @@ public class CSourceSubscriptionService {
 		if (props != null || relations != null) {
 			newEntityInfos.add(regEntityInfo);
 			if (props != null) {
-				newInfo.getProperties().addAll(props);
+				newInfo.getPropertyNames().addAll(props);
 			}
 			if (relations != null) {
-				newInfo.getRelationships().addAll(props);
+				newInfo.getRelationshipNames().addAll(props);
 			}
 		}
 
 	}
 
 	private Set<String> extractRelationShips(Information info, Subscription subscription) {
-		if (info.getRelationships() == null || info.getRelationships().isEmpty()
+		if (info.getRelationshipNames() == null || info.getRelationshipNames().isEmpty()
 				|| subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
 			return new HashSet<String>();
 		}
@@ -504,7 +504,7 @@ public class CSourceSubscriptionService {
 		HashSet<String> attribNames = new HashSet<String>();
 		attribNames.addAll(subscription.getNotification().getAttributeNames());
 		attribNames.addAll(subscription.getAttributeNames());
-		for (String relationship : info.getRelationships()) {
+		for (String relationship : info.getRelationshipNames()) {
 			if (attribNames.contains(relationship)) {
 				result.add(relationship);
 			}
@@ -516,7 +516,7 @@ public class CSourceSubscriptionService {
 	}
 
 	private Set<String> extractProperties(Information info, Subscription subscription) {
-		if (info.getProperties() == null || info.getProperties().isEmpty() || subscription.getAttributeNames() == null
+		if (info.getPropertyNames() == null || info.getPropertyNames().isEmpty() || subscription.getAttributeNames() == null
 				|| subscription.getAttributeNames().isEmpty()) {
 			return new HashSet<String>();
 		}
@@ -524,7 +524,7 @@ public class CSourceSubscriptionService {
 		attribNames.addAll(subscription.getNotification().getAttributeNames());
 		attribNames.addAll(subscription.getAttributeNames());
 		HashSet<String> result = new HashSet<String>();
-		for (String property : info.getProperties()) {
+		for (String property : info.getPropertyNames()) {
 			if (attribNames.contains(property)) {
 				result.add(property);
 			}

@@ -36,7 +36,7 @@ public interface NGSIConstants {
 	public final static String CSOURCE_TIMESTAMP = "timestamp";
 	public final static String CSOURCE_COORDINATES = "coordinates";
 	public final static String SUBSCRIPTION_NAME = "subscriptionName";
-	
+	public final static String CSOURCEREGISTRATION_NAME = "registrationName";
 	public final static String OBJECT = "object";
 	public final static String JSON_LD_ID = "@id";
 	public final static String JSON_LD_TYPE = "@type";
@@ -62,8 +62,8 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_DATE = "https://uri.etsi.org/ngsi-ld/Date";
 	public final static String NGSI_LD_TIME = "https://uri.etsi.org/ngsi-ld/TimeAt";
 	public final static String NGSI_LD_INFORMATION = "https://uri.etsi.org/ngsi-ld/information";
-	public final static String NGSI_LD_RELATIONSHIPS = "https://uri.etsi.org/ngsi-ld/relationships";
-	public final static String NGSI_LD_PROPERTIES = "https://uri.etsi.org/ngsi-ld/properties";
+	public final static String NGSI_LD_RELATIONSHIPS = "https://uri.etsi.org/ngsi-ld/relationshipNames";
+	public final static String NGSI_LD_PROPERTIES = "https://uri.etsi.org/ngsi-ld/propertyNames";
 	public final static String NGSI_LD_INSTANCE_ID = "https://uri.etsi.org/ngsi-ld/instanceId";
 
 	public final static String NGSI_LD_ID_PATTERN = "https://uri.etsi.org/ngsi-ld/idPattern";
@@ -82,6 +82,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ATTRIBUTES_SHORT = "attributes";
 	public final static String NGSI_LD_NAME = "https://uri.etsi.org/ngsi-ld/name";
 	public final static String NGSI_LD_SUBSCRIPTION_NAME = "https://uri.etsi.org/ngsi-ld/subscriptionName";
+	public final static String NGSI_LD_CSOURCEREGISTRATION_NAME = "https://uri.etsi.org/ngsi-ld/registrationName";
 	public final static String NGSI_LD_THROTTLING = "https://uri.etsi.org/ngsi-ld/throttling";
 	public final static String NGSI_LD_TIME_INTERVAL = "https://uri.etsi.org/ngsi-ld/timeInterval";
 	public final static String NGSI_LD_EXPIRES = "https://uri.etsi.org/ngsi-ld/expiresAt";

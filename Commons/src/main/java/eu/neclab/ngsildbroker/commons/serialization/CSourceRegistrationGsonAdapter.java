@@ -64,8 +64,8 @@ public class CSourceRegistrationGsonAdapter
 		if (src.getInformation() != null) {
 			for (Information info : src.getInformation()) {
 				JsonObject infoObject = new JsonObject();
-				Set<String> properties = info.getProperties();
-				Set<String> relationsships = info.getRelationships();
+				Set<String> properties = info.getPropertyNames();
+				Set<String> relationsships = info.getRelationshipNames();
 				List<EntityInfo> entities = info.getEntities();
 
 				JsonArray attribs = new JsonArray();
@@ -74,7 +74,9 @@ public class CSourceRegistrationGsonAdapter
 					tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(property));
 					attribs.add(tempObj);
 				}
+				if(attribs.size() > 0) {
 				infoObject.add(NGSIConstants.NGSI_LD_PROPERTIES, attribs);
+				}
 
 				attribs = new JsonArray();
 				for (String relation : relationsships) {
@@ -82,7 +84,9 @@ public class CSourceRegistrationGsonAdapter
 					tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(relation));
 					attribs.add(tempObj);
 				}
+				if(attribs.size() > 0) {
 				infoObject.add(NGSIConstants.NGSI_LD_RELATIONSHIPS, attribs);
+				}
 
 				attribs = new JsonArray();
 				JsonArray tempArray = new JsonArray();
@@ -159,6 +163,12 @@ public class CSourceRegistrationGsonAdapter
 		if(src.getExpiresAt()!=null) {
 			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools.getJson(src.getExpiresAt(), context));
 		}
+		if (src.getDescription() != null) {
+			top.add(NGSIConstants.NGSI_LD_DESCRIPTION, SerializationTools.getValueArray(src.getDescription()));
+		}
+		if (src.getRegistrationName() != null) {
+			top.add(NGSIConstants.NGSI_LD_CSOURCEREGISTRATION_NAME, SerializationTools.getValueArray(src.getRegistrationName()));
+		}
 		
 		return top;
 	}
@@ -198,8 +208,8 @@ public class CSourceRegistrationGsonAdapter
 				while (it.hasNext()) {
 					Information info = new Information();
 					List<EntityInfo> entities = info.getEntities();
-					Set<String> properties = info.getProperties();
-					Set<String> relationships = info.getRelationships();
+					Set<String> properties = info.getPropertyNames();
+					Set<String> relationships = info.getRelationshipNames();
 					information.add(info);
 					JsonObject obj = it.next().getAsJsonObject();
 					if (obj.has(NGSIConstants.NGSI_LD_ENTITIES)) {
@@ -274,6 +284,12 @@ public class CSourceRegistrationGsonAdapter
 				} catch (Exception e) {
 					throw new JsonParseException(e.getMessage());
 				}
+			} else if (key.equals(NGSIConstants.NGSI_LD_DESCRIPTION)) {
+				result.setDescription(
+						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+			} else if (key.equals(NGSIConstants.NGSI_LD_CSOURCEREGISTRATION_NAME)) {
+				result.setRegistrationName(
+						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
 			}
 		}
 		return result;

@@ -969,8 +969,8 @@ public class EntityService {
 
 		entities.add(new EntityInfo(entity.getId(), null, entity.getType()));
 
-		info.setProperties(propertiesList);
-		info.setRelationships(relationshipsList);
+		info.setPropertyNames(propertiesList);
+		info.setRelationshipNames(relationshipsList);
 		information.add(info);
 		csourceRegistration.setInformation(information);
 
