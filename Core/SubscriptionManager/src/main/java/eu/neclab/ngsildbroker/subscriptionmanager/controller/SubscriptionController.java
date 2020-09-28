@@ -101,11 +101,12 @@ public class SubscriptionController {
 			URI subId = manager.subscribe(subRequest);
 
 			logger.trace("subscribeRest() :: completed");
-			return ResponseEntity.created(new URI(AppConstants.SUBSCRIPTIONS_URL + subId.toString())).body((AppConstants.SUBSCRIPTIONS_URL + subId.toString()).getBytes());
+			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.SUBSCRIPTIONS_URL + subId).build();
+			//return ResponseEntity.created(new URI(AppConstants.SUBSCRIPTIONS_URL + subId.toString())).body((AppConstants.SUBSCRIPTIONS_URL + subId.toString()).getBytes());
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
-		} catch (URISyntaxException e) {
+		} catch (Exception  e) {
 			logger.error("Exception ::", e);
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(subscription.getId().toString().getBytes());
 		}
