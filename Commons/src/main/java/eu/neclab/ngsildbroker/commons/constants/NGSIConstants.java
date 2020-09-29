@@ -197,7 +197,7 @@ public interface NGSIConstants {
 	public static final String MQTT_QOS = "mqtt_qos";
 	public static final String MQTT_VERSION = "mqtt_version";
 	public static final String DEFAULT_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/default-data-set-id";
-	public static final String NGSI_LD_ENDPOINT_REGEX = ".*\\\"https\\:\\/\\/uri\\.etsi\\.org\\/ngsi-ld\\/endpoint\\\"\\W*\\:\\W*\\[\\W*\\{\\W*\\@value\\\"\\:\\W*\\\"(http(s)*:\\/\\/[\\w\\.\\:\\/]*)\\\".*";
+	public static final String NGSI_LD_ENDPOINT_REGEX = ".*\\\"https\\:\\/\\/uri\\.etsi\\.org\\/ngsi-ld\\/endpoint\\\"\\W*\\:\\W*\\[\\W*\\{\\W*\\@value\\\"\\:\\W*\\\"(http(s)*\\:\\/\\/\\S*)\\\".*";
 	public static final String NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX = "([\\<\\\"\\'\\=\\;\\(\\)\\>\\?\\*])";
 	public static final String NGSI_LD_FORBIDDEN_KEY_CHARS = "<,\",',=,;,(,),>,?,*";
 	public static final String[] VALID_SUB_ENDPOINT_SCHEMAS = { "http", "https", "mqtt", "mqtts" };

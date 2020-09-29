@@ -101,7 +101,7 @@ public class SubscriptionController {
 			URI subId = manager.subscribe(subRequest);
 
 			logger.trace("subscribeRest() :: completed");
-			return ResponseEntity.created(new URI(AppConstants.SUBSCRIPTIONS_URL + subId.toString())).body(subId.toString().getBytes());
+			return ResponseEntity.created(new URI(AppConstants.SUBSCRIPTIONS_URL + subId.toString())).build();
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
