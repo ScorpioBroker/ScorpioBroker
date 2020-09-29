@@ -89,7 +89,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_STATUS = "https://uri.etsi.org/ngsi-ld/status";
 	public final static String NGSI_LD_DESCRIPTION = "http://purl.org/dc/terms/description";
 	public final static String NGSI_LD_GEO_REL = "https://uri.etsi.org/ngsi-ld/georel";
-	public final static String NGSI_LD_TIME_STAMP = "https://uri.etsi.org/ngsi-ld/timestamp";
+	public final static String NGSI_LD_TIME_STAMP = "https://uri.etsi.org/ngsi-ld/default-context/timestamp";
 	public final static String NGSI_LD_TIMESTAMP_START = "https://uri.etsi.org/ngsi-ld/startAt";
 	public final static String NGSI_LD_TIMESTAMP_END = "https://uri.etsi.org/ngsi-ld/endAt";
 	public final static String NGSI_LD_POLYOGN = "https://uri.etsi.org/ngsi-ld/Polygon";
