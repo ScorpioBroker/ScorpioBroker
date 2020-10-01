@@ -78,7 +78,6 @@ public class QueryTerm {
 		return result;
 	}
 
-	
 	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant)
 			throws ResponseException {
 
@@ -353,8 +352,8 @@ public class QueryTerm {
 		Object value = null;
 		if (myEntry instanceof PropertyEntry) {
 			value = ((PropertyEntry) myEntry).getValue();
-			if(value instanceof List) {
-				value = ((List)value).get(0);
+			if (value instanceof List) {
+				value = ((List) value).get(0);
 			}
 		} else if (myEntry instanceof RelationshipEntry) {
 			value = ((RelationshipEntry) myEntry).getObject().toString();
@@ -1072,17 +1071,19 @@ public class QueryTerm {
 
 	private void getAttribQueryForTemporalEntity(StringBuilder result) throws ResponseException {
 		ArrayList<String> attribPath = getAttribPathArray();
-		StringBuilder testAttribute = new StringBuilder("teai.attributeid = '");
-		StringBuilder testAttributeExistsProperty = new StringBuilder(
-				"teai.data@>'{\"@type\":[\"" + NGSIConstants.NGSI_LD_PROPERTY + "\"]}'");
-		StringBuilder testAttributeExistsRelationship = new StringBuilder(
-				"teai.data@>'{\"@type\":[\"" + NGSIConstants.NGSI_LD_RELATIONSHIP + "\"]}'");
-		StringBuilder attributeFilterProperty = new StringBuilder("(teai.data#");
-		StringBuilder attributeFilterRelationship = new StringBuilder("teai.data#");
+		//https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
+		String attribId = null;
+		for (String subPath : attribPath) {
+			attribId = subPath;
+			break; // sub-properties are not supported yet in HistoryManager
+		}
+		
+		StringBuilder attributeFilterProperty = new StringBuilder("(m.attrdata#");
+		StringBuilder attributeFilterRelationship = new StringBuilder("m.attrdata#");
 		String testValueTypeForPatternOp = new String(
-				"jsonb_typeof(teai.data#>'{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@value}') = 'string'");
+				"jsonb_typeof(m.attrdata#>'{" + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@value}') = 'string'");
 		StringBuilder testValueTypeForDateTime = new StringBuilder(
-				"data#>>'{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@type}' = ");
+				"m.attrdata#>>'{" + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@type}' = ");
 
 		if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
 				|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
@@ -1093,8 +1094,8 @@ public class QueryTerm {
 			attributeFilterRelationship.append(">");
 		}
 
-		attributeFilterProperty.append("'{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@value}')");
-		attributeFilterRelationship.append("'{" + NGSIConstants.NGSI_LD_HAS_OBJECT + ",0,@id}'");
+		attributeFilterProperty.append("'{" + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@value}')");
+		attributeFilterRelationship.append("'{" + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_OBJECT + ",0,@id}'");
 		if (operant.matches(DATETIME)) {
 			attributeFilterProperty.append("::timestamp ");
 			testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE_TIME + "'");
@@ -1105,21 +1106,14 @@ public class QueryTerm {
 			attributeFilterProperty.append("::time ");
 			testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_TIME + "'");
 		}
+		
 
-		for (String subPath : attribPath) {
-			testAttribute.append(subPath);
-			break; // sub-properties are not supported yet in HistoryManager
-		}
-		testAttribute.append("'");
 		boolean useRelClause = applyOperator(attributeFilterProperty, attributeFilterRelationship);
 		if (useRelClause) {
-			result.append("((" + testAttribute.toString() + " and " + testAttributeExistsProperty.toString() + " and "
-					+ attributeFilterProperty.toString() + ") or (" + testAttribute.toString() + " and "
-					+ testAttributeExistsRelationship.toString() + " and " + attributeFilterRelationship.toString()
+			result.append("((" + attributeFilterProperty.toString() + ") or (" + attributeFilterRelationship.toString()
 					+ "))");
 		} else {
-			result.append("(" + testAttribute.toString() + " and " + testAttributeExistsProperty.toString() + " and "
-					+ attributeFilterProperty.toString());
+			result.append("(" + attributeFilterProperty.toString());
 			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
 				result.append(" and " + testValueTypeForPatternOp);
 			}
