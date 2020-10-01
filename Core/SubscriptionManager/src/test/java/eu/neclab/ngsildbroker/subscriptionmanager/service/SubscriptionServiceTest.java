@@ -1,14 +1,17 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,16 +22,12 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
-import java.util.*;
+
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
-import eu.neclab.ngsildbroker.subscriptionmanager.service.IntervalNotificationHandler;
-import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
-import java.util.*;
 
 @SpringBootTest(properties= {"spring.main.allow-bean-definition-overriding=true"})
 @RunWith(SpringRunner.class)
@@ -41,9 +40,6 @@ public class SubscriptionServiceTest {
 	
 	@Mock 
 	SubscriptionRequest subscriptionRequest;
-	
-	@Mock
-	SubscriptionManagerProducerChannel entityProducerChannel;
 	
 	@Mock
 	IntervalNotificationHandler intervalHandlerREST;
