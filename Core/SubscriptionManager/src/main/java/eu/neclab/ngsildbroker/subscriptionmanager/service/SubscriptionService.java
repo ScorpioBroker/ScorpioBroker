@@ -155,6 +155,8 @@ public class SubscriptionService implements SubscriptionManager {
 	private Map<String, String> ids2Type;
 
 	private HTreeMap<String,String> subscriptionStore;
+	@Value("${subscriptions.store:subscriptionstore.db}")
+	private String subscriptionStoreLocation;
 
 	// @Value("${notification.port}")
 	// String REMOTE_NOTIFICATION_PORT;
@@ -173,7 +175,7 @@ public class SubscriptionService implements SubscriptionManager {
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, queryResultTopic,
 				requestTopic, paramsResolver);
 		logger.trace("call loadStoredSubscriptions() ::");
-		this.subscriptionStore = DBMaker.fileDB("subscriptionstore.db").closeOnJvmShutdown().checksumHeaderBypass().transactionEnable().make().hashMap("subscriptions", Serializer.STRING, Serializer.STRING).createOrOpen();
+		this.subscriptionStore = DBMaker.fileDB(this.subscriptionStoreLocation).closeOnJvmShutdown().checksumHeaderBypass().transactionEnable().make().hashMap("subscriptions", Serializer.STRING, Serializer.STRING).createOrOpen();
 		loadStoredSubscriptions();
 
 	}
