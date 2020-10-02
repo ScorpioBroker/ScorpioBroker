@@ -322,13 +322,8 @@ public class KafkaOps {
 		}
 	}
 
-	public String getMessageKey(Message<?> message) {
+	public static String getMessageKey(Message<?> message) {
 		Object key = message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
-//		if(key instanceof String) {
-//			System.err.println("----------------------ITS A STRING -------------------");
 		return (String) key;
-//		}else {
-//			return new String((byte[]) key);
-//		}
 	}
 }
