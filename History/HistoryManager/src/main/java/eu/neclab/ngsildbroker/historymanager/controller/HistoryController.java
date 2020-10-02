@@ -37,7 +37,7 @@ import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
 import eu.neclab.ngsildbroker.historymanager.utils.Validator;
 
 @RestController
-@RequestMapping("/ngsi-ld/v1/temporal")
+@RequestMapping("/ngsi-ld/v1/temporal/entities")
 public class HistoryController {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
@@ -62,7 +62,7 @@ public class HistoryController {
 		this.httpUtils = HttpUtils.getInstance(contextResolver);
 	}
 
-	@PostMapping("/entities")
+	@PostMapping
 	public ResponseEntity<byte[]> createTemporalEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
@@ -84,7 +84,7 @@ public class HistoryController {
 		}
 	}
 
-	@GetMapping("/entities")
+	@GetMapping
 	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request) {
 		String params = request.getQueryString();
 		try {
@@ -115,7 +115,7 @@ public class HistoryController {
 		}
 	}
 
-	@GetMapping("/entities/{entityId}")
+	@GetMapping("/{entityId}")
 	public ResponseEntity<byte[]> retrieveTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		String params = request.getQueryString();
@@ -140,7 +140,7 @@ public class HistoryController {
 		}
 	}
 
-	@DeleteMapping("/entities/{entityId}")
+	@DeleteMapping("/{entityId}")
 	public ResponseEntity<byte[]> deleteTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		try {
@@ -160,7 +160,7 @@ public class HistoryController {
 		}
 	}
 
-	@PostMapping("/entities/{entityId}/attrs")
+	@PostMapping("/{entityId}/attrs")
 	public ResponseEntity<byte[]> addAttrib2TemopralEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload) {
 		try {
@@ -181,7 +181,7 @@ public class HistoryController {
 		}
 	}
 
-	@DeleteMapping("/entities/{entityId}/attrs/{attrId}")
+	@DeleteMapping("/{entityId}/attrs/{attrId}")
 	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
@@ -201,7 +201,7 @@ public class HistoryController {
 		}
 	}
 
-	@PatchMapping("/entities/{entityId}/attrs/{attrId}/{instanceId}")
+	@PatchMapping("/{entityId}/attrs/{attrId}/{instanceId}")
 	public ResponseEntity<byte[]> modifyAttribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId, @RequestBody(required = false) String payload) {
@@ -227,7 +227,7 @@ public class HistoryController {
 		}
 	}
 
-	@DeleteMapping("/entities/{entityId}/attrs/{attrId}/{instanceId}")
+	@DeleteMapping("/{entityId}/attrs/{attrId}/{instanceId}")
 	public ResponseEntity<byte[]> deleteAtrribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId) {

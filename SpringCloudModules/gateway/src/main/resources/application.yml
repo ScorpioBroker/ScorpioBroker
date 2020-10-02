@@ -98,7 +98,7 @@ zuul:
       stripPrefix: false
     history-manager:
       sensitiveHeaders:
-      path: /ngsi-ld/v1/temporal/**
+      path: /ngsi-ld/v1/temporal/entities/**
       serviceId: HISTORY-MANAGER
       stripPrefix: false
     atcontext-server:
