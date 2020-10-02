@@ -986,7 +986,7 @@ public class EntityService {
 		// location node.
 
 		TimeInterval timestamp = new TimeInterval();
-		timestamp.setStart(new Date());
+		timestamp.setStart(new Date().getTime());
 		csourceRegistration.setTimestamp(timestamp);
 		logger.trace("getCSourceRegistrationFromJson() :: completed");
 		return csourceRegistration;
