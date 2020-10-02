@@ -1072,57 +1072,144 @@ public class QueryTerm {
 	private void getAttribQueryForTemporalEntity(StringBuilder result) throws ResponseException {
 		ArrayList<String> attribPath = getAttribPathArray();
 		//https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
-		String attribId = null;
-		for (String subPath : attribPath) {
-			attribId = subPath;
-			break; // sub-properties are not supported yet in HistoryManager
-		}
-		
-		StringBuilder attributeFilterProperty = new StringBuilder("(m.attrdata#");
-		StringBuilder attributeFilterRelationship = new StringBuilder("m.attrdata#");
-		String testValueTypeForPatternOp = new String(
-				"jsonb_typeof(m.attrdata#>'{" + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@value}') = 'string'");
-		StringBuilder testValueTypeForDateTime = new StringBuilder(
-				"m.attrdata#>>'{" + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@type}' = ");
+		/*
+		 * String attribId = null; for (String subPath : attribPath) { attribId =
+		 * subPath; break; // sub-properties are not supported yet in HistoryManager }
+		 */
 
+		int iElem = 0;
+		String currentSet = "m.attrdata";
+		char charcount = 'a';
+		String lastAttrib = null;
+		for (String subPath : attribPath) {
+			result.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
+			result.append(subPath);
+			if (attribute.contains("[") && iElem == 0) {
+				result.append(",0," + NGSIConstants.NGSI_LD_HAS_VALUE);
+			}
+			result.append("}') as ");
+			result.append(charcount);
+			currentSet = "" + charcount;
+			result.append(" WHERE ");
+			charcount++;
+			iElem++;
+			lastAttrib = subPath;
+		}
+
+		// x#> '{https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'
+		charcount--;
+		if (operator.equals(NGSIConstants.QUERY_EQUAL) || operator.equals(NGSIConstants.QUERY_UNEQUAL)
+				|| operator.equals(NGSIConstants.QUERY_PATTERNOP)
+				|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
+			result.append(charcount);
+			result.append("#> '{");
+			result.append("https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'");
+			applyOperator(result);
+			result.append(" OR ");
+		}
+		result.append('(');
+		result.append(charcount);
+		result.append("#>");
 		if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
 				|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-			attributeFilterProperty.append(">>");
-			attributeFilterRelationship.append(">>");
-		} else {
-			attributeFilterProperty.append(">");
-			attributeFilterRelationship.append(">");
+			result.append(">");
 		}
-
-		attributeFilterProperty.append("'{" + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@value}')");
-		attributeFilterRelationship.append("'{" + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_OBJECT + ",0,@id}'");
+		result.append(" '{");
+		result.append("https://uri.etsi.org/ngsi-ld/hasValue,0,@value}')");
 		if (operant.matches(DATETIME)) {
-			attributeFilterProperty.append("::timestamp ");
-			testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE_TIME + "'");
+			result.append("::timestamp ");
 		} else if (operant.matches(DATE)) {
-			attributeFilterProperty.append("::date ");
-			testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE + "'");
+			result.append("::date ");
 		} else if (operant.matches(TIME)) {
-			attributeFilterProperty.append("::time ");
-			testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_TIME + "'");
+			result.append("::time ");
 		}
-		
+		applyOperator(result);
+		result.append(" OR ");
+		if (TIME_PROPS.contains(lastAttrib)) {
+			result.append('(');
+			result.append((char) (charcount - 1));
+			result.append("#>>");
+			result.append(" '{");
+			result.append(lastAttrib);
+			result.append(",0,@value}')");
 
-		boolean useRelClause = applyOperator(attributeFilterProperty, attributeFilterRelationship);
-		if (useRelClause) {
-			result.append("((" + attributeFilterProperty.toString() + ") or (" + attributeFilterRelationship.toString()
-					+ "))");
+		} else if (lastAttrib.equals(NGSIConstants.NGSI_LD_DATA_SET_ID) || lastAttrib.equals(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
+			result.append('(');
+			result.append(charcount);
+			result.append("#>");
+			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
+					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
+				result.append(">");
+			}
+			result.append(" '{");
+			result.append("@id}')");
 		} else {
-			result.append("(" + attributeFilterProperty.toString());
-			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-				result.append(" and " + testValueTypeForPatternOp);
+			result.append('(');
+			result.append(charcount);
+			result.append("#>");
+			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
+					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
+				result.append(">");
 			}
-			if (operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-				result.append(" and " + testValueTypeForDateTime.toString());
-			}
-			result.append(")");
+			result.append(" '{");
+			result.append("@value}')");
+
 		}
 
+		if (operant.matches(DATETIME)) {
+			result.append("::timestamp ");
+		} else if (operant.matches(DATE)) {
+			result.append("::date ");
+		} else if (operant.matches(TIME)) {
+			result.append("::time ");
+		}
+		applyOperator(result);
+		for (int i = 0; i < attribPath.size(); i++) {
+			result.append(')');
+		}
+
+		
+		/*
+		 * StringBuilder attributeFilterProperty = new StringBuilder("(m.attrdata#");
+		 * StringBuilder attributeFilterRelationship = new StringBuilder("m.attrdata#");
+		 * String testValueTypeForPatternOp = new String( "jsonb_typeof(m.attrdata#>'{"
+		 * + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE +
+		 * ",0,@value}') = 'string'"); StringBuilder testValueTypeForDateTime = new
+		 * StringBuilder( "m.attrdata#>>'{" + attribId + ",0," +
+		 * NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@type}' = ");
+		 * 
+		 * if (operator.equals(NGSIConstants.QUERY_PATTERNOP) ||
+		 * operator.equals(NGSIConstants.QUERY_NOTPATTERNOP) || operant.matches(DATE) ||
+		 * operant.matches(TIME) || operant.matches(DATETIME)) {
+		 * attributeFilterProperty.append(">>");
+		 * attributeFilterRelationship.append(">>"); } else {
+		 * attributeFilterProperty.append(">"); attributeFilterRelationship.append(">");
+		 * }
+		 * 
+		 * attributeFilterProperty.append("'{" + attribId + ",0," +
+		 * NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@value}')");
+		 * attributeFilterRelationship.append("'{" + attribId + ",0," +
+		 * NGSIConstants.NGSI_LD_HAS_OBJECT + ",0,@id}'"); if
+		 * (operant.matches(DATETIME)) { attributeFilterProperty.append("::timestamp ");
+		 * testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE_TIME + "'");
+		 * } else if (operant.matches(DATE)) {
+		 * attributeFilterProperty.append("::date ");
+		 * testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE + "'"); }
+		 * else if (operant.matches(TIME)) { attributeFilterProperty.append("::time ");
+		 * testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_TIME + "'"); }
+		 * 
+		 * 
+		 * boolean useRelClause = applyOperator(attributeFilterProperty,
+		 * attributeFilterRelationship); if (useRelClause) { result.append("((" +
+		 * attributeFilterProperty.toString() + ") or (" +
+		 * attributeFilterRelationship.toString() + "))"); } else { result.append("(" +
+		 * attributeFilterProperty.toString()); if
+		 * (operator.equals(NGSIConstants.QUERY_PATTERNOP) ||
+		 * operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) { result.append(" and " +
+		 * testValueTypeForPatternOp); } if (operant.matches(DATE) ||
+		 * operant.matches(TIME) || operant.matches(DATETIME)) { result.append(" and " +
+		 * testValueTypeForDateTime.toString()); } result.append(")"); }
+		 */
 	}
 
 	// Only for testing;
