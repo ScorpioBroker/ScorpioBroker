@@ -87,11 +87,6 @@ public class HistoryDAO extends StorageReaderDAO {
 			}
 		}
 
-		// advanced query "q"
-		if (qp.getQ() != null) {
-			sqlWhere = qp.getQ();
-			fullSqlWhere.append("(" + sqlWhere + ") AND ");
-		}
 
 		String sqlQuery = "with r as ("
 				+ "  select te.id, te.type, te.createdat, te.modifiedat, coalesce(teai.attributeid, '') as attributeid, jsonb_agg(teai.data";
@@ -144,6 +139,13 @@ public class HistoryDAO extends StorageReaderDAO {
 		sqlQuery += "  group by id, type, createdat, modifiedat ";
 		sqlQuery += "  order by modifiedat desc ";
 		sqlQuery += ") as m";
+		
+		// advanced query "q"
+		//THIS DOESN'T WORK 
+		if (qp.getQ() != null) {
+			sqlQuery += " where " + qp.getQ(); 
+		}
+
 		return sqlQuery;
 	}
 

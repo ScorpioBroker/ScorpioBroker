@@ -7,32 +7,35 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_INT
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEAR;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
-import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.JSON_LD_TYPE;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.util.Arrays;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,7 +57,6 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.shared.Application;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
@@ -64,8 +66,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
-import eu.neclab.ngsildbroker.commons.datatypes.Property;
-import eu.neclab.ngsildbroker.commons.datatypes.Relationship;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -80,7 +80,6 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 
 @Service
 public class SubscriptionService implements SubscriptionManager {
@@ -107,9 +106,6 @@ public class SubscriptionService implements SubscriptionManager {
 	Timer watchDog = new Timer(true);
 
 	// KafkaOps kafkaOps = new KafkaOps();
-	@Autowired
-	@Qualifier("smops")
-	KafkaOps kafkaOps;
 
 	@Autowired
 	ObjectMapper objectMapper;
@@ -143,8 +139,6 @@ public class SubscriptionService implements SubscriptionManager {
 
 	boolean directDB = true;
 
-	private final SubscriptionManagerProducerChannel producerChannel;
-
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	HashMap<String, Subscription> subscriptionId2Subscription = new HashMap<String, Subscription>();
@@ -160,11 +154,14 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private Map<String, String> ids2Type;
 
+	private HTreeMap<String,String> subscriptionStore;
+	@Value("${subscriptions.store:subscriptionstore.db}")
+	private String subscriptionStoreLocation;
+
 	// @Value("${notification.port}")
 	// String REMOTE_NOTIFICATION_PORT;
 
-	public SubscriptionService(SubscriptionManagerProducerChannel producerChannel) {
-		this.producerChannel = producerChannel;
+	public SubscriptionService() {
 	}
 
 	@PostConstruct
@@ -178,31 +175,33 @@ public class SubscriptionService implements SubscriptionManager {
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, queryResultTopic,
 				requestTopic, paramsResolver);
 		logger.trace("call loadStoredSubscriptions() ::");
-		Map<String, byte[]> subs = kafkaOps.pullFromKafka(KafkaConstants.SUBSCRIPTIONS_TOPIC);
-		for (byte[] sub : subs.values()) {
-			try {
-				if (Arrays.areEqual(sub, AppConstants.NULL_BYTES)) {
+		this.subscriptionStore = DBMaker.fileDB(this.subscriptionStoreLocation).closeOnJvmShutdown().checksumHeaderBypass().transactionEnable().make().hashMap("subscriptions", Serializer.STRING, Serializer.STRING).createOrOpen();
+		loadStoredSubscriptions();
+
+	}
+	@PreDestroy
+	private void deconstructor() {
+		subscriptionStore.close();
+	}
+	private void loadStoredSubscriptions() {
+		// TODO Auto-generated method stub
+		synchronized (this.subscriptionStore) {
+			for (Entry<String, String> entry : subscriptionStore.entrySet()) {
+				try {
+					SubscriptionRequest subscription = DataSerializer.getSubscriptionRequest(entry.getValue());
+					subscribe(subscription);
+				} catch (JsonParseException e) {
+					logger.error("Exception ::", e);
+					e.printStackTrace();
+					continue;
+				} catch (ResponseException e) {
+					logger.error("Exception ::", e);
+					e.printStackTrace();
 					continue;
 				}
-				SubscriptionRequest subscription = DataSerializer.getSubscriptionRequest(new String(sub));
-
-				// if (subscription.getLdQuery() != null &&
-				// !subscription.getLdQuery().trim().equals("")) {
-				// subscription.setQueryTerm(queryParser.parseQuery(subscription.getLdQuery(),
-				// contextResolverService.getContextAsSet(subscription.getId().toString())));
-				// }
-				subscribe(subscription);
-			} catch (JsonParseException e) {
-				logger.error("Exception ::", e);
-				e.printStackTrace();
-				continue;
-			} catch (ResponseException e) {
-				logger.error("Exception ::", e);
-				e.printStackTrace();
-				continue;
 			}
+			
 		}
-
 	}
 
 	@Override
@@ -243,7 +242,7 @@ public class SubscriptionService implements SubscriptionManager {
 				}
 
 			}
-			syncToMessageBus(subscriptionRequest);
+			storeSubscription(subscriptionRequest);
 
 			if (subscription.getExpires() != null) {
 				TimerTask cancel = new TimerTask() {
@@ -279,17 +278,12 @@ public class SubscriptionService implements SubscriptionManager {
 
 	}
 
-	private void syncToMessageBus(SubscriptionRequest subscription) throws ResponseException {
+	private void storeSubscription(SubscriptionRequest subscription) throws ResponseException {
 		new Thread() {
 			public void run() {
-				try {
-					kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
-							subscription.getSubscription().getId().toString().getBytes(),
-							DataSerializer.toJson(subscription).getBytes());
-				} catch (ResponseException e) {
-					logger.error(e);
+				synchronized (subscriptionStore) {
+					subscriptionStore.put(subscription.getSubscription().getId().toString(), DataSerializer.toJson(subscription));
 				}
-
 			};
 		}.start();
 
@@ -339,11 +333,8 @@ public class SubscriptionService implements SubscriptionManager {
 		// TODO remove remote subscription
 		new Thread() {
 			public void run() {
-				try {
-					kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(), id.toString().getBytes(),
-							"null".getBytes());
-				} catch (ResponseException e) {
-					logger.error(e);
+				synchronized (subscriptionStore) {
+					subscriptionStore.remove(id.toString());
 				}
 			};
 		}.start();
@@ -425,7 +416,7 @@ public class SubscriptionService implements SubscriptionManager {
 	@KafkaListener(topics = "${entity.create.topic}", groupId = "submanager")
 	public void handleCreate(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
-		String key = kafkaOps.getMessageKey(message);
+		String key = KafkaOps.getMessageKey(message);
 		logger.debug("Create got called: " + payload);
 		logger.debug(key);
 		checkSubscriptionsWithCreate(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
@@ -506,8 +497,9 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private void sendNotification(List<Entity> dataList, Subscription subscription) {
 		logger.debug(DataSerializer.toJson(dataList));
-		//System.out.println("SENDING NOTIFICATION: " + DataSerializer.toJson(dataList) + " \nTO SUBSCRIPTION \n"
-		//		+ DataSerializer.toJson(subscription));
+		// System.out.println("SENDING NOTIFICATION: " + DataSerializer.toJson(dataList)
+		// + " \nTO SUBSCRIPTION \n"
+		// + DataSerializer.toJson(subscription));
 		// if (subscription.getTimeInterval() > 0) {
 		// try {
 		// intervalHandler.notify(new
@@ -535,7 +527,8 @@ public class SubscriptionService implements SubscriptionManager {
 							subscription.getId(), dataList, null, null, 0, true),
 					subscription.getNotification().getEndPoint().getUri(),
 					subscription.getNotification().getEndPoint().getAccept(), subscription.getId().toString(),
-					subscriptionId2Context.get(subscription.getId().toString()), subscription.getThrottling(), subscription.getNotification().getEndPoint().getNotifierInfo());
+					subscriptionId2Context.get(subscription.getId().toString()), subscription.getThrottling(),
+					subscription.getNotification().getEndPoint().getNotifierInfo());
 		} catch (URISyntaxException e) {
 			logger.error("Exception ::", e);
 			// Left empty intentionally
@@ -605,7 +598,7 @@ public class SubscriptionService implements SubscriptionManager {
 		if (directDB) {
 			entityBody = subscriptionInfoDAO.getEntity(deltaInfo.getId().toString());
 		}
-		//HERE YOU NEED TO REPLACE THE ATTRIBUTE TO THE ONE FROM DELTA
+		// HERE YOU NEED TO REPLACE THE ATTRIBUTE TO THE ONE FROM DELTA
 		Entity entity = DataSerializer.getEntity(entityBody);
 		if (!evaluateGeoQuery(subscription.getLdGeoQuery(), entity.getLocation())) {
 			return null;
@@ -754,7 +747,7 @@ public class SubscriptionService implements SubscriptionManager {
 	@KafkaListener(topics = "${entity.update.topic}", groupId = "submanager")
 	public void handleUpdate(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
-		String key = kafkaOps.getMessageKey(message);
+		String key = KafkaOps.getMessageKey(message);
 		logger.debug("update got called: " + payload);
 		logger.debug(key);
 		checkSubscriptionsWithUpdate(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
@@ -796,7 +789,7 @@ public class SubscriptionService implements SubscriptionManager {
 	@KafkaListener(topics = "${entity.append.topic}", groupId = "submanager")
 	public void handleAppend(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
-		String key = kafkaOps.getMessageKey(message);
+		String key = KafkaOps.getMessageKey(message);
 		logger.debug("Create got called: " + payload);
 		logger.debug(key);
 		checkSubscriptionsWithAppend(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
@@ -838,7 +831,7 @@ public class SubscriptionService implements SubscriptionManager {
 	// @StreamListener(SubscriptionManagerConsumerChannel.deleteReadChannel)
 	@KafkaListener(topics = "${entity.delete.topic}", groupId = "submanager")
 	public void handleDelete(Message<byte[]> message) throws Exception {
-		this.ids2Type.remove(kafkaOps.getMessageKey(message));
+		this.ids2Type.remove(KafkaOps.getMessageKey(message));
 		// checkSubscriptionsWithDelete(new String((byte[])
 		// message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)),
 		// new String(message.getPayload()));
@@ -847,7 +840,7 @@ public class SubscriptionService implements SubscriptionManager {
 	@KafkaListener(topics = "${csource.notification.topic}", groupId = "submanager")
 	public void handleCSourceNotification(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
-		String key = kafkaOps.getMessageKey(message);
+		String key = KafkaOps.getMessageKey(message);
 		@SuppressWarnings("unchecked")
 		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
 		subscribeToRemote(subscriptionId2Subscription.get(key), endPoints);
