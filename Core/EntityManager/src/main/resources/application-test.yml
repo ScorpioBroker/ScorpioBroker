@@ -46,6 +46,16 @@ bootstrap:
 #Entity Append ovewrite options
 append:
   overwrite: noOverwrite
-
-
-  
+writer:
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP_Writer
+    password: ngb
+    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_writer
+    username: ngb
+  enabled: true

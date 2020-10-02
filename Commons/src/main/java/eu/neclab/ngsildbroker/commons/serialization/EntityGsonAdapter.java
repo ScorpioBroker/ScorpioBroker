@@ -140,9 +140,11 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 				}
 				break;
 			case NGSIConstants.NGSI_LD_NAME:
-				name = entry.getValue().getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE)
-						.getAsString();
-				break;
+				if (!entry.getValue().getAsJsonArray().get(0).getAsJsonObject().has(NGSIConstants.JSON_LD_TYPE)) {
+					name = entry.getValue().getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE)
+							.getAsString();
+					break;
+				}
 			default:
 
 				JsonArray topLevelArray = entry.getValue().getAsJsonArray();

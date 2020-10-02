@@ -19,7 +19,10 @@ query-manager:
   request-path: /ngsi-ld/v1/entities
   target-service: aio-runner
   http-method: GET
-
+entity-manager:
+  request-path: /ngsi-ld/v1/entities
+  target-service: aio-runner
+  http-method: POST
 spring:
   application:
     name: gateway
@@ -40,6 +43,9 @@ eureka:
 
 zuul:
   ignored-services: '*'
+  ribbon:
+    eager-load:
+      enabled: true
   semaphore:
     maxSemaphores: 60000
   host:
@@ -73,7 +79,7 @@ zuul:
       stripPrefix: false
     history-manager:
       sensitiveHeaders:
-      path: /ngsi-ld/v1/temporal/**
+      path: /ngsi-ld/v1/temporal/entities/**
       serviceId: aio-runner
       stripPrefix: false
     atcontext-server:
@@ -84,6 +90,16 @@ zuul:
     infos:
       sensitiveHeaders:
       path: /scorpio/v1/info/**
+      serviceId: aio-runner
+      stripPrefix: false
+    health:
+      sensitiveHeaders:
+      path: /health/**
+      serviceId: aio-runner
+      stripPrefix: false
+    corecontext:
+      sensitiveHeaders:
+      path: /corecontext/**
       serviceId: aio-runner
       stripPrefix: false
     test-manager:
@@ -110,3 +126,6 @@ security:
       #userInfoUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/userinfo
     # for keycloak configure
       userInfoUri: http://172.30.64.120:3000/user
+logging:
+  level:
+    root: ERROR

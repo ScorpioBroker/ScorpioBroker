@@ -1,0 +1,156 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>11. Getting a docker container &#8212; ScorpioBroker  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs.css" type="text/css" />
+    <link rel="stylesheet" href="_static/css/fiware_readthedocs_core.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="12. Troubleshooting" href="troubleshooting.html" />
+    <link rel="prev" title="10. API Walkthrough" href="API_walkthrough.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="getting-a-docker-container">
+<h1>11. Getting a docker container<a class="headerlink" href="#getting-a-docker-container" title="Permalink to this headline">¶</a></h1>
+<p>The current maven build supports two types of docker container generations from the build using maven profiles to trigger it.</p>
+<p>The first profile is called ‘docker’ and can be called like this</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>&nbsp; &nbsp; mvn clean package -DskipTests -Pdocker</p>
+<p>this will generate individual docker containers for each microservice. The corresponding docker-compose file is <cite>docker-compose-dist.yml</cite></p>
+<p>The second profile is called ‘docker-aaio’ (for almost all in one). This will generate one single docker container for all components of the broker except the Kafka message bus and the Postgres database.</p>
+<p>To get the aaio version run the maven build like this</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>&nbsp; &nbsp; mvn clean package -DskipTests -Pdocker-aaio</p>
+<p>The corresponding docker-compose file is <cite>docker-compose-aaio.yml</cite></p>
+<div class="section" id="general-remark-for-the-kafka-docker-image-and-docker-compose">
+<h2>11.1. General remark for the Kafka docker image and docker-compose<a class="headerlink" href="#general-remark-for-the-kafka-docker-image-and-docker-compose" title="Permalink to this headline">¶</a></h2>
+<p>The Kafka docker container requires you to provide the environment variable <cite>KAFKA_ADVERTISED_HOST_NAME</cite>. This has to be changed in the docker-compose files to match your docker host IP. You can use <cite>127.0.0.1</cite> however this will disallow you to run Kafka in a cluster mode.</p>
+<p>For further details please refer to <a class="reference external" href="https://hub.docker.com/r/wurstmeister/kafka">https://hub.docker.com/r/wurstmeister/kafka</a></p>
+</div>
+<div class="section" id="running-docker-build-outside-of-maven">
+<h2>11.2. Running docker build outside of Maven<a class="headerlink" href="#running-docker-build-outside-of-maven" title="Permalink to this headline">¶</a></h2>
+<p>If you want to have the build of the jars separated from the docker build you need to provide certain VARS to docker.
+The following list shows all the vars and their intended value if you run docker build from the root dir</p>
+<p>&nbsp;- BUILD_DIR_ACS = Core/AtContextServer</p>
+<p>&nbsp;- BUILD_DIR_SCS = SpringCloudModules/config-server</p>
+<p>&nbsp;- BUILD_DIR_SES = SpringCloudModules/eureka</p>
+<p>&nbsp;- BUILD_DIR_SGW = SpringCloudModules/gateway</p>
+<p>&nbsp;- BUILD_DIR_HMG = History/HistoryManager</p>
+<p>&nbsp;- BUILD_DIR_QMG = Core/QueryManager</p>
+<p>&nbsp;- BUILD_DIR_RMG = Registry/RegistryManager</p>
+<p>&nbsp;- BUILD_DIR_EMG = Core/EntityManager</p>
+<p>&nbsp;- BUILD_DIR_STRMG = Storage/StorageManager</p>
+<p>&nbsp;- BUILD_DIR_SUBMG = Core/SubscriptionManager</p>
+<p>&nbsp;- JAR_FILE_BUILD_ACS = AtContextServer-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_BUILD_SCS = config-server-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_BUILD_SES = eureka-server-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_BUILD_SGW = gateway-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_BUILD_HMG = HistoryManager-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_BUILD_QMG = QueryManager-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_BUILD_RMG = RegistryManager-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_BUILD_EMG = EntityManager-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_BUILD_STRMG = StorageManager-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_BUILD_SUBMG = SubscriptionManager-${project.version}.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_ACS = AtContextServer.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_SCS = config-server.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_SES = eureka-server.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_SGW = gateway.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_HMG = HistoryManager.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_QMG = QueryManager.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_RMG = RegistryManager.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_EMG = EntityManager.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_STRMG = StorageManager.jar</p>
+<p>&nbsp;- JAR_FILE_RUN_SUBMG = SubscriptionManager.jar</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">11. Getting a docker container</a><ul>
+<li><a class="reference internal" href="#general-remark-for-the-kafka-docker-image-and-docker-compose">11.1. General remark for the Kafka docker image and docker-compose</a></li>
+<li><a class="reference internal" href="#running-docker-build-outside-of-maven">11.2. Running docker build outside of Maven</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="API_walkthrough.html" title="previous chapter">10. API Walkthrough</a></li>
+      <li>Next: <a href="troubleshooting.html" title="next chapter">12. Troubleshooting</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/docker.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, NECTI + NLE.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/docker.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

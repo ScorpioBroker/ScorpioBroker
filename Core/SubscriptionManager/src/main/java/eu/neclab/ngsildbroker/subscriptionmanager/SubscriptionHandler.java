@@ -6,7 +6,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
@@ -14,14 +13,13 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
-import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
+import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 
 @SpringBootApplication
-@EnableBinding({ SubscriptionManagerProducerChannel.class, AtContextProducerChannel.class })
-@Import(KafkaConfig.class)
+@EnableBinding({ AtContextProducerChannel.class })
+@Import({KafkaConfig.class, SwaggerConfigDetails.class})
 public class SubscriptionHandler {
 
 	@Value("${atcontext.url}")

@@ -2,6 +2,8 @@ package eu.neclab.ngsildbroker.atcontextserver.controller;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.google.common.io.Files;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContext;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
@@ -34,18 +37,16 @@ public class AtContextServerController {
 	@Autowired
 	ResourceLoader resourceLoader;
 	
-	String coreContext;
-	
-	@PostConstruct
-	private void setup() {
-		try {
-			coreContext = new String(Files.asByteSource(resourceLoader.getResource("classpath:ngsi-ld-core-context.jsonld").getFile()).read());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	}
+	/*
+	 * String coreContext;
+	 * 
+	 * @PostConstruct private void setup() { try { coreContext = new
+	 * String(Files.asByteSource(resourceLoader.getResource(
+	 * "classpath:ngsi-ld-core-context.jsonld").getFile()).read()); } catch
+	 * (IOException e) { // TODO Auto-generated catch block e.printStackTrace(); }
+	 * 
+	 * }
+	 */
 	 
 	/**
 	 * Method(GET) for multiple attributes separated by comma list
@@ -59,9 +60,11 @@ public class AtContextServerController {
 	public ResponseEntity<Object> getContextForEntity(HttpServletRequest request,
 			@PathVariable("contextId") String contextId) {
 		logger.trace("getAtContext() for " + contextId);
-		if(contextId.equals("ngsi-ld-core-context")) {
-			return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(coreContext);
-		}
+		/*
+		 * if(contextId.equals(AppConstants.CORE_CONTEXT_URL_SUFFIX)) { return
+		 * ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(
+		 * coreContext); }
+		 */
 		List<Object> contextes = atContext.getContextes(contextId);
 		StringBuilder body = new StringBuilder("{\"@context\": ");
 
@@ -72,7 +75,14 @@ public class AtContextServerController {
 
 	@GetMapping(name="atcontextget")
 	public ResponseEntity<Object> getAllContextes() {
-		return ResponseEntity.accepted().body(atContext.getAllContextes().toString());
+		StringBuilder body = new StringBuilder("{\n");
+		//Manuallly done because gson shows the actual byte values and not a string
+		Map<String, byte[]> contextMapping = atContext.getAllContextes();
+		for(Entry<String, byte[]> contextEntry: contextMapping.entrySet()) {
+			body.append("    \"" + contextEntry.getKey() + "\": \"" + new String(contextEntry.getValue()) + "\",\n");
+		}
+		body.append("}");
+		return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(body.toString());
 	}
 
 }

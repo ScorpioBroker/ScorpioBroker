@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -36,7 +37,7 @@ import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
 import eu.neclab.ngsildbroker.historymanager.utils.Validator;
 
 @RestController
-@RequestMapping("/ngsi-ld/v1/temporal")
+@RequestMapping("/ngsi-ld/v1/temporal/entities")
 public class HistoryController {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
@@ -61,14 +62,14 @@ public class HistoryController {
 		this.httpUtils = HttpUtils.getInstance(contextResolver);
 	}
 
-	@PostMapping("/entities")
+	@PostMapping
 	public ResponseEntity<byte[]> createTemporalEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
 			logger.trace("createTemporalEntity :: started");
 			Validator.validateTemporalEntity(payload);
 
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
 			URI uri = historyService.createTemporalEntityFromBinding(resolved);
 			logger.trace("createTemporalEntity :: completed");
@@ -79,11 +80,11 @@ public class HistoryController {
 		} catch (Exception exception) {
 			logger.error("Exception", exception);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
-	@GetMapping("/entities")
+	@GetMapping
 	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request) {
 		String params = request.getQueryString();
 		try {
@@ -110,11 +111,11 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
-	@GetMapping("/entities/{entityId}")
+	@GetMapping("/{entityId}")
 	public ResponseEntity<byte[]> retrieveTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		String params = request.getQueryString();
@@ -135,11 +136,11 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
-	@DeleteMapping("/entities/{entityId}")
+	@DeleteMapping("/{entityId}")
 	public ResponseEntity<byte[]> deleteTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		try {
@@ -155,17 +156,17 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
-	@PostMapping("/entities/{entityId}/attrs")
+	@PostMapping("/{entityId}/attrs")
 	public ResponseEntity<byte[]> addAttrib2TemopralEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload) {
 		try {
 			logger.trace("addAttrib2TemopralEntity :: started");
 			logger.debug("entityId : " + entityId);
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
 			historyService.addAttrib2TemporalEntity(entityId, resolved);
 			logger.trace("addAttrib2TemopralEntity :: completed");
@@ -176,11 +177,11 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
-	@DeleteMapping("/entities/{entityId}/attrs/{attrId}")
+	@DeleteMapping("/{entityId}/attrs/{attrId}")
 	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
@@ -196,11 +197,11 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
-	@PatchMapping("/entities/{entityId}/attrs/{attrId}/{instanceId}")
+	@PatchMapping("/{entityId}/attrs/{attrId}/{instanceId}")
 	public ResponseEntity<byte[]> modifyAttribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId, @RequestBody(required = false) String payload) {
@@ -208,7 +209,7 @@ public class HistoryController {
 			logger.trace("modifyAttribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
 
-			String resolved = httpUtils.expandPayload(request, payload);
+			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
 			// TODO : TBD- conflict between specs and implementation <mentioned no request
 			// body in specs>
@@ -222,11 +223,11 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
-	@DeleteMapping("/entities/{entityId}/attrs/{attrId}/{instanceId}")
+	@DeleteMapping("/{entityId}/attrs/{attrId}/{instanceId}")
 	public ResponseEntity<byte[]> deleteAtrribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId) {
@@ -243,7 +244,7 @@ public class HistoryController {
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes());
+					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
 
