@@ -311,19 +311,28 @@ public class EntityService {
 			Map.Entry<String, JsonNode> entry = iter.next();
 			if (entry.getKey().equals(NGSIConstants.JSON_LD_ID) || entry.getKey().equals(NGSIConstants.JSON_LD_TYPE)) {
 				kvJsonObject.set(entry.getKey(), entry.getValue());
-			} else if (entry.getValue().isArray() && entry.getValue().has(0) && entry.getValue().get(0).isObject()) {
-				ObjectNode attrObj = (ObjectNode) entry.getValue().get(0);
-				if (attrObj.has(NGSIConstants.JSON_LD_VALUE)) { // common members like createdAt do not have
-																// hasValue/hasObject
-					kvJsonObject.set(entry.getKey(), entry.getValue());
-				} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-					kvJsonObject.set(entry.getKey(), attrObj.get(NGSIConstants.NGSI_LD_HAS_VALUE));
-				} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT)
-						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isArray()
-						&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).has(NGSIConstants.JSON_LD_ID)) {
-					kvJsonObject.set(entry.getKey(),
-							attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(NGSIConstants.JSON_LD_ID));
+			} else if (entry.getValue().isArray()) {
+				ArrayNode values = objectMapper.createArrayNode();
+				Iterator<JsonNode> it = entry.getValue().elements();
+				while (it.hasNext()) {
+					ObjectNode attrObj = (ObjectNode) it.next();
+					if (attrObj.has(NGSIConstants.JSON_LD_VALUE)) { // common members like createdAt do not have
+						// hasValue/hasObject
+						values.add(entry.getValue());
+					} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+						values.add(attrObj.get(NGSIConstants.NGSI_LD_HAS_VALUE));
+					} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT)
+							&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isArray()
+							&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).has(NGSIConstants.JSON_LD_ID)) {
+						values.add(attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(NGSIConstants.JSON_LD_ID));
+					}
 				}
+				if (values.size() == 1) {
+					kvJsonObject.set(entry.getKey(), values.get(0));
+				} else {
+					kvJsonObject.set(entry.getKey(), values);
+				}
+
 			}
 		}
 		return kvJsonObject;
@@ -977,7 +986,7 @@ public class EntityService {
 		// location node.
 
 		TimeInterval timestamp = new TimeInterval();
-		timestamp.setStart(new Date());
+		timestamp.setStart(new Date().getTime());
 		csourceRegistration.setTimestamp(timestamp);
 		logger.trace("getCSourceRegistrationFromJson() :: completed");
 		return csourceRegistration;

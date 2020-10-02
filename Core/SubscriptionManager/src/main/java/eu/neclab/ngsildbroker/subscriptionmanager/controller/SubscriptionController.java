@@ -2,8 +2,8 @@ package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.List;
+
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
@@ -26,7 +26,6 @@ import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
@@ -39,7 +38,6 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 
 @RestController
 @RequestMapping("/ngsi-ld/v1/subscriptions")
@@ -54,8 +52,6 @@ public class SubscriptionController {
 	@Qualifier("smconRes")
 	ContextResolverBasic contextResolver;
 
-	@Autowired
-	SubscriptionManagerProducerChannel producerChannel;
 	@Autowired
 	@Qualifier("smops")
 	KafkaOps kafkaOps;
@@ -95,7 +91,8 @@ public class SubscriptionController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
-			//System.out.println("RECEIVING SUBSCRIPTION: " + payload  + " at " + System.currentTimeMillis());
+			// System.out.println("RECEIVING SUBSCRIPTION: " + payload + " at " +
+			// System.currentTimeMillis());
 			subscription = contextResolver.expandSubscription(payload, context);
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
 			URI subId = manager.subscribe(subRequest);
@@ -143,7 +140,8 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
-			//System.out.println("DELETING SUBSCRIPTION: " + id + " at " + System.currentTimeMillis());
+			// System.out.println("DELETING SUBSCRIPTION: " + id + " at " +
+			// System.currentTimeMillis());
 			manager.unsubscribe(id);
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
