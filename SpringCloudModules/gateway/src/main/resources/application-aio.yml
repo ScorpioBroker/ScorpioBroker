@@ -80,7 +80,7 @@ zuul:
       stripPrefix: false
     history-manager:
       sensitiveHeaders:
-      path: /ngsi-ld/v1/temporal/**
+      path: /ngsi-ld/v1/temporal/entities/**
       serviceId: aio-runner
       stripPrefix: false
     atcontext-server:
