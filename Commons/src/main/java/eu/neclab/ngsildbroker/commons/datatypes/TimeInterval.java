@@ -9,26 +9,25 @@ import java.util.Date;
  */
 public class TimeInterval {
 
-	private Date startAt;
-	private Date stop;
+	private Long startAt;
+	private Long stop;
 
 	public TimeInterval(){
-
 	}
 	
-	public Date getStartAt() {
+	public Long getStartAt() {
 		return startAt;
 	}
 
-	public void setStartAt(Date startAt) {
+	public void setStartAt(Long startAt) {
 		this.startAt = startAt;
 	}
 
-	public Date getStop() {
+	public Long getStop() {
 		return stop;
 	}
 
-	public void setStop(Date stop) {
+	public void setStop(Long stop) {
 		this.stop = stop;
 	}
 

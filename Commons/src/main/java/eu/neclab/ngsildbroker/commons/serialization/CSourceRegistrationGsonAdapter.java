@@ -121,31 +121,12 @@ public class CSourceRegistrationGsonAdapter
 		if (src.getTimestamp() != null) {
 			jsonArray = new JsonArray();
 			JsonObject timestampObject = new JsonObject();
-			if (src.getTimestamp().getStartAt() != null) {
-				JsonArray temp2 = new JsonArray();
-				jsonObject = new JsonObject();
-
-				Date date = src.getTimestamp().getStartAt();
-				Instant current = date.toInstant();
-				LocalDateTime ldt = LocalDateTime.ofInstant(current, ZoneId.systemDefault());
-
-				jsonObject.add(NGSIConstants.JSON_LD_VALUE, context.serialize(ldt.toString()));
-				jsonObject.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
-				temp2.add(jsonObject);
-				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_START, temp2);
+			if (src.getTimestamp().getStartAt() != null) {		
+				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_START, SerializationTools.getJson(src.getTimestamp().getStartAt(), context));
 			}
 			if (src.getTimestamp().getStop() != null) {
-				JsonArray temp2 = new JsonArray();
-				jsonObject = new JsonObject();
-
-				Date date = src.getTimestamp().getStop();
-				Instant current = date.toInstant();
-				LocalDateTime ldt = LocalDateTime.ofInstant(current, ZoneId.systemDefault());
-
-				jsonObject.add(NGSIConstants.JSON_LD_VALUE, context.serialize(ldt.toString()));
-				jsonObject.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
-				temp2.add(jsonObject);
-				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_END, temp2);
+				
+				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_END, SerializationTools.getJson(src.getTimestamp().getStop(), context));
 			}
 			jsonArray.add(timestampObject);
 
@@ -264,18 +245,20 @@ public class CSourceRegistrationGsonAdapter
 				if (timestampObject.has(NGSIConstants.NGSI_LD_TIMESTAMP_START)) {
 					String dateTime = timestampObject.get(NGSIConstants.NGSI_LD_TIMESTAMP_START).getAsJsonArray().get(0)
 							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
-					LocalDateTime localdatetime = LocalDateTime.parse(dateTime.trim());
-					Instant instant = localdatetime.atZone(ZoneId.systemDefault()).toInstant();
-					Date startDate = Date.from(instant);
-					result.getTimestamp().setStartAt(startDate);
+					try {
+						result.getTimestamp().setStartAt(SerializationTools.date2Long(dateTime));
+					} catch (Exception e) {
+						throw new JsonParseException(e.getMessage());
+					}
 				}
 				if (timestampObject.has(NGSIConstants.NGSI_LD_TIMESTAMP_END)) {
 					String dateTime = timestampObject.get(NGSIConstants.NGSI_LD_TIMESTAMP_END).getAsJsonArray().get(0)
 							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
-					LocalDateTime localdatetime = LocalDateTime.parse(dateTime.trim());
-					Instant instant = localdatetime.atZone(ZoneId.systemDefault()).toInstant();
-					Date endDate = Date.from(instant);
-					result.getTimestamp().setStop(endDate);
+					try {
+						result.getTimestamp().setStop(SerializationTools.date2Long(dateTime));
+					} catch (Exception e) {
+						throw new JsonParseException(e.getMessage());
+					}
 				}
 			}else if(key.equals(NGSIConstants.NGSI_LD_EXPIRES)) {
 				String expires=value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
