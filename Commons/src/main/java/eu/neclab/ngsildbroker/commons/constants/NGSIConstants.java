@@ -186,6 +186,7 @@ public interface NGSIConstants {
 	public static final String ALLOWED_OUT_DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]'Z'";
 	public static final String DEFAULT_FORGIVING_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 	public static final String HEADER_REL_LDCONTEXT = "http://www.w3.org/ns/json-ld#context";
+	public static final String DATE_TIME_REGEX = "\\d\\d\\d\\d-(0[0-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d+\\d?\\d?\\d?\\d?\\d?)?Z";
 
 	public static final HashMap<Integer, String> HTTP_CODE_2_NGSI_ERROR = new HashMap<Integer, String>();
 	public static final List<String> ALLOWED_GEOMETRIES = Arrays.asList("Point", "MultiPoint", "LineString",
