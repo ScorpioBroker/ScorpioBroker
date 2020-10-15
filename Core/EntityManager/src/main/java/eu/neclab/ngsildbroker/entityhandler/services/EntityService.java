@@ -785,7 +785,7 @@ public class EntityService {
 						createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT)
 								.get(0)).get(NGSIConstants.JSON_LD_VALUE).asText();
 					}
-					setTemporalProperties(attrNode, createdAt, now, true);
+					setTemporalProperties(attrNode, createdAt, now, false);
 
 					// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
 					// present ...
@@ -801,6 +801,9 @@ public class EntityService {
 		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
 		updateResult.setJson(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
 		updateResult.setFinalNode(node);
+		//Store appended before removing temporal fields 
+		updateResult.setJsonToAppend(updateResult.getJsonToAppend().deepCopy());
+		updateResult.setAppendedJsonFields(updateResult.getAppendedJsonFields().deepCopy());
 		removeTemporalProperties(node);
 		updateResult.setJsonWithoutSysAttrs(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
 		logger.trace("updateFields() :: completed");
@@ -849,7 +852,7 @@ public class EntityService {
 					// TODO: should we keep the createdAt value if attribute already exists?
 					// (overwrite operation) => if (objectNode.has(key)) ...
 					JsonNode attrNode = jsonToAppend.get(key).get(0);
-					setTemporalProperties(attrNode, now, now, true);
+					setTemporalProperties(attrNode, now, now, false);
 				}
 				objectNode.replace(key, jsonToAppend.get(key));
 				((ObjectNode) appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
@@ -858,7 +861,9 @@ public class EntityService {
 		}
 		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
 		appendResult.setJson(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
-
+		//Store result before removing temporal properties
+		appendResult.setJsonToAppend(appendResult.getJsonToAppend().deepCopy());
+		appendResult.setAppendedJsonFields(appendResult.getAppendedJsonFields().deepCopy());
 		removeTemporalProperties(node);
 		appendResult.setJsonWithoutSysAttrs(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
 		appendResult.setFinalNode(node);
