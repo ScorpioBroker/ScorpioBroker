@@ -3,8 +3,10 @@ package eu.neclab.ngsildbroker.historymanager.service;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -16,6 +18,9 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -391,11 +396,77 @@ public class HistoryService {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
 				for (JsonElement jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, true);
+					String full = jsonElement.toString();
+					removeSysAttrs(jsonElement);
+					String withoutSysAttrs = jsonElement.toString();
+					String keyValue = createKeyValue(jsonElement.getAsJsonObject()).toString();
+					String data = jsonElement.toString() + NGSIConstants.KAFKA_SPLIT + withoutSysAttrs
+							+ NGSIConstants.KAFKA_SPLIT + keyValue;
 					pushAttributeToKafka(key, now, attribIdPayload, jsonElement.toString());
 				}
 			}
 		}
 
+	}
+	private JsonObject createKeyValue(JsonObject json) {
+			JsonObject kvJsonObject = new JsonObject();
+			Iterator<Entry<String, JsonElement>> iter = json.entrySet().iterator();
+			while (iter.hasNext()) {
+				Entry<String, JsonElement> entry = iter.next();
+				if (entry.getKey().equals(NGSIConstants.JSON_LD_ID) || entry.getKey().equals(NGSIConstants.JSON_LD_TYPE)) {
+					kvJsonObject.add(entry.getKey(), entry.getValue());
+				} else if (entry.getValue().isJsonArray()) {
+					JsonArray values = new JsonArray();
+					Iterator<JsonElement> it = entry.getValue().getAsJsonArray().iterator();
+					while (it.hasNext()) {
+						JsonObject attrObj = it.next().getAsJsonObject();
+						if (attrObj.has(NGSIConstants.JSON_LD_VALUE)) { // common members like createdAt do not have
+							// hasValue/hasObject
+							values.add(entry.getValue());
+						} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+							values.add(attrObj.get(NGSIConstants.NGSI_LD_HAS_VALUE));
+						} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT)
+								&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isJsonArray()
+								&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).getAsJsonArray().get(0).getAsJsonObject().has(NGSIConstants.JSON_LD_ID)) {
+							values.add(attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_ID));
+						}
+					}
+					if (values.size() == 1) {
+						kvJsonObject.add(entry.getKey(), values.get(0));
+					} else {
+						kvJsonObject.add(entry.getKey(), values);
+					}
+
+				}
+			}
+			return kvJsonObject;
+
+	}
+
+	private void removeSysAttrs(JsonElement jsonElement) {
+		if (!jsonElement.isJsonObject()) {
+			return;
+		}
+		
+		JsonObject objectNode = jsonElement.getAsJsonObject();
+		objectNode.remove(NGSIConstants.NGSI_LD_CREATED_AT);
+		objectNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+
+		String regexNgsildAttributeTypes = new String(NGSIConstants.NGSI_LD_PROPERTY + "|"
+				+ NGSIConstants.NGSI_LD_RELATIONSHIP + "|" + NGSIConstants.NGSI_LD_GEOPROPERTY);
+		Iterator<Entry<String, JsonElement>> iter = objectNode.entrySet().iterator();
+		while (iter.hasNext()) {
+			Entry<String, JsonElement> entry = iter.next();
+			if (entry.getValue().isJsonArray() && entry.getValue().getAsJsonArray().size() > 0  && entry.getValue().getAsJsonArray().get(0).isJsonObject()) {
+				JsonObject attrObj = entry.getValue().getAsJsonArray().get(0).getAsJsonObject();
+				// add createdAt/modifiedAt only to properties, geoproperties and relationships
+				if (attrObj.has(NGSIConstants.JSON_LD_TYPE) && attrObj.get(NGSIConstants.JSON_LD_TYPE).isJsonArray()
+						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().size() > 0 
+						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().get(0).getAsString().matches(regexNgsildAttributeTypes)) {
+					removeSysAttrs(attrObj);
+				}
+			}
+		}
 	}
 
 	@KafkaListener(topics = "${entity.update.topic}", groupId = "historyManagerUpdate")
