@@ -87,12 +87,16 @@ public class HistoryDAO extends StorageReaderDAO {
 			}
 		}
 
-
 		String sqlQuery = "with r as ("
-				+ "  select te.id, te.type, te.createdat, te.modifiedat, coalesce(teai.attributeid, '') as attributeid, jsonb_agg(teai.data";
-
-		if (!qp.getIncludeSysAttrs()) {
-			sqlQuery += "  - '" + NGSIConstants.NGSI_LD_CREATED_AT + "' - '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
+				+ "  select te.id, te.type, te.createdat, te.modifiedat, coalesce(teai.attributeid, '') as attributeid, jsonb_agg(";
+		if (qp.getKeyValues()) {
+			sqlQuery += "teai.kvdata";
+		} else {
+			if (!qp.getIncludeSysAttrs()) {
+				sqlQuery += "teai.data_without_sysattrs";
+			} else {
+				sqlQuery += "teai.data";
+			}
 		}
 		sqlQuery += " order by teai.modifiedat desc) as attributedata" + "  from " + DBConstants.DBTABLE_TEMPORALENTITY
 				+ " te" + "  left join " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
@@ -105,28 +109,28 @@ public class HistoryDAO extends StorageReaderDAO {
 				+ "          ('{\"" + NGSIConstants.JSON_LD_TYPE + "\":[\"' || type || '\"]}')::jsonb ";
 		if (qp.getIncludeSysAttrs()) {
 			sqlQuery += "         || ('{\"" + NGSIConstants.NGSI_LD_CREATED_AT + "\":";
-			//if (!qp.getTemporalValues()) {
-				sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME
-						+ "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"' ";
-			//} else {
-			//	sqlQuery += "\"'";
-			//}
+			// if (!qp.getTemporalValues()) {
+			sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \""
+					+ NGSIConstants.JSON_LD_VALUE + "\": \"' ";
+			// } else {
+			// sqlQuery += "\"'";
+			// }
 			sqlQuery += "|| to_char(createdat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\"";
-			//if (!qp.getTemporalValues()) {
-				sqlQuery += "}]";
-			//}
+			// if (!qp.getTemporalValues()) {
+			sqlQuery += "}]";
+			// }
 			sqlQuery += "}')::jsonb || ";
 			sqlQuery += " ('{\"" + NGSIConstants.NGSI_LD_MODIFIED_AT + "\":";
-			//if (!qp.getTemporalValues()) {
-				sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME
-						+ "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"' ";
-			//} else {
-			//	sqlQuery += "\"'";
-			//}
+			// if (!qp.getTemporalValues()) {
+			sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \""
+					+ NGSIConstants.JSON_LD_VALUE + "\": \"' ";
+			// } else {
+			// sqlQuery += "\"'";
+			// }
 			sqlQuery += "|| to_char(modifiedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\"";
-			//if (!qp.getTemporalValues()) {
-				sqlQuery += "}]";
-			//}
+			// if (!qp.getTemporalValues()) {
+			sqlQuery += "}]";
+			// }
 			sqlQuery += "}')::jsonb";
 		}
 		sqlQuery += "  as tedata, " + "jsonb_object_agg(attributeid, attributedata";
@@ -139,11 +143,10 @@ public class HistoryDAO extends StorageReaderDAO {
 		sqlQuery += "  group by id, type, createdat, modifiedat ";
 		sqlQuery += "  order by modifiedat desc ";
 		sqlQuery += ") as m";
-		
+
 		// advanced query "q"
-		//THIS DOESN'T WORK 
 		if (qp.getQ() != null) {
-			sqlQuery += " where " + qp.getQ(); 
+			sqlQuery += " where " + qp.getQ();
 		}
 
 		return sqlQuery;
