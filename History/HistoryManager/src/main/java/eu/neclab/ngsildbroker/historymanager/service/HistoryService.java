@@ -121,7 +121,13 @@ public class HistoryService {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
 				for (JsonElement jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity);
-					pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId, jsonElement.toString(),
+					String full = jsonElement.toString();
+					removeSysAttrs(jsonElement);
+					String withoutSysAttrs = jsonElement.toString();
+					String keyValue = createKeyValue(jsonElement.getAsJsonObject()).toString();
+					String data = full + NGSIConstants.KAFKA_SPLIT + withoutSysAttrs
+							+ NGSIConstants.KAFKA_SPLIT + keyValue;
+					pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId, data,
 							createTemporalEntityIfNotExists, false);
 				}
 			}
@@ -400,7 +406,7 @@ public class HistoryService {
 					removeSysAttrs(jsonElement);
 					String withoutSysAttrs = jsonElement.toString();
 					String keyValue = createKeyValue(jsonElement.getAsJsonObject()).toString();
-					String data = jsonElement.toString() + NGSIConstants.KAFKA_SPLIT + withoutSysAttrs
+					String data = full + NGSIConstants.KAFKA_SPLIT + withoutSysAttrs
 							+ NGSIConstants.KAFKA_SPLIT + keyValue;
 					pushAttributeToKafka(key, now, attribIdPayload, jsonElement.toString());
 				}
@@ -495,7 +501,13 @@ public class HistoryService {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
 				for (JsonElement jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, true);
-					pushAttributeToKafka(key, now, attribIdPayload, jsonElement.toString());
+					String full = jsonElement.toString();
+					removeSysAttrs(jsonElement);
+					String withoutSysAttrs = jsonElement.toString();
+					String keyValue = createKeyValue(jsonElement.getAsJsonObject()).toString();
+					String data = full + NGSIConstants.KAFKA_SPLIT + withoutSysAttrs
+							+ NGSIConstants.KAFKA_SPLIT + keyValue;
+					pushAttributeToKafka(key, now, attribIdPayload, data);
 				}
 			}
 		}
