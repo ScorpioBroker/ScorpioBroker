@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: regmgr
+  name: regmgr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: regmgr
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: regmgr
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:RegistryManager_latest
+        imagePullPolicy: ""
+        name: regmgr
+        ports:
+        - containerPort: 1030
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+

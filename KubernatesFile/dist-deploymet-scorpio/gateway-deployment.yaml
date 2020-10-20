@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: gateway
+  name: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: gateway
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: gateway
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:gateway_latest
+        imagePullPolicy: ""
+        name: gateway
+        ports:
+        - containerPort: 9090
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+

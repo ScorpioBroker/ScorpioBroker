@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+      component: postgres
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: postgres
+  strategy: {}
+  template:
+    metadata:
+      labels:
+       component: postgres
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_DB
+          value: ngb
+        - name: POSTGRES_PASSWORD
+          value: ngb
+        - name: POSTGRES_USER
+          value: ngb
+        image: mdillon/postgis
+        imagePullPolicy: ""
+        name: postgres
+        ports:
+        - containerPort: 5432
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+
+

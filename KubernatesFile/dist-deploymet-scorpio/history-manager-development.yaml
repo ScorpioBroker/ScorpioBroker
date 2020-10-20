@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: histmgr
+  name: histmgr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: histmgr
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: histmgr
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:HistoryManager_latest
+        imagePullPolicy: ""
+        name: histmgr
+        ports:
+        - containerPort: 1040
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+

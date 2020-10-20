@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+      component: zookeeper
+  name: zookeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: zookeeper
+  strategy: {}
+  template:
+    metadata:
+      labels:
+       component: zookeeper
+    spec:
+      containers:
+      - image: zookeeper
+        imagePullPolicy: ""
+        name: zookeeper
+        ports:
+        - containerPort: 2181
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+

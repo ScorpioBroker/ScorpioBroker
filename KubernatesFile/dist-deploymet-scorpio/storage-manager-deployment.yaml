@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: stomgr
+  name: stomgr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: stomgr
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: stomgr
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:StorageManager_latest
+        imagePullPolicy: ""
+        name: stomgr
+        ports:
+        - containerPort: 1029
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+

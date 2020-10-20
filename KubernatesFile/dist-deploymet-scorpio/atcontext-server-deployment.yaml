@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: atctxsrv
+  name: atctxsrv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: atctxsrv
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: atctxsrv
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:AtContextServer_latest
+        imagePullPolicy: ""
+        name: atctxsrv
+        ports:
+        - containerPort: 27015
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+

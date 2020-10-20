@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: sbsmgr
+  name: sbsmgr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: sbsmgr
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: sbsmgr
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:SubscriptionManager_latest
+        imagePullPolicy: ""
+        name: sbsmgr
+        ports:
+        - containerPort: 2025
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+

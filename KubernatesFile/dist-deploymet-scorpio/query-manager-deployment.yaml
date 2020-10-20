@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: qrymgr
+  name: qrymgr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: qrymgr
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: qrymgr
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:QueryManager_latest
+        imagePullPolicy: ""
+        name: qrymgr
+        ports:
+        - containerPort: 1026
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+
