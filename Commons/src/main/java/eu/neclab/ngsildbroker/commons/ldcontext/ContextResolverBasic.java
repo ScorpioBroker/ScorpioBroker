@@ -824,7 +824,7 @@ public class ContextResolverBasic {
 	}
 
 	private void protectGeoProp(Map<String, Object> objMap, Object value, List<Object> usedContext)
-			throws JsonGenerationException, IOException {
+			throws JsonGenerationException, IOException, ResponseException {
 		Object potentialStringValue = ((Map) value).get(NGSIConstants.JSON_LD_VALUE);
 		if (potentialStringValue != null) {
 			return;
@@ -844,16 +844,27 @@ public class ContextResolverBasic {
 			
 		}
 		List geoValues = (List) compactedFull.get(NGSIConstants.GEO_JSON_COORDINATES);
+		Object entry1, entry2;
 		switch (geoType) {
 		case NGSIConstants.GEO_TYPE_POINT:
 			// nothing to be done here point is ok like this
+			entry1 = geoValues.get(0);
+			entry2 = geoValues.get(1);
+			if((!(entry1 instanceof Double) && !(entry1 instanceof Integer)) || (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
+				throw new ResponseException(ErrorType.BadRequestData, "Provided coordinate entry is not a float value");
+			}
 			break;
 		case NGSIConstants.GEO_TYPE_LINESTRING:
 			ArrayList<Object> containerList = new ArrayList<Object>();
 			for (int i = 0; i < geoValues.size(); i += 2) {
 				ArrayList<Object> container = new ArrayList<Object>();
-				container.add(geoValues.get(i));
-				container.add(geoValues.get(i + 1));
+				entry1 = geoValues.get(i);
+				entry2 = geoValues.get(i + 1);
+				if((!(entry1 instanceof Double) && !(entry1 instanceof Integer)) || (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
+					throw new ResponseException(ErrorType.BadRequestData, "Provided coordinate entry is not a float value");
+				}
+				container.add(entry1);
+				container.add(entry2);
 				containerList.add(container);
 			}
 			compactedFull.put(NGSIConstants.GEO_JSON_COORDINATES, containerList);
@@ -862,10 +873,18 @@ public class ContextResolverBasic {
 		case NGSIConstants.GEO_TYPE_POLYGON:
 			ArrayList<Object> topLevelContainerList = new ArrayList<Object>();
 			ArrayList<Object> polyContainerList = new ArrayList<Object>();
+			if(!geoValues.get(0).equals(geoValues.get(geoValues.size()-2)) || !geoValues.get(1).equals(geoValues.get(geoValues.size()-1))) {
+				throw new ResponseException(ErrorType.BadRequestData, "Polygon does not close");
+			}
 			for (int i = 0; i < geoValues.size(); i += 2) {
 				ArrayList<Object> container = new ArrayList<Object>();
-				container.add(geoValues.get(i));
-				container.add(geoValues.get(i + 1));
+				entry1 = geoValues.get(i);
+				entry2 = geoValues.get(i + 1);
+				if((!(entry1 instanceof Double) && !(entry1 instanceof Integer)) || (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
+					throw new ResponseException(ErrorType.BadRequestData, "Provided coordinate entry is not a float value");
+				}
+				container.add(entry1);
+				container.add(entry2);
 				polyContainerList.add(container);
 			}
 			topLevelContainerList.add(polyContainerList);
@@ -877,9 +896,13 @@ public class ContextResolverBasic {
 			ArrayList<Object> multiPolyContainerList = new ArrayList<Object>();
 			for (int i = 0; i < geoValues.size(); i += 2) {
 				ArrayList<Object> container = new ArrayList<Object>();
-				container.add(geoValues.get(i));
-				container.add(geoValues.get(i + 1));
-				multiPolyContainerList.add(container);
+				entry1 = geoValues.get(i);
+				entry2 = geoValues.get(i + 1);
+				if((!(entry1 instanceof Double) && !(entry1 instanceof Integer)) || (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
+					throw new ResponseException(ErrorType.BadRequestData, "Provided coordinate entry is not a float value");
+				}
+				container.add(entry1);
+				container.add(entry2);multiPolyContainerList.add(container);
 			}
 			multiMidLevelContainerList.add(multiPolyContainerList);
 			multiTopLevelContainerList.add(multiMidLevelContainerList);
