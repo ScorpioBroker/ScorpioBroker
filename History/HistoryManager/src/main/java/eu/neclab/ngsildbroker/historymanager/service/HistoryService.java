@@ -408,7 +408,7 @@ public class HistoryService {
 					String keyValue = createKeyValue(jsonElement.getAsJsonObject()).toString();
 					String data = full + NGSIConstants.KAFKA_SPLIT + withoutSysAttrs
 							+ NGSIConstants.KAFKA_SPLIT + keyValue;
-					pushAttributeToKafka(key, now, attribIdPayload, jsonElement.toString());
+					pushAttributeToKafka(key, now, attribIdPayload, data);
 				}
 			}
 		}
@@ -416,34 +416,12 @@ public class HistoryService {
 	}
 	private JsonObject createKeyValue(JsonObject json) {
 			JsonObject kvJsonObject = new JsonObject();
-			Iterator<Entry<String, JsonElement>> iter = json.entrySet().iterator();
-			while (iter.hasNext()) {
-				Entry<String, JsonElement> entry = iter.next();
-				if (entry.getKey().equals(NGSIConstants.JSON_LD_ID) || entry.getKey().equals(NGSIConstants.JSON_LD_TYPE)) {
-					kvJsonObject.add(entry.getKey(), entry.getValue());
-				} else if (entry.getValue().isJsonArray()) {
-					JsonArray values = new JsonArray();
-					Iterator<JsonElement> it = entry.getValue().getAsJsonArray().iterator();
-					while (it.hasNext()) {
-						JsonObject attrObj = it.next().getAsJsonObject();
-						if (attrObj.has(NGSIConstants.JSON_LD_VALUE)) { // common members like createdAt do not have
-							// hasValue/hasObject
-							values.add(entry.getValue());
-						} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-							values.add(attrObj.get(NGSIConstants.NGSI_LD_HAS_VALUE));
-						} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT)
-								&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isJsonArray()
-								&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).getAsJsonArray().get(0).getAsJsonObject().has(NGSIConstants.JSON_LD_ID)) {
-							values.add(attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_ID));
-						}
-					}
-					if (values.size() == 1) {
-						kvJsonObject.add(entry.getKey(), values.get(0));
-					} else {
-						kvJsonObject.add(entry.getKey(), values);
-					}
-
-				}
+			String type = json.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().get(0).getAsString();
+			kvJsonObject.add(NGSIConstants.JSON_LD_TYPE, json.get(NGSIConstants.JSON_LD_TYPE));
+			if(type.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
+				kvJsonObject.add(NGSIConstants.NGSI_LD_HAS_VALUES, json.get(NGSIConstants.NGSI_LD_HAS_VALUE));
+			}else {
+				kvJsonObject.add(NGSIConstants.NGSI_LD_HAS_OBJECTS, json.get(NGSIConstants.NGSI_LD_HAS_OBJECT));
 			}
 			return kvJsonObject;
 

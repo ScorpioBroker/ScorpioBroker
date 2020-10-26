@@ -41,11 +41,14 @@ public interface NGSIConstants {
 	public final static String JSON_LD_TYPE = "@type";
 	public final static String JSON_LD_VALUE = "@value";
 	public final static String JSON_LD_CONTEXT = "@context";
+	public final static String JSON_LD_LIST = "@list";
 	public final static String NGSI_LD_DEFAULT_PREFIX = "https://uri.etsi.org/ngsi-ld/default-context/";
 	public final static String NGSI_LD_RELATIONSHIP = "https://uri.etsi.org/ngsi-ld/Relationship";
 	public final static String NGSI_LD_PROPERTY = "https://uri.etsi.org/ngsi-ld/Property";
 	public final static String NGSI_LD_HAS_VALUE = "https://uri.etsi.org/ngsi-ld/hasValue";
+	public final static String NGSI_LD_HAS_VALUES = "https://uri.etsi.org/ngsi-ld/hasValues";
 	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
+	public final static String NGSI_LD_HAS_OBJECTS = "https://uri.etsi.org/ngsi-ld/hasObjects";
 	public final static String NGSI_LD_COORDINATES = "https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
