@@ -1,0 +1,50 @@
+management:
+  security:
+    enabled: false
+       
+security:
+  sessions: NEVER
+  oauth2:
+    resource:
+      userInfoUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/userinfo
+# Configure resources  
+secEnabled: false
+auth:
+   - api: /
+     role: 
+      - USER_PG
+      - USER_PUG
+      - ADMIN_PUGD
+     method:
+       POST
+   - api: /
+     role: 
+      - USER_G
+      - USER_PG
+      - USER_GUD
+      - USER_PUG
+      - ADMIN_PUGD
+     method:
+       GET
+   - api: /*
+     role: 
+      - USER_G
+      - USER_PG
+      - USER_GUD
+      - USER_PUG
+      - ADMIN_PUGD
+     method:
+       GET
+   - api: /*
+     role: 
+      - USER_GUD
+      - ADMIN_PUGD
+     method:
+       DELETE
+   - api: /*
+     role: 
+      - USER_GUD
+      - USER_PUG
+      - ADMIN_PUGD
+     method:
+       PATCH

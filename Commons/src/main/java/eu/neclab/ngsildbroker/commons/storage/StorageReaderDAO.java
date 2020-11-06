@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.commons.storage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.annotation.PostConstruct;
 
@@ -27,6 +28,8 @@ abstract public class StorageReaderDAO {
 
 	@Autowired
 	protected JdbcTemplate readerJdbcTemplate;
+	
+	public Random random=new Random();
 
 	@PostConstruct
 	public void init() {
@@ -37,6 +40,10 @@ abstract public class StorageReaderDAO {
 	public List<String> query(QueryParams qp) {
 		
 		try {
+			if(qp.getCheck()!=null) {
+				String sqlQuery=typesAndAttributeQuery(qp);
+				return readerJdbcTemplate.queryForList(sqlQuery,String.class);
+			}
 			String sqlQuery = translateNgsildQueryToSql(qp);
 			logger.info("NGSI-LD to SQL: " + sqlQuery);
 			//SqlRowSet result = readerJdbcTemplate.queryForRowSet(sqlQuery);
@@ -83,6 +90,45 @@ abstract public class StorageReaderDAO {
 			result.add(row.get("type").toString());
 		}
 		return result;
+	}
+	
+	/*
+	 * TODO: optimize sql queries for types and Attributes by using prepared statements (if possible)
+	 */
+	protected String typesAndAttributeQuery(QueryParams qp) throws ResponseException {
+		String query="";
+		if(qp.getCheck()=="NonDeatilsType" && qp.getAttrs()==null) {
+			int number = random.nextInt(999999);
+			query="select jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"','urn:ngsi-ld:EntityTypeList:"+number+"','"+NGSIConstants.JSON_LD_TYPE+"', jsonb_build_array('"+NGSIConstants.NGSI_LD_ENTITY_LIST+"'), '"+NGSIConstants.NGSI_LD_TYPE_LIST+"',json_agg(distinct jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', type)::jsonb)) from entity;";
+		    return query;
+		}
+		else if(qp.getCheck()=="deatilsType" && qp.getAttrs()==null) {
+			query="select distinct jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"',type,'"+NGSIConstants.JSON_LD_TYPE+"', jsonb_build_array('"+NGSIConstants.NGSI_LD_ENTITY_TYPE+"'), '"+NGSIConstants.NGSI_LD_TYPE_NAME+"', jsonb_build_array(jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', type)), '"+NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES+"', jsonb_agg(jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', attribute.key))) from entity, jsonb_each(data_without_sysattrs - '"+NGSIConstants.JSON_LD_ID+"' - '"+NGSIConstants.JSON_LD_TYPE+"') attribute group by id;";
+		    return query;
+		}
+		else if(qp.getCheck()=="type" && qp.getAttrs()!=null) {
+			String type=qp.getAttrs();
+			query="with r as (select distinct attribute.key as mykey, jsonb_agg(distinct jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', attribute.value#>>'{0,@type,0}')) as mytype from entity, jsonb_each(data_without_sysattrs - '"+NGSIConstants.JSON_LD_ID+"' - '"+NGSIConstants.JSON_LD_TYPE+"') attribute where type='"+type+"'"+" group by attribute.key)select jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"',type,'"+NGSIConstants.JSON_LD_TYPE+"', jsonb_build_array('"+NGSIConstants.NGSI_LD_ENTITY_TYPE_INFO+"'), '"+NGSIConstants.NGSI_LD_TYPE_NAME+"', jsonb_build_array(jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', type)),'"+NGSIConstants.NGSI_LD_ENTITY_COUNT+"', jsonb_build_array(jsonb_build_object('"+NGSIConstants.JSON_LD_VALUE+"', count(Distinct id))), '"+NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS+"', jsonb_agg(distinct jsonb_build_object('"+NGSIConstants.NGSI_LD_ATTRIBUTE_NAME+"',jsonb_build_array(jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', mykey)), '"+NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES+"', mytype, '"+NGSIConstants.JSON_LD_ID+"', mykey, '"+NGSIConstants.JSON_LD_TYPE+"',jsonb_build_array('"+NGSIConstants.NGSI_LD_ATTRIBUTE+"')))) from entity, r attribute where type='"+type+"' group by type;";
+			return query;
+		}
+		else if(qp.getCheck()=="NonDeatilsAttributes" && qp.getAttrs()==null) {
+			int number = random.nextInt(999999);
+			query="select jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"','urn:ngsi-ld:AttributeList:"+number+"','"+NGSIConstants.JSON_LD_TYPE+"', jsonb_build_array('"+NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_1+"'), '"+NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_2+"',json_agg(distinct jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', attribute.key)::jsonb)) from entity,jsonb_each(data_without_sysattrs-'"+NGSIConstants.JSON_LD_ID+"'-'"+NGSIConstants.JSON_LD_TYPE+"') attribute;";
+			return query;
+			
+		}
+		else if(qp.getCheck()=="deatilsAttributes" && qp.getAttrs()==null) {
+			query="select jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', attribute.key,'"+NGSIConstants.JSON_LD_TYPE+"','"+NGSIConstants.NGSI_LD_ATTRIBUTE+"','"+NGSIConstants.NGSI_LD_ATTRIBUTE_NAME+"',jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', attribute.key),'"+NGSIConstants.NGSI_LD_TYPE_NAMES+"',jsonb_agg(distinct jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"', type))) from entity,jsonb_each(data_without_sysattrs-'"+NGSIConstants.JSON_LD_ID+"'-'"+NGSIConstants.JSON_LD_TYPE+"') attribute group by attribute.key;";
+			return query;
+			
+		}
+		else if(qp.getCheck()=="Attribute" && qp.getAttrs()!=null) {
+			String type=qp.getAttrs();
+			query="with r as(select count(data_without_sysattrs->'"+type+"') as mycount  from entity), y as(select  jsonb_agg(distinct jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"',type)) as mytype,jsonb_build_array(jsonb_build_object('"+NGSIConstants.JSON_LD_VALUE+"',mycount)) as finalcount, jsonb_agg(distinct jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"',attribute.value#>>'{0,@type,0}')) as mydata from r,entity,jsonb_each(data_without_sysattrs-'"+NGSIConstants.JSON_LD_ID+"'-'"+NGSIConstants.JSON_LD_TYPE+"') attribute where attribute.key='"+type+"' group by mycount) select jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"','"+type+"','"+NGSIConstants.JSON_LD_TYPE+"','"+NGSIConstants.NGSI_LD_ATTRIBUTE+"','"+NGSIConstants.NGSI_LD_ATTRIBUTE_NAME+"',jsonb_build_object('"+NGSIConstants.JSON_LD_ID+"','"+type+"'),'"+NGSIConstants.NGSI_LD_TYPE_NAMES+"',mytype,'"+NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT+"',finalcount,'"+NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES+"',mydata) from y,r;";
+			return query;
+			
+		}
+		return null;
 	}
 
 	/*

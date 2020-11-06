@@ -1,0 +1,192 @@
+append:
+  overwrite: noOverwrite
+atcontext:
+  url: http://localhost:9090/ngsi-ld/contextes/
+bootstrap:
+  servers: kafka:9092
+broker:
+  id: FedBroker1
+  parent:
+    location:
+      url: SELF
+      
+query:
+  result:
+    topic: QUERY_RESULT
+  topic: QUERY
+
+
+csource:
+  stopListenerIfDbFails: false
+  topic: CONTEXT_SOURCE
+  registry:
+    topic: CONTEXT_REGISTRY
+  source:
+    topic: CONTEXT_SOURCE
+  notification:
+    topic: CONTEXT_SOURCE_NOTIFICATION
+  query:
+    topic: CONTEXT_REGISTRY_QUERY
+    result:
+      topic: CONTEXT_REGISTRY_QUERY_RESULT
+
+csources:
+  registration:
+    topic: CONTEXT_REGISTRY
+defaultLimit: 50
+directDbConnection: false 
+entity:
+  append:
+    topic: ENTITY_APPEND
+  create:
+    topic: ENTITY_CREATE
+  delete:
+    topic: ENTITY_DELETE
+  update:
+    topic: ENTITY_UPDATE
+  index:
+    topic: ENTITY_INDEX
+  keyValues:
+    topic: KVENTITY
+  stopListenerIfDbFails: false
+  temporal:
+    stopListenerIfDbFails: false
+    topic: TEMPORALENTITY
+  topic: ENTITY
+  withoutSysAttrs:
+    topic: ENTITY_WITHOUT_SYSATTRS
+
+submanager:
+  subscription:
+    topic: SUBSCRIPTIONS
+
+kafka:
+  replytimeout: 10000
+management:
+  endpoint:
+    restart:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+max:
+  request:
+    size: 104857600
+maxLimit: 500
+ngb:
+  debugmode: false
+
+
+reader:
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP_Reader
+    password: ngb
+    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_reader
+    username: ngb
+  enabled: true
+
+server:
+  port: 1025
+  tomcat:
+    max:
+      threads: 200
+spring:
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: kafka:9092
+      bindings:
+        ENTITY_WRITE_CHANNEL:
+          destination: ENTITY
+          contentType: application/json
+        KVENTITY_WRITE_CHANNEL:
+          destination: KVENTITY
+          contentType: application/json
+        ENTITY_WITHOUT_SYSATTRS_WRITE_CHANNEL:
+          destination: ENTITY_WITHOUT_SYSATTRS
+          contentType: application/json
+        CREATE_WRITE_CHANNEL:
+          destination: ENTITY_CREATE
+          contentType: application/json
+        APPEND_WRITE_CHANNEL:
+          destination: ENTITY_APPEND
+          contentType: application/json
+        UPDATE_WRITE_CHANNEL:
+          destination: ENTITY_UPDATE
+          contentType: application/json
+        DELETE_WRITE_CHANNEL:
+          destination: ENTITY_DELETE
+          contentType: application/json
+        CONTEXT_REGISTRY_WRITE_CHANNEL:
+          destination: CONTEXT_REGISTRY
+          contentType: application/json
+        CONTEXT_REGISTRY_UPDATE_CHANNEL:
+          destination: CONTEXT_UPDATE
+          contentType: application/json
+        INDEX_WRITE_CHANNEL:
+          destination: ENTITY_INDEX
+          contentType: application/json
+        ATCONTEXT_WRITE_CHANNEL:
+          destination: ATCONTEXT
+          contentType: application/json
+        TEMPORAL_ENTITY_WRITE_CHANNEL:
+          destination: TEMPORALENTITY
+          contentType: application/json
+        SUBSCRIPTIONS_WRITE_CHANNEL:
+          destination: SUBSCRIPTIONS
+          contentType: application/json
+        CSOURCE_SUBSCRIPTION_WRITE_CHANNEL:
+          destination: CSOURCE_SUBSCRIPTIONS
+          contentType: application/json
+        CSOURCE_REGISTRATION_WRITE_CHANNEL:
+          destination: CONTEXT_SOURCE
+          contentType: application/json
+        CSOURCE_NOTIFICATION_WRITE_CHANNEL:
+          destination: CONTEXT_SOURCE_NOTIFICATION
+          contentType: application/json
+  application.name: aio-runner
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP
+    password: ngb
+    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_registrymanager
+    username: ngb
+  flyway:
+    baselineOnMigrate: true
+  kafka:
+    admin:
+      properties:
+        cleanup:
+          policy: compact
+  main:
+    lazy-initialization: true
+    allow-bean-definition-overriding: true
+
+selfhostcorecontext: http://localhost:9090/corecontext
+writer:
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP_Writer
+    password: ngb
+    url: jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_writer
+    username: ngb
+  enabled: true
+
