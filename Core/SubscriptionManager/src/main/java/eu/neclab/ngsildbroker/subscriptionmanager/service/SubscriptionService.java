@@ -138,7 +138,6 @@ public class SubscriptionService implements SubscriptionManager {
 	@Qualifier("smparamsResolver")
 	ParamsResolver paramsResolver;
 	
-	@Autowired
 	SubscriptionManagerProducerChannel producerChannel;
 
 	@Autowired
@@ -168,8 +167,10 @@ public class SubscriptionService implements SubscriptionManager {
 	// @Value("${notification.port}")
 	// String REMOTE_NOTIFICATION_PORT;
 
-	public SubscriptionService() {
+	public SubscriptionService(SubscriptionManagerProducerChannel producerChannel) {
+		this.producerChannel = producerChannel;
 	}
+
 
 	@PostConstruct
 	private void setup() {
