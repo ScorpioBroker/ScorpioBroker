@@ -1,3 +1,4 @@
+
 # Increase the Hystrix timeout to 60s (globally)
 hystrix:
   command:
@@ -74,11 +75,6 @@ zuul:
       sensitiveHeaders:
       path: /ngsi-ld/v1/entities/**
       serviceId: ENTITY-MANAGER
-      stripPrefix: false
-    query-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/**
-      serviceId: QUERY-MANAGER
       stripPrefix: false
     batchoperations:
       sensitiveHeaders:

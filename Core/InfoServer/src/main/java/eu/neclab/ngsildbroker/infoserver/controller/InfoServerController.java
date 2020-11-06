@@ -41,7 +41,7 @@ public class InfoServerController {
 	{
 		try {
 			headers.put("Accept", AppConstants.NGB_APPLICATION_JSON);
-			microService2Uri.put(QUERY_MANAGER, new URI("http://localhost:9090/ngsi-ld/v1/entities"));
+			microService2Uri.put(QUERY_MANAGER, new URI("http://localhost:9090/ngsi-ld/v1/entities/"));
 			microService2Uri.put(ENTITY_MANAGER, new URI("http://localhost:9090/ngsi-ld/v1/entities/"));
 			microService2Uri.put(STORAGE_MANAGER, new URI("http://localhost:9090/scorpio/v1/info/")); 
 			microService2Uri.put(SUBSCRIPTION_MANAGER, new URI("http://localhost:9090/ngsi-ld/v1/subscriptions/"));
