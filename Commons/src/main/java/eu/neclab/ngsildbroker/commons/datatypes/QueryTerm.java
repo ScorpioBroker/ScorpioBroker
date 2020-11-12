@@ -842,7 +842,6 @@ public class QueryTerm {
 					}
 				}
 			}
-
 		}
 		else if (attribute.contains("[")) {
 			for (String subPart : attribute.split("\\[")) {
