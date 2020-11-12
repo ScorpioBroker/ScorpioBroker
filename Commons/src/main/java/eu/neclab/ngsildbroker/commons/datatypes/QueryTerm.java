@@ -735,7 +735,10 @@ public class QueryTerm {
 			for (String subPath : attribPath) {
 				attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
 				attributeFilterProperty.append(subPath);
-				if (attribute.contains("[") && iElem == 0) {
+				if (attribute.contains("[")&&attribute.contains(".") && iElem == 1) {
+					attributeFilterProperty.append(",0," + NGSIConstants.NGSI_LD_HAS_VALUE);
+				}
+				else if (attribute.contains("[") &&!attribute.contains(".") && iElem == 0) {
 					attributeFilterProperty.append(",0," + NGSIConstants.NGSI_LD_HAS_VALUE);
 				}
 				attributeFilterProperty.append("}') as ");
@@ -826,7 +829,22 @@ public class QueryTerm {
 
 	private ArrayList<String> getAttribPathArray() throws ResponseException {
 		ArrayList<String> attribPath = new ArrayList<String>();
-		if (attribute.contains("[")) {
+		if (attribute.contains("[") && attribute.contains(".")) {
+			if (attribute.contains(".")) {
+				for (String subPart : attribute.split("\\.")) {
+					if (subPart.contains("[")) {
+						for (String subParts : subPart.split("\\[")) {
+							subParts = subParts.replaceAll("\\]", "");
+							attribPath.add(expandAttributeName(subParts));
+						}
+					} else {
+						attribPath.add(expandAttributeName(subPart));
+					}
+				}
+			}
+
+		}
+		else if (attribute.contains("[")) {
 			for (String subPart : attribute.split("\\[")) {
 				subPart = subPart.replaceAll("\\]", "");
 				attribPath.add(expandAttributeName(subPart));
