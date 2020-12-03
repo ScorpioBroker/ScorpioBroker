@@ -627,13 +627,13 @@ public class EntityService {
 		if (updateResult.getStatus()) {
 			if (directDB) {
 				JsonNode json = updateResult.getFinalNode();
-				String withSysAttrs = objectMapper.writeValueAsString(json);
+				String withSysAttrs = new String(updateResult.getJson());
 				removeTemporalProperties(json); // remove createdAt/modifiedAt fields informed by the user
 				String entityWithoutSysAttrs;
 				try {
-					entityWithoutSysAttrs = objectMapper.writeValueAsString(json);
+					entityWithoutSysAttrs = new String(updateResult.getJsonWithoutSysAttrs());
 					pushToDB(entityId, withSysAttrs, entityWithoutSysAttrs,
-							objectMapper.writeValueAsString(getKeyValueEntity(json)));
+							objectMapper.writeValueAsString(getKeyValueEntity(objectMapper.readTree(withSysAttrs))));
 				} catch (JsonProcessingException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -644,13 +644,15 @@ public class EntityService {
 				public void run() {
 					try {
 						operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-								updateResult.getAppendedJsonFields().toString().getBytes());
+								objectMapper.writeValueAsBytes(updateResult.getFinalNode()));
 						updateContext(entityId.getBytes(NGSIConstants.ENCODE_FORMAT), updateResult.getJson());
 					} catch (UnsupportedEncodingException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (ResponseException e) {
 						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (JsonProcessingException e) {
 						e.printStackTrace();
 					}
 				};
