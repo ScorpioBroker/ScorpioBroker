@@ -131,7 +131,7 @@ public class HistoryDAO extends StorageReaderDAO {
 		}
 		sqlQuery += "  as tedata, " + "jsonb_object_agg(attributeid,";
 		if (qp.getTemporalValues()) {
-			sqlQuery += "(select json_agg(jsonb_build_array(t -> '"+NGSIConstants.NGSI_LD_HAS_VALUE+"'->0->'" + NGSIConstants.JSON_LD_VALUE + "'"+",t->'https://uri.etsi.org/ngsi-ld/observedAt'->0->'@value')) from jsonb_array_elements(attributedata) as x(t))";
+			sqlQuery += "(select json_agg(jsonb_build_array(t -> '"+NGSIConstants.NGSI_LD_HAS_VALUE+"'->0->'"+NGSIConstants.JSON_LD_VALUE +"',t->'"+NGSIConstants.NGSI_LD_OBSERVED_AT+"'->0->'"+NGSIConstants.JSON_LD_VALUE+"')) from jsonb_array_elements(attributedata) as x(t))";
 		}
 		else {
 			sqlQuery +="attributedata";
