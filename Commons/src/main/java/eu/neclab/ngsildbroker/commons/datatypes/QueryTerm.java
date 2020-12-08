@@ -759,16 +759,16 @@ public class QueryTerm {
 				attributeFilterProperty.append(" OR ");
 			}
 			attributeFilterProperty.append('(');
-			//attributeFilterProperty.append(charcount);
-			//attributeFilterProperty.append("#>");
-			attributeFilterProperty.append(operant.replaceAll("\"","\'"));
-			//if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
-			//		|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-			//	attributeFilterProperty.append(">");
-			//}
-			//attributeFilterProperty.append(" '{");
-			//attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue,0,@value}')");
-			attributeFilterProperty.append(" in (select jsonb_array_elements("+charcount+"->'https://uri.etsi.org/ngsi-ld/hasValue')->>'@value'))");
+			attributeFilterProperty.append(charcount);
+			attributeFilterProperty.append("#>");
+			//attributeFilterProperty.append(operant.replaceAll("\"","\'"));
+			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
+					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
+				attributeFilterProperty.append(">");
+			}
+			attributeFilterProperty.append(" '{");
+			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue,0,@value}')");
+			//attributeFilterProperty.append(" in (select jsonb_array_elements("+charcount+"->'https://uri.etsi.org/ngsi-ld/hasValue')->>'@value'))");
 			if (operant.matches(DATETIME)) {
 				attributeFilterProperty.append("::timestamp ");
 			} else if (operant.matches(DATE)) {
@@ -776,7 +776,11 @@ public class QueryTerm {
 			} else if (operant.matches(TIME)) {
 				attributeFilterProperty.append("::time ");
 			}
-			//applyOperator(attributeFilterProperty);
+			applyOperator(attributeFilterProperty);
+			attributeFilterProperty.append(" OR ");
+			attributeFilterProperty.append('(');
+			attributeFilterProperty.append(operant.replaceAll("\"","\'"));
+			attributeFilterProperty.append(" in (select jsonb_array_elements("+charcount+"->'https://uri.etsi.org/ngsi-ld/hasValue')->>'@value'))");
 			attributeFilterProperty.append(" OR ");
 			if (TIME_PROPS.contains(lastAttrib)) {
 				attributeFilterProperty.append('(');
