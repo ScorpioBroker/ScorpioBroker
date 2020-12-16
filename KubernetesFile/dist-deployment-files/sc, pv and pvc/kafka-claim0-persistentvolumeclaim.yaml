@@ -6,7 +6,6 @@ metadata:
       component: kafka-claim0
   name: kafka-claim0
 spec:
-  storageClassName: manual
   accessModes:
   - ReadWriteOnce
   resources:

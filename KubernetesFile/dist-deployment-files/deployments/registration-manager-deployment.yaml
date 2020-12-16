@@ -9,7 +9,11 @@ spec:
   selector:
     matchLabels:
       service: regmgr
-  strategy: {}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -17,13 +21,17 @@ spec:
     spec:
       containers:
       - image: scorpiobroker/scorpio:RegistryManager_latest
-        imagePullPolicy: ""
+        imagePullPolicy: IfNotPresent
         name: regmgr
         ports:
         - containerPort: 1030
-        resources: {}
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1280Mi
+          requests:
+            cpu: 250m
+            memory: 600Mi
       restartPolicy: Always
-      serviceAccountName: ""
-      volumes: null
 status: {}
-
