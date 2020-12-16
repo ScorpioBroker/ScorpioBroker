@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   labels:
     service: stomgr
+    name: stomgr
 spec:
   replicas: 1
   selector:
