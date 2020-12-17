@@ -16,6 +16,7 @@ import org.springframework.util.ReflectionUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.CountResultHeader;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -27,6 +28,7 @@ abstract public class StorageReaderDAO {
 
 	@Autowired
 	protected JdbcTemplate readerJdbcTemplate;
+	public static int countHeader = 0;
 
 	@PostConstruct
 	public void init() {
@@ -40,10 +42,9 @@ abstract public class StorageReaderDAO {
 			String sqlQuery = translateNgsildQueryToSql(qp);
 			logger.info("NGSI-LD to SQL: " + sqlQuery);
 			//SqlRowSet result = readerJdbcTemplate.queryForRowSet(sqlQuery);
-			
-			return readerJdbcTemplate.queryForList(sqlQuery,String.class);
-			
-
+			List<String> list = readerJdbcTemplate.queryForList(sqlQuery,String.class);
+			CountResultHeader.count=CountResultHeader.count+list.size();
+			return list;
 		} catch(DataIntegrityViolationException e) {
 			//Empty result don't worry
 			logger.warn("SQL Result Exception::", e);

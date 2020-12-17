@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.CountResultHeader;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -71,6 +72,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	private final byte[] emptyResult1 = { '{', ' ', '}' };
 	private final byte[] emptyResult2 = { '{', '}' };
+	public static String countResult = null;
 	@PostConstruct
 	private void setup() {
 		httpUtils = HttpUtils.getInstance(contextResolver);
@@ -151,7 +153,14 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(name = "options", required = false) List<String> options,
-			@RequestParam(name = "services", required = false) Boolean showServices) {
+			@RequestParam(name = "services", required = false) Boolean showServices,
+			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
+		CountResultHeader.count=0;    
+		if(count == true) {
+		    	countResult = "true";
+		    } else {
+		    	countResult = "false";
+		    } 
 		return getQueryData(request, request.getQueryString(), request.getParameterMap(), attrs, limit, offset, qToken,
 				options, showServices, false);
 	}
@@ -260,8 +269,13 @@ public class QueryController {// implements QueryHandlerInterface {
 		if (prevLink != null) {
 			additionalLinks.add(prevLink);
 		}
-
+		ArrayList<String> additionalHeaerCount = new ArrayList<String>();
 		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
+		if(countResult!=null) {
+		if(countResult.equalsIgnoreCase("true")) {
+			additionalHeaerCount.add(String.valueOf(CountResultHeader.count));
+			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaerCount);
+		}}
 		if (!additionalLinks.isEmpty()) {
 			additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
 		}
