@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.CountResultHeader;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -36,6 +35,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import eu.neclab.ngsildbroker.queryhandler.utils.Validator;
@@ -155,7 +155,7 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(name = "services", required = false) Boolean showServices,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
-		CountResultHeader.count=0;    
+		StorageReaderDAO.countHeader=0;    
 		if(count == true) {
 		    	countResult = "true";
 		    } else {
@@ -273,7 +273,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
 		if(countResult!=null) {
 		if(countResult.equalsIgnoreCase("true")) {
-			additionalHeaerCount.add(String.valueOf(CountResultHeader.count));
+			additionalHeaerCount.add(String.valueOf(StorageReaderDAO.countHeader));
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaerCount);
 		}}
 		if (!additionalLinks.isEmpty()) {
