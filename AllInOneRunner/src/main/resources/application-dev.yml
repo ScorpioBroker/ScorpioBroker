@@ -287,3 +287,4 @@ security:
 logging:
   level:
     root: ERROR
+
