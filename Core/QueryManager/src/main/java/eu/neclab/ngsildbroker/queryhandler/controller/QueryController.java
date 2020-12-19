@@ -172,6 +172,10 @@ public class QueryController {// implements QueryHandlerInterface {
 		if (limit == null) {
 			limit = defaultLimit;
 		}
+		if(countResult.equalsIgnoreCase("false") && limit == 0) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.BadRequestData, "Bad Request Data").toJsonBytes());
+		}
 		if (offset == null) {
 			offset = 0;
 		}
