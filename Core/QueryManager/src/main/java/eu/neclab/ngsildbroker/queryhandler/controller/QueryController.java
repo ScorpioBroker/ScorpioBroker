@@ -178,6 +178,9 @@ public class QueryController {// implements QueryHandlerInterface {
 
 		try {
 			logger.trace("getAllEntity() ::");
+			if(countResult.equalsIgnoreCase("false") && limit == 0) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+			}
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 			if (retrieve || request.getRequestURI().equals(MY_REQUEST_URL)
 					|| request.getRequestURI().equals(MY_REQUEST_URL_ALT)) {
