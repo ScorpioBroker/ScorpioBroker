@@ -65,6 +65,15 @@ public class QueryParams {
 	@SerializedName("offSet")
 	@Expose
 	private int offSet = -1;
+	private String check;
+
+	public String getCheck() {
+		return check;
+	}
+
+	public void setCheck(String check) {
+		this.check = check;
+	}
 
 	public String getId() {
 		return id;
