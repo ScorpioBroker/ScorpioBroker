@@ -172,17 +172,15 @@ public class QueryController {// implements QueryHandlerInterface {
 		if (limit == null) {
 			limit = defaultLimit;
 		}
-		if(countResult.equalsIgnoreCase("false") && limit == 0) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Bad Request Data").toJsonBytes());
-		}
 		if (offset == null) {
 			offset = 0;
 		}
 
 		try {
 			logger.trace("getAllEntity() ::");
-
+			if(countResult.equalsIgnoreCase("false") && limit == 0) {
+				throw new ResponseException(ErrorType.BadRequestData);
+			}
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 			if (retrieve || request.getRequestURI().equals(MY_REQUEST_URL)
 					|| request.getRequestURI().equals(MY_REQUEST_URL_ALT)) {
