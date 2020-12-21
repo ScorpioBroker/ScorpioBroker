@@ -72,7 +72,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	private final byte[] emptyResult1 = { '{', ' ', '}' };
 	private final byte[] emptyResult2 = { '{', '}' };
-	public static String countResult = null;
+	public static Boolean countResult = false;
 	@PostConstruct
 	private void setup() {
 		httpUtils = HttpUtils.getInstance(contextResolver);
@@ -157,10 +157,11 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
 		StorageReaderDAO.countHeader=0;    
 		if(count == true) {
-		    	countResult = "true";
+		    	countResult = true;
 		    } else {
-		    	countResult = "false";
+		    	countResult = false;
 		    } 
+		
 		return getQueryData(request, request.getQueryString(), request.getParameterMap(), attrs, limit, offset, qToken,
 				options, showServices, false);
 	}
@@ -178,7 +179,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 		try {
 			logger.trace("getAllEntity() ::");
-			if(countResult.equalsIgnoreCase("false") && limit == 0) {
+			if(countResult == false && limit == 0) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 			}
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
@@ -273,11 +274,11 @@ public class QueryController {// implements QueryHandlerInterface {
 		}
 		ArrayList<String> additionalHeaerCount = new ArrayList<String>();
 		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
-		if(countResult!=null) {
-		if(countResult.equalsIgnoreCase("true")) {
+		
+		if(countResult ==true) {
 			additionalHeaerCount.add(String.valueOf(StorageReaderDAO.countHeader));
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaerCount);
-		}}
+		}
 		if (!additionalLinks.isEmpty()) {
 			additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
 		}
