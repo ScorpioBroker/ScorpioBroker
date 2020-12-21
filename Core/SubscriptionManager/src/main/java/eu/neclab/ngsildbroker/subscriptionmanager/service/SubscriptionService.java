@@ -244,7 +244,7 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 			storeSubscription(subscriptionRequest);
 
-			if (subscription.getExpires() != null) {
+			if (subscription.getExpiresAt() != null) {
 				TimerTask cancel = new TimerTask() {
 
 					@Override
@@ -258,7 +258,7 @@ public class SubscriptionService implements SubscriptionManager {
 					}
 				};
 				subId2TimerTask.put(subscription.getId().toString(), cancel);
-				watchDog.schedule(cancel, subscription.getExpires() - System.currentTimeMillis());
+				watchDog.schedule(cancel, subscription.getExpiresAt() - System.currentTimeMillis());
 			}
 		}
 		return subscription.getId();
@@ -358,12 +358,12 @@ public class SubscriptionService implements SubscriptionManager {
 		if (subscription.getEntities() != null && !subscription.getEntities().isEmpty()) {
 			oldSub.setEntities(subscription.getEntities());
 		}
-		if (subscription.getExpires() != null) {
-			oldSub.setExpires(subscription.getExpires());
+		if (subscription.getExpiresAt() != null) {
+			oldSub.setExpiresAt(subscription.getExpiresAt());
 			synchronized (subId2TimerTask) {
 				TimerTask task = subId2TimerTask.get(oldSub.getId().toString());
 				task.cancel();
-				watchDog.schedule(task, subscription.getExpires() - System.currentTimeMillis());
+				watchDog.schedule(task, subscription.getExpiresAt() - System.currentTimeMillis());
 			}
 
 		}
@@ -863,7 +863,7 @@ public class SubscriptionService implements SubscriptionManager {
 				remoteSub.setCustomFlags(sub.getCustomFlags());
 				remoteSub.setDescription(sub.getDescription());
 				remoteSub.setEntities(sub.getEntities());
-				remoteSub.setExpires(sub.getExpires());
+				remoteSub.setExpiresAt(sub.getExpiresAt());
 				remoteSub.setLdGeoQuery(sub.getLdGeoQuery());
 				remoteSub.setLdQuery(sub.getLdQuery());
 				remoteSub.setLdTempQuery(sub.getLdTempQuery());

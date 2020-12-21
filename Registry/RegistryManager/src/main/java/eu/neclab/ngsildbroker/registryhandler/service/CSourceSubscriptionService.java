@@ -300,8 +300,8 @@ public class CSourceSubscriptionService {
 		if (subscription.getEntities() != null && !subscription.getEntities().isEmpty()) {
 			oldSub.setEntities(subscription.getEntities());
 		}
-		if (subscription.getExpires() != null) {
-			oldSub.setExpires(subscription.getExpires());
+		if (subscription.getExpiresAt() != null) {
+			oldSub.setExpiresAt(subscription.getExpiresAt());
 		}
 		if (subscription.getLdGeoQuery() != null) {
 			oldSub.setLdGeoQuery(subscription.getLdGeoQuery());
@@ -428,7 +428,7 @@ public class CSourceSubscriptionService {
 		reg.setDescription(regEntry.getDescription());
 		reg.setName(regEntry.getName());
 		reg.setEndpoint(regEntry.getEndpoint());
-		reg.setExpires(regEntry.getExpires());
+		reg.setExpiresAt(regEntry.getExpiresAt());
 		reg.setId(regEntry.getId());
 		reg.setLocation(regEntry.getLocation());
 		reg.setTimestamp(regEntry.getTimestamp());
