@@ -67,7 +67,7 @@ public class CoreContextController {
 			"      \"observationInterval\": \"https://uri.etsi.org/ngsi-ld/observationInterval\",\r\n" + 
 			"      \"managementInterval\": \"https://uri.etsi.org/ngsi-ld/managementInterval\",\r\n" + 
 			"      \"expires\": {\r\n" + 
-			"        \"@id\": \"https://uri.etsi.org/ngsi-ld/expires\",\r\n" + 
+			"        \"@id\": \"https://uri.etsi.org/ngsi-ld/expiresAt\",\r\n" + 
 			"        \"@type\": \"DateTime\"\r\n" + 
 			"      },\r\n" + 
 			"      \"endpoint\": \"https://uri.etsi.org/ngsi-ld/endpoint\",\r\n" + 

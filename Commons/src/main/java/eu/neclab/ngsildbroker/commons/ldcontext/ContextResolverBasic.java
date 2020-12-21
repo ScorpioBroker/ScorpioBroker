@@ -507,10 +507,10 @@ public class ContextResolverBasic {
 			} else if (keyType == 19) {
 				// EXPIRES
 				try {
-					subscription.setExpires(SerializationTools.date2Long(
+					subscription.setExpiresAt(SerializationTools.date2Long(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE)));
 				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse expires");
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse expiresAt");
 				}
 			} else if (keyType == 20) {
 				// STATUS

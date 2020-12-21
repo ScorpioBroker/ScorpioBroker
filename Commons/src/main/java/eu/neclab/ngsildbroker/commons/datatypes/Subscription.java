@@ -12,7 +12,7 @@ import java.util.Map;
 public class Subscription extends Query {
 
 	private String description;
-	private Long expires;
+	private Long expiresAt;
 	private URI id;
 	private String name;
 	private NotificationParam notification;
@@ -34,7 +34,7 @@ public class Subscription extends Query {
 			NotificationParam notification, String status, Integer throttling, Integer timeInterval, String type) {
 		super(customFlags, attributeNames, entities, ldContext, ldGeoQuery, ldQuery, ldTempQuery, requestorList);
 		this.description = description;
-		this.expires = expires;
+		this.expiresAt = expiresAt;
 		this.id = id;
 		this.name = name;
 		this.notification = notification;
@@ -60,12 +60,12 @@ public class Subscription extends Query {
 		this.description = description;
 	}
 
-	public Long getExpires() {
-		return expires;
+	public Long getExpiresAt() {
+		return expiresAt;
 	}
 
-	public void setExpires(Long expires) {
-		this.expires = expires;
+	public void setExpiresAt(Long expiresAt) {
+		this.expiresAt = expiresAt;
 	}
 
 	public URI getId() {
@@ -146,7 +146,7 @@ public class Subscription extends Query {
 
 	@Override
 	public String toString() {
-		return "Subscription [description=" + description + ", expires=" + expires + ", id=" + id + ", name=" + name
+		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id + ", name=" + name
 				+ ", notification=" + notification + ", status=" + status + ", throttling=" + throttling
 				+ ", timeInterval=" + timeInterval + ", type=" + type + ", internal=" + internal + ", queryTerm="
 				+ queryTerm + ", attributeNames=" + attributeNames + ", entities=" + entities + ", ldContext="

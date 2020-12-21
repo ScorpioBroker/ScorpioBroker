@@ -30,7 +30,7 @@ public interface NGSIConstants {
 	public final static String CSOURCE_INFORMATION = "information";
 	public final static String CSOURCE_DESCRIPTION = "description";
 	public final static String CSOURCE_ENDPOINT = "endpoint";
-	public final static String CSOURCE_EXPIRES = "expires";
+	public final static String CSOURCE_EXPIRES = "expiresAt";
 	public final static String CSOURCE_NAME = "name";
 	public final static String CSOURCE_TYPE = "type";
 	public final static String CSOURCE_TIMESTAMP = "timestamp";
@@ -82,7 +82,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_NAME = "https://uri.etsi.org/ngsi-ld/name";
 	public final static String NGSI_LD_THROTTLING = "https://uri.etsi.org/ngsi-ld/throttling";
 	public final static String NGSI_LD_TIME_INTERVAL = "https://uri.etsi.org/ngsi-ld/timeInterval";
-	public final static String NGSI_LD_EXPIRES = "https://uri.etsi.org/ngsi-ld/expires";
+	public final static String NGSI_LD_EXPIRES = "https://uri.etsi.org/ngsi-ld/expiresAt";
 	public final static String NGSI_LD_STATUS = "https://uri.etsi.org/ngsi-ld/status";
 	public final static String NGSI_LD_DESCRIPTION = "https://uri.etsi.org/ngsi-ld/description";
 	public final static String NGSI_LD_GEO_REL = "https://uri.etsi.org/ngsi-ld/georel";
