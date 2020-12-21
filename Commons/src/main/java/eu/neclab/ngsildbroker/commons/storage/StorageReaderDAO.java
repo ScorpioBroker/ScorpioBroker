@@ -40,6 +40,11 @@ abstract public class StorageReaderDAO {
 			String sqlQuery = translateNgsildQueryToSql(qp);
 			logger.info("NGSI-LD to SQL: " + sqlQuery);
 			//SqlRowSet result = readerJdbcTemplate.queryForRowSet(sqlQuery);
+			if(qp.getLimit() == 0 &&  qp.getCountResult() == true) {
+				List<String> list = readerJdbcTemplate.queryForList(sqlQuery,String.class);
+				countHeader = countHeader+list.size();	
+				return new ArrayList<String>();
+			} 
 			List<String> list = readerJdbcTemplate.queryForList(sqlQuery,String.class);
 			countHeader = countHeader+list.size();
 			return list;
@@ -191,9 +196,12 @@ abstract public class StorageReaderDAO {
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();
 				
-		if(limit != -1) {
-			sqlQuery += "LIMIT " + limit + " "; 
-		}
+		if(limit == 0) {
+            sqlQuery += "";           
+        }
+        else {
+        sqlQuery += "LIMIT " + limit + " ";
+        }
 		if(offSet != -1) {
 			sqlQuery += "OFFSET " + offSet + " "; 
 		}

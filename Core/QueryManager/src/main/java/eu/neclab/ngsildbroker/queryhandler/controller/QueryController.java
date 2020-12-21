@@ -94,7 +94,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		HashMap<String, String[]> paramMap = new HashMap<String, String[]>();
 		paramMap.put(NGSIConstants.QUERY_PARAMETER_ID, new String[] { entityId });
 		ResponseEntity<byte[]> result = getQueryData(request, originalQuery, paramMap, attrs, null, null, null, options,
-				false, true);
+				false, true, false);
 		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
@@ -163,12 +163,12 @@ public class QueryController {// implements QueryHandlerInterface {
 		    } 
 		
 		return getQueryData(request, request.getQueryString(), request.getParameterMap(), attrs, limit, offset, qToken,
-				options, showServices, false);
+				options, showServices, false,countResult);
 	}
 
 	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
 			Map<String, String[]> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
-			List<String> options, Boolean showServices, boolean retrieve) {
+			List<String> options, Boolean showServices, boolean retrieve,Boolean countResult) {
 
 		if (limit == null) {
 			limit = defaultLimit;
@@ -211,7 +211,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 					checkParamsForValidity(qp);
 					QueryResult qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
-							qToken, showServices);
+							qToken, showServices,countResult);
 
 					return generateReply(request, qResult, !retrieve);
 
