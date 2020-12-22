@@ -777,7 +777,7 @@ public class QueryTerm {
 			applyOperator(attributeFilterProperty);
 			attributeFilterProperty.append(" OR ");
 			attributeFilterProperty.append('(');
-			attributeFilterProperty.append(operant.replace("\"","\'"));
+			attributeFilterProperty.append(operant.replaceAll("\"","\'"));
 			attributeFilterProperty.append(" in (select jsonb_array_elements("+charcount+"->'https://uri.etsi.org/ngsi-ld/hasValue')->>'@value'))");
 			attributeFilterProperty.append(" OR ");
 			if (TIME_PROPS.contains(lastAttrib)) {
