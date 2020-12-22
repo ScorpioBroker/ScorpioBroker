@@ -36,7 +36,7 @@ In NGSI-LDv1.2.1 only the request for entities based on specific entities, entit
 API Walkthrough
 #################
 
-1. http://<IP Address>:<port>/ngsi-ld/v1/types
+1. **http://<IP Address>:<port>/ngsi-ld/v1/types**
 Response:
 ::
 
@@ -49,7 +49,7 @@ Response:
           ]
  }
 
-2. http://<IP Address>:<port>/ngsi-ld/v1/types?details=true
+2. **http://<IP Address>:<port>/ngsi-ld/v1/types?details=true**
 Response:
 ::
 
@@ -68,7 +68,7 @@ Response:
     }
  ]
 
-3. http://<IP Address>:<port>/ngsi-ld/v1/types/{entity type name}
+3. **http://<IP Address>:<port>/ngsi-ld/v1/types/{entity type name}**
 Response:
 ::
 
@@ -92,7 +92,7 @@ Response:
    }
  }
 
-4. http://<IP Address>:<port>/ngsi-ld/v1/attributes
+4. **http://<IP Address>:<port>/ngsi-ld/v1/attributes**
 Response:
 ::
 
@@ -105,7 +105,7 @@ Response:
 	     "location"]
  }
 
-5. http://<IP Address>:<port>/ngsi-ld/v1/attributes?details=true
+5. **http://<IP Address>:<port>/ngsi-ld/v1/attributes?details=true**
 Response:
 ::
 
@@ -126,7 +126,7 @@ Response:
         }
  ]
 
-6. http://<IP Address>:<port>/ngsi-ld/v1/attributes/{attributes name}
+6. **http://<IP Address>:<port>/ngsi-ld/v1/attributes/{attributes name}**
 Response:
 ::
 
@@ -151,16 +151,14 @@ Query Language Syntax Changes to Attribute Path
 - Thus it is necessary to distinguish whether a name refers to e.g. a property of property or an element of a value.
 
 New definition:
-        **property.property[value_level1.value_level2.value_level3]**
-
+        property.property[value_level1.value_level2.value_level3]
 Example:
+      /ngsi-ld/v1/entities?q=sensor.rawdata[airquality.particulate]==40
 
-              /ngsi-ld/v1/entities?q=sensor.rawdata[airquality.particulate]==40
-
-            Previous definition:
-                    property.property[value_level1][value_level2][value_level3]==40
-            Example:
-                   /ngsi-ld/v1/entities?q=sensor.rawdata[airquality][particulate]==40
+Previous definition:
+      property.property[value_level1][value_level2][value_level3]
+Example:
+     /ngsi-ld/v1/entities?q=sensor.rawdata[airquality][particulate]==40
 
 Counting query results
 ########################
@@ -172,7 +170,7 @@ Operation:
 
 URL: **http://<IPAddress>:<port>/ngsi-ld/v1/entities?type=Vehicle&count=true**
 
-**Response:**
+Response:
 
 Body:
 ::
@@ -257,20 +255,18 @@ Body:
         ]
     }
  ]
-
+ 
 Headers:
-
 count:2
+
  URL: **http://<IP Address>:<port>/ngsi-ld/v1/entities?type=Vehicle&count=true&limit=0**
 
 Response:
 
 Body:
-
 empty
 
 Headers:
-
 count:2
 
 Changes in NGSI-LD v1.3.1
@@ -278,7 +274,7 @@ Changes in NGSI-LD v1.3.1
 
 This change affects existing NGSI-LD data. There are some parameter changes in the below list.
 
-.. list-table::  **Changes** 
+.. list-table::  **Changes in NGSI-LD v1.3.1** 
    :widths: 33 33 34
    :header-rows: 1
 
