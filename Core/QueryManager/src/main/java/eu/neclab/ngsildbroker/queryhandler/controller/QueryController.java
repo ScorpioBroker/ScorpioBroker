@@ -156,7 +156,7 @@ public class QueryController {// implements QueryHandlerInterface {
 				options, showServices, false,null);
 	}
 	
-	@GetMapping(path = "/type")
+	@GetMapping(path = "/types")
 	public ResponseEntity<byte[]> getAllTypes(HttpServletRequest request, 
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 		String check="NonDeatilsType";
@@ -172,8 +172,8 @@ public class QueryController {// implements QueryHandlerInterface {
 		return result;
 	}
 	
-	@GetMapping(path = "/type/{type}")
-	public ResponseEntity<byte[]> getType(HttpServletRequest request, @PathVariable("type") String type,
+	@GetMapping(path = "/types/{entityType}")
+	public ResponseEntity<byte[]> getType(HttpServletRequest request, @PathVariable("entityType") String type,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 		String check="type";
 		ArrayList<String> types=new ArrayList<String>();
