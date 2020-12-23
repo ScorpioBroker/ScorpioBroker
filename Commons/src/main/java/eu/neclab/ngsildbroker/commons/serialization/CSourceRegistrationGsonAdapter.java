@@ -64,8 +64,8 @@ public class CSourceRegistrationGsonAdapter
 		if (src.getInformation() != null) {
 			for (Information info : src.getInformation()) {
 				JsonObject infoObject = new JsonObject();
-				Set<String> properties = info.getProperties();
-				Set<String> relationsships = info.getRelationships();
+				Set<String> properties = info.getPropertyNames();
+				Set<String> relationsships = info.getRelationshipNames();
 				List<EntityInfo> entities = info.getEntities();
 
 				JsonArray attribs = new JsonArray();
@@ -117,9 +117,9 @@ public class CSourceRegistrationGsonAdapter
 		if (src.getTimestamp() != null) {
 			jsonArray = new JsonArray();
 			JsonObject timestampObject = new JsonObject();
-			if (src.getTimestamp().getStart() != null) {
+			if (src.getTimestamp().getStartAt() != null) {
 				
-				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_START, SerializationTools.getJson(src.getTimestamp().getStart(), context));
+				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_START, SerializationTools.getJson(src.getTimestamp().getStartAt(), context));
 			}
 			if (src.getTimestamp().getStop() != null) {
 				
@@ -180,8 +180,8 @@ public class CSourceRegistrationGsonAdapter
 				while (it.hasNext()) {
 					Information info = new Information();
 					List<EntityInfo> entities = info.getEntities();
-					Set<String> properties = info.getProperties();
-					Set<String> relationships = info.getRelationships();
+					Set<String> properties = info.getPropertyNames();
+					Set<String> relationships = info.getRelationshipNames();
 					information.add(info);
 					JsonObject obj = it.next().getAsJsonObject();
 					if (obj.has(NGSIConstants.NGSI_LD_ENTITIES)) {
@@ -237,7 +237,7 @@ public class CSourceRegistrationGsonAdapter
 					String dateTime = timestampObject.get(NGSIConstants.NGSI_LD_TIMESTAMP_START).getAsJsonArray().get(0)
 							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 					try {
-						result.getTimestamp().setStart(SerializationTools.date2Long(dateTime));
+						result.getTimestamp().setStartAt(SerializationTools.date2Long(dateTime));
 					} catch (Exception e) {
 						throw new JsonParseException(e.getMessage());
 					}

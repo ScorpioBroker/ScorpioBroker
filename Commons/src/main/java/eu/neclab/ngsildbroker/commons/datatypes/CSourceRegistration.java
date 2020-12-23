@@ -20,7 +20,7 @@ public class CSourceRegistration {
 	private List<Information> information;
 	//private GeoProperty location;
 	private Geometry<?> location; // csource location is not the same as entity location. entity location is a GeoProperty, csource location is just a geojson value (string)
-	private String name;
+	private String registrationName;
 	private TimeInterval timestamp;
 	private boolean isInternal = false;
 
@@ -61,8 +61,8 @@ public class CSourceRegistration {
 		if (updateBean.getLocation() != null) {
 			this.setLocation(updateBean.getLocation());
 		}
-		if (updateBean.getName() != null) {
-			this.setName(updateBean.getName());
+		if (updateBean.getRegistrationName() != null) {
+			this.setRegistrationName(updateBean.getRegistrationName());
 		}
 		if (updateBean.getTimestamp() != null) {
 			this.setTimestamp(updateBean.getTimestamp());
@@ -129,12 +129,12 @@ public class CSourceRegistration {
 		this.location = location;
 	}
 
-	public String getName() {
-		return name;
+	public String getRegistrationName() {
+		return registrationName;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setRegistrationName(String registrationName) {
+		this.registrationName = registrationName;
 	}
 
 	public String getType() {
@@ -156,7 +156,7 @@ public class CSourceRegistration {
 	@Override
 	public String toString() {
 		return "CSourceRegistration [description=" + description + ", endpoint=" + endpoint + ", expires=" + expiresAt
-				+ ", id=" + id + ", information=" + information + ", location=" + location + ", name=" + name
+				+ ", id=" + id + ", information=" + information + ", location=" + location + ", name=" + registrationName
 				+ ", timestamp=" + timestamp + ", type=" + type + "]";
 	}
 
@@ -170,7 +170,7 @@ public class CSourceRegistration {
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result + ((information == null) ? 0 : information.hashCode());
 		result = prime * result + ((location == null) ? 0 : location.hashCode());
-		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime * result + ((registrationName == null) ? 0 : registrationName.hashCode());
 		result = prime * result + ((timestamp == null) ? 0 : timestamp.hashCode());
 		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		return result;
@@ -215,10 +215,10 @@ public class CSourceRegistration {
 				return false;
 		} else if (!location.equals(other.location))
 			return false;
-		if (name == null) {
-			if (other.name != null)
+		if (registrationName == null) {
+			if (other.registrationName != null)
 				return false;
-		} else if (!name.equals(other.name))
+		} else if (!registrationName.equals(other.registrationName))
 			return false;
 		if (timestamp == null) {
 			if (other.timestamp != null)
