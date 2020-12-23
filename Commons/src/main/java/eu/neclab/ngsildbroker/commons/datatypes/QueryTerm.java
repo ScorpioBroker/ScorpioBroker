@@ -778,7 +778,7 @@ public class QueryTerm {
 			attributeFilterProperty.append(" OR ");
 			attributeFilterProperty.append('(');
 			attributeFilterProperty.append(operant.replaceAll("\"","\'"));
-			attributeFilterProperty.append(" in (select jsonb_array_elements("+charcount+"->'https://uri.etsi.org/ngsi-ld/hasValue')->>'@value'))");
+			attributeFilterProperty.append(" in (select jsonb_array_elements("+charcount+"->'"+NGSIConstants.NGSI_LD_HAS_VALUE+"')->>'"+NGSIConstants.JSON_LD_VALUE+"'))");
 			attributeFilterProperty.append(" OR ");
 			if (TIME_PROPS.contains(lastAttrib)) {
 				attributeFilterProperty.append('(');
