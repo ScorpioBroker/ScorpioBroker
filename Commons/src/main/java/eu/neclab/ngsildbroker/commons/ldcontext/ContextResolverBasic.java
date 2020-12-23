@@ -57,7 +57,7 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 public class ContextResolverBasic {
 	private final static Logger logger = LogManager.getLogger(ContextResolverBasic.class);
 	private URI CORE_CONTEXT_URL;
-	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld}")
 	private String CORE_CONTEXT_URL_STR;
 	
 	private String USED_CORE_CONTEXT_URL_STR;
