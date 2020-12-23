@@ -536,6 +536,14 @@ public class ContextResolverBasic {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
 				}
+			} else if (keyType == 25) {
+				// Name
+				try {
+					subscription.setSubscriptionName(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
+				}
 			}
 
 		}

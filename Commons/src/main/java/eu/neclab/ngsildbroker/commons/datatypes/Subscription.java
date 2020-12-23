@@ -14,7 +14,7 @@ public class Subscription extends Query {
 	private String description;
 	private Long expiresAt;
 	private URI id;
-	private String name;
+	private String subscriptionName;
 	private NotificationParam notification;
 	private String status;
 	private Integer throttling = 0;
@@ -30,13 +30,13 @@ public class Subscription extends Query {
 
 	public Subscription(Map<String, String> customFlags, List<String> attributeNames, List<EntityInfo> entities,
 			String ldContext, LDGeoQuery ldGeoQuery, String ldQuery, LDTemporalQuery ldTempQuery,
-			List<URI> requestorList, String description, Long expires, URI id, String name,
+			List<URI> requestorList, String description, Long expires, URI id, String subscriptionName,
 			NotificationParam notification, String status, Integer throttling, Integer timeInterval, String type) {
 		super(customFlags, attributeNames, entities, ldContext, ldGeoQuery, ldQuery, ldTempQuery, requestorList);
 		this.description = description;
 		this.expiresAt = expiresAt;
 		this.id = id;
-		this.name = name;
+		this.subscriptionName = subscriptionName;
 		this.notification = notification;
 		this.status = status;
 		this.throttling = throttling;
@@ -76,12 +76,12 @@ public class Subscription extends Query {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
+	public String getSubscriptionName() {
+		return subscriptionName;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setSubscriptionName(String subscriptionName) {
+		this.subscriptionName = subscriptionName;
 	}
 
 	public NotificationParam getNotification() {
@@ -146,7 +146,7 @@ public class Subscription extends Query {
 
 	@Override
 	public String toString() {
-		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id + ", name=" + name
+		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id + ", subscriptionName=" + subscriptionName
 				+ ", notification=" + notification + ", status=" + status + ", throttling=" + throttling
 				+ ", timeInterval=" + timeInterval + ", type=" + type + ", internal=" + internal + ", queryTerm="
 				+ queryTerm + ", attributeNames=" + attributeNames + ", entities=" + entities + ", ldContext="

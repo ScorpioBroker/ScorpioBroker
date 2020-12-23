@@ -867,7 +867,7 @@ public class SubscriptionService implements SubscriptionManager {
 				remoteSub.setLdGeoQuery(sub.getLdGeoQuery());
 				remoteSub.setLdQuery(sub.getLdQuery());
 				remoteSub.setLdTempQuery(sub.getLdTempQuery());
-				remoteSub.setName(sub.getName());
+				remoteSub.setSubscriptionName(sub.getSubscriptionName());
 				remoteSub.setStatus(sub.getStatus());
 				remoteSub.setThrottling(sub.getThrottling());
 				remoteSub.setTimeInterval(sub.getTimeInterval());

@@ -223,8 +223,11 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			} else if (key.equals(NGSIConstants.NGSI_LD_DESCRIPTION)) {
 				result.setDescription(
 						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
-			}
+			} else if (key.equals(NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME)) {
+				result.setSubscriptionName(
+						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
 
+			}
 		}
 		if (result.getNotification() == null) {
 			throw new JsonParseException("no notification parameter provided");
@@ -446,14 +449,21 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			top.add(NGSIConstants.NGSI_LD_TIME_INTERVAL, SerializationTools.getValueArray(src.getTimeInterval()));
 		}
 		if (src.getExpiresAt() != null) {
-			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools
-					.getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpiresAt()))));
+			//top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools
+					//.getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpiresAt()))));
+			JsonArray array = SerializationTools
+                    .getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpiresAt())));
+             array.get(0).getAsJsonObject().addProperty(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+             top.add(NGSIConstants.NGSI_LD_EXPIRES, array);
 		}
 		if (src.getStatus() != null) {
 			top.add(NGSIConstants.NGSI_LD_STATUS, SerializationTools.getValueArray(src.getStatus()));
 		}
 		if (src.getDescription() != null) {
 			top.add(NGSIConstants.NGSI_LD_DESCRIPTION, SerializationTools.getValueArray(src.getDescription()));
+		}
+		if (src.getSubscriptionName() != null) {
+			top.add(NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME, SerializationTools.getValueArray(src.getSubscriptionName()));
 		}
 
 		return top;
