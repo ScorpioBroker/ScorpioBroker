@@ -8,13 +8,13 @@ import java.util.Set;
 public class Information {
 	
 	private List<EntityInfo> entities;
-	private Set<String> properties;
-	private Set<String> relationships;
+	private Set<String> propertyNames;
+	private Set<String> relationshipNames;
 	
 	public Information() {
 		this.entities=new ArrayList<EntityInfo>();
-		this.properties=new HashSet<String>();
-		this.relationships=new HashSet<String>();
+		this.propertyNames=new HashSet<String>();
+		this.relationshipNames=new HashSet<String>();
 	}
 	public List<EntityInfo> getEntities() {
 		return entities;
@@ -24,25 +24,25 @@ public class Information {
 		this.entities = entities;
 	}
 
-	public Set<String> getProperties() {
-		return properties;
+	public Set<String> getPropertyNames() {
+		return propertyNames;
 	}
 
-	public void setProperties(Set<String> properties) {
-		this.properties = properties;
+	public void setPropertyNames(Set<String> propertyNames) {
+		this.propertyNames = propertyNames;
 	}
 
-	public Set<String> getRelationships() {
-		return relationships;
+	public Set<String> getRelationshipNames() {
+		return relationshipNames;
 	}
 
-	public void setRelationships(Set<String> relationships) {
-		this.relationships = relationships;
+	public void setRelationshipNames(Set<String> relationshipNames) {
+		this.relationshipNames = relationshipNames;
 	}
 
 	@Override
 	public String toString() {
-		return "Information [entities=" + entities + ", properties=" + properties + ", relationships=" + relationships
+		return "Information [entities=" + entities + ", properties=" + propertyNames + ", relationships=" + relationshipNames
 				+ "]";
 	}
 
@@ -51,8 +51,8 @@ public class Information {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((entities == null) ? 0 : entities.hashCode());
-		result = prime * result + ((properties == null) ? 0 : properties.hashCode());
-		result = prime * result + ((relationships == null) ? 0 : relationships.hashCode());
+		result = prime * result + ((propertyNames == null) ? 0 : propertyNames.hashCode());
+		result = prime * result + ((relationshipNames == null) ? 0 : relationshipNames.hashCode());
 		return result;
 	}
 
@@ -70,15 +70,15 @@ public class Information {
 				return false;
 		} else if (!entities.equals(other.entities))
 			return false;
-		if (properties == null) {
-			if (other.properties != null)
+		if (propertyNames == null) {
+			if (other.propertyNames != null)
 				return false;
-		} else if (!properties.equals(other.properties))
+		} else if (!propertyNames.equals(other.propertyNames))
 			return false;
-		if (relationships == null) {
-			if (other.relationships != null)
+		if (relationshipNames == null) {
+			if (other.relationshipNames != null)
 				return false;
-		} else if (!relationships.equals(other.relationships))
+		} else if (!relationshipNames.equals(other.relationshipNames))
 			return false;
 		return true;
 	}

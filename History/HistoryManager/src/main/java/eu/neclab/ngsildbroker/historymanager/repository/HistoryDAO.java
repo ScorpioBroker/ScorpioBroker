@@ -66,8 +66,8 @@ public class HistoryDAO extends StorageReaderDAO {
 
 		// temporal query
 		if (qp.getTimerel() != null) {
-			sqlWhere = translateNgsildTimequeryToSql(qp.getTimerel(), qp.getTime(), qp.getTimeproperty(),
-					qp.getEndTime(), "teai.");
+			sqlWhere = translateNgsildTimequeryToSql(qp.getTimerel(), qp.getTimeAt(), qp.getTimeproperty(),
+					qp.getEndTimeAt(), "teai.");
 			fullSqlWhere.append(sqlWhere + " AND ");
 		}
 
@@ -78,8 +78,8 @@ public class HistoryDAO extends StorageReaderDAO {
 			sqlWhere = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
 					qp.getGeoproperty(), "geovalue");
 			if (!sqlWhere.isEmpty()) {
-				String sqlWhereTemporal = translateNgsildTimequeryToSql(qp.getTimerel(), qp.getTime(),
-						qp.getTimeproperty(), qp.getEndTime(), "");
+				String sqlWhereTemporal = translateNgsildTimequeryToSql(qp.getTimerel(), qp.getTimeAt(),
+						qp.getTimeproperty(), qp.getEndTimeAt(), "");
 				sqlWhereGeoquery = "where exists (" + "  select 1 " + "  from temporalentityattrinstance "
 						+ "  where temporalentity_id = r.id and " + "        attributeid = '" + qp.getGeoproperty()
 						+ "' and " + "        attributetype = '" + NGSIConstants.NGSI_LD_GEOPROPERTY + "' and "
@@ -173,7 +173,7 @@ public class HistoryDAO extends StorageReaderDAO {
 		return sqlWhere;
 	}
 
-	protected String translateNgsildTimequeryToSql(String timerel, String time, String timeproperty, String endTime,
+	protected String translateNgsildTimequeryToSql(String timerel, String timeAT, String timeproperty, String endTimeAT,
 			String dbPrefix) throws ResponseException {
 		StringBuilder sqlWhere = new StringBuilder(50);
 
@@ -193,13 +193,13 @@ public class HistoryDAO extends StorageReaderDAO {
 
 		switch (timerel) {
 		case NGSIConstants.TIME_REL_BEFORE:
-			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " '" + time + "'::timestamp");
+			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " '" + timeAT + "'::timestamp");
 			break;
 		case NGSIConstants.TIME_REL_AFTER:
-			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " '" + time + "'::timestamp");
+			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " '" + timeAT + "'::timestamp");
 			break;
 		case NGSIConstants.TIME_REL_BETWEEN:
-			sqlWhere.append(dbColumn + " BETWEEN '" + time + "'::timestamp AND '" + endTime + "'::timestamp");
+			sqlWhere.append(dbColumn + " BETWEEN '" + timeAT + "'::timestamp AND '" + endTimeAT + "'::timestamp");
 			break;
 		default:
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);
