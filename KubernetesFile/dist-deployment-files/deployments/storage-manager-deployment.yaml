@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   labels:
     service: stomgr
-    name: stomgr
+  name: stomgr
 spec:
   replicas: 1
   selector:
@@ -27,6 +27,16 @@ spec:
         ports:
         - containerPort: 1029
           protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1029/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 7
+          initialDelaySeconds: 25
+          periodSeconds: 5
         resources:
           limits:
             cpu: 500m

@@ -27,6 +27,16 @@ spec:
         ports:
         - containerPort: 1025
           protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1025/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 10
+          initialDelaySeconds: 20
+          periodSeconds: 5
         resources:
           limits:
             cpu: 875m
