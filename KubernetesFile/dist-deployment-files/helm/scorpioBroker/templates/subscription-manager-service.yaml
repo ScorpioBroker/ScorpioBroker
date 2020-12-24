@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: sbsmgr
+  name: sbsmgr
+spec:
+  ports:
+  - name: "2025"
+    port: 2025
+    targetPort: 2025
+  selector:
+    service: sbsmgr
+status:
+  loadBalancer: {}
+

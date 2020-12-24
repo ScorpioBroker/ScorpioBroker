@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: histmgr
+  name: histmgr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: histmgr
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: histmgr
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:HistoryManager_latest
+        imagePullPolicy: IfNotPresent
+        name: histmgr
+        ports:
+        - containerPort: 1040
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1040/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 10
+          initialDelaySeconds: 20
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1280Mi
+          requests:
+            cpu: 250m
+            memory: 600Mi
+      restartPolicy: Always
+status: {}

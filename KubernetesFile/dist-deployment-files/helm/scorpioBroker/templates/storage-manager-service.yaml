@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: stomgr
+  name: stomgr
+spec:
+  ports:
+  - name: "1029"
+    port: 1029
+    targetPort: 1029
+  selector:
+    service: stomgr
+status:
+  loadBalancer: {}
+

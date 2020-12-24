@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: regmgr
+  name: regmgr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: regmgr
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: regmgr
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:RegistryManager_latest
+        imagePullPolicy: IfNotPresent
+        name: regmgr
+        ports:
+        - containerPort: 1030
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1030/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 10
+          initialDelaySeconds: 20
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1280Mi
+          requests:
+            cpu: 250m
+            memory: 600Mi
+      restartPolicy: Always
+status: {}
