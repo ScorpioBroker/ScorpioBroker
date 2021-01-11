@@ -84,10 +84,11 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @param attrs
 	 * @return
 	 */
-	@GetMapping(path = "/{entityId}")
-	public ResponseEntity<byte[]> getEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
+	@GetMapping(path = "/**")
+	public ResponseEntity<byte[]> getEntity(HttpServletRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
 			@RequestParam(value = "options", required = false) List<String> options) {
+		String entityId = HttpUtils.denormalize(request.getServletPath().replace("/ngsi-ld/v1/entities/", ""));
 		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
 		HashMap<String, String[]> paramMap = new HashMap<String, String[]>();
 		paramMap.put(NGSIConstants.QUERY_PARAMETER_ID, new String[] { entityId });
