@@ -220,4 +220,5 @@ public interface NGSIConstants {
 	public static final String[] VALID_MQTT_VERSION = { "mqtt5.0", "mqtt3.1.1" };
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
 	public static final String KAFKA_SPLIT = "!@##!@";
+	public final static String COUNT_HEADER_RESULT = "count";
 }

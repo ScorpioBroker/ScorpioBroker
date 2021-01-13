@@ -13,7 +13,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
 import org.springframework.util.ReflectionUtils;
-
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
@@ -27,7 +26,8 @@ abstract public class StorageReaderDAO {
 
 	@Autowired
 	protected JdbcTemplate readerJdbcTemplate;
-
+	public static int countHeader = 0;
+	
 	@PostConstruct
 	public void init() {
 		readerJdbcTemplate.execute("SELECT 1"); // create connection pool and connect to database
@@ -40,10 +40,14 @@ abstract public class StorageReaderDAO {
 			String sqlQuery = translateNgsildQueryToSql(qp);
 			logger.info("NGSI-LD to SQL: " + sqlQuery);
 			//SqlRowSet result = readerJdbcTemplate.queryForRowSet(sqlQuery);
-			
-			return readerJdbcTemplate.queryForList(sqlQuery,String.class);
-			
-
+			if(qp.getLimit() == 0 &&  qp.getCountResult() == true) {
+				List<String> list = readerJdbcTemplate.queryForList(sqlQuery,String.class);
+				countHeader = countHeader+list.size();	
+				return new ArrayList<String>();
+			} 
+			List<String> list = readerJdbcTemplate.queryForList(sqlQuery,String.class);
+			countHeader = countHeader+list.size();
+			return list;
 		} catch(DataIntegrityViolationException e) {
 			//Empty result don't worry
 			logger.warn("SQL Result Exception::", e);
@@ -192,9 +196,12 @@ abstract public class StorageReaderDAO {
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();
 				
-		if(limit != -1) {
-			sqlQuery += "LIMIT " + limit + " "; 
-		}
+		if(limit == 0) {
+            sqlQuery += "";           
+        }
+        else {
+        sqlQuery += "LIMIT " + limit + " ";
+        }
 		if(offSet != -1) {
 			sqlQuery += "OFFSET " + offSet + " "; 
 		}
