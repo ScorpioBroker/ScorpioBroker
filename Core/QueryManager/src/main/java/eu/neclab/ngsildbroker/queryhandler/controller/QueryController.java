@@ -35,6 +35,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import eu.neclab.ngsildbroker.queryhandler.utils.Validator;
@@ -71,6 +72,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	private final byte[] emptyResult1 = { '{', ' ', '}' };
 	private final byte[] emptyResult2 = { '{', '}' };
+	public static Boolean countResult = false;
 	@PostConstruct
 	private void setup() {
 		httpUtils = HttpUtils.getInstance(contextResolver);
@@ -92,7 +94,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		HashMap<String, String[]> paramMap = new HashMap<String, String[]>();
 		paramMap.put(NGSIConstants.QUERY_PARAMETER_ID, new String[] { entityId });
 		ResponseEntity<byte[]> result = getQueryData(request, originalQuery, paramMap, attrs, null, null, null, options,
-				false, true);
+				false, true, false);
 		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
@@ -151,14 +153,22 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(name = "options", required = false) List<String> options,
-			@RequestParam(name = "services", required = false) Boolean showServices) {
+			@RequestParam(name = "services", required = false) Boolean showServices,
+			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
+		StorageReaderDAO.countHeader=0;    
+		if(count == true) {
+		    	countResult = true;
+		    } else {
+		    	countResult = false;
+		    } 
+		
 		return getQueryData(request, request.getQueryString(), request.getParameterMap(), attrs, limit, offset, qToken,
-				options, showServices, false);
+				options, showServices, false,countResult);
 	}
 
 	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
 			Map<String, String[]> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
-			List<String> options, Boolean showServices, boolean retrieve) {
+			List<String> options, Boolean showServices, boolean retrieve,Boolean countResult) {
 
 		if (limit == null) {
 			limit = defaultLimit;
@@ -169,7 +179,9 @@ public class QueryController {// implements QueryHandlerInterface {
 
 		try {
 			logger.trace("getAllEntity() ::");
-
+			if(countResult == false && limit == 0) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+			}
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 			if (retrieve || request.getRequestURI().equals(MY_REQUEST_URL)
 					|| request.getRequestURI().equals(MY_REQUEST_URL_ALT)) {
@@ -199,7 +211,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 					checkParamsForValidity(qp);
 					QueryResult qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
-							qToken, showServices);
+							qToken, showServices,countResult);
 
 					return generateReply(request, qResult, !retrieve);
 
@@ -260,8 +272,13 @@ public class QueryController {// implements QueryHandlerInterface {
 		if (prevLink != null) {
 			additionalLinks.add(prevLink);
 		}
-
+		ArrayList<String> additionalHeaerCount = new ArrayList<String>();
 		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
+		
+		if(countResult ==true) {
+			additionalHeaerCount.add(String.valueOf(StorageReaderDAO.countHeader));
+			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaerCount);
+		}
 		if (!additionalLinks.isEmpty()) {
 			additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
 		}
@@ -320,5 +337,4 @@ public class QueryController {// implements QueryHandlerInterface {
 
 		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
 	}
-
 }

@@ -61,7 +61,7 @@ public class QueryParams {
 	@SerializedName("limit")
 	@Expose
 	private int limit = -1;
-
+    private Boolean countResult;
 	@SerializedName("offSet")
 	@Expose
 	private int offSet = -1;
@@ -301,6 +301,14 @@ public class QueryParams {
 
 	public void setOffSet(int offSet) {
 		this.offSet = offSet;
+	}
+    
+	public Boolean getCountResult() {
+		return countResult;
+	}
+
+	public void setCountResult(Boolean countResult) {
+		this.countResult = countResult;
 	}
 
 	@Override
