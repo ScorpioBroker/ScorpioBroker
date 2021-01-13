@@ -129,9 +129,23 @@ public class HistoryDAO extends StorageReaderDAO {
 			//}
 			sqlQuery += "}')::jsonb";
 		}
-		sqlQuery += "  as tedata, " + "jsonb_object_agg(attributeid, attributedata";
+		sqlQuery += "  as tedata, " + "jsonb_object_agg(attributeid,";
 		if (qp.getTemporalValues()) {
-			sqlQuery += "->0->'" + NGSIConstants.NGSI_LD_HAS_VALUE + "'->0->'" + NGSIConstants.JSON_LD_VALUE + "'";
+			if (qp.getTimeproperty().equalsIgnoreCase(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+				sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE + "'->0->'"
+						+ NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_MODIFIED_AT + "'->0->'"
+						+ NGSIConstants.JSON_LD_VALUE + "')) from jsonb_array_elements(attributedata) as x(t))";
+			} else if (qp.getTimeproperty().equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)) {
+				sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE + "'->0->'"
+						+ NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_CREATED_AT + "'->0->'"
+						+ NGSIConstants.JSON_LD_VALUE + "')) from jsonb_array_elements(attributedata) as x(t))";
+			} else if (qp.getTimeproperty().equalsIgnoreCase(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
+				sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE + "'->0->'"
+						+ NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_OBSERVED_AT + "'->0->'"
+						+ NGSIConstants.JSON_LD_VALUE + "')) from jsonb_array_elements(attributedata) as x(t))";
+			}
+		} else {
+			sqlQuery += "attributedata";
 		}
 
 		sqlQuery += ") as attrdata " + "  from r ";
