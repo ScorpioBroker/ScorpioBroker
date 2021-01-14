@@ -554,7 +554,7 @@ public class QueryTerm {
 	}
 
 	private void getAttribQuery(StringBuilder result) throws ResponseException {
-		ArrayList<String> attribPath = getAttribPathArray();
+		ArrayList<String> attribPath = getAttribPathArray(this.attribute);
 
 		StringBuilder testAttributeExistsProperty = new StringBuilder("");
 		StringBuilder testAttributeExistsRelationship = new StringBuilder("");
@@ -698,7 +698,7 @@ public class QueryTerm {
 	}
 
 	private void getAttribQueryV2(StringBuilder result) throws ResponseException {
-		ArrayList<String> attribPath = getAttribPathArray();
+		ArrayList<String> attribPath = getAttribPathArray(this.attribute);
 
 		StringBuilder attributeFilterProperty = new StringBuilder("");
 
@@ -824,18 +824,18 @@ public class QueryTerm {
 
 	}
 
-	private ArrayList<String> getAttribPathArray() throws ResponseException {
+	private ArrayList<String> getAttribPathArray(String attribute) throws ResponseException {
 		ArrayList<String> attribPath = new ArrayList<String>();
 		if (attribute.contains("[")) {
 			for (String subPart : attribute.split("\\[")) {
 				subPart = subPart.replaceAll("\\]", "");
-				attribPath.add(expandAttributeName(subPart));
+				attribPath.addAll(getAttribPathArray(subPart));
 			}
 		} else if (attribute.matches(URI)) {
 			attribPath.add(expandAttributeName(attribute));
 		} else if (attribute.contains(".")) {
 			for (String subPart : attribute.split("\\.")) {
-				attribPath.add(expandAttributeName(subPart));
+				attribPath.addAll(getAttribPathArray(subPart));
 			}
 		} else {
 			attribPath.add(expandAttributeName(attribute));
@@ -1070,7 +1070,7 @@ public class QueryTerm {
 	}
 
 	private void getAttribQueryForTemporalEntity(StringBuilder result) throws ResponseException {
-		ArrayList<String> attribPath = getAttribPathArray();
+		ArrayList<String> attribPath = getAttribPathArray(this.attribute);
 		//https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
 		/*
 		 * String attribId = null; for (String subPath : attribPath) { attribId =

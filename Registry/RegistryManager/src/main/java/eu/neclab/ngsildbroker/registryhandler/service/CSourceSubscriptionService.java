@@ -155,26 +155,17 @@ public class CSourceSubscriptionService {
 				continue;
 			}
 		}
-		subs = kafkaOps.pullFromKafka(KafkaConstants.SUBSCRIPTIONS_TOPIC);
-		for (byte[] sub : subs.values()) {
-			try {
-				if (Arrays.areEqual(sub, nullArray)) {
-					continue;
-				}
-				SubscriptionRequest subscriptionRequest = DataSerializer.getSubscriptionRequest(new String(sub));
-				subscriptionRequest.getSubscription().setInternal(true);
-				subscribe(subscriptionRequest, false);
-			} catch (JsonParseException e) {
-				// logger.error("Exception ::", e);
-				// e.printStackTrace();
-				continue;
-			} catch (ResponseException e) {
-				// logger.error("Exception ::", e);
-				// e.printStackTrace();
-				continue;
-			}
-		}
-
+		/*
+		 * subs = kafkaOps.pullFromKafka(KafkaConstants.SUBSCRIPTIONS_TOPIC); for
+		 * (byte[] sub : subs.values()) { try { if (Arrays.areEqual(sub, nullArray)) {
+		 * continue; } SubscriptionRequest subscriptionRequest =
+		 * DataSerializer.getSubscriptionRequest(new String(sub));
+		 * subscriptionRequest.getSubscription().setInternal(true);
+		 * subscribe(subscriptionRequest, false); } catch (JsonParseException e) { //
+		 * logger.error("Exception ::", e); // e.printStackTrace(); continue; } catch
+		 * (ResponseException e) { // logger.error("Exception ::", e); //
+		 * e.printStackTrace(); continue; } }
+		 */
 	}
 
 	public Subscription querySubscription(URI id) throws ResponseException {
