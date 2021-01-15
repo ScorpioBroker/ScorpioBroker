@@ -27,6 +27,7 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
     onepageTutorial.rst
     buildScorpio.rst
     mqtt.rst
+	NewFeatures_Changes_NGSILDv1.3.1.rst
 
 .. toctree::
     :maxdepth: 1

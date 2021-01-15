@@ -26,6 +26,7 @@ public class Validator {
 		validParams.add(NGSIConstants.QUERY_PARAMETER_QTOKEN);
 		validParams.add(NGSIConstants.QUERY_PARAMETER_OPTIONS);
 		validParams.add(NGSIConstants.QUERY_PARAMETER_DETAILS);
+		validParams.add(NGSIConstants.COUNT_HEADER_RESULT);
 	}
 	
 

@@ -323,13 +323,14 @@ public class QueryService {
 	 * @throws Exception
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
-			Integer offset, String qToken, Boolean showServices, String check) throws ResponseException, Exception {
+			Integer offset, String qToken, Boolean showServices, Boolean countResult,String check) throws ResponseException, Exception {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
 		List<String> realResult;
 		qp.setLimit(limit);
 		qp.setOffSet(offset);
+        qp.setCountResult(countResult);		
 		int dataLeft = 0;
 		if (qToken == null) {
 			ExecutorService executorService = Executors.newFixedThreadPool(2);
