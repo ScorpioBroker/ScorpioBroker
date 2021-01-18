@@ -1,4 +1,4 @@
-FROM openjdk:8-jre
+FROM openjdk:11-alpine
 
 WORKDIR /usr/src/scorpio
 ARG JAR_FILE_BUILD
