@@ -11,6 +11,8 @@ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 import org.springframework.cloud.netflix.zuul.EnableZuulProxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.web.firewall.DefaultHttpFirewall;
+import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -20,6 +22,7 @@ import org.springframework.web.filter.CorsFilter;
 @EnableEurekaClient
 public class GatewayApplication {
 	public static void main(String[] args) {
+		System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
 		SpringApplication.run(GatewayApplication.class, args);
 	}
 	@Value("${gateway.enablecors:false}")
@@ -94,12 +97,21 @@ public class GatewayApplication {
 		return new CorsFilter(source);
 	}
 	@Bean
+	public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
+	    DefaultHttpFirewall firewall = new DefaultHttpFirewall();
+	    firewall.setAllowUrlEncodedSlash(true);
+	    return firewall;
+	}
+
+	@Bean
 	public ConfigurableServletWebServerFactory webServerFactory() {
 	    TomcatServletWebServerFactory factory = new TomcatServletWebServerFactory();
 	    factory.addConnectorCustomizers(new TomcatConnectorCustomizer() {
 	        @Override
 	        public void customize(Connector connector) {
 	            connector.setProperty("relaxedQueryChars", "|{}[]");
+	            //connector.setProperty("encodedSolidusHandling", "passthrough");
+	            //Doesn't do anything 
 	        }
 	    });
 	    return factory;
