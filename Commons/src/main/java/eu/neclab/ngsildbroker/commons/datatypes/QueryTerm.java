@@ -522,6 +522,7 @@ public class QueryTerm {
 		StringBuilder builder = new StringBuilder();
 		toSql(builder, false);
 		// builder.append(";");
+		System.out.println(builder.toString());
 		return builder.toString();
 	}
 
@@ -552,150 +553,6 @@ public class QueryTerm {
 			}
 			next.toSql(result, temporalEntityMode);
 		}
-	}
-
-	private void getAttribQuery(StringBuilder result) throws ResponseException {
-		ArrayList<String> attribPath = getAttribPathArray();
-
-		StringBuilder testAttributeExistsProperty = new StringBuilder("");
-		StringBuilder testAttributeExistsRelationship = new StringBuilder("");
-		StringBuilder attributeFilterProperty = new StringBuilder("");
-		StringBuilder attributeFilterRelationship = new StringBuilder("");
-		StringBuilder testValueTypeForPatternOp = new StringBuilder("");
-		StringBuilder testValueTypeForDateTime = new StringBuilder("");
-
-		String reservedDbColumn = null;
-		if (attribPath.size() == 1) {
-			// if not mapped, returns null
-			reservedDbColumn = DBConstants.NGSILD_TO_SQL_RESERVED_PROPERTIES_MAPPING.get(attribPath.get(0));
-		}
-
-		// do not use createdAt/modifiedAt db columns if value (operant) is not a
-		// date/time value
-		if (reservedDbColumn != null
-				&& (reservedDbColumn.equals(DBConstants.DBCOLUMN_CREATED_AT)
-						|| reservedDbColumn.equals(DBConstants.DBCOLUMN_MODIFIED_AT))
-				&& !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME))) {
-			reservedDbColumn = null;
-		}
-
-		if (reservedDbColumn == null) {
-			testAttributeExistsProperty.append("data@>'{\"");
-			testAttributeExistsRelationship.append("data@>'{\"");
-			attributeFilterProperty.append("(data#");
-			attributeFilterRelationship.append("data#");
-			testValueTypeForPatternOp.append("jsonb_typeof(data#>'{");
-			testValueTypeForDateTime.append("data#>>'{");
-			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
-					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-				attributeFilterProperty.append(">>");
-				attributeFilterRelationship.append(">>");
-			} else {
-				attributeFilterProperty.append(">");
-				attributeFilterRelationship.append(">");
-			}
-			attributeFilterProperty.append("'{");
-			attributeFilterRelationship.append("'{");
-
-			int iElem = 0;
-			String lastAttribute = "";
-			for (String subPath : attribPath) {
-				// in compoundAttrName filter, Property test only applies to the top level
-				// element
-				if (!attribute.contains("[") || attribute.contains("[") && iElem == 0) {
-					testAttributeExistsProperty.append(subPath);
-					testAttributeExistsProperty.append("\":[{\"");
-					testAttributeExistsRelationship.append(subPath);
-					testAttributeExistsRelationship.append("\":[{\"");
-				}
-				attributeFilterProperty.append(subPath);
-				attributeFilterProperty.append(",0,");
-				attributeFilterRelationship.append(subPath);
-				attributeFilterRelationship.append(",0,");
-				testValueTypeForPatternOp.append(subPath);
-				testValueTypeForPatternOp.append(",0,");
-				testValueTypeForDateTime.append(subPath);
-				testValueTypeForDateTime.append(",0,");
-				// in compoundAttrName filter, hasValue/hasObject is in the top level element
-				if (attribute.contains("[") && iElem == 0) {
-					attributeFilterProperty.append(NGSIConstants.NGSI_LD_HAS_VALUE + ",0,");
-					attributeFilterRelationship.append(NGSIConstants.NGSI_LD_HAS_OBJECT + ",0,");
-					testValueTypeForPatternOp.append(NGSIConstants.NGSI_LD_HAS_VALUE + ",0,");
-					testValueTypeForDateTime.append(NGSIConstants.NGSI_LD_HAS_VALUE + ",0,");
-				}
-				iElem++;
-				lastAttribute = subPath;
-			}
-
-			// createdAt/modifiedAt/observedAt type is DateTime (without array brackets)
-			if (lastAttribute.equals(NGSIConstants.NGSI_LD_CREATED_AT)
-					|| lastAttribute.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
-					|| lastAttribute.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
-				testAttributeExistsProperty.append("@type\":\"" + NGSIConstants.NGSI_LD_DATE_TIME + "\"");
-			} else {
-				testAttributeExistsProperty.append("@type\":[\"" + NGSIConstants.NGSI_LD_PROPERTY + "\"]");
-			}
-			testAttributeExistsRelationship.append("@type\":[\"" + NGSIConstants.NGSI_LD_RELATIONSHIP + "\"]");
-			for (int i = 0; i < attribPath.size(); i++) {
-				if (!attribute.contains("[") || attribute.contains("[") && i == 0) {
-					testAttributeExistsProperty.append("}]");
-					testAttributeExistsRelationship.append("}]");
-				}
-			}
-			testAttributeExistsProperty.append("}'");
-			testAttributeExistsRelationship.append("}'");
-			// in compoundAttrName, hasValue is at the top level element.
-			// createdAt/modifiedAt/observedAt properties do not have a hasValue element
-			if (!attribute.contains("[") && !lastAttribute.equals(NGSIConstants.NGSI_LD_CREATED_AT)
-					&& !lastAttribute.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
-					&& !lastAttribute.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
-				attributeFilterProperty.append(NGSIConstants.NGSI_LD_HAS_VALUE + ",0,");
-				attributeFilterRelationship.append(NGSIConstants.NGSI_LD_HAS_OBJECT + ",0,");
-				testValueTypeForPatternOp.append(NGSIConstants.NGSI_LD_HAS_VALUE + ",0,");
-				testValueTypeForDateTime.append(NGSIConstants.NGSI_LD_HAS_VALUE + ",0,");
-			}
-			attributeFilterProperty.append("@value}')");
-			attributeFilterRelationship.append("@id}'");
-			testValueTypeForPatternOp.append("@value}') = 'string'");
-			testValueTypeForDateTime.append("@type}' = ");
-			if (operant.matches(DATETIME)) {
-				attributeFilterProperty.append("::timestamp ");
-				testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE_TIME + "'");
-			} else if (operant.matches(DATE)) {
-				attributeFilterProperty.append("::date ");
-				testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE + "'");
-			} else if (operant.matches(TIME)) {
-				attributeFilterProperty.append("::time ");
-				testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_TIME + "'");
-			}
-
-		} else {
-			attributeFilterProperty.append(reservedDbColumn);
-		}
-
-		boolean useRelClause = applyOperator(attributeFilterProperty, attributeFilterRelationship);
-
-		if (reservedDbColumn == null) {
-			if (useRelClause) {
-				result.append("((" + testAttributeExistsProperty.toString() + " and "
-						+ attributeFilterProperty.toString() + ") or (" + testAttributeExistsRelationship.toString()
-						+ " and " + attributeFilterRelationship.toString() + "))");
-			} else {
-				result.append(
-						"(" + testAttributeExistsProperty.toString() + " and " + attributeFilterProperty.toString());
-				if (operator.equals(NGSIConstants.QUERY_PATTERNOP)
-						|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-					result.append(" and " + testValueTypeForPatternOp.toString());
-				}
-				if (operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-					result.append(" and " + testValueTypeForDateTime.toString());
-				}
-				result.append(")");
-			}
-		} else {
-			result.append("(" + attributeFilterProperty.toString() + ")");
-		}
-
 	}
 
 	private void getAttribQueryV2(StringBuilder result) throws ResponseException {
@@ -736,10 +593,9 @@ public class QueryTerm {
 			for (String subPath : attribPath) {
 				attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
 				attributeFilterProperty.append(subPath);
-				if (attribute.contains("[")&&attribute.contains(".") && iElem == 1) {
+				if (attribute.contains("[") && attribute.contains(".") && iElem == 1) {
 					attributeFilterProperty.append(",0," + NGSIConstants.NGSI_LD_HAS_VALUE);
-				}
-				else if (attribute.contains("[") &&!attribute.contains(".") && iElem == 0) {
+				} else if (attribute.contains("[") && !attribute.contains(".") && iElem == 0) {
 					attributeFilterProperty.append(",0," + NGSIConstants.NGSI_LD_HAS_VALUE);
 				}
 				attributeFilterProperty.append("}') as ");
@@ -756,21 +612,30 @@ public class QueryTerm {
 			if (operator.equals(NGSIConstants.QUERY_EQUAL) || operator.equals(NGSIConstants.QUERY_UNEQUAL)
 					|| operator.equals(NGSIConstants.QUERY_PATTERNOP)
 					|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
+				attributeFilterProperty.append("(EXISTS (SELECT FROM jsonb_array_elements(");
 				attributeFilterProperty.append(charcount);
-				attributeFilterProperty.append("#> '{");
-				attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'");
+				attributeFilterProperty.append("#> '{https://uri.etsi.org/ngsi-ld/hasObject}') as ");
+				attributeFilterProperty.append(charcount);
+				attributeFilterProperty.append("a WHERE ");
+				attributeFilterProperty.append(charcount);
+				attributeFilterProperty.append("a#>'{@id}' ");
 				applyOperator(attributeFilterProperty);
 				attributeFilterProperty.append(" OR ");
 			}
-			attributeFilterProperty.append('(');
+			attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(");
 			attributeFilterProperty.append(charcount);
 			attributeFilterProperty.append("#>");
+			attributeFilterProperty.append(" '{");
+			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue}') as ");
+			attributeFilterProperty.append(charcount);
+			attributeFilterProperty.append("b WHERE ");
+			attributeFilterProperty.append(charcount);
+			attributeFilterProperty.append("b #>");
 			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
 					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
 				attributeFilterProperty.append(">");
 			}
-			attributeFilterProperty.append(" '{");
-			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue,0,@value}')");
+			attributeFilterProperty.append("'{@value}'");
 			if (operant.matches(DATETIME)) {
 				attributeFilterProperty.append("::timestamp ");
 			} else if (operant.matches(DATE)) {
@@ -780,14 +645,14 @@ public class QueryTerm {
 			}
 			applyOperator(attributeFilterProperty);
 			attributeFilterProperty.append(" OR ");
-			attributeFilterProperty.append('(');
-			if(operant.matches(CHECKTYPE)) {
-				attributeFilterProperty.append(operant.replaceAll("\"","\'"));
-			} else {
-				attributeFilterProperty.append("'" + operant + "'");	
-			}
-			attributeFilterProperty.append(" in (select jsonb_array_elements("+charcount+"->'"+NGSIConstants.NGSI_LD_HAS_VALUE+"')->>'"+NGSIConstants.JSON_LD_VALUE+"'))");
-			attributeFilterProperty.append(" OR ");
+			/**
+			 * attributeFilterProperty.append('('); if(operant.matches(CHECKTYPE)) {
+			 * attributeFilterProperty.append(operant.replaceAll("\"","\'")); } else {
+			 * attributeFilterProperty.append("'" + operant + "'"); }
+			 * attributeFilterProperty.append(" in (select
+			 * jsonb_array_elements("+charcount+"->'"+NGSIConstants.NGSI_LD_HAS_VALUE+"')->>'"+NGSIConstants.JSON_LD_VALUE+"'))");
+			 * attributeFilterProperty.append(" OR ");
+			 */
 			if (TIME_PROPS.contains(lastAttrib)) {
 				attributeFilterProperty.append('(');
 				attributeFilterProperty.append((char) (charcount - 1));
@@ -851,8 +716,7 @@ public class QueryTerm {
 					}
 				}
 			}
-		}
-		else if (attribute.contains("[")) {
+		} else if (attribute.contains("[")) {
 			for (String subPart : attribute.split("\\[")) {
 				subPart = subPart.replaceAll("\\]", "");
 				attribPath.add(expandAttributeName(subPart));
@@ -1097,7 +961,7 @@ public class QueryTerm {
 
 	private void getAttribQueryForTemporalEntity(StringBuilder result) throws ResponseException {
 		ArrayList<String> attribPath = getAttribPathArray();
-		//https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
+		// https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
 		/*
 		 * String attribId = null; for (String subPath : attribPath) { attribId =
 		 * subPath; break; // sub-properties are not supported yet in HistoryManager }
@@ -1159,7 +1023,8 @@ public class QueryTerm {
 			result.append(lastAttrib);
 			result.append(",0,@value}')");
 
-		} else if (lastAttrib.equals(NGSIConstants.NGSI_LD_DATA_SET_ID) || lastAttrib.equals(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
+		} else if (lastAttrib.equals(NGSIConstants.NGSI_LD_DATA_SET_ID)
+				|| lastAttrib.equals(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
 			result.append('(');
 			result.append(charcount);
 			result.append("#>");
@@ -1194,7 +1059,6 @@ public class QueryTerm {
 			result.append(')');
 		}
 
-		
 		/*
 		 * StringBuilder attributeFilterProperty = new StringBuilder("(m.attrdata#");
 		 * StringBuilder attributeFilterRelationship = new StringBuilder("m.attrdata#");
