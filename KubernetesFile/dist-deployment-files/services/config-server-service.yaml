@@ -2,15 +2,14 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    service: cfgsrv
-  name: cfgsrv
+    service: config-server
+  name: config-server
 spec:
   ports:
   - name: "8888"
     port: 8888
     targetPort: 8888
   selector:
-    service: cfgsrv
-status:
-  loadBalancer: {}
+    service: config-server
+status: {}
 

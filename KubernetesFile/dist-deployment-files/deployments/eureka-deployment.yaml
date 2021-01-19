@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - image: scorpiobroker/scorpio:eureka-server_latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: eureka
         ports:
         - containerPort: 8761
@@ -35,6 +35,7 @@ spec:
             cpu: 250m
             memory: 600Mi
       restartPolicy: Always
+      serviceAccountName: ""
       securityContext: {}
       terminationGracePeriodSeconds: 30
 status: {}

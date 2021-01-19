@@ -11,6 +11,5 @@ spec:
     targetPort: 8761
   selector:
     service: eureka
-status:
-  loadBalancer: {}
+status: {}
 
