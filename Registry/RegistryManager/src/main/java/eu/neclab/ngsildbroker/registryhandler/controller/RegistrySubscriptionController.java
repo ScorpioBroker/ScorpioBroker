@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
@@ -61,7 +62,12 @@ public class RegistrySubscriptionController {
 	@Autowired
 	EurekaClient eurekaClient;
 	
-	HttpUtils httpUtils = HttpUtils.getInstance(contextResolver);
+	private HttpUtils httpUtils;
+
+	@PostConstruct
+	private void setup() {
+		this.httpUtils = HttpUtils.getInstance(contextResolver);
+	}
 
 	ResponseException badRequest = new ResponseException(ErrorType.BadRequestData);
 
