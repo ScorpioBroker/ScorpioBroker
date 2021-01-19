@@ -24,7 +24,7 @@ public class QueryTerm {
 	private static final String DATETIME = "\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
 	private static final String DATE = "\\d\\d\\d\\d-\\d\\d-\\d\\d";
 	private static final String TIME = "\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
-	private static final String CHECKTYPE = "\".*\"";
+	
 
 	private static final List<String> TIME_PROPS = Arrays.asList(NGSIConstants.NGSI_LD_OBSERVED_AT,
 			NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_MODIFIED_AT);
@@ -612,7 +612,7 @@ public class QueryTerm {
 			if (operator.equals(NGSIConstants.QUERY_EQUAL) || operator.equals(NGSIConstants.QUERY_UNEQUAL)
 					|| operator.equals(NGSIConstants.QUERY_PATTERNOP)
 					|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-				attributeFilterProperty.append("(EXISTS (SELECT FROM jsonb_array_elements(");
+				attributeFilterProperty.append("(EXISTS SELECT FROM jsonb_array_elements(");
 				attributeFilterProperty.append(charcount);
 				attributeFilterProperty.append("#> '{https://uri.etsi.org/ngsi-ld/hasObject}') as ");
 				attributeFilterProperty.append(charcount);
