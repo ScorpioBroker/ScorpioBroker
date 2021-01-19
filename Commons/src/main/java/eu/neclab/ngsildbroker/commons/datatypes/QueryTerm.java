@@ -612,7 +612,7 @@ public class QueryTerm {
 			if (operator.equals(NGSIConstants.QUERY_EQUAL) || operator.equals(NGSIConstants.QUERY_UNEQUAL)
 					|| operator.equals(NGSIConstants.QUERY_PATTERNOP)
 					|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-				attributeFilterProperty.append("(EXISTS SELECT FROM jsonb_array_elements(");
+				attributeFilterProperty.append("((EXISTS (SELECT FROM jsonb_array_elements(");
 				attributeFilterProperty.append(charcount);
 				attributeFilterProperty.append("#> '{https://uri.etsi.org/ngsi-ld/hasObject}') as ");
 				attributeFilterProperty.append(charcount);
@@ -620,9 +620,9 @@ public class QueryTerm {
 				attributeFilterProperty.append(charcount);
 				attributeFilterProperty.append("a#>'{@id}' ");
 				applyOperator(attributeFilterProperty);
-				attributeFilterProperty.append(" OR ");
+				attributeFilterProperty.append(")) OR ");
 			}
-			attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(");
+			attributeFilterProperty.append("(EXISTS (SELECT FROM jsonb_array_elements(");
 			attributeFilterProperty.append(charcount);
 			attributeFilterProperty.append("#>");
 			attributeFilterProperty.append(" '{");
@@ -644,7 +644,7 @@ public class QueryTerm {
 				attributeFilterProperty.append("::time ");
 			}
 			applyOperator(attributeFilterProperty);
-			attributeFilterProperty.append(" OR ");
+			attributeFilterProperty.append(")) OR ");
 			/**
 			 * attributeFilterProperty.append('('); if(operant.matches(CHECKTYPE)) {
 			 * attributeFilterProperty.append(operant.replaceAll("\"","\'")); } else {
