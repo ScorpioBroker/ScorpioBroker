@@ -129,7 +129,13 @@ public final class HttpUtils {
 		}
 		return SINGLETON;
 	}
-
+	public static String denormalize(String attrId) {
+		String result = attrId.replace(":/", "://");
+		if(result.endsWith("/")) {
+			return result.substring(0, result.length() - 2);
+		}
+		return result;
+	}
 	public static void doPreflightCheck(HttpServletRequest req, String payload) throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
 		if (contentType == null) {
