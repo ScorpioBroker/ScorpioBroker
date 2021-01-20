@@ -612,7 +612,7 @@ public class QueryTerm {
 			if (operator.equals(NGSIConstants.QUERY_EQUAL) || operator.equals(NGSIConstants.QUERY_UNEQUAL)
 					|| operator.equals(NGSIConstants.QUERY_PATTERNOP)
 					|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-				attributeFilterProperty.append("((EXISTS (SELECT FROM jsonb_array_elements(");
+				attributeFilterProperty.append("(EXISTS (SELECT FROM jsonb_array_elements(");
 				attributeFilterProperty.append(charcount);
 				attributeFilterProperty.append("#> '{https://uri.etsi.org/ngsi-ld/hasObject}') as ");
 				attributeFilterProperty.append(charcount);
