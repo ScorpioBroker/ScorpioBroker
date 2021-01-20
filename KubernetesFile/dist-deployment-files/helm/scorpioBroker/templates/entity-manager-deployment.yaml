@@ -2,14 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: emgr
-  name: emgr
+    service: entity-manager
+  name: entity-manager
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
   selector:
     matchLabels:
-      service: emgr
+      service: entity-manager
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -18,12 +18,12 @@ spec:
   template:
     metadata:
       labels:
-        service: emgr
+        service: entity-manager
     spec:
       containers:
       - image: scorpiobroker/scorpio:EntityManager_latest
-        imagePullPolicy: IfNotPresent
-        name: emgr
+        imagePullPolicy: Always
+        name: entity-manager
         ports:
         - containerPort: 1025
           protocol: TCP

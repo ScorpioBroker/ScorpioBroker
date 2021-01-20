@@ -1,12 +1,12 @@
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
- name: sub-hpa
+ name: query-hpa
 spec:
  scaleTargetRef:
    apiVersion: apps/v1
    kind: Deployment
-   name: sbsmgr
+   name: query-manager
  minReplicas: 1
  maxReplicas: 5
  targetCPUUtilizationPercentage: 80

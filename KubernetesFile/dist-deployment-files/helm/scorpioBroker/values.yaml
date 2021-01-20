@@ -1,0 +1,68 @@
+################################### Eureka Server ##########################
+eureka:
+## Enable the eureka deployment & service
+  enabled: true 
+  name: eureka
+## Number of eureka instances to deploy
+##
+  replicas: 1
+## Scorpio Broker eureka image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: eureka-server_FIWARE_7.9.1
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## eureka containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## eureka containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext:{}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for eureka
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80

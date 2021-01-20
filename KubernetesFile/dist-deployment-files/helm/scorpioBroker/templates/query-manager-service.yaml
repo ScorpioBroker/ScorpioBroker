@@ -2,14 +2,13 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    service: qrymgr
-  name: qrymgr
+    service: query-manager
+  name: query-manager
 spec:
   ports:
   - name: "1026"
     port: 1026
     targetPort: 1026
   selector:
-    service: qrymgr
-status:
-  loadBalancer: {}
+    service: query-manager
+status: {}

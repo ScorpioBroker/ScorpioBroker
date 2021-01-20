@@ -2,15 +2,14 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    service: histmgr
-  name: histmgr
+    service: history-manager
+  name: history-manager
 spec:
   ports:
   - name: "1040"
     port: 1040
     targetPort: 1040
   selector:
-    service: histmgr
-status:
-  loadBalancer: {}
+    service: history-manager
+status: {}
 

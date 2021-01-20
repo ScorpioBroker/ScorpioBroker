@@ -1,16 +1,16 @@
+{{- if .Values.eureka.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    service: eureka
-  name: eureka
+    service: {{ .Values.eureka.name }}
+  name: {{ .Values.eureka.name }}
 spec:
   ports:
   - name: "8761"
     port: 8761
     targetPort: 8761
   selector:
-    service: eureka
-status:
-  loadBalancer: {}
-
+    service: {{ .Values.eureka.name }}
+status: {}
+{{- end }}

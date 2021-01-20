@@ -2,13 +2,13 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: qrymgr
-  name: qrymgr
+    service: query-manager
+  name: query-manager
 spec:
   replicas: 1
   selector:
     matchLabels:
-      service: qrymgr
+      service: query-manager
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -17,12 +17,12 @@ spec:
   template:
     metadata:
       labels:
-        service: qrymgr
+        service: query-manager
     spec:
       containers:
       - image: scorpiobroker/scorpio:QueryManager_latest
-        imagePullPolicy: IfNotPresent
-        name: qrymgr
+        imagePullPolicy: Always
+        name: query-manager
         ports:
         - containerPort: 1026
           protocol: TCP
@@ -44,4 +44,5 @@ spec:
             cpu: 250m
             memory: 600Mi
       restartPolicy: Always
+      serviceAccountName: ""
 status: {}

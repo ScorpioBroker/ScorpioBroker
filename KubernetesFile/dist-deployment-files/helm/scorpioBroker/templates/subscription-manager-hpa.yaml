@@ -1,12 +1,12 @@
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
- name: history-hpa
+ name: sub-hpa
 spec:
  scaleTargetRef:
    apiVersion: apps/v1
    kind: Deployment
-   name: histmgr
+   name: subscription-manager
  minReplicas: 1
  maxReplicas: 5
  targetCPUUtilizationPercentage: 80

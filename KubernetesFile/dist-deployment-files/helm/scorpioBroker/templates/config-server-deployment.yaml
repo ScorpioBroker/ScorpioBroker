@@ -2,23 +2,23 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: cfgsrv
-  name: cfgsrv
+    service: config-server
+  name: config-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      service: cfgsrv
+      service: config-server
   strategy: {}
   template:
     metadata:
       labels:
-        service: cfgsrv
+        service: config-server
     spec:
       containers:
       - image: scorpiobroker/scorpio:config-server_latest
-        imagePullPolicy: ""
-        name: cfgsrv
+        imagePullPolicy: Always
+        name: config-server
         ports:
         - containerPort: 8888
         readinessProbe:

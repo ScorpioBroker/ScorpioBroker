@@ -2,15 +2,15 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: sbsmgr
-  name: sbsmgr
+    service: subscription-manager
+  name: subscription-manager
 spec:
   progressDeadlineSeconds: 600
   replicas: 1
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      service: sbsmgr
+      service: subscription-manager
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -19,12 +19,12 @@ spec:
   template:
     metadata:
       labels:
-        service: sbsmgr
+        service: subscription-manager
     spec:
       containers:
       - image: scorpiobroker/scorpio:SubscriptionManager_latest
-        imagePullPolicy: IfNotPresent
-        name: sbsmgr
+        imagePullPolicy: Always
+        name: subscription-manager
         ports:
         - containerPort: 2025
           protocol: TCP
@@ -46,4 +46,5 @@ spec:
             cpu: 250m
             memory: 600Mi
       restartPolicy: Always
+      serviceAccountName: ""
 status: {}

@@ -1,13 +1,12 @@
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
- name: eureka-hpa
+ name: history-hpa
 spec:
  scaleTargetRef:
    apiVersion: apps/v1
    kind: Deployment
-   name: eureka
+   name: history-manager
  minReplicas: 1
  maxReplicas: 5
  targetCPUUtilizationPercentage: 80
-
