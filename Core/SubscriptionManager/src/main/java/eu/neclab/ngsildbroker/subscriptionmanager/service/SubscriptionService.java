@@ -80,6 +80,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 
 @Service
 public class SubscriptionService implements SubscriptionManager {
@@ -136,7 +137,12 @@ public class SubscriptionService implements SubscriptionManager {
 	@Autowired
 	@Qualifier("smparamsResolver")
 	ParamsResolver paramsResolver;
+	
+	SubscriptionManagerProducerChannel producerChannel;
 
+	@Autowired
+	KafkaOps kafkaOps;
+	
 	boolean directDB = true;
 
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
@@ -161,8 +167,10 @@ public class SubscriptionService implements SubscriptionManager {
 	// @Value("${notification.port}")
 	// String REMOTE_NOTIFICATION_PORT;
 
-	public SubscriptionService() {
+	public SubscriptionService(SubscriptionManagerProducerChannel producerChannel) {
+		this.producerChannel = producerChannel;
 	}
+
 
 	@PostConstruct
 	private void setup() {
@@ -283,7 +291,16 @@ public class SubscriptionService implements SubscriptionManager {
 			public void run() {
 				synchronized (subscriptionStore) {
 					subscriptionStore.put(subscription.getSubscription().getId().toString(), DataSerializer.toJson(subscription));
+					try {
+						kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
+								subscription.getSubscription().getId().toString().getBytes(),
+								DataSerializer.toJson(subscription).getBytes());
+					} catch (ResponseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
+				
 			};
 		}.start();
 
@@ -304,6 +321,9 @@ public class SubscriptionService implements SubscriptionManager {
 		Subscription removedSub;
 		synchronized (subscriptionId2Subscription) {
 			removedSub = this.subscriptionId2Subscription.remove(id.toString());
+			this.kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
+					id.toString().getBytes(),
+					AppConstants.NULL_BYTES);
 		}
 
 		if (removedSub == null) {
@@ -388,6 +408,7 @@ public class SubscriptionService implements SubscriptionManager {
 		synchronized (this.subscriptionId2Context) {
 			this.subscriptionId2Context.putAll(oldSub.getId().toString(), subscriptionRequest.getContext());
 		}
+		storeSubscription(new SubscriptionRequest(oldSub, subscriptionRequest.getContext()));
 		return oldSub;
 	}
 
