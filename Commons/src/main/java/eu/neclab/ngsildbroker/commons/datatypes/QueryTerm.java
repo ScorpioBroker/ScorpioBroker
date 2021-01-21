@@ -695,9 +695,10 @@ public class QueryTerm {
 				attributeFilterProperty.append(')');
 			}
 		}
-
+		if(operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+			result.append("NOT ");
+		}
 		result.append("(" + attributeFilterProperty.toString() + ")");
-
 	}
 
 	private ArrayList<String> getAttribPathArray() throws ResponseException {
@@ -745,6 +746,7 @@ public class QueryTerm {
 		}
 
 		switch (operator) {
+		case NGSIConstants.QUERY_UNEQUAL:
 		case NGSIConstants.QUERY_EQUAL:
 			if (operant.matches(LIST)) {
 				attributeFilterProperty.append(" in (");
@@ -762,22 +764,19 @@ public class QueryTerm {
 			}
 			useRelClause = !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME));
 			break;
-		case NGSIConstants.QUERY_UNEQUAL:
-			if (operant.matches(LIST)) {
-				attributeFilterProperty.append(" not in (");
-				for (String listItem : operant.split(",")) {
-					attributeFilterProperty.append("'" + listItem + "'::" + typecast + ",");
-				}
-				attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
-			} else if (operant.matches(RANGE)) {
-				String[] myRange = operant.split("\\.\\.");
-				attributeFilterProperty.append(
-						" not between '" + myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast);
-			} else {
-				attributeFilterProperty.append(" <> '" + operant + "'::" + typecast);
-			}
-			useRelClause = !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME));
-			break;
+		/*
+		 * case NGSIConstants.QUERY_UNEQUAL: if (operant.matches(LIST)) {
+		 * attributeFilterProperty.append(" not in ("); for (String listItem :
+		 * operant.split(",")) { attributeFilterProperty.append("'" + listItem + "'::" +
+		 * typecast + ","); }
+		 * attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
+		 * } else if (operant.matches(RANGE)) { String[] myRange =
+		 * operant.split("\\.\\."); attributeFilterProperty.append( " not between '" +
+		 * myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast); }
+		 * else { attributeFilterProperty.append(" <> '" + operant + "'::" + typecast);
+		 * } useRelClause = !(operant.matches(DATE) || operant.matches(TIME) ||
+		 * operant.matches(DATETIME)); break;
+		 */
 		case NGSIConstants.QUERY_GREATEREQ:
 			if (operant.matches(LIST)) {
 				throw new BadRequestException();
@@ -1057,7 +1056,7 @@ public class QueryTerm {
 		for (int i = 0; i < attribPath.size(); i++) {
 			result.append(')');
 		}
-		System.out.println(result.toString());
+		
 		/*
 		 * StringBuilder attributeFilterProperty = new StringBuilder("(m.attrdata#");
 		 * StringBuilder attributeFilterRelationship = new StringBuilder("m.attrdata#");
