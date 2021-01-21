@@ -142,7 +142,7 @@ gateway:
 AtContextServer:
 ## Enable the AtContextServer deployment & service
   enabled: true 
-  name: AtContextServer
+  name: at-context-server
 ## Number of AtContextServer instances to deploy
 ##
   replicas: 1
@@ -211,7 +211,7 @@ AtContextServer:
 ConfigServer:
 ## Enable the ConfigServer deployment & service
   enabled: true 
-  name: ConfigServer
+  name: config-server
 ## Number of ConfigServer instances to deploy
 ##
   replicas: 1
@@ -280,7 +280,7 @@ ConfigServer:
 EntityManager:
 ## Enable the EntityManager deployment & service
   enabled: true 
-  name: EntityManager
+  name: entity-manager
 ## Number of EntityManager instances to deploy
 ##
   replicas: 1
@@ -349,7 +349,7 @@ EntityManager:
 HistoryManager:
 ## Enable the HistoryManager deployment & service
   enabled: true 
-  name: HistoryManager
+  name: history-manager
 ## Number of HistoryManager instances to deploy
 ##
   replicas: 1
@@ -418,7 +418,7 @@ HistoryManager:
 QueryManager:
 ## Enable the QueryManager deployment & service
   enabled: true 
-  name: QueryManager
+  name: query-manager
 ## Number of QueryManager instances to deploy
 ##
   replicas: 1
@@ -487,7 +487,7 @@ QueryManager:
 RegistryManager:
 ## Enable the RegistryManager deployment & service
   enabled: true 
-  name: RegistryManager
+  name: registry-manager
 ## Number of RegistryManager instances to deploy
 ##
   replicas: 1
@@ -556,7 +556,7 @@ RegistryManager:
 StorageManager:
 ## Enable the StorageManager deployment & service
   enabled: true 
-  name: StorageManager
+  name: storage-manager
 ## Number of StorageManager instances to deploy
 ##
   replicas: 1
@@ -626,7 +626,7 @@ StorageManager:
 SubscriptionManager:
 ## Enable the SubscriptionManager deployment & service
   enabled: true 
-  name: SubscriptionManager
+  name: subscription-manager
 ## Number of SubscriptionManager instances to deploy
 ##
   replicas: 1
