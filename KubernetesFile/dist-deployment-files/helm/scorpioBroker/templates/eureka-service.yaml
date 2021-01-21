@@ -5,6 +5,7 @@ metadata:
   labels:
     service: {{ .Values.eureka.name }}
   name: {{ .Values.eureka.name }}
+  namespace: {{.Values.namespace}}
 spec:
   ports:
   - name: "8761"

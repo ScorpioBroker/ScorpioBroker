@@ -1,14 +1,16 @@
+{{- if .Values.gateway.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: history-manager
-  name: history-manager
+    service: {{ .Values.gateway.name }}
+  name: {{ .Values.gateway.name }}
+  namespace: {{.Values.namespace}}
 spec:
-  replicas: 1
+  replicas: {{ .Values.gateway.replicas }}
   selector:
     matchLabels:
-      service: history-manager
+      service: {{ .Values.gateway.name }}
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -17,15 +19,16 @@ spec:
   template:
     metadata:
       labels:
-        service: history-manager
+        service: {{ .Values.gateway.name }}
     spec:
       containers:
-      - image: scorpiobroker/scorpio:HistoryManager_latest
-        imagePullPolicy: Always
-        name: history-manager
+      - image: {{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}
+        imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
+        name: {{ .Values.gateway.name }}
         ports:
         - containerPort: 1040
           protocol: TCP
+        {{- if .Values.gateway.readinessProbe.enabled }}
         readinessProbe:
           exec:
             command:
@@ -33,16 +36,17 @@ spec:
             - -c
             - curl --silent http://localhost:1040/actuator/health | grep --quiet -e
               '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
-          periodSeconds: 5
+          failureThreshold: {{ .Values.gateway.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.gateway.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.gateway.readinessProbe.periodSeconds }}
+          {{- end}}
         resources:
-          limits:
-            cpu: 500m
-            memory: 1280Mi
-          requests:
-            cpu: 250m
-            memory: 600Mi
-      restartPolicy: Always
-      serviceAccountName: ""
+{{ toYaml .Values.gateway.resources | indent 10 }}
+      restartPolicy: {{ .Values.gateway.restartPolicy }}
+      {{- if .Values.gateway.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.gateway.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.gateway.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.gateway.terminationGracePeriodSeconds }}
 status: {}
+{{- end }}

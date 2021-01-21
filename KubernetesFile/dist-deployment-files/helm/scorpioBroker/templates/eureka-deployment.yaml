@@ -5,6 +5,7 @@ metadata:
   labels:
     service: {{ .Values.eureka.name }}
   name: {{ .Values.eureka.name }}
+  namespace: {{.Values.namespace}}
 spec:
   replicas: {{ .Values.eureka.replicas }}
   selector:
@@ -27,7 +28,7 @@ spec:
         ports:
         - containerPort: 8761
           protocol: TCP
-        
+        {{- if .Values.eureka.readinessProbe.enabled }}
         readinessProbe:
           exec:
             command:
@@ -45,8 +46,7 @@ spec:
       {{- if .Values.eureka.serviceAccount.enabled }}
       serviceAccountName: {{ .Values.eureka.serviceAccount.name }}
       {{- end}}
-      securityContext: {{ .Values.eureka.securityContext }}
+      securityContext: {{ .Values.eureka.securityContext | toYaml }}
       terminationGracePeriodSeconds: {{ .Values.eureka.terminationGracePeriodSeconds }}
 status: {}
-
 {{- end }}

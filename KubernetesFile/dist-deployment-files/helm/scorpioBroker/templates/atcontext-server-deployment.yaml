@@ -1,26 +1,34 @@
+{{- if .Values.AtContextServer.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: atcontext-server
-  name: atcontext-server
+    service: {{ .Values.AtContextServer.name }}
+  name: {{ .Values.AtContextServer.name }}
+  namespace: {{.Values.namespace}}
 spec:
-  replicas: 1
+  replicas: {{ .Values.AtContextServer.replicas }}
   selector:
     matchLabels:
-      service: atcontext-server
-  strategy: {}
+      service: {{ .Values.AtContextServer.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
   template:
     metadata:
       labels:
-        service: atcontext-server
+        service: {{ .Values.AtContextServer.name }}
     spec:
       containers:
-      - image: scorpiobroker/scorpio:AtContextServer_latest
-        imagePullPolicy: Always
-        name: atcontext-server
+      - image: {{ .Values.AtContextServer.image.repository }}:{{ .Values.AtContextServer.image.tag }}
+        imagePullPolicy: {{ .Values.AtContextServer.image.pullPolicy }}
+        name: {{ .Values.AtContextServer.name }}
         ports:
         - containerPort: 27015
+          protocol: TCP
+        {{- if .Values.AtContextServer.readinessProbe.enabled }}
         readinessProbe:
           exec:
             command:
@@ -28,18 +36,17 @@ spec:
             - -c
             - curl --silent http://localhost:27015/actuator/health | grep --quiet -e
               '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
-          periodSeconds: 5
+          failureThreshold: {{ .Values.AtContextServer.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.AtContextServer.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.AtContextServer.readinessProbe.periodSeconds }}
+          {{- end}}
         resources:
-          limits:
-            cpu: 575m
-            memory: 2280Mi
-          requests:
-            cpu: 450m
-            memory: 1850Mi
-      restartPolicy: Always
-      serviceAccountName: ""
-      volumes: null
+{{ toYaml .Values.AtContextServer.resources | indent 10 }}
+      restartPolicy: {{ .Values.AtContextServer.restartPolicy }}
+      {{- if .Values.AtContextServer.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.AtContextServer.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.AtContextServer.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.AtContextServer.terminationGracePeriodSeconds }}
 status: {}
-
+{{- end }}

@@ -1,12 +1,15 @@
+{{- if and .Values.QueryManager.enabled .Values.QueryManager.hpa.enabled }}
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
- name: query-hpa
+ name: {{ .Values.QueryManager.name }}-hpa
+ namespace: {{.Values.namespace}}
 spec:
  scaleTargetRef:
    apiVersion: apps/v1
    kind: Deployment
-   name: query-manager
- minReplicas: 1
- maxReplicas: 5
- targetCPUUtilizationPercentage: 80
+   name: {{ .Values.QueryManager.name }}
+ minReplicas: {{ .Values.QueryManager.hpa.minReplicas }}
+ maxReplicas: {{ .Values.QueryManager.hpa.maxReplicas }}
+ targetCPUUtilizationPercentage: {{ .Values.QueryManager.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

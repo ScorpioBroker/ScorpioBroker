@@ -1,14 +1,15 @@
+{{- if and .Values.EntityManager.enabled .Values.EntityManager.hpa.enabled }}
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
- name: entity-hpa
+ name: {{ .Values.EntityManager.name }}-hpa
+ namespace: {{.Values.namespace}}
 spec:
  scaleTargetRef:
    apiVersion: apps/v1
    kind: Deployment
-   name: entity-manager
- minReplicas: 1
- maxReplicas: 5
- targetCPUUtilizationPercentage: 80
-
-
+   name: {{ .Values.EntityManager.name }}
+ minReplicas: {{ .Values.EntityManager.hpa.minReplicas }}
+ maxReplicas: {{ .Values.EntityManager.hpa.maxReplicas }}
+ targetCPUUtilizationPercentage: {{ .Values.EntityManager.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

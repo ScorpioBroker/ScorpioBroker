@@ -1,14 +1,16 @@
+{{- if .Values.StorageManager.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: storage-manager
-  name: storage-manager
+    service: {{ .Values.StorageManager.name }}
+  name: {{ .Values.StorageManager.name }}
+  namespace: {{.Values.namespace}}
 spec:
-  replicas: 1
+  replicas: {{ .Values.StorageManager.replicas }}
   selector:
     matchLabels:
-      service: storage-manager
+      service: {{ .Values.StorageManager.name }}
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -16,17 +18,17 @@ spec:
     type: RollingUpdate
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        service: storage-manager
+        service: {{ .Values.StorageManager.name }}
     spec:
       containers:
-      - image: scorpiobroker/scorpio:StorageManager_latest
-        imagePullPolicy: Always
-        name: storage-manager
+      - image: {{ .Values.StorageManager.image.repository }}:{{ .Values.StorageManager.image.tag }}
+        imagePullPolicy: {{ .Values.StorageManager.image.pullPolicy }}
+        name: {{ .Values.StorageManager.name }}
         ports:
         - containerPort: 1029
           protocol: TCP
+        {{- if .Values.StorageManager.readinessProbe.enabled }}
         readinessProbe:
           exec:
             command:
@@ -34,16 +36,17 @@ spec:
             - -c
             - curl --silent http://localhost:1029/actuator/health | grep --quiet -e
               '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 7
-          initialDelaySeconds: 25
-          periodSeconds: 5
+          failureThreshold: {{ .Values.StorageManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.StorageManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.StorageManager.readinessProbe.periodSeconds }}
+          {{- end}}
         resources:
-          limits:
-            cpu: 500m
-            memory: 1280Mi
-          requests:
-            cpu: 250m
-            memory: 600Mi
-      restartPolicy: Always
-      serviceAccountName: ""
+{{ toYaml .Values.StorageManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.StorageManager.restartPolicy }}
+      {{- if .Values.StorageManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.StorageManager.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.StorageManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.StorageManager.terminationGracePeriodSeconds }}
 status: {}
+{{- end }}

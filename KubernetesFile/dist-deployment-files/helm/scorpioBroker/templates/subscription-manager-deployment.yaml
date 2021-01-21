@@ -1,16 +1,16 @@
+{{- if .Values.SubscriptionManager.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: subscription-manager
-  name: subscription-manager
+    service: {{ .Values.SubscriptionManager.name }}
+  name: {{ .Values.SubscriptionManager.name }}
+  namespace: {{.Values.namespace}}
 spec:
-  progressDeadlineSeconds: 600
-  replicas: 1
-  revisionHistoryLimit: 10
+  replicas: {{ .Values.SubscriptionManager.replicas }}
   selector:
     matchLabels:
-      service: subscription-manager
+      service: {{ .Values.SubscriptionManager.name }}
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -19,15 +19,16 @@ spec:
   template:
     metadata:
       labels:
-        service: subscription-manager
+        service: {{ .Values.SubscriptionManager.name }}
     spec:
       containers:
-      - image: scorpiobroker/scorpio:SubscriptionManager_latest
-        imagePullPolicy: Always
-        name: subscription-manager
+      - image: {{ .Values.SubscriptionManager.image.repository }}:{{ .Values.SubscriptionManager.image.tag }}
+        imagePullPolicy: {{ .Values.SubscriptionManager.image.pullPolicy }}
+        name: {{ .Values.SubscriptionManager.name }}
         ports:
         - containerPort: 2025
           protocol: TCP
+        {{- if .Values.SubscriptionManager.readinessProbe.enabled }}
         readinessProbe:
           exec:
             command:
@@ -35,16 +36,17 @@ spec:
             - -c
             - curl --silent http://localhost:2025/actuator/health | grep --quiet -e
               '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
-          periodSeconds: 5
+          failureThreshold: {{ .Values.SubscriptionManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.SubscriptionManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.SubscriptionManager.readinessProbe.periodSeconds }}
+          {{- end}}
         resources:
-          limits:
-            cpu: 500m
-            memory: 1280Mi
-          requests:
-            cpu: 250m
-            memory: 600Mi
-      restartPolicy: Always
-      serviceAccountName: ""
+{{ toYaml .Values.SubscriptionManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.SubscriptionManager.restartPolicy }}
+      {{- if .Values.SubscriptionManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.SubscriptionManager.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.SubscriptionManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.SubscriptionManager.terminationGracePeriodSeconds }}
 status: {}
+{{- end }}

@@ -1,15 +1,16 @@
+{{- if .Values.EntityManager.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: entity-manager
-  name: entity-manager
+    service: {{ .Values.EntityManager.name }}
+  name: {{ .Values.EntityManager.name }}
+  namespace: {{.Values.namespace}}
 spec:
-  progressDeadlineSeconds: 600
-  replicas: 1
+  replicas: {{ .Values.EntityManager.replicas }}
   selector:
     matchLabels:
-      service: entity-manager
+      service: {{ .Values.EntityManager.name }}
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -18,15 +19,16 @@ spec:
   template:
     metadata:
       labels:
-        service: entity-manager
+        service: {{ .Values.EntityManager.name }}
     spec:
       containers:
-      - image: scorpiobroker/scorpio:EntityManager_latest
-        imagePullPolicy: Always
-        name: entity-manager
+      - image: {{ .Values.EntityManager.image.repository }}:{{ .Values.EntityManager.image.tag }}
+        imagePullPolicy: {{ .Values.EntityManager.image.pullPolicy }}
+        name: {{ .Values.EntityManager.name }}
         ports:
         - containerPort: 1025
           protocol: TCP
+        {{- if .Values.EntityManager.readinessProbe.enabled }}
         readinessProbe:
           exec:
             command:
@@ -34,17 +36,17 @@ spec:
             - -c
             - curl --silent http://localhost:1025/actuator/health | grep --quiet -e
               '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
-          periodSeconds: 5
+          failureThreshold: {{ .Values.EntityManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.EntityManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.EntityManager.readinessProbe.periodSeconds }}
+          {{- end}}
         resources:
-          limits:
-            cpu: 875m
-            memory: 2280Mi
-          requests:
-            cpu: 850m
-            memory: 1850Mi
-      restartPolicy: Always
-      securityContext: {}
-      terminationGracePeriodSeconds: 30
+{{ toYaml .Values.EntityManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.EntityManager.restartPolicy }}
+      {{- if .Values.EntityManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.EntityManager.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.EntityManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.EntityManager.terminationGracePeriodSeconds }}
 status: {}
+{{- end }}
