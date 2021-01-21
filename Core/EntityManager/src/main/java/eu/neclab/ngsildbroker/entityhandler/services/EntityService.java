@@ -664,7 +664,8 @@ public class EntityService {
 
 	}
 
-	public boolean deleteAttribute(String entityId, String attrId,String datasetId,String deleteAll) throws ResponseException, Exception {
+	public boolean deleteAttribute(String entityId, String attrId, String datasetId, String deleteAll)
+			throws ResponseException, Exception {
 		logger.trace("deleteAttribute() :: started");
 		// get message channel for ENTITY_APPEND topic
 		MessageChannel messageChannel = producerChannels.deleteWriteChannel();
@@ -703,6 +704,7 @@ public class EntityService {
 
 	/**
 	 * Method to merge/update fields in original Entitiy
+	 * 
 	 * @param originalJsonObject
 	 * @param jsonToUpdate
 	 * @param attrId
@@ -882,7 +884,8 @@ public class EntityService {
 	 * @throws IOException
 	 * @throws ResponseException
 	 */
-	public JsonNode deleteFields(String originalJsonObject, String attrId, String datasetId, String deleteAll) throws Exception, ResponseException {
+	public JsonNode deleteFields(String originalJsonObject, String attrId, String datasetId, String deleteAll)
+			throws Exception, ResponseException {
 		logger.trace("deleteFields() :: started");
 		JsonNode node = objectMapper.readTree(originalJsonObject);
 		ObjectNode objectNode = (ObjectNode) node;
@@ -890,7 +893,7 @@ public class EntityService {
 		ArrayNode myArray = (ArrayNode) innerNode;
 		String availableDatasetId = null;
 		if (objectNode.has(attrId)) {
-			//below condition remove the existing datasetId
+			// below condition remove the existing datasetId
 			if (datasetId != null && !datasetId.isEmpty()) {
 				for (int i = 0; i < myArray.size(); i++) {
 					if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
@@ -905,7 +908,7 @@ public class EntityService {
 				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
 					throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
 				}
-              // below condition remove all the datasetId 
+				// below condition remove all the datasetId
 			} else if (deleteAll != null && !deleteAll.isEmpty()) {
 				if (deleteAll.equals("true")) {
 					if (objectNode.has(attrId)) {
@@ -933,6 +936,11 @@ public class EntityService {
 				}
 				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
 					throw new ResponseException(ErrorType.NotFound, "Default attribute instance is not present");
+				}
+			}
+			if (myArray.size() == 0) {
+				if (objectNode.has(attrId)) {
+					objectNode.remove(attrId);
 				}
 			}
 		} else {
@@ -1252,18 +1260,19 @@ public class EntityService {
 		} catch (IOException e) {
 			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
 		}
-	}	
+	}
 
 	/**
 	 * this method use for update the value of jsonNode.
+	 * 
 	 * @param it
 	 * @param innerNode
 	 * @param jsonToUpdate
 	 * @param updateResult
 	 * @param i
 	 */
-	private void setFieldValue(Iterator<String> it, JsonNode innerNode, JsonNode jsonToUpdate, UpdateResult updateResult,
-			int i) {
+	private void setFieldValue(Iterator<String> it, JsonNode innerNode, JsonNode jsonToUpdate,
+			UpdateResult updateResult, int i) {
 		while (it.hasNext()) {
 			String field = it.next();
 			// TOP level updates of context id or type are ignored

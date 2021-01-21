@@ -295,7 +295,7 @@ public class ContextResolverBasic {
 				} else if (mapValue instanceof String) {
 					type = validateUri((String) mapValue);
 				}
-				if (type == null) {
+				if (type == null || root) {
 					continue;
 				}
 				switch (type) {
@@ -312,7 +312,7 @@ public class ContextResolverBasic {
 					isDatetime = true;
 					break;
 				default:
-					break;
+					throw new ResponseException(ErrorType.BadRequestData, "Unknown type");
 				}
 			} else if (keyType == 6) {
 				value = checkHasValue(mapValue);
