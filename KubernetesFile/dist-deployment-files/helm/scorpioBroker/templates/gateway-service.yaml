@@ -15,4 +15,3 @@ spec:
     service: {{ .Values.gateway.name }}
 status: {}
 {{- end }}
-

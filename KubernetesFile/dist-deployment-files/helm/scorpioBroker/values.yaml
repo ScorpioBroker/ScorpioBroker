@@ -207,15 +207,15 @@ AtContextServer:
    maxReplicas: 5
    targetCPUUtilizationPercentage: 80
    
-################################### config-server ##########################################################################
-config-server:
-## Enable the config-server deployment & service
+################################### ConfigServer ##########################################################################
+ConfigServer:
+## Enable the ConfigServer deployment & service
   enabled: true 
-  name: config-server
-## Number of config-server instances to deploy
+  name: ConfigServer
+## Number of ConfigServer instances to deploy
 ##
   replicas: 1
-## Scorpio Broker config-server image version
+## Scorpio Broker ConfigServer image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ##
   image:
@@ -226,7 +226,7 @@ config-server:
 ##
    pullPolicy: Always
 
-## config-server containers' resource requests and limits
+## ConfigServer containers' resource requests and limits
 ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
 ##
   resources: {}
@@ -241,7 +241,7 @@ config-server:
   #   cpu: 250m
   #   memory: 256Mi
   
-## config-server containers'  readiness probes. Evaluated as a template.
+## ConfigServer containers'  readiness probes. Evaluated as a template.
 ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
 ##
   readinessProbe:
@@ -267,7 +267,7 @@ config-server:
 
   terminationGracePeriodSeconds: 30
 
-## Enable HPA for config-server
+## Enable HPA for ConfigServer
 ## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
 ##
   hpa:

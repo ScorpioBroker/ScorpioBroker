@@ -1,16 +1,16 @@
-{{- if .Values.config-server.enabled }}
+{{- if .Values.ConfigServer.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    service: {{ .Values.config-server.name }}
-  name: {{ .Values.config-server.name }}
+    service: {{ .Values.ConfigServer.name }}
+  name: {{ .Values.ConfigServer.name }}
   namespace: {{.Values.namespace}}
 spec:
-  replicas: {{ .Values.config-server.replicas }}
+  replicas: {{ .Values.ConfigServer.replicas }}
   selector:
     matchLabels:
-      service: {{ .Values.config-server.name }}
+      service: {{ .Values.ConfigServer.name }}
   strategy:
     rollingUpdate:
       maxSurge: 25%
@@ -19,16 +19,16 @@ spec:
   template:
     metadata:
       labels:
-        service: {{ .Values.config-server.name }}
+        service: {{ .Values.ConfigServer.name }}
     spec:
       containers:
-      - image: {{ .Values.config-server.image.repository }}:{{ .Values.config-server.image.tag }}
-        imagePullPolicy: {{ .Values.config-server.image.pullPolicy }}
-        name: {{ .Values.config-server.name }}
+      - image: {{ .Values.ConfigServer.image.repository }}:{{ .Values.ConfigServer.image.tag }}
+        imagePullPolicy: {{ .Values.ConfigServer.image.pullPolicy }}
+        name: {{ .Values.ConfigServer.name }}
         ports:
         - containerPort: 8888
           protocol: TCP
-        {{- if .Values.config-server.readinessProbe.enabled }}
+        {{- if .Values.ConfigServer.readinessProbe.enabled }}
         readinessProbe:
           exec:
             command:
@@ -36,17 +36,17 @@ spec:
             - -c
             - curl --silent http://localhost:8888/actuator/health | grep --quiet -e
               '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: {{ .Values.config-server.readinessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.config-server.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.config-server.readinessProbe.periodSeconds }}
+          failureThreshold: {{ .Values.ConfigServer.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.ConfigServer.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.ConfigServer.readinessProbe.periodSeconds }}
           {{- end}}
         resources:
-{{ toYaml .Values.config-server.resources | indent 10 }}
-      restartPolicy: {{ .Values.config-server.restartPolicy }}
-      {{- if .Values.config-server.serviceAccount.enabled }}
-      serviceAccountName: {{ .Values.config-server.serviceAccount.name }}
+{{ toYaml .Values.ConfigServer.resources | indent 10 }}
+      restartPolicy: {{ .Values.ConfigServer.restartPolicy }}
+      {{- if .Values.ConfigServer.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.ConfigServer.serviceAccount.name }}
       {{- end}}
-      securityContext: {{ .Values.config-server.securityContext | toYaml }}
-      terminationGracePeriodSeconds: {{ .Values.config-server.terminationGracePeriodSeconds }}
+      securityContext: {{ .Values.ConfigServer.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.ConfigServer.terminationGracePeriodSeconds }}
 status: {}
 {{- end }}
