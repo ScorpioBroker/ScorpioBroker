@@ -24,7 +24,6 @@ public class QueryTerm {
 	private static final String DATETIME = "\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
 	private static final String DATE = "\\d\\d\\d\\d-\\d\\d-\\d\\d";
 	private static final String TIME = "\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
-	
 
 	private static final List<String> TIME_PROPS = Arrays.asList(NGSIConstants.NGSI_LD_OBSERVED_AT,
 			NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_MODIFIED_AT);
@@ -609,9 +608,9 @@ public class QueryTerm {
 
 			// x#> '{https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'
 			charcount--;
-			if (operator.equals(NGSIConstants.QUERY_EQUAL) || operator.equals(NGSIConstants.QUERY_UNEQUAL)
-					|| operator.equals(NGSIConstants.QUERY_PATTERNOP)
-					|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
+			if (!TIME_PROPS.contains(lastAttrib) && (operator.equals(NGSIConstants.QUERY_EQUAL)
+					|| operator.equals(NGSIConstants.QUERY_UNEQUAL) || operator.equals(NGSIConstants.QUERY_PATTERNOP)
+					|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP))) {
 				attributeFilterProperty.append("(EXISTS (SELECT FROM jsonb_array_elements(");
 				attributeFilterProperty.append(charcount);
 				attributeFilterProperty.append("#> '{https://uri.etsi.org/ngsi-ld/hasObject}') as ");
@@ -628,14 +627,14 @@ public class QueryTerm {
 			attributeFilterProperty.append(" '{");
 			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue}') as ");
 			attributeFilterProperty.append(charcount);
-			attributeFilterProperty.append("b WHERE ");
+			attributeFilterProperty.append("b WHERE (");
 			attributeFilterProperty.append(charcount);
-			attributeFilterProperty.append("b #>");
+			attributeFilterProperty.append("b#>");
 			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
 					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
 				attributeFilterProperty.append(">");
 			}
-			attributeFilterProperty.append("'{@value}'");
+			attributeFilterProperty.append("'{@value}')");
 			if (operant.matches(DATETIME)) {
 				attributeFilterProperty.append("::timestamp ");
 			} else if (operant.matches(DATE)) {
@@ -1058,7 +1057,7 @@ public class QueryTerm {
 		for (int i = 0; i < attribPath.size(); i++) {
 			result.append(')');
 		}
-
+		System.out.println(result.toString());
 		/*
 		 * StringBuilder attributeFilterProperty = new StringBuilder("(m.attrdata#");
 		 * StringBuilder attributeFilterRelationship = new StringBuilder("m.attrdata#");
