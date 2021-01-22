@@ -4,6 +4,7 @@ metadata:
   labels:
     service: query-manager
   name: query-manager
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "1026"

@@ -4,6 +4,7 @@ metadata:
   labels:
     service: config-server
   name: config-server
+  namespace: scorpio-broker
 spec:
   replicas: 1
   selector:

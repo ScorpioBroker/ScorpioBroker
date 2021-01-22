@@ -4,6 +4,7 @@ metadata:
   labels:
     service: entity-manager
   name: entity-manager
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "1025"

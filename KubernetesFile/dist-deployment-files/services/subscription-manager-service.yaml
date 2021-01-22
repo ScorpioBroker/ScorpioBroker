@@ -4,6 +4,7 @@ metadata:
   labels:
     service: subscription-manager
   name: subscription-manager
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "2025"

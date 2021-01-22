@@ -4,6 +4,7 @@ metadata:
   labels:
     service: eureka 
   name: eureka-node-port
+  namespace: scorpio-broker
 spec:
   type: NodePort
   ports:

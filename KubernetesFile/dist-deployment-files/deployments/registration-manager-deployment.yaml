@@ -4,6 +4,7 @@ metadata:
   labels:
     service: registry-manager
   name: registry-manager
+  namespace: scorpio-broker
 spec:
   replicas: 1
   selector:

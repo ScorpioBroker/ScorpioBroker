@@ -4,6 +4,7 @@ metadata:
   labels:
     service: gateway
   name: scorpio-gateway-node-port
+  namespace: scorpio-broker
 spec:
   type: NodePort
   ports:

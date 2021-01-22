@@ -4,6 +4,7 @@ metadata:
   labels:
     service: storage-manager
   name: storage-manager
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "1029"

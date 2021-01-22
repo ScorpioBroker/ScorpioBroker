@@ -4,6 +4,7 @@ metadata:
   labels:
     service: gateway
   name: gateway
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "9090"
