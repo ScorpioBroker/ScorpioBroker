@@ -4,7 +4,6 @@ metadata:
   labels:
     component: zookeeper
   name: zookeeper
-  namespace: default
 spec:
   progressDeadlineSeconds: 600
   replicas: 1

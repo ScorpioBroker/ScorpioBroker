@@ -150,8 +150,8 @@ AtContextServer:
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ##
   image:
-   repository: scorpiobroker/scorpio
-   tag: AtContextServer_FIWARE_7.9.1
+   repository: arpitnec/scorpiotest
+   tag: atContext
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -288,8 +288,8 @@ EntityManager:
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ##
   image:
-   repository: scorpiobroker/scorpio
-   tag: EntityManager_FIWARE_7.9.1
+   repository: arpitnec/scorpiotest
+   tag: entity
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -357,8 +357,8 @@ HistoryManager:
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ##
   image:
-   repository: scorpiobroker/scorpio
-   tag: HistoryManager_FIWARE_7.9.1
+   repository: arpitnec/scorpiotest
+   tag: hist
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -426,8 +426,8 @@ QueryManager:
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ##
   image:
-   repository: scorpiobroker/scorpio
-   tag: QueryManager_FIWARE_7.9.1
+   repository: arpitnec/scorpiotest
+   tag: query
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -495,8 +495,8 @@ RegistryManager:
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ##
   image:
-   repository: scorpiobroker/scorpio
-   tag: RegistryManager_FIWARE_7.9.1
+   repository: arpitnec/scorpiotest
+   tag: registry
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -564,8 +564,8 @@ StorageManager:
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ##
   image:
-   repository: scorpiobroker/scorpio
-   tag: StorageManager_FIWARE_7.9.1
+   repository: arpitnec/scorpiotest
+   tag: storage
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -634,8 +634,8 @@ SubscriptionManager:
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ##
   image:
-   repository: scorpiobroker/scorpio
-   tag: SubscriptionManager_FIWARE_7.9.1
+   repository: arpitnec/scorpiotest
+   tag: subscription
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
