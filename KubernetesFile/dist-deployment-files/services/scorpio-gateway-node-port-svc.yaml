@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: gateway
+  name: scorpio-gateway-node-port
+  namespace: scorpio-broker
+spec:
+  type: NodePort
+  ports:
+  - port: 9090
+    targetPort: 9090
+    nodePort : 30001
+  selector:
+    service: gateway
+
+
