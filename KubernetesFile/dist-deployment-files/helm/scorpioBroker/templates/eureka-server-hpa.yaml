@@ -1,0 +1,15 @@
+{{- if and .Values.eureka.enabled .Values.eureka.hpa.enabled }}
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+ name: {{ .Values.eureka.name }}-hpa
+ namespace: {{.Values.namespace}}
+spec:
+ scaleTargetRef:
+   apiVersion: apps/v1
+   kind: Deployment
+   name: {{ .Values.eureka.name }}
+ minReplicas: {{ .Values.eureka.hpa.minReplicas }}
+ maxReplicas: {{ .Values.eureka.hpa.maxReplicas }}
+ targetCPUUtilizationPercentage: {{ .Values.eureka.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

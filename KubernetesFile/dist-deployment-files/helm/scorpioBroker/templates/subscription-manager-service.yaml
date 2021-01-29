@@ -1,0 +1,17 @@
+{{- if .Values.SubscriptionManager.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: {{ .Values.SubscriptionManager.name }}
+  name: {{ .Values.SubscriptionManager.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  ports:
+  - name: "2025"
+    port: 2025
+    targetPort: 2025
+  selector:
+    service: {{ .Values.SubscriptionManager.name }}
+status: {}
+{{- end }}
