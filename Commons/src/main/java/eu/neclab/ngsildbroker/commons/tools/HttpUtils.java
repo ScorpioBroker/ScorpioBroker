@@ -122,12 +122,40 @@ public final class HttpUtils {
 	 */
 	public static HttpUtils getInstance(ContextResolverBasic contextResolver) {
 		if(contextResolver == null) {
+			getSystemProxy(NULL_INSTANCE);
 			return NULL_INSTANCE;
 		}
 		if (SINGLETON == null) {
 			SINGLETON = new HttpUtils(contextResolver);
+			getSystemProxy(SINGLETON);
 		}
 		return SINGLETON;
+	}
+	private static void getSystemProxy(HttpUtils instance) {
+		String httpProxy = null;
+		String httpsProxy = null;
+		
+		for(Entry<String, String> entry: System.getenv().entrySet()) {
+			if(entry.getKey().equalsIgnoreCase("http_proxy")) {
+				httpProxy = entry.getValue();
+			}
+			if(entry.getKey().equalsIgnoreCase("https_proxy")) {
+				httpsProxy = entry.getValue();
+			}
+		}
+		if(httpsProxy != null) {
+			try {
+				setHttpProxy(new URL(httpsProxy), instance);
+			} catch (MalformedURLException e) {
+				LOG.error("Your configured https_proxy setting is not valid.", e);
+			}
+		}else if(httpProxy != null) {
+			try {
+				setHttpProxy(new URL(httpProxy), instance);
+			} catch (MalformedURLException e) {
+				LOG.error("Your configured http_proxy setting is not valid.", e);
+			}
+		}
 	}
 	public static String denormalize(String attrId) {
 		String result = attrId.replace(":/", "://");
@@ -195,15 +223,15 @@ public final class HttpUtils {
 	 * 
 	 * @param httpProxy a URL with the HTTP proxy
 	 */
-	public static void setHttpProxy(URL httpProxy) {
+	public static void setHttpProxy(URL httpProxy, HttpUtils instance) {
 		if (httpProxy != null) {
 			int port = httpProxy.getPort();
 			if (port == -1) {
 				port = DEFAULT_PROXY_PORT;
 			}
-			SINGLETON.httpProxy = new HttpHost(httpProxy.getHost(), port, httpProxy.getProtocol());
+			instance.httpProxy = new HttpHost(httpProxy.getHost(), port, httpProxy.getProtocol());
 		} else {
-			SINGLETON.httpProxy = null;
+			instance.httpProxy = null;
 		}
 	}
 
