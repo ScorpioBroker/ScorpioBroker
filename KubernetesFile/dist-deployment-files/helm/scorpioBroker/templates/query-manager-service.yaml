@@ -1,0 +1,17 @@
+{{- if .Values.QueryManager.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: {{ .Values.QueryManager.name }}
+  name: {{ .Values.QueryManager.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  ports:
+  - name: "1026"
+    port: 1026
+    targetPort: 1026
+  selector:
+    service: {{ .Values.QueryManager.name }}
+status: {}
+{{- end }}

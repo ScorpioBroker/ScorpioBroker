@@ -1,0 +1,17 @@
+{{- if .Values.eureka.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: {{ .Values.eureka.name }}
+  name: {{ .Values.eureka.name }}-node-port
+  namespace: {{.Values.namespace}}
+spec:
+  type: NodePort
+  ports:
+  - port: 8761
+    targetPort: 8761
+    nodePort : 30000
+  selector:
+    service: {{ .Values.eureka.name }}
+{{- end }}
