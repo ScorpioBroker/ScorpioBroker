@@ -354,11 +354,12 @@ public class EntityService {
 			objectNode.putArray(NGSIConstants.NGSI_LD_MODIFIED_AT).addObject()
 					.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME)
 					.put(NGSIConstants.JSON_LD_VALUE, modifiedAt);
+			
 		}
 		if (rootOnly) {
 			return;
 		}
-
+		
 		Iterator<Map.Entry<String, JsonNode>> iter = objectNode.fields();
 		while (iter.hasNext()) {
 			Map.Entry<String, JsonNode> entry = iter.next();
@@ -731,6 +732,7 @@ public class EntityService {
 			JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
 			ArrayNode myArray = (ArrayNode) innerNode;
 			String availableDatasetId = null;
+						
 			for (int i = 0; i < myArray.size(); i++) {
 				if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 					String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
@@ -756,6 +758,11 @@ public class EntityService {
 					} else {
 						((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_DATA_SET_ID).addObject()
 								.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
+						if(innerNode.get(i).has(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+							((ObjectNode) innerNode.get(i)).remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+							((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_MODIFIED_AT).addObject()
+							.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME).put(NGSIConstants.JSON_LD_VALUE,now);
+						}
 						setFieldValue(jsonToUpdate.fieldNames(), ((ArrayNode) objectNode.get(attrId)), jsonToUpdate,
 								updateResult, i);
 					}
