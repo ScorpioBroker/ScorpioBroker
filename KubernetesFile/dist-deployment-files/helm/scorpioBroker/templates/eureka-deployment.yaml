@@ -1,0 +1,52 @@
+{{- if .Values.eureka.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: {{ .Values.eureka.name }}
+  name: {{ .Values.eureka.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  replicas: {{ .Values.eureka.replicas }}
+  selector:
+    matchLabels:
+      service: {{ .Values.eureka.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: {{ .Values.eureka.name }}
+    spec:
+      containers:
+      - image: {{ .Values.eureka.image.repository }}:{{ .Values.eureka.image.tag }}
+        imagePullPolicy: {{ .Values.eureka.image.pullPolicy }}
+        name: {{ .Values.eureka.name }}
+        ports:
+        - containerPort: 8761
+          protocol: TCP
+        {{- if .Values.eureka.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:8761/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: {{ .Values.eureka.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.eureka.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.eureka.readinessProbe.periodSeconds }}
+          {{- end}}
+        resources:
+{{ toYaml .Values.eureka.resources | indent 10 }}
+      restartPolicy: {{ .Values.eureka.restartPolicy }}
+      {{- if .Values.eureka.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.eureka.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.eureka.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.eureka.terminationGracePeriodSeconds }}
+status: {}
+{{- end }}

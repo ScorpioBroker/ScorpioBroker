@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: example-pv1
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: pd-standard
+  local:
+    path: /mnt/disks/ssd1
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - nti-dpf-d-ff-01.nectechnologies.in
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: example-pv2
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: pd-standard
+  local:
+    path: /mnt/disks/ssd2
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - nti-dpf-d-ff-01.nectechnologies.in
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: example-pv3
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: pd-standard
+  local:
+    path: /mnt/disks/ssd3
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - nti-dpf-d-ff-01.nectechnologies.in
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: example-pv4
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: pd-standard
+  local:
+    path: /mnt/disks/ssd4
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - nti-dpf-d-ff-01.nectechnologies.in
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: example-pv5
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: pd-standard
+  local:
+    path: /mnt/disks/ssd5
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - nti-dpf-d-ff-01.nectechnologies.in
+
+
