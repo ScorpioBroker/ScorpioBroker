@@ -106,6 +106,7 @@ public class EntityService {
 	int maxDeleteBatch;
 
 	boolean directDB = true;
+	public static boolean checkEntity = false;
 	@Autowired
 	@Qualifier("emstorage")
 	StorageWriterDAO storageWriterDao;
@@ -1190,6 +1191,7 @@ public class EntityService {
 
 	public BatchResult upsertMultipleMessage(String resolved) throws ResponseException {
 		try {
+			checkEntity = false;
 			BatchResult result = new BatchResult();
 			JsonNode myTree = objectMapper.readTree(resolved);
 			if (!myTree.isArray()) {
@@ -1214,8 +1216,12 @@ public class EntityService {
 				}
 				String entityString = objectMapper.writeValueAsString(next);
 				try {
-
-					result.addSuccess(createMessage(entityString));
+                    String ids = createMessage(entityString);
+                    if(ids != null && !ids.isEmpty()) {
+                    	checkEntity = true;
+                    	System.out.println("ids is:"+ids);	
+                    }
+					result.addSuccess(ids);
 
 				} catch (Exception e) {
 
@@ -1223,11 +1229,13 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						ResponseException responseException = ((ResponseException) e);
 						if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
+							System.out.println("catch block...exist entity....");
 							AppendResult updateResult;
 							try {
 								updateResult = appendMessage(entityId, entityString, null);
 
 								if (updateResult.getStatus()) {
+									System.out.println("append message......");
 									result.addSuccess(entityId);
 								} else {
 									result.addFail(new BatchFailure(entityId,
