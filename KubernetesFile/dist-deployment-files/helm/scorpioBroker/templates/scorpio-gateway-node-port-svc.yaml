@@ -1,0 +1,17 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: {{ .Values.gateway.name }}
+  name: scorpio-gateway-node-port
+  namespace: {{.Values.namespace}}
+spec:
+  type: NodePort
+  ports:
+  - port: 9090
+    targetPort: 9090
+    nodePort : 30001
+  selector:
+    service: {{ .Values.gateway.name }}
+{{- end }}

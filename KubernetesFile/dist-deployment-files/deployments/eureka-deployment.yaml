@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: eureka
+  name: eureka
+  namespace: scorpio-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: eureka
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        service: eureka
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:eureka-server_latest
+        imagePullPolicy: Always
+        name: eureka
+        ports:
+        - containerPort: 8761
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1280Mi
+          requests:
+            cpu: 250m
+            memory: 600Mi
+      restartPolicy: Always
+      serviceAccountName: ""
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}

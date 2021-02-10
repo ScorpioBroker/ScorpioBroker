@@ -365,12 +365,15 @@ public class EntityService {
 		while (iter.hasNext()) {
 			Map.Entry<String, JsonNode> entry = iter.next();
 			if (entry.getValue().isArray() && entry.getValue().has(0) && entry.getValue().get(0).isObject()) {
-				ObjectNode attrObj = (ObjectNode) entry.getValue().get(0);
-				// add createdAt/modifiedAt only to properties, geoproperties and relationships
-				if (attrObj.has(NGSIConstants.JSON_LD_TYPE) && attrObj.get(NGSIConstants.JSON_LD_TYPE).isArray()
-						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).has(0)
-						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).get(0).asText().matches(regexNgsildAttributeTypes)) {
-					setTemporalProperties(attrObj, createdAt, modifiedAt, rootOnly);
+				Iterator<JsonNode> valueIterator = ((ArrayNode) entry.getValue()).iterator();
+				while (valueIterator.hasNext()) {
+					ObjectNode attrObj = (ObjectNode) valueIterator.next();
+					// add createdAt/modifiedAt only to properties, geoproperties and relationships
+					if (attrObj.has(NGSIConstants.JSON_LD_TYPE) && attrObj.get(NGSIConstants.JSON_LD_TYPE).isArray()
+							&& attrObj.get(NGSIConstants.JSON_LD_TYPE).has(0) && attrObj.get(NGSIConstants.JSON_LD_TYPE)
+									.get(0).asText().matches(regexNgsildAttributeTypes)) {
+						setTemporalProperties(attrObj, createdAt, modifiedAt, rootOnly);
+					}
 				}
 			}
 		}
@@ -797,7 +800,7 @@ public class EntityService {
 						createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT)
 								.get(0)).get(NGSIConstants.JSON_LD_VALUE).asText();
 					}
-					setTemporalProperties(attrNode, createdAt, now, true);
+					setTemporalProperties(attrNode, createdAt, now, false);
 
 					// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
 					// present ...
@@ -861,7 +864,7 @@ public class EntityService {
 					// TODO: should we keep the createdAt value if attribute already exists?
 					// (overwrite operation) => if (objectNode.has(key)) ...
 					JsonNode attrNode = jsonToAppend.get(key).get(0);
-					setTemporalProperties(attrNode, now, now, true);
+					setTemporalProperties(attrNode, now, now, false);
 				}
 				objectNode.replace(key, jsonToAppend.get(key));
 				((ObjectNode) appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
