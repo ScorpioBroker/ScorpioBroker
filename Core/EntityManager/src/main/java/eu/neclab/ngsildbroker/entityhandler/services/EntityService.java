@@ -1222,7 +1222,6 @@ public class EntityService {
                     String ids = createMessage(entityString);
                     if(ids != null && !ids.isEmpty()) {
                     	checkEntity = true;
-                    	System.out.println("ids is:"+ids);	
                     }
 					result.addSuccess(ids);
 
@@ -1232,13 +1231,11 @@ public class EntityService {
 					if (e instanceof ResponseException) {
 						ResponseException responseException = ((ResponseException) e);
 						if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
-							System.out.println("catch block...exist entity....");
 							AppendResult updateResult;
 							try {
 								updateResult = appendMessage(entityId, entityString, null);
 
 								if (updateResult.getStatus()) {
-									System.out.println("append message......");
 									result.addSuccess(entityId);
 								} else {
 									result.addFail(new BatchFailure(entityId,

@@ -77,8 +77,6 @@ public class EntityBatchController {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			BatchResult result = entityService.upsertMultipleMessage(resolved);
-			System.out.println("fail:"+result.getFails().size());
-			System.out.println("success:"+result.getSuccess().size());
 			if(result.getFails().size() == 0 && EntityService.checkEntity == true) {
 				return generateBatchResultReply(result, HttpStatus.CREATED);
 			} else {
