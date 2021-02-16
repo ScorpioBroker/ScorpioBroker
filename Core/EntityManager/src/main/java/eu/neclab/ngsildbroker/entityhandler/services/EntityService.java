@@ -354,21 +354,25 @@ public class EntityService {
 			objectNode.putArray(NGSIConstants.NGSI_LD_MODIFIED_AT).addObject()
 					.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME)
 					.put(NGSIConstants.JSON_LD_VALUE, modifiedAt);
+			
 		}
 		if (rootOnly) {
 			return;
 		}
-
+		
 		Iterator<Map.Entry<String, JsonNode>> iter = objectNode.fields();
 		while (iter.hasNext()) {
 			Map.Entry<String, JsonNode> entry = iter.next();
 			if (entry.getValue().isArray() && entry.getValue().has(0) && entry.getValue().get(0).isObject()) {
-				ObjectNode attrObj = (ObjectNode) entry.getValue().get(0);
-				// add createdAt/modifiedAt only to properties, geoproperties and relationships
-				if (attrObj.has(NGSIConstants.JSON_LD_TYPE) && attrObj.get(NGSIConstants.JSON_LD_TYPE).isArray()
-						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).has(0)
-						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).get(0).asText().matches(regexNgsildAttributeTypes)) {
-					setTemporalProperties(attrObj, createdAt, modifiedAt, rootOnly);
+				Iterator<JsonNode> valueIterator = ((ArrayNode) entry.getValue()).iterator();
+				while (valueIterator.hasNext()) {
+					ObjectNode attrObj = (ObjectNode) valueIterator.next();
+					// add createdAt/modifiedAt only to properties, geoproperties and relationships
+					if (attrObj.has(NGSIConstants.JSON_LD_TYPE) && attrObj.get(NGSIConstants.JSON_LD_TYPE).isArray()
+							&& attrObj.get(NGSIConstants.JSON_LD_TYPE).has(0) && attrObj.get(NGSIConstants.JSON_LD_TYPE)
+									.get(0).asText().matches(regexNgsildAttributeTypes)) {
+						setTemporalProperties(attrObj, createdAt, modifiedAt, rootOnly);
+					}
 				}
 			}
 		}
@@ -731,6 +735,7 @@ public class EntityService {
 			JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
 			ArrayNode myArray = (ArrayNode) innerNode;
 			String availableDatasetId = null;
+						
 			for (int i = 0; i < myArray.size(); i++) {
 				if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 					String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
@@ -756,6 +761,11 @@ public class EntityService {
 					} else {
 						((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_DATA_SET_ID).addObject()
 								.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
+						if(innerNode.get(i).has(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+							((ObjectNode) innerNode.get(i)).remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+							((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_MODIFIED_AT).addObject()
+							.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME).put(NGSIConstants.JSON_LD_VALUE,now);
+						}
 						setFieldValue(jsonToUpdate.fieldNames(), ((ArrayNode) objectNode.get(attrId)), jsonToUpdate,
 								updateResult, i);
 					}
@@ -789,7 +799,7 @@ public class EntityService {
 						createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT)
 								.get(0)).get(NGSIConstants.JSON_LD_VALUE).asText();
 					}
-					setTemporalProperties(attrNode, createdAt, now, true);
+					setTemporalProperties(attrNode, createdAt, now, false);
 
 					// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
 					// present ...
@@ -853,7 +863,7 @@ public class EntityService {
 					// TODO: should we keep the createdAt value if attribute already exists?
 					// (overwrite operation) => if (objectNode.has(key)) ...
 					JsonNode attrNode = jsonToAppend.get(key).get(0);
-					setTemporalProperties(attrNode, now, now, true);
+					setTemporalProperties(attrNode, now, now, false);
 				}
 				objectNode.replace(key, jsonToAppend.get(key));
 				((ObjectNode) appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
