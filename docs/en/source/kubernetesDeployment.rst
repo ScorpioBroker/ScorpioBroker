@@ -100,4 +100,6 @@ Now run the command
 
 Now run the ** kubectl get pods --all-namespace ** to verify that all the microservice of the Scorpio broker are in the running state.
 
+**Note:** Please use only the latest docker images for the deployment since some older docker images might not work properly with kubernetes.
+ 
 Now you are ready to use the Scorpio broker.
