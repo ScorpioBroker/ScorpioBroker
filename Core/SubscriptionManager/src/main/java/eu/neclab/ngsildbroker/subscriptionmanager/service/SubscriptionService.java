@@ -852,7 +852,9 @@ public class SubscriptionService implements SubscriptionManager {
 	// @StreamListener(SubscriptionManagerConsumerChannel.deleteReadChannel)
 	@KafkaListener(topics = "${entity.delete.topic}", groupId = "submanager")
 	public void handleDelete(Message<byte[]> message) throws Exception {
-		this.ids2Type.remove(KafkaOps.getMessageKey(message));
+		if (message.getPayload().equals("{}".getBytes())) {
+			this.ids2Type.remove(KafkaOps.getMessageKey(message));
+		}
 		// checkSubscriptionsWithDelete(new String((byte[])
 		// message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)),
 		// new String(message.getPayload()));
