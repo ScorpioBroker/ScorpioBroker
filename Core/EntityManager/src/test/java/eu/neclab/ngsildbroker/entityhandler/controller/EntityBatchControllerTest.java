@@ -35,6 +35,7 @@ public class EntityBatchControllerTest {
     private EntityService entityService;
     
 	private String createPayload;
+	private String deletePayload;
 	
 	@Before
 	public void setup() throws Exception {
@@ -82,11 +83,16 @@ public class EntityBatchControllerTest {
 							"}\r\n" +
 					"]";
 		
+		deletePayload = "[  \r\n" +
+							"\"urn:ngsi-ld:Vehicle:A101\",\r\n" + 
+						    "\"urn:ngsi-ld:Vehicle:A102\"\r\n" + 
+						"]";
 				//@formatter:on
 	}
 	@After
 	public void tearDown() {
 		createPayload = null;
+		deletePayload = null;
 	}
 	
 	/**
@@ -134,5 +140,70 @@ public class EntityBatchControllerTest {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * this method is validate the bad request if create the multiple entity 
+	 * but some entity request is not valid
+	 */
+	@Test
+	public void createMultipleEntityBadRequestTest() {
+		try {
+
+			BatchResult batchResult = new BatchResult();
+			when(entityService.createMultipleMessage(any())).thenReturn(batchResult);
+			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(createPayload))
+					.andExpect(status().isBadRequest());
+			verify(entityService, times(1)).createMultipleMessage(any());
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * this method is use for delete the multiple entity
+	 */
+	@Test
+	public void deleteMultipleEntityTest() {
+		try {
+
+			BatchResult batchResult = new BatchResult();
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A102");
+			when(entityService.deleteMultipleMessage(any())).thenReturn(batchResult);
+			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/delete").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(deletePayload))
+					.andExpect(status().isNoContent());
+			verify(entityService, times(1)).deleteMultipleMessage(any());
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * this method is use for delete the multiple entity but someone entity not exist.
+	 */
+	@Test
+	public void deleteMultipleEntityIfEntityNotExistTest() {
+		try {
+
+			BatchResult batchResult = new BatchResult();
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
+			RestResponse restResponse = new RestResponse(ErrorType.NotFound,"Resource not found.");
+			BatchFailure batchFailure = new BatchFailure("urn:ngsi-ld:Vehicle:A104",restResponse);
+			batchResult.addFail(batchFailure);
+			when(entityService.deleteMultipleMessage(any())).thenReturn(batchResult);
+			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/delete").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(deletePayload))
+					.andExpect(status().isMultiStatus());
+			verify(entityService, times(1)).deleteMultipleMessage(any());
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
+
 
 }
