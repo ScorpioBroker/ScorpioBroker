@@ -221,6 +221,8 @@ public class SerializationTools {
 					dataSetId = getDataSetId(value);
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_NAME)) {
 					name = getName(value);
+				} else if (propKey.equals(NGSIConstants.NGSI_LD_UNIT_CODE)) {
+					unitCode = getUnitCode(value);
 				} else {
 					JsonArray subLevelArray = value.getAsJsonArray();
 					JsonObject objValue = subLevelArray.get(0).getAsJsonObject();
@@ -264,7 +266,7 @@ public class SerializationTools {
 
 	private static String getUnitCode(JsonElement value) {
 		// TODO Auto-generated method stub
-		return null;
+		return value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -532,6 +534,9 @@ public class SerializationTools {
 			}
 			if (entry.getModifiedAt() > 0) {
 				top.add(NGSIConstants.NGSI_LD_MODIFIED_AT, getJson(entry.getModifiedAt(), context));
+			}
+			if (entry.getUnitCode() != null && !entry.getUnitCode().isEmpty()) {
+				top.add(NGSIConstants.NGSI_LD_UNIT_CODE, getJson(entry.getUnitCode(), context));
 			}
 			for (Property propOfProp : entry.getProperties()) {
 				top.add(propOfProp.getId().toString(), getJson(propOfProp, context));
