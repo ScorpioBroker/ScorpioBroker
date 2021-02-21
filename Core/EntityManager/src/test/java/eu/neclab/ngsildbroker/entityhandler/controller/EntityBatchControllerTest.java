@@ -34,14 +34,14 @@ public class EntityBatchControllerTest {
     @MockBean
     private EntityService entityService;
     
-	private String createPayload;
+	private String payload;
 	private String deletePayload;
 	
 	@Before
 	public void setup() throws Exception {
 		//@formatter:off
 		
-		createPayload= "[  \r\n" +
+		payload= "[  \r\n" +
 					       "{  \r\n" +
 							"   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" + 
 							"   \"type\":\"Vehicle\",\r\n" + 
@@ -91,7 +91,7 @@ public class EntityBatchControllerTest {
 	}
 	@After
 	public void tearDown() {
-		createPayload = null;
+		payload = null;
 		deletePayload = null;
 	}
 	
@@ -108,7 +108,7 @@ public class EntityBatchControllerTest {
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A103");
 			when(entityService.createMultipleMessage(any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
-					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(createPayload))
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isCreated());
 			verify(entityService, times(1)).createMultipleMessage(any());
 		} catch (Exception e) {
@@ -132,7 +132,7 @@ public class EntityBatchControllerTest {
 			batchResult.addFail(batchFailure);
 			when(entityService.createMultipleMessage(any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
-					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(createPayload))
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isMultiStatus());
 			verify(entityService, times(1)).createMultipleMessage(any());	
 		} catch (Exception e) {
@@ -152,9 +152,30 @@ public class EntityBatchControllerTest {
 			BatchResult batchResult = new BatchResult();
 			when(entityService.createMultipleMessage(any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
-					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(createPayload))
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isBadRequest());
 			verify(entityService, times(1)).createMultipleMessage(any());
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * this method is use for update the multiple entity.
+	 */
+	@Test
+	public void updateMultipleEntityTest() {
+		try {
+			
+			BatchResult batchResult = new BatchResult();
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A102");
+			when(entityService.updateMultipleMessage(any())).thenReturn(batchResult);
+			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
+					.andExpect(status().isNoContent());
+			verify(entityService, times(1)).updateMultipleMessage(any());	
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
