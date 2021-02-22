@@ -215,8 +215,6 @@ public class SerializationTools {
 					continue;
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
 					continue;
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_UNIT_CODE)) {
-					unitCode = getUnitCode(value);
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 					dataSetId = getDataSetId(value);
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_NAME)) {
