@@ -258,12 +258,10 @@ public class SerializationTools {
 	}
 
 	private static String getName(JsonElement value) {
-		// TODO Auto-generated method stub
-		return null;
+		return value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 	}
 
 	private static String getUnitCode(JsonElement value) {
-		// TODO Auto-generated method stub
 		return value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 	}
 
@@ -471,8 +469,7 @@ public class SerializationTools {
 	}
 
 	private static String getDataSetId(JsonElement value) {
-		// TODO Auto-generated method stub
-		return null;
+		return value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_ID).getAsString();
 	}
 
 	public static JsonElement getJson(Long timestamp, JsonSerializationContext context) {
