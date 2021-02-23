@@ -591,6 +591,11 @@ public class SerializationTools {
 			objValue.add(NGSIConstants.JSON_LD_ID, context.serialize(entry.getObject()));
 			value.add(objValue);
 			top.add(NGSIConstants.NGSI_LD_HAS_OBJECT, value);
+			JsonArray datasetIdvalue = new JsonArray();
+			JsonObject datasetobjValue = new JsonObject();
+			datasetobjValue.add(NGSIConstants.JSON_LD_ID, context.serialize(entry.getDataSetId()));
+			datasetIdvalue.add(datasetobjValue);
+			top.add(NGSIConstants.NGSI_LD_DATA_SET_ID, datasetIdvalue);
 			if (entry.getObservedAt() > 0) {
 				top.add(NGSIConstants.NGSI_LD_OBSERVED_AT, getJson(entry.getObservedAt(), context));
 			}
