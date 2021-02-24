@@ -16,7 +16,6 @@ jobs:
     strategy: 
       matrix:
         java: [11] 
-        node: [ 14 ]
         
     services:
      zookeeper:
@@ -55,28 +54,22 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - uses: actions/checkout@v2 
-      - name: Setup node
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ matrix.node }}
-          
-      - uses: actions/checkout@v2
-      - name: download test-suit
-      - run: |
-          mkdir testsuite
-          cd testsuite
-          curl -LO https://github.com/ScorpioBroker/NGSI-LD_TestSuite/archive/master.zip
-          shasum -a 256 master.zip
-          unzip -q master.zip
-          rm master.zip
-          cd NGSI-LD_TestSuite-master
-          npm install
-          cd ../..
-          
+
       - uses: actions/checkout@v2   
       - name: Setting Up Environment
-        run: |        
+        run: |       
+         sudo apt update
+         sudo apt install nodejs
+         sudo apt install npm
+         mkdir testsuite
+         cd testsuite
+         curl -LO https://github.com/ScorpioBroker/NGSI-LD_TestSuite/archive/master.zip
+         shasum -a 256 master.zip
+         unzip -q master.zip
+         rm master.zip
+         cd NGSI-LD_TestSuite-master
+         npm install
+         cd ../..
          mvn clean package -DskipTests -DskipDefault -PbuildForTest -B
          java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
          sleep 10
@@ -85,16 +78,13 @@ jobs:
          java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar &
          sleep 80
          while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done
-      
-      - uses: actions/checkout@v2 
-      - name: run tests
-      - run : |
-          cd testsuite
-          cd NGSI-LD_TestSuite-master
-          export TEST_ENDPOINT="http://localhost:9090"
-          export ACC_ENDPOINT="http://localhost:4444"
-          export NOTIFY_ENDPOINT="http://localhost:4444/acc"
-          export WEB_APP_PORT=4444
-          node accumulator/accumulator.js &
-          npm test
-          curl http://localhost:9090/scorpio/v1/info/
+         cd testsuite
+         cd NGSI-LD_TestSuite-master
+         export TEST_ENDPOINT="http://localhost:9090"
+         export ACC_ENDPOINT="http://localhost:4444"
+         export NOTIFY_ENDPOINT="http://localhost:4444/acc"
+         export WEB_APP_PORT=4444
+         node accumulator/accumulator.js &
+         npm test
+         curl http://localhost:9090/scorpio/v1/info/
+
