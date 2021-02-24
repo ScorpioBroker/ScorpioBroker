@@ -28,3 +28,8 @@ jobs:
     - run: npm ci
     - run: npm run build --if-present
     - run: npm test
+    
+    - name: java installation
+    - run: |
+       apt-get update
+       apt-get install openjdk-11-jdk
