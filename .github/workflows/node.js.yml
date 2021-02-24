@@ -18,19 +18,28 @@ jobs:
       matrix:
         node-version: [14.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    services:
+      postgres:
+        image: postgis/postgis:10-2.5
+        env:
+          POSTGRES_USER: ngb
+          POSTGRES_PASSWORD: ngb
+          POSTGRES_DB: ngb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:    
     - name: Setting Up Environment
       run: |        
-        sudo apt-get update
-        sudo apt-get install postgresql-10
-        sudo pg_ctlcluster 10 main start
-        sudo psql -U postgres -c "create extension postgis;"
-        sudo psql -U postgres -c "create database ngb;"
-        sudo psql -U postgres -c "create user ngb with password 'ngb';"
-        sudo psql -U postgres -c "alter database ngb owner to ngb;"
-        sudo psql -U postgres -c "grant all privileges on database ngb to ngb;"
-        sudo psql -U postgres -c "alter role ngb superuser;"
-        sudo apt install postgresql-10-postgis-2.4
-        sudo apt install postgresql-10-postgis-scripts
-        sudo -u postgres psql -U postgres -c "create extension postgis;
+       mkdir kafka
+       cd kafka
+       wget https://archive.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
+       tar -xzf kafka_2.12-2.2.0.tgz
+       kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties > /dev/null 2>&1 &
+       sleep 2
+       kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties > /dev/null 2>&1 &
+       sleep 2
+       cd ..
