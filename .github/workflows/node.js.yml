@@ -30,6 +30,7 @@ jobs:
     - run: npm test
     
     - name: java installation
+    - uses: java install
     - run: |
        apt-get update
        apt-get install openjdk-11-jdk
