@@ -21,11 +21,10 @@ jobs:
 
     steps:    
     - name: Setting Up Environment
-      run: |
-        sudo apt-get update
-        sudo apt-get install openjdk-11-jdk
+      run: |        
         sudo apt-get update
         sudo apt-get install postgresql-10
+        pg_ctlcluster 10 main start
         psql -U postgres -c "create extension postgis;"
         psql -U postgres -c "create database ngb;"
         psql -U postgres -c "create user ngb with password 'ngb';"
