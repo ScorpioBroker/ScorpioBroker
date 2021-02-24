@@ -60,6 +60,8 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
+          
+      - uses: actions/checkout@v2
       - name: download test-suit
       - run: |
           mkdir testsuite
@@ -83,7 +85,8 @@ jobs:
          java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar &
          sleep 80
          while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done
-     
+      
+      - uses: actions/checkout@v2 
       - name: run tests
       - run : |
           cd testsuite
