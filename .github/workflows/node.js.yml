@@ -31,3 +31,6 @@ jobs:
         sudo psql -U postgres -c "alter database ngb owner to ngb;"
         sudo psql -U postgres -c "grant all privileges on database ngb to ngb;"
         sudo psql -U postgres -c "alter role ngb superuser;"
+        sudo apt install postgresql-10-postgis-2.4
+        sudo apt install postgresql-10-postgis-scripts
+        sudo -u postgres psql -U postgres -c "create extension postgis;
