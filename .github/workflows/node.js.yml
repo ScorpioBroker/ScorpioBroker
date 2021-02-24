@@ -54,10 +54,9 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-          
+      - uses: actions/checkout@v2   
       - name: Setting Up Environment
         run: |        
-         cd ${{ github.repository }}
          mvn clean package -DskipTests -DskipDefault -PbuildForTest -B
          java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
          sleep 10
