@@ -24,10 +24,10 @@ jobs:
       run: |        
         sudo apt-get update
         sudo apt-get install postgresql-10
-        pg_ctlcluster 10 main start
-        psql -U postgres -c "create extension postgis;"
-        psql -U postgres -c "create database ngb;"
-        psql -U postgres -c "create user ngb with password 'ngb';"
-        psql -U postgres -c "alter database ngb owner to ngb;"
-        psql -U postgres -c "grant all privileges on database ngb to ngb;"
-        psql -U postgres -c "alter role ngb superuser;"
+        sudo pg_ctlcluster 10 main start
+        sudo psql -U postgres -c "create extension postgis;"
+        sudo psql -U postgres -c "create database ngb;"
+        sudo psql -U postgres -c "create user ngb with password 'ngb';"
+        sudo psql -U postgres -c "alter database ngb owner to ngb;"
+        sudo psql -U postgres -c "grant all privileges on database ngb to ngb;"
+        sudo psql -U postgres -c "alter role ngb superuser;"
