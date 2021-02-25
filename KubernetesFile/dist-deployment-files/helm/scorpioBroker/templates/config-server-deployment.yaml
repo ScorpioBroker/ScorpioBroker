@@ -28,6 +28,13 @@ spec:
         ports:
         - containerPort: 8888
           protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/CONFIGSERVER/$HOSTNAME:configserver:8888/status?value=OUT_OF_SERVICE"
         {{- if .Values.ConfigServer.readinessProbe.enabled }}
         readinessProbe:
           exec:

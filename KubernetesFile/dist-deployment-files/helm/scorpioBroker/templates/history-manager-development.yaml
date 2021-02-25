@@ -28,6 +28,13 @@ spec:
         ports:
         - containerPort: 1040
           protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/HISTORY-MANAGER/$HOSTNAME:history-manager:1040/status?value=OUT_OF_SERVICE"
         {{- if .Values.HistoryManager.readinessProbe.enabled }}
         readinessProbe:
           exec:
