@@ -67,6 +67,6 @@ jobs:
          export WEB_APP_PORT=4444
          node accumulator/accumulator.js &
          npm test
-         curl http://localhost:9090/scorpio/v1/info/
+         
          
          
