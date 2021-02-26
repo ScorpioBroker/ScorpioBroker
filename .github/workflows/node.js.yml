@@ -74,5 +74,9 @@ jobs:
         run: |
          mvn clean package -DskipTests -DskipDefault -PbuildForTest -B
          java -jar ./SpringCloudModules/eureka/target/eureka-server.jar
+         sleep 10         
+         java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar
+         sleep 10
+         java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar 
          
          
