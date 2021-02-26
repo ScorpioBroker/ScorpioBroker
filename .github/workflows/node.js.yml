@@ -26,10 +26,7 @@ jobs:
          postgresql user: ngb
          postgresql password: ngb
       - name: installation
-        run: |         
-         sudo psql -U postgres -c "alter database ngb owner to ngb;"
-         sudo psql -U postgres -c "grant all privileges on database ngb to ngb;"
-         sudo psql -U postgres -c "alter role ngb superuser;"
+        run: |        
          mkdir kafka
          cd kafka
          wget https://archive.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
