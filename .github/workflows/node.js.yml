@@ -35,6 +35,29 @@ jobs:
          sleep 12
          kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties > /dev/null 2>&1 &
          sleep 2
+      - name: Setting Up Environment
+        run: |       
+         sudo apt update
+         sudo apt install nodejs
+         sudo apt install npm
+         mkdir testsuite
+         cd testsuite
+         curl -LO https://github.com/ScorpioBroker/NGSI-LD_TestSuite/archive/master.zip
+         shasum -a 256 master.zip
+         unzip -q master.zip
+         rm master.zip
+         cd NGSI-LD_TestSuite-master
+         npm install
+         cd ../..
+      - name: Building Scorpio Components
+        run: |
+         mvn clean package -DskipTests -DskipDefault -PbuildForTest -B
+         java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
+         sleep 10
+         java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar > /dev/null 2>&1 &
+         sleep 10
+         java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar &
+         sleep 80
       
          
          
