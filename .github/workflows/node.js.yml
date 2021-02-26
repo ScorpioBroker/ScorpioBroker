@@ -22,13 +22,14 @@ jobs:
         uses: huaxk/postgis-action@v1.0.0
         with:
          postgresql version: 9.6
+         postgresql db: ngb
+         postgresql user: ngb
+         postgresql password: ngb
       - name: installation
         run: |         
-         psql -U postgres -c "create database ngb;"
-         psql -U postgres -c "create user ngb with password 'ngb';"
-         psql -U postgres -c "alter database ngb owner to ngb;"
-         psql -U postgres -c "grant all privileges on database ngb to ngb;"
-         psql -U postgres -c "alter role ngb superuser;"
+         sudo psql -U postgres -c "alter database ngb owner to ngb;"
+         sudo psql -U postgres -c "grant all privileges on database ngb to ngb;"
+         sudo psql -U postgres -c "alter role ngb superuser;"
          mkdir kafka
          cd kafka
          wget https://archive.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
