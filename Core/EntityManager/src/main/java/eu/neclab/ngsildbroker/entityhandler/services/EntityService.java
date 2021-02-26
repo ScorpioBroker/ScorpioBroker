@@ -1163,7 +1163,13 @@ public class EntityService {
 					result.addFail(new BatchFailure(entityId,
 							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
 					continue;
-				}
+				} 
+				
+				if (!next.hasNonNull(NGSIConstants.JSON_LD_TYPE)) {
+					result.addFail(new BatchFailure(entityId,
+							new RestResponse(ErrorType.BadRequestData, "Bad Request Data.")));
+					continue; 
+				} 
 				try {
 					AppendResult updateResult = appendMessage(entityId, objectMapper.writeValueAsString(next), null);
 					if (updateResult.getStatus()) {
