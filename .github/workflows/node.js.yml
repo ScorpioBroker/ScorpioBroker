@@ -67,6 +67,11 @@ jobs:
          export WEB_APP_PORT=4444
          node accumulator/accumulator.js &
          npm test
+         curl http://localhost:9090/scorpio/v1/info/
+         cd
+         cd kafka
+         kafka_2.12-2.2.0/bin/zookeeper-server-stop.sh
+         kafka_2.12-2.2.0/bin/kafka-server-stop.sh
          
          
          
