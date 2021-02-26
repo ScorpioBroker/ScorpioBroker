@@ -57,6 +57,7 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.shared.Application;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
@@ -908,7 +909,12 @@ public class SubscriptionService implements SubscriptionManager {
 				additionalHeaders.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD);
 				for (String remoteEndPoint : remoteEndPoints) {
 					try {
-						httpUtils.doPost(new URI(remoteEndPoint), body, additionalHeaders);
+						StringBuilder temp = new StringBuilder(remoteEndPoint);
+						if(remoteEndPoint.endsWith("/")) {
+							temp.deleteCharAt(remoteEndPoint.length() - 1);
+						}
+						temp.append(AppConstants.SUBSCRIPTIONS_URL);
+						httpUtils.doPost(new URI(temp.toString()), body, additionalHeaders);
 					} catch (IOException e) {
 						// TODO what to do when a remote sub times out ? at the moment we just fail here
 						e.printStackTrace();
