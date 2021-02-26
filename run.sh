@@ -5,11 +5,11 @@ java -jar $sesjar &
 cd ..
 sleep 10
 cd $scsdir
-java -jar $scsjar &
+java -jar $scsjar $* &
 cd ..
 sleep 10
 cd $sgwdir
-java -jar $sgwjar &
+java -jar $sgwjar $* &
 cd ..
 sleep 10
 cd $scrdir
