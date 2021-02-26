@@ -110,24 +110,32 @@ Those can be overwriten via the command line or in the docker case as described 
 | maxLimit          | The maximum number of results in a query        | 500                                                                            | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 | reader.datasource | If you change the postgres setup here you set   | ngb                                                                            | 
-| .hikari.password  | the password                                    |                                                                                | 
+| .password         | the password                                    |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 | reader.datasource | JDBC URL to postgres                            | jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_reader  | 
-| .hikari.url       |                                                 |                                                                                | 
+| .url              |                                                 |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 | reader.datasource | username for the postgres db                    | ngb                                                                            | 
-| .hikari.username  |                                                 |                                                                                | 
+| .username         |                                                 |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 | writer.datasource | If you change the postgres setup here you set   | ngb                                                                            | 
-| .hikari.password  | the password                                    |                                                                                | 
+| .password         | the password                                    |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 | writer.datasource | JDBC URL to postgres                            | jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_writer  | 
-| .hikari.url       |                                                 |                                                                                | 
+| .url              |                                                 |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 | writer.datasource | username for the postgres db                    | ngb                                                                            | 
-| .hikari.username  |                                                 |                                                                                | 
+| .username         |                                                 |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-
+| spring.datasource | Same as above but used by flyway for database   | ngb                                                                            | 
+| .password         | migration                                       |                                                                                | 
++-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
+| spring.datasource | Same as above but used by flyway for database   | jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_writer  | 
+| .url              | migration                                       |                                                                                | 
++-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
+| spring.datasource | Same as above but used by flyway for database   | ngb                                                                            | 
+| .username         | migration                                       |                                                                                | 
++-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 
 
 ****************************
