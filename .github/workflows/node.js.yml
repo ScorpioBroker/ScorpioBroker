@@ -23,8 +23,7 @@ jobs:
         with:
          postgresql version: 9.6
       - name: installation
-        run: |
-         psql -U postgres -c "create extension postgis;"
+        run: |         
          psql -U postgres -c "create database ngb;"
          psql -U postgres -c "create user ngb with password 'ngb';"
          psql -U postgres -c "alter database ngb owner to ngb;"
