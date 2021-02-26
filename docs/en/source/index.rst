@@ -59,3 +59,12 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
     docker.rst
     config.rst
     troubleshooting.rst
+	
+.. toctree::
+    :maxdepth: 1
+    :caption: Kubernetes
+    :numbered:
+     
+	k8Introduction.rst
+    kubernetesDeployment.rst
+

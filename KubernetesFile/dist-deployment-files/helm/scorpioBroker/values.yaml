@@ -10,10 +10,11 @@ eureka:
   replicas: 1
 ## Scorpio Broker eureka image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: eureka-server_FIWARE_7.9.1
+   tag: eureka-server_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -79,10 +80,11 @@ gateway:
   replicas: 1
 ## Scorpio Broker gateway image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: gateway_FIWARE_7.9.1
+   tag: gateway_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -148,10 +150,11 @@ AtContextServer:
   replicas: 1
 ## Scorpio Broker AtContextServer image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: AtContextServer_FIWARE_7.9.1
+   tag: AtContextServer_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -217,10 +220,11 @@ ConfigServer:
   replicas: 1
 ## Scorpio Broker ConfigServer image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: config-server_FIWARE_7.9.1
+   tag: config-server_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -286,10 +290,11 @@ EntityManager:
   replicas: 1
 ## Scorpio Broker EntityManager image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: EntityManager_FIWARE_7.9.1
+   tag: EntityManager_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -355,10 +360,11 @@ HistoryManager:
   replicas: 1
 ## Scorpio Broker HistoryManager image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: HistoryManager_FIWARE_7.9.1
+   tag: HistoryManager_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -424,10 +430,11 @@ QueryManager:
   replicas: 1
 ## Scorpio Broker QueryManager image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: QueryManager_FIWARE_7.9.1
+   tag: QueryManager_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -493,10 +500,11 @@ RegistryManager:
   replicas: 1
 ## Scorpio Broker RegistryManager image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: RegistryManager_FIWARE_7.9.1
+   tag: RegistryManager_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -562,10 +570,11 @@ StorageManager:
   replicas: 1
 ## Scorpio Broker StorageManager image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: StorageManager_FIWARE_7.9.1
+   tag: StorageManager_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -632,10 +641,11 @@ SubscriptionManager:
   replicas: 1
 ## Scorpio Broker SubscriptionManager image version
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
 ##
   image:
    repository: scorpiobroker/scorpio
-   tag: SubscriptionManager_FIWARE_7.9.1
+   tag: SubscriptionManager_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
