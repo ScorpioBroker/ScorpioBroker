@@ -2,7 +2,6 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
 name: Node.js CI
-
 on: [push,pull_request]
 jobs:
   build:
@@ -20,7 +19,7 @@ jobs:
          postgresql db: ngb
          postgresql user: ngb
          postgresql password: ngb
-      - name: installation
+      - name: installation of kafka and zookeeper
         run: |        
          mkdir kafka
          cd kafka
@@ -54,6 +53,8 @@ jobs:
          java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar &
          sleep 80
          while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done
+      - name: Building TestSuite 
+        run: |
          cd testsuite
          cd NGSI-LD_TestSuite-master     
          export TEST_ENDPOINT="http://localhost:9090"
