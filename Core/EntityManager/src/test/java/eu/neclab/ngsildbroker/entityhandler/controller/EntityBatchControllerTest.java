@@ -181,6 +181,30 @@ public class EntityBatchControllerTest {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * this method is use for create the multiple entity but someone entity not exist.
+	 */
+	@Test
+	public void updateMultipleEntityIfEntityNotExistTest() {
+		try {
+			
+			BatchResult batchResult = new BatchResult();
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A110");
+			RestResponse restResponse = new RestResponse(ErrorType.NotFound,"Resource not found.");
+			BatchFailure batchFailure = new BatchFailure("urn:ngsi-ld:Vehicle:A110",restResponse);
+			batchResult.addFail(batchFailure);
+			when(entityService.updateMultipleMessage(any())).thenReturn(batchResult);
+			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
+					.andExpect(status().isMultiStatus());
+			verify(entityService, times(1)).updateMultipleMessage(any());	
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * this method is use for delete the multiple entity
@@ -225,6 +249,4 @@ public class EntityBatchControllerTest {
 			e.printStackTrace();
 		}
 	}
-
-
 }
