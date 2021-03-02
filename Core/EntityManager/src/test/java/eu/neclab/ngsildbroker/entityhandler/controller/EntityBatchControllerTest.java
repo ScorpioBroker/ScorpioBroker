@@ -233,7 +233,6 @@ public class EntityBatchControllerTest {
 	@Test
 	public void deleteMultipleEntityIfEntityNotExistTest() {
 		try {
-
 			BatchResult batchResult = new BatchResult();
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
 			RestResponse restResponse = new RestResponse(ErrorType.NotFound,"Resource not found.");
