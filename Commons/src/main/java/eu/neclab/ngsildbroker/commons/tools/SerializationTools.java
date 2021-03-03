@@ -215,12 +215,12 @@ public class SerializationTools {
 					continue;
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
 					continue;
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_UNIT_CODE)) {
-					unitCode = getUnitCode(value);
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 					dataSetId = getDataSetId(value);
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_NAME)) {
 					name = getName(value);
+				} else if (propKey.equals(NGSIConstants.NGSI_LD_UNIT_CODE)) {
+					unitCode = getUnitCode(value);
 				} else {
 					JsonArray subLevelArray = value.getAsJsonArray();
 					JsonObject objValue = subLevelArray.get(0).getAsJsonObject();
@@ -258,13 +258,11 @@ public class SerializationTools {
 	}
 
 	private static String getName(JsonElement value) {
-		// TODO Auto-generated method stub
-		return null;
+		return value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 	}
 
 	private static String getUnitCode(JsonElement value) {
-		// TODO Auto-generated method stub
-		return null;
+		return value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -471,8 +469,7 @@ public class SerializationTools {
 	}
 
 	private static String getDataSetId(JsonElement value) {
-		// TODO Auto-generated method stub
-		return null;
+		return value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_ID).getAsString();
 	}
 
 	public static JsonElement getJson(Long timestamp, JsonSerializationContext context) {
@@ -533,6 +530,9 @@ public class SerializationTools {
 			if (entry.getModifiedAt() > 0) {
 				top.add(NGSIConstants.NGSI_LD_MODIFIED_AT, getJson(entry.getModifiedAt(), context));
 			}
+			if (entry.getUnitCode() != null && !entry.getUnitCode().isEmpty()) {
+				top.add(NGSIConstants.NGSI_LD_UNIT_CODE, getJson(entry.getUnitCode(), context));
+			}
 			for (Property propOfProp : entry.getProperties()) {
 				top.add(propOfProp.getId().toString(), getJson(propOfProp, context));
 			}
@@ -591,6 +591,11 @@ public class SerializationTools {
 			objValue.add(NGSIConstants.JSON_LD_ID, context.serialize(entry.getObject()));
 			value.add(objValue);
 			top.add(NGSIConstants.NGSI_LD_HAS_OBJECT, value);
+			JsonArray datasetIdvalue = new JsonArray();
+			JsonObject datasetobjValue = new JsonObject();
+			datasetobjValue.add(NGSIConstants.JSON_LD_ID, context.serialize(entry.getDataSetId()));
+			datasetIdvalue.add(datasetobjValue);
+			top.add(NGSIConstants.NGSI_LD_DATA_SET_ID, datasetIdvalue);
 			if (entry.getObservedAt() > 0) {
 				top.add(NGSIConstants.NGSI_LD_OBSERVED_AT, getJson(entry.getObservedAt(), context));
 			}

@@ -28,6 +28,13 @@ spec:
         ports:
         - containerPort: 1029
           protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/STORAGE-MANAGER/$HOSTNAME:storage-manager:1029/status?value=OUT_OF_SERVICE"
         {{- if .Values.StorageManager.readinessProbe.enabled }}
         readinessProbe:
           exec:
