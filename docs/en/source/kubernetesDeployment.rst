@@ -15,8 +15,6 @@ For Testing
 ************
 For the quick set-up, the user can use the yaml files present in the dependencies folder of Kubernetes files. For this user need to follow the following steps:-
 
-.. literalinclude:: ../../../../KubernetesFile/dependencies/deployments/postgres-deployment.yaml
-
  1. Firstly the user needs to deploy the Postgres volume files.
  
  2. After the persistent volume and persistent volume claim are successfully created user needs to deploy the Postgres deployment file.
