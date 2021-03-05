@@ -1,6 +1,6 @@
-****************************
-Kubernetes Deployment Guide
-****************************
+********************************************************
+Deployment Guide for Scorpio Broker on Kubernetes
+********************************************************
 
 In order to deploy the Scorpio broker on the Kubernetes, the following dependency needs to be deployed:-
 
@@ -8,8 +8,8 @@ In order to deploy the Scorpio broker on the Kubernetes, the following dependenc
 2. Kafka and Zookeeper.
 3. Scorpio Broker microservices.
 
-For Testing
-#############
+For Quick Deployment
+#####################
 
 Postgres
 ************
@@ -417,6 +417,7 @@ To quickly deploy the Kafka and zookeeper, the user can use the deployment files
  .. figure:: figures/kafkaDep.png
  
 5. Finally deploy the Kafka service file. (Only once Kafka deployment moved to running state else sometimes is throes error).
+
  .. code-block:: yaml
 
   apiVersion: v1
@@ -459,7 +460,7 @@ Scorpio Broker
 ****************
 
 For testing and other lite usage, users can use the All-in-one-deployment(aaio) files(in this all the micro-services are deployed in the single docker container). For this user have two options:
- 1. **Deployment through helm**: The first step is to get the helm chart of aaio deployment of the Scorpio broker, please download the helm package from GitHub.
+ 1. **Deployment through helm**: The first step is to get the helm chart of aaio deployment of the Scorpio broker, please download the helm package from GitHub(ScorpioBroker > KubernetesFile > aaio-deployment-files > helm ).
 
   Now run the command 
 
@@ -467,12 +468,123 @@ For testing and other lite usage, users can use the All-in-one-deployment(aaio) 
 
  2. **Deployment through YAML files**: user can use the YAML files present in the aaio deployment section and follow the steps:
 
-   a. Make sure Kafka and Postgres are running, after that deploy the deployment file using the command **kubectl create -f <file name>**.
-   
-   b. Once the deployment is up and running create the clusterIP or node port service as per the need.
+  a. Make sure Kafka and Postgres are running, after that deploy the deployment file or the gien configuaration  using the command 
 
-For Production
-####################
+   .. code-block:: yaml
+
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      labels:
+          component: scorpio
+      name: scorpio
+    spec:
+      replicas: 2
+      selector:
+        matchLabels:
+          component: scorpio
+      strategy: {}
+      template:
+        metadata:
+          labels:
+          component: scorpio
+        spec:
+          containers:
+          - image: scorpiobroker/scorpio:scorpio-aaio_1.0.0
+            imagePullPolicy: ""
+            name: scorpio
+            ports:
+            - containerPort: 9090
+            resources: {}
+          restartPolicy: Always
+          serviceAccountName: ""
+          volumes: null
+    status: {}
+
+   once the file is created apply it through the command:
+
+   ::
+  
+    kubectl create -f <filename> 
+
+   This will create an instance of Scorpio Broker and the user will get the message.
+   ::
+
+    deployment.apps/scorpio created
+
+
+    User can check this by running the commands:
+
+   ::
+  
+    kubectl get deployments
+  
+   .. figure:: figures/scorpioAaioDeploy.png
+
+   
+ b. Once the deployment is up and running create the clusterIP or node port service as per the need.
+
+   .. code-block:: yaml
+
+    apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+          component: scorpio
+      name: scorpio
+    spec:
+      ports:
+      - name: "9090"
+        port: 9090
+        targetPort: 9090
+      selector:
+          component: scorpio
+    status:
+      loadBalancer: {}
+    ----
+    apiVersion: v1
+    kind: Service
+    metadata:
+      labels:
+          component: scorpio
+      name: scorpio-node-port
+    spec:
+      type: NodePort
+      ports:
+      - port: 9090
+        targetPort: 9090
+        nodePort : 30000
+      selector:
+          component: scorpio
+
+   once the file is created apply it through the command:
+
+   ::
+  
+    kubectl create -f <filename> 
+
+   This will create an instance of Postgres and the user will get the message.
+   ::
+
+    service/scorpio created
+    service/scorpio-node-port created
+
+    User can check this by running the commands:
+
+   ::
+  
+    kubectl get deployments
+  
+   .. figure:: figures/scorpioSvc.png
+
+   Now, if user have deployed the node post service user can access Scorpio Broker at 
+
+   ::
+
+   <ip address of master>:30000
+
+For Production Deployment
+##########################
 
 Postgres
 ************
