@@ -460,15 +460,16 @@ Scorpio Broker
 ****************
 
 For testing and other lite usage, users can use the All-in-one-deployment(aaio) files(in this all the micro-services are deployed in the single docker container). For this user have two options:
- 1. **Deployment through helm**: The first step is to get the helm chart of aaio deployment of the Scorpio broker, please download the helm package from GitHub(ScorpioBroker > KubernetesFile > aaio-deployment-files > helm ).
+
+1. **Deployment through helm**: The first step is to get the helm chart of aaio deployment of the Scorpio broker, please download the helm package from GitHub(ScorpioBroker > KubernetesFile > aaio-deployment-files > helm ).
 
   Now run the command 
 
   **helm install {release_name} <helm folder name>**
 
- 2. **Deployment through YAML files**: user can use the YAML files present in the aaio deployment section and follow the steps:
+2. **Deployment through YAML files**: user can use the YAML files present in the aaio deployment section and follow the steps:
 
-  a. Make sure Kafka and Postgres are running, after that deploy the deployment file or the gien configuaration  using the command 
+ a. Make sure Kafka and Postgres are running, after that deploy the deployment file or the gien configuaration  using the command 
 
    .. code-block:: yaml
 
