@@ -36,6 +36,7 @@ public class EntityBatchControllerTest {
     
 	private String payload;
 	private String deletePayload;
+	public static boolean checkEntity = false;
 	
 	@Before
 	public void setup() throws Exception {
@@ -205,6 +206,69 @@ public class EntityBatchControllerTest {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * this method is validate the bad request if update the multiple entity 
+	 * but some entity request is not valid
+	 */
+	@Test
+	public void updateMultipleEntityBadRequestTest() {
+		try {
+
+			BatchResult batchResult = new BatchResult();
+			when(entityService.updateMultipleMessage(any())).thenReturn(batchResult);
+			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
+					.andExpect(status().isBadRequest());
+			verify(entityService, times(1)).updateMultipleMessage(any());
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
+    
+	/**
+	 * this method is use for upsert the multiple entity if all entities already exist.
+	 */
+	@Test
+	public void upsertMultipleEntityTest() {
+		try {
+			
+			BatchResult batchResult = new BatchResult();
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A102");
+			EntityService.checkEntity = false;
+			when(entityService.upsertMultipleMessage(any())).thenReturn(batchResult);
+			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
+					.andExpect(status().isNoContent());
+			verify(entityService, times(1)).upsertMultipleMessage(any());	
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * this method is use for upsert the multiple entity if someone entity not exist
+	 */
+	@Test
+	public void upsertMultipleEntityIfEntityNotExistTest() {
+		try {
+			
+			BatchResult batchResult = new BatchResult();
+			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
+			EntityService.checkEntity = true;
+			when(entityService.upsertMultipleMessage(any())).thenReturn(batchResult);
+			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
+					.andExpect(status().isCreated());
+			verify(entityService, times(1)).upsertMultipleMessage(any());	
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * this method is use for delete the multiple entity
@@ -233,6 +297,7 @@ public class EntityBatchControllerTest {
 	@Test
 	public void deleteMultipleEntityIfEntityNotExistTest() {
 		try {
+			
 			BatchResult batchResult = new BatchResult();
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
 			RestResponse restResponse = new RestResponse(ErrorType.NotFound,"Resource not found.");
