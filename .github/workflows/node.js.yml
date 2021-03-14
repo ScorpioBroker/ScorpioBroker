@@ -1,0 +1,74 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node.js CI
+on: [push,pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:    
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.11
+      - name: Setup PostgreSQL with Postgis 
+        uses: huaxk/postgis-action@v1.0.0
+        with:
+         postgresql version: 9.6
+         postgresql db: ngb
+         postgresql user: ngb
+         postgresql password: ngb
+      - name: installation of kafka and zookeeper
+        run: |        
+         mkdir kafka
+         cd kafka
+         wget https://archive.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
+         tar -xzf kafka_2.12-2.2.0.tgz
+         kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties > /dev/null 2>&1 &
+         sleep 12
+         kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties > /dev/null 2>&1 &
+         sleep 2
+      - name: Setting Up Environment
+        run: |       
+         sudo apt update
+         sudo apt install nodejs
+         sudo apt install npm
+         mkdir testsuite
+         cd testsuite
+         curl -LO https://github.com/ScorpioBroker/NGSI-LD_TestSuite/archive/master.zip
+         shasum -a 256 master.zip
+         unzip -q master.zip
+         rm master.zip
+         cd NGSI-LD_TestSuite-master
+         npm install
+         cd ../..
+      - name: Building Scorpio Components
+        run: |
+         mvn clean package -DskipTests -DskipDefault -PbuildForTest -B
+         java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
+         sleep 10
+         java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar > /dev/null 2>&1 &
+         sleep 10
+         java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar &
+         sleep 80
+         while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -eq 500 ]; do sleep 10; done
+      - name: Building TestSuite 
+        run: |
+         cd testsuite
+         cd NGSI-LD_TestSuite-master     
+         export TEST_ENDPOINT="http://localhost:9090"
+         export ACC_ENDPOINT="http://localhost:4444"
+         export NOTIFY_ENDPOINT="http://localhost:4444/acc"
+         export WEB_APP_PORT=4444
+         node accumulator/accumulator.js &
+         npm test
+         curl http://localhost:9090/scorpio/v1/info/
+      - name: closing kafka and zookeeper
+        run: |
+         cd kafka
+         kafka_2.12-2.2.0/bin/zookeeper-server-stop.sh
+         kafka_2.12-2.2.0/bin/kafka-server-stop.sh
+         
+         
+         
