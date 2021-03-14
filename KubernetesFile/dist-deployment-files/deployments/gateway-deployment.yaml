@@ -29,6 +29,13 @@ spec:
         ports:
         - containerPort: 9090
           protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/GATEWAY/$HOSTNAME:gateway:9090/status?value=OUT_OF_SERVICE"
         readinessProbe:
           exec:
             command:
