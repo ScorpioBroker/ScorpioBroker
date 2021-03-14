@@ -28,6 +28,13 @@ spec:
         ports:
         - containerPort: 1026
           protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/QUERY-MANAGER/$HOSTNAME:query-manager:1026/status?value=OUT_OF_SERVICE"
         {{- if .Values.QueryManager.readinessProbe.enabled }}
         readinessProbe:
           exec:
