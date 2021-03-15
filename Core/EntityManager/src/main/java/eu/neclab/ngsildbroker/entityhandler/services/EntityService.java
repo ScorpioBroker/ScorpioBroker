@@ -819,6 +819,9 @@ public class EntityService {
 		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
 		updateResult.setJson(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
 		updateResult.setFinalNode(node);
+		//Store appended before removing temporal fields 
+		updateResult.setJsonToAppend(updateResult.getJsonToAppend().deepCopy());
+		updateResult.setAppendedJsonFields(updateResult.getAppendedJsonFields().deepCopy());
 		removeTemporalProperties(node);
 		updateResult.setJsonWithoutSysAttrs(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
 		logger.trace("updateFields() :: completed");
@@ -876,7 +879,9 @@ public class EntityService {
 		}
 		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
 		appendResult.setJson(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
-
+		//Store result before removing temporal properties
+		appendResult.setJsonToAppend(appendResult.getJsonToAppend().deepCopy());
+		appendResult.setAppendedJsonFields(appendResult.getAppendedJsonFields().deepCopy());
 		removeTemporalProperties(node);
 		appendResult.setJsonWithoutSysAttrs(node.toString().getBytes(NGSIConstants.ENCODE_FORMAT));
 		appendResult.setFinalNode(node);

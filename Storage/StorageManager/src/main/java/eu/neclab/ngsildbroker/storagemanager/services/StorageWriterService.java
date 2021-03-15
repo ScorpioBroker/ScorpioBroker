@@ -15,6 +15,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.storagemanager.repository.StorageWriterDAO;
 
 @Service
@@ -154,10 +155,11 @@ public class StorageWriterService {
 		if (!temporalEntityListenerOk) // this test is needed because listenerContainer.stop() does not work properly
 										// during boot time (probably because of concurrency)
 			return;
-		String payload = new String(message);
+		String[] payload = new String(message).split(NGSIConstants.KAFKA_SPLIT);
+		
 		logger.debug("Received message: " + payload);
 		logger.trace("Writing data...");
-		if (storageWriterDao != null && storageWriterDao.storeTemporalEntity(key, payload)) {
+		if (storageWriterDao != null && storageWriterDao.storeTemporalEntity(key, payload[0], payload[1], payload[2])) {
 			acknowledgment.acknowledge();
 			logger.trace("Kafka offset commited");
 		} else {

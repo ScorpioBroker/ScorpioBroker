@@ -41,11 +41,14 @@ public interface NGSIConstants {
 	public final static String JSON_LD_TYPE = "@type";
 	public final static String JSON_LD_VALUE = "@value";
 	public final static String JSON_LD_CONTEXT = "@context";
+	public final static String JSON_LD_LIST = "@list";
 	public final static String NGSI_LD_DEFAULT_PREFIX = "https://uri.etsi.org/ngsi-ld/default-context/";
 	public final static String NGSI_LD_RELATIONSHIP = "https://uri.etsi.org/ngsi-ld/Relationship";
 	public final static String NGSI_LD_PROPERTY = "https://uri.etsi.org/ngsi-ld/Property";
 	public final static String NGSI_LD_HAS_VALUE = "https://uri.etsi.org/ngsi-ld/hasValue";
+	public final static String NGSI_LD_HAS_VALUES = "https://uri.etsi.org/ngsi-ld/hasValues";
 	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
+	public final static String NGSI_LD_HAS_OBJECTS = "https://uri.etsi.org/ngsi-ld/hasObjects";
 	public final static String NGSI_LD_COORDINATES = "https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
@@ -203,6 +206,7 @@ public interface NGSIConstants {
 	public static final String ALLOWED_OUT_DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]'Z'";
 	public static final String DEFAULT_FORGIVING_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 	public static final String HEADER_REL_LDCONTEXT = "http://www.w3.org/ns/json-ld#context";
+	public static final String DATE_TIME_REGEX = "\\d\\d\\d\\d-(0[0-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d+\\d?\\d?\\d?\\d?\\d?)?Z";
 
 	public static final HashMap<Integer, String> HTTP_CODE_2_NGSI_ERROR = new HashMap<Integer, String>();
 	public static final List<String> ALLOWED_GEOMETRIES = Arrays.asList("Point", "MultiPoint", "LineString",
@@ -232,5 +236,6 @@ public interface NGSIConstants {
 	public static final String MQTT_VERSION_3 = "mqtt3.1.1";
 	public static final String[] VALID_MQTT_VERSION = { "mqtt5.0", "mqtt3.1.1" };
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
+	public static final String KAFKA_SPLIT = "!@##!@";
 	public final static String COUNT_HEADER_RESULT = "count";
 }

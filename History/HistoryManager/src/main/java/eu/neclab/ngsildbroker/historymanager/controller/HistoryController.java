@@ -73,7 +73,8 @@ public class HistoryController {
 
 			URI uri = historyService.createTemporalEntityFromBinding(resolved);
 			logger.trace("createTemporalEntity :: completed");
-			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString()).body(uri.toString().getBytes());
+			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString())
+					.body(uri.toString().getBytes());
 		} catch (ResponseException exception) {
 			logger.error("Exception", exception);
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
