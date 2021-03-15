@@ -269,6 +269,26 @@ public class EntityBatchControllerTest {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * this method is validate the bad request if upsert the multiple entity 
+	 * but some entity request is not valid
+	 */
+	@Test
+	public void upsertMultipleEntityBadRequestTest() {
+		try {
+
+			BatchResult batchResult = new BatchResult();
+			when(entityService.upsertMultipleMessage(any())).thenReturn(batchResult);
+			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
+					.andExpect(status().isBadRequest());
+			verify(entityService, times(1)).upsertMultipleMessage(any());
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * this method is use for delete the multiple entity
