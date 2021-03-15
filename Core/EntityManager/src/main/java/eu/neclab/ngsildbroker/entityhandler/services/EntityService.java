@@ -394,12 +394,16 @@ public class EntityService {
 		while (iter.hasNext()) {
 			Map.Entry<String, JsonNode> entry = iter.next();
 			if (entry.getValue().isArray() && entry.getValue().has(0) && entry.getValue().get(0).isObject()) {
-				ObjectNode attrObj = (ObjectNode) entry.getValue().get(0);
+				//ObjectNode attrObj = (ObjectNode) entry.getValue().get(0);
 				// add createdAt/modifiedAt only to properties, geoproperties and relationships
+				Iterator<JsonNode> valueIterator = ((ArrayNode) entry.getValue()).iterator();
+				while (valueIterator.hasNext()) {
+					ObjectNode attrObj = (ObjectNode) valueIterator.next();
 				if (attrObj.has(NGSIConstants.JSON_LD_TYPE) && attrObj.get(NGSIConstants.JSON_LD_TYPE).isArray()
-						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).has(0)
-						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).get(0).asText().matches(regexNgsildAttributeTypes)) {
+						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).has(0) && attrObj.get(NGSIConstants.JSON_LD_TYPE)
+								.get(0).asText().matches(regexNgsildAttributeTypes)) {
 					removeTemporalProperties(attrObj);
+				  }
 				}
 			}
 		}

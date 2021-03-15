@@ -28,6 +28,13 @@ spec:
         ports:
         - containerPort: 2025
           protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/SUBSCRIPTION-MANAGER/$HOSTNAME:subscription-manager:2025/status?value=OUT_OF_SERVICE"
         {{- if .Values.SubscriptionManager.readinessProbe.enabled }}
         readinessProbe:
           exec:

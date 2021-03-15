@@ -51,6 +51,8 @@ reader:
 bootstrap:
   servers: kafka:9092
 eureka:
+  instance:
+    preferIpAddress: true
   client:
     serviceUrl:
       defaultZone: http://eureka:8761/eureka/

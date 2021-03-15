@@ -28,6 +28,13 @@ spec:
         ports:
         - containerPort: 1025
           protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/ENTITY-MANAGER/$HOSTNAME:entity-manager:1025/status?value=OUT_OF_SERVICE"
         {{- if .Values.EntityManager.readinessProbe.enabled }}
         readinessProbe:
           exec:
