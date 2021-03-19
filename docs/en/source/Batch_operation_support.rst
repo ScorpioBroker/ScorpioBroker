@@ -15,6 +15,7 @@ For example: take a car as a entity1 and another car as a entity2 and room as a 
 
 .. figure:: figures/BatchOperation.JPG
 
+
 These are the batch operation API’s.
 
  - /ngsi-ld/v1/entityOperations/create/
