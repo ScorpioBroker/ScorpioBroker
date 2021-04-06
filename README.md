@@ -166,7 +166,7 @@ However if someone is repeatedly trying to provoke, attack a person, shift discu
 If there is a dispute to be resolved we as owners of this repo have the final word.
 ## License
 
-Scorpio is licensed under [BSD-4-Clause](https://spdx.org/licenses/BSD-4-Clause.html).
+Scorpio is licensed under [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html).
 For contributions this [contribution license](CONTRIBUTING.md) applies.
 
-© 2020 NEC
+© 2021 NEC
