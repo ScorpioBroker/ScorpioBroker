@@ -18,5 +18,5 @@ jobs:
         with:
           pmd-version: '6.33.0'
           file-path: './src'
-          rules-path: './pmd-ruleset.xml'
+          #rules-path: './pmd-ruleset.xml'
           error-rules: 'AvoidDirectAccessTriggerMap,AvoidDmlStatementsInLoops,AvoidHardcodingId'
