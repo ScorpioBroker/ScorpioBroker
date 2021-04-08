@@ -17,6 +17,6 @@ jobs:
         uses: synergy-au/pmd-analyser-action@v1
         with:
           pmd-version: '6.33.0'
-          file-path: './src'
+          file-path: './'
           rules-path: './pmd-ruleset.xml'
           #error-rules: 'AvoidDirectAccessTriggerMap,AvoidDmlStatementsInLoops,AvoidHardcodingId'
