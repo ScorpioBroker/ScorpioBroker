@@ -84,7 +84,7 @@ public class SubscriptionServiceTest {
 	    Subscription subscription = null;
 	    subscription = DataSerializer.getSubscription(resolved);
 	    SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
-		URI subId = manager.subscribe(subRequest);
+		manager.subscribe(subRequest);
 		verify(kafkaOperations, times(1)).pushToKafka(any(),any(),any());
 	 
  }
