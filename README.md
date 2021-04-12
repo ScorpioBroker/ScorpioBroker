@@ -1,7 +1,7 @@
 # <img src="./img/ScorpioLogo.svg" width="140" align="middle"> Scorpio NGSI-LD Broker
 
 [![FIWARE Core](https://nexus.lab.fiware.org/static/badges/chapters/core.svg)](https://www.fiware.org/developers/catalogue/)
-[![License: BSD-4-Clause](https://img.shields.io/badge/license-BSD%204%20Clause-blue.svg)](https://spdx.org/licenses/BSD-4-Clause.html)
+[![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD%203%20Clause-blue.svg)](https://spdx.org/licenses/BSD-3-Clause.html)
 [![Docker](https://img.shields.io/docker/pulls/scorpiobroker/scorpio.svg)](https://hub.docker.com/r/scorpiobroker/scorpio/)
 [![fiware](https://nexus.lab.fiware.org/repository/raw/public/badges/stackoverflow/fiware.svg)](https://stackoverflow.com/questions/tagged/fiware)
 [![NGSI LD](https://nexus.lab.fiware.org/repository/raw/public/badges/specifications/ngsild.svg)](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf)
@@ -166,7 +166,7 @@ However if someone is repeatedly trying to provoke, attack a person, shift discu
 If there is a dispute to be resolved we as owners of this repo have the final word.
 ## License
 
-Scorpio is licensed under [BSD-4-Clause](https://spdx.org/licenses/BSD-4-Clause.html).
+Scorpio is licensed under [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html).
 For contributions this [contribution license](CONTRIBUTING.md) applies.
 
-© 2020 NEC
+© 2021 NEC
