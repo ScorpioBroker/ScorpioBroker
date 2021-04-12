@@ -20,4 +20,4 @@ jobs:
           file-path: './'
           rules-path: './pmd-ruleset.xml'
           analyse-all-code: true
-          #error-rules: 'AvoidDirectAccessTriggerMap,AvoidDmlStatementsInLoops,AvoidHardcodingId'
+          error-rules: 'CommentRequired,UnnecessaryModifier,MethodArgumentCouldBeFinal'
