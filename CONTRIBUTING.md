@@ -92,6 +92,25 @@ sections. Anybody is welcome to join these conversations.
 Wherever possible, do not take these conversations to private channels, including contacting the maintainers directly.
 Keeping communication public means everybody can benefit and learn from the conversation.
 
+## Dependency guidelines
+
+* ALL dependency must be done through Maven only. All dependencies MUST be available on a public Maven repositories.
+* We are only accepting new depencies which are released under a well recognized [OSS license](https://opensource.org/licenses)
+* Scorpio only relies on the Central Maven Repository at the moment. New repositories MUST be added in the corresponding pom.xml. .m2 configs are not acceptable.
+* We will NOT accept any contribution that includes binary files
+* We are not using any platform dependent depdencies at the moment. If any platform based depdencies are introduced the following points must be met.
+  - Maven profiles MUST be used to control the dependencies.
+  - Profiles MUST include an activation based on the platform. So that a default build on the host OS just works as default. [Maven profiles](https://maven.apache.org/guides/introduction/introduction-to-profiles.html)
+  - Support for Windows and Linux 64Bit is a MUST. 32Bit support is a SHOULD as 32Bit is coming to an end. 
+  - Linux ARM64 is considered a SHOULD at the moment but might become a MUST. Linux ARM hf is a weak SHOULD.
+  - Support for Mac is considered a SHOULD as we recognize that testing on Mac OS/OS X is legally not possible without buying a Mac. 
+  - All dependencies MUST work relatively out of the box with the standard build. Relatively means e.g. 
+     - We will not accept something which requires an installation/compilation manual. 
+     - An apt-get on Linux is fine as this is the common way in Linux. 
+	BEST is that the native library is packaged with the Java dependency. 
+  - If there is a platform specific optimization or something similar (e.g. hardware optimized libraries), it of course only has to be provided for that platform.
+
+
 ## Code style guidelines
 
 ### Filesystem layout 
@@ -115,12 +134,12 @@ written before the guidelines were established. However, all new code contributi
 All .java files MUST contain the following copyright header
 ```
 /* 
-*          NAME OF THE PROGRAM THIS FILE BELONGS TO 
+*          Scorpio Broker
 * 
 *   file: FILE NAME 
 * 
-* Authors: A (email A) 
-*          B (email B) 
+* Authors: The Scorpio Development Team (scorpiobroker@neclab.eu) 
+*          
 
 * 
 *          NEC Laboratories Europe GmbH --- PROPRIETARY INFORMATION 
@@ -132,7 +151,7 @@ All .java files MUST contain the following copyright header
 
 * Any unauthorized publication, transfer to third parties or duplication of the object or source code –
 * either totally or in part - is strictly prohibited.
-*      Copyright (c) INSERT YEAR NEC Laboratories Europe GmbH  All Rights Reserved. 
+*      Copyright (c) 2021 NEC Laboratories Europe GmbH  All Rights Reserved. 
 * 
 * NEC Laboratories Europe GmbH DISCLAIMS ALL WARRANTIES, EITHER EXPRESS OR 
 * IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY 
@@ -150,7 +169,7 @@ All .java files MUST contain the following copyright header
 * THE POSSIBILITY OF SUCH DAMAGES. 
 * 
 *     THIS HEADER MAY NOT BE EXTRACTED OR MODIFIED IN ANY WAY.
-
+*/
 ```
 #### 'SHOULD follow’ rules
 
@@ -529,22 +548,6 @@ But we will reject endless lines.
     </profile>
 </profiles>
 
-## Dependency guidelines
 
-* ALL dependency must be done through Maven only. All dependencies MUST be available on a public Maven repositories.
-* We are only accepting new depencies which are released under a well recognized [OSS license](https://opensource.org/licenses)
-* Scorpio only relies on the Central Maven Repository at the moment. New repositories MUST be added in the corresponding pom.xml. .m2 configs are not acceptable.
-* We will NOT accept any contribution that includes binary files
-* We are not using any platform dependent depdencies at the moment. If any platform based depdencies are introduced the following points must be met.
-  - Maven profiles MUST be used to control the dependencies.
-  - Profiles MUST include an activation based on the platform. So that a default build on the host OS just works as default. [Maven profiles](https://maven.apache.org/guides/introduction/introduction-to-profiles.html)
-  - Support for Windows and Linux 64Bit is a MUST. 32Bit support is a SHOULD as 32Bit is coming to an end. 
-  - Linux ARM64 is considered a SHOULD at the moment but might become a MUST. Linux ARM hf is a weak SHOULD.
-  - Support for Mac is considered a SHOULD as we recognize that testing on Mac OS/OS X is legally not possible without buying a Mac. 
-  - All dependencies MUST work relatively out of the box with the standard build. Relatively means e.g. 
-     - We will not accept something which requires an installation/compilation manual. 
-     - An apt-get on Linux is fine as this is the common way in Linux. 
-	BEST is that the native library is packaged with the Java dependency. 
-  - If there is a platform specific optimization or something similar (e.g. hardware optimized libraries), it of course only has to be provided for that platform.
 
 
