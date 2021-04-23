@@ -1,12 +1,8 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Type;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -22,7 +17,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
@@ -47,13 +41,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -61,7 +53,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.queryhandler.config.QueryProducerChannel;
 import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 
@@ -129,12 +120,13 @@ public class QueryService {
 	@Qualifier("qmrestTemp")
 	RestTemplate restTemplate;
 
-	private QueryProducerChannel producerChannels;
-
-	public QueryService(QueryProducerChannel producerChannels) {
-
-		this.producerChannels = producerChannels;
-	}
+	/*
+	 * private QueryProducerChannel producerChannels;
+	 * 
+	 * public QueryService(QueryProducerChannel producerChannels) {
+	 * 
+	 * this.producerChannels = producerChannels; }
+	 */
 
 	@PostConstruct
 	private void setup() {
@@ -373,7 +365,7 @@ public class QueryService {
 											+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 								}
 
-								HttpEntity entity = new HttpEntity<>(headers);
+								HttpEntity<Object> entity = new HttpEntity<Object>(headers);
 
 								String result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
 										HttpMethod.GET, entity, String.class).getBody();
@@ -459,21 +451,20 @@ public class QueryService {
 		result.setResultsLeftBefore(offset);
 		return result;
 	}
+	//TODO decide on removal
+	/*
+	 * private void writeFullResultToKafka(String qToken, List<String>
+	 * aggregatedResult) throws IOException, ResponseException { // write to byte
+	 * array ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	 * DataOutputStream out = new DataOutputStream(baos); for (String element :
+	 * aggregatedResult) { out.writeUTF(element); }
+	 * operations.pushToKafka(producerChannels.paginationWriteChannel(),
+	 * qToken.getBytes(), baos.toByteArray()); }
+	 */
 
-	private void writeFullResultToKafka(String qToken, List<String> aggregatedResult)
-			throws IOException, ResponseException {
-		// write to byte array
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		DataOutputStream out = new DataOutputStream(baos);
-		for (String element : aggregatedResult) {
-			out.writeUTF(element);
-		}
-		operations.pushToKafka(producerChannels.paginationWriteChannel(), qToken.getBytes(), baos.toByteArray());
-	}
-
-	private String generateToken() {
-		return UUID.randomUUID().toString();
-	}
+	/*
+	 * private String generateToken() { return UUID.randomUUID().toString(); }
+	 */
 
 	/**
 	 * making http call to all discovered csources async.

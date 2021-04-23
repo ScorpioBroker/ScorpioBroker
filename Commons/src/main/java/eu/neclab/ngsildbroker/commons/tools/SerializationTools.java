@@ -3,13 +3,10 @@ package eu.neclab.ngsildbroker.commons.tools;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -72,7 +69,6 @@ public class SerializationTools {
 			String geoValueStr = null;
 			Geometry<?> geoValue = null;
 			String dataSetId = null;
-			String unitCode = null;
 			String name = null;
 			for (Entry<String, JsonElement> entry : next.entrySet()) {
 				String propKey = entry.getKey();
@@ -164,7 +160,6 @@ public class SerializationTools {
 		return prop;
 	}
 
-	@SuppressWarnings("unchecked")
 	public static Property parseProperty(JsonArray topLevelArray, String key) {
 		Property prop = new Property();
 		try {

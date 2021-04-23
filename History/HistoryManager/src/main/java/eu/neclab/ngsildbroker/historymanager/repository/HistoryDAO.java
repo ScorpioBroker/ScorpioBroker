@@ -209,7 +209,7 @@ public class HistoryDAO extends StorageReaderDAO {
 	}
 
 	public boolean entityExists(String entityId) {
-		List list = readerJdbcTemplate.queryForList("Select id from temporalentity where id='" + entityId + "';");
+		List<Map<String, Object>> list = readerJdbcTemplate.queryForList("Select id from temporalentity where id='" + entityId + "';");
 		if (list == null || list.isEmpty()) {
 			return false;
 		}

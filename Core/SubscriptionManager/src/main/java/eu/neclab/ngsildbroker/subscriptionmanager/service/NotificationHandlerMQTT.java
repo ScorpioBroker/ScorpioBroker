@@ -14,7 +14,6 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 
@@ -59,7 +58,7 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 
 	private byte[] getPayload(ResponseEntity<byte[]> reply) {
 		HttpHeaders headers = reply.getHeaders();
-		Map<String, String> metaData = new HashMap<String, String>();
+		//Map<String, String> metaData = new HashMap<String, String>();
 		StringBuilder result = new StringBuilder("{\""+NGSIConstants.METADATA+"\":{");
 		for(Entry<String, List<String>> entry: headers.entrySet()) {
 			result.append("\"");
