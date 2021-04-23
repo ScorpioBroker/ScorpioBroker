@@ -18,6 +18,8 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.google.common.collect.ArrayListMultimap;
+
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
@@ -84,7 +86,7 @@ public class CSourceSubscriptionServiceTest {
 	public void subscribeTest() {
 		try {
 			Mockito.doReturn(true).when(operations).isMessageExists(any(), any());
-			URI uri=csourceSubs.subscribe(new SubscriptionRequest(subs, null));
+			URI uri=csourceSubs.subscribe(new SubscriptionRequest(subs, null, ArrayListMultimap.create()));
 			
 			Assert.assertEquals(uri, new URI("urn:ngsi-ld:Subscription:7"));
 		}catch(Exception ex) {
@@ -96,7 +98,7 @@ public class CSourceSubscriptionServiceTest {
 	@Test
 	public void unSubscribeTest() throws Exception {
 		try {
-			csourceSubs.subscribe(new SubscriptionRequest(subs, null));
+			csourceSubs.subscribe(new SubscriptionRequest(subs, null, ArrayListMultimap.create()));
 			Assert.assertTrue(csourceSubs.unsubscribe(new URI("urn:ngsi-ld:Subscription:7")));
 		}catch(Exception ex) {
 			Assert.fail();
@@ -106,7 +108,7 @@ public class CSourceSubscriptionServiceTest {
 	@Test
 	public void updateSubTest() throws Exception {
 		try {
-			csourceSubs.subscribe(new SubscriptionRequest(subs, null));
+			csourceSubs.subscribe(new SubscriptionRequest(subs, null, ArrayListMultimap.create()));
 			Subscription  newSub=subs;
 			List<String> watchedAttrib=new ArrayList<>();	
 			watchedAttrib.add("http://example.org/vehicle/brandName2");

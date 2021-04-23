@@ -42,6 +42,10 @@ public class AppConstants {
 	//constants for swagger
 	public final static String SWAGGER_WEBSITE_LINK = "https://github.com/ScorpioBroker/ScorpioBroker";
 	public final static String SWAGGER_CONTACT_LINK = "https://github.com/ScorpioBroker/ScorpioBroker";
+	public static final int OPERATION_CREATE_ENTITY = 0;
+	public static final int OPERATION_UPDATE_ENTITY = 1;
+	public static final int OPERATION_APPEND_ENTITY = 2;
+	public static final int OPERATION_DELETE_ATTRIBUTE_ENTITY = 3;
 
 
 

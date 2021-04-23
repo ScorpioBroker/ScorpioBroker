@@ -21,6 +21,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.google.gson.Gson;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
@@ -72,10 +73,15 @@ public class StorageWriterDAO {
 		return false;
 	}
 
-	public boolean storeEntity(String key, String value, String valueWithoutSysAttrs, String kvValue)
+	public boolean storeEntity(EntityRequest request)
 			throws SQLTransientConnectionException {
 		String sql;
+		String key = request.getId();
+		String value = request.getWithSysAttrs();
+		String valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
+		String kvValue = request.getKeyValue();
 		int n = 0;
+		
 		if (value != null && !value.equals("null")) {
 			sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA

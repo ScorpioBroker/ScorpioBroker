@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -94,7 +95,7 @@ public class SubscriptionController {
 			// System.out.println("RECEIVING SUBSCRIPTION: " + payload + " at " +
 			// System.currentTimeMillis());
 			subscription = contextResolver.expandSubscription(payload, context);
-			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
+			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request));
 			URI subId = manager.subscribe(subRequest);
 
 			logger.trace("subscribeRest() :: completed");
@@ -112,12 +113,19 @@ public class SubscriptionController {
 	public ResponseEntity<byte[]> getAllSubscriptions(HttpServletRequest request,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException {
 		logger.trace("getAllSubscriptions() :: started");
-		List<Subscription> result = null;
-		result = manager.getAllSubscriptions(limit);
+		List<SubscriptionRequest> result = null;
+		result = manager.getAllSubscriptions(limit, HttpUtils.getHeaders(request));
 		logger.trace("getAllSubscriptions() :: completed");
+		return httpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(result)));
 
-		return httpUtils.generateReply(request, DataSerializer.toJson(result));
+	}
 
+	private List<Subscription> getSubscriptions(List<SubscriptionRequest> subRequests) {
+		ArrayList<Subscription> result = new ArrayList<Subscription>();
+		for(SubscriptionRequest subRequest: subRequests) {
+			result.add(subRequest.getSubscription());
+		}
+		return result;
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/{id}")
@@ -142,7 +150,7 @@ public class SubscriptionController {
 			logger.trace("call deleteSubscription() ::");
 			// System.out.println("DELETING SUBSCRIPTION: " + id + " at " +
 			// System.currentTimeMillis());
-			manager.unsubscribe(id);
+			manager.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
@@ -164,7 +172,7 @@ public class SubscriptionController {
 			if (subscription.getId() == null) {
 				subscription.setId(id);
 			}
-			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context);
+			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request));
 
 			// expandSubscriptionAttributes(subscription, context);
 			if (resolved == null || subscription == null || !id.equals(subscription.getId())) {

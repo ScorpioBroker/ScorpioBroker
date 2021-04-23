@@ -99,7 +99,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 			// entityService.validateEntity(resolved, request);
 
-			result = entityService.createMessage(resolved);
+			result = entityService.createMessage(HttpUtils.getHeaders(request), resolved);
 			logger.trace("create entity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
 					.build();
@@ -139,7 +139,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.trace("update entity :: started");
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
-			UpdateResult update = entityService.updateMessage(entityId, resolved);
+			UpdateResult update = entityService.updateMessage(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("update entity :: completed");
 			if (update.getUpdateResult()) {
 				return ResponseEntity.noContent().build();
@@ -185,7 +185,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.trace("append entity :: started");
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
 
-			AppendResult append = entityService.appendMessage(entityId, resolved, options);
+			AppendResult append = entityService.appendMessage(HttpUtils.getHeaders(request), entityId, resolved,
+					options);
 			logger.trace("append entity :: completed");
 			if (append.getAppendResult()) {
 				return ResponseEntity.noContent().build();
@@ -235,7 +236,8 @@ public class EntityController {// implements EntityHandlerInterface {
 
 			String expandedAttrib = paramsResolver.expandAttribute(attrId, payload, request);
 
-			UpdateResult update = entityService.partialUpdateEntity(entityId, expandedAttrib, expandedPayload);
+			UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,
+					expandedAttrib, expandedPayload);
 			logger.trace("partial-update entity :: completed");
 			if (update.getStatus()) {
 				return ResponseEntity.noContent().build();
@@ -288,7 +290,8 @@ public class EntityController {// implements EntityHandlerInterface {
 				logger.trace("delete attribute :: started");
 				Validator.validate(request.getParameterMap());
 				String expandedAttrib = paramsResolver.expandAttribute(attrId, HttpUtils.getAtContext(request));
-				entityService.deleteAttribute(entityId, expandedAttrib, datasetId, deleteAll);
+				entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,
+						deleteAll);
 				logger.trace("delete attribute :: completed");
 				return ResponseEntity.noContent().build();
 			} else {

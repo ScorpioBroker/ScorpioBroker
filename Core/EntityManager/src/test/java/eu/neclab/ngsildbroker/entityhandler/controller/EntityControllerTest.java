@@ -10,9 +10,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -22,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
@@ -135,11 +137,11 @@ public class EntityControllerTest {
 	@Test
 	public void createEntityTest() {
 		try {
-			when(entityService.createMessage(any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
+			when(entityService.createMessage(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
 			mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload)).andExpect(status().isCreated())
 					.andExpect(redirectedUrl("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101"));
-			verify(entityService, times(1)).createMessage(any());
+			verify(entityService, times(1)).createMessage(any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -152,11 +154,11 @@ public class EntityControllerTest {
 	@Test
 	public void createEntityAlreadyExistTest() {
 		try {
-			when(entityService.createMessage(any())).thenThrow(new ResponseException(ErrorType.AlreadyExists));
+			when(entityService.createMessage(any(), any())).thenThrow(new ResponseException(ErrorType.AlreadyExists));
 			mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
 					.andExpect(status().isConflict()).andExpect(jsonPath("$.title").value("Already exists."));
-			verify(entityService, times(1)).createMessage(any());
+			verify(entityService, times(1)).createMessage(any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}
@@ -168,11 +170,11 @@ public class EntityControllerTest {
 	@Test
 	public void createEntityBadRequestTest() {
 		try {
-			when(entityService.createMessage(any())).thenThrow(new ResponseException(ErrorType.BadRequestData));
+			when(entityService.createMessage(any(), any())).thenThrow(new ResponseException(ErrorType.BadRequestData));
 			mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
 					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-			verify(entityService, times(1)).createMessage(any());
+			verify(entityService, times(1)).createMessage(any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -185,11 +187,11 @@ public class EntityControllerTest {
 	@Test
 	public void createEntity500ExceptionTest() {
 		try {
-			when(entityService.createMessage(any())).thenThrow(new Exception());
+			when(entityService.createMessage(any(), any())).thenThrow(new Exception());
 			mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
 					.andExpect(status().isInternalServerError()).andExpect(jsonPath("$.title").value("Internal error"));
-			verify(entityService, times(1)).createMessage(any());
+			verify(entityService, times(1)).createMessage(any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -203,12 +205,12 @@ public class EntityControllerTest {
 	public void appendEntityNoContentTest() {
 		try {
 			AppendResult appendResult = Mockito.mock(AppendResult.class);
-			when(entityService.appendMessage(any(), any(), any())).thenReturn(appendResult);
+			when(entityService.appendMessage(any(), any(), any(), any())).thenReturn(appendResult);
 			when(appendResult.getAppendResult()).thenReturn(true);
 			mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(appendPayload)).andExpect(status().isNoContent());
-			verify(entityService, times(1)).appendMessage(any(), any(), any());
+			verify(entityService, times(1)).appendMessage(any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -222,11 +224,11 @@ public class EntityControllerTest {
 	public void appendEntityMultiStatusTest() {
 		try {
 			AppendResult appendResult = Mockito.mock(AppendResult.class);
-			when(entityService.appendMessage(any(), any(), any())).thenReturn(appendResult);
+			when(entityService.appendMessage(any(), any(), any(), any())).thenReturn(appendResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(appendPayload)).andExpect(status().isMultiStatus());
-			verify(entityService, times(1)).appendMessage(any(), any(), any());
+			verify(entityService, times(1)).appendMessage(any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -239,13 +241,13 @@ public class EntityControllerTest {
 	@Test
 	public void appendEntityBadRequestTest() {
 		try {
-			when(entityService.appendMessage(any(), any(), any()))
+			when(entityService.appendMessage(any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData));
 			mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(appendPayload)).andExpect(status().isBadRequest())
 					.andExpect(jsonPath("$.title").value("Bad Request Data."));
-			verify(entityService, times(1)).appendMessage(any(), any(), any());
+			verify(entityService, times(1)).appendMessage(any(), any(), any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -258,12 +260,12 @@ public class EntityControllerTest {
 	@Test
 	public void appendEntityNotFoundTest() {
 		try {
-			when(entityService.appendMessage(any(), any(), any())).thenThrow(new ResponseException(ErrorType.NotFound));
+			when(entityService.appendMessage(any(), any(), any(), any())).thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(appendPayload)).andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.title").value("Resource not found."));
-			verify(entityService, times(1)).appendMessage(any(), any(), any());
+			verify(entityService, times(1)).appendMessage(any(), any(), any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -276,12 +278,12 @@ public class EntityControllerTest {
 	@Test
 	public void appendEntity500Test() {
 		try {
-			when(entityService.appendMessage(any(), any(), any())).thenThrow(new Exception());
+			when(entityService.appendMessage(any(), any(), any(), any())).thenThrow(new Exception());
 			mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(appendPayload)).andExpect(status().isInternalServerError())
 					.andExpect(jsonPath("$.title").value("Internal error"));
-			verify(entityService, times(1)).appendMessage(any(), any(), any());
+			verify(entityService, times(1)).appendMessage(any(), any(), any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -295,12 +297,12 @@ public class EntityControllerTest {
 	public void updateEntityNoContentTest() {
 		try {
 			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
-			when(entityService.updateMessage(any(), any())).thenReturn(updateResult);
+			when(entityService.updateMessage(any(), any(), any())).thenReturn(updateResult);
 			when(updateResult.getUpdateResult()).thenReturn(true);
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload)).andExpect(status().isNoContent());
-			verify(entityService, times(1)).updateMessage(any(), any());
+			verify(entityService, times(1)).updateMessage(any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -314,11 +316,11 @@ public class EntityControllerTest {
 	public void updateEntityMultiStatusTest() {
 		try {
 			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
-			when(entityService.updateMessage(any(), any())).thenReturn(updateResult);
+			when(entityService.updateMessage(any(), any(), any())).thenReturn(updateResult);
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload)).andExpect(status().isMultiStatus());
-			verify(entityService, times(1)).updateMessage(any(), any());
+			verify(entityService, times(1)).updateMessage(any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -331,12 +333,12 @@ public class EntityControllerTest {
 	@Test
 	public void updateEntityBadRequestTest() {
 		try {
-			when(entityService.updateMessage(any(), any())).thenThrow(new ResponseException(ErrorType.BadRequestData));
+			when(entityService.updateMessage(any(), any(), any())).thenThrow(new ResponseException(ErrorType.BadRequestData));
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload)).andExpect(status().isBadRequest())
 					.andExpect(jsonPath("$.title").value("Bad Request Data."));
-			verify(entityService, times(1)).updateMessage(any(), any());
+			verify(entityService, times(1)).updateMessage(any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}
@@ -348,12 +350,12 @@ public class EntityControllerTest {
 	@Test
 	public void updateEntityNotFoundTest() {
 		try {
-			when(entityService.updateMessage(any(), any())).thenThrow(new ResponseException(ErrorType.NotFound));
+			when(entityService.updateMessage(any(), any(), any())).thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload)).andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.title").value("Resource not found."));
-			verify(entityService, times(1)).updateMessage(any(), any());
+			verify(entityService, times(1)).updateMessage(any(), any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -366,12 +368,12 @@ public class EntityControllerTest {
 	@Test
 	public void updateEntity500Test() {
 		try {
-			when(entityService.updateMessage(any(), any())).thenThrow(new Exception());
+			when(entityService.updateMessage(any(), any(), any())).thenThrow(new Exception());
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload)).andExpect(status().isInternalServerError())
 					.andExpect(jsonPath("$.title").value("Internal error"));
-			verify(entityService, times(1)).updateMessage(any(), any());
+			verify(entityService, times(1)).updateMessage(any(), any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -385,12 +387,12 @@ public class EntityControllerTest {
 	public void partialUpdateAttributeIfDatasetIdExistNoContentTest() {
 		try {
 			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
-			when(entityService.partialUpdateEntity(any(), any(), any())).thenReturn(updateResult);
+			when(entityService.partialUpdateEntity(any(), any(), any(), any())).thenReturn(updateResult);
 			when(updateResult.getStatus()).thenReturn(true);
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdatePayload)).andExpect(status().isNoContent());
-			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any());
+			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -403,13 +405,13 @@ public class EntityControllerTest {
 	@Test
 	public void partialUpdateAttributeIfDatasetIdIsNotExistTest() {
 		try {
-			when(entityService.partialUpdateEntity(any(), any(), any()))
+			when(entityService.partialUpdateEntity(any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdatePayload)).andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.title").value("Resource not found."));
-			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any());
+			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -422,13 +424,13 @@ public class EntityControllerTest {
 	@Test
 	public void partialUpdateAttributeBadRequestTest() {
 		try {
-			when(entityService.partialUpdateEntity(any(), any(), any()))
+			when(entityService.partialUpdateEntity(any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData));
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload)).andExpect(status().isBadRequest())
 					.andExpect(jsonPath("$.title").value("Bad Request Data."));
-			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any());
+			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -442,12 +444,12 @@ public class EntityControllerTest {
 	public void partialUpdateAttributeDefaultDatasetIdCaseTest() {
 		try {
 			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
-			when(entityService.partialUpdateEntity(any(), any(), any())).thenReturn(updateResult);
+			when(entityService.partialUpdateEntity(any(), any(), any(), any())).thenReturn(updateResult);
 			when(updateResult.getStatus()).thenReturn(true);
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdateDefaultCasePayload)).andExpect(status().isNoContent());
-			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any());
+			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -460,13 +462,13 @@ public class EntityControllerTest {
 	@Test
 	public void partialUpdateAttributeDefaultDatasetIdCaseNotFoundTest() {
 		try {
-			when(entityService.partialUpdateEntity(any(), any(), any()))
+			when(entityService.partialUpdateEntity(any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdateDefaultCasePayload)).andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.title").value("Resource not found."));
-			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any());
+			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -479,12 +481,12 @@ public class EntityControllerTest {
 	@Test
 	public void partialUpdateAttribute500Test() {
 		try {
-			when(entityService.partialUpdateEntity(any(), any(), any())).thenThrow(new Exception());
+			when(entityService.partialUpdateEntity(any(), any(), any(), any())).thenThrow(new Exception());
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdateDefaultCasePayload)).andExpect(status().isInternalServerError())
 					.andExpect(jsonPath("$.title").value("Internal error"));
-			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any());
+			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();
@@ -561,12 +563,12 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAttributeInstanceIfDatasetIdExistTest() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any())).thenReturn(true);
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any())).thenReturn(true);
 			mockMvc.perform(delete(
 					"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
 					"urn:ngsi-ld:Vehicle:A101", "speed").contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isNoContent());
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -579,13 +581,13 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAttributeInstanceIfDatasetIdNotExistTest() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any()))
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(delete(
 					"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
 					"urn:ngsi-ld:Vehicle:A101", "speed").contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."));
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}
@@ -597,13 +599,13 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAttributeInstanceBadRequestTest() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any()))
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData));
 			mockMvc.perform(delete(
 					"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
 					"urn:ngsi-ld:Vehicle:A101", "speed").contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(jsonPath("$.title").value("Bad Request Data."));
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}
@@ -615,12 +617,12 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAttributeDefaultInstanceIfExistTest() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any())).thenReturn(true);
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any())).thenReturn(true);
 			mockMvc.perform(
 					delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isNoContent());
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -633,13 +635,13 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAttributeDefaultInstanceNotExistTest() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any()))
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(
 					delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."));
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}
@@ -651,13 +653,13 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAttributeNotFoundTest() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any()))
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(
 					delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."));
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}
@@ -669,11 +671,11 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAllAttributeInstanceTest() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any())).thenReturn(true);
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any())).thenReturn(true);
 			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true",
 					"urn:ngsi-ld:Vehicle:A101", "speed").contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isNoContent());
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -686,12 +688,12 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAllAttributeInstanceBadRequestTest() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any()))
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData));
 			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true",
 					"urn:ngsi-ld:Vehicle:A101", "speed").contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}
@@ -703,13 +705,13 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAttributeBadRequestTest() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any()))
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData));
 			mockMvc.perform(
 					delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}
@@ -721,12 +723,12 @@ public class EntityControllerTest {
 	@Test
 	public void deleteAttribute500Test() {
 		try {
-			when(entityService.deleteAttribute(any(), any(), any(), any())).thenThrow(new Exception());
+			when(entityService.deleteAttribute(any(), any(), any(), any(), any())).thenThrow(new Exception());
 			mockMvc.perform(
 					delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
 							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isInternalServerError()).andExpect(jsonPath("$.title").value("Internal error"));
-			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any());
+			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail();
 		}

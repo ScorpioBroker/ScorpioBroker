@@ -101,7 +101,7 @@ public class RegistrySubscriptionController {
 		}
 
 		try {
-			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context);
+			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request));
 			URI subId = manager.subscribe(subscriptionRequest);
 			logger.trace("subscribeRest() :: completed");
 			//no absolute url only relative url

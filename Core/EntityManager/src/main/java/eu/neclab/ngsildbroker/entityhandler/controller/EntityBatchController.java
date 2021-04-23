@@ -49,7 +49,7 @@ public class EntityBatchController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
-			BatchResult result = entityService.createMultipleMessage(resolved);
+			BatchResult result = entityService.createMultipleMessage(HttpUtils.getHeaders(request), resolved);
 			return generateBatchResultReply(result, HttpStatus.CREATED);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
@@ -79,7 +79,7 @@ public class EntityBatchController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
-			BatchResult result = entityService.upsertMultipleMessage(resolved);
+			BatchResult result = entityService.upsertMultipleMessage(HttpUtils.getHeaders(request), resolved);
 			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
@@ -92,7 +92,7 @@ public class EntityBatchController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
-			BatchResult result = entityService.updateMultipleMessage(resolved);
+			BatchResult result = entityService.updateMultipleMessage(HttpUtils.getHeaders(request), resolved);
 			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);

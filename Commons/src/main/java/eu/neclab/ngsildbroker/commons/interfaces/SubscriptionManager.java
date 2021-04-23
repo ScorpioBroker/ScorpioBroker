@@ -3,6 +3,8 @@ package eu.neclab.ngsildbroker.commons.interfaces;
 import java.net.URI;
 import java.util.List;
 
+import com.google.common.collect.ArrayListMultimap;
+
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
@@ -27,18 +29,19 @@ public interface SubscriptionManager {
 	/**
 	 * 
 	 * @param id
+	 * @param headers 
 	 */
-	public void unsubscribe(URI id) throws ResponseException;
+	public void unsubscribe(URI id, ArrayListMultimap<String,String> headers) throws ResponseException;
 
 	/**
 	 * 
 	 * @param subscription
 	 */
-	public Subscription updateSubscription(SubscriptionRequest subscription) throws ResponseException;
+	public SubscriptionRequest updateSubscription(SubscriptionRequest subscription) throws ResponseException;
 	
-	public List<Subscription> getAllSubscriptions(int limit);
+	public List<SubscriptionRequest> getAllSubscriptions(int limit, ArrayListMultimap<String, String> headers);
 	
-	public Subscription getSubscription(String subscriptionId) throws ResponseException;
+	public SubscriptionRequest getSubscription(String subscriptionId) throws ResponseException;
 
 	public void remoteNotify(String id, Notification notification);
 

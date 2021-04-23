@@ -23,6 +23,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import com.google.common.collect.ArrayListMultimap;
+
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -83,7 +85,7 @@ public class SubscriptionServiceTest {
 		List<Object> context = new ArrayList<>();	
 	    Subscription subscription = null;
 	    subscription = DataSerializer.getSubscription(resolved);
-	    SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
+	    SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context, ArrayListMultimap.create());
 		URI subId = manager.subscribe(subRequest);
 		verify(kafkaOperations, times(1)).pushToKafka(any(),any(),any());
 	 
@@ -97,7 +99,7 @@ public class SubscriptionServiceTest {
 		List<Object> context = new ArrayList<>();	
 	    Subscription subscription = null;
 	    subscription = DataSerializer.getSubscription(resolved);
-	    SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context);
+	    SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context, ArrayListMultimap.create());
 	    when(subscriptionId2Subscription.get(any())).thenReturn(new Subscription());
 		try {
 			manager.updateSubscription(subRequest);
@@ -112,7 +114,7 @@ public class SubscriptionServiceTest {
 	 */
 	@Test
 	public void getAllSubscriptionsTest() {
-		List<Subscription> result=manager.getAllSubscriptions(0);
+		List<SubscriptionRequest> result=manager.getAllSubscriptions(0);
 		assertNotNull(result);
 	}
 	

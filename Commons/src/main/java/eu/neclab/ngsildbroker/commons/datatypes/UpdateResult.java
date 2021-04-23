@@ -7,8 +7,8 @@ public class UpdateResult {
 	private JsonNode updatedJsonFields;// = new ArrayList<JsonNode>();
 	private JsonNode finalNode;
 	private boolean status = false;
-	private byte[] json;
-	private byte[] jsonWithoutSysAttrs;
+	private String json;
+	private String jsonWithoutSysAttrs;
 
 	public boolean getUpdateResult() {
 		return jsonToAppend.size() == updatedJsonFields.size();
@@ -53,19 +53,19 @@ public class UpdateResult {
 		this.status = status;
 	}
 
-	public byte[] getJson() {
+	public String getJson() {
 		return json;
 	}
 
-	public void setJson(byte[] json) {
+	public void setJson(String json) {
 		this.json = json;
 	}
 	
-	public byte[] getJsonWithoutSysAttrs() {
+	public String getJsonWithoutSysAttrs() {
 		return jsonWithoutSysAttrs;
 	}
 
-	public void setJsonWithoutSysAttrs(byte[] jsonWithoutSysAttrs) {
+	public void setJsonWithoutSysAttrs(String jsonWithoutSysAttrs) {
 		this.jsonWithoutSysAttrs = jsonWithoutSysAttrs;
 	}
 	
