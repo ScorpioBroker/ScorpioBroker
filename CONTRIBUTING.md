@@ -8,10 +8,10 @@ planning to contribute to the code you should read this document and get familia
 If you are interested to make any contribution to the ScorpioBroker, please download the contributor license agreement listed below and send us you signed agreement via email scorpio-support@listserv.neclab.eu  
 
 
-[ScorpioBroker Entity Contributor License Agreement](https://github.com/scorpiobroker/scorpiobroker/blob/development/ScorpioBroker-Entity.pdf)
+[ScorpioBroker Entity Contributor License Agreement](https://github.com/ScorpioBroker/ScorpioBroker/blob/development/ScorpioBroker-Entity_CLA_final.pdf)
 
 
-[ScorpioBroker Individual Contributor License Agreement](https://github.com/scorpiobroker/scorpiobroker/blob/development/ScorpioBroker-Individual.pdf)
+[ScorpioBroker Individual Contributor License Agreement](https://github.com/ScorpioBroker/ScorpioBroker/blob/development/ScorpioBroker-Individual_CLA_final.pdf)
 
 ## Ground rules & expectations
 
