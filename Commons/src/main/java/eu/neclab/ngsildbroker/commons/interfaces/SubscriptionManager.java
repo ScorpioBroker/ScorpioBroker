@@ -41,7 +41,7 @@ public interface SubscriptionManager {
 	
 	public List<SubscriptionRequest> getAllSubscriptions(int limit, ArrayListMultimap<String, String> headers);
 	
-	public SubscriptionRequest getSubscription(String subscriptionId) throws ResponseException;
+	public SubscriptionRequest getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers) throws ResponseException;
 
 	public void remoteNotify(String id, Notification notification);
 

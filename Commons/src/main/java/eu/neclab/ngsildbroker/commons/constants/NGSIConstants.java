@@ -3,6 +3,8 @@ package eu.neclab.ngsildbroker.commons.constants;
 import java.util.HashMap;
 import java.util.List;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.util.Arrays;
 
 public interface NGSIConstants {
@@ -235,4 +237,5 @@ public interface NGSIConstants {
 	public static final String COUNT_HEADER_RESULT = "count";
 	public static final String REGEX_NGSI_LD_ATTR_TYPES = new String(
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
+	public static final @Nullable String TENANT_HEADER = "Tenant";
 }

@@ -32,7 +32,6 @@ import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
-import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
@@ -58,7 +57,9 @@ import com.netflix.discovery.shared.Application;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
@@ -69,6 +70,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -138,12 +140,12 @@ public class SubscriptionService implements SubscriptionManager {
 	@Autowired
 	@Qualifier("smparamsResolver")
 	ParamsResolver paramsResolver;
-	
+
 	SubscriptionManagerProducerChannel producerChannel;
 
 	@Autowired
 	KafkaOps kafkaOps;
-	
+
 	boolean directDB = true;
 
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
@@ -161,7 +163,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private Map<String, String> ids2Type;
 
-	private HTreeMap<String,String> subscriptionStore;
+	private HTreeMap<String, String> subscriptionStore;
 	@Value("${subscriptions.store:subscriptionstore.db}")
 	private String subscriptionStoreLocation;
 
@@ -171,7 +173,6 @@ public class SubscriptionService implements SubscriptionManager {
 	public SubscriptionService(SubscriptionManagerProducerChannel producerChannel) {
 		this.producerChannel = producerChannel;
 	}
-
 
 	@PostConstruct
 	private void setup() {
@@ -184,14 +185,18 @@ public class SubscriptionService implements SubscriptionManager {
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, queryResultTopic,
 				requestTopic, paramsResolver);
 		logger.trace("call loadStoredSubscriptions() ::");
-		this.subscriptionStore = DBMaker.fileDB(this.subscriptionStoreLocation).closeOnJvmShutdown().checksumHeaderBypass().transactionEnable().make().hashMap("subscriptions", Serializer.STRING, Serializer.STRING).createOrOpen();
+		this.subscriptionStore = DBMaker.fileDB(this.subscriptionStoreLocation).closeOnJvmShutdown()
+				.checksumHeaderBypass().transactionEnable().make()
+				.hashMap("subscriptions", Serializer.STRING, Serializer.STRING).createOrOpen();
 		loadStoredSubscriptions();
 
 	}
+
 	@PreDestroy
 	private void deconstructor() {
 		subscriptionStore.close();
 	}
+
 	private void loadStoredSubscriptions() {
 		// TODO Auto-generated method stub
 		synchronized (this.subscriptionStore) {
@@ -209,7 +214,7 @@ public class SubscriptionService implements SubscriptionManager {
 					continue;
 				}
 			}
-			
+
 		}
 	}
 
@@ -291,7 +296,8 @@ public class SubscriptionService implements SubscriptionManager {
 		new Thread() {
 			public void run() {
 				synchronized (subscriptionStore) {
-					subscriptionStore.put(subscription.getSubscription().getId().toString(), DataSerializer.toJson(subscription));
+					subscriptionStore.put(subscription.getSubscription().getId().toString(),
+							DataSerializer.toJson(subscription));
 					try {
 						kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
 								subscription.getSubscription().getId().toString().getBytes(),
@@ -301,7 +307,7 @@ public class SubscriptionService implements SubscriptionManager {
 						e.printStackTrace();
 					}
 				}
-				
+
 			};
 		}.start();
 
@@ -322,8 +328,7 @@ public class SubscriptionService implements SubscriptionManager {
 		SubscriptionRequest removedSub;
 		synchronized (subscriptionId2Subscription) {
 			removedSub = this.subscriptionId2Subscription.remove(id.toString());
-			this.kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
-					id.toString().getBytes(),
+			this.kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(), id.toString().getBytes(),
 					AppConstants.NULL_BYTES);
 		}
 
@@ -410,7 +415,8 @@ public class SubscriptionService implements SubscriptionManager {
 		synchronized (this.subscriptionId2Context) {
 			this.subscriptionId2Context.putAll(oldSub.getId().toString(), subscriptionRequest.getContext());
 		}
-		SubscriptionRequest result = new SubscriptionRequest(oldSub, subscriptionRequest.getContext(), subscriptionRequest.getHeaders());
+		SubscriptionRequest result = new SubscriptionRequest(oldSub, subscriptionRequest.getContext(),
+				subscriptionRequest.getHeaders());
 		storeSubscription(result);
 		return result;
 	}
@@ -418,7 +424,13 @@ public class SubscriptionService implements SubscriptionManager {
 	@Override
 	public List<SubscriptionRequest> getAllSubscriptions(int limit, ArrayListMultimap<String, String> headers) {
 		List<SubscriptionRequest> result = new ArrayList<SubscriptionRequest>();
-		result.addAll(subscriptionId2Subscription.values());
+		List<String> requestTenant = headers.get(NGSIConstants.TENANT_HEADER);
+		for (SubscriptionRequest sub : subscriptionId2Subscription.values()) {
+			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
+			if (tenantMatches(requestTenant, subTenant)) {
+				result.add(sub);
+			}
+		}
 		if (limit > 0) {
 			if (limit < result.size()) {
 				result = result.subList(0, limit);
@@ -428,8 +440,11 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	@Override
-	public SubscriptionRequest getSubscription(String subscriptionId) throws ResponseException {
-		if (subscriptionId2Subscription.containsKey(subscriptionId)) {
+	public SubscriptionRequest getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers)
+			throws ResponseException {
+		if (subscriptionId2Subscription.containsKey(subscriptionId) && tenantMatches(
+				headers.get(NGSIConstants.TENANT_HEADER),
+				subscriptionId2Subscription.get(subscriptionId).getHeaders().get(NGSIConstants.TENANT_HEADER))) {
 			return subscriptionId2Subscription.get(subscriptionId);
 		} else {
 			throw new ResponseException(ErrorType.NotFound);
@@ -439,39 +454,75 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@KafkaListener(topics = "${entity.create.topic}", groupId = "submanager")
 	public void handleCreate(Message<byte[]> message) {
-		String payload = new String(message.getPayload());
 		String key = KafkaOps.getMessageKey(message);
-		logger.debug("Create got called: " + payload);
-		logger.debug(key);
-		checkSubscriptionsWithCreate(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
+		logger.debug("Create got called: " + key);
+		checkSubscriptionsWithCreate(DataSerializer.getCreateEntityRequest(new String(message.getPayload())),
+				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
-	private void checkSubscriptionsWithCreate(String key, String payload, long messageTime) {
-		Entity create = DataSerializer.getEntity(payload);
+	private void checkSubscriptionsWithCreate(CreateEntityRequest createRequest, long messageTime) {
+		Entity create = DataSerializer.getEntity(createRequest.getWithSysAttrs());
+		String id = createRequest.getId();
 		synchronized (this.ids2Type) {
-			this.ids2Type.put(key, create.getType());
+			this.ids2Type.put(id, create.getType());
 		}
-
+		List<String> createTenant = createRequest.getHeaders().get(NGSIConstants.TENANT_HEADER);
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(create.getType())) {
+			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
+			if (!tenantMatches(createTenant, subTenant)) {
+				continue;
+			}
 			for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
 				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(key)) {
+				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getIdPattern() != null && key.matches(entityInfo.getIdPattern())) {
+				if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
 					subsToCheck.add(sub);
 					break;
 				}
 			}
 		}
-		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE));
+		addAllTypeSubscriptions(createTenant, subsToCheck);
+
 		checkSubscriptions(subsToCheck, create, CREATE, messageTime);
 
+	}
+
+	private void addAllTypeSubscriptions(List<String> entityTenant, List<SubscriptionRequest> subsToCheck) {
+		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE)) {
+			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
+			if ((subTenant.isEmpty() && !entityTenant.isEmpty()) || (!subTenant.isEmpty() && entityTenant.isEmpty())) {
+				continue;
+			}
+			if (!subTenant.isEmpty() && !entityTenant.isEmpty() && !subTenant.get(0).equals(entityTenant.get(0))) {
+				continue;
+			}
+			subsToCheck.add(sub);
+		}
+	}
+
+	/**
+	 * Checks if two tenant headers match up Expects ArrayListMultiMap inputs which
+	 * provide an empty List if an entry is not present.
+	 * 
+	 * @param entityTenant
+	 * @param subTenant
+	 * @return if tenant matches. Incl. no tenant.
+	 */
+	private boolean tenantMatches(List<String> entityTenant, List<String> subTenant) {
+		if ((subTenant.isEmpty() && !entityTenant.isEmpty()) || (!subTenant.isEmpty() && entityTenant.isEmpty())) {
+			return false;
+		}
+		if (!subTenant.isEmpty() && !entityTenant.isEmpty() && !subTenant.get(0).equals(entityTenant.get(0))) {
+			return false;
+		}
+		return true;
 	}
 
 	private void checkSubscriptions(ArrayList<SubscriptionRequest> subsToCheck, Entity entity, int methodType,
@@ -522,7 +573,8 @@ public class SubscriptionService implements SubscriptionManager {
 	private void sendNotification(List<Entity> dataList, SubscriptionRequest subscription) {
 		logger.debug(DataSerializer.toJson(dataList));
 		try {
-			String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
+			String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri()
+					.getScheme();
 
 			NotificationHandler handler;
 			if (endpointProtocol.equals("mqtt")) {
@@ -534,8 +586,10 @@ public class SubscriptionService implements SubscriptionManager {
 					new Notification(EntityTools.getRandomID("notification:"), System.currentTimeMillis(),
 							subscription.getSubscription().getId(), dataList, null, null, 0, true),
 					subscription.getSubscription().getNotification().getEndPoint().getUri(),
-					subscription.getSubscription().getNotification().getEndPoint().getAccept(), subscription.getSubscription().getId().toString(),
-					subscriptionId2Context.get(subscription.getSubscription().getId().toString()), subscription.getSubscription().getThrottling(),
+					subscription.getSubscription().getNotification().getEndPoint().getAccept(),
+					subscription.getSubscription().getId().toString(),
+					subscriptionId2Context.get(subscription.getSubscription().getId().toString()),
+					subscription.getSubscription().getThrottling(),
 					subscription.getSubscription().getNotification().getEndPoint().getNotifierInfo());
 		} catch (URISyntaxException e) {
 			logger.error("Exception ::", e);
@@ -545,7 +599,8 @@ public class SubscriptionService implements SubscriptionManager {
 		// }
 	}
 
-	private Entity generateNotificationEntity(Entity entity, SubscriptionRequest subscription) throws ResponseException {
+	private Entity generateNotificationEntity(Entity entity, SubscriptionRequest subscription)
+			throws ResponseException {
 
 		if (!evaluateGeoQuery(subscription.getSubscription().getLdGeoQuery(), entity.getLocation())) {
 			return null;
@@ -584,7 +639,8 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private boolean shouldFire(Entity entity, SubscriptionRequest subscription) {
-		if (subscription.getSubscription().getAttributeNames() == null || subscription.getSubscription().getAttributeNames().isEmpty()) {
+		if (subscription.getSubscription().getAttributeNames() == null
+				|| subscription.getSubscription().getAttributeNames().isEmpty()) {
 			return true;
 		}
 		for (String attribName : subscription.getSubscription().getAttributeNames()) {
@@ -758,38 +814,45 @@ public class SubscriptionService implements SubscriptionManager {
 		String key = KafkaOps.getMessageKey(message);
 		logger.debug("update got called: " + payload);
 		logger.debug(key);
-		checkSubscriptionsWithUpdate(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
+		UpdateEntityRequest updateRequest = DataSerializer.getUpdateEntityRequest(payload);
+		checkSubscriptionsWithUpdate(updateRequest, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
-	private void checkSubscriptionsWithUpdate(String key, String payload, long messageTime) {
-		Entity update = DataSerializer.getPartialEntity(payload);
-		String type = getTypeForId(key);
+	private void checkSubscriptionsWithUpdate(UpdateEntityRequest updateRequest, long messageTime) {
+		Entity update = DataSerializer.getPartialEntity(updateRequest.getWithSysAttrs());
+		String id = updateRequest.getId();
+		String type = getTypeForId(id);
 		try {
-			update.setId(new URI(key));
+			update.setId(new URI(id));
 		} catch (URISyntaxException e) {
 			// left empty intentionally should never happen because the uri should be
 			// already checked
 			e.printStackTrace();
 		}
 		update.setType(type);
+		List<String> updateTenant = updateRequest.getHeaders().get(NGSIConstants.TENANT_HEADER);
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(type)) {
+			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
+			if (!tenantMatches(updateTenant, subTenant)) {
+				continue;
+			}
 			for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
 				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(key)) {
+				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getIdPattern() != null && key.matches(entityInfo.getIdPattern())) {
+				if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
 					subsToCheck.add(sub);
 					break;
 				}
 			}
 		}
-		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE));
+		addAllTypeSubscriptions(updateTenant, subsToCheck);
 		checkSubscriptions(subsToCheck, update, UPDATE, messageTime);
 
 	}
@@ -800,38 +863,46 @@ public class SubscriptionService implements SubscriptionManager {
 		String key = KafkaOps.getMessageKey(message);
 		logger.debug("Create got called: " + payload);
 		logger.debug(key);
-		checkSubscriptionsWithAppend(key, payload, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
+		checkSubscriptionsWithAppend(DataSerializer.getAppendEntityRequest(new String(message.getPayload())),
+				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
-	private void checkSubscriptionsWithAppend(String key, String payload, long messageTime) {
-		Entity append = DataSerializer.getPartialEntity(payload);
-		String type = getTypeForId(key);
+	private void checkSubscriptionsWithAppend(AppendEntityRequest appendRequest, long messageTime) {
+		Entity append = DataSerializer.getPartialEntity(appendRequest.getWithSysAttrs());
+		String id = appendRequest.getId();
+		String type = getTypeForId(id);
+
 		try {
-			append.setId(new URI(key));
+			append.setId(new URI(id));
 		} catch (URISyntaxException e) {
 			// left empty intentionally should never happen because the uri should be
 			// already checked
 			e.printStackTrace();
 		}
 		append.setType(type);
+		List<String> appendTenant = appendRequest.getHeaders().get(NGSIConstants.TENANT_HEADER);
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(type)) {
+			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
+			if (!tenantMatches(appendTenant, subTenant)) {
+				continue;
+			}
 			for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
 				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(key)) {
+				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
 					subsToCheck.add(sub);
 					break;
 				}
-				if (entityInfo.getIdPattern() != null && key.matches(entityInfo.getIdPattern())) {
+				if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
 					subsToCheck.add(sub);
 					break;
 				}
 			}
 		}
-		subsToCheck.addAll(this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE));
+		addAllTypeSubscriptions(appendTenant, subsToCheck);
 		checkSubscriptions(subsToCheck, append, APPEND, messageTime);
 
 	}
@@ -897,7 +968,7 @@ public class SubscriptionService implements SubscriptionManager {
 				for (String remoteEndPoint : remoteEndPoints) {
 					try {
 						StringBuilder temp = new StringBuilder(remoteEndPoint);
-						if(remoteEndPoint.endsWith("/")) {
+						if (remoteEndPoint.endsWith("/")) {
 							temp.deleteCharAt(remoteEndPoint.length() - 1);
 						}
 						temp.append(AppConstants.SUBSCRIPTIONS_URL);

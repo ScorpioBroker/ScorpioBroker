@@ -95,7 +95,8 @@ public class SubscriptionController {
 			// System.out.println("RECEIVING SUBSCRIPTION: " + payload + " at " +
 			// System.currentTimeMillis());
 			subscription = contextResolver.expandSubscription(payload, context);
-			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request));
+			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
+					HttpUtils.getHeaders(request));
 			URI subId = manager.subscribe(subRequest);
 
 			logger.trace("subscribeRest() :: completed");
@@ -122,7 +123,7 @@ public class SubscriptionController {
 
 	private List<Subscription> getSubscriptions(List<SubscriptionRequest> subRequests) {
 		ArrayList<Subscription> result = new ArrayList<Subscription>();
-		for(SubscriptionRequest subRequest: subRequests) {
+		for (SubscriptionRequest subRequest : subRequests) {
 			result.add(subRequest.getSubscription());
 		}
 		return result;
@@ -134,7 +135,8 @@ public class SubscriptionController {
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
 			logger.trace("call getSubscriptions() ::");
-			return httpUtils.generateReply(request, DataSerializer.toJson(manager.getSubscription(id)));
+			return httpUtils.generateReply(request,
+					DataSerializer.toJson(manager.getSubscription(id, HttpUtils.getHeaders(request))));
 
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
@@ -172,7 +174,8 @@ public class SubscriptionController {
 			if (subscription.getId() == null) {
 				subscription.setId(id);
 			}
-			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request));
+			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context,
+					HttpUtils.getHeaders(request));
 
 			// expandSubscriptionAttributes(subscription, context);
 			if (resolved == null || subscription == null || !id.equals(subscription.getId())) {

@@ -14,8 +14,10 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoValue;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
@@ -24,6 +26,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.datatypes.TypedValue;
+import eu.neclab.ngsildbroker.commons.datatypes.UpdateEntityRequest;
 
 public class DataSerializer {
 
@@ -115,6 +118,18 @@ public class DataSerializer {
 
 	public static SubscriptionRequest getSubscriptionRequest(String json) {
 		return GSON.fromJson(json, SubscriptionRequest.class);
+	}
+	
+	public static CreateEntityRequest getCreateEntityRequest(String json) {
+		return GSON.fromJson(json, CreateEntityRequest.class);
+	}
+	
+	public static UpdateEntityRequest getUpdateEntityRequest(String json) {
+		return GSON.fromJson(json, UpdateEntityRequest.class);
+	}
+	
+	public static AppendEntityRequest getAppendEntityRequest(String json) {
+		return GSON.fromJson(json, AppendEntityRequest.class);
 	}
 
 	public static Notification getNotification(String json) {

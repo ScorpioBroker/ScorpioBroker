@@ -114,7 +114,7 @@ public class SubscriptionServiceTest {
 	 */
 	@Test
 	public void getAllSubscriptionsTest() {
-		List<SubscriptionRequest> result=manager.getAllSubscriptions(0);
+		List<SubscriptionRequest> result=manager.getAllSubscriptions(0, ArrayListMultimap.create());
 		assertNotNull(result);
 	}
 	
@@ -126,7 +126,7 @@ public class SubscriptionServiceTest {
 		Subscription removedSub=new Subscription();	
 		URI id=new URI("urn:ngsi-ld:Subscription:173223");
 		when(subscriptionId2Subscription.remove(any())).thenReturn(removedSub);
-		manager.unsubscribe(id);
+		manager.unsubscribe(id, ArrayListMultimap.create());
 		//verify(kafkaOperations, times(1)).pushToKafka(any(),any(),any());
 		verify(intervalNotificationHandler,times(1)).removeSub(any());
 	}
@@ -138,7 +138,7 @@ public class SubscriptionServiceTest {
 	public void getSubscriptionTest()  {
 		String errorMessage=null;
 		try {
-			manager.getSubscription("");
+			manager.getSubscription("", ArrayListMultimap.create());
 		} catch (ResponseException e) {
 			errorMessage=e.getMessage();
 		}
