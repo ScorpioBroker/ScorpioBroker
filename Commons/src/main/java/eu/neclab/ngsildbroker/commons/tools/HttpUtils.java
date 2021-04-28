@@ -1079,7 +1079,7 @@ public final class HttpUtils {
 			String key = it.next();
 			Iterator<String> it2 = request.getHeaders(key).asIterator();
 			while(it2.hasNext()) {
-				result.put(key, it.next());
+				result.put(key, it2.next());
 			}
 		}
 		return result;

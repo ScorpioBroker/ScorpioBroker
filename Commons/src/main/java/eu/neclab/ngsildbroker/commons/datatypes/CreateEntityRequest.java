@@ -34,7 +34,7 @@ public class CreateEntityRequest extends EntityRequest {
 		if (idNode == null || type == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		String id = idNode.asText();
+		this.id = idNode.asText();
 		logger.debug("entity id " + id);
 		// check in-memory hashmap for id
 
