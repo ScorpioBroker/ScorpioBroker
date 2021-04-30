@@ -19,7 +19,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class CreateEntityRequest extends EntityRequest {
 
-
+	/**
+	 * constructor for serialization
+	 */
+	public CreateEntityRequest() {
+		super(AppConstants.OPERATION_CREATE_ENTITY, null);
+	}
+	
 	public CreateEntityRequest(String payload, ArrayListMultimap<String, String> headers)
 			throws ResponseException {
 		super(AppConstants.OPERATION_CREATE_ENTITY, headers);

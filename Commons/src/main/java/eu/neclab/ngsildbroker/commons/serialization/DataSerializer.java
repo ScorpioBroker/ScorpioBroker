@@ -19,6 +19,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoValue;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
@@ -96,6 +97,11 @@ public class DataSerializer {
 		builder.registerTypeAdapterFactory(new JtsAdapterFactory());
 		builder.registerTypeAdapter(Notification.class, new NotificationGsonAdapter());
 		builder.registerTypeAdapter(TypedValue.class, new TypedValueGsonAdapter());
+		builder.registerTypeAdapter(EntityRequest.class, new EntityRequestGsonAdapter());
+		builder.registerTypeAdapter(CreateEntityRequest.class, new EntityRequestGsonAdapter());
+		builder.registerTypeAdapter(UpdateEntityRequest.class, new EntityRequestGsonAdapter());
+		builder.registerTypeAdapter(AppendEntityRequest.class, new EntityRequestGsonAdapter());
+		//builder.registerTypeAdapter(DeleteEntityRequest.class, new EntityRequestGsonAdapter());
 		builder.registerTypeAdapter(SerializationTypes.entitiesType, new EntitiesGsonAdapter());
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
 	}
@@ -118,6 +124,10 @@ public class DataSerializer {
 
 	public static SubscriptionRequest getSubscriptionRequest(String json) {
 		return GSON.fromJson(json, SubscriptionRequest.class);
+	}
+	
+	public static EntityRequest getEntityRequest(String json) {
+		return GSON.fromJson(json, EntityRequest.class);
 	}
 	
 	public static CreateEntityRequest getCreateEntityRequest(String json) {

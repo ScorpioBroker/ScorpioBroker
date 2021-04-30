@@ -20,6 +20,9 @@ public abstract class BaseRequest {
 	ArrayListMultimap<String, String> headers;
 	protected final static Logger logger = LogManager.getLogger(BaseRequest.class);
 	
+	protected BaseRequest() {
+		
+	}
 	public BaseRequest(ArrayListMultimap<String, String> headers) {
 		super();
 		this.headers = headers;

@@ -180,7 +180,7 @@ public class EntityService {
 		// get message channel for ENTITY_CREATE topic.
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
-		CreateEntityRequest request = new CreateEntityRequest(payload, headers);
+		EntityRequest request = new CreateEntityRequest(payload, headers);
 		synchronized (this.entityIds) {
 			if (this.entityIds.contains(request.getId())) {
 				throw new ResponseException(ErrorType.AlreadyExists);

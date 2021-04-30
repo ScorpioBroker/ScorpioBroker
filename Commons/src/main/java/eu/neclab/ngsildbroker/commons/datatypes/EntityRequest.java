@@ -11,7 +11,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
-public abstract class EntityRequest extends BaseRequest{
+public class EntityRequest extends BaseRequest{
 
 	protected int operationType;
 	protected String id;
@@ -19,6 +19,10 @@ public abstract class EntityRequest extends BaseRequest{
 	protected String withSysAttrs;
 	protected String entityWithoutSysAttrs;
 	protected String keyValue;
+	
+	public EntityRequest() {
+		
+	}
 
 	public EntityRequest(int operationType, ArrayListMultimap<String, String> headers) {
 		super(headers);

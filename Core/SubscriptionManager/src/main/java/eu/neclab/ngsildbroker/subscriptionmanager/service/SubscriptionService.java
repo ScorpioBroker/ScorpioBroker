@@ -57,12 +57,11 @@ import com.netflix.discovery.shared.Application;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
-import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
@@ -70,7 +69,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -456,11 +454,11 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleCreate(Message<byte[]> message) {
 		String key = KafkaOps.getMessageKey(message);
 		logger.debug("Create got called: " + key);
-		checkSubscriptionsWithCreate(DataSerializer.getCreateEntityRequest(new String(message.getPayload())),
+		checkSubscriptionsWithCreate(DataSerializer.getEntityRequest(new String(message.getPayload())),
 				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
-	private void checkSubscriptionsWithCreate(CreateEntityRequest createRequest, long messageTime) {
+	private void checkSubscriptionsWithCreate(EntityRequest createRequest, long messageTime) {
 		Entity create = DataSerializer.getEntity(createRequest.getWithSysAttrs());
 		String id = createRequest.getId();
 		synchronized (this.ids2Type) {
@@ -814,11 +812,11 @@ public class SubscriptionService implements SubscriptionManager {
 		String key = KafkaOps.getMessageKey(message);
 		logger.debug("update got called: " + payload);
 		logger.debug(key);
-		UpdateEntityRequest updateRequest = DataSerializer.getUpdateEntityRequest(payload);
+		EntityRequest updateRequest = DataSerializer.getEntityRequest(payload);
 		checkSubscriptionsWithUpdate(updateRequest, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
-	private void checkSubscriptionsWithUpdate(UpdateEntityRequest updateRequest, long messageTime) {
+	private void checkSubscriptionsWithUpdate(EntityRequest updateRequest, long messageTime) {
 		Entity update = DataSerializer.getPartialEntity(updateRequest.getWithSysAttrs());
 		String id = updateRequest.getId();
 		String type = getTypeForId(id);
@@ -863,11 +861,11 @@ public class SubscriptionService implements SubscriptionManager {
 		String key = KafkaOps.getMessageKey(message);
 		logger.debug("Create got called: " + payload);
 		logger.debug(key);
-		checkSubscriptionsWithAppend(DataSerializer.getAppendEntityRequest(new String(message.getPayload())),
+		checkSubscriptionsWithAppend(DataSerializer.getEntityRequest(new String(message.getPayload())),
 				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
 	}
 
-	private void checkSubscriptionsWithAppend(AppendEntityRequest appendRequest, long messageTime) {
+	private void checkSubscriptionsWithAppend(EntityRequest appendRequest, long messageTime) {
 		Entity append = DataSerializer.getPartialEntity(appendRequest.getWithSysAttrs());
 		String id = appendRequest.getId();
 		String type = getTypeForId(id);
