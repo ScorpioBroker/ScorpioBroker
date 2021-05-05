@@ -1,10 +1,6 @@
 package eu.neclab.ngsildbroker.historymanager.controller;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 

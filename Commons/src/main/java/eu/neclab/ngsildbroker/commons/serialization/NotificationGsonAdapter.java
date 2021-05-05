@@ -3,7 +3,6 @@ package eu.neclab.ngsildbroker.commons.serialization;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
 

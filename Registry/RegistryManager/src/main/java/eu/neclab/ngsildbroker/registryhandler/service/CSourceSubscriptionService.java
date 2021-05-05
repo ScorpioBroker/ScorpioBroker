@@ -8,7 +8,6 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEA
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -636,7 +635,7 @@ public class CSourceSubscriptionService {
 	public void handleInternalSub(Message<byte[]> message) {
 		if (Arrays.areEqual(AppConstants.NULL_BYTES, message.getPayload())) {
 			try {
-				unsubscribe(new URI(kafkaOps.getMessageKey(message)));
+				unsubscribe(new URI(KafkaOps.getMessageKey(message)));
 			} catch (ResponseException e) {
 				logger.error(e);
 			} catch (URISyntaxException e) {

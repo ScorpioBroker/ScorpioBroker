@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.serialization;
 
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -9,8 +8,6 @@ import java.util.List;
 import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
 import com.github.filosganga.geogson.jts.JtsAdapterFactory;
 import com.github.filosganga.geogson.model.Geometry;
-import com.github.filosganga.geogson.model.MultiPolygon;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -154,6 +151,7 @@ public class DataSerializer {
 		return GSON.fromJson(json, QueryParams.class);
 	}
 
+	@SuppressWarnings("unchecked")//Always a String list. No class object from generics
 	public static ArrayList<String> getStringList(String json) {
 		return GSON.fromJson(json, ArrayList.class);
 	}

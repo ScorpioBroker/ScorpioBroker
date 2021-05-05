@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.net.URI;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * @author hebgen
@@ -41,8 +40,9 @@ public abstract class BaseProperty {
 	public void setType(String type) {
 		this.type = type;
 	}
-	
-	public abstract HashMap getEntries();
+
+ 
+	public abstract HashMap<String, ? extends BaseEntry> getEntries();
 
 
 	@Override

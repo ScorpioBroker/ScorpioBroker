@@ -32,7 +32,7 @@ import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 public class HistoryServiceTest {
 	
 	@Autowired
-    private MockMvc mockMvc;
+    MockMvc mockMvc;
 	
 	@Mock
 	ProducerChannel producerChannels;
@@ -94,7 +94,7 @@ public class HistoryServiceTest {
 	@Test
 	public void createTemporalEntityFromBindingTest() {
 		try {
-			URI uri1=historyService.createTemporalEntityFromBinding(temporalPayload);
+			historyService.createTemporalEntityFromBinding(temporalPayload);
 			verify(kafkaOperations, times(3)).pushToKafka(any(),any(),any());
 		} catch (Exception e) {
 			Assert.fail();
@@ -109,7 +109,7 @@ public class HistoryServiceTest {
 	@Test
 	public void createTemporalEntityFromEntityTest() {
 		try {
-			URI uri1=historyService.createTemporalEntityFromEntity(temporalPayload);
+			historyService.createTemporalEntityFromEntity(temporalPayload);
 			verify(kafkaOperations, times(3)).pushToKafka(any(),any(),any());
 		} catch (Exception e) {
 			Assert.fail();

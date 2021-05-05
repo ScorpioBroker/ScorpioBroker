@@ -18,14 +18,9 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 public class CSourceNotificationHandlerREST implements CSourceNotificationHandler{
 	
 	private final static Logger logger = LogManager.getLogger(CSourceNotificationHandlerREST.class);
-	
-	
-
-	private ContextResolverBasic contextResolver;
 	HttpUtils httpUtils;
 	
 	public CSourceNotificationHandlerREST(ContextResolverBasic contextResolver) {
-		this.contextResolver = contextResolver;
 		httpUtils = HttpUtils.getInstance(contextResolver);
 	}
 

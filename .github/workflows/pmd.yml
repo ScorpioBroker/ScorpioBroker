@@ -1,0 +1,23 @@
+name: PMD Static Code Analysis
+on:
+  pull_request:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        with:
+          # Incremental diffs require fetch depth to be at 0 to grab the target branch
+          fetch-depth: '0'
+      - name: Run PMD Analyser
+        uses: synergy-au/pmd-analyser-action@v1
+        with:
+          pmd-version: '6.33.0'
+          file-path: './'
+          rules-path: './pmd-ruleset.xml'
+          analyse-all-code: false
+          #error-rules: 'CommentRequired,UnnecessaryModifier,MethodArgumentCouldBeFinal'

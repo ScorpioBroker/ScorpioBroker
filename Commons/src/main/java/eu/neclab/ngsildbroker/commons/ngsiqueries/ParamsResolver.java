@@ -1,8 +1,6 @@
 package eu.neclab.ngsildbroker.commons.ngsiqueries;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -19,7 +17,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.JsonElement;
@@ -291,9 +288,9 @@ public class ParamsResolver {
 		logger.debug("link: " + context);
 		String jsonLdAttribute = getJsonLdAttribute(attribute, context);
 		logger.debug("jsonLdAttribute: " + jsonLdAttribute);
-		LocalDateTime start = LocalDateTime.now();
+		//LocalDateTime start = LocalDateTime.now();
 		String jsonLdAttributeResolved = contextResolver.expand(jsonLdAttribute, context, false, AppConstants.INTERNAL_CALL_ID);
-		LocalDateTime end = LocalDateTime.now();
+		//LocalDateTime end = LocalDateTime.now();
 
 		logger.debug("jsonLdAttributeResolved: " + jsonLdAttributeResolved);
 		JsonParser parser = new JsonParser();

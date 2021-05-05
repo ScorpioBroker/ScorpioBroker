@@ -16,8 +16,6 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.google.gson.Gson;
-
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
