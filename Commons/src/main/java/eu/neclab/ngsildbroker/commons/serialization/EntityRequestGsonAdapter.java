@@ -4,6 +4,7 @@ import java.lang.reflect.Type;
 import java.util.Map.Entry;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -12,16 +13,11 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import com.google.gson.reflect.TypeToken;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 
 public class EntityRequestGsonAdapter implements JsonDeserializer<EntityRequest>, JsonSerializer<EntityRequest> {
-
-	private static final Type arrayListType = new TypeToken<ArrayListMultimap<String, String>>() {
-	}.getType();
 
 	@Override
 	public JsonElement serialize(EntityRequest src, Type typeOfSrc, JsonSerializationContext context) {
@@ -31,7 +27,7 @@ public class EntityRequestGsonAdapter implements JsonDeserializer<EntityRequest>
 		root.add(AppConstants.REQUEST_WOA, new JsonPrimitive(src.getEntityWithoutSysAttrs()));
 		root.add(AppConstants.REQUEST_T, new JsonPrimitive(src.getOperationType()));
 		root.add(AppConstants.REQUEST_ID, new JsonPrimitive(src.getId()));
-		root.add(AppConstants.REQUEST_HD, context.serialize(src.getHeaders()));
+		root.add(AppConstants.REQUEST_HD, serializeHeaders(src.getHeaders(), context));
 		return root;
 	}
 
@@ -53,7 +49,27 @@ public class EntityRequestGsonAdapter implements JsonDeserializer<EntityRequest>
 			} else if (entry.getKey().equals(AppConstants.REQUEST_ID)) {
 				result.setId(entry.getValue().getAsString());
 			} else if (entry.getKey().equals(AppConstants.REQUEST_HD)) {
-				result.setHeaders(context.deserialize(json, arrayListType));
+				result.setHeaders(deserializeHeaders(entry.getValue()));
+			}
+		}
+		return result;
+	}
+
+	private JsonElement serializeHeaders(ArrayListMultimap<String, String> headers, JsonSerializationContext context) {
+		JsonObject result = new JsonObject();
+		for (String key : headers.keySet()) {
+			result.add(key, context.serialize(headers.get(key)));
+		}
+		return result;
+	}
+
+	private ArrayListMultimap<String, String> deserializeHeaders(JsonElement json) {
+		JsonObject root = json.getAsJsonObject();
+		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+		for (Entry<String, JsonElement> entry : root.entrySet()) {
+			JsonArray array = entry.getValue().getAsJsonArray();
+			for (JsonElement item : array) {
+				result.put(entry.getKey(), item.getAsString());
 			}
 		}
 		return result;

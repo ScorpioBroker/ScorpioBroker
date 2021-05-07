@@ -46,12 +46,16 @@ public class AppConstants {
 	public static final int OPERATION_UPDATE_ENTITY = 1;
 	public static final int OPERATION_APPEND_ENTITY = 2;
 	public static final int OPERATION_DELETE_ATTRIBUTE_ENTITY = 3;
-
+	public static final int OPERATION_CREATE_HISTORY_ENTITY = 4;
+	public static final int OPERATION_UPDATE_HISTORY_ENTITY = 5;
+	public static final int OPERATION_APPEND_HISTORY_ENTITY = 6;
+	public static final int OPERATION_DELETE_ATTRIBUTE_HISTORY_ENTITY = 7;
 	public static final String REQUEST_KV = "kv";
 	public static final String REQUEST_WA = "withAttrs";
 	public static final String REQUEST_WOA = "withoutAtts";
 	public static final String REQUEST_T = "type";
 	public static final String REQUEST_ID = "id";
 	public static final String REQUEST_HD = "headers";
+	
 
 }
