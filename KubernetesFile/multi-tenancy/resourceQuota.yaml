@@ -1,0 +1,11 @@
+# Define resource quota
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: mem-cpu-demo
+#  namespace: test
+spec:
+  hard:
+    requests.cpu: "1"
+    limits.cpu: "2"

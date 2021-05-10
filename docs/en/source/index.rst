@@ -67,4 +67,5 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
      
 	k8Introduction.rst
     kubernetesDeployment.rst
+	multi-tenency.rst
 

@@ -1,0 +1,14 @@
+# namespace admin rolebinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+#  namespace: test
+  name: testing-services-admin
+subjects:
+  - kind: Group
+    name: testing-services-admin-group
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: testing-services-admin-role
+  apiGroup: rbac.authorization.k8s.io
