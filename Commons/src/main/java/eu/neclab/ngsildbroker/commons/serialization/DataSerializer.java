@@ -14,9 +14,12 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
+import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
@@ -104,6 +107,10 @@ public class DataSerializer {
 		//builder.registerTypeAdapter(DeleteEntityRequest.class, new EntityRequestGsonAdapter());
 		builder.registerTypeAdapter(SerializationTypes.entitiesType, new EntitiesGsonAdapter());
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
+		builder.registerTypeAdapter(CreateCSourceRequest.class, new CSourceRequestGsonAdapter());
+		builder.registerTypeAdapter(CSourceRequest.class, new CSourceRequestGsonAdapter());
+		builder.registerTypeAdapter(AppendCSourceRequest.class, new CSourceRequestGsonAdapter());
+		
 	}
 
 	public static List<Entity> getEntities(String json) {
@@ -186,5 +193,18 @@ public class DataSerializer {
 	public static TemporalEntityStorageKey getTemporalEntityStorageKey(String json) {
 		return GSON.fromJson(json, TemporalEntityStorageKey.class);
 	}
+	//---------------------------------------------------------------------------------------
+	
+		public static CSourceRequest getCSourceRequest(String json) {
+			return GSON.fromJson(json, CSourceRequest.class);
+		}
+		
+		public static CreateCSourceRequest getCreateCSourceRequest(String json) {
+			return GSON.fromJson(json, CreateCSourceRequest.class);
+		}
+		public static AppendCSourceRequest getAppendCSourceRequest(String json) {
+			return GSON.fromJson(json, AppendCSourceRequest.class);
+		}
+	//------------------------------------------------------------------------------------------
 
 }

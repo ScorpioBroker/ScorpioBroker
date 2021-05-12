@@ -10,15 +10,23 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.listener.MessageListenerContainer;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
 import eu.neclab.ngsildbroker.storagemanager.repository.StorageWriterDAO;
+import eu.neclab.ngsildbroker.storagemanager.tenant.TenantAwareDataSource;
+
 
 @Service
-@ConditionalOnProperty(value="writer.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)
 public class StorageWriterService {
 
 	private final static Logger logger = LogManager.getLogger(StorageWriterService.class);
@@ -31,6 +39,9 @@ public class StorageWriterService {
 
 	@Autowired
 	StorageWriterDAO storageWriterDao;
+
+	@Autowired
+	TenantAwareDataSource tenantAwareDataSource;
 
 	@Value("${entity.stopListenerIfDbFails:true}")
 	boolean entityStopListenerIfDbFails;
@@ -119,7 +130,7 @@ public class StorageWriterService {
 	 * logger.trace("Writing is complete"); }
 	 */
 	@KafkaListener(containerFactory = "kafkaListenerContainerFactoryManualOffsetCommit", topics = "${csource.topic}", id = CSOURCE_LISTENER_ID, groupId = "csourceWriter", containerGroup = "csourceWriter-container")
-	public void writeCSource(@Payload byte[] message, Acknowledgment acknowledgment,
+	public void writeCSource(Message<byte[]> message, Acknowledgment acknowledgment,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key, @Header(KafkaHeaders.OFFSET) Long offset)
 			throws Exception {
 		logger.trace("Listener csourceWriter, Thread ID: " + Thread.currentThread().getId());
@@ -127,10 +138,26 @@ public class StorageWriterService {
 		if (!csourceListenerOk) // this test is needed because listenerContainer.stop() does not work properly
 								// during boot time (probably because of concurrency)
 			return;
-		String payload = new String(message);
+		// String payload = new String(message);
+		String payload = new String(message.getPayload());
+		JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
+		String datavalue = jsonObject.get("CSource").toString();
+		String header = jsonObject.get("headers").toString();
+		JsonObject jsonObjectheader = new JsonParser().parse(header).getAsJsonObject();
+		String headervalue;
+		if (jsonObjectheader.has("ngsild-tenant")) {
+			headervalue = jsonObjectheader.get("ngsild-tenant").getAsString();
+			TenantContext.setCurrentTenant(headervalue);
+			String databasename = "ngb" + headervalue;
+			storageWriterDao.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,
+					headervalue, databasename);
+		} else {
+			headervalue = null;
+		}
 		logger.debug("Received message: " + payload);
 		logger.trace("Writing data...");
-		if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_CSOURCE, DBConstants.DBCOLUMN_DATA, key, payload)) {
+		if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_CSOURCE, DBConstants.DBCOLUMN_DATA,
+				key, datavalue, headervalue)) {
 			acknowledgment.acknowledge();
 			logger.trace("Kafka offset commited");
 		} else {
@@ -142,6 +169,7 @@ public class StorageWriterService {
 				listenerContainer.stop();
 			}
 		}
+		// }
 		logger.trace("Writing is complete");
 	}
 

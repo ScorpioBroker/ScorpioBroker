@@ -46,6 +46,7 @@ BEGIN
         (TG_OP = 'UPDATE' AND OLD.data IS NOT NULL AND NEW.data IS NULL) OR 
         (TG_OP = 'UPDATE' AND OLD.data IS NOT NULL AND NEW.data IS NOT NULL AND OLD.data <> NEW.data) THEN 
       NEW.type = NEW.data#>>'{@type,0}';
+      NEW.tenant_id = NEW.data#>>'{tenant,0,@value}';
       NEW.name = NEW.data#>>'{https://uri.etsi.org/ngsi-ld/name,0,@value}';
       NEW.description = NEW.data#>>'{https://uri.etsi.org/ngsi-ld/description,0,@value}';
       NEW.timestamp_start = (NEW.data#>>'{https://uri.etsi.org/ngsi-ld/timestamp,0,https://uri.etsi.org/ngsi-ld/start,0,@value}')::TIMESTAMP;

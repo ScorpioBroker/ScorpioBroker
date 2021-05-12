@@ -76,14 +76,14 @@ public class RegistryControllerTest {
 	@Test
 	public void registerCSourceTest() {
 		try {
-			when(csourceService.registerCSource(any()))
+			when(csourceService.registerCSource(any(),any()))
 					.thenReturn(new URI("urn:ngsi-ld:ContextSourceRegistration:csr1a3458"));
 			mockMvc.perform(post("/ngsi-ld/v1/csourceRegistrations/").contentType(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isCreated())
 					.andExpect(redirectedUrl("/ngsi-ld/v1/csourceRegistrations/urn:ngsi-ld:ContextSourceRegistration:csr1a3458"))
 					.andDo(print());
 
-			verify(csourceService, times(1)).registerCSource(any());
+			verify(csourceService, times(1)).registerCSource(any(),any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 			e.printStackTrace();
@@ -94,13 +94,15 @@ public class RegistryControllerTest {
 	@Test
 	public void updateCSourceTest() {
 		try {
-			when(csourceService.updateCSourceRegistration("urn:ngsi-ld:ContextSourceRegistration:csr1a3458",
-					updatePayload)).thenReturn(true);
+//			when(csourceService.updateCSourceRegistration(
+//					"{content-length=[883], x-forwarded-proto=[http], postman-token=[8f71bb12-8223-44a4-9322-9853fae06baa], x-forwarded-port=[9090], x-forwarded-for=[0:0:0:0:0:0:0:1], accept=[*/*], ngsild-tenant=[csource1], x-forwarded-host=[localhost:9090], host=[DLLT-9218.nectechnologies.in:1030], content-type=[application/json], connection=[Keep-Alive], accept-encoding=[gzip, deflate], user-agent=[PostmanRuntime/7.6.0]}",
+//					"urn:ngsi-ld:ContextSourceRegistration:csr1a3458",
+//					updatePayload)).thenReturn(true);
 			mockMvc.perform(patch("/ngsi-ld/v1/csourceRegistrations/{registrationId}", "urn:ngsi-ld:ContextSourceRegistration:csr1a3458")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isNoContent()).andDo(print());
 
-			verify(csourceService, times(1)).updateCSourceRegistration(any(), any());
+			verify(csourceService, times(1)).updateCSourceRegistration(any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 			e.printStackTrace();

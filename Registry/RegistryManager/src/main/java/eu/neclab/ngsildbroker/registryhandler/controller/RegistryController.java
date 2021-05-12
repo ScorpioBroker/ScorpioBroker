@@ -104,11 +104,13 @@ public class RegistryController {
 		try {
 			logger.trace("getCSources() ::");
 			String queryParams = request.getQueryString();
+			String tenantid = request.getHeader("NGSILD-Tenant");
 			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING)
 					|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)) && queryParams != null) {
 
 				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
+				qp.setTenant(tenantid);
 				if (qp == null) // invalid query
 					throw new ResponseException(ErrorType.InvalidRequest);
 				List<String> csourceList = csourceDAO.query(qp);
@@ -146,7 +148,7 @@ public class RegistryController {
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
 			logger.debug("Csource :: " + csourceRegistration);
-			URI uri = csourceService.registerCSource(csourceRegistration);
+			URI uri = csourceService.registerCSource(HttpUtils.getHeaders(request),csourceRegistration);
 
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri).build();
 		} catch (ResponseException exception) {
@@ -163,8 +165,9 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
+			String tenantid = request.getHeader("NGSILD-Tenant");
 			List<String> csourceList = new ArrayList<String>();
-			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(registrationId)));
+			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
 			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 		} catch (ResponseException exception) {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
@@ -182,7 +185,7 @@ public class RegistryController {
 			logger.debug("update CSource() ::" + registrationId);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
 
-			csourceService.updateCSourceRegistration(registrationId, resolved);
+			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request),registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {

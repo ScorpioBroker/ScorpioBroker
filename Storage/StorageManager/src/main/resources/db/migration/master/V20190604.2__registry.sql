@@ -2,6 +2,7 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE IF NOT EXISTS csource (
   id TEXT NOT NULL,
+  tenant_id TEXT,
   data JSONB NOT NULL,
   type TEXT,
   name TEXT,
@@ -56,6 +57,7 @@ DECLARE
     l_attributeinfo_count INTEGER;
 BEGIN
     NEW.type = NEW.data#>>'{@type,0}';
+    NEW.tenant_id = NEW.data#>>'{tenant,0,@value}';
     NEW.name = NEW.data#>>'{https://uri.etsi.org/ngsi-ld/name,0,@value}';
     NEW.description = NEW.data#>>'{https://uri.etsi.org/ngsi-ld/description,0,@value}';
     NEW.timestamp_start = (NEW.data#>>'{https://uri.etsi.org/ngsi-ld/timestamp,0,https://uri.etsi.org/ngsi-ld/start,0,@value}')::TIMESTAMP;

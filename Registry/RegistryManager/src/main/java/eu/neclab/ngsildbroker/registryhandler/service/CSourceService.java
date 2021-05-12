@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -27,14 +28,27 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
+import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
@@ -84,8 +98,9 @@ public class CSourceService {
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
 	Timer watchDog = new Timer(true);
 	private ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(50000, true);
-	
+
 	ThreadPoolExecutor executor = new ThreadPoolExecutor(20, 50, 600000, TimeUnit.MILLISECONDS, workQueue);
+
 	CSourceService(CSourceProducerChannel producerChannels) {
 
 		this.producerChannels = producerChannels;
@@ -137,7 +152,8 @@ public class CSourceService {
 	// return false;
 	// }
 
-	public CSourceRegistration getCSourceRegistrationById(String registrationId) throws ResponseException, Exception {
+	public CSourceRegistration getCSourceRegistrationById(String tenantheaders, String registrationId)
+			throws ResponseException, Exception {
 		if (registrationId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
@@ -150,11 +166,29 @@ public class CSourceService {
 		if (entityJsonBody.isNull()) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
-		return DataSerializer.getCSourceRegistration(objectMapper.writeValueAsString(entityJsonBody));
+		JsonNode csourceJsonBody = entityJsonBody.get("CSource");
+		String csourceJsonheasers = entityJsonBody.get("headers").toString();
+		JsonObject jsonObjectheader = new JsonParser().parse(csourceJsonheasers).getAsJsonObject();
+		String headervalue;
+		if (jsonObjectheader.has("ngsild-tenant")) {
+			headervalue = jsonObjectheader.get("ngsild-tenant").getAsString();
+			if (headervalue.equalsIgnoreCase(tenantheaders)) {
+				return DataSerializer.getCSourceRegistration(objectMapper.writeValueAsString(csourceJsonBody));
+			} else {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+		} else {
+			headervalue = null;
+			if (headervalue == tenantheaders) {
+				return DataSerializer.getCSourceRegistration(objectMapper.writeValueAsString(csourceJsonBody));
+			} else {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+		}
 	}
 
-	public boolean updateCSourceRegistration(String registrationId, String payload)
-			throws ResponseException, Exception {
+	public boolean updateCSourceRegistration(ArrayListMultimap<String, String> headers, String registrationId,
+			String payload) throws ResponseException, Exception {
 		MessageChannel messageChannel = producerChannels.csourceWriteChannel();
 		if (registrationId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
@@ -166,12 +200,17 @@ public class CSourceService {
 		// original message in kafka.
 		JsonNode entityJsonBody = objectMapper.createObjectNode();
 		entityJsonBody = objectMapper.readTree(csourceBytes);
+		System.out.println(entityJsonBody.get("headers"));
+		System.out.println(headers);
 		CSourceRegistration prevCSourceRegistration = DataSerializer.getCSourceRegistration(entityJsonBody.toString());
 		logger.debug("Previous CSource Registration:: " + prevCSourceRegistration);
 
 		CSourceRegistration updateCS = DataSerializer.getCSourceRegistration(payload);
 
 		CSourceRegistration newCSourceRegistration = prevCSourceRegistration.update(updateCS);
+
+		AppendCSourceRequest request = new AppendCSourceRequest(headers, registrationId, entityJsonBody,
+				newCSourceRegistration);
 
 		synchronized (this) {
 			TimerTask task = regId2TimerTask.get(registrationId.toString());
@@ -182,7 +221,7 @@ public class CSourceService {
 		}
 		csourceSubService.checkSubscriptions(prevCSourceRegistration, newCSourceRegistration);
 		this.operations.pushToKafka(messageChannel, registrationId.getBytes(),
-				DataSerializer.toJson(newCSourceRegistration).getBytes());
+				DataSerializer.toJson(request).getBytes());
 		handleFed();
 		return true;
 	}
@@ -195,8 +234,10 @@ public class CSourceService {
 		}.start();
 	}
 
-	public URI registerCSource(CSourceRegistration csourceRegistration) throws ResponseException, Exception {
+	public URI registerCSource(ArrayListMultimap<String, String> headers, CSourceRegistration csourceRegistration)
+			throws ResponseException, Exception {
 		MessageChannel messageChannel = producerChannels.csourceWriteChannel();
+		CSourceRequest request = new CreateCSourceRequest(csourceRegistration, headers);
 		String id;
 		URI idUri = csourceRegistration.getId();
 		if (idUri == null) {
@@ -233,8 +274,11 @@ public class CSourceService {
 		}
 
 		// TODO: [check for valid identifier (id)]
-		operations.pushToKafka(messageChannel, id.getBytes(), DataSerializer.toJson(csourceRegistration).getBytes());
-
+		// operations.pushToKafka(messageChannel, id.getBytes(),
+		// DataSerializer.toJson(csourceRegistration).getBytes());
+		operations.pushToKafka(producerChannels.csourceWriteChannel(),
+				request.getId().getBytes(NGSIConstants.ENCODE_FORMAT),
+				DataSerializer.toJson(request).getBytes(NGSIConstants.ENCODE_FORMAT));
 		this.csourceTimerTask(csourceRegistration);
 		if (!csourceRegistration.isInternal()) {
 			csourceSubService.checkSubscriptions(csourceRegistration, TriggerReason.newlyMatching);
@@ -311,11 +355,23 @@ public class CSourceService {
 
 				CSourceRegistration csourceRegistration = DataSerializer
 						.getCSourceRegistration(new String((byte[]) message.getPayload()));
+
+				String payload = new String((byte[]) message.getPayload());
+				JsonObject jsonObjectpayload = new JsonParser().parse(payload).getAsJsonObject();
+				String headers = jsonObjectpayload.get("headers").toString();
+				JsonObject jsonObjectheaders = new JsonParser().parse(headers).getAsJsonObject();
+				ArrayListMultimap<String, String> requestheaders = ArrayListMultimap.create();
+				for (Entry<String, JsonElement> entry : jsonObjectheaders.entrySet()) {
+					JsonArray array = entry.getValue().getAsJsonArray();
+					for (JsonElement item : array) {
+						requestheaders.put(entry.getKey(), item.getAsString());
+					}
+				}
 				// objectMapper.readValue((byte[]) message.getPayload(),
 				// CSourceRegistration.class);
 				csourceRegistration.setInternal(true);
 				try {
-					registerCSource(csourceRegistration);
+					registerCSource(requestheaders, csourceRegistration);
 				} catch (Exception e) {
 					logger.trace("Failed to register csource " + csourceRegistration.getId().toString(), e);
 				}

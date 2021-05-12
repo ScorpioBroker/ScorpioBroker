@@ -12,6 +12,12 @@ public class QueryParams {
 	@SerializedName("type")
 	@Expose
 	private String type;
+//----------------------------
+	@SerializedName("tenant")
+	@Expose
+	private String tenant;
+//-----------------------------	
+
 	@SerializedName("attrs")
 	@Expose
 	private String attrs;
@@ -61,7 +67,7 @@ public class QueryParams {
 	@SerializedName("limit")
 	@Expose
 	private int limit = -1;
-    private Boolean countResult;
+	private Boolean countResult;
 	@SerializedName("offSet")
 	@Expose
 	private int offSet = -1;
@@ -311,7 +317,7 @@ public class QueryParams {
 	public void setOffSet(int offSet) {
 		this.offSet = offSet;
 	}
-    
+
 	public Boolean getCountResult() {
 		return countResult;
 	}
@@ -320,12 +326,21 @@ public class QueryParams {
 		this.countResult = countResult;
 	}
 
+	public String getTenant() {
+		return tenant;
+	}
+
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
+	}
+
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this).append("id", id).append("type", type).append("attrs", attrs)
 				.append("idPattern", idPattern).append("q", q).append("georel", georel).append("geometry", geometry)
 				.append("coordinates", coordinates).append("geoproperty", geoproperty).append("timerel", timerel)
-				.append("time", time).append("endTime", endTime).append("timeproperty", timeproperty).toString();
+				.append("time", time).append("endTime", endTime).append("timeproperty", timeproperty)
+				.append("tenant", tenant).toString();
 	}
 
 }

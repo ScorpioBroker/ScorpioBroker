@@ -10,6 +10,8 @@ spring:
           brokers: localhost:9092
   flyway:
     baselineOnMigrate: true
+    check-location: false
+    locations: classpath:db/migration/master
     
 server:
   port: 1029
