@@ -80,7 +80,7 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
 	
 	public Boolean flywayMigrate(DataSource tenantDataSource) {
 		try {
-			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration/tenant")
+			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
 					.baselineOnMigrate(true).outOfOrder(true).load();
 			flyway.repair();
 			flyway.migrate();

@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
-import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
@@ -11,7 +10,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Repository;
@@ -88,7 +86,7 @@ public class StorageWriterDAO {
 		String tenenat;
 		if (request.getHeaders().containsKey("ngsild-tenant")) {
 			tenenat = request.getHeaders().get("ngsild-tenant").get(0);
-			System.out.println(tenenat);
+
 			TenantContext.setCurrentTenant(tenenat);
 			String databasename = "ngb" + tenenat;
 

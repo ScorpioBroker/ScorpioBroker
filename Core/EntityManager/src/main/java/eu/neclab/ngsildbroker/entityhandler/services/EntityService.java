@@ -62,6 +62,7 @@ import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
@@ -70,6 +71,7 @@ import eu.neclab.ngsildbroker.entityhandler.validationutil.PropertyValidatioRule
 import eu.neclab.ngsildbroker.entityhandler.validationutil.RelationshipValidationRule;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.TypeValidationRule;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.ValidationRules;
+
 
 @Service
 public class EntityService {
@@ -115,6 +117,11 @@ public class EntityService {
 	@Autowired
 	@Qualifier("emparamsres")
 	ParamsResolver paramsResolver;
+	
+	@Autowired
+	TenantAwareDataSource tenantAwareDataSource;
+
+	
 
 	public void setOperations(KafkaOps operations) {
 		this.operations = operations;
@@ -183,12 +190,39 @@ public class EntityService {
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
 		EntityRequest request = new CreateEntityRequest(payload, headers);
-		synchronized (this.entityIds) {
-			if (this.entityIds.contains(request.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists);
-			}
-			this.entityIds.add(request.getId());
+		
+		
+		String tenantid;
+		if (headers.containsKey("ngsild-tenant")) {
+			tenantid = headers.get("ngsild-tenant").get(0);
+			TenantContext.setCurrentTenant(tenantid);
+		} else {
+			tenantid = null;
 		}
+		if (tenantid != null) {
+			String databsename = tenantAwareDataSource.findDataBaseNameByTenantId(tenantid);
+			if (databsename != null) {
+				this.tenantEntityIds = entityInfoDAO.getAllTenantIds();
+				synchronized (this.tenantEntityIds) {
+					if (this.tenantEntityIds.contains(request.getId())) {
+						throw new ResponseException(ErrorType.AlreadyExists);
+					}
+					this.tenantEntityIds.add(request.getId());
+				}
+			}
+
+		} else {
+
+			synchronized (this.entityIds) {
+				if (this.entityIds.contains(request.getId())) {
+					throw new ResponseException(ErrorType.AlreadyExists);
+				}
+				this.entityIds.add(request.getId());
+			}
+		}
+		
+		
+		
 		pushToDB(request);
 		new Thread() {
 			public void run() {
