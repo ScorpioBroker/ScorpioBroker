@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.serialization;
 
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -9,8 +8,6 @@ import java.util.List;
 import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
 import com.github.filosganga.geogson.jts.JtsAdapterFactory;
 import com.github.filosganga.geogson.model.Geometry;
-import com.github.filosganga.geogson.model.MultiPolygon;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -21,6 +18,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoValue;
@@ -104,13 +102,15 @@ public class DataSerializer {
 		builder.registerTypeAdapter(CreateEntityRequest.class, new EntityRequestGsonAdapter());
 		builder.registerTypeAdapter(UpdateEntityRequest.class, new EntityRequestGsonAdapter());
 		builder.registerTypeAdapter(AppendEntityRequest.class, new EntityRequestGsonAdapter());
-		//builder.registerTypeAdapter(DeleteEntityRequest.class, new EntityRequestGsonAdapter());
+		// builder.registerTypeAdapter(DeleteEntityRequest.class, new
+		// EntityRequestGsonAdapter());
 		builder.registerTypeAdapter(SerializationTypes.entitiesType, new EntitiesGsonAdapter());
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
 		builder.registerTypeAdapter(CreateCSourceRequest.class, new CSourceRequestGsonAdapter());
 		builder.registerTypeAdapter(CSourceRequest.class, new CSourceRequestGsonAdapter());
 		builder.registerTypeAdapter(AppendCSourceRequest.class, new CSourceRequestGsonAdapter());
-		
+		builder.registerTypeAdapter(DeleteCSourceRequest.class, new CSourceRequestGsonAdapter());
+
 	}
 
 	public static List<Entity> getEntities(String json) {
@@ -132,19 +132,19 @@ public class DataSerializer {
 	public static SubscriptionRequest getSubscriptionRequest(String json) {
 		return GSON.fromJson(json, SubscriptionRequest.class);
 	}
-	
+
 	public static EntityRequest getEntityRequest(String json) {
 		return GSON.fromJson(json, EntityRequest.class);
 	}
-	
+
 	public static CreateEntityRequest getCreateEntityRequest(String json) {
 		return GSON.fromJson(json, CreateEntityRequest.class);
 	}
-	
+
 	public static UpdateEntityRequest getUpdateEntityRequest(String json) {
 		return GSON.fromJson(json, UpdateEntityRequest.class);
 	}
-	
+
 	public static AppendEntityRequest getAppendEntityRequest(String json) {
 		return GSON.fromJson(json, AppendEntityRequest.class);
 	}
@@ -193,18 +193,23 @@ public class DataSerializer {
 	public static TemporalEntityStorageKey getTemporalEntityStorageKey(String json) {
 		return GSON.fromJson(json, TemporalEntityStorageKey.class);
 	}
-	//---------------------------------------------------------------------------------------
-	
-		public static CSourceRequest getCSourceRequest(String json) {
-			return GSON.fromJson(json, CSourceRequest.class);
-		}
-		
-		public static CreateCSourceRequest getCreateCSourceRequest(String json) {
-			return GSON.fromJson(json, CreateCSourceRequest.class);
-		}
-		public static AppendCSourceRequest getAppendCSourceRequest(String json) {
-			return GSON.fromJson(json, AppendCSourceRequest.class);
-		}
-	//------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------
+
+	public static CSourceRequest getCSourceRequest(String json) {
+		return GSON.fromJson(json, CSourceRequest.class);
+	}
+
+	public static CreateCSourceRequest getCreateCSourceRequest(String json) {
+		return GSON.fromJson(json, CreateCSourceRequest.class);
+	}
+
+	public static AppendCSourceRequest getAppendCSourceRequest(String json) {
+		return GSON.fromJson(json, AppendCSourceRequest.class);
+	}
+
+	public static DeleteCSourceRequest getDeleteCSourceRequest(String json) {
+		return GSON.fromJson(json, DeleteCSourceRequest.class);
+	}
+	// ------------------------------------------------------------------------------------------
 
 }

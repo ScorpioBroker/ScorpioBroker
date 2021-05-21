@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.storagemanager.config;
+package eu.neclab.ngsildbroker.entityhandler.config;
 
 
 import javax.sql.DataSource;

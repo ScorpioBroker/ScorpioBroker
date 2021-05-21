@@ -28,6 +28,7 @@ public class AppendEntityRequest extends EntityRequest {
 			String update, String overwriteOption, String appendOverwriteFlag) throws ResponseException {
 		super(AppConstants.OPERATION_APPEND_ENTITY, headers);
 		this.appendOverwriteFlag = appendOverwriteFlag;
+		this.id=id;
 		generateAppend(update, old, overwriteOption);
 	}
 

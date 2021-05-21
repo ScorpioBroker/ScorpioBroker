@@ -132,6 +132,8 @@ spring:
     username: ngb
   flyway:
     baselineOnMigrate: true
+    check-location: false
+    locations: classpath:db/migration/master
   
 writer:
   datasource:

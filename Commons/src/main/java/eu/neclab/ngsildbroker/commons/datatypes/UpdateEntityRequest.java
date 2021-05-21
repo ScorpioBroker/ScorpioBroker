@@ -21,6 +21,7 @@ public class UpdateEntityRequest extends EntityRequest{
 
 	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, String old, String update, String attrName) throws ResponseException {
 		super(AppConstants.OPERATION_UPDATE_ENTITY, headers);
+		this.id=id;
 		generateUpdate(update, old, attrName);
 	}
 

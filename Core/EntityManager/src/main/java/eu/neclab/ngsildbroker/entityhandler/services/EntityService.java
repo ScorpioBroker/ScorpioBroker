@@ -62,6 +62,7 @@ import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.IdValidationRule;
@@ -136,6 +137,7 @@ public class EntityService {
 	LocalDateTime start;
 	LocalDateTime end;
 	private Set<String> entityIds = new HashSet<String>();
+	private Set<String> tenantEntityIds = new HashSet<String>();
 
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
 
@@ -244,7 +246,17 @@ public class EntityService {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
 		MessageChannel messageChannel = producerChannels.updateWriteChannel();
-		String entityBody = validateIdAndGetBody(entityId);
+		String tenantid;
+		if (headers.containsKey("ngsild-tenant")) {
+			tenantid = headers.get("ngsild-tenant").get(0);
+			TenantContext.setCurrentTenant(tenantid);
+		} else {
+			tenantid = null;
+		}
+
+		// get entity details
+		String entityBody = validateIdAndGetBody(entityId, tenantid);
+		// String entityBody = validateIdAndGetBody(entityId);
 		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, payload, null);
 
 		// update fields
@@ -289,8 +301,17 @@ public class EntityService {
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
+
+		String tenantid;
+		if (headers.containsKey("ngsild-tenant")) {
+			tenantid = headers.get("ngsild-tenant").get(0);
+			TenantContext.setCurrentTenant(tenantid);
+		} else {
+			tenantid = null;
+		}
+
 		// get entity details
-		String entityBody = validateIdAndGetBody(entityId);
+		String entityBody = validateIdAndGetBody(entityId, tenantid);
 		AppendEntityRequest request = new AppendEntityRequest(headers, entityId, entityBody, payload, overwriteOption,
 				this.appendOverwriteFlag);
 		// get entity from ENTITY topic.
@@ -315,20 +336,33 @@ public class EntityService {
 		return request.getAppendResult();
 	}
 
-	private String validateIdAndGetBody(String entityId) throws ResponseException {
+	private String validateIdAndGetBody(String entityId, String tenantid) throws ResponseException {
 		// null id check
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		// get entity details from in-memory hashmap.
-		synchronized (this.entityIds) {
-			if (!this.entityIds.contains(entityId)) {
-				throw new ResponseException(ErrorType.NotFound);
+		if (tenantid != null) {
+			this.tenantEntityIds = entityInfoDAO.getAllTenantIds();
+			synchronized (this.tenantEntityIds) {
+				if (!this.tenantEntityIds.contains(entityId)) {
+					throw new ResponseException(ErrorType.NotFound);
+				}
+			}
+		} else {
+			// get entity details from in-memory hashmap.
+			synchronized (this.entityIds) {
+				if (!this.entityIds.contains(entityId)) {
+					throw new ResponseException(ErrorType.NotFound);
+				}
 			}
 		}
 		String entityBody = null;
 		if (directDB) {
-			entityBody = this.entityInfoDAO.getEntity(entityId);
+			if (tenantid != null) {
+				entityBody = this.entityInfoDAO.getTenantEntity(entityId);
+			} else {
+				entityBody = this.entityInfoDAO.getEntity(entityId);
+			}
 		}
 		return entityBody;
 	}
@@ -400,8 +434,18 @@ public class EntityService {
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
+
+		String tenantid;
+		if (headers.containsKey("ngsild-tenant")) {
+			tenantid = headers.get("ngsild-tenant").get(0);
+			TenantContext.setCurrentTenant(tenantid);
+		} else {
+			tenantid = null;
+		}
+
 		// get entity details
-		String entityBody = validateIdAndGetBody(entityId);
+		String entityBody = validateIdAndGetBody(entityId, tenantid);
+
 		// JsonNode originalJsonNode = objectMapper.readTree(originalJson);
 		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, payload, attrId);
 		// pubilsh merged message
@@ -435,8 +479,18 @@ public class EntityService {
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
+		String tenantid;
+		if (headers.containsKey("ngsild-tenant")) {
+			tenantid = headers.get("ngsild-tenant").get(0);
+			TenantContext.setCurrentTenant(tenantid);
+		} else {
+			tenantid = null;
+		}
+
+		// get entity details
+		String entityBody = validateIdAndGetBody(entityId, tenantid);
 		// get entity details from in-memory hashmap
-		String entityBody = validateIdAndGetBody(entityId);
+
 		DeleteAttributeRequest request = new DeleteAttributeRequest(headers, entityId, entityBody, attrId, datasetId,
 				deleteAll);
 		if (directDB) {
@@ -462,10 +516,39 @@ public class EntityService {
 		// TODO needs rework as well
 		logger.trace("registerContext() :: started");
 		MessageChannel messageChannel = producerChannels.contextRegistryWriteChannel();
-		byte[] id = request.getId().getBytes(NGSIConstants.ENCODE_FORMAT);
-		byte[] payload = request.getWithSysAttrs().getBytes(NGSIConstants.ENCODE_FORMAT);
-		CSourceRegistration contextRegistryPayload = this.getCSourceRegistrationFromJson(payload);
-		this.operations.pushToKafka(messageChannel, id, DataSerializer.toJson(contextRegistryPayload).getBytes());
+
+		String entityBody;
+		if (request.getHeaders().containsKey("ngsild-tenant")) {
+			String tenantvalue = request.getHeaders().get("ngsild-tenant").get(0).toString();
+			TenantContext.setCurrentTenant(tenantvalue);
+			entityBody = this.entityInfoDAO.getTenantEntity(request.getId());
+
+		} else {
+			entityBody = this.entityInfoDAO.getEntity(request.getId());
+		}
+
+		// JsonObject jsonObjectheader = new
+		// JsonParser().parse(header).getAsJsonObject();
+		// String headervalue;
+		// JsonNode csourceJsonBody;
+
+		// if (jsonObjectheader.has("ngsild-tenant")) {
+		// headervalue = jsonObjectheader.get("ngsild-tenant").getAsString();
+
+		// csourceJsonBody = objectMapper.createObjectNode();
+		// csourceJsonBody = objectMapper.readTree(entityBody);
+		// }else
+		// {
+		// headervalue=null;
+		// }
+
+		// byte[] id = request.getId().getBytes(NGSIConstants.ENCODE_FORMAT);
+		// byte[] payload =
+		// request.getWithSysAttrs().getBytes(NGSIConstants.ENCODE_FORMAT);
+
+		CSourceRegistration contextRegistryPayload = this.getCSourceRegistrationFromJson(entityBody);
+		this.operations.pushToKafka(messageChannel, request.getId().getBytes(),
+				DataSerializer.toJson(contextRegistryPayload).getBytes());
 		logger.trace("registerContext() :: completed");
 		return true;
 	}
@@ -480,9 +563,11 @@ public class EntityService {
 		logger.trace("updateContext() :: completed");
 	}
 
-	private CSourceRegistration getCSourceRegistrationFromJson(byte[] payload) throws URISyntaxException, IOException {
+	private CSourceRegistration getCSourceRegistrationFromJson(String payload) throws URISyntaxException, IOException {
 		logger.trace("getCSourceRegistrationFromJson() :: started");
 		CSourceRegistration csourceRegistration = new CSourceRegistration();
+		// csourceJsonBody = objectMapper.createObjectNode();
+		// csourceJsonBody = objectMapper.readTree(entityBody);
 		List<Information> information = new ArrayList<Information>();
 		Information info = new Information();
 		List<EntityInfo> entities = info.getEntities();

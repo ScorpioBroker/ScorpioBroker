@@ -18,12 +18,10 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.google.gson.Gson;
-
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.storagemanager.tenant.TenantAwareDataSource;
+import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 
 @Repository
 @ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)
@@ -52,8 +50,9 @@ public class StorageWriterDAO {
 		writerJdbcTemplateWithTransaction = new JdbcTemplate(transactionManager.getDataSource());
 		writerTransactionTemplate = new TransactionTemplate(transactionManager);
 	}
+
 	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
-			throws SQLException {		
+			throws SQLException {
 		writerJdbcTemplate = new JdbcTemplate(writerDataSource);
 
 		try {
@@ -100,13 +99,12 @@ public class StorageWriterDAO {
 	public boolean store(String tableName, String columnName, String key, String value, String tenantvalue)
 			throws SQLException {
 		try {
-			String sql;			
+			String sql;
 			int n = 0;
 			if (tenantvalue != null) {
 				DataSource finaldatasource = tenantAwareDataSource.determineTargetDataSource();
 				writerJdbcTemplate = new JdbcTemplate(finaldatasource);
-			}else
-			{
+			} else {
 				writerJdbcTemplate = new JdbcTemplate(writerDataSource);
 			}
 			if (!value.equals("null")) {
@@ -118,14 +116,14 @@ public class StorageWriterDAO {
 				sql = "DELETE FROM " + tableName + " WHERE id = ?";
 				n = writerJdbcTemplate.update(sql, key);
 			}
-			
+
 			logger.trace("Rows affected: " + Integer.toString(n));
 			return true; // (n>0);
 		} catch (Exception e) {
 			logger.error("Exception ::", e);
 			e.printStackTrace();
 		}
-	
+
 		return false;
 	}
 
@@ -202,7 +200,5 @@ public class StorageWriterDAO {
 		}
 		return false;
 	}
-
-	
 
 }

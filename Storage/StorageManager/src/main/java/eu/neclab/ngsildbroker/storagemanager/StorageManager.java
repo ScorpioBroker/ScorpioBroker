@@ -7,8 +7,8 @@ import org.springframework.context.annotation.Import;
 
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.storagemanager.config.JdbcConfig;
-import eu.neclab.ngsildbroker.storagemanager.services.StorageWriterService;
 import eu.neclab.ngsildbroker.storagemanager.services.StorageReaderService;
+import eu.neclab.ngsildbroker.storagemanager.services.StorageWriterService;
 
 @SpringBootApplication
 @Import(KafkaConfig.class)
@@ -16,6 +16,8 @@ public class StorageManager {
 
 	@Autowired
 	JdbcConfig jdbcConfig;
+	
+	
 
 	@Autowired(required=false)
 	StorageWriterService storageWriterService;

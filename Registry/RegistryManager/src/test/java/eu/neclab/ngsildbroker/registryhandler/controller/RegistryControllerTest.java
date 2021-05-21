@@ -112,8 +112,8 @@ public class RegistryControllerTest {
 	@Test
 	public void deleteCsourceTest() {
 		try {
-			when(csourceService.deleteCSourceRegistration("urn:ngsi-ld:ContextSourceRegistration:csr1a3458"))
-					.thenReturn(true);
+		//	when(csourceService.deleteCSourceRegistration("urn:ngsi-ld:ContextSourceRegistration:csr1a3458"))
+			//		.thenReturn(true);
 			mockMvc.perform(delete("/ngsi-ld/v1/csourceRegistrations/{registrationId}", "urn:ngsi-ld:ContextSourceRegistration:csr1a3458")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isNoContent()).andDo(print());
 		} catch (Exception e) {

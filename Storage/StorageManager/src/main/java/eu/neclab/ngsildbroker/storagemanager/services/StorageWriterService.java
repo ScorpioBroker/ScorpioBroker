@@ -15,15 +15,13 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
 import eu.neclab.ngsildbroker.storagemanager.repository.StorageWriterDAO;
-import eu.neclab.ngsildbroker.storagemanager.tenant.TenantAwareDataSource;
-
 
 @Service
 @ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)
@@ -138,10 +136,15 @@ public class StorageWriterService {
 		if (!csourceListenerOk) // this test is needed because listenerContainer.stop() does not work properly
 								// during boot time (probably because of concurrency)
 			return;
-		// String payload = new String(message);
+
 		String payload = new String(message.getPayload());
+		String datavalue;
 		JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
-		String datavalue = jsonObject.get("CSource").toString();
+		if (jsonObject.has("CSource")) {
+			datavalue = jsonObject.get("CSource").toString();
+		} else {
+			datavalue = "null";
+		}
 		String header = jsonObject.get("headers").toString();
 		JsonObject jsonObjectheader = new JsonParser().parse(header).getAsJsonObject();
 		String headervalue;
@@ -149,8 +152,10 @@ public class StorageWriterService {
 			headervalue = jsonObjectheader.get("ngsild-tenant").getAsString();
 			TenantContext.setCurrentTenant(headervalue);
 			String databasename = "ngb" + headervalue;
-			storageWriterDao.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,
-					headervalue, databasename);
+			if (datavalue != null) {
+				storageWriterDao.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,
+						headervalue, databasename);
+			}
 		} else {
 			headervalue = null;
 		}
@@ -169,7 +174,7 @@ public class StorageWriterService {
 				listenerContainer.stop();
 			}
 		}
-		// }
+
 		logger.trace("Writing is complete");
 	}
 

@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
+import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
@@ -10,7 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.stereotype.Repository;
@@ -18,12 +19,12 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.google.gson.Gson;
-
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
+import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
+import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
 
 @Repository("emstorage")
 @ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)
@@ -34,6 +35,9 @@ public class StorageWriterDAO {
 
 	@Autowired
 	private JdbcTemplate writerJdbcTemplate;
+
+	@Autowired
+	TenantAwareDataSource tenantAwareDataSource;
 
 	@Autowired
 	private DataSource writerDataSource;
@@ -73,15 +77,39 @@ public class StorageWriterDAO {
 		return false;
 	}
 
-	public boolean storeEntity(EntityRequest request)
-			throws SQLTransientConnectionException {
+	public boolean storeEntity(EntityRequest request) throws SQLTransientConnectionException {
 		String sql;
 		String key = request.getId();
 		String value = request.getWithSysAttrs();
 		String valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
 		String kvValue = request.getKeyValue();
 		int n = 0;
-		
+
+		String tenenat;
+		if (request.getHeaders().containsKey("ngsild-tenant")) {
+			tenenat = request.getHeaders().get("ngsild-tenant").get(0);
+			System.out.println(tenenat);
+			TenantContext.setCurrentTenant(tenenat);
+			String databasename = "ngb" + tenenat;
+
+			try {
+				tenantAwareDataSource.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT,
+						DBConstants.DBCOLUMN_DATA_TENANT, tenenat, databasename);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else {
+			tenenat = null;
+		}
+
+		if (tenenat != null) {
+			DataSource finaldatasource = tenantAwareDataSource.determineTargetDataSource();
+			writerJdbcTemplate = new JdbcTemplate(finaldatasource);
+		} else {
+			writerJdbcTemplate = new JdbcTemplate(writerDataSource);
+		}
+
 		if (value != null && !value.equals("null")) {
 			sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
