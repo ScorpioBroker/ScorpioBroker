@@ -39,6 +39,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
@@ -189,8 +190,8 @@ public class CSourceService {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		String tenantid;
-		if (headers.containsKey("ngsild-tenant")) {
-			tenantid = headers.get("ngsild-tenant").get(0);
+		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
+			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -260,8 +261,8 @@ public class CSourceService {
 		}
 
 		String tenantid;
-		if (headers.containsKey("ngsild-tenant")) {
-			tenantid = headers.get("ngsild-tenant").get(0);
+		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
+			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -342,8 +343,8 @@ public class CSourceService {
 		}
 
 		String tenantid;
-		if (headers.containsKey("ngsild-tenant")) {
-			tenantid = headers.get("ngsild-tenant").get(0);
+		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
+			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;

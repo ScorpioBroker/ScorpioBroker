@@ -35,6 +35,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
@@ -44,6 +45,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteAttributeRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
@@ -71,7 +73,6 @@ import eu.neclab.ngsildbroker.entityhandler.validationutil.PropertyValidatioRule
 import eu.neclab.ngsildbroker.entityhandler.validationutil.RelationshipValidationRule;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.TypeValidationRule;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.ValidationRules;
-
 
 @Service
 public class EntityService {
@@ -117,11 +118,9 @@ public class EntityService {
 	@Autowired
 	@Qualifier("emparamsres")
 	ParamsResolver paramsResolver;
-	
+
 	@Autowired
 	TenantAwareDataSource tenantAwareDataSource;
-
-	
 
 	public void setOperations(KafkaOps operations) {
 		this.operations = operations;
@@ -190,11 +189,10 @@ public class EntityService {
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
 		EntityRequest request = new CreateEntityRequest(payload, headers);
-		
-		
+
 		String tenantid;
-		if (headers.containsKey("ngsild-tenant")) {
-			tenantid = headers.get("ngsild-tenant").get(0);
+		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
+			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -220,9 +218,7 @@ public class EntityService {
 				this.entityIds.add(request.getId());
 			}
 		}
-		
-		
-		
+
 		pushToDB(request);
 		new Thread() {
 			public void run() {
@@ -281,8 +277,8 @@ public class EntityService {
 		// get message channel for ENTITY_UPDATE topic
 		MessageChannel messageChannel = producerChannels.updateWriteChannel();
 		String tenantid;
-		if (headers.containsKey("ngsild-tenant")) {
-			tenantid = headers.get("ngsild-tenant").get(0);
+		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
+			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -337,8 +333,8 @@ public class EntityService {
 		}
 
 		String tenantid;
-		if (headers.containsKey("ngsild-tenant")) {
-			tenantid = headers.get("ngsild-tenant").get(0);
+		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
+			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -401,22 +397,47 @@ public class EntityService {
 		return entityBody;
 	}
 
-	public boolean deleteEntity(String entityId) throws ResponseException, Exception {
+	public boolean deleteEntity(ArrayListMultimap<String, String> headers, String entityId)
+			throws ResponseException, Exception {
 		logger.trace("deleteEntity() :: started");
 		// get message channel for ENTITY_DELETE topic
 		MessageChannel messageChannel = producerChannels.deleteWriteChannel();
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		// get entity details from in-memory hashmap
-		synchronized (this.entityIds) {
-			if (!this.entityIds.remove(entityId)) {
-				throw new ResponseException(ErrorType.NotFound);
+		String tenantid;
+		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
+			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
+			TenantContext.setCurrentTenant(tenantid);
+		} else {
+			tenantid = null;
+		}
+		if (tenantid != null) {
+			this.tenantEntityIds = entityInfoDAO.getAllTenantIds();
+			synchronized (this.tenantEntityIds) {
+				if (!this.tenantEntityIds.contains(entityId)) {
+					throw new ResponseException(ErrorType.NotFound);
+				}
 			}
-			if (directDB) {
-				storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, entityId, null);
+		} else {
+			synchronized (this.entityIds) {
+
+				if (!this.entityIds.contains(entityId)) {
+					throw new ResponseException(ErrorType.NotFound);
+				}
+				this.entityIds.remove(entityId);
+
 			}
 		}
+		EntityRequest request = new DeleteEntityRequest(entityId, headers);
+		if (directDB) {
+			pushToDB(request);
+		}
+
+//			if (directDB) {
+//				storageWriterDao.store(DBConstants.DBTABLE_ENTITY, DBConstants.DBCOLUMN_DATA, entityId, null);
+//			}
+//		}
 		new Thread() {
 			public void run() {
 				try {
@@ -470,8 +491,8 @@ public class EntityService {
 		}
 
 		String tenantid;
-		if (headers.containsKey("ngsild-tenant")) {
-			tenantid = headers.get("ngsild-tenant").get(0);
+		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
+			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -514,8 +535,8 @@ public class EntityService {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		String tenantid;
-		if (headers.containsKey("ngsild-tenant")) {
-			tenantid = headers.get("ngsild-tenant").get(0);
+		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
+			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -552,8 +573,8 @@ public class EntityService {
 		MessageChannel messageChannel = producerChannels.contextRegistryWriteChannel();
 
 		String entityBody;
-		if (request.getHeaders().containsKey("ngsild-tenant")) {
-			String tenantvalue = request.getHeaders().get("ngsild-tenant").get(0).toString();
+		if (request.getHeaders().containsKey(AppConstants.TENANT_HEADER)) {
+			String tenantvalue = request.getHeaders().get(AppConstants.TENANT_HEADER).get(0).toString();
 			TenantContext.setCurrentTenant(tenantvalue);
 			entityBody = this.entityInfoDAO.getTenantEntity(request.getId());
 
@@ -566,8 +587,8 @@ public class EntityService {
 		// String headervalue;
 		// JsonNode csourceJsonBody;
 
-		// if (jsonObjectheader.has("ngsild-tenant")) {
-		// headervalue = jsonObjectheader.get("ngsild-tenant").getAsString();
+		// if (jsonObjectheader.has(AppConstants.TENANT_HEADER)) {
+		// headervalue = jsonObjectheader.get(AppConstants.TENANT_HEADER).getAsString();
 
 		// csourceJsonBody = objectMapper.createObjectNode();
 		// csourceJsonBody = objectMapper.readTree(entityBody);
@@ -727,7 +748,8 @@ public class EntityService {
 
 	}
 
-	public BatchResult deleteMultipleMessage(String payload) throws ResponseException {
+	public BatchResult deleteMultipleMessage(ArrayListMultimap<String, String> headers, String payload)
+			throws ResponseException {
 		try {
 			BatchResult result = new BatchResult();
 			JsonNode myTree = objectMapper.readTree(payload);
@@ -746,7 +768,7 @@ public class EntityService {
 				JsonNode next = it.next();
 				String entityId = next.asText();
 				try {
-					if (deleteEntity(entityId)) {
+					if (deleteEntity(headers, entityId)) {
 						result.addSuccess(entityId);
 					}
 				} catch (Exception e) {

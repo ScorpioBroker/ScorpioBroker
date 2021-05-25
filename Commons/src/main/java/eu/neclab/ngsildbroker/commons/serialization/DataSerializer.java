@@ -19,6 +19,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoValue;

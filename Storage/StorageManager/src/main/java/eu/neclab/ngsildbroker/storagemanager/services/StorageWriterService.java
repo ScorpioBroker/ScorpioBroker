@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
@@ -148,8 +149,8 @@ public class StorageWriterService {
 		String header = jsonObject.get("headers").toString();
 		JsonObject jsonObjectheader = new JsonParser().parse(header).getAsJsonObject();
 		String headervalue;
-		if (jsonObjectheader.has("ngsild-tenant")) {
-			headervalue = jsonObjectheader.get("ngsild-tenant").getAsString();
+		if (jsonObjectheader.has(AppConstants.TENANT_HEADER)) {
+			headervalue = jsonObjectheader.get(AppConstants.TENANT_HEADER).getAsString();
 			TenantContext.setCurrentTenant(headervalue);
 			String databasename = "ngb" + headervalue;
 			if (datavalue != null) {

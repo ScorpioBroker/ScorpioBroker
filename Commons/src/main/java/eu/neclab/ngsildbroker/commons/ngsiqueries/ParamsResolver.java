@@ -2,12 +2,12 @@ package eu.neclab.ngsildbroker.commons.ngsiqueries;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.JsonElement;
@@ -89,10 +88,10 @@ public class ParamsResolver {
 				String coordinatesString;
 				switch (temp.getGeometry().toLowerCase()) {
 				case "polygon":
-					coordinatesString = "[[" + builder.toString() +"]]";
+					coordinatesString = "[[" + builder.toString() + "]]";
 					break;
 				case "linestring":
-					coordinatesString = "[" + builder.toString() +"]";
+					coordinatesString = "[" + builder.toString() + "]";
 					break;
 				case "point":
 				default:
@@ -101,7 +100,7 @@ public class ParamsResolver {
 				}
 				temp.setCoordinates(coordinatesString);
 			}
-			if(subscription.getLdQuery() != null && !subscription.getLdQuery().isEmpty()) {
+			if (subscription.getLdQuery() != null && !subscription.getLdQuery().isEmpty()) {
 				temp.setQ(subscription.getLdQuery());
 			}
 			result.add(temp);
@@ -155,7 +154,7 @@ public class ParamsResolver {
 
 					geoqueryTokens = queryParser.parseGeoRel(georel);
 					logger.debug("  Geoquery term georelOp: " + geoqueryTokens.getGeorelOp());
-					
+
 					if (geoqueryTokens.getGeorelOp().isEmpty() || geometry.isEmpty() || coordinates.isEmpty()) {
 						throw new ResponseException(ErrorType.BadRequestData,
 								"Georel detected but georel, geometry or coordinates are empty!");
@@ -223,10 +222,11 @@ public class ParamsResolver {
 	}
 
 	private void validateCoordinates(String coordinates) throws ResponseException {
-		if(!coordinates.matches("^\\[*(\\[\\s*[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)(,\\d)?,[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)\\],?)+\\]*$")) {
+		if (!coordinates.matches(
+				"^\\[*(\\[\\s*[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)(,\\d)?,[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)\\],?)+\\]*$")) {
 			throw new ResponseException(ErrorType.BadRequestData, "coordinates are not valid");
 		}
-		
+
 	}
 
 	private String expandQueryValues(List<Object> linkHeaders, String queryValue) throws ResponseException {
@@ -292,7 +292,8 @@ public class ParamsResolver {
 		String jsonLdAttribute = getJsonLdAttribute(attribute, context);
 		logger.debug("jsonLdAttribute: " + jsonLdAttribute);
 		LocalDateTime start = LocalDateTime.now();
-		String jsonLdAttributeResolved = contextResolver.expand(jsonLdAttribute, context, false, AppConstants.INTERNAL_CALL_ID);
+		String jsonLdAttributeResolved = contextResolver.expand(jsonLdAttribute, context, false,
+				AppConstants.INTERNAL_CALL_ID);
 		LocalDateTime end = LocalDateTime.now();
 
 		logger.debug("jsonLdAttributeResolved: " + jsonLdAttributeResolved);

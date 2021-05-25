@@ -323,14 +323,15 @@ public class QueryService {
 	 * @throws Exception
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
-			Integer offset, String qToken, Boolean showServices, Boolean countResult,String check) throws ResponseException, Exception {
+			Integer offset, String qToken, Boolean showServices, Boolean countResult, String check)
+			throws ResponseException, Exception {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
 		List<String> realResult;
 		qp.setLimit(limit);
 		qp.setOffSet(offset);
-        qp.setCountResult(countResult);		
+		qp.setCountResult(countResult);
 		int dataLeft = 0;
 		if (qToken == null) {
 			ExecutorService executorService = Executors.newFixedThreadPool(2);
@@ -338,7 +339,7 @@ public class QueryService {
 			Future<List<String>> futureStorageManager = executorService.submit(new Callable<List<String>>() {
 				public List<String> call() throws Exception {
 					logger.trace("Asynchronous Callable storage manager");
-					//TAKE CARE OF PAGINATION HERE
+					// TAKE CARE OF PAGINATION HERE
 					if (queryDAO != null) {
 						return queryDAO.query(qp);
 					} else {
@@ -429,8 +430,8 @@ public class QueryService {
 			 * 
 			 * } }; }.start(); } else {
 			 */
-				realResult = aggregatedResult;
-			//}
+			realResult = aggregatedResult;
+			// }
 		} else {
 			// read from byte array
 			byte[] data = operations.getMessage(qToken, KafkaConstants.PAGINATION_TOPIC);
@@ -504,7 +505,8 @@ public class QueryService {
 					JsonNode jsonNode = objectMapper.readTree(response);
 					for (int i = 0; i <= jsonNode.size(); i++) {
 						if (jsonNode.get(i) != null && !jsonNode.isNull()) {
-							String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true, AppConstants.ENTITIES_URL_ID);// , linkHeaders);
+							String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true,
+									AppConstants.ENTITIES_URL_ID);// , linkHeaders);
 							entitiesList.add(payload);
 						}
 					}

@@ -44,12 +44,13 @@ public class AppConstants {
 	public final static String SWAGGER_CONTACT_LINK = "https://github.com/ScorpioBroker/ScorpioBroker";
 	public static final int OPERATION_CREATE_ENTITY = 0;
 	public static final int OPERATION_UPDATE_ENTITY = 1;
-	public static final int OPERATION_APPEND_ENTITY = 2;
+	public static final int OPERATION_APPEND_ENTITY = 2;	
 	public static final int OPERATION_DELETE_ATTRIBUTE_ENTITY = 3;
 	public static final int OPERATION_CREATE_HISTORY_ENTITY = 4;
 	public static final int OPERATION_UPDATE_HISTORY_ENTITY = 5;
 	public static final int OPERATION_APPEND_HISTORY_ENTITY = 6;
 	public static final int OPERATION_DELETE_ATTRIBUTE_HISTORY_ENTITY = 7;
+	public static final int OPERATION_DELETE_ENTITY = 8;
 	public static final String REQUEST_KV = "kv";
 	public static final String REQUEST_WA = "withAttrs";
 	public static final String REQUEST_WOA = "withoutAtts";
@@ -57,6 +58,9 @@ public class AppConstants {
 	public static final String REQUEST_ID = "id";
 	public static final String REQUEST_HD = "headers";
 	public static final String REQUEST_CSOURCE = "CSource";
+	public static final String TENANT_HEADER = "ngsild-tenant";
+	
+	
 	
 
 }

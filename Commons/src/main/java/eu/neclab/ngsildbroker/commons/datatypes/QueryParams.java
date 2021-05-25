@@ -1,8 +1,9 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import org.apache.commons.lang.builder.ToStringBuilder;
 
 public class QueryParams {
 
@@ -12,12 +13,9 @@ public class QueryParams {
 	@SerializedName("type")
 	@Expose
 	private String type;
-//----------------------------
 	@SerializedName("tenant")
 	@Expose
 	private String tenant;
-//-----------------------------	
-
 	@SerializedName("attrs")
 	@Expose
 	private String attrs;

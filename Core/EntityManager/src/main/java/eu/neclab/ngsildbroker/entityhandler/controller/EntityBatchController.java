@@ -22,7 +22,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 
 @RestController
@@ -105,7 +104,7 @@ public class EntityBatchController {
 		try {
 //			String resolved = httpUtils.expandPayload(request, payload);
 			// it's an array of uris which is not json-ld so no expanding here
-			BatchResult result = entityService.deleteMultipleMessage(payload);
+			BatchResult result = entityService.deleteMultipleMessage(HttpUtils.getHeaders(request), payload);
 			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (ResponseException e) {
 			throw new ResponseException(ErrorType.BadRequestData);

@@ -326,7 +326,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			String entityId = HttpUtils.denormalize(request.getServletPath().replace("/ngsi-ld/v1/entities/", ""));
 			logger.trace("delete entity :: started");
-			entityService.deleteEntity(entityId);
+			entityService.deleteEntity(HttpUtils.getHeaders(request), entityId);
 			logger.trace("delete entity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException responseException) {
