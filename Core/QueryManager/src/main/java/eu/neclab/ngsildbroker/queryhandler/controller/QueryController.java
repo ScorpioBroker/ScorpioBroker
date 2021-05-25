@@ -233,7 +233,8 @@ public class QueryController {// implements QueryHandlerInterface {
 	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
 			Map<String, String[]> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
 			List<String> options, Boolean showServices, boolean retrieve, Boolean countResult, String check) {
-
+		String tenantid = request.getHeader(AppConstants.TENANT_HEADER);
+		
 		if (limit == null) {
 			limit = defaultLimit;
 		}
@@ -257,6 +258,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(paramMap, linkHeaders);
 					if (qp == null) // invalid query
 						throw new ResponseException(ErrorType.InvalidRequest);
+					qp.setTenant(tenantid);
 					qp.setKeyValues(
 							(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)));
 					qp.setIncludeSysAttrs(
