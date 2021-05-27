@@ -212,22 +212,17 @@ public class StorageWriterService {
 //			headervalue = null;
 //		}
 //--------------------------------------------------------------------------------------------		
-		
-		logger.debug("Received message: " + payload);
-		logger.trace("Writing data...");
-		if (storageWriterDao != null && storageWriterDao.storeTemporalEntity(key, payload)) {
-			acknowledgment.acknowledge();
-			logger.trace("Kafka offset commited");
-		} else {
-			if (temporalEntityStopListenerIfDbFails) {
-				temporalEntityListenerOk = false;
-				logger.error("DB failed, not processing any new messages");
-				MessageListenerContainer listenerContainer = kafkaListenerEndpoint
-						.getListenerContainer(TEMPORALENTITY_LISTENER_ID);
-				listenerContainer.stop();
-			}
-		}
-		logger.trace("Writing is complete");
+		/*
+		 * logger.debug("Received message: " + payload);
+		 * logger.trace("Writing data..."); if (storageWriterDao != null &&
+		 * storageWriterDao.storeTemporalEntity(key, payload)) {
+		 * acknowledgment.acknowledge(); logger.trace("Kafka offset commited"); } else {
+		 * if (temporalEntityStopListenerIfDbFails) { temporalEntityListenerOk = false;
+		 * logger.error("DB failed, not processing any new messages");
+		 * MessageListenerContainer listenerContainer = kafkaListenerEndpoint
+		 * .getListenerContainer(TEMPORALENTITY_LISTENER_ID); listenerContainer.stop();
+		 * } }
+		 */		logger.trace("Writing is complete");
 	}
 
 }

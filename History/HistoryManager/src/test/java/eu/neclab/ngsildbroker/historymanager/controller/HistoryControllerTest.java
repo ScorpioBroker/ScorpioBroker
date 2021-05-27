@@ -104,11 +104,11 @@ public class HistoryControllerTest {
 	@Test
 	public void createTemporalEntityTest() {
 		try {
-			when(historyService.createTemporalEntityFromBinding(any())).thenReturn(uri);
+			when(historyService.createTemporalEntityFromBinding(any(), any())).thenReturn(uri);
 			mockMvc.perform(post("/ngsi-ld/v1/temporal/entities/").contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(temporalPayload))
 					.andExpect(status().isCreated());
-			verify(historyService, times(1)).createTemporalEntityFromBinding(any());
+			verify(historyService, times(1)).createTemporalEntityFromBinding(any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -121,13 +121,13 @@ public class HistoryControllerTest {
 	@Test
 	public void createTemporalEntityBadRequestTest() {
 		try {
-			when(historyService.createTemporalEntityFromBinding(any()))
+			when(historyService.createTemporalEntityFromBinding(any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData));
 			mockMvc.perform(post("/ngsi-ld/v1/temporal/entities/").contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(temporalPayload))
 					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
 
-			verify(historyService, times(1)).createTemporalEntityFromBinding(any());
+			verify(historyService, times(1)).createTemporalEntityFromBinding(any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -141,12 +141,12 @@ public class HistoryControllerTest {
 	@Test
 	public void createTemporalEntityInternalServerErrorTest() {
 		try {
-			when(historyService.createTemporalEntityFromBinding(any())).thenThrow(new Exception());
+			when(historyService.createTemporalEntityFromBinding(any(), any())).thenThrow(new Exception());
 			mockMvc.perform(post("/ngsi-ld/v1/temporal/entities/").contentType(AppConstants.NGB_APPLICATION_JSONLD)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(temporalPayload))
 					.andExpect(status().isInternalServerError());
 
-			verify(historyService, times(1)).createTemporalEntityFromBinding(any());
+			verify(historyService, times(1)).createTemporalEntityFromBinding(any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -169,14 +169,13 @@ public class HistoryControllerTest {
 	}
 
 	/**
-	 * this method is try to update the temporalEntity with "INTERNAL SERVER
-	 * ERROR"
+	 * this method is try to update the temporalEntity with "INTERNAL SERVER ERROR"
 	 */
 
 	@Test
 	public void updateAttrByIdInternalServerError() {
 		try {
-			Mockito.doThrow(new Exception()).when(historyService).addAttrib2TemporalEntity(any(), any());
+			Mockito.doThrow(new Exception()).when(historyService).addAttrib2TemporalEntity(any(), any(), any());
 			mockMvc.perform(post("/ngsi-ld/v1/temporal/entities/urn:ngsi-ld:testunit:151/attrs")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(temporalPayload)).andExpect(status().isInternalServerError());
@@ -194,7 +193,7 @@ public class HistoryControllerTest {
 	public void updateAttrByIdBadRequest() {
 		try {
 			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService)
-					.addAttrib2TemporalEntity(any(), any());
+					.addAttrib2TemporalEntity(any(), any(), any());
 			mockMvc.perform(post("/ngsi-ld/v1/temporal/entities/urn:ngsi-ld:testunit:151/attrs")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(temporalPayload)).andExpect(status().isBadRequest());
@@ -222,8 +221,8 @@ public class HistoryControllerTest {
 	}
 
 	/**
-	 * this method is try to modify the attribute of temporalEntity having
-	 * "INTERNAL SERVER ERROR"
+	 * this method is try to modify the attribute of temporalEntity having "INTERNAL
+	 * SERVER ERROR"
 	 */
 
 	@Test
@@ -231,7 +230,7 @@ public class HistoryControllerTest {
 
 		try {
 			Mockito.doThrow(new Exception()).when(historyService).modifyAttribInstanceTemporalEntity(any(), any(),
-					any(), any(), any());
+					any(), any(), any(), any());
 			mockMvc.perform(patch("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}/{instanceId}",
 					"urn:ngsi-ld:testunit:151", "airQualityLevel", "urn:ngsi-ld:d43aa0fe-a986-4479-9fac-35b7eba232041")
 							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
@@ -252,7 +251,7 @@ public class HistoryControllerTest {
 
 		try {
 			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService)
-					.modifyAttribInstanceTemporalEntity(any(), any(), any(), any(), any());
+					.modifyAttribInstanceTemporalEntity(any(), any(), any(), any(), any(), any());
 			mockMvc.perform(patch("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}/{instanceId}",
 					"urn:ngsi-ld:testunit:151", "airQualityLevel", "urn:ngsi-ld:d43aa0fe-a986-4479-9fac-35b7eba232041")
 							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
@@ -277,7 +276,8 @@ public class HistoryControllerTest {
 									"urn:ngsi-ld:testunit:151", "airQualityLevel")
 							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
 					.andExpect(status().isNoContent());
-			verify(historyService, times(1)).delete("urn:ngsi-ld:testunit:151", "airQualityLevel", null, linkHeaders);
+			verify(historyService, times(1)).delete(any(), "urn:ngsi-ld:testunit:151", "airQualityLevel", null,
+					linkHeaders);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -294,7 +294,7 @@ public class HistoryControllerTest {
 			mockMvc.perform(MockMvcRequestBuilders
 					.delete("/ngsi-ld/v1/temporal/entities/{entityId}", "urn:ngsi-ld:testunit:151")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isNoContent());
-			verify(historyService, times(1)).delete("urn:ngsi-ld:testunit:151", null, null, linkHeaders);
+			verify(historyService, times(1)).delete(any(), "urn:ngsi-ld:testunit:151", null, null, linkHeaders);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -309,7 +309,7 @@ public class HistoryControllerTest {
 	public void deleteTemporalEntityInternalServerError() {
 		List<Object> linkHeaders = null;
 		try {
-			Mockito.doThrow(new Exception()).when(historyService).delete(any(), any(), any(), any());
+			Mockito.doThrow(new Exception()).when(historyService).delete(any(), any(), any(), any(), any());
 			mockMvc.perform(MockMvcRequestBuilders
 					.delete("/ngsi-ld/v1/temporal/entities/{entities}", "urn:ngsi-ld:testunit:151")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isInternalServerError());
@@ -327,7 +327,7 @@ public class HistoryControllerTest {
 		List<Object> linkHeaders = null;
 		try {
 			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).delete(any(), any(),
-					any(), any());
+					any(), any(), any());
 			mockMvc.perform(MockMvcRequestBuilders
 					.delete("/ngsi-ld/v1/temporal/entities/{entities}", "urn:ngsi-ld:testunit:151")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isBadRequest());
@@ -337,15 +337,15 @@ public class HistoryControllerTest {
 	}
 
 	/**
-	 * this method is try to delete the attribute of temporalEntity having
-	 * "INTERNAL SERVER ERROR"
+	 * this method is try to delete the attribute of temporalEntity having "INTERNAL
+	 * SERVER ERROR"
 	 */
 
 	@Test
 	public void deleteTemporalEntityByAttrInternalServerError() {
 		List<Object> linkHeaders = null;
 		try {
-			Mockito.doThrow(new Exception()).when(historyService).delete(any(), any(), any(), any());
+			Mockito.doThrow(new Exception()).when(historyService).delete(any(), any(), any(), any(), any());
 			mockMvc.perform(
 					MockMvcRequestBuilders
 							.delete("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}",
@@ -367,7 +367,7 @@ public class HistoryControllerTest {
 		List<Object> linkHeaders = null;
 		try {
 			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).delete(any(), any(),
-					any(), any());
+					any(), any(), any());
 			mockMvc.perform(
 					MockMvcRequestBuilders
 							.delete("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}",
@@ -389,7 +389,7 @@ public class HistoryControllerTest {
 		List<Object> linkHeaders = null;
 		try {
 			Mockito.doThrow(new ResponseException(ErrorType.NotFound)).when(historyService).delete(any(), any(), any(),
-					any());
+					any(), any());
 			mockMvc.perform(
 					MockMvcRequestBuilders
 							.delete("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}",
