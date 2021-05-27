@@ -1,9 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.net.URI;
-import java.time.Instant;
 import java.util.Map;
-import java.util.UUID;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonArray;
@@ -15,34 +13,66 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
-public class CreateHistoryEntityRequest extends EntityRequest{
-	
+public class CreateHistoryEntityRequest extends HistoryEntityRequest {
+
 	JsonParser parser = new JsonParser();
-	
+	private boolean fromEntity;
+	private JsonObject jsonObject;
+	private URI uriId;
+	private int attributeCount;
+
+	public boolean isFromEntity() {
+		return fromEntity;
+	}
+
+	public void setFromEntity(boolean fromEntity) {
+		this.fromEntity = fromEntity;
+	}
+
+	public URI getUriId() {
+		return uriId;
+	}
+
+	public void setUriId(URI uriId) {
+		this.uriId = uriId;
+	}
+
+	public int getAttributeCount() {
+		return attributeCount;
+	}
+
+	public void setAttributeCount(int attributeCount) {
+		this.attributeCount = attributeCount;
+	}
+
 	/**
 	 * Serialization constructor
+	 * @param entityRequest 
 	 */
-	public CreateHistoryEntityRequest() {
-	}
-	
-	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers) {
-		super(AppConstants.OPERATION_CREATE_HISTORY_ENTITY, headers);
+	public CreateHistoryEntityRequest(EntityRequest entityRequest) {
 	}
 
-	
-	private URI createTemporalEntity(String payload, boolean fromEntity) throws ResponseException, Exception {
-		logger.trace("creating temporal entity");
-		final JsonObject jsonObject = parser.parse(payload).getAsJsonObject();
-		System.out.println(jsonObject.toString());
+	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers, String payload, boolean fromEntity)
+			throws ResponseException {
+		super(headers, payload);
+		this.fromEntity = fromEntity;
+		try {
+			createTemporalEntity(payload, fromEntity);
+		} catch (ResponseException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new ResponseException(e.getMessage());
+		}
+		// super(AppConstants.OPERATION_CREATE_HISTORY_ENTITY, headers);
+	}
 
+	private void createTemporalEntity(String payload, boolean fromEntity) throws ResponseException, Exception {
+		this.jsonObject = parser.parse(payload).getAsJsonObject();
 		if (jsonObject.get(NGSIConstants.JSON_LD_ID) == null || jsonObject.get(NGSIConstants.JSON_LD_TYPE) == null) {
 			throw new ResponseException(ErrorType.InvalidRequest, "id and type are required fields");
 		}
-		String now = SerializationTools.formatter.format(Instant.now());
-
+		this.attributeCount = 0;
 		if (jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT) == null
 				|| jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT) == null) {
 			JsonArray temp = new JsonArray();
@@ -58,11 +88,11 @@ public class CreateHistoryEntityRequest extends EntityRequest{
 			}
 		}
 
-		String id = jsonObject.get(NGSIConstants.JSON_LD_ID).getAsString();
-		String type = jsonObject.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().get(0).getAsString();
-		String createdAt = jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray().get(0).getAsJsonObject()
+		this.id = jsonObject.get(NGSIConstants.JSON_LD_ID).getAsString();
+		this.type = jsonObject.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().get(0).getAsString();
+		this.createdAt = jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray().get(0).getAsJsonObject()
 				.get(NGSIConstants.JSON_LD_VALUE).getAsString();
-		String modifiedAt = jsonObject.get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0).getAsJsonObject()
+		this.modifiedAt = jsonObject.get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0).getAsJsonObject()
 				.get(NGSIConstants.JSON_LD_VALUE).getAsString();
 
 		Integer attributeCount = 0;
@@ -75,87 +105,36 @@ public class CreateHistoryEntityRequest extends EntityRequest{
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
 				continue;
 			}
+
 			String attribId = entry.getKey();
 			Boolean createTemporalEntityIfNotExists = (attributeCount == 0); // if it's the first attribute, create the
-																				// temporalentity record
+																				// //
+			// temporalentity record
 
 			if (entry.getValue().isJsonArray()) {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
+				// TODO check if changes in the array are reflect in the object
 				for (JsonElement jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity);
-					//pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId, jsonElement.toString(),
-					//		createTemporalEntityIfNotExists, false);
+					// pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId,
+					// jsonElement.toString(), createTemporalEntityIfNotExists, false);
 				}
 			}
 			attributeCount++;
 		}
-		if (attributeCount == 0) { // create empty temporalentity (no attributes)
-			TemporalEntityStorageKey tesk = new TemporalEntityStorageKey(id);
-			tesk.setEntityType(type);
-			tesk.setEntityCreatedAt(createdAt);
-			tesk.setEntityModifiedAt(modifiedAt);
-			String messageKey = DataSerializer.toJson(tesk);
-			logger.debug(" message key " + messageKey + " payload element: empty");
-			//kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(), messageKey.getBytes(),
-			//		"".getBytes());
-		}
-		logger.trace("temporal entity created " + id);
-		return new URI(AppConstants.HISTORY_URL + id);
-	}
-	private JsonElement setCommonTemporalProperties(JsonElement jsonElement, String date, boolean fromEntity) {
-		String valueCreatedAt;
-		if (fromEntity) {
-			// reuse modifiedAt field from Attribute in Entity, if exists
-			if (jsonElement.getAsJsonObject().has(NGSIConstants.NGSI_LD_MODIFIED_AT)
-					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).isJsonArray()
-					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray()
-							.get(0) != null
-					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0)
-							.isJsonObject()
-					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0)
-							.getAsJsonObject().has(NGSIConstants.JSON_LD_VALUE)) {
-				valueCreatedAt = jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray()
-						.get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
-			} else {
-				valueCreatedAt = date;
-			}
-		} else {
-			valueCreatedAt = date;
-		}
-		// append/overwrite temporal fields. as we are creating new instances,
-		// modifiedAt and createdAt are the same
-		jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_CREATED_AT, valueCreatedAt);
-		jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, valueCreatedAt);
-		// system generated instance id
-		UUID uuid = UUID.randomUUID();
-		String instanceid = "urn" + ":" + "ngsi-ld" + ":" + uuid;
-		jsonElement = setTemporalPropertyinstanceId(jsonElement, NGSIConstants.NGSI_LD_INSTANCE_ID, instanceid);
-		return jsonElement;
-	}
+		// attributeCount++; //move out }if(attributeCount==0)
 
-	private JsonElement setTemporalProperty(JsonElement jsonElement, String propertyName, String value) {
-		JsonObject objAttribute = jsonElement.getAsJsonObject();
-		objAttribute.remove(propertyName);
-		JsonObject obj = new JsonObject();
-		obj.addProperty(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-		obj.addProperty(NGSIConstants.JSON_LD_VALUE, value);
-		JsonArray arr = new JsonArray();
-		arr.add(obj);
-		objAttribute.add(propertyName, arr);
-		return objAttribute;
-	}
-	// system generated instance id
-	private JsonElement setTemporalPropertyinstanceId(JsonElement jsonElement, String propertyName, String value) {
-		JsonObject objAttribute = jsonElement.getAsJsonObject();
-		objAttribute.remove(propertyName);
-		JsonObject obj = new JsonObject();
-		obj.addProperty(NGSIConstants.JSON_LD_ID, value);
-		JsonArray arr = new JsonArray();
-		arr.add(obj);
-		objAttribute.add(propertyName, arr);
-		return objAttribute;
-	}
+		// { // create empty temporalentity (no attributes) TemporalEntityStorageKey
+		// tesk = new TemporalEntityStorageKey(id); tesk.setEntityType(type);
+		// tesk.setEntityCreatedAt(createdAt); tesk.setEntityModifiedAt(modifiedAt);
+		// String messageKey = DataSerializer.toJson(tesk); logger.debug(" message key "
+		// + messageKey + " payload element: empty"); /*
+		// kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(),
+		// messageKey.getBytes(), "".getBytes());
 
+		// }logger.trace("temporal entity created "+id);
+		this.uriId = new URI(AppConstants.HISTORY_URL + id);
+	}
 
 	
 }

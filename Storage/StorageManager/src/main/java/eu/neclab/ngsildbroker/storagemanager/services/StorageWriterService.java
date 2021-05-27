@@ -20,9 +20,9 @@ import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
-import eu.neclab.ngsildbroker.storagemanager.repository.StorageWriterDAO;
 
 @Service
 @ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)

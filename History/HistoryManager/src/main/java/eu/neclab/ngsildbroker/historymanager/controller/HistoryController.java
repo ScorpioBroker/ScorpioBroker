@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryHistoryEntitiesRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -71,7 +73,7 @@ public class HistoryController {
 
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
-			URI uri = historyService.createTemporalEntityFromBinding(resolved);
+			URI uri = historyService.createTemporalEntityFromBinding(httpUtils.getHeaders(request), resolved);
 			logger.trace("createTemporalEntity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString()).body(uri.toString().getBytes());
 		} catch (ResponseException exception) {
@@ -104,7 +106,8 @@ public class HistoryController {
 			}
 
 			logger.trace("retrieveTemporalEntity :: completed");
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)));
+			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
+			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(req.getQp())));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
@@ -129,7 +132,8 @@ public class HistoryController {
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
 			qp.setId(entityId);
 			logger.trace("retrieveTemporalEntityById :: completed");
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)));
+			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
+			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(req.getQp())));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
@@ -146,7 +150,7 @@ public class HistoryController {
 		try {
 			logger.trace("deleteTemporalEntityById :: started");
 			logger.debug("entityId : " + entityId);
-			historyService.delete(entityId, null, null,
+			historyService.delete(HttpUtils.getHeaders(request), entityId, null, null,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteTemporalEntityById :: completed");
 			return ResponseEntity.noContent().build();
@@ -168,7 +172,7 @@ public class HistoryController {
 			logger.debug("entityId : " + entityId);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
-			historyService.addAttrib2TemporalEntity(entityId, resolved);
+			historyService.addAttrib2TemporalEntity(httpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("addAttrib2TemopralEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
@@ -187,7 +191,7 @@ public class HistoryController {
 		try {
 			logger.trace("deleteAttrib2TemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId);
-			historyService.delete(entityId, attrId, null,
+			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteAttrib2TemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
@@ -213,7 +217,7 @@ public class HistoryController {
 
 			// TODO : TBD- conflict between specs and implementation <mentioned no request
 			// body in specs>
-			historyService.modifyAttribInstanceTemporalEntity(entityId, resolved, attrId, instanceId,
+			historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId, resolved, attrId, instanceId,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("modifyAttribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
@@ -234,7 +238,7 @@ public class HistoryController {
 		try {
 			logger.trace("deleteAtrribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
-			historyService.delete(entityId, attrId, instanceId,
+			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
