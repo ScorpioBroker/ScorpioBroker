@@ -29,6 +29,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
+import eu.neclab.ngsildbroker.entityhandler.services.EntityInfoDAO;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 
 
@@ -40,7 +42,10 @@ public class EntityControllerTest {
     private MockMvc mockMvc;
     @MockBean
     private EntityService entityService;
-    
+    @MockBean
+	private EntityInfoDAO entityInfoDAO;
+	@MockBean
+	private TenantAwareDataSource tenantAwareDataSource;
 	private String appendPayload;
 	private String updatePayload;
 	private String entityPayload;
@@ -390,6 +395,10 @@ public class EntityControllerTest {
 			when(entityService.partialUpdateEntity(any(), any(), any(), any())).thenReturn(updateResult);
 			when(updateResult.getStatus()).thenReturn(true);
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
+					.with(request -> {
+					      request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
+					      return request;
+					    })
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdatePayload)).andExpect(status().isNoContent());
 			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
@@ -408,6 +417,10 @@ public class EntityControllerTest {
 			when(entityService.partialUpdateEntity(any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
+					.with(request -> {
+					      request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
+					      return request;
+					    })
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdatePayload)).andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.title").value("Resource not found."));
@@ -427,6 +440,10 @@ public class EntityControllerTest {
 			when(entityService.partialUpdateEntity(any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData));
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
+					.with(request -> {
+					      request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
+					      return request;
+					    })
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(updatePayload)).andExpect(status().isBadRequest())
 					.andExpect(jsonPath("$.title").value("Bad Request Data."));
@@ -447,6 +464,10 @@ public class EntityControllerTest {
 			when(entityService.partialUpdateEntity(any(), any(), any(), any())).thenReturn(updateResult);
 			when(updateResult.getStatus()).thenReturn(true);
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
+					.with(request -> {
+					      request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
+					      return request;
+					    })
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdateDefaultCasePayload)).andExpect(status().isNoContent());
 			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
@@ -465,6 +486,10 @@ public class EntityControllerTest {
 			when(entityService.partialUpdateEntity(any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
+					.with(request -> {
+					      request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
+					      return request;
+					    })
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdateDefaultCasePayload)).andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.title").value("Resource not found."));
@@ -483,6 +508,10 @@ public class EntityControllerTest {
 		try {
 			when(entityService.partialUpdateEntity(any(), any(), any(), any())).thenThrow(new Exception());
 			mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
+					.with(request -> {
+					      request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
+					      return request;
+					    })
 					.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
 					.content(partialUpdateDefaultCasePayload)).andExpect(status().isInternalServerError())
 					.andExpect(jsonPath("$.title").value("Internal error"));
@@ -499,10 +528,10 @@ public class EntityControllerTest {
 	@Test
 	public void deleteEntityTest() {
 		try {
-		//	when(entityService.deleteEntity(any())).thenReturn(true);
+			when(entityService.deleteEntity(any(),any())).thenReturn(true);
 			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isNoContent());
-		//	verify(entityService, times(1)).deleteEntity(any());
+			verify(entityService, times(1)).deleteEntity(any(),any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -515,11 +544,11 @@ public class EntityControllerTest {
 	@Test
 	public void deleteEntityNotFoundTest() {
 		try {
-		//	when(entityService.deleteEntity(any())).thenThrow(new ResponseException(ErrorType.NotFound));
+			when(entityService.deleteEntity(any(),any())).thenThrow(new ResponseException(ErrorType.NotFound));
 			mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A101")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isNotFound())
 					.andExpect(jsonPath("$.title").value("Resource not found."));
-		//	verify(entityService, times(1)).deleteEntity(any());
+			verify(entityService, times(1)).deleteEntity(any(),any());
 		} catch (Exception e) {
 			Assert.fail();
 		}

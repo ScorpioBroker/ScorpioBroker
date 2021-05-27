@@ -16,6 +16,9 @@ import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+
 public class TenantAwareDataSource extends AbstractRoutingDataSource {
 
 	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
@@ -49,7 +52,12 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
 
 		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
 		if (tenantDataSource == null) {
-			tenantDataSource = createDataSourceForTenantId(tenantidvalue);
+			try {
+				tenantDataSource = createDataSourceForTenantId(tenantidvalue);
+			} catch (ResponseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			flywayMigrate(tenantDataSource);
 			resolvedDataSources.put(tenantidvalue, tenantDataSource);
 		}
@@ -57,10 +65,11 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
 		return tenantDataSource;
 	}
 
-	private DataSource createDataSourceForTenantId(String tenantidvalue) {
+	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException {
 		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
 		if (tenantDatabaseName == null)
-			throw new IllegalArgumentException("Given tenant id is not valid : " + tenantidvalue);
+			throw new ResponseException(ErrorType.TenantNotFound);
+			//throw new IllegalArgumentException("Given tenant id is not valid : " + tenantidvalue);
 		HikariConfig tenantHikariConfig = new HikariConfig();
 		hikariConfig.copyStateTo(tenantHikariConfig);
 		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(hikariConfig.getJdbcUrl(), tenantDatabaseName);

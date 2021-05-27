@@ -189,6 +189,30 @@ public class StorageWriterService {
 										// during boot time (probably because of concurrency)
 			return;
 		String payload = new String(message);
+//-------------------------------------------------------------------------------------------
+//		String datavalue;
+//		JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
+//		if (jsonObject.has("CSource")) {
+//			datavalue = jsonObject.get("CSource").toString();
+//		} else {
+//			datavalue = "null";
+//		}
+//		String header = jsonObject.get("headers").toString();
+//		JsonObject jsonObjectheader = new JsonParser().parse(header).getAsJsonObject();
+//		String headervalue;
+//		if (jsonObjectheader.has(AppConstants.TENANT_HEADER)) {
+//			headervalue = jsonObjectheader.get(AppConstants.TENANT_HEADER).getAsString();
+//			TenantContext.setCurrentTenant(headervalue);
+//			String databasename = "ngb" + headervalue;
+//			if (datavalue != null) {
+//				storageWriterDao.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,
+//						headervalue, databasename);
+//			}
+//		} else {
+//			headervalue = null;
+//		}
+//--------------------------------------------------------------------------------------------		
+		
 		logger.debug("Received message: " + payload);
 		logger.trace("Writing data...");
 		if (storageWriterDao != null && storageWriterDao.storeTemporalEntity(key, payload)) {
