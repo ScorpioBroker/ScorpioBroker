@@ -106,9 +106,9 @@ public class RegistryController {
 
 				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
-				qp.setTenant(tenantid);
 				if (qp == null) // invalid query
 					throw new ResponseException(ErrorType.InvalidRequest);
+				qp.setTenant(tenantid);
 				List<String> csourceList = csourceDAO.query(qp);
 				if (csourceList.size() > 0) {
 					return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
@@ -118,7 +118,8 @@ public class RegistryController {
 			} else {
 				// spec v0.9.0 section 5.10.2.4: if neither Entity types nor Attribute names are
 				// provided, an error of BadRequestData shall be raised
-				throw new ResponseException(ErrorType.BadRequestData, "You must provide at least type or attrs as parameter");
+				throw new ResponseException(ErrorType.BadRequestData,
+						"You must provide at least type or attrs as parameter");
 			}
 		} catch (ResponseException exception) {
 			logger.error("Exception ::", exception);
@@ -144,7 +145,7 @@ public class RegistryController {
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
 			logger.debug("Csource :: " + csourceRegistration);
-			URI uri = csourceService.registerCSource(HttpUtils.getHeaders(request),csourceRegistration);
+			URI uri = csourceService.registerCSource(HttpUtils.getHeaders(request), csourceRegistration);
 
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri).build();
 		} catch (ResponseException exception) {
@@ -181,7 +182,7 @@ public class RegistryController {
 			logger.debug("update CSource() ::" + registrationId);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
 
-			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request),registrationId, resolved);
+			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request), registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {
@@ -198,7 +199,7 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("delete CSource() ::" + registrationId);
-			csourceService.deleteCSourceRegistration(HttpUtils.getHeaders(request),registrationId);
+			csourceService.deleteCSourceRegistration(HttpUtils.getHeaders(request), registrationId);
 			logger.debug("delete CSource() completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {

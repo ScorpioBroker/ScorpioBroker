@@ -25,15 +25,9 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
 
 	@Autowired
 	private HikariConfig hikariConfig;
-	
+
 	@Autowired
 	private JdbcTemplate writerJdbcTemplate;
-
-//	@Autowired
-//	private TenantDatabaseMigrationService tenantDatabaseMigrationService;
-
-//	@Autowired
-//	TenantWriterDAO tenantWriterDAO;
 
 	@Override
 	public void afterPropertiesSet() {
@@ -56,7 +50,6 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
 		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
 		if (tenantDataSource == null) {
 			tenantDataSource = createDataSourceForTenantId(tenantidvalue);
-			//tenantDatabaseMigrationService.flywayMigrate(tenantDataSource);
 			flywayMigrate(tenantDataSource);
 			resolvedDataSources.put(tenantidvalue, tenantDataSource);
 		}
@@ -65,11 +58,9 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
 	}
 
 	private DataSource createDataSourceForTenantId(String tenantidvalue) {
-		//String tenantDatabaseName = tenantWriterDAO.findDataBaseNameByTenantId(tenantidvalue);
 		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
 		if (tenantDatabaseName == null)
 			throw new IllegalArgumentException("Given tenant id is not valid : " + tenantidvalue);
-
 		HikariConfig tenantHikariConfig = new HikariConfig();
 		hikariConfig.copyStateTo(tenantHikariConfig);
 		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(hikariConfig.getJdbcUrl(), tenantDatabaseName);
@@ -77,7 +68,7 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
 		tenantHikariConfig.setPoolName(tenantDatabaseName + "-db-pool");
 		return new HikariDataSource(tenantHikariConfig);
 	}
-	
+
 	public Boolean flywayMigrate(DataSource tenantDataSource) {
 		try {
 			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
@@ -90,9 +81,9 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
 
 		return true;
 	}
-	
+
 	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
-			throws SQLException {		
+			throws SQLException {
 		writerJdbcTemplate = new JdbcTemplate(masterDataSource);
 
 		try {
@@ -119,15 +110,14 @@ public class TenantAwareDataSource extends AbstractRoutingDataSource {
 		if (tenantidvalue == null)
 			return null;
 		try {
-
-			// SELECT EXISTS(SELECT datname FROM pg_database WHERE datname = 'tenant2');
 			String databasename = writerJdbcTemplate.queryForObject(
 					"SELECT database_name FROM tenant WHERE tenant_id = ?", String.class, tenantidvalue);
 			List<String> data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
 			if (data.contains(databasename)) {
 				return databasename;
 			} else {
-				String sql = "create database " + databasename + "";
+				String modifydatabasename = " \"" + databasename + "\"";
+				String sql = "create database " + modifydatabasename + "";
 				writerJdbcTemplate.execute(sql);
 				return databasename;
 			}
