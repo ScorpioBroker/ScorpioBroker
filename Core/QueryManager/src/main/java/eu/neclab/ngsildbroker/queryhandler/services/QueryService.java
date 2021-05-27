@@ -46,6 +46,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.netflix.discovery.EurekaClient;
@@ -313,6 +314,7 @@ public class QueryService {
 	 * @param qToken
 	 * @param offset
 	 * @param limit
+	 * @param headers 
 	 * @param expandedAttrs
 	 * @return List<Entity>
 	 * @throws ExecutionException
@@ -323,7 +325,7 @@ public class QueryService {
 	 * @throws Exception
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
-			Integer offset, String qToken, Boolean showServices, Boolean countResult, String check)
+			Integer offset, String qToken, Boolean showServices, Boolean countResult, String check, ArrayListMultimap<String,String> headers)
 			throws ResponseException, Exception {
 
 		List<String> aggregatedResult = new ArrayList<String>();
@@ -355,6 +357,7 @@ public class QueryService {
 						logger.trace("Asynchronous 1 context registry");
 						List<String> brokerList;
 						if (cSourceDAO != null) {
+							//TODO change this to get tenant info as well
 							brokerList = cSourceDAO.queryExternalCsources(qp);
 						} else {
 							brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
@@ -373,7 +376,7 @@ public class QueryService {
 									headers.add("Link", "<" + link.toString()
 											+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 								}
-
+								//TODO change this to include the tenant from csource and all the other headers from the original request
 								HttpEntity entity = new HttpEntity<>(headers);
 
 								String result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,

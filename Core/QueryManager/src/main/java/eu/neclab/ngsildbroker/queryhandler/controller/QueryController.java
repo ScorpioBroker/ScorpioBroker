@@ -277,7 +277,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 					checkParamsForValidity(qp);
 					QueryResult qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
-							qToken, showServices, countResult, check);
+							qToken, showServices, countResult, check, HttpUtils.getHeaders(request));
 
 					return generateReply(request, qResult, !retrieve);
 
