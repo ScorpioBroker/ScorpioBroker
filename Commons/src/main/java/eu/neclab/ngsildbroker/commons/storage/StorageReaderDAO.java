@@ -78,17 +78,22 @@ abstract public class StorageReaderDAO {
 
 		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
 		if (tenantDataSource == null) {
-			tenantDataSource = createDataSourceForTenantId(tenantidvalue);
+			try {
+				tenantDataSource = createDataSourceForTenantId(tenantidvalue);
+			} catch (ResponseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			resolvedDataSources.put(tenantidvalue, tenantDataSource);
 		}
 
 		return tenantDataSource;
 	}
 
-	private DataSource createDataSourceForTenantId(String tenantidvalue) {
+	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException {
 		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
 		if (tenantDatabaseName == null)
-			throw new IllegalArgumentException("Given tenant id is not valid : " + tenantidvalue);
+			throw new ResponseException(ErrorType.TenantNotFound);
 
 		HikariConfig tenantHikariConfig = new HikariConfig();
 		hikariConfig.copyStateTo(tenantHikariConfig);
@@ -98,11 +103,13 @@ abstract public class StorageReaderDAO {
 		return new HikariDataSource(tenantHikariConfig);
 	}
 
-	public List<String> query(QueryParams qp) {
+	public List<String> query(QueryParams qp) throws ResponseException {
 		String tenentid = qp.getTenant();
 		if (tenentid != null) {
 
 			DataSource finaldatasource = determineTargetDataSource(qp.getTenant());
+			if(finaldatasource == null)
+				throw new ResponseException(ErrorType.TenantNotFound);
 			readerJdbcTemplate = new JdbcTemplate(finaldatasource);
 		} else {
 			readerJdbcTemplate = new JdbcTemplate(masterDataSource);

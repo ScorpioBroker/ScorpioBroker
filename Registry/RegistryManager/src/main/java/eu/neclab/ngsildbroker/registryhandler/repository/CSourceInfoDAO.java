@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 
@@ -28,8 +30,10 @@ public class CSourceInfoDAO extends StorageReaderDAO {
 		return new HashSet<String>(tempList);
 	}
 	
-	public Set<String> getAllTenantIds() {		
+	public Set<String> getAllTenantIds() throws ResponseException {		
 		DataSource finaldatasource = tenantAwareDataSource.determineTargetDataSource();
+		if(finaldatasource == null)
+			throw new ResponseException(ErrorType.TenantNotFound);
 		readerJdbcTemplate = new JdbcTemplate(finaldatasource);
 		List<String> tempTenantList = readerJdbcTemplate.queryForList("SELECT id FROM csource", String.class);
 		return new HashSet<String>(tempTenantList);
