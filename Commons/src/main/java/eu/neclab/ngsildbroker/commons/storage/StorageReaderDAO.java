@@ -55,12 +55,20 @@ abstract public class StorageReaderDAO {
 		if (tenantidvalue == null)
 			return null;
 		try {
-			readerJdbcTemplate = new JdbcTemplate(masterDataSource);
+			synchronized (readerJdbcTemplate) {
+				readerJdbcTemplate = new JdbcTemplate(masterDataSource);
+			}
 			// String databasename="ngbcsource2";
 			// SELECT EXISTS(SELECT datname FROM pg_database WHERE datname = 'tenant2');
 			String sql = "SELECT database_name FROM tenant WHERE tenant_id = ?";
-			String databasename = readerJdbcTemplate.queryForObject(sql, new Object[] { tenantidvalue }, String.class);
-			List<String> data = readerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
+			String databasename;
+			synchronized (readerJdbcTemplate) {
+				databasename = readerJdbcTemplate.queryForObject(sql, new Object[] { tenantidvalue }, String.class);
+			}
+			List<String> data;
+			synchronized (readerJdbcTemplate) {
+				data = readerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
+			}
 			if (data.contains(databasename)) {
 				return databasename;
 			} else {
@@ -108,11 +116,15 @@ abstract public class StorageReaderDAO {
 		if (tenentid != null) {
 
 			DataSource finaldatasource = determineTargetDataSource(qp.getTenant());
-			if(finaldatasource == null)
+			if (finaldatasource == null)
 				throw new ResponseException(ErrorType.TenantNotFound);
-			readerJdbcTemplate = new JdbcTemplate(finaldatasource);
+			synchronized (readerJdbcTemplate) {
+				readerJdbcTemplate = new JdbcTemplate(finaldatasource);
+			}
 		} else {
-			readerJdbcTemplate = new JdbcTemplate(masterDataSource);
+			synchronized (readerJdbcTemplate) {
+				readerJdbcTemplate = new JdbcTemplate(masterDataSource);
+			}
 		}
 
 		try {

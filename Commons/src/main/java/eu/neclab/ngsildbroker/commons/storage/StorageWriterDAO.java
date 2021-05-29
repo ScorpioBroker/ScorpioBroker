@@ -64,7 +64,9 @@ public class StorageWriterDAO {
 
 	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
 			throws SQLException {
-		writerJdbcTemplate = new JdbcTemplate(writerDataSource);
+		synchronized (writerJdbcTemplate) {
+			writerJdbcTemplate = new JdbcTemplate(writerDataSource);
+		}
 
 		try {
 			String sql;
@@ -72,10 +74,14 @@ public class StorageWriterDAO {
 			if (!tenantidvalue.equals(null)) {
 				sql = "INSERT INTO " + tableName
 						+ " (tenant_id, database_name) VALUES (?, ?) ON CONFLICT(tenant_id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id";
-				n = writerJdbcTemplate.update(sql, tenantidvalue, databasename);
+				synchronized (writerJdbcTemplate) {
+					n = writerJdbcTemplate.update(sql, tenantidvalue, databasename);
+				}
 			} else {
 				sql = "DELETE FROM " + tableName + " WHERE id = ?";
-				n = writerJdbcTemplate.update(sql, tenantidvalue);
+				synchronized (writerJdbcTemplate) {
+					n = writerJdbcTemplate.update(sql, tenantidvalue);
+				}
 			}
 			logger.trace("Rows affected: " + Integer.toString(n));
 			return true; // (n>0);
@@ -86,27 +92,6 @@ public class StorageWriterDAO {
 		return false;
 	}
 
-	public String findDataBaseNameByTenantId(String tenantidvalue) {
-		if (tenantidvalue == null)
-			return null;
-		try {
-
-			// SELECT EXISTS(SELECT datname FROM pg_database WHERE datname = 'tenant2');
-			String databasename = writerJdbcTemplate.queryForObject(
-					"SELECT database_name FROM tenant WHERE tenant_id = ?", String.class, tenantidvalue);
-			List<String> data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
-			if (data.contains(databasename)) {
-				return databasename;
-			} else {
-				String sql = "create database " + databasename + "";
-				writerJdbcTemplate.execute(sql);
-				return databasename;
-			}
-		} catch (EmptyResultDataAccessException e) {
-			return null;
-		}
-	}
-
 	public boolean store(String tableName, String columnName, String key, String value, String tenantvalue)
 			throws SQLException {
 		try {
@@ -114,18 +99,26 @@ public class StorageWriterDAO {
 			int n = 0;
 			if (tenantvalue != null) {
 				DataSource finaldatasource = tenantAwareDataSource.determineTargetDataSource();
-				writerJdbcTemplate = new JdbcTemplate(finaldatasource);
+				synchronized (writerJdbcTemplate) {
+					writerJdbcTemplate = new JdbcTemplate(finaldatasource);
+				}
 			} else {
-				writerJdbcTemplate = new JdbcTemplate(writerDataSource);
+				synchronized (writerJdbcTemplate) {
+					writerJdbcTemplate = new JdbcTemplate(writerDataSource);
+				}
 			}
 			if (!value.equals("null")) {
 				sql = "INSERT INTO " + tableName + " (id, " + columnName
 						+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO UPDATE SET " + columnName + " = EXCLUDED."
 						+ columnName;
-				n = writerJdbcTemplate.update(sql, key, value);
+				synchronized (writerJdbcTemplate) {
+					n = writerJdbcTemplate.update(sql, key, value);
+				}
 			} else {
 				sql = "DELETE FROM " + tableName + " WHERE id = ?";
-				n = writerJdbcTemplate.update(sql, key);
+				synchronized (writerJdbcTemplate) {
+					n = writerJdbcTemplate.update(sql, key);
+				}
 			}
 
 			logger.trace("Rows affected: " + Integer.toString(n));
