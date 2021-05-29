@@ -27,6 +27,7 @@ public class DeleteAttributeRequest extends EntityRequest {
 	public DeleteAttributeRequest(ArrayListMultimap<String, String> headers, String entityId, String entityBody,
 			String attrId, String datasetId, String deleteAll) throws ResponseException {
 		super(AppConstants.OPERATION_DELETE_ATTRIBUTE_ENTITY, headers);
+		this.id = entityId;
 		generateDeleteAttrib(entityId, entityBody, attrId, datasetId, deleteAll);
 	}
 
