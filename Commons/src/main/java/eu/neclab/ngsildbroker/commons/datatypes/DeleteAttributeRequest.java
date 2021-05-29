@@ -40,7 +40,7 @@ public class DeleteAttributeRequest extends EntityRequest {
 			this.entityWithoutSysAttrs = objectMapper.writeValueAsString(finalJson);
 			this.keyValue = objectMapper.writeValueAsString(getKeyValueEntity(finalJson));
 		} catch (Exception e) {
-			throw new ResponseException(ErrorType.UnprocessableEntity, e.getMessage());
+			throw new ResponseException(ErrorType.NotFound, e.getMessage());
 		}
 	}
 

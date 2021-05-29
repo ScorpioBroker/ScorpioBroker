@@ -34,7 +34,7 @@ public class UpdateEntityRequest extends EntityRequest{
 			this.withSysAttrs = updateResult.getJson();
 			this.keyValue = objectMapper.writeValueAsString(getKeyValueEntity(updateResult.getFinalNode()));
 		} catch (Exception e) {
-			throw new ResponseException(ErrorType.UnprocessableEntity, e.getMessage());
+			throw new ResponseException(ErrorType.NotFound, e.getMessage());
 		}
 		
 		
