@@ -13,16 +13,20 @@ import com.google.gson.GsonBuilder;
 
 import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoValue;
+import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
@@ -30,6 +34,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.datatypes.TypedValue;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
 
 public class DataSerializer {
 
@@ -105,6 +110,11 @@ public class DataSerializer {
 		builder.registerTypeAdapter(AppendEntityRequest.class, new EntityRequestGsonAdapter());
 		// builder.registerTypeAdapter(DeleteEntityRequest.class, new
 		// EntityRequestGsonAdapter());
+		builder.registerTypeAdapter(CreateHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
+		builder.registerTypeAdapter(UpdateHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
+		builder.registerTypeAdapter(AppendHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
+		builder.registerTypeAdapter(DeleteHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
+
 		builder.registerTypeAdapter(SerializationTypes.entitiesType, new EntitiesGsonAdapter());
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
 		builder.registerTypeAdapter(CreateCSourceRequest.class, new CSourceRequestGsonAdapter());
@@ -210,6 +220,10 @@ public class DataSerializer {
 
 	public static DeleteCSourceRequest getDeleteCSourceRequest(String json) {
 		return GSON.fromJson(json, DeleteCSourceRequest.class);
+	}
+
+	public static HistoryEntityRequest getHistoryEntityRequest(String json) {
+		return GSON.fromJson(json, HistoryEntityRequest.class);
 	}
 	// ------------------------------------------------------------------------------------------
 

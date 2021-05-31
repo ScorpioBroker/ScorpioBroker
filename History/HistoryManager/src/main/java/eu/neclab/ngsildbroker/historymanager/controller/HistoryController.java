@@ -1,9 +1,6 @@
 package eu.neclab.ngsildbroker.historymanager.controller;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -25,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryHistoryEntitiesRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;

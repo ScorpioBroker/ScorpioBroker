@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registryhandler.config;
+package eu.neclab.ngsildbroker.historymanager.config;
 
 
 import javax.sql.DataSource;
@@ -17,7 +17,7 @@ import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 
 
 @Configuration
-public class JdbcConfig {
+public class HistoryJdbcConfig {
 		
 	// https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto-two-datasources
 
