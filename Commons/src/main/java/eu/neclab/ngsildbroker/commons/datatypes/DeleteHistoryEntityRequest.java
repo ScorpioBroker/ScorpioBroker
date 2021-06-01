@@ -50,6 +50,7 @@ public class DeleteHistoryEntityRequest extends HistoryEntityRequest {
 		this.instanceId = instanceId;
 		this.id = entityId;
 	}
+	
 
 	private void deleteTemporalEntity(String payload, boolean fromEntity) throws ResponseException, Exception {
 		TemporalEntityStorageKey tesk = new TemporalEntityStorageKey(this.id);

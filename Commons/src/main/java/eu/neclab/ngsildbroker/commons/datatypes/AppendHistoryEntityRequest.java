@@ -20,38 +20,12 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 		createAppend();
 	}
 	
-	public AppendHistoryEntityRequest(EntityRequest entityRequest) {
-		logger.trace("Listener handleEntityAppend...");
-
-//		logger.debug("Received key: " + key);
-//		String payload = new String(message);
-		logger.debug("Received message: " + payload);
-
-		String now = SerializationTools.formatter.format(Instant.now());
-
-		final JsonObject jsonObject = parser.parse(payload).getAsJsonObject();
-		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
-			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
-			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
-					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
-					|| entry.getKey().equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)
-					|| entry.getKey().equalsIgnoreCase(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-				continue;
-			}
-			String attribIdPayload = entry.getKey();
-
-			if (entry.getValue().isJsonArray()) {
-				JsonArray valueArray = entry.getValue().getAsJsonArray();
-				for (JsonElement jsonElement : valueArray) {
-					jsonElement = setCommonTemporalProperties(jsonElement, now, true);
-	//				pushAttributeToKafka(key, now, attribIdPayload, jsonElement.toString());
-				}
-			}
-		}
+	public AppendHistoryEntityRequest(EntityRequest entityRequest) throws ResponseException {
+		this(entityRequest.getHeaders(), entityRequest.getWithSysAttrs(), entityRequest.getId());
 
 	}
 
-	private void createAppend() {
+	protected void createAppend() {
 		logger.trace("replace attribute in temporal entity");
 		this.jsonObject = parser.parse(payload).getAsJsonObject();
 		
@@ -65,17 +39,17 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 				continue;
 			}
 
-			//String attribId = entry.getKey();
+			String attribId = entry.getKey();
 			if (entry.getValue().isJsonArray()) {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
 				Integer instanceCount = 0;
 				for (JsonElement jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, false);
 					//
-					//Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send the overwrite op to
+					Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send the overwrite op to
 																// delete current values
-					//pushAttributeToKafka(entityId, null, null, now, attribId, jsonElement.toString(), false,
-					//		overwriteOp);
+					storeEntry(id, null, null, now, attribId, jsonElement.toString(), overwriteOp);
+
 					instanceCount++;
 				}
 			}

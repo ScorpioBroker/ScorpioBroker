@@ -49,8 +49,10 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 	/**
 	 * Serialization constructor
 	 * @param entityRequest 
+	 * @throws ResponseException 
 	 */
-	public CreateHistoryEntityRequest(EntityRequest entityRequest) {
+	public CreateHistoryEntityRequest(EntityRequest entityRequest) throws ResponseException {
+		this(entityRequest.getHeaders(), entityRequest.getWithSysAttrs(), true);
 	}
 
 	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers, String payload, boolean fromEntity)
@@ -66,7 +68,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 		}
 		// super(AppConstants.OPERATION_CREATE_HISTORY_ENTITY, headers);
 	}
-
+	
 	private void createTemporalEntity(String payload, boolean fromEntity) throws ResponseException, Exception {
 		this.jsonObject = parser.parse(payload).getAsJsonObject();
 		if (jsonObject.get(NGSIConstants.JSON_LD_ID) == null || jsonObject.get(NGSIConstants.JSON_LD_TYPE) == null) {
@@ -107,7 +109,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 			}
 
 			String attribId = entry.getKey();
-			Boolean createTemporalEntityIfNotExists = (attributeCount == 0); // if it's the first attribute, create the
+			// Boolean createTemporalEntityIfNotExists = (attributeCount == 0); // if it's the first attribute, create the
 																				// //
 			// temporalentity record
 
@@ -116,6 +118,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 				// TODO check if changes in the array are reflect in the object
 				for (JsonElement jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity);
+					storeEntry(id, type, createdAt, modifiedAt, attribId, jsonElement.toString(), false);
 					// pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId,
 					// jsonElement.toString(), createTemporalEntityIfNotExists, false);
 				}

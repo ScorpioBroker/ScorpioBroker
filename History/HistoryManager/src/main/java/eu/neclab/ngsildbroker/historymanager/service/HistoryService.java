@@ -1,15 +1,14 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
 import java.net.URI;
-import java.time.Instant;
-import java.util.Date;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -17,27 +16,20 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
+import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.historymanager.config.ProducerChannel;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
@@ -53,6 +45,9 @@ public class HistoryService {
 	@Autowired
 	HistoryDAO historyDAO;
 
+	@Autowired
+	@Qualifier("historydao")
+	StorageWriterDAO writerDAO;
 //	public static final Gson GSON = DataSerializer.GSON;
 
 	JsonParser parser = new JsonParser();
@@ -89,13 +84,24 @@ public class HistoryService {
 		return request.getUriId();
 	}
 
-	private void pushToKafka(HistoryEntityRequest request) {
-		// TODO Auto-generated method stub
+	private void pushToKafka(HistoryEntityRequest request) throws ResponseException {
+		try {
+			kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(), UUID.randomUUID().toString().getBytes(),
+					DataSerializer.toJson(request).getBytes());
+		} catch (ResponseException e) {
+			e.printStackTrace();
+			throw new ResponseException(ErrorType.InternalError, "Failed to push entity to kafka. " + e.getLocalizedMessage());
+		}
 
 	}
 
-	private void pushToDB(HistoryEntityRequest request) {
-		// TODO Auto-generated method stub
+	private void pushToDB(HistoryEntityRequest request) throws ResponseException {
+		try {
+			writerDAO.storeTemporalEntity(request);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new ResponseException(e.getLocalizedMessage());
+		}
 
 	}
 
@@ -213,7 +219,6 @@ public class HistoryService {
 			pushToKafka(request);
 		}
 
-		
 	}
 
 	@KafkaListener(topics = "${entity.update.topic}", groupId = "historyManagerUpdate")

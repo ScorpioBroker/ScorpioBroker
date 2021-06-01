@@ -5,11 +5,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.storagemanager.config.JdbcConfig;
 import eu.neclab.ngsildbroker.storagemanager.services.StorageReaderService;
 import eu.neclab.ngsildbroker.storagemanager.services.StorageWriterService;

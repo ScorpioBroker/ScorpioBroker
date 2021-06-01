@@ -19,7 +19,7 @@ import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityTopicMap;
-import eu.neclab.ngsildbroker.entityhandler.config.JdbcConfig;
+import eu.neclab.ngsildbroker.entityhandler.config.EntityJdbcConfig;
 
 
 
@@ -34,7 +34,7 @@ public class EntityHandler {
 	}
 	
 	@Autowired
-	JdbcConfig jdbcConfig;
+	EntityJdbcConfig jdbcConfig;
 
 	@Bean("emops")
 	@Primary

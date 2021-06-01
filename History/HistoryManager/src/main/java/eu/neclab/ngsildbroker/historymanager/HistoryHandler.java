@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.historymanager;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.stream.annotation.EnableBinding;
@@ -12,11 +13,14 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
+import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
+import eu.neclab.ngsildbroker.historymanager.config.HistoryJdbcConfig;
 import eu.neclab.ngsildbroker.historymanager.config.ProducerChannel;
+
 
 
 @SpringBootApplication
@@ -25,6 +29,14 @@ import eu.neclab.ngsildbroker.historymanager.config.ProducerChannel;
 public class HistoryHandler {
 	public static void main(String[] args) {
 		SpringApplication.run(HistoryHandler.class, args);
+	}
+	
+	@Autowired
+	HistoryJdbcConfig jdbcConfig;
+	
+	@Bean("historydao")	
+	StorageWriterDAO storagewriterDAO() {
+		return new StorageWriterDAO();
 	}
 	
 	@Bean

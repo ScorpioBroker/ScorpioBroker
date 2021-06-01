@@ -26,7 +26,7 @@ import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 
 import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
-import eu.neclab.ngsildbroker.registryhandler.config.JdbcConfig;
+import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
 
 
 
@@ -42,7 +42,7 @@ public class RegistryHandler {
 	}
 	
 	@Autowired
-	JdbcConfig jdbcConfig;
+	RegistryJdbcConfig jdbcConfig;
 	
 	 
 

@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.storagemanager.services;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -20,6 +21,7 @@ import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
@@ -37,6 +39,7 @@ public class StorageWriterService {
 	public final static String TEMPORALENTITY_LISTENER_ID = "temporalEntityWriter-1";
 
 	@Autowired
+	@Qualifier("storagewriterdao")
 	StorageWriterDAO storageWriterDao;
 
 	@Autowired
@@ -188,7 +191,8 @@ public class StorageWriterService {
 		if (!temporalEntityListenerOk) // this test is needed because listenerContainer.stop() does not work properly
 										// during boot time (probably because of concurrency)
 			return;
-		String payload = new String(message);
+
+		storageWriterDao.storeTemporalEntity(DataSerializer.getHistoryEntityRequest(new String(message)));
 //-------------------------------------------------------------------------------------------
 //		String datavalue;
 //		JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
@@ -222,7 +226,7 @@ public class StorageWriterService {
 		 * MessageListenerContainer listenerContainer = kafkaListenerEndpoint
 		 * .getListenerContainer(TEMPORALENTITY_LISTENER_ID); listenerContainer.stop();
 		 * } }
-		 */		logger.trace("Writing is complete");
+		 */ logger.trace("Writing is complete");
 	}
 
 }

@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class HistoryEntityRequest extends BaseRequest {
 
+	protected ArrayList<HistoryAttribInstance> attribs = new ArrayList<HistoryAttribInstance>();
 	JsonParser parser = new JsonParser();
 	protected String payload;
 	protected JsonObject jsonObject;
@@ -37,7 +39,6 @@ public class HistoryEntityRequest extends BaseRequest {
 	public void setPayload(String payload) {
 		this.payload = payload;
 	}
-
 
 	public JsonObject getJsonObject() {
 		return jsonObject;
@@ -67,6 +68,14 @@ public class HistoryEntityRequest extends BaseRequest {
 		return createdAt;
 	}
 
+	public ArrayList<HistoryAttribInstance> getAttribs() {
+		return attribs;
+	}
+
+	public void setAttribs(ArrayList<HistoryAttribInstance> attribs) {
+		this.attribs = attribs;
+	}
+
 	public void setCreatedAt(String createdAt) {
 		this.createdAt = createdAt;
 	}
@@ -79,19 +88,23 @@ public class HistoryEntityRequest extends BaseRequest {
 		this.modifiedAt = modifiedAt;
 	}
 
-
 	/**
 	 * Serialization constructor
 	 */
 	public HistoryEntityRequest() {
 	}
 
-	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, String payload)
-			throws ResponseException {
+	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, String payload) throws ResponseException {
 		super(headers);
 		this.payload = payload;
 		this.now = SerializationTools.formatter.format(Instant.now());
 
+	}
+
+	protected void storeEntry(String entityId, String entityType, String entityCreatedAt, String entityModifiedAt,
+			String attributeId, String elementValue, Boolean overwriteOp) {
+		attribs.add(new HistoryAttribInstance(entityId, entityType, entityCreatedAt, entityModifiedAt, attributeId,
+				elementValue, overwriteOp));
 	}
 
 	protected JsonElement setCommonTemporalProperties(JsonElement jsonElement, String date, boolean fromEntity) {
@@ -149,13 +162,13 @@ public class HistoryEntityRequest extends BaseRequest {
 		return objAttribute;
 	}
 
-	
 	public String getInstanceId() {
-		// TODO Auto-generated method stub
 		return this.instanceId;
 	}
 
-
-
+	public void setInstanceId(String instanceId) {
+		this.instanceId = instanceId;
+	}
+	
 
 }
