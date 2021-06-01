@@ -59,6 +59,7 @@ public class AppConstants {
 	public static final String REQUEST_HD = "headers";
 	public static final String REQUEST_CSOURCE = "CSource";
 	public static final String TENANT_HEADER = "ngsild-tenant";
+	public static final String INTERNAL_NULL_KEY = ")$%^&";
 	
 	
 	

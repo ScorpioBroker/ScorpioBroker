@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 
@@ -73,6 +74,15 @@ public abstract class BaseRequest {
 			}
 		}
 	}
-
+	/**
+	 * 
+	 * @return the internal null value if the tenant is not present
+	 */
+	public String getTenant() {
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
+		}
+		return AppConstants.INTERNAL_NULL_KEY;
+	}
 	
 }

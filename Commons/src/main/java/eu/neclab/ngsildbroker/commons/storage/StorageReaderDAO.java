@@ -112,21 +112,8 @@ abstract public class StorageReaderDAO {
 	}
 
 	public List<String> query(QueryParams qp) throws ResponseException {
-		String tenentid = qp.getTenant();
-		if (tenentid != null) {
-
-			DataSource finaldatasource = determineTargetDataSource(qp.getTenant());
-			if (finaldatasource == null)
-				throw new ResponseException(ErrorType.TenantNotFound);
-			synchronized (readerJdbcTemplate) {
-				readerJdbcTemplate = new JdbcTemplate(finaldatasource);
-			}
-		} else {
-			synchronized (readerJdbcTemplate) {
-				readerJdbcTemplate = new JdbcTemplate(masterDataSource);
-			}
-		}
-
+		String tenantId = qp.getTenant();
+		setTenant(tenantId);
 		try {
 			if (qp.getCheck() != null) {
 				String sqlQuery = typesAndAttributeQuery(qp);
@@ -152,6 +139,22 @@ abstract public class StorageReaderDAO {
 		}
 		return new ArrayList<String>();
 
+	}
+
+	protected void setTenant(String tenantId) throws ResponseException {
+		if (tenantId != null) {
+			DataSource finaldatasource = determineTargetDataSource(tenantId);
+			if (finaldatasource == null) {
+				throw new ResponseException(ErrorType.TenantNotFound);
+			}
+			synchronized (readerJdbcTemplate) {
+				readerJdbcTemplate = new JdbcTemplate(finaldatasource);
+			}
+		} else {
+			synchronized (readerJdbcTemplate) {
+				readerJdbcTemplate = new JdbcTemplate(masterDataSource);
+			}
+		}
 	}
 
 	public String getListAsJsonArray(List<String> s) {

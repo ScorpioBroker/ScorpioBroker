@@ -50,6 +50,7 @@ import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Table;
 import com.google.gson.JsonParseException;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
@@ -58,6 +59,7 @@ import com.netflix.discovery.shared.Application;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
+import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
@@ -144,6 +146,7 @@ public class SubscriptionService implements SubscriptionManager {
 	@Autowired
 	KafkaOps kafkaOps;
 
+	@Value("${subscription.directdb:true}")
 	boolean directDB = true;
 
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
@@ -159,7 +162,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	HttpUtils httpUtils;
 
-	private Map<String, String> ids2Type;
+	private Table<String, String, String> tenant2Ids2Type;
 
 	private HTreeMap<String, String> subscriptionStore;
 	@Value("${subscriptions.store:subscriptionstore.db}")
@@ -174,7 +177,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@PostConstruct
 	private void setup() {
-		this.ids2Type = subscriptionInfoDAO.getIds2Type();
+		this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
 		httpUtils = HttpUtils.getInstance(contextResolverService);
 		notificationHandlerREST = new NotificationHandlerREST(this, contextResolverService, objectMapper);
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, queryResultTopic,
@@ -461,8 +464,8 @@ public class SubscriptionService implements SubscriptionManager {
 	private void checkSubscriptionsWithCreate(EntityRequest createRequest, long messageTime) {
 		Entity create = DataSerializer.getEntity(createRequest.getWithSysAttrs());
 		String id = createRequest.getId();
-		synchronized (this.ids2Type) {
-			this.ids2Type.put(id, create.getType());
+		synchronized (this.tenant2Ids2Type) {
+			this.tenant2Ids2Type.put(createRequest.getTenant(), id, create.getType());
 		}
 		List<String> createTenant = createRequest.getHeaders().get(NGSIConstants.TENANT_HEADER);
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
@@ -658,7 +661,7 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 
 		if (directDB) {
-			entityBody = subscriptionInfoDAO.getEntity(deltaInfo.getId().toString());
+			entityBody = subscriptionInfoDAO.getEntity(deltaInfo.getId().toString(), subscription.getTenant());
 		}
 		// HERE YOU NEED TO REPLACE THE ATTRIBUTE TO THE ONE FROM DELTA
 		Entity entity = DataSerializer.getEntity(entityBody);
@@ -819,7 +822,7 @@ public class SubscriptionService implements SubscriptionManager {
 	private void checkSubscriptionsWithUpdate(EntityRequest updateRequest, long messageTime) {
 		Entity update = DataSerializer.getPartialEntity(updateRequest.getWithSysAttrs());
 		String id = updateRequest.getId();
-		String type = getTypeForId(id);
+		String type = getTypeForId(id, updateRequest.getTenant());
 		try {
 			update.setId(new URI(id));
 		} catch (URISyntaxException e) {
@@ -868,7 +871,7 @@ public class SubscriptionService implements SubscriptionManager {
 	private void checkSubscriptionsWithAppend(EntityRequest appendRequest, long messageTime) {
 		Entity append = DataSerializer.getPartialEntity(appendRequest.getWithSysAttrs());
 		String id = appendRequest.getId();
-		String type = getTypeForId(id);
+		String type = getTypeForId(appendRequest.getTenant(), id);
 
 		try {
 			append.setId(new URI(id));
@@ -908,12 +911,8 @@ public class SubscriptionService implements SubscriptionManager {
 	// @StreamListener(SubscriptionManagerConsumerChannel.deleteReadChannel)
 	@KafkaListener(topics = "${entity.delete.topic}", groupId = "submanager")
 	public void handleDelete(Message<byte[]> message) throws Exception {
-		if (message.getPayload().equals("{}".getBytes())) {
-			this.ids2Type.remove(KafkaOps.getMessageKey(message));
-		}
-		// checkSubscriptionsWithDelete(new String((byte[])
-		// message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)),
-		// new String(message.getPayload()));
+		EntityRequest req = DataSerializer.getEntityRequest(new String(message.getPayload()));
+		this.tenant2Ids2Type.remove(req.getTenant(), req.getId());
 	}
 
 	@KafkaListener(topics = "${csource.notification.topic}", groupId = "submanager")
@@ -1020,9 +1019,9 @@ public class SubscriptionService implements SubscriptionManager {
 
 	}
 
-	private String getTypeForId(String key) {
-		synchronized (this.ids2Type) {
-			return (String) this.ids2Type.get(key);
+	private String getTypeForId(String tenantId, String entityId) {
+		synchronized (this.tenant2Ids2Type) {
+			return this.tenant2Ids2Type.get(tenantId, entityId);
 		}
 		/*
 		 * //this has to be db handled byte[] json = kafkaOps.getMessage(key,
