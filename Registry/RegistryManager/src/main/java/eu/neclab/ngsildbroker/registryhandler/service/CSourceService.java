@@ -405,13 +405,15 @@ public class CSourceService {
 
 				String payload = new String((byte[]) message.getPayload());
 				JsonObject jsonObjectpayload = new JsonParser().parse(payload).getAsJsonObject();
-				String headers = jsonObjectpayload.get("headers").toString();
-				JsonObject jsonObjectheaders = new JsonParser().parse(headers).getAsJsonObject();
 				ArrayListMultimap<String, String> requestheaders = ArrayListMultimap.create();
-				for (Entry<String, JsonElement> entry : jsonObjectheaders.entrySet()) {
-					JsonArray array = entry.getValue().getAsJsonArray();
-					for (JsonElement item : array) {
-						requestheaders.put(entry.getKey(), item.getAsString());
+				if (jsonObjectpayload.has("headers")) {
+					String headers = jsonObjectpayload.get("headers").toString();
+					JsonObject jsonObjectheaders = new JsonParser().parse(headers).getAsJsonObject();
+					for (Entry<String, JsonElement> entry : jsonObjectheaders.entrySet()) {
+						JsonArray array = entry.getValue().getAsJsonArray();
+						for (JsonElement item : array) {
+							requestheaders.put(entry.getKey(), item.getAsString());
+						}
 					}
 				}
 				// objectMapper.readValue((byte[]) message.getPayload(),
