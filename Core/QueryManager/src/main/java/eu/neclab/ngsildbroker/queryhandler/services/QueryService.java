@@ -5,8 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Type;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,7 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
@@ -48,13 +45,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -314,7 +309,7 @@ public class QueryService {
 	 * @param qToken
 	 * @param offset
 	 * @param limit
-	 * @param headers 
+	 * @param headers
 	 * @param expandedAttrs
 	 * @return List<Entity>
 	 * @throws ExecutionException
@@ -325,8 +320,8 @@ public class QueryService {
 	 * @throws Exception
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
-			Integer offset, String qToken, Boolean showServices, Boolean countResult, String check, ArrayListMultimap<String,String> headers)
-			throws ResponseException, Exception {
+			Integer offset, String qToken, Boolean showServices, Boolean countResult, String check,
+			ArrayListMultimap<String, String> headers) throws ResponseException, Exception {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
@@ -353,22 +348,33 @@ public class QueryService {
 			Future<List<String>> futureContextRegistry = executorService.submit(new Callable<List<String>>() {
 				public List<String> call() throws Exception {
 					try {
+
 						List<String> fromCsources = new ArrayList<String>();
 						logger.trace("Asynchronous 1 context registry");
 						List<String> brokerList;
 						if (cSourceDAO != null) {
-							//TODO change this to get tenant info as well
 							brokerList = cSourceDAO.queryExternalCsources(qp);
 						} else {
 							brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
 						}
 						Pattern p = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_REGEX);
+						Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);
 						Matcher m;
+						Matcher mtenant;
 						Set<Callable<String>> callablesCollection = new HashSet<Callable<String>>();
 						for (String brokerInfo : brokerList) {
 							m = p.matcher(brokerInfo);
 							m.find();
+							final String uri_tenant;
 							String uri = m.group(1);
+							mtenant = ptenant.matcher(brokerInfo);
+							if (mtenant != null) {
+								mtenant.find();
+								uri_tenant = mtenant.group(1);
+
+							} else {
+								uri_tenant = null;
+							}
 							logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
 							Callable<String> callable = () -> {
 								HttpHeaders headers = new HttpHeaders();
@@ -376,12 +382,12 @@ public class QueryService {
 									headers.add("Link", "<" + link.toString()
 											+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 								}
-								//TODO change this to include the tenant from csource and all the other headers from the original request
+								if (uri_tenant != null) {
+									headers.add(AppConstants.TENANT_HEADER, uri_tenant);
+								}
 								HttpEntity entity = new HttpEntity<>(headers);
-
 								String result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
 										HttpMethod.GET, entity, String.class).getBody();
-
 								logger.debug("http call result :: ::" + result);
 								return result;
 							};
