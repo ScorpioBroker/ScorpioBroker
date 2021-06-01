@@ -16,10 +16,12 @@ public class CSourceRegistration {
 	private URI endpoint;
 	private Long expires;
 	private URI id;
+	private URI tenant;
 
 	private List<Information> information;
-	//private GeoProperty location;
-	private Geometry<?> location; // csource location is not the same as entity location. entity location is a GeoProperty, csource location is just a geojson value (string)
+	// private GeoProperty location;
+	private Geometry<?> location; // csource location is not the same as entity location. entity location is a
+									// GeoProperty, csource location is just a geojson value (string)
 	private String name;
 	private TimeInterval timestamp;
 	private boolean isInternal = false;
@@ -67,11 +69,9 @@ public class CSourceRegistration {
 		if (updateBean.getTimestamp() != null) {
 			this.setTimestamp(updateBean.getTimestamp());
 		}
-		
+
 		return this;
 	}
-	
-	
 
 	public boolean isInternal() {
 		return isInternal;
@@ -153,11 +153,19 @@ public class CSourceRegistration {
 		this.timestamp = timestamp;
 	}
 
+	public URI getTenant() {
+		return tenant;
+	}
+
+	public void setTenant(URI tenant) {
+		this.tenant = tenant;
+	}
+
 	@Override
 	public String toString() {
 		return "CSourceRegistration [description=" + description + ", endpoint=" + endpoint + ", expires=" + expires
 				+ ", id=" + id + ", information=" + information + ", location=" + location + ", name=" + name
-				+ ", timestamp=" + timestamp + ", type=" + type + "]";
+				+ ", timestamp=" + timestamp + ", type=" + type + " ,tenant=" + tenant + "]";
 	}
 
 	@Override
@@ -173,6 +181,7 @@ public class CSourceRegistration {
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((timestamp == null) ? 0 : timestamp.hashCode());
 		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		result = prime * result + ((tenant == null) ? 0 : tenant.hashCode());
 		return result;
 	}
 
@@ -229,6 +238,11 @@ public class CSourceRegistration {
 			if (other.type != null)
 				return false;
 		} else if (!type.equals(other.type))
+			return false;
+		if (tenant == null) {
+			if (other.tenant != null)
+				return false;
+		} else if (!tenant.equals(other.tenant))
 			return false;
 		return true;
 	}
