@@ -291,17 +291,10 @@ public class ParamsResolver {
 		logger.debug("link: " + context);
 		String jsonLdAttribute = getJsonLdAttribute(attribute, context);
 		logger.debug("jsonLdAttribute: " + jsonLdAttribute);
-<<<<<<< HEAD
 		LocalDateTime start = LocalDateTime.now();
 		String jsonLdAttributeResolved = contextResolver.expand(jsonLdAttribute, context, false,
 				AppConstants.INTERNAL_CALL_ID);
 		LocalDateTime end = LocalDateTime.now();
-=======
-		//LocalDateTime start = LocalDateTime.now();
-		String jsonLdAttributeResolved = contextResolver.expand(jsonLdAttribute, context, false, AppConstants.INTERNAL_CALL_ID);
-		//LocalDateTime end = LocalDateTime.now();
->>>>>>> development
-
 		logger.debug("jsonLdAttributeResolved: " + jsonLdAttributeResolved);
 		JsonParser parser = new JsonParser();
 		JsonElement jsonTree = parser.parse(jsonLdAttributeResolved);
