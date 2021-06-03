@@ -56,6 +56,7 @@ public class AppConstants {
 	public static final String REQUEST_WOA = "withoutAtts";
 	public static final String REQUEST_T = "type";
 	public static final String REQUEST_ID = "id";
+	public static final String REQUEST_OV = "ov";
 	public static final String REQUEST_HD = "headers";
 	public static final String REQUEST_CSOURCE = "CSource";
 	public static final String TENANT_HEADER = "ngsild-tenant";

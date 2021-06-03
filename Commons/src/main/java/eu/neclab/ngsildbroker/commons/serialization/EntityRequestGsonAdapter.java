@@ -27,6 +27,9 @@ public class EntityRequestGsonAdapter implements JsonDeserializer<EntityRequest>
 		root.add(AppConstants.REQUEST_WOA, new JsonPrimitive(src.getEntityWithoutSysAttrs()));
 		root.add(AppConstants.REQUEST_T, new JsonPrimitive(src.getOperationType()));
 		root.add(AppConstants.REQUEST_ID, new JsonPrimitive(src.getId()));
+		if (src.getOperationValue() != null) {
+			root.add(AppConstants.REQUEST_OV, new JsonPrimitive(src.getOperationValue()));
+		}
 		root.add(AppConstants.REQUEST_HD, serializeHeaders(src.getHeaders(), context));
 		return root;
 	}
@@ -48,6 +51,8 @@ public class EntityRequestGsonAdapter implements JsonDeserializer<EntityRequest>
 				result.setOperationType(entry.getValue().getAsInt());
 			} else if (entry.getKey().equals(AppConstants.REQUEST_ID)) {
 				result.setId(entry.getValue().getAsString());
+			} else if (entry.getKey().equals(AppConstants.REQUEST_OV)) {
+				result.setOperationValue(entry.getValue().getAsString());
 			} else if (entry.getKey().equals(AppConstants.REQUEST_HD)) {
 				result.setHeaders(deserializeHeaders(entry.getValue()));
 			}

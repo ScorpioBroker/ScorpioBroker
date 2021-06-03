@@ -41,6 +41,7 @@ public class AppendEntityRequest extends EntityRequest {
 			this.entityWithoutSysAttrs = appendResult.getJsonWithoutSysAttrs();
 			this.withSysAttrs = appendResult.getJson();
 			this.keyValue = objectMapper.writeValueAsString(getKeyValueEntity(appendResult.getFinalNode()));
+			this.operationValue = objectMapper.writeValueAsString(appendResult.getJsonToAppend());
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.UnprocessableEntity, e.getMessage());
 		}

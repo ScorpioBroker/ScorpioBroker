@@ -889,7 +889,7 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private void checkSubscriptionsWithAppend(EntityRequest appendRequest, long messageTime) {
-		Entity append = DataSerializer.getPartialEntity(appendRequest.getWithSysAttrs());
+		Entity append = DataSerializer.getPartialEntity(appendRequest.getOperationValue());
 		String id = appendRequest.getId();
 		String type = getTypeForId(appendRequest.getTenant(), id);
 

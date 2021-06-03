@@ -19,6 +19,7 @@ public class EntityRequest extends BaseRequest{
 	protected String withSysAttrs;
 	protected String entityWithoutSysAttrs;
 	protected String keyValue;
+	protected String operationValue;
 	
 	public EntityRequest() {
 		
@@ -29,6 +30,15 @@ public class EntityRequest extends BaseRequest{
 		this.operationType = operationType;
 	}
 
+
+	
+	public String getOperationValue() {
+		return operationValue;
+	}
+
+	public void setOperationValue(String operationValue) {
+		this.operationValue = operationValue;
+	}
 
 	public String getWithSysAttrs() {
 		return withSysAttrs;
