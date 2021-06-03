@@ -136,7 +136,7 @@ public class SubscriptionController {
 		try {
 			logger.trace("call getSubscriptions() ::");
 			return httpUtils.generateReply(request,
-					DataSerializer.toJson(manager.getSubscription(id, HttpUtils.getHeaders(request))));
+					DataSerializer.toJson(manager.getSubscription(id, HttpUtils.getHeaders(request)).getSubscription()));
 
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);

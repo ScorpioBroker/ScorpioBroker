@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
@@ -67,12 +68,19 @@ public class CSourceInfoDAO extends StorageReaderDAO {
 	public List<String> getAllRegistrations(String tenant) {
 		synchronized (readerJdbcTemplate) {
 			try {
+				tenant = getTenant(tenant);
 				setTenant(tenant);
 			} catch (ResponseException e) {
 				// Left empty intentionally nothing will ever happen
 			}
 			return readerJdbcTemplate.queryForList("SELECT data FROM csource", String.class);
 		}
+	}
+	private String getTenant(String tenantId) {
+		if (AppConstants.INTERNAL_NULL_KEY.equals(tenantId)) {
+			return null;
+		}
+		return tenantId;
 	}
 
 }
