@@ -1,11 +1,12 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
-import java.net.URI;
-import java.util.List;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
+import java.net.URI;
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,9 +24,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.historymanager.config.ProducerChannel;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
@@ -91,13 +92,9 @@ public class HistoryServiceTest {
 	@Test
 	public void createTemporalEntityFromBindingTest() {
 		try {
-<<<<<<< HEAD
 			URI uri1 = historyService.createTemporalEntityFromBinding(ArrayListMultimap.create(), temporalPayload);
 			verify(kafkaOperations, times(3)).pushToKafka(any(), any(), any());
-=======
-			historyService.createTemporalEntityFromBinding(temporalPayload);
-			verify(kafkaOperations, times(3)).pushToKafka(any(),any(),any());
->>>>>>> development
+
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -112,13 +109,9 @@ public class HistoryServiceTest {
 	@Test
 	public void createTemporalEntityFromEntityTest() {
 		try {
-<<<<<<< HEAD
 			URI uri1 = historyService.createTemporalEntityFromEntity(ArrayListMultimap.create(), temporalPayload);
 			verify(kafkaOperations, times(3)).pushToKafka(any(), any(), any());
-=======
-			historyService.createTemporalEntityFromEntity(temporalPayload);
-			verify(kafkaOperations, times(3)).pushToKafka(any(),any(),any());
->>>>>>> development
+
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
