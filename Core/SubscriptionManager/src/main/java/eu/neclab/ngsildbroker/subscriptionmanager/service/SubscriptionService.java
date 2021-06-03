@@ -882,7 +882,7 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleAppend(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
 		String key = KafkaOps.getMessageKey(message);
-		logger.debug("Create got called: " + payload);
+		logger.debug("Append got called: " + payload);
 		logger.debug(key);
 		checkSubscriptionsWithAppend(DataSerializer.getEntityRequest(new String(message.getPayload())),
 				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));

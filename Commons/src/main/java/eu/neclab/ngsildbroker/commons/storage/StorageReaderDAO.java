@@ -375,12 +375,10 @@ abstract public class StorageReaderDAO {
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();
 
-		if (limit == 0) {
-			sqlQuery += "";
-		} else {
+		if (limit > 0) {
 			sqlQuery += "LIMIT " + limit + " ";
 		}
-		if (offSet != -1) {
+		if (offSet > 0) {
 			sqlQuery += "OFFSET " + offSet + " ";
 		}
 		// order by ?
