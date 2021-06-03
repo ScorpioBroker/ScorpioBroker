@@ -99,7 +99,7 @@ public class CSourceSubscriptionServiceTest {
 	public void unSubscribeTest() throws Exception {
 		try {
 			csourceSubs.subscribe(new SubscriptionRequest(subs, null, ArrayListMultimap.create()));
-			Assert.assertTrue(csourceSubs.unsubscribe(new URI("urn:ngsi-ld:Subscription:7")));
+			Assert.assertTrue(csourceSubs.unsubscribe(new URI("urn:ngsi-ld:Subscription:7"), ArrayListMultimap.create()));
 		}catch(Exception ex) {
 			Assert.fail();
 		}
@@ -114,7 +114,7 @@ public class CSourceSubscriptionServiceTest {
 			watchedAttrib.add("http://example.org/vehicle/brandName2");
 			newSub.setAttributeNames(watchedAttrib);
 			
-			Subscription updatedSub=csourceSubs.updateSubscription(newSub);
+			Subscription updatedSub=csourceSubs.updateSubscription(new SubscriptionRequest(newSub, new ArrayList<Object>(), ArrayListMultimap.create()));
 			
 			Assert.assertEquals("http://example.org/vehicle/brandName2", updatedSub.getAttributeNames().get(0));
 		}catch(Exception ex) {

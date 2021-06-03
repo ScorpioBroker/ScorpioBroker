@@ -32,7 +32,7 @@ import eu.neclab.ngsildbroker.commons.tenant.DBUtil;
 abstract public class StorageReaderDAO {
 
 	private final static Logger logger = LogManager.getLogger(StorageReaderDAO.class);
-	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
+	protected Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 
 	@Autowired
 	protected JdbcTemplate readerJdbcTemplate;
@@ -81,9 +81,9 @@ abstract public class StorageReaderDAO {
 
 	public DataSource determineTargetDataSource(String tenantidvalue) {
 		// String tenantidvalue = (String) determineCurrentLookupKey();
-		if (tenantidvalue == null)
+		if (tenantidvalue == null) {
 			return masterDataSource;
-
+		}
 		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
 		if (tenantDataSource == null) {
 			try {
@@ -100,9 +100,9 @@ abstract public class StorageReaderDAO {
 
 	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException {
 		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
-		if (tenantDatabaseName == null)
+		if (tenantDatabaseName == null) {
 			throw new ResponseException(ErrorType.TenantNotFound);
-
+		}
 		HikariConfig tenantHikariConfig = new HikariConfig();
 		hikariConfig.copyStateTo(tenantHikariConfig);
 		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(hikariConfig.getJdbcUrl(), tenantDatabaseName);

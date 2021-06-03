@@ -99,6 +99,7 @@ public class CSourceService {
 	@Value("${csource.source.topic}")
 	String CSOURCE_TOPIC;
 
+	@Value("${csource.directdb:true}")
 	boolean directDB = true;
 
 	private final CSourceProducerChannel producerChannels;
@@ -123,22 +124,33 @@ public class CSourceService {
 		}
 	}
 
-	public List<JsonNode> getCSourceRegistrations() throws ResponseException, IOException, Exception {
-		logger.trace("getAll() ::");
-		Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
-		Map<String, JsonNode> entityMap = new HashMap<String, JsonNode>();
-		JsonNode entityJsonBody = objectMapper.createObjectNode();
-		byte[] result = null;
-		String key = null;
+	public List<JsonNode> getCSourceRegistrations(String tenant) throws ResponseException, IOException, Exception {
+		if(directDB) {
+			ArrayList<JsonNode> result = new ArrayList<JsonNode>();
+			List<String> regs = csourceInfoDAO.getAllRegistrations(tenant);	
+			for(String reg: regs) {
+				result.add(objectMapper.readTree(reg));
+			}
+			return result;
+		}else {
+			logger.trace("getAll() ::");
+			
+			Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
+			Map<String, JsonNode> entityMap = new HashMap<String, JsonNode>();
+			JsonNode entityJsonBody = objectMapper.createObjectNode();
+			byte[] result = null;
+			String key = null;
 
-		for (String recordKey : records.keySet()) {
-			result = records.get(recordKey);
-			key = recordKey;
-			entityJsonBody = objectMapper.readTree(result);
-			if (!entityJsonBody.isNull())
-				entityMap.put(key, entityJsonBody);
+			for (String recordKey : records.keySet()) {
+				result = records.get(recordKey);
+				key = recordKey;
+				entityJsonBody = objectMapper.readTree(result);
+				if (!entityJsonBody.isNull())
+					entityMap.put(key, entityJsonBody);
+			}
+			return new ArrayList<JsonNode>(entityMap.values());			
 		}
-		return new ArrayList<JsonNode>(entityMap.values());
+
 	}
 
 	// private List<String> getParamsList(String types) {

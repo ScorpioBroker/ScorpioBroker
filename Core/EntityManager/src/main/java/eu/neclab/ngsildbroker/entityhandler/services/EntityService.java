@@ -442,7 +442,7 @@ public class EntityService {
 			public void run() {
 				try {
 					operations.pushToKafka(messageChannel, entityId.getBytes(NGSIConstants.ENCODE_FORMAT),
-							"{}".getBytes());
+							DataSerializer.toJson(request).getBytes());
 				} catch (UnsupportedEncodingException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

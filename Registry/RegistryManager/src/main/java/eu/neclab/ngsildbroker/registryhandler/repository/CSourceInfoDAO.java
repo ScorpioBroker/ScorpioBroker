@@ -27,9 +27,9 @@ public class CSourceInfoDAO extends StorageReaderDAO {
 	public Set<String> getAllIds() {
 		synchronized (readerJdbcTemplate) {
 			readerJdbcTemplate = new JdbcTemplate(readerDataSource);
+			List<String> tempList = readerJdbcTemplate.queryForList("SELECT id FROM csource", String.class);
+			return new HashSet<String>(tempList);
 		}
-		List<String> tempList = readerJdbcTemplate.queryForList("SELECT id FROM csource", String.class);
-		return new HashSet<String>(tempList);
 	}
 
 	public Set<String> getAllTenantIds() throws ResponseException {
@@ -38,28 +38,41 @@ public class CSourceInfoDAO extends StorageReaderDAO {
 			throw new ResponseException(ErrorType.TenantNotFound);
 		synchronized (readerJdbcTemplate) {
 			readerJdbcTemplate = new JdbcTemplate(finaldatasource);
+			List<String> tempTenantList = readerJdbcTemplate.queryForList("SELECT id FROM csource", String.class);
+			return new HashSet<String>(tempTenantList);
 		}
-		List<String> tempTenantList = readerJdbcTemplate.queryForList("SELECT id FROM csource", String.class);
-		return new HashSet<String>(tempTenantList);
 	}
 
 	public String getEntity(String entityId) {
 		synchronized (readerJdbcTemplate) {
 			readerJdbcTemplate = new JdbcTemplate(readerDataSource);
+			List<String> tempList = readerJdbcTemplate
+					.queryForList("SELECT data FROM csource WHERE id='" + entityId + "'", String.class);
+			return tempList.get(0);
 		}
-		List<String> tempList = readerJdbcTemplate.queryForList("SELECT data FROM csource WHERE id='" + entityId + "'",
-				String.class);
-		return tempList.get(0);
+
 	}
 
 	public String getTenantEntity(String entityId) {
-		DataSource finaldatasource = tenantAwareDataSource.determineTargetDataSource();
 		synchronized (readerJdbcTemplate) {
+			DataSource finaldatasource = tenantAwareDataSource.determineTargetDataSource();
 			readerJdbcTemplate = new JdbcTemplate(finaldatasource);
+			List<String> tempTenantList = readerJdbcTemplate
+					.queryForList("SELECT data FROM csource WHERE id='" + entityId + "'", String.class);
+			return tempTenantList.get(0);
 		}
-		List<String> tempTenantList = readerJdbcTemplate
-				.queryForList("SELECT data FROM csource WHERE id='" + entityId + "'", String.class);
-		return tempTenantList.get(0);
+
+	}
+
+	public List<String> getAllRegistrations(String tenant) {
+		synchronized (readerJdbcTemplate) {
+			try {
+				setTenant(tenant);
+			} catch (ResponseException e) {
+				// Left empty intentionally nothing will ever happen
+			}
+			return readerJdbcTemplate.queryForList("SELECT data FROM csource", String.class);
+		}
 	}
 
 }

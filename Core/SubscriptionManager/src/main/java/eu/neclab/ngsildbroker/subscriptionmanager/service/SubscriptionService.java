@@ -147,7 +147,7 @@ public class SubscriptionService implements SubscriptionManager {
 	KafkaOps kafkaOps;
 
 	@Value("${subscription.directdb:true}")
-	boolean directDB = true;
+	boolean directDB;
 
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
@@ -177,7 +177,12 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@PostConstruct
 	private void setup() {
-		this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
+		try {
+			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
+		} catch (ResponseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		httpUtils = HttpUtils.getInstance(contextResolverService);
 		notificationHandlerREST = new NotificationHandlerREST(this, contextResolverService, objectMapper);
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, queryResultTopic,
@@ -324,18 +329,32 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 	}
 
+	private void checkTenant(ArrayListMultimap<String, String> headers, ArrayListMultimap<String, String> headers2)
+			throws ResponseException {
+		List<String> tenant1 = headers.get(NGSIConstants.TENANT_HEADER);
+		List<String> tenant2 = headers2.get(NGSIConstants.TENANT_HEADER);
+		if (tenant1.size() != tenant2.size()) {
+			throw new ResponseException(ErrorType.NotFound);
+		}
+		if (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2)) {
+			throw new ResponseException(ErrorType.NotFound);
+		}
+
+	}
+
 	@Override
 	public void unsubscribe(URI id, ArrayListMultimap<String, String> headers) throws ResponseException {
-		SubscriptionRequest removedSub;
+		if (!this.subscriptionId2Subscription.containsKey(id.toString())) {
+			throw new ResponseException(ErrorType.NotFound);
+		}
+		SubscriptionRequest removedSub = this.subscriptionId2Subscription.get(id.toString());
+		checkTenant(headers, removedSub.getHeaders());
 		synchronized (subscriptionId2Subscription) {
 			removedSub = this.subscriptionId2Subscription.remove(id.toString());
 			this.kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(), id.toString().getBytes(),
 					AppConstants.NULL_BYTES);
 		}
 
-		if (removedSub == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
 		synchronized (subscriptionId2Context) {
 			this.subscriptionId2Context.removeAll(id.toString());
 		}
@@ -372,6 +391,7 @@ public class SubscriptionService implements SubscriptionManager {
 	public SubscriptionRequest updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		SubscriptionRequest oldSubRequest = subscriptionId2Subscription.get(subscription.getId().toString());
+		checkTenant(subscriptionRequest.getHeaders(), oldSubRequest.getHeaders());
 		Subscription oldSub = oldSubRequest.getSubscription();
 
 		if (oldSub == null) {
@@ -735,8 +755,8 @@ public class SubscriptionService implements SubscriptionManager {
 					Iterator<SinglePosition> it2 = ((Polygon) next.getGeoValue()).positions().children().iterator()
 							.next().children().iterator();
 					while (it2.hasNext()) {
-						polygonBuilder.pointXY(((SinglePosition) it2).coordinates().getLon(),
-								((SinglePosition) it2).coordinates().getLat());
+						SinglePosition next2 = it2.next();
+						polygonBuilder.pointXY(next2.coordinates().getLon(), next2.coordinates().getLat());
 					}
 					entityShape = polygonBuilder.build();
 				} else {
