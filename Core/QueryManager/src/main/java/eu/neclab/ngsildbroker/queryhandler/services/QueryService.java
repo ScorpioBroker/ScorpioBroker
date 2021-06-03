@@ -1,9 +1,7 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -12,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -57,7 +54,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.queryhandler.config.QueryProducerChannel;
 import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 
@@ -125,12 +121,13 @@ public class QueryService {
 	@Qualifier("qmrestTemp")
 	RestTemplate restTemplate;
 
-	private QueryProducerChannel producerChannels;
-
-	public QueryService(QueryProducerChannel producerChannels) {
-
-		this.producerChannels = producerChannels;
-	}
+	/*
+	 * private QueryProducerChannel producerChannels;
+	 * 
+	 * public QueryService(QueryProducerChannel producerChannels) {
+	 * 
+	 * this.producerChannels = producerChannels; }
+	 */
 
 	@PostConstruct
 	private void setup() {
@@ -469,21 +466,20 @@ public class QueryService {
 		result.setResultsLeftBefore(offset);
 		return result;
 	}
+	//TODO decide on removal
+	/*
+	 * private void writeFullResultToKafka(String qToken, List<String>
+	 * aggregatedResult) throws IOException, ResponseException { // write to byte
+	 * array ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	 * DataOutputStream out = new DataOutputStream(baos); for (String element :
+	 * aggregatedResult) { out.writeUTF(element); }
+	 * operations.pushToKafka(producerChannels.paginationWriteChannel(),
+	 * qToken.getBytes(), baos.toByteArray()); }
+	 */
 
-	private void writeFullResultToKafka(String qToken, List<String> aggregatedResult)
-			throws IOException, ResponseException {
-		// write to byte array
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		DataOutputStream out = new DataOutputStream(baos);
-		for (String element : aggregatedResult) {
-			out.writeUTF(element);
-		}
-		operations.pushToKafka(producerChannels.paginationWriteChannel(), qToken.getBytes(), baos.toByteArray());
-	}
-
-	private String generateToken() {
-		return UUID.randomUUID().toString();
-	}
+	/*
+	 * private String generateToken() { return UUID.randomUUID().toString(); }
+	 */
 
 	/**
 	 * making http call to all discovered csources async.

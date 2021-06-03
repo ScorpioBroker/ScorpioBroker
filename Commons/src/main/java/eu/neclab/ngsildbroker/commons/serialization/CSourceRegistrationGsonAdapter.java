@@ -3,20 +3,11 @@ package eu.neclab.ngsildbroker.commons.serialization;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import javax.sql.rowset.serial.SerialException;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;

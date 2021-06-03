@@ -196,6 +196,7 @@ public class DataSerializer {
 		return GSON.fromJson(json, QueryParams.class);
 	}
 
+	@SuppressWarnings("unchecked")//Always a String list. No class object from generics
 	public static ArrayList<String> getStringList(String json) {
 		return GSON.fromJson(json, ArrayList.class);
 	}

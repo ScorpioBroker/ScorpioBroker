@@ -674,7 +674,7 @@ public class CSourceSubscriptionService {
 	public void handleInternalSub(Message<byte[]> message) {
 		if (Arrays.areEqual(AppConstants.NULL_BYTES, message.getPayload())) {
 			try {
-				unsubscribe(new URI(kafkaOps.getMessageKey(message)));
+				unsubscribe(new URI(KafkaOps.getMessageKey(message)));
 			} catch (ResponseException e) {
 				logger.error(e);
 			} catch (URISyntaxException e) {

@@ -1,0 +1,6 @@
+RELEASE NOTES 
+Scorpio FIWARE 7.8.2 
+ - The release contains various bugfixes as well as support for Kubernetes using Helm files. 
+ - CI was changed to github actions from travis ci. 
+ - spring_args in docker-compose will now be forwarded to the gateway as well. this allows external configuration of oauth without changing the application.yml file.
+ - various bugfixes for subscription triggering

@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.util.UUID;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class PropertyEntry extends BaseEntry{

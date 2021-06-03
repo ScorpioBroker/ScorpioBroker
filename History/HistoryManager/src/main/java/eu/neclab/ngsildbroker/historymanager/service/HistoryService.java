@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.historymanager.service;
 
 import java.net.URI;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,6 +17,9 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.datatypes.AppendHistoryEntityRequest;

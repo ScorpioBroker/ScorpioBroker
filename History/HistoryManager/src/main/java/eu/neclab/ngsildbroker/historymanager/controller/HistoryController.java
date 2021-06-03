@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.historymanager.controller;
 
 import java.net.URI;
-
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 

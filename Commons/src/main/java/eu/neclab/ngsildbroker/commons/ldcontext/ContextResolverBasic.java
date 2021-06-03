@@ -3,11 +3,8 @@ package eu.neclab.ngsildbroker.commons.ldcontext;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Instant;
-import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -26,22 +23,17 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
-import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoRelation;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
-import eu.neclab.ngsildbroker.commons.datatypes.LDQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -54,13 +46,14 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 @Component
+@SuppressWarnings({"unchecked", "rawtypes"})//Map<String, Object>/List<Object> is always returned here. Json LD lib uses rawtypes 
 public class ContextResolverBasic {
 	private final static Logger logger = LogManager.getLogger(ContextResolverBasic.class);
 	private URI CORE_CONTEXT_URL;
 	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	private String CORE_CONTEXT_URL_STR;
 	
-	private String USED_CORE_CONTEXT_URL_STR;
+	//private String USED_CORE_CONTEXT_URL_STR;
 	// private URI DEFAULT_CONTEXT_URL;
 
 	@Autowired
@@ -90,7 +83,6 @@ public class ContextResolverBasic {
 			String json = httpUtils.doGet(CORE_CONTEXT_URL);
 			CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 			BASE_CONTEXT.putAll(CORE_CONTEXT);
-			USED_CORE_CONTEXT_URL_STR = CORE_CONTEXT_URL_STR;
 		} catch (URISyntaxException e) {
 			// left empty intentionally
 			// controlled uri
@@ -103,7 +95,6 @@ public class ContextResolverBasic {
 				String json = httpUtils.doGet(CORE_CONTEXT_URL);
 				CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 				BASE_CONTEXT.putAll(CORE_CONTEXT);
-				USED_CORE_CONTEXT_URL_STR = SELF_HOST_CORE_CONTEXT_URL;
 			} catch (URISyntaxException e1) {
 				// left empty intentionally
 				// controlled uri
@@ -116,12 +107,6 @@ public class ContextResolverBasic {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-		ContextResolverBasic bla = new ContextResolverBasic();
-		ArrayList<Object> contextLinks = new ArrayList<Object>();
-		String body = "{ \"id\": \"urn:ngsi-ld:Building:store000000001\", \"type\": \"Building\", \"category\": { \"type\": \"Property\", \"value\": [\"commercial\"] }, \"address\": { \"type\": \"Property\", \"value\": { \"streetAddress\": \"Bornholmer Straße 65\", \"addressRegion\": \"Berlin\", \"addressLocality\": \"Prenzlauer Berg\", \"postalCode\": \"10439\" }, \"verified\": { \"type\": \"Property\", \"value\": true } }, \"location\": { \"type\": \"GeoProperty\", \"value\": { \"type\": \"Point\", \"coordinates\": [13.3986, 52.5547] } }, \"name\": { \"type\": \"Property\", \"value\": \"Bösebrücke Einkauf\" }, \"@context\": [ \"https://fiware.github.io/data-models/context.jsonld\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\" ] }";
-		/**/
-	}
 
 	public ContextResolverBasic(String atContextBaseUrl) {
 		this();
@@ -228,6 +213,7 @@ public class ContextResolverBasic {
 
 	}
 
+	// Type checks are done. Full control over map generics
 	private boolean preFlightCheck(List<Object> expanded, List<Object> usedContext, boolean root, int calledEndpoint,
 			boolean customKey) throws JsonGenerationException, ResponseException, IOException {
 		boolean hasAttributes = false;
@@ -244,7 +230,7 @@ public class ContextResolverBasic {
 		}
 		return hasAttributes;
 	}
-
+	
 	private boolean preFlightCheck(Map<String, Object> objMap, List<Object> usedContext, boolean root,
 			int calledEndpoint, boolean customKey) throws ResponseException, JsonGenerationException, IOException {
 
@@ -371,7 +357,7 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse document. JSON is invalid");
 		}
 		Map<String, Object> rawSub = (Map<String, Object>) expanded.get(1).get(0);
-		Object value = null;
+		
 		boolean hasEntities = false;
 		boolean hasWatchedAttributes = false;
 		boolean hasNotificaition = false;
@@ -922,14 +908,14 @@ public class ContextResolverBasic {
 		objMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, tempList);
 	}
 
-	private void unprotectGeoProps(Object json) throws JsonParseException, IOException {
-		if (json instanceof Map) {
-			unprotectGeoProps((Map<String, Object>) json);
-		} else if (json instanceof List) {
-			unprotectGeoProps((List) json);
-		}
-
-	}
+	/*
+	 * private void unprotectGeoProps(Object json) throws JsonParseException,
+	 * IOException { if (json instanceof Map) { unprotectGeoProps((Map<String,
+	 * Object>) json); } else if (json instanceof List) { unprotectGeoProps((List)
+	 * json); }
+	 * 
+	 * }
+	 */
 
 	private void unprotectGeoProps(Map<String, Object> objMap) throws JsonParseException, IOException {
 		boolean typeFound = false;
@@ -1079,7 +1065,7 @@ public class ContextResolverBasic {
 //			unprotectLocationFromRegistry(tempResult);
 			if (tempResult.containsKey("@graph")) {
 				// we are in a multiresult set
-				Object atContext = tempResult.get(NGSIConstants.JSON_LD_CONTEXT);
+				//Object atContext = tempResult.get(NGSIConstants.JSON_LD_CONTEXT);
 				List<Map<String, Object>> toCompact = (List<Map<String, Object>>) tempResult.get("@graph");
 				result.setCompacted(JsonUtils.toPrettyString(toCompact));
 				for (Map<String, Object> entry : toCompact) {
@@ -1207,30 +1193,22 @@ public class ContextResolverBasic {
 		}
 
 	}
-
-	private void validateAndCleanContext(Map<String, Object> contextToMerge) throws ResponseException {
-		if (contextToMerge == null) {
-			return;
-		}
-		Iterator<Entry<String, Object>> it = contextToMerge.entrySet().iterator();
-
-		while (it.hasNext()) {
-			Entry<String, Object> next = it.next();
-			String key = next.getKey();
-			Object value = next.getValue();
-			if (BASE_CONTEXT.containsKey(key)) {
-				if (!value.equals(BASE_CONTEXT.get(key))) {
-					// Attemp to overwrite default context
-					throw new ResponseException(ErrorType.BadRequestData,
-							"Provided context entry " + key + "=" + value.toString() + " overrides base context");
-				}
-				it.remove();
-				continue;
-			}
-
-		}
-	}
-	
+//Check not used anymore
+	/*
+	 * private void validateAndCleanContext(Map<String, Object> contextToMerge)
+	 * throws ResponseException { if (contextToMerge == null) { return; }
+	 * Iterator<Entry<String, Object>> it = contextToMerge.entrySet().iterator();
+	 * 
+	 * while (it.hasNext()) { Entry<String, Object> next = it.next(); String key =
+	 * next.getKey(); Object value = next.getValue(); if
+	 * (BASE_CONTEXT.containsKey(key)) { if (!value.equals(BASE_CONTEXT.get(key))) {
+	 * // Attemp to overwrite default context throw new
+	 * ResponseException(ErrorType.BadRequestData, "Provided context entry " + key +
+	 * "=" + value.toString() + " overrides base context"); } it.remove(); continue;
+	 * }
+	 * 
+	 * } }
+	 */	
 	private String validateSubNotifierInfoMqttVersion(String string) throws ResponseException {
 		try {
 			if (!Arrays.asList(NGSIConstants.VALID_MQTT_VERSION).contains(string)) {

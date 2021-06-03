@@ -27,7 +27,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -307,7 +306,6 @@ public class HistoryControllerTest {
 
 	@Test
 	public void deleteTemporalEntityInternalServerError() {
-		List<Object> linkHeaders = null;
 		try {
 			Mockito.doThrow(new Exception()).when(historyService).delete(any(), any(), any(), any(), any());
 			mockMvc.perform(MockMvcRequestBuilders
@@ -324,7 +322,6 @@ public class HistoryControllerTest {
 
 	@Test
 	public void deleteTemporalEntityBadRequest() {
-		List<Object> linkHeaders = null;
 		try {
 			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).delete(any(), any(),
 					any(), any(), any());
@@ -343,7 +340,6 @@ public class HistoryControllerTest {
 
 	@Test
 	public void deleteTemporalEntityByAttrInternalServerError() {
-		List<Object> linkHeaders = null;
 		try {
 			Mockito.doThrow(new Exception()).when(historyService).delete(any(), any(), any(), any(), any());
 			mockMvc.perform(
@@ -364,7 +360,6 @@ public class HistoryControllerTest {
 
 	@Test
 	public void deleteTemporalEntityByAttrBadRequest() {
-		List<Object> linkHeaders = null;
 		try {
 			Mockito.doThrow(new ResponseException(ErrorType.BadRequestData)).when(historyService).delete(any(), any(),
 					any(), any(), any());
@@ -386,7 +381,6 @@ public class HistoryControllerTest {
 
 	@Test
 	public void deleteTemporalEntityByAttrResourceNotFound() {
-		List<Object> linkHeaders = null;
 		try {
 			Mockito.doThrow(new ResponseException(ErrorType.NotFound)).when(historyService).delete(any(), any(), any(),
 					any(), any());

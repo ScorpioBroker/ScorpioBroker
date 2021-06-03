@@ -91,8 +91,13 @@ public class HistoryServiceTest {
 	@Test
 	public void createTemporalEntityFromBindingTest() {
 		try {
+<<<<<<< HEAD
 			URI uri1 = historyService.createTemporalEntityFromBinding(ArrayListMultimap.create(), temporalPayload);
 			verify(kafkaOperations, times(3)).pushToKafka(any(), any(), any());
+=======
+			historyService.createTemporalEntityFromBinding(temporalPayload);
+			verify(kafkaOperations, times(3)).pushToKafka(any(),any(),any());
+>>>>>>> development
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -107,8 +112,13 @@ public class HistoryServiceTest {
 	@Test
 	public void createTemporalEntityFromEntityTest() {
 		try {
+<<<<<<< HEAD
 			URI uri1 = historyService.createTemporalEntityFromEntity(ArrayListMultimap.create(), temporalPayload);
 			verify(kafkaOperations, times(3)).pushToKafka(any(), any(), any());
+=======
+			historyService.createTemporalEntityFromEntity(temporalPayload);
+			verify(kafkaOperations, times(3)).pushToKafka(any(),any(),any());
+>>>>>>> development
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();

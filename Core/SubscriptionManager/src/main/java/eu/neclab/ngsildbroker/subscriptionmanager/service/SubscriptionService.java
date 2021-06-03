@@ -57,7 +57,6 @@ import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.shared.Application;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
@@ -939,7 +938,6 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleCSourceNotification(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
 		String key = KafkaOps.getMessageKey(message);
-		@SuppressWarnings("unchecked")
 		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
 		subscribeToRemote(subscriptionId2Subscription.get(key), endPoints);
 	}
