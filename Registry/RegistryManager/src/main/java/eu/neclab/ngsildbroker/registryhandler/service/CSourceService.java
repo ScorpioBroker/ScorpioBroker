@@ -124,16 +124,16 @@ public class CSourceService {
 	}
 
 	public List<JsonNode> getCSourceRegistrations(String tenant) throws ResponseException, IOException, Exception {
-		if(directDB) {
+		if (directDB) {
 			ArrayList<JsonNode> result = new ArrayList<JsonNode>();
-			List<String> regs = csourceInfoDAO.getAllRegistrations(tenant);	
-			for(String reg: regs) {
+			List<String> regs = csourceInfoDAO.getAllRegistrations(tenant);
+			for (String reg : regs) {
 				result.add(objectMapper.readTree(reg));
 			}
 			return result;
-		}else {
+		} else {
 			logger.trace("getAll() ::");
-			
+
 			Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
 			Map<String, JsonNode> entityMap = new HashMap<String, JsonNode>();
 			JsonNode entityJsonBody = objectMapper.createObjectNode();
@@ -147,7 +147,7 @@ public class CSourceService {
 				if (!entityJsonBody.isNull())
 					entityMap.put(key, entityJsonBody);
 			}
-			return new ArrayList<JsonNode>(entityMap.values());			
+			return new ArrayList<JsonNode>(entityMap.values());
 		}
 
 	}
@@ -410,11 +410,15 @@ public class CSourceService {
 		executor.execute(new Thread() {
 			@Override
 			public void run() {
-
-				CSourceRegistration csourceRegistration = DataSerializer
-						.getCSourceRegistration(new String((byte[]) message.getPayload()));
-
-				String payload = new String((byte[]) message.getPayload());
+				String payload = new String((byte[]) message.getPayload());				
+				String datavalue;
+				JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
+				if (jsonObject.has("CSource")) {
+					datavalue = jsonObject.get("CSource").toString();
+				} else {
+					datavalue = "null";
+				}
+				CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(datavalue);
 				JsonObject jsonObjectpayload = new JsonParser().parse(payload).getAsJsonObject();
 				ArrayListMultimap<String, String> requestheaders = ArrayListMultimap.create();
 				if (jsonObjectpayload.has("headers")) {

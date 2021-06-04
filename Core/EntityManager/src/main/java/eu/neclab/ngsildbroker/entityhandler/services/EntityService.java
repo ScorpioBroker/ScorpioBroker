@@ -41,6 +41,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
+import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
@@ -586,7 +588,8 @@ public class EntityService {
 		// JsonNode csourceJsonBody;
 
 		// if (jsonObjectheader.has(NGSIConstants.TENANT_HEADER)) {
-		// headervalue = jsonObjectheader.get(NGSIConstants.TENANT_HEADER).getAsString();
+		// headervalue =
+		// jsonObjectheader.get(NGSIConstants.TENANT_HEADER).getAsString();
 
 		// csourceJsonBody = objectMapper.createObjectNode();
 		// csourceJsonBody = objectMapper.readTree(entityBody);
@@ -600,8 +603,9 @@ public class EntityService {
 		// request.getWithSysAttrs().getBytes(NGSIConstants.ENCODE_FORMAT);
 
 		CSourceRegistration contextRegistryPayload = this.getCSourceRegistrationFromJson(entityBody);
+		CSourceRequest Csrequest = new CreateCSourceRequest(contextRegistryPayload, request.getHeaders());
 		this.operations.pushToKafka(messageChannel, request.getId().getBytes(),
-				DataSerializer.toJson(contextRegistryPayload).getBytes());
+				DataSerializer.toJson(Csrequest).getBytes());
 		logger.trace("registerContext() :: completed");
 		return true;
 	}
