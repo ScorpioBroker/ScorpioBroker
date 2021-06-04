@@ -113,7 +113,7 @@ public class DataSerializer {
 		builder.registerTypeAdapter(UpdateHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
 		builder.registerTypeAdapter(AppendHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
 		builder.registerTypeAdapter(DeleteHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
-
+		builder.registerTypeAdapter(SubscriptionRequest.class, new SubscriptionRequestGsonAdapter());
 		builder.registerTypeAdapter(SerializationTypes.entitiesType, new EntitiesGsonAdapter());
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
 		builder.registerTypeAdapter(CreateCSourceRequest.class, new CSourceRequestGsonAdapter());

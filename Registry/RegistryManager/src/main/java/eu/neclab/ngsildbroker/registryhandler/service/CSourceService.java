@@ -227,7 +227,8 @@ public class CSourceService {
 			}
 			this.csourceTimerTask(headers, newCSourceRegistration);
 		}
-		csourceSubService.checkSubscriptions(prevCSourceRegistration, newCSourceRegistration);
+		csourceSubService.checkSubscriptions(new CreateCSourceRequest(prevCSourceRegistration, headers),
+				new CreateCSourceRequest(newCSourceRegistration, headers));
 		this.operations.pushToKafka(messageChannel, registrationId.getBytes(),
 				DataSerializer.toJson(request).getBytes());
 		handleFed();
@@ -306,7 +307,7 @@ public class CSourceService {
 				DataSerializer.toJson(request).getBytes(NGSIConstants.ENCODE_FORMAT));
 		this.csourceTimerTask(headers, csourceRegistration);
 		if (!csourceRegistration.isInternal()) {
-			csourceSubService.checkSubscriptions(csourceRegistration, TriggerReason.newlyMatching);
+			csourceSubService.checkSubscriptions(request, TriggerReason.newlyMatching);
 		}
 		handleFed();
 		return idUri;
@@ -387,7 +388,7 @@ public class CSourceService {
 		}
 		CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(csourceBody);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
-		this.csourceSubService.checkSubscriptions(csourceRegistration, TriggerReason.noLongerMatching);
+		this.csourceSubService.checkSubscriptions(request, TriggerReason.noLongerMatching);
 		this.operations.pushToKafka(messageChannel, registrationId.getBytes(),
 				DataSerializer.toJson(request).getBytes(NGSIConstants.ENCODE_FORMAT));
 		handleFed();
@@ -410,7 +411,7 @@ public class CSourceService {
 		executor.execute(new Thread() {
 			@Override
 			public void run() {
-				String payload = new String((byte[]) message.getPayload());				
+				String payload = new String((byte[]) message.getPayload());
 				String datavalue;
 				JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
 				if (jsonObject.has("CSource")) {

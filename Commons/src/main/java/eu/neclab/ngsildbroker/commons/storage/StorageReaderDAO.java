@@ -78,19 +78,16 @@ abstract public class StorageReaderDAO {
 		}
 	}
 
-	public DataSource determineTargetDataSource(String tenantidvalue) {
+	public DataSource determineTargetDataSource(String tenantidvalue) throws ResponseException {
 		// String tenantidvalue = (String) determineCurrentLookupKey();
 		if (tenantidvalue == null) {
 			return masterDataSource;
 		}
 		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
 		if (tenantDataSource == null) {
-			try {
-				tenantDataSource = createDataSourceForTenantId(tenantidvalue);
-			} catch (ResponseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			
+			tenantDataSource = createDataSourceForTenantId(tenantidvalue);
+			
 			resolvedDataSources.put(tenantidvalue, tenantDataSource);
 		}
 
