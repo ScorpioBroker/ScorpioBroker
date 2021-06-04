@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.net.URI;
-import java.util.Date;
 import java.util.List;
 import com.github.filosganga.geogson.model.Geometry;
 

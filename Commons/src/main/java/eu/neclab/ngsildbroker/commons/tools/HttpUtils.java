@@ -16,13 +16,11 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -39,7 +37,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -51,7 +48,6 @@ import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.params.ConnRouteParams;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ByteArrayEntity;
@@ -62,7 +58,6 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.params.HttpParams;
 import org.apache.http.ssl.SSLContextBuilder;
@@ -122,14 +117,48 @@ public final class HttpUtils {
 	 */
 	public static HttpUtils getInstance(ContextResolverBasic contextResolver) {
 		if(contextResolver == null) {
+			getSystemProxy(NULL_INSTANCE);
 			return NULL_INSTANCE;
 		}
 		if (SINGLETON == null) {
 			SINGLETON = new HttpUtils(contextResolver);
+			getSystemProxy(SINGLETON);
 		}
 		return SINGLETON;
 	}
-
+	private static void getSystemProxy(HttpUtils instance) {
+		String httpProxy = null;
+		String httpsProxy = null;
+		
+		for(Entry<String, String> entry: System.getenv().entrySet()) {
+			if(entry.getKey().equalsIgnoreCase("http_proxy")) {
+				httpProxy = entry.getValue();
+			}
+			if(entry.getKey().equalsIgnoreCase("https_proxy")) {
+				httpsProxy = entry.getValue();
+			}
+		}
+		if(httpsProxy != null) {
+			try {
+				setHttpProxy(new URL(httpsProxy), instance);
+			} catch (MalformedURLException e) {
+				LOG.error("Your configured https_proxy setting is not valid.", e);
+			}
+		}else if(httpProxy != null) {
+			try {
+				setHttpProxy(new URL(httpProxy), instance);
+			} catch (MalformedURLException e) {
+				LOG.error("Your configured http_proxy setting is not valid.", e);
+			}
+		}
+	}
+	public static String denormalize(String attrId) {
+		String result = attrId.replace(":/", "://");
+		if(result.endsWith("/")) {
+			return result.substring(0, result.length() - 2);
+		}
+		return result;
+	}
 	public static void doPreflightCheck(HttpServletRequest req, String payload) throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
 		if (contentType == null) {
@@ -189,15 +218,15 @@ public final class HttpUtils {
 	 * 
 	 * @param httpProxy a URL with the HTTP proxy
 	 */
-	public static void setHttpProxy(URL httpProxy) {
+	public static void setHttpProxy(URL httpProxy, HttpUtils instance) {
 		if (httpProxy != null) {
 			int port = httpProxy.getPort();
 			if (port == -1) {
 				port = DEFAULT_PROXY_PORT;
 			}
-			SINGLETON.httpProxy = new HttpHost(httpProxy.getHost(), port, httpProxy.getProtocol());
+			instance.httpProxy = new HttpHost(httpProxy.getHost(), port, httpProxy.getProtocol());
 		} else {
-			SINGLETON.httpProxy = null;
+			instance.httpProxy = null;
 		}
 	}
 

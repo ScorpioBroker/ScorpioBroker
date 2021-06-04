@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionManager;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;

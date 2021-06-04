@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,8 +16,6 @@ import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.kafka.support.KafkaHeaders;
 
-import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
@@ -31,8 +28,6 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
 public class IntervalNotificationHandler {
 
-	private ArrayListMultimap<String, Notification> id2Data = ArrayListMultimap.create();
-	private HashMap<String, URI> id2Callback = new HashMap<String, URI>();
 	private HashMap<String, TimerTask> id2TimerTask = new HashMap<String, TimerTask>();
 	private Timer executor = new Timer(true);
 

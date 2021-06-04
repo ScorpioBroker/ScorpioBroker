@@ -1,0 +1,59 @@
+{{- if .Values.AtContextServer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: {{ .Values.AtContextServer.name }}
+  name: {{ .Values.AtContextServer.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  replicas: {{ .Values.AtContextServer.replicas }}
+  selector:
+    matchLabels:
+      service: {{ .Values.AtContextServer.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: {{ .Values.AtContextServer.name }}
+    spec:
+      containers:
+      - image: {{ .Values.AtContextServer.image.repository }}:{{ .Values.AtContextServer.image.tag }}
+        imagePullPolicy: {{ .Values.AtContextServer.image.pullPolicy }}
+        name: {{ .Values.AtContextServer.name }}
+        ports:
+        - containerPort: 27015
+          protocol: TCP
+        {{- if .Values.AtContextServer.readinessProbe.enabled }}
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/ATCONTEXT-SERVER/$HOSTNAME:atcontext-server:27015/status?value=OUT_OF_SERVICE"
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:27015/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: {{ .Values.AtContextServer.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.AtContextServer.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.AtContextServer.readinessProbe.periodSeconds }}
+          {{- end}}
+        resources:
+{{ toYaml .Values.AtContextServer.resources | indent 10 }}
+      restartPolicy: {{ .Values.AtContextServer.restartPolicy }}
+      {{- if .Values.AtContextServer.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.AtContextServer.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.AtContextServer.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.AtContextServer.terminationGracePeriodSeconds }}
+status: {}
+{{- end }}

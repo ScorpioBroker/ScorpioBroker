@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: config-server
+  name: config-server
+  namespace: scorpio-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: config-server
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        service: config-server
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:config-server_latest
+        imagePullPolicy: Always
+        name: config-server
+        ports:
+        - containerPort: 8888
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/CONFIGSERVER/$HOSTNAME:configserver:8888/status?value=OUT_OF_SERVICE"
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:8888/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 10
+          initialDelaySeconds: 20
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 575m
+            memory: 2280Mi
+          requests:
+            cpu: 450m
+            memory: 1850Mi
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+

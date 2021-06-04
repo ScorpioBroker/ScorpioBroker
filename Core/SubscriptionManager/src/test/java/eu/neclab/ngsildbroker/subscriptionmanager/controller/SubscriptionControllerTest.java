@@ -12,9 +12,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -163,7 +160,6 @@ public class SubscriptionControllerTest {
 	@Test
 	public void getSubscriptionEntityTest() {
 		try {
-			List<Object> context = new ArrayList<>();	
 			Subscription subscription = null;
 			subscription = DataSerializer.getSubscription(subscriptionEntityPayload);
 			when(subscriptionService.getSubscription(any())).thenReturn(subscription);

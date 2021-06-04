@@ -1,0 +1,59 @@
+{{- if .Values.RegistryManager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: {{ .Values.RegistryManager.name }}
+  name: {{ .Values.RegistryManager.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  replicas: {{ .Values.RegistryManager.replicas }}
+  selector:
+    matchLabels:
+      service: {{ .Values.RegistryManager.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: {{ .Values.RegistryManager.name }}
+    spec:
+      containers:
+      - image: {{ .Values.RegistryManager.image.repository }}:{{ .Values.RegistryManager.image.tag }}
+        imagePullPolicy: {{ .Values.RegistryManager.image.pullPolicy }}
+        name: {{ .Values.RegistryManager.name }}
+        ports:
+        - containerPort: 1030
+          protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/C-SOURCES/$HOSTNAME:c-sources:1030/status?value=OUT_OF_SERVICE"
+        {{- if .Values.RegistryManager.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1030/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: {{ .Values.RegistryManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.RegistryManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.RegistryManager.readinessProbe.periodSeconds }}
+          {{- end}}
+        resources:
+{{ toYaml .Values.RegistryManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.RegistryManager.restartPolicy }}
+      {{- if .Values.RegistryManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.RegistryManager.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.RegistryManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.RegistryManager.terminationGracePeriodSeconds }}
+status: {}
+{{- end }}

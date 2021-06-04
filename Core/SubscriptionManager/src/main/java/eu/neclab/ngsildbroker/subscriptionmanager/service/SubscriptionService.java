@@ -32,7 +32,6 @@ import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
-import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
@@ -80,6 +79,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 
 @Service
 public class SubscriptionService implements SubscriptionManager {
@@ -136,7 +136,12 @@ public class SubscriptionService implements SubscriptionManager {
 	@Autowired
 	@Qualifier("smparamsResolver")
 	ParamsResolver paramsResolver;
+	
+	SubscriptionManagerProducerChannel producerChannel;
 
+	@Autowired
+	KafkaOps kafkaOps;
+	
 	boolean directDB = true;
 
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
@@ -161,8 +166,10 @@ public class SubscriptionService implements SubscriptionManager {
 	// @Value("${notification.port}")
 	// String REMOTE_NOTIFICATION_PORT;
 
-	public SubscriptionService() {
+	public SubscriptionService(SubscriptionManagerProducerChannel producerChannel) {
+		this.producerChannel = producerChannel;
 	}
+
 
 	@PostConstruct
 	private void setup() {
@@ -283,7 +290,16 @@ public class SubscriptionService implements SubscriptionManager {
 			public void run() {
 				synchronized (subscriptionStore) {
 					subscriptionStore.put(subscription.getSubscription().getId().toString(), DataSerializer.toJson(subscription));
+					try {
+						kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
+								subscription.getSubscription().getId().toString().getBytes(),
+								DataSerializer.toJson(subscription).getBytes());
+					} catch (ResponseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
+				
 			};
 		}.start();
 
@@ -304,6 +320,9 @@ public class SubscriptionService implements SubscriptionManager {
 		Subscription removedSub;
 		synchronized (subscriptionId2Subscription) {
 			removedSub = this.subscriptionId2Subscription.remove(id.toString());
+			this.kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
+					id.toString().getBytes(),
+					AppConstants.NULL_BYTES);
 		}
 
 		if (removedSub == null) {
@@ -388,6 +407,7 @@ public class SubscriptionService implements SubscriptionManager {
 		synchronized (this.subscriptionId2Context) {
 			this.subscriptionId2Context.putAll(oldSub.getId().toString(), subscriptionRequest.getContext());
 		}
+		storeSubscription(new SubscriptionRequest(oldSub, subscriptionRequest.getContext()));
 		return oldSub;
 	}
 
@@ -831,7 +851,9 @@ public class SubscriptionService implements SubscriptionManager {
 	// @StreamListener(SubscriptionManagerConsumerChannel.deleteReadChannel)
 	@KafkaListener(topics = "${entity.delete.topic}", groupId = "submanager")
 	public void handleDelete(Message<byte[]> message) throws Exception {
-		this.ids2Type.remove(KafkaOps.getMessageKey(message));
+		if (message.getPayload().equals("{}".getBytes())) {
+			this.ids2Type.remove(KafkaOps.getMessageKey(message));
+		}
 		// checkSubscriptionsWithDelete(new String((byte[])
 		// message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY)),
 		// new String(message.getPayload()));
@@ -841,7 +863,6 @@ public class SubscriptionService implements SubscriptionManager {
 	public void handleCSourceNotification(Message<byte[]> message) {
 		String payload = new String(message.getPayload());
 		String key = KafkaOps.getMessageKey(message);
-		@SuppressWarnings("unchecked")
 		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
 		subscribeToRemote(subscriptionId2Subscription.get(key), endPoints);
 	}
@@ -885,7 +906,12 @@ public class SubscriptionService implements SubscriptionManager {
 				additionalHeaders.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD);
 				for (String remoteEndPoint : remoteEndPoints) {
 					try {
-						httpUtils.doPost(new URI(remoteEndPoint), body, additionalHeaders);
+						StringBuilder temp = new StringBuilder(remoteEndPoint);
+						if(remoteEndPoint.endsWith("/")) {
+							temp.deleteCharAt(remoteEndPoint.length() - 1);
+						}
+						temp.append(AppConstants.SUBSCRIPTIONS_URL);
+						httpUtils.doPost(new URI(temp.toString()), body, additionalHeaders);
 					} catch (IOException e) {
 						// TODO what to do when a remote sub times out ? at the moment we just fail here
 						e.printStackTrace();

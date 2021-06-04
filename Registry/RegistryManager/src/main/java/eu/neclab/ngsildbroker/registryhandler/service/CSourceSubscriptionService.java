@@ -8,7 +8,6 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEA
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -155,26 +154,17 @@ public class CSourceSubscriptionService {
 				continue;
 			}
 		}
-		subs = kafkaOps.pullFromKafka(KafkaConstants.SUBSCRIPTIONS_TOPIC);
-		for (byte[] sub : subs.values()) {
-			try {
-				if (Arrays.areEqual(sub, nullArray)) {
-					continue;
-				}
-				SubscriptionRequest subscriptionRequest = DataSerializer.getSubscriptionRequest(new String(sub));
-				subscriptionRequest.getSubscription().setInternal(true);
-				subscribe(subscriptionRequest, false);
-			} catch (JsonParseException e) {
-				// logger.error("Exception ::", e);
-				// e.printStackTrace();
-				continue;
-			} catch (ResponseException e) {
-				// logger.error("Exception ::", e);
-				// e.printStackTrace();
-				continue;
-			}
-		}
-
+		/*
+		 * subs = kafkaOps.pullFromKafka(KafkaConstants.SUBSCRIPTIONS_TOPIC); for
+		 * (byte[] sub : subs.values()) { try { if (Arrays.areEqual(sub, nullArray)) {
+		 * continue; } SubscriptionRequest subscriptionRequest =
+		 * DataSerializer.getSubscriptionRequest(new String(sub));
+		 * subscriptionRequest.getSubscription().setInternal(true);
+		 * subscribe(subscriptionRequest, false); } catch (JsonParseException e) { //
+		 * logger.error("Exception ::", e); // e.printStackTrace(); continue; } catch
+		 * (ResponseException e) { // logger.error("Exception ::", e); //
+		 * e.printStackTrace(); continue; } }
+		 */
 	}
 
 	public Subscription querySubscription(URI id) throws ResponseException {
@@ -645,7 +635,7 @@ public class CSourceSubscriptionService {
 	public void handleInternalSub(Message<byte[]> message) {
 		if (Arrays.areEqual(AppConstants.NULL_BYTES, message.getPayload())) {
 			try {
-				unsubscribe(new URI(kafkaOps.getMessageKey(message)));
+				unsubscribe(new URI(KafkaOps.getMessageKey(message)));
 			} catch (ResponseException e) {
 				logger.error(e);
 			} catch (URISyntaxException e) {

@@ -1,0 +1,59 @@
+{{- if .Values.EntityManager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: {{ .Values.EntityManager.name }}
+  name: {{ .Values.EntityManager.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  replicas: {{ .Values.EntityManager.replicas }}
+  selector:
+    matchLabels:
+      service: {{ .Values.EntityManager.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: {{ .Values.EntityManager.name }}
+    spec:
+      containers:
+      - image: {{ .Values.EntityManager.image.repository }}:{{ .Values.EntityManager.image.tag }}
+        imagePullPolicy: {{ .Values.EntityManager.image.pullPolicy }}
+        name: {{ .Values.EntityManager.name }}
+        ports:
+        - containerPort: 1025
+          protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/ENTITY-MANAGER/$HOSTNAME:entity-manager:1025/status?value=OUT_OF_SERVICE"
+        {{- if .Values.EntityManager.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1025/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: {{ .Values.EntityManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.EntityManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.EntityManager.readinessProbe.periodSeconds }}
+          {{- end}}
+        resources:
+{{ toYaml .Values.EntityManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.EntityManager.restartPolicy }}
+      {{- if .Values.EntityManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.EntityManager.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.EntityManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.EntityManager.terminationGracePeriodSeconds }}
+status: {}
+{{- end }}

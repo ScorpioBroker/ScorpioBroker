@@ -1,0 +1,18 @@
+{{- if .Values.ConfigServer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: {{ .Values.ConfigServer.name }}
+  name: {{ .Values.ConfigServer.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  ports:
+  - name: "8888"
+    port: 8888
+    targetPort: 8888
+  selector:
+    service: {{ .Values.ConfigServer.name }}
+status: {}
+{{- end }}
+

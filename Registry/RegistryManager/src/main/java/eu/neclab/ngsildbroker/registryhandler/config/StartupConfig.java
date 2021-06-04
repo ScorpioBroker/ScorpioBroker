@@ -3,10 +3,7 @@ package eu.neclab.ngsildbroker.registryhandler.config;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
@@ -19,7 +16,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -28,9 +24,6 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.discovery.EurekaClient;
 
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
-import eu.neclab.ngsildbroker.commons.datatypes.Information;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
@@ -227,14 +220,14 @@ public class StartupConfig {
 		// return this.getInformationNode(streamRecords);
 	}
 
-	private String getInformationNode(Map<String, String> records) throws URISyntaxException {
-		logger.trace("getCSourceRegistrationFromJson() :: started");
-		List<Information> information = new ArrayList<Information>();
-		for (String s : records.keySet()) {
-			CSourceRegistration cSource = DataSerializer.getCSourceRegistration(records.get(s));
-			information.addAll(cSource.getInformation());
-		}
-		String informationString = DataSerializer.toJson(information);
-		return informationString;
-	}
+	/*
+	 * private String getInformationNode(Map<String, String> records) throws
+	 * URISyntaxException {
+	 * logger.trace("getCSourceRegistrationFromJson() :: started");
+	 * List<Information> information = new ArrayList<Information>(); for (String s :
+	 * records.keySet()) { CSourceRegistration cSource =
+	 * DataSerializer.getCSourceRegistration(records.get(s));
+	 * information.addAll(cSource.getInformation()); } String informationString =
+	 * DataSerializer.toJson(information); return informationString; }
+	 */
 }

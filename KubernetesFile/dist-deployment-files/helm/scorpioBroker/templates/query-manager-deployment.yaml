@@ -1,0 +1,59 @@
+{{- if .Values.QueryManager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: {{ .Values.QueryManager.name }}
+  name: {{ .Values.QueryManager.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  replicas: {{ .Values.QueryManager.replicas }}
+  selector:
+    matchLabels:
+      service: {{ .Values.QueryManager.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: {{ .Values.QueryManager.name }}
+    spec:
+      containers:
+      - image: {{ .Values.QueryManager.image.repository }}:{{ .Values.QueryManager.image.tag }}
+        imagePullPolicy: {{ .Values.QueryManager.image.pullPolicy }}
+        name: {{ .Values.QueryManager.name }}
+        ports:
+        - containerPort: 1026
+          protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/QUERY-MANAGER/$HOSTNAME:query-manager:1026/status?value=OUT_OF_SERVICE"
+        {{- if .Values.QueryManager.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1026/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: {{ .Values.QueryManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.QueryManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.QueryManager.readinessProbe.periodSeconds }}
+          {{- end}}
+        resources:
+{{ toYaml .Values.QueryManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.QueryManager.restartPolicy }}
+      {{- if .Values.QueryManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.QueryManager.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.QueryManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.QueryManager.terminationGracePeriodSeconds }}
+status: {}
+{{- end }}

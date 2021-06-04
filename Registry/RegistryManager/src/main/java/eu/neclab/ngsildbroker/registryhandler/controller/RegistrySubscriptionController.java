@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
@@ -21,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.discovery.EurekaClient;
@@ -61,7 +61,12 @@ public class RegistrySubscriptionController {
 	@Autowired
 	EurekaClient eurekaClient;
 	
-	HttpUtils httpUtils = HttpUtils.getInstance(contextResolver);
+	private HttpUtils httpUtils;
+
+	@PostConstruct
+	private void setup() {
+		this.httpUtils = HttpUtils.getInstance(contextResolver);
+	}
 
 	ResponseException badRequest = new ResponseException(ErrorType.BadRequestData);
 
