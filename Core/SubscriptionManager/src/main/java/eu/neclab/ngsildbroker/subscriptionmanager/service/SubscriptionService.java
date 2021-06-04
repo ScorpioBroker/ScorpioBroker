@@ -443,12 +443,15 @@ public class SubscriptionService implements SubscriptionManager {
 	@Override
 	public List<SubscriptionRequest> getAllSubscriptions(int limit, ArrayListMultimap<String, String> headers) {
 		List<SubscriptionRequest> result = new ArrayList<SubscriptionRequest>();
-		List<String> requestTenant = headers.get(NGSIConstants.TENANT_HEADER);
+		
 		for (SubscriptionRequest sub : subscriptionId2Subscription.values()) {
-			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
-			if (tenantMatches(requestTenant, subTenant)) {
-				result.add(sub);
+			try {
+				checkTenant(headers, sub.getHeaders());
+			} catch (ResponseException e) {
+				continue;
 			}
+			result.add(sub);
+			
 		}
 		if (limit > 0) {
 			if (limit < result.size()) {
@@ -461,10 +464,10 @@ public class SubscriptionService implements SubscriptionManager {
 	@Override
 	public SubscriptionRequest getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers)
 			throws ResponseException {
-		if (subscriptionId2Subscription.containsKey(subscriptionId) && tenantMatches(
-				headers.get(NGSIConstants.TENANT_HEADER),
-				subscriptionId2Subscription.get(subscriptionId).getHeaders().get(NGSIConstants.TENANT_HEADER))) {
-			return subscriptionId2Subscription.get(subscriptionId);
+		if (subscriptionId2Subscription.containsKey(subscriptionId)) {
+			SubscriptionRequest sub = subscriptionId2Subscription.get(subscriptionId);
+			checkTenant(headers, sub.getHeaders());
+			return sub;
 		} else {
 			throw new ResponseException(ErrorType.NotFound);
 		}
@@ -485,13 +488,15 @@ public class SubscriptionService implements SubscriptionManager {
 		synchronized (this.tenant2Ids2Type) {
 			this.tenant2Ids2Type.put(createRequest.getTenant(), id, create.getType());
 		}
-		List<String> createTenant = createRequest.getHeaders().get(NGSIConstants.TENANT_HEADER);
+		
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(create.getType())) {
-			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
-			if (!tenantMatches(createTenant, subTenant)) {
+			try {
+				checkTenant(createRequest.getHeaders(), sub.getHeaders());
+			} catch (ResponseException e) {
 				continue;
 			}
+			
 			for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
 				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 					subsToCheck.add(sub);
@@ -507,43 +512,24 @@ public class SubscriptionService implements SubscriptionManager {
 				}
 			}
 		}
-		addAllTypeSubscriptions(createTenant, subsToCheck);
+		addAllTypeSubscriptions(createRequest.getHeaders(), subsToCheck);
 
 		checkSubscriptions(subsToCheck, create, CREATE, messageTime);
 
 	}
 
-	private void addAllTypeSubscriptions(List<String> entityTenant, List<SubscriptionRequest> subsToCheck) {
+	private void addAllTypeSubscriptions(ArrayListMultimap<String, String> entityOpHeaders, List<SubscriptionRequest> subsToCheck) {
 		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE)) {
-			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
-			if ((subTenant.isEmpty() && !entityTenant.isEmpty()) || (!subTenant.isEmpty() && entityTenant.isEmpty())) {
-				continue;
-			}
-			if (!subTenant.isEmpty() && !entityTenant.isEmpty() && !subTenant.get(0).equals(entityTenant.get(0))) {
+			try {
+				checkTenant(entityOpHeaders, sub.getHeaders());
+			} catch (ResponseException e) {
 				continue;
 			}
 			subsToCheck.add(sub);
 		}
 	}
 
-	/**
-	 * Checks if two tenant headers match up Expects ArrayListMultiMap inputs which
-	 * provide an empty List if an entry is not present.
-	 * 
-	 * @param entityTenant
-	 * @param subTenant
-	 * @return if tenant matches. Incl. no tenant.
-	 */
-	private boolean tenantMatches(List<String> entityTenant, List<String> subTenant) {
-		if ((subTenant.isEmpty() && !entityTenant.isEmpty()) || (!subTenant.isEmpty() && entityTenant.isEmpty())) {
-			return false;
-		}
-		if (!subTenant.isEmpty() && !entityTenant.isEmpty() && !subTenant.get(0).equals(entityTenant.get(0))) {
-			return false;
-		}
-		return true;
-	}
-
+	
 	private void checkSubscriptions(ArrayList<SubscriptionRequest> subsToCheck, Entity entity, int methodType,
 			long messageTime) {
 
@@ -849,11 +835,12 @@ public class SubscriptionService implements SubscriptionManager {
 			e.printStackTrace();
 		}
 		update.setType(type);
-		List<String> updateTenant = updateRequest.getHeaders().get(NGSIConstants.TENANT_HEADER);
+		
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(type)) {
-			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
-			if (!tenantMatches(updateTenant, subTenant)) {
+			try{
+				checkTenant(updateRequest.getHeaders(), sub.getHeaders());
+			}catch (ResponseException e) {
 				continue;
 			}
 			for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
@@ -871,7 +858,7 @@ public class SubscriptionService implements SubscriptionManager {
 				}
 			}
 		}
-		addAllTypeSubscriptions(updateTenant, subsToCheck);
+		addAllTypeSubscriptions(updateRequest.getHeaders(), subsToCheck);
 		checkSubscriptions(subsToCheck, update, UPDATE, messageTime);
 
 	}
@@ -899,11 +886,12 @@ public class SubscriptionService implements SubscriptionManager {
 			e.printStackTrace();
 		}
 		append.setType(type);
-		List<String> appendTenant = appendRequest.getHeaders().get(NGSIConstants.TENANT_HEADER);
+		
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(type)) {
-			List<String> subTenant = sub.getHeaders().get(NGSIConstants.TENANT_HEADER);
-			if (!tenantMatches(appendTenant, subTenant)) {
+			try{
+				checkTenant(appendRequest.getHeaders(), sub.getHeaders());
+			}catch (ResponseException e) {
 				continue;
 			}
 			for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
@@ -921,7 +909,7 @@ public class SubscriptionService implements SubscriptionManager {
 				}
 			}
 		}
-		addAllTypeSubscriptions(appendTenant, subsToCheck);
+		addAllTypeSubscriptions(appendRequest.getHeaders(), subsToCheck);
 		checkSubscriptions(subsToCheck, append, APPEND, messageTime);
 
 	}
