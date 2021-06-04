@@ -1,9 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.time.Instant;
-import java.util.Iterator;
-import java.util.Map;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ArrayListMultimap;
@@ -13,9 +10,6 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class CreateEntityRequest extends EntityRequest {
 

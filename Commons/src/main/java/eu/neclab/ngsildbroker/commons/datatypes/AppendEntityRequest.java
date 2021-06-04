@@ -1,15 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.util.Iterator;
 
-import org.springframework.messaging.MessageChannel;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 

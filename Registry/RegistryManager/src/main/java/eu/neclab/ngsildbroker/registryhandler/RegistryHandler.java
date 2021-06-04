@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.registryhandler;
 
-import javax.sql.DataSource;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -23,7 +21,6 @@ import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 
-import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
 

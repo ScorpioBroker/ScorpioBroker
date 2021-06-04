@@ -1,9 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -12,11 +10,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class HistoryEntityRequest extends BaseRequest {

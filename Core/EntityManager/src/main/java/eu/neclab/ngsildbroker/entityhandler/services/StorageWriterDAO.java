@@ -16,8 +16,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
@@ -84,8 +84,8 @@ public class StorageWriterDAO {
 		int n = 0;
 
 		String tenenat;
-		if (request.getHeaders().containsKey(AppConstants.TENANT_HEADER)) {
-			tenenat = request.getHeaders().get(AppConstants.TENANT_HEADER).get(0);
+		if (request.getHeaders().containsKey(NGSIConstants.TENANT_HEADER)) {
+			tenenat = request.getHeaders().get(NGSIConstants.TENANT_HEADER).get(0);
 
 			TenantContext.setCurrentTenant(tenenat);
 			String databasename = "ngb" + tenenat;

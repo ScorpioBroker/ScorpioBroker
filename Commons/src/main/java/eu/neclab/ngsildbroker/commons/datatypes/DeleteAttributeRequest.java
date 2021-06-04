@@ -1,13 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.time.Instant;
-import java.util.Iterator;
-
-import org.springframework.messaging.MessageChannel;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -17,7 +10,6 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class DeleteAttributeRequest extends EntityRequest {
 

@@ -233,7 +233,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
 			Map<String, String[]> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
 			List<String> options, Boolean showServices, boolean retrieve, Boolean countResult, String check) {
-		String tenantid = request.getHeader(AppConstants.TENANT_HEADER);
+		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 		
 		if (limit == null) {
 			limit = defaultLimit;

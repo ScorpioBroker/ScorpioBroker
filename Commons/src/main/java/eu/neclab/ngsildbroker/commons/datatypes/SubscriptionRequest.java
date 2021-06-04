@@ -4,8 +4,6 @@ import java.util.List;
 
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-
 public class SubscriptionRequest extends BaseRequest {
 	Subscription subscription;
 	List<Object> context;

@@ -109,7 +109,8 @@ public class HistoryServiceTest {
 	@Test
 	public void createTemporalEntityFromEntityTest() {
 		try {
-			URI uri1 = historyService.createTemporalEntityFromEntity(ArrayListMultimap.create(), temporalPayload);
+			//URI uri1 = 
+			historyService.createTemporalEntityFromEntity(ArrayListMultimap.create(), temporalPayload);
 			verify(kafkaOperations, times(3)).pushToKafka(any(), any(), any());
 
 		} catch (Exception e) {

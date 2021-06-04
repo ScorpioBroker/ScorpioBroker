@@ -100,7 +100,7 @@ public class RegistryController {
 		try {
 			logger.trace("getCSources() ::");
 			String queryParams = request.getQueryString();
-			String tenantid = request.getHeader(AppConstants.TENANT_HEADER);
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING)
 					|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)) && queryParams != null) {
 
@@ -162,7 +162,7 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
-			String tenantid = request.getHeader(AppConstants.TENANT_HEADER);
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
 			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
 			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));

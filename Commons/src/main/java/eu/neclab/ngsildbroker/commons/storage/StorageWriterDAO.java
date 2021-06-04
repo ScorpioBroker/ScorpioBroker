@@ -17,8 +17,8 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
@@ -129,10 +129,11 @@ public class StorageWriterDAO {
 		// TemporalEntityStorageKey tesk =
 		// DataSerializer.getTemporalEntityStorageKey(key);
 
-		String entityId = request.getId();
-		String entityType = request.getType();
-		String entityCreatedAt = request.getCreatedAt();
-		String entityModifiedAt = request.getModifiedAt();
+		/*
+		 * String entityId = request.getId(); String entityType = request.getType();
+		 * String entityCreatedAt = request.getCreatedAt(); String entityModifiedAt =
+		 * request.getModifiedAt();
+		 */
 		String instanceId = request.getInstanceId();
 
 		for (HistoryAttribInstance entry : request.getAttribs()) {
@@ -266,8 +267,8 @@ public class StorageWriterDAO {
 
 	private String getTenant(BaseRequest request) {
 		String tenant;
-		if (request.getHeaders().containsKey(AppConstants.TENANT_HEADER)) {
-			tenant = request.getHeaders().get(AppConstants.TENANT_HEADER).get(0);
+		if (request.getHeaders().containsKey(NGSIConstants.TENANT_HEADER)) {
+			tenant = request.getHeaders().get(NGSIConstants.TENANT_HEADER).get(0);
 
 			TenantContext.setCurrentTenant(tenant);
 			String databasename = "ngb" + tenant;

@@ -35,8 +35,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
@@ -191,8 +189,8 @@ public class EntityService {
 		EntityRequest request = new CreateEntityRequest(payload, headers);
 
 		String tenantid;
-		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
-			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			tenantid = headers.get(NGSIConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -277,8 +275,8 @@ public class EntityService {
 		// get message channel for ENTITY_UPDATE topic
 		MessageChannel messageChannel = producerChannels.updateWriteChannel();
 		String tenantid;
-		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
-			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			tenantid = headers.get(NGSIConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -333,8 +331,8 @@ public class EntityService {
 		}
 
 		String tenantid;
-		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
-			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			tenantid = headers.get(NGSIConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -406,8 +404,8 @@ public class EntityService {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		String tenantid;
-		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
-			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			tenantid = headers.get(NGSIConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -491,8 +489,8 @@ public class EntityService {
 		}
 
 		String tenantid;
-		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
-			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			tenantid = headers.get(NGSIConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -535,8 +533,8 @@ public class EntityService {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		String tenantid;
-		if (headers.containsKey(AppConstants.TENANT_HEADER)) {
-			tenantid = headers.get(AppConstants.TENANT_HEADER).get(0);
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			tenantid = headers.get(NGSIConstants.TENANT_HEADER).get(0);
 			TenantContext.setCurrentTenant(tenantid);
 		} else {
 			tenantid = null;
@@ -573,8 +571,8 @@ public class EntityService {
 		MessageChannel messageChannel = producerChannels.contextRegistryWriteChannel();
 
 		String entityBody;
-		if (request.getHeaders().containsKey(AppConstants.TENANT_HEADER)) {
-			String tenantvalue = request.getHeaders().get(AppConstants.TENANT_HEADER).get(0).toString();
+		if (request.getHeaders().containsKey(NGSIConstants.TENANT_HEADER)) {
+			String tenantvalue = request.getHeaders().get(NGSIConstants.TENANT_HEADER).get(0).toString();
 			TenantContext.setCurrentTenant(tenantvalue);
 			entityBody = this.entityInfoDAO.getTenantEntity(request.getId());
 
@@ -587,8 +585,8 @@ public class EntityService {
 		// String headervalue;
 		// JsonNode csourceJsonBody;
 
-		// if (jsonObjectheader.has(AppConstants.TENANT_HEADER)) {
-		// headervalue = jsonObjectheader.get(AppConstants.TENANT_HEADER).getAsString();
+		// if (jsonObjectheader.has(NGSIConstants.TENANT_HEADER)) {
+		// headervalue = jsonObjectheader.get(NGSIConstants.TENANT_HEADER).getAsString();
 
 		// csourceJsonBody = objectMapper.createObjectNode();
 		// csourceJsonBody = objectMapper.readTree(entityBody);

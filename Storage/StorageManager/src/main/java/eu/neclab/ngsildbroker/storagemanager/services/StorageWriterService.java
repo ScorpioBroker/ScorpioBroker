@@ -19,8 +19,8 @@ import org.springframework.stereotype.Service;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
@@ -152,8 +152,8 @@ public class StorageWriterService {
 		String header = jsonObject.get("headers").toString();
 		JsonObject jsonObjectheader = new JsonParser().parse(header).getAsJsonObject();
 		String headervalue;
-		if (jsonObjectheader.has(AppConstants.TENANT_HEADER)) {
-			headervalue = jsonObjectheader.get(AppConstants.TENANT_HEADER).getAsString();
+		if (jsonObjectheader.has(NGSIConstants.TENANT_HEADER)) {
+			headervalue = jsonObjectheader.get(NGSIConstants.TENANT_HEADER).getAsString();
 			TenantContext.setCurrentTenant(headervalue);
 			String databasename = "ngb" + headervalue;
 			if (datavalue != null) {
@@ -204,8 +204,8 @@ public class StorageWriterService {
 //		String header = jsonObject.get("headers").toString();
 //		JsonObject jsonObjectheader = new JsonParser().parse(header).getAsJsonObject();
 //		String headervalue;
-//		if (jsonObjectheader.has(AppConstants.TENANT_HEADER)) {
-//			headervalue = jsonObjectheader.get(AppConstants.TENANT_HEADER).getAsString();
+//		if (jsonObjectheader.has(NGSIConstants.TENANT_HEADER)) {
+//			headervalue = jsonObjectheader.get(NGSIConstants.TENANT_HEADER).getAsString();
 //			TenantContext.setCurrentTenant(headervalue);
 //			String databasename = "ngb" + headervalue;
 //			if (datavalue != null) {

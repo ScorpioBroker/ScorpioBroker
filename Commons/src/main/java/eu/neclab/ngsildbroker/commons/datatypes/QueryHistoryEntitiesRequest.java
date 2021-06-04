@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class QueryHistoryEntitiesRequest extends BaseRequest {
 
@@ -13,7 +13,7 @@ public class QueryHistoryEntitiesRequest extends BaseRequest {
 	public QueryHistoryEntitiesRequest(ArrayListMultimap<String, String> headers, QueryParams qp) {
 		super(headers);
 		this.qp = qp;
-		List<String> tenant = this.headers.get(AppConstants.TENANT_HEADER);
+		List<String> tenant = this.headers.get(NGSIConstants.TENANT_HEADER);
 		if(tenant.isEmpty()) {
 			qp.setTenant(null);
 		}else {

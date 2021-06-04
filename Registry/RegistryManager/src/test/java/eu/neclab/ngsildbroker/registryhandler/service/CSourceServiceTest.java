@@ -2,13 +2,9 @@ package eu.neclab.ngsildbroker.registryhandler.service;
 
 import static org.mockito.ArgumentMatchers.any;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.HashSet;
-import java.util.List;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -26,9 +22,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
-
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;

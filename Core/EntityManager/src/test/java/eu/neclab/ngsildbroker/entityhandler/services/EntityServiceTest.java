@@ -25,7 +25,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityDetails;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;

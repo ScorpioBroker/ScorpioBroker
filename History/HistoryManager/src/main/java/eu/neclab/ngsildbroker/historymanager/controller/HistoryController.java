@@ -68,7 +68,7 @@ public class HistoryController {
 
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
-			URI uri = historyService.createTemporalEntityFromBinding(httpUtils.getHeaders(request), resolved);
+			URI uri = historyService.createTemporalEntityFromBinding(HttpUtils.getHeaders(request), resolved);
 			logger.trace("createTemporalEntity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString()).body(uri.toString().getBytes());
 		} catch (ResponseException exception) {
@@ -167,7 +167,7 @@ public class HistoryController {
 			logger.debug("entityId : " + entityId);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
-			historyService.addAttrib2TemporalEntity(httpUtils.getHeaders(request), entityId, resolved);
+			historyService.addAttrib2TemporalEntity(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("addAttrib2TemopralEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {

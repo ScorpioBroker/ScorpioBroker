@@ -6,7 +6,6 @@ import java.util.List;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
-import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 

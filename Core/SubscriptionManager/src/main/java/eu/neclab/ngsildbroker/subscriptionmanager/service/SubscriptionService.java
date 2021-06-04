@@ -16,7 +16,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -59,7 +58,6 @@ import com.netflix.discovery.shared.Application;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
-import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
@@ -336,7 +334,7 @@ public class SubscriptionService implements SubscriptionManager {
 		if (tenant1.size() != tenant2.size()) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
-		if (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2)) {
+		if (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2.get(0))) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
 

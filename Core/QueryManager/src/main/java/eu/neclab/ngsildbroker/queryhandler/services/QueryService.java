@@ -380,7 +380,7 @@ public class QueryService {
 											+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 								}
 								if (uri_tenant != null) {
-									headers.add(AppConstants.TENANT_HEADER, uri_tenant);
+									headers.add(NGSIConstants.TENANT_HEADER, uri_tenant);
 								}
 								HttpEntity entity = new HttpEntity<>(headers);
 								String result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,

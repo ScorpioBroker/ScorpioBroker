@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.time.Instant;
 import java.util.Map;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -11,7 +10,6 @@ import com.google.gson.JsonObject;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 

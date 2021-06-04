@@ -294,7 +294,7 @@ public class CSourceSubscriptionService {
 		if (tenant1.size() != tenant2.size()) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
-		if (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2)) {
+		if (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2.get(0))) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
 

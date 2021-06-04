@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Iterator;
 
