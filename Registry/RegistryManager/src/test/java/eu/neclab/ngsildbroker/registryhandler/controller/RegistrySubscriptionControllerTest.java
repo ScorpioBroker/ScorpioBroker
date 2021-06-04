@@ -109,11 +109,11 @@ public class RegistrySubscriptionControllerTest {
 	@Test
 	public void unsubscribeTest() {
 		try {
-			when(csourceSubsService.unsubscribe(any())).thenReturn(true);
+			when(csourceSubsService.unsubscribe(any(), any())).thenReturn(true);
 			mockMvc.perform(delete("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:7")
 					.contentType(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isNoContent()).andDo(print());
-			verify(csourceSubsService, times(1)).unsubscribe(any());
+			verify(csourceSubsService, times(1)).unsubscribe(any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 			e.printStackTrace();

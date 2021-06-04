@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.stream.annotation.EnableBinding;
@@ -19,7 +20,12 @@ import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
+
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
+import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
+
+
+
 
 //@Component(immediate=true)
 @SpringBootApplication
@@ -30,6 +36,11 @@ public class RegistryHandler {
 	public static void main(String[] args) {
 		SpringApplication.run(RegistryHandler.class);
 	}
+	
+	@Autowired
+	RegistryJdbcConfig jdbcConfig;
+	
+	 
 
 	@Bean("rmops")
 	KafkaOps ops() {
@@ -76,5 +87,7 @@ public class RegistryHandler {
 	ParamsResolver paramsResolver() {
 		return new ParamsResolver();
 	}
+	
+	
 	
 }
