@@ -40,6 +40,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonSyntaxException;
 import com.netflix.discovery.EurekaClient;
 
@@ -305,6 +306,7 @@ public class QueryService {
 	 * @param qToken
 	 * @param offset
 	 * @param limit
+	 * @param headers
 	 * @param expandedAttrs
 	 * @return List<Entity>
 	 * @throws ExecutionException
@@ -315,14 +317,15 @@ public class QueryService {
 	 * @throws Exception
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
-			Integer offset, String qToken, Boolean showServices, Boolean countResult,String check) throws ResponseException, Exception {
+			Integer offset, String qToken, Boolean showServices, Boolean countResult, String check,
+			ArrayListMultimap<String, String> headers) throws ResponseException, Exception {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
 		List<String> realResult;
 		qp.setLimit(limit);
 		qp.setOffSet(offset);
-        qp.setCountResult(countResult);		
+		qp.setCountResult(countResult);
 		int dataLeft = 0;
 		if (qToken == null) {
 			ExecutorService executorService = Executors.newFixedThreadPool(2);
@@ -330,7 +333,7 @@ public class QueryService {
 			Future<List<String>> futureStorageManager = executorService.submit(new Callable<List<String>>() {
 				public List<String> call() throws Exception {
 					logger.trace("Asynchronous Callable storage manager");
-					//TAKE CARE OF PAGINATION HERE
+					// TAKE CARE OF PAGINATION HERE
 					if (queryDAO != null) {
 						return queryDAO.query(qp);
 					} else {
@@ -342,6 +345,7 @@ public class QueryService {
 			Future<List<String>> futureContextRegistry = executorService.submit(new Callable<List<String>>() {
 				public List<String> call() throws Exception {
 					try {
+
 						List<String> fromCsources = new ArrayList<String>();
 						logger.trace("Asynchronous 1 context registry");
 						List<String> brokerList;
@@ -351,12 +355,23 @@ public class QueryService {
 							brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
 						}
 						Pattern p = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_REGEX);
+						Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);
 						Matcher m;
+						Matcher mtenant;
 						Set<Callable<String>> callablesCollection = new HashSet<Callable<String>>();
 						for (String brokerInfo : brokerList) {
 							m = p.matcher(brokerInfo);
 							m.find();
+							final String uri_tenant;
 							String uri = m.group(1);
+							mtenant = ptenant.matcher(brokerInfo);
+							if (mtenant != null) {
+								mtenant.find();
+								uri_tenant = mtenant.group(1);
+
+							} else {
+								uri_tenant = null;
+							}
 							logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
 							Callable<String> callable = () -> {
 								HttpHeaders headers = new HttpHeaders();
@@ -364,12 +379,12 @@ public class QueryService {
 									headers.add("Link", "<" + link.toString()
 											+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 								}
-
-								HttpEntity<Object> entity = new HttpEntity<Object>(headers);
-
+								if (uri_tenant != null) {
+									headers.add(NGSIConstants.TENANT_HEADER, uri_tenant);
+								}
+								HttpEntity entity = new HttpEntity<>(headers);
 								String result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
 										HttpMethod.GET, entity, String.class).getBody();
-
 								logger.debug("http call result :: ::" + result);
 								return result;
 							};
@@ -421,8 +436,8 @@ public class QueryService {
 			 * 
 			 * } }; }.start(); } else {
 			 */
-				realResult = aggregatedResult;
-			//}
+			realResult = aggregatedResult;
+			// }
 		} else {
 			// read from byte array
 			byte[] data = operations.getMessage(qToken, KafkaConstants.PAGINATION_TOPIC);
@@ -495,7 +510,8 @@ public class QueryService {
 					JsonNode jsonNode = objectMapper.readTree(response);
 					for (int i = 0; i <= jsonNode.size(); i++) {
 						if (jsonNode.get(i) != null && !jsonNode.isNull()) {
-							String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true, AppConstants.ENTITIES_URL_ID);// , linkHeaders);
+							String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true,
+									AppConstants.ENTITIES_URL_ID);// , linkHeaders);
 							entitiesList.add(payload);
 						}
 					}

@@ -18,6 +18,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -68,6 +69,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
+
+import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -1063,6 +1066,18 @@ public final class HttpUtils {
 		}
 
 		return baos.toByteArray();
+	}
+	public static ArrayListMultimap<String, String> getHeaders(HttpServletRequest request) {
+		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+		Iterator<String> it = request.getHeaderNames().asIterator();
+		while(it.hasNext()) {
+			String key = it.next();
+			Iterator<String> it2 = request.getHeaders(key).asIterator();
+			while(it2.hasNext()) {
+				result.put(key, it2.next());
+			}
+		}
+		return result;
 	}
 
 	// public static ResponseEntity<Object> generateReply(String acceptHeader,

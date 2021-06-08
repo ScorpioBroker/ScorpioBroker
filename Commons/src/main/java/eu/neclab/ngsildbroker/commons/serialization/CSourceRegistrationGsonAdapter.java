@@ -27,30 +27,36 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 // TODO : complete serializer - include other fields also i.e. location,name etc.
 public class CSourceRegistrationGsonAdapter
 		implements JsonDeserializer<CSourceRegistration>, JsonSerializer<CSourceRegistration> {
-	
-	
 
 	@Override
 	public JsonElement serialize(CSourceRegistration src, Type typeOfSrc, JsonSerializationContext context) {
 		JsonObject top = new JsonObject();
 		top.add(NGSIConstants.JSON_LD_ID, context.serialize(src.getId().toString()));
-		
+
 		JsonArray jsonArray = new JsonArray();
 		jsonArray.add(src.getType());
 		top.add(NGSIConstants.JSON_LD_TYPE, jsonArray);
-		
+
 		jsonArray = new JsonArray();
 		JsonObject jsonObject = new JsonObject();
 		jsonObject.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getEndpoint().toString()));
 		jsonArray.add(jsonObject);
 		top.add(NGSIConstants.NGSI_LD_ENDPOINT, jsonArray);
 
+		if (src.getTenant() != null) {
+			jsonArray = new JsonArray();
+			jsonObject = new JsonObject();
+			jsonObject.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getTenant().toString()));
+			jsonArray.add(jsonObject);
+			top.add(NGSIConstants.NGSI_LD_TENANT, jsonArray);
+		}
+
 		jsonArray = new JsonArray();
 		jsonObject = new JsonObject();
 		jsonObject.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.isInternal()));
 		jsonArray.add(jsonObject);
 		top.add(NGSIConstants.NGSI_LD_INTERNAL, jsonArray);
-					
+
 		jsonArray = new JsonArray();
 		if (src.getInformation() != null) {
 			for (Information info : src.getInformation()) {
@@ -109,30 +115,32 @@ public class CSourceRegistrationGsonAdapter
 			jsonArray = new JsonArray();
 			JsonObject timestampObject = new JsonObject();
 			if (src.getTimestamp().getStart() != null) {
-				
-				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_START, SerializationTools.getJson(src.getTimestamp().getStart(), context));
+
+				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_START,
+						SerializationTools.getJson(src.getTimestamp().getStart(), context));
 			}
 			if (src.getTimestamp().getStop() != null) {
-				
-				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_END, SerializationTools.getJson(src.getTimestamp().getStop(), context));
+
+				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_END,
+						SerializationTools.getJson(src.getTimestamp().getStop(), context));
 			}
 			jsonArray.add(timestampObject);
 
 			top.add(NGSIConstants.NGSI_LD_TIME_STAMP, jsonArray);
 		}
-		
+
 		if (src.getLocation() != null) {
 			jsonArray = new JsonArray();
-			jsonObject = new JsonObject();						
+			jsonObject = new JsonObject();
 			jsonObject.add(NGSIConstants.JSON_LD_VALUE, SerializationTools.getJson(src.getLocation()));
 			jsonArray.add(jsonObject);
-			top.add(NGSIConstants.NGSI_LD_LOCATION, jsonArray);			
+			top.add(NGSIConstants.NGSI_LD_LOCATION, jsonArray);
 		}
-		
-		if(src.getExpires()!=null) {
+
+		if (src.getExpires() != null) {
 			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools.getJson(src.getExpires(), context));
 		}
-		
+
 		return top;
 	}
 
@@ -155,8 +163,8 @@ public class CSourceRegistrationGsonAdapter
 			} else if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
 				result.setType(value.getAsString());
 			} else if (key.equals(NGSIConstants.NGSI_LD_INTERNAL)) {
-				result.setInternal(value.getAsJsonArray().get(0).getAsJsonObject()
-						.get(NGSIConstants.JSON_LD_VALUE).getAsBoolean());
+				result.setInternal(value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE)
+						.getAsBoolean());
 			} else if (key.equals(NGSIConstants.NGSI_LD_ENDPOINT)) {
 				try {
 					result.setEndpoint(new URI(value.getAsJsonArray().get(0).getAsJsonObject()
@@ -164,6 +172,14 @@ public class CSourceRegistrationGsonAdapter
 				} catch (URISyntaxException e) {
 					throw new JsonParseException("Invalid endpoint uri " + value.getAsString());
 				}
+			} else if (key.equals(NGSIConstants.NGSI_LD_TENANT)) {
+				try {
+					result.setTenant(new URI(value.getAsJsonArray().get(0).getAsJsonObject()
+							.get(NGSIConstants.JSON_LD_VALUE).getAsString()));
+				} catch (URISyntaxException e) {
+					throw new JsonParseException("Invalid tenant uri " + value.getAsString());
+				}
+
 			} else if (key.equals(NGSIConstants.NGSI_LD_INFORMATION)) {
 				List<Information> information = new ArrayList<Information>();
 				JsonArray jsonEntities = value.getAsJsonArray();
@@ -217,10 +233,10 @@ public class CSourceRegistrationGsonAdapter
 					}
 				}
 				result.setInformation(information);
-			} else if (key.equals(NGSIConstants.NGSI_LD_LOCATION)) {	
-				String geoValue = value.getAsJsonArray().get(0).getAsJsonObject()
-						.get(NGSIConstants.JSON_LD_VALUE).getAsString();
-				result.setLocation( DataSerializer.getGeojsonGeometry(geoValue) );
+			} else if (key.equals(NGSIConstants.NGSI_LD_LOCATION)) {
+				String geoValue = value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE)
+						.getAsString();
+				result.setLocation(DataSerializer.getGeojsonGeometry(geoValue));
 			} else if (key.equals(NGSIConstants.NGSI_LD_TIME_STAMP)) {
 				result.setTimestamp(new TimeInterval());
 				JsonObject timestampObject = value.getAsJsonArray().get(0).getAsJsonObject();
@@ -242,8 +258,9 @@ public class CSourceRegistrationGsonAdapter
 						throw new JsonParseException(e.getMessage());
 					}
 				}
-			}else if(key.equals(NGSIConstants.NGSI_LD_EXPIRES)) {
-				String expires=value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
+			} else if (key.equals(NGSIConstants.NGSI_LD_EXPIRES)) {
+				String expires = value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE)
+						.getAsString();
 				try {
 					result.setExpires(SerializationTools.date2Long(expires));
 				} catch (Exception e) {

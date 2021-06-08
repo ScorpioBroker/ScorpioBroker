@@ -50,8 +50,10 @@ import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
+import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoRelation;
 import eu.neclab.ngsildbroker.commons.datatypes.Information;
@@ -98,11 +100,11 @@ public class CSourceSubscriptionService {
 
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
-	HashMap<URI, Subscription> subscriptionId2Subscription = new HashMap<URI, Subscription>();
-	ArrayListMultimap<String, Subscription> idBasedSubscriptions = ArrayListMultimap.create();
-	ArrayListMultimap<String, Subscription> typeBasedSubscriptions = ArrayListMultimap.create();
-	ArrayListMultimap<String, Subscription> idPatternBasedSubscriptions = ArrayListMultimap.create();
-	HashMap<String, Subscription> remoteNotifyCallbackId2InternalSub = new HashMap<String, Subscription>();
+	HashMap<URI, SubscriptionRequest> subscriptionId2Subscription = new HashMap<URI, SubscriptionRequest>();
+	ArrayListMultimap<String, SubscriptionRequest> idBasedSubscriptions = ArrayListMultimap.create();
+	ArrayListMultimap<String, SubscriptionRequest> typeBasedSubscriptions = ArrayListMultimap.create();
+	ArrayListMultimap<String, SubscriptionRequest> idPatternBasedSubscriptions = ArrayListMultimap.create();
+	HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
 	// HashMap<String, Integer> subId2HashNotificationData = new HashMap<String,
 	// Integer>();
 	@Value("${bootstrap.servers}")
@@ -169,7 +171,7 @@ public class CSourceSubscriptionService {
 
 	public Subscription querySubscription(URI id) throws ResponseException {
 		if (subscriptionId2Subscription.containsKey(id)) {
-			return subscriptionId2Subscription.get(id);
+			return subscriptionId2Subscription.get(id).getSubscription();
 		} else {
 			throw new ResponseException(ErrorType.NotFound);
 		}
@@ -189,14 +191,14 @@ public class CSourceSubscriptionService {
 				throw new ResponseException(ErrorType.AlreadyExists);
 			}
 		}
-		this.subscriptionId2Subscription.put(subscription.getId(), subscription);
+		this.subscriptionId2Subscription.put(subscription.getId(), subscriptionRequest);
 		for (EntityInfo info : subscription.getEntities()) {
 			if (info.getId() != null) {
-				idBasedSubscriptions.put(info.getId().toString(), subscription);
+				idBasedSubscriptions.put(info.getId().toString(), subscriptionRequest);
 			} else if (info.getType() != null) {
-				typeBasedSubscriptions.put(info.getType(), subscription);
+				typeBasedSubscriptions.put(info.getType(), subscriptionRequest);
 			} else if (info.getIdPattern() != null) {
-				idPatternBasedSubscriptions.put(info.getIdPattern(), subscription);
+				idPatternBasedSubscriptions.put(info.getIdPattern(), subscriptionRequest);
 			}
 
 		}
@@ -206,27 +208,27 @@ public class CSourceSubscriptionService {
 		if (subscription.isInternal()) {
 			new Thread() {
 				public void run() {
-					generateInitialNotification(subscription);
+					generateInitialNotification(subscriptionRequest);
 				}
 			}.start();
 		}
 		return subscription.getId();
 	}
 
-	private void generateInitialNotification(Subscription subscription) {
+	private void generateInitialNotification(SubscriptionRequest subscriptionRequest) {
 		List<JsonNode> registrations;
 
 		try {
-			registrations = cSourceService.getCSourceRegistrations();
+			registrations = cSourceService.getCSourceRegistrations(subscriptionRequest.getTenant());
 
 			for (JsonNode reg : registrations) {
 				CSourceRegistration regEntry = DataSerializer
 						.getCSourceRegistration(objectMapper.writeValueAsString(reg));
 				if (!regEntry.isInternal()) {
-					CSourceNotification notifyEntry = generateNotificationEntry(regEntry, subscription,
+					CSourceNotification notifyEntry = generateNotificationEntry(regEntry, subscriptionRequest,
 							TriggerReason.newlyMatching);
 					if (notifyEntry != null) {
-						internalNotificationHandler.notify(notifyEntry, subscription);
+						internalNotificationHandler.notify(notifyEntry, subscriptionRequest.getSubscription());
 					}
 				}
 			}
@@ -238,6 +240,9 @@ public class CSourceSubscriptionService {
 	}
 
 	private void syncToMessageBus(SubscriptionRequest subscriptionRequest) throws ResponseException {
+		if (subscriptionRequest.getSubscription().isInternal()) {
+			return;
+		}
 		String id = subscriptionRequest.getSubscription().getId().toString();
 		if (!this.kafkaOps.isMessageExists(id, KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC)) {
 			this.kafkaOps.pushToKafka(producerChannel.csourceSubscriptionWriteChannel(), id.getBytes(),
@@ -256,12 +261,18 @@ public class CSourceSubscriptionService {
 		}
 	}
 
-	public boolean unsubscribe(URI id) throws ResponseException {
-		Subscription removedSub = this.subscriptionId2Subscription.remove(id);
+	public boolean unsubscribe(URI id, ArrayListMultimap<String, String> headers) throws ResponseException {
+		SubscriptionRequest req = this.subscriptionId2Subscription.get(id);
+		checkTenant(headers, req.getHeaders());
+		return unsubscribe(id);
+	}
+
+	private boolean unsubscribe(URI id) throws ResponseException {
+		SubscriptionRequest removedSub = this.subscriptionId2Subscription.remove(id);
 		if (removedSub == null) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
-		for (EntityInfo info : removedSub.getEntities()) {
+		for (EntityInfo info : removedSub.getSubscription().getEntities()) {
 			if (info.getId() != null) {
 				idBasedSubscriptions.remove(info.getId().toString(), removedSub);
 			} else if (info.getType() != null) {
@@ -274,10 +285,27 @@ public class CSourceSubscriptionService {
 		this.kafkaOps.pushToKafka(this.producerChannel.csourceSubscriptionWriteChannel(), id.toString().getBytes(),
 				"null".getBytes());
 		return true;
+
 	}
 
-	public Subscription updateSubscription(Subscription subscription) throws ResponseException {
-		Subscription oldSub = subscriptionId2Subscription.get(subscription.getId());
+	private void checkTenant(ArrayListMultimap<String, String> headers, ArrayListMultimap<String, String> headers2)
+			throws ResponseException {
+		List<String> tenant1 = headers.get(NGSIConstants.TENANT_HEADER);
+		List<String> tenant2 = headers2.get(NGSIConstants.TENANT_HEADER);
+		if (tenant1.size() != tenant2.size()) {
+			throw new ResponseException(ErrorType.NotFound);
+		}
+		if (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2.get(0))) {
+			throw new ResponseException(ErrorType.NotFound);
+		}
+
+	}
+
+	public Subscription updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
+		Subscription subscription = subscriptionRequest.getSubscription();
+		SubscriptionRequest oldSubRequest = subscriptionId2Subscription.get(subscription.getId());
+		checkTenant(subscriptionRequest.getHeaders(), oldSubRequest.getHeaders());
+		Subscription oldSub = oldSubRequest.getSubscription();
 		if (oldSub == null) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
@@ -314,9 +342,15 @@ public class CSourceSubscriptionService {
 		return oldSub;
 	}
 
-	public List<Subscription> getAllSubscriptions(int limit) {
+	public List<Subscription> getAllSubscriptions(ArrayListMultimap<String, String> headers, int limit) {
 		List<Subscription> result = new ArrayList<Subscription>();
-		for (Subscription sub : subscriptionId2Subscription.values()) {
+		for (SubscriptionRequest subRequest : subscriptionId2Subscription.values()) {
+			try {
+				checkTenant(headers, subRequest.getHeaders());
+			} catch (ResponseException e) {
+				continue;
+			}
+			Subscription sub = subRequest.getSubscription();
 			if (!sub.isInternal()) {
 				result.add(sub);
 			}
@@ -329,48 +363,68 @@ public class CSourceSubscriptionService {
 		return result;
 	}
 
-	public Subscription getSubscription(URI subscriptionId) throws ResponseException {
+	public Subscription getSubscription(ArrayListMultimap<String, String> headers, URI subscriptionId)
+			throws ResponseException {
+
 		if (subscriptionId2Subscription.containsKey(subscriptionId)) {
-			return subscriptionId2Subscription.get(subscriptionId);
+			SubscriptionRequest subRequest = subscriptionId2Subscription.get(subscriptionId);
+			checkTenant(headers, subRequest.getHeaders());
+			return subRequest.getSubscription();
 		} else {
 			throw new ResponseException(ErrorType.NotFound);
 		}
 
 	}
 
-	public void checkSubscriptions(CSourceRegistration cSourceRegistration, TriggerReason triggerReason) {
+	private void checkRegEntry(List<SubscriptionRequest> subs, ArrayListMultimap<String, String> regHeaders,
+			HashSet<SubscriptionRequest> subsToCheck) {
+		for (SubscriptionRequest subReq : subs) {
+			try {
+				checkTenant(subReq.getHeaders(), regHeaders);
+			} catch (ResponseException e) {
+				continue;
+			}
+			subsToCheck.add(subReq);
+		}
+	}
+
+	public void checkSubscriptions(CSourceRequest cSourceRequest, TriggerReason triggerReason) {
 		new Thread() {
 			@Override
 			public void run() {
-				HashSet<Subscription> subsToCheck = new HashSet<Subscription>();
-				for (Information info : cSourceRegistration.getInformation()) {
+				HashSet<SubscriptionRequest> subsToCheck = new HashSet<SubscriptionRequest>();
+				for (Information info : cSourceRequest.getCsourceRegistration().getInformation()) {
 					for (EntityInfo entityInfo : info.getEntities()) {
 
 						if (entityInfo.getId() != null) {
-							subsToCheck.addAll(idBasedSubscriptions.get(entityInfo.getId().toString()));
+							checkRegEntry(idBasedSubscriptions.get(entityInfo.getId().toString()),
+									cSourceRequest.getHeaders(), subsToCheck);
 						}
-						subsToCheck.addAll(typeBasedSubscriptions.get(entityInfo.getType()));
+						checkRegEntry(typeBasedSubscriptions.get(entityInfo.getType()), cSourceRequest.getHeaders(),
+								subsToCheck);
 						if (entityInfo.getId() != null) {
-							subsToCheck.addAll(getPatternBasedSubs(entityInfo.getId().toString()));
+							checkRegEntry(getPatternBasedSubs(entityInfo.getId().toString()),
+									cSourceRequest.getHeaders(), subsToCheck);
 						}
 						if (entityInfo.getIdPattern() != null) {
-							subsToCheck.addAll(getSubsForIdPattern(entityInfo.getIdPattern()));
+							checkRegEntry(getSubsForIdPattern(entityInfo.getIdPattern()), cSourceRequest.getHeaders(),
+									subsToCheck);
 						}
 
 					}
 
 				}
-				for (Subscription sub : subsToCheck) {
-					CSourceNotification notifyEntry = generateNotificationEntry(cSourceRegistration, sub,
-							triggerReason);
+				for (SubscriptionRequest subReq : subsToCheck) {
+					CSourceNotification notifyEntry = generateNotificationEntry(cSourceRequest.getCsourceRegistration(),
+							subReq, triggerReason);
 					if (notifyEntry != null) {
 						new Thread() {
 							@Override
 							public void run() {
-								if (sub.isInternal()) {
-									internalNotificationHandler.notify(notifyEntry, sub);
+								if (subReq.getSubscription().isInternal()) {
+									internalNotificationHandler.notify(notifyEntry, subReq.getSubscription());
 								} else {
-									notificationHandler.notify(notifyEntry, sub);
+									notificationHandler.notify(notifyEntry, subReq.getSubscription());
 								}
 
 							}
@@ -384,8 +438,8 @@ public class CSourceSubscriptionService {
 
 	}
 
-	private Collection<? extends Subscription> getSubsForIdPattern(String idPattern) {
-		ArrayList<Subscription> result = new ArrayList<Subscription>();
+	private List<SubscriptionRequest> getSubsForIdPattern(String idPattern) {
+		ArrayList<SubscriptionRequest> result = new ArrayList<SubscriptionRequest>();
 		for (String pattern : idPatternBasedSubscriptions.keySet()) {
 			if (idPattern.matches(pattern)) {
 				result.addAll(idPatternBasedSubscriptions.get(pattern));
@@ -400,8 +454,9 @@ public class CSourceSubscriptionService {
 		return result;
 	}
 
-	private CSourceNotification generateNotificationEntry(CSourceRegistration regEntry, Subscription subscription,
-			TriggerReason triggerReason) {
+	private CSourceNotification generateNotificationEntry(CSourceRegistration regEntry,
+			SubscriptionRequest subscriptionRequest, TriggerReason triggerReason) {
+		Subscription subscription = subscriptionRequest.getSubscription();
 		if (subscription.getLdGeoQuery() != null && regEntry.getLocation() != null) {
 			if (subscription.isInternal()) {
 				if (!evaluateRegGeoQuery(subscription.getLdGeoQuery(), regEntry.getLocation())) {
@@ -423,6 +478,7 @@ public class CSourceSubscriptionService {
 		reg.setLocation(regEntry.getLocation());
 		reg.setTimestamp(regEntry.getTimestamp());
 		reg.setType(regEntry.getType());
+		reg.setTenant(regEntry.getTenant());
 		ArrayList<Information> temp = new ArrayList<Information>();
 		for (Information info : regEntry.getInformation()) {
 
@@ -621,8 +677,8 @@ public class CSourceSubscriptionService {
 
 	}
 
-	private Collection<? extends Subscription> getPatternBasedSubs(String key) {
-		ArrayList<Subscription> result = new ArrayList<Subscription>();
+	private List<SubscriptionRequest> getPatternBasedSubs(String key) {
+		ArrayList<SubscriptionRequest> result = new ArrayList<SubscriptionRequest>();
 		for (String pattern : idPatternBasedSubscriptions.keySet()) {
 			if (key.matches(pattern)) {
 				result.addAll(idPatternBasedSubscriptions.get(pattern));
@@ -701,65 +757,75 @@ public class CSourceSubscriptionService {
 
 	// TODO this is potentially slow as hell so figure out a better way to do
 	// this!!!
-	public boolean checkSubscriptions(CSourceRegistration prevCSourceRegistration,
-			CSourceRegistration newCSourceRegistration) {
+	public boolean checkSubscriptions(CSourceRequest prevCSourceRegistration, CSourceRequest newCSourceRegistration) {
 		new Thread() {
 			@Override
 			public void run() {
-				HashMap<Subscription, CSourceNotification> oldNotification = new HashMap<Subscription, CSourceNotification>();
-				HashMap<Subscription, CSourceNotification> newNotification = new HashMap<Subscription, CSourceNotification>();
+				HashMap<SubscriptionRequest, CSourceNotification> oldNotification = new HashMap<SubscriptionRequest, CSourceNotification>();
+				HashMap<SubscriptionRequest, CSourceNotification> newNotification = new HashMap<SubscriptionRequest, CSourceNotification>();
 
-				HashSet<Subscription> prevSubsToCheck = new HashSet<Subscription>();
-				for (Information info : prevCSourceRegistration.getInformation()) {
+				HashSet<SubscriptionRequest> prevSubsToCheck = new HashSet<SubscriptionRequest>();
+				for (Information info : prevCSourceRegistration.getCsourceRegistration().getInformation()) {
 					for (EntityInfo entityInfo : info.getEntities()) {
 
 						if (entityInfo.getId() != null) {
-							prevSubsToCheck.addAll(idBasedSubscriptions.get(entityInfo.getId().toString()));
+							checkRegEntry(idBasedSubscriptions.get(entityInfo.getId().toString()),
+									prevCSourceRegistration.getHeaders(), prevSubsToCheck);
 						}
-						prevSubsToCheck.addAll(typeBasedSubscriptions.get(entityInfo.getType()));
-						prevSubsToCheck.addAll(getPatternBasedSubs(entityInfo.getId().toString()));
+						checkRegEntry(typeBasedSubscriptions.get(entityInfo.getType()),
+								prevCSourceRegistration.getHeaders(), prevSubsToCheck);
+						checkRegEntry(getPatternBasedSubs(entityInfo.getId().toString()),
+								prevCSourceRegistration.getHeaders(), prevSubsToCheck);
 						if (entityInfo.getIdPattern() != null) {
-							prevSubsToCheck.addAll(getSubsForIdPattern(entityInfo.getIdPattern()));
+							checkRegEntry(getSubsForIdPattern(entityInfo.getIdPattern()),
+									prevCSourceRegistration.getHeaders(), prevSubsToCheck);
 						}
 
 					}
 
 				}
 
-				HashSet<Subscription> newSubsToCheck = new HashSet<Subscription>();
-				for (Information info : prevCSourceRegistration.getInformation()) {
+				HashSet<SubscriptionRequest> newSubsToCheck = new HashSet<SubscriptionRequest>();
+				for (Information info : prevCSourceRegistration.getCsourceRegistration().getInformation()) {
 					for (EntityInfo entityInfo : info.getEntities()) {
 
 						if (entityInfo.getId() != null) {
-							newSubsToCheck.addAll(idBasedSubscriptions.get(entityInfo.getId().toString()));
+							checkRegEntry(idBasedSubscriptions.get(entityInfo.getId().toString()),
+									newCSourceRegistration.getHeaders(), newSubsToCheck);
+
 						}
-						newSubsToCheck.addAll(typeBasedSubscriptions.get(entityInfo.getType()));
-						newSubsToCheck.addAll(getPatternBasedSubs(entityInfo.getId().toString()));
+						checkRegEntry(typeBasedSubscriptions.get(entityInfo.getType()),
+								newCSourceRegistration.getHeaders(), newSubsToCheck);
+						checkRegEntry(getPatternBasedSubs(entityInfo.getId().toString()),
+								newCSourceRegistration.getHeaders(), newSubsToCheck);
 						if (entityInfo.getIdPattern() != null) {
-							newSubsToCheck.addAll(getSubsForIdPattern(entityInfo.getIdPattern()));
+							checkRegEntry(getSubsForIdPattern(entityInfo.getIdPattern()),
+									newCSourceRegistration.getHeaders(), newSubsToCheck);
 						}
 
 					}
 
 				}
 
-				for (Subscription sub : prevSubsToCheck) {
+				for (SubscriptionRequest sub : prevSubsToCheck) {
 
-					CSourceNotification notifyEntry = generateNotificationEntry(prevCSourceRegistration, sub, null);
+					CSourceNotification notifyEntry = generateNotificationEntry(
+							prevCSourceRegistration.getCsourceRegistration(), sub, null);
 					if (notifyEntry != null) {
 						oldNotification.put(sub, notifyEntry);
 					}
 				}
-				for (Subscription sub : newSubsToCheck) {
+				for (SubscriptionRequest sub : newSubsToCheck) {
 
-					CSourceNotification notifyEntry = generateNotificationEntry(newCSourceRegistration, sub, null);
+					CSourceNotification notifyEntry = generateNotificationEntry(
+							newCSourceRegistration.getCsourceRegistration(), sub, null);
 					if (notifyEntry != null) {
 						newNotification.put(sub, notifyEntry);
 					}
 				}
 				TriggerReason trigger;
-				for (Entry<Subscription, CSourceNotification> entry : newNotification.entrySet()) {
-					Subscription sub = entry.getKey();
+				for (Entry<SubscriptionRequest, CSourceNotification> entry : newNotification.entrySet()) {
+					SubscriptionRequest sub = entry.getKey();
 					if (oldNotification.containsKey(sub)) {
 						if (oldNotification.hashCode() == entry.getValue().hashCode()) {
 							// no changes for sub -> no notification
@@ -775,17 +841,17 @@ public class CSourceSubscriptionService {
 					new Thread() {
 						@Override
 						public void run() {
-							if (sub.isInternal()) {
-								internalNotificationHandler.notify(entry.getValue(), sub);
+							if (sub.getSubscription().isInternal()) {
+								internalNotificationHandler.notify(entry.getValue(), sub.getSubscription());
 							} else {
-								notificationHandler.notify(entry.getValue(), sub);
+								notificationHandler.notify(entry.getValue(), sub.getSubscription());
 							}
 
 						}
 					}.start();
 				}
 
-				for (Entry<Subscription, CSourceNotification> entry : oldNotification.entrySet()) {
+				for (Entry<SubscriptionRequest, CSourceNotification> entry : oldNotification.entrySet()) {
 					if (!newNotification.containsKey(entry.getKey())) {
 						// deleted notification
 						CSourceNotification deleteNotification = new CSourceNotification(entry.getValue().getId(),
@@ -794,10 +860,11 @@ public class CSourceSubscriptionService {
 						new Thread() {
 							@Override
 							public void run() {
-								if (entry.getKey().isInternal()) {
-									internalNotificationHandler.notify(deleteNotification, entry.getKey());
+								if (entry.getKey().getSubscription().isInternal()) {
+									internalNotificationHandler.notify(deleteNotification,
+											entry.getKey().getSubscription());
 								} else {
-									notificationHandler.notify(deleteNotification, entry.getKey());
+									notificationHandler.notify(deleteNotification, entry.getKey().getSubscription());
 								}
 
 							}

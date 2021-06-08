@@ -9,8 +9,7 @@ spring:
         binder:
           brokers: localhost:9092
   flyway:
-    baselineOnMigrate: true
-    
+    baselineOnMigrate: true    
 server:
   port: 1029
 

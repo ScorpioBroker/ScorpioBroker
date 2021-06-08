@@ -39,13 +39,12 @@ import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceSubscriptionService;
 
-
 @RestController
 @RequestMapping("/ngsi-ld/v1/csourceSubscriptions")
 public class RegistrySubscriptionController {
-	
+
 	private final static Logger logger = LogManager.getLogger(RegistrySubscriptionController.class);
-	
+
 	@Autowired
 	CSourceSubscriptionService manager;
 
@@ -53,14 +52,13 @@ public class RegistrySubscriptionController {
 	@Qualifier("rmconRes")
 	ContextResolverBasic contextResolver;
 
-	
 	@Autowired
 	@Qualifier("rmops")
 	KafkaOps kafkaOps;
 
 	@Autowired
 	EurekaClient eurekaClient;
-	
+
 	private HttpUtils httpUtils;
 
 	@PostConstruct
@@ -84,91 +82,96 @@ public class RegistrySubscriptionController {
 	// ContextResolverService(prodChannel.atContextWriteChannel());
 	// }
 
-	
 	@PostMapping
-	public ResponseEntity<byte[]> subscribeRest(HttpServletRequest request,	@RequestBody String payload) throws ResponseException {
+	public ResponseEntity<byte[]> subscribeRest(HttpServletRequest request, @RequestBody String payload)
+			throws ResponseException {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription;
 
-
 		List<Object> context = HttpUtils.getAtContext(request);
 		String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
-		
+
 		subscription = DataSerializer.getSubscription(resolved);
 		if (resolved == null || subscription == null) {
 			return badRequestResponse;
 		}
 
 		try {
-			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context);
+			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context,
+					HttpUtils.getHeaders(request));
 			URI subId = manager.subscribe(subscriptionRequest);
 			logger.trace("subscribeRest() :: completed");
-			//no absolute url only relative url
-			return ResponseEntity.created(new URI("/ngsi-ld/v1/csourceSubscriptions/" + subId.toString())).body(subId.toString().getBytes());
+			// no absolute url only relative url
+			return ResponseEntity.created(new URI("/ngsi-ld/v1/csourceSubscriptions/" + subId.toString()))
+					.body(subId.toString().getBytes());
 		} catch (ResponseException e) {
-			logger.error("Exception ::",e);
+			logger.error("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		} catch (URISyntaxException e) {
-			logger.error("Exception ::",e);
+			logger.error("Exception ::", e);
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(subscription.getId().toString().getBytes());
 		}
 	}
 
 	@GetMapping
-	public ResponseEntity<byte[]> getAllSubscriptions(HttpServletRequest request,  @RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException{
+	public ResponseEntity<byte[]> getAllSubscriptions(HttpServletRequest request,
+			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException {
 		logger.trace("getAllSubscriptions() :: started");
 		List<Subscription> result = null;
-		result = manager.getAllSubscriptions(limit);
+		result = manager.getAllSubscriptions(HttpUtils.getHeaders(request), limit);
 		logger.trace("getAllSubscriptions() :: completed");
 		return httpUtils.generateReply(request, DataSerializer.toJson(result));
 	}
-	
+
 	@GetMapping("{id}")
-	//(method = RequestMethod.GET, value = "/{id}")
-	public ResponseEntity<byte[]> getSubscriptions(HttpServletRequest request, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
+	// (method = RequestMethod.GET, value = "/{id}")
+	public ResponseEntity<byte[]> getSubscriptions(HttpServletRequest request,
+			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
 			logger.trace("call getSubscriptions() ::");
-			return httpUtils.generateReply(request, DataSerializer.toJson(manager.getSubscription(id)));
-			
+			return httpUtils.generateReply(request,
+					DataSerializer.toJson(manager.getSubscription(HttpUtils.getHeaders(request), id)));
+
 		} catch (ResponseException e) {
-			logger.error("Exception ::",e);
+			logger.error("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		}
 
-		
 	}
 
 	@DeleteMapping("{id}")
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{id}")
-	public ResponseEntity<byte[]> deleteSubscription(@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
+	public ResponseEntity<byte[]> deleteSubscription(HttpServletRequest request,
+			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
-			manager.unsubscribe(id);
+			manager.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (ResponseException e) {
-			logger.error("Exception ::",e);
+			logger.error("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		}
 		return ResponseEntity.noContent().build();
 	}
 
 	@PatchMapping("{id}")
-	public ResponseEntity<byte[]> updateSubscription(HttpServletRequest request, @PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
-			@RequestBody String payload) throws ResponseException {
+	public ResponseEntity<byte[]> updateSubscription(HttpServletRequest request,
+			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id, @RequestBody String payload)
+			throws ResponseException {
 		logger.trace("call updateSubscription() ::");
 		List<Object> context = HttpUtils.getAtContext(request);
 		String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
 		Subscription subscription = DataSerializer.getSubscription(resolved);
-		if(subscription.getId() == null) {
+		if (subscription.getId() == null) {
 			subscription.setId(id);
 		}
 		if (resolved == null || subscription == null || !id.equals(subscription.getId())) {
 			return badRequestResponse;
 		}
 		try {
-			manager.updateSubscription(subscription);
+			manager.updateSubscription(new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request)));
 		} catch (ResponseException e) {
-			logger.error("Exception ::",e);
+			logger.error("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		}
 		return ResponseEntity.noContent().build();

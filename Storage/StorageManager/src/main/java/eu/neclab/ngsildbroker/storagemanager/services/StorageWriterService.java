@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.storagemanager.services;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -10,15 +11,23 @@ import org.springframework.kafka.config.KafkaListenerEndpointRegistry;
 import org.springframework.kafka.listener.MessageListenerContainer;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
-import eu.neclab.ngsildbroker.storagemanager.repository.StorageWriterDAO;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
+import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
+import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
+import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
 
 @Service
-@ConditionalOnProperty(value="writer.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)
 public class StorageWriterService {
 
 	private final static Logger logger = LogManager.getLogger(StorageWriterService.class);
@@ -30,7 +39,11 @@ public class StorageWriterService {
 	public final static String TEMPORALENTITY_LISTENER_ID = "temporalEntityWriter-1";
 
 	@Autowired
+	@Qualifier("storagewriterdao")
 	StorageWriterDAO storageWriterDao;
+
+	@Autowired
+	TenantAwareDataSource tenantAwareDataSource;
 
 	@Value("${entity.stopListenerIfDbFails:true}")
 	boolean entityStopListenerIfDbFails;
@@ -119,7 +132,7 @@ public class StorageWriterService {
 	 * logger.trace("Writing is complete"); }
 	 */
 	@KafkaListener(containerFactory = "kafkaListenerContainerFactoryManualOffsetCommit", topics = "${csource.topic}", id = CSOURCE_LISTENER_ID, groupId = "csourceWriter", containerGroup = "csourceWriter-container")
-	public void writeCSource(@Payload byte[] message, Acknowledgment acknowledgment,
+	public void writeCSource(Message<byte[]> message, Acknowledgment acknowledgment,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key, @Header(KafkaHeaders.OFFSET) Long offset)
 			throws Exception {
 		logger.trace("Listener csourceWriter, Thread ID: " + Thread.currentThread().getId());
@@ -127,10 +140,33 @@ public class StorageWriterService {
 		if (!csourceListenerOk) // this test is needed because listenerContainer.stop() does not work properly
 								// during boot time (probably because of concurrency)
 			return;
-		String payload = new String(message);
+
+		String payload = new String(message.getPayload());
+		String datavalue;
+		JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
+		if (jsonObject.has("CSource")) {
+			datavalue = jsonObject.get("CSource").toString();
+		} else {
+			datavalue = "null";
+		}
+		String header = jsonObject.get("headers").toString();
+		JsonObject jsonObjectheader = new JsonParser().parse(header).getAsJsonObject();
+		String headervalue;
+		if (jsonObjectheader.has(NGSIConstants.TENANT_HEADER)) {
+			headervalue = jsonObjectheader.get(NGSIConstants.TENANT_HEADER).getAsString();
+			TenantContext.setCurrentTenant(headervalue);
+			String databasename = "ngb" + headervalue;
+			if (datavalue != null) {
+				storageWriterDao.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,
+						headervalue, databasename);
+			}
+		} else {
+			headervalue = null;
+		}
 		logger.debug("Received message: " + payload);
 		logger.trace("Writing data...");
-		if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_CSOURCE, DBConstants.DBCOLUMN_DATA, key, payload)) {
+		if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_CSOURCE, DBConstants.DBCOLUMN_DATA,
+				key, datavalue, headervalue)) {
 			acknowledgment.acknowledge();
 			logger.trace("Kafka offset commited");
 		} else {
@@ -142,6 +178,7 @@ public class StorageWriterService {
 				listenerContainer.stop();
 			}
 		}
+
 		logger.trace("Writing is complete");
 	}
 
@@ -154,22 +191,42 @@ public class StorageWriterService {
 		if (!temporalEntityListenerOk) // this test is needed because listenerContainer.stop() does not work properly
 										// during boot time (probably because of concurrency)
 			return;
-		String payload = new String(message);
-		logger.debug("Received message: " + payload);
-		logger.trace("Writing data...");
-		if (storageWriterDao != null && storageWriterDao.storeTemporalEntity(key, payload)) {
-			acknowledgment.acknowledge();
-			logger.trace("Kafka offset commited");
-		} else {
-			if (temporalEntityStopListenerIfDbFails) {
-				temporalEntityListenerOk = false;
-				logger.error("DB failed, not processing any new messages");
-				MessageListenerContainer listenerContainer = kafkaListenerEndpoint
-						.getListenerContainer(TEMPORALENTITY_LISTENER_ID);
-				listenerContainer.stop();
-			}
-		}
-		logger.trace("Writing is complete");
+
+		storageWriterDao.storeTemporalEntity(DataSerializer.getHistoryEntityRequest(new String(message)));
+//-------------------------------------------------------------------------------------------
+//		String datavalue;
+//		JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
+//		if (jsonObject.has("CSource")) {
+//			datavalue = jsonObject.get("CSource").toString();
+//		} else {
+//			datavalue = "null";
+//		}
+//		String header = jsonObject.get("headers").toString();
+//		JsonObject jsonObjectheader = new JsonParser().parse(header).getAsJsonObject();
+//		String headervalue;
+//		if (jsonObjectheader.has(NGSIConstants.TENANT_HEADER)) {
+//			headervalue = jsonObjectheader.get(NGSIConstants.TENANT_HEADER).getAsString();
+//			TenantContext.setCurrentTenant(headervalue);
+//			String databasename = "ngb" + headervalue;
+//			if (datavalue != null) {
+//				storageWriterDao.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,
+//						headervalue, databasename);
+//			}
+//		} else {
+//			headervalue = null;
+//		}
+//--------------------------------------------------------------------------------------------		
+		/*
+		 * logger.debug("Received message: " + payload);
+		 * logger.trace("Writing data..."); if (storageWriterDao != null &&
+		 * storageWriterDao.storeTemporalEntity(key, payload)) {
+		 * acknowledgment.acknowledge(); logger.trace("Kafka offset commited"); } else {
+		 * if (temporalEntityStopListenerIfDbFails) { temporalEntityListenerOk = false;
+		 * logger.error("DB failed, not processing any new messages");
+		 * MessageListenerContainer listenerContainer = kafkaListenerEndpoint
+		 * .getListenerContainer(TEMPORALENTITY_LISTENER_ID); listenerContainer.stop();
+		 * } }
+		 */ logger.trace("Writing is complete");
 	}
 
 }
