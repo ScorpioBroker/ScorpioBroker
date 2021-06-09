@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,58 +21,25 @@ import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 public class SubscriptionInfoDAO extends StorageReaderDAO {
 	private final static Logger logger = LogManager.getLogger(SubscriptionInfoDAO.class);
 
-	public Set<String> getAllIds(String tenantId) {
-		try {
-			setTenant(tenantId);
-		} catch (ResponseException e) {
-			// Left Empty intentionally
-		}
-		synchronized (readerJdbcTemplate) {
-			List<String> tempList = readerJdbcTemplate.queryForList("SELECT id FROM entity", String.class);
-			return new HashSet<String>(tempList);
-		}
-
+	public Set<String> getAllIds(String tenantId) throws ResponseException {
+		List<String> tempList = getJDBCTemplate(tenantId).queryForList("SELECT id FROM entity", String.class);
+		return new HashSet<String>(tempList);
 	}
 
 	public Table<String, String, String> getIds2Type() throws ResponseException {
-		synchronized (readerJdbcTemplate) {
-			Table<String, String, String> result = HashBasedTable.create();
-			List<String> tenants = getTenants();
-			for (String tenantId : tenants) {
-
-				try {
-					if (tenantId.equals(AppConstants.INTERNAL_NULL_KEY)) {
-						setTenant(null);
-					} else {
-						setTenant(tenantId);
-					}
-				} catch (ResponseException e) {
-					// Left Empty intentionally
-				}
-
-				List<Map<String, Object>> temp = readerJdbcTemplate.queryForList("SELECT id, type FROM entity");
-				for (Map<String, Object> entry : temp) {
-					result.put(tenantId, entry.get("id").toString(), entry.get("type").toString());
-				}
-
-			}
-			return result;
+		Table<String, String, String> result = HashBasedTable.create();
+		for (Map<String, Object> entry : getJDBCTemplate(null).queryForList("SELECT id, type FROM entity")) {
+			result.put(AppConstants.INTERNAL_NULL_KEY, entry.get("id").toString(), entry.get("type").toString());
 		}
-	}
-
-	private List<String> getTenants() throws ResponseException {
-		System.out.println("watch this");
-		setTenant(null);
-		ArrayList<String> result = new ArrayList<String>();
-		try {
-			List<Map<String, Object>> temp = readerJdbcTemplate.queryForList("SELECT tenant_id FROM tenant");
+		List<String> tenants = getTenants();
+		for (String tenantId : tenants) {
+			tenantId = getTenant(tenantId);
+			List<Map<String, Object>> temp = getJDBCTemplate(tenantId).queryForList("SELECT id, type FROM entity");
 			for (Map<String, Object> entry : temp) {
-				result.add(entry.get("tenant_id").toString());
+				result.put(tenantId, entry.get("id").toString(), entry.get("type").toString());
 			}
-		} catch (Exception e) {
-			System.out.println("tenant table not found");
+
 		}
-		result.add(AppConstants.INTERNAL_NULL_KEY);
 		return result;
 	}
 
@@ -89,12 +55,5 @@ public class SubscriptionInfoDAO extends StorageReaderDAO {
 			logger.debug(e);
 			return null;
 		}
-	}
-
-	private String getTenant(String tenantId) {
-		if (AppConstants.INTERNAL_NULL_KEY.equals(tenantId)) {
-			return null;
-		}
-		return tenantId;
 	}
 }

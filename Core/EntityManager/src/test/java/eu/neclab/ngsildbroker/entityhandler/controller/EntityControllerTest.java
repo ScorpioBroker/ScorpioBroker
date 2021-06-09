@@ -29,7 +29,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityInfoDAO;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 
@@ -44,8 +43,7 @@ public class EntityControllerTest {
     private EntityService entityService;
     @MockBean
 	private EntityInfoDAO entityInfoDAO;
-	@MockBean
-	private TenantAwareDataSource tenantAwareDataSource;
+
 	private String appendPayload;
 	private String updatePayload;
 	private String entityPayload;

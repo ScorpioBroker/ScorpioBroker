@@ -12,7 +12,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.zaxxer.hikari.HikariDataSource;
 
-import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 
 
 
@@ -60,9 +59,6 @@ public class HistoryJdbcConfig {
     	return new JdbcTemplate(getWriterDataSource());
     }
     
-    @Bean(name = "tenantAwareDataSource")	
-	public DataSource tenantAwareDataSource() {
-		return new TenantAwareDataSource();
-	}
+
 
 }

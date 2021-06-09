@@ -1079,6 +1079,21 @@ public final class HttpUtils {
 		}
 		return result;
 	}
+	
+	public static String getTenantFromHeaders(ArrayListMultimap<String, String> headers) {
+		if(headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
+		}
+		return null;
+	}
+
+	public static String getInternalTenant(ArrayListMultimap<String, String> headers) {
+		String tenantId = getTenantFromHeaders(headers);
+		if (tenantId == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
+		return tenantId;
+	}
 
 	// public static ResponseEntity<Object> generateReply(String acceptHeader,
 	// List<Object> contextLinks,

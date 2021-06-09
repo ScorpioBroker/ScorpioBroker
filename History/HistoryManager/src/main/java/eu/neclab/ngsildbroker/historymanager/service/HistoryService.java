@@ -30,6 +30,7 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.config.ProducerChannel;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
@@ -149,7 +150,7 @@ public class HistoryService {
 	// endpoint "/entities/{entityId}/attrs"
 	public void addAttrib2TemporalEntity(ArrayListMultimap<String, String> headers, String entityId, String payload)
 			throws ResponseException, Exception {
-		if (!historyDAO.entityExists(entityId)) {
+		if (!historyDAO.entityExists(entityId, HttpUtils.getTenantFromHeaders(headers))) {
 			throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
 		}
 		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, payload, entityId);

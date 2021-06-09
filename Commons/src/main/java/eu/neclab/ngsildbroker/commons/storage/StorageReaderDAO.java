@@ -20,6 +20,7 @@ import org.springframework.util.ReflectionUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
@@ -33,10 +34,12 @@ abstract public class StorageReaderDAO {
 	private final static Logger logger = LogManager.getLogger(StorageReaderDAO.class);
 	protected Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 
+	private HashMap<String, JdbcTemplate> tenant2Template = new HashMap<String, JdbcTemplate>();
+
 	@Autowired
-	protected JdbcTemplate readerJdbcTemplate;
+	private JdbcTemplate readerJdbcTemplate;
 	@Autowired
-	public DataSource masterDataSource;
+	private DataSource masterDataSource;
 
 	@Autowired
 	private HikariConfig hikariConfig;
@@ -54,20 +57,15 @@ abstract public class StorageReaderDAO {
 		if (tenantidvalue == null)
 			return null;
 		try {
-			synchronized (readerJdbcTemplate) {
-				readerJdbcTemplate = new JdbcTemplate(masterDataSource);
-			}
+
 			// String databasename="ngbcsource2";
 			// SELECT EXISTS(SELECT datname FROM pg_database WHERE datname = 'tenant2');
 			String sql = "SELECT database_name FROM tenant WHERE tenant_id = ?";
 			String databasename;
-			synchronized (readerJdbcTemplate) {
-				databasename = readerJdbcTemplate.queryForObject(sql, new Object[] { tenantidvalue }, String.class);
-			}
+			databasename = readerJdbcTemplate.queryForObject(sql, new Object[] { tenantidvalue }, String.class);
+
 			List<String> data;
-			synchronized (readerJdbcTemplate) {
-				data = readerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
-			}
+			data = readerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
 			if (data.contains(databasename)) {
 				return databasename;
 			} else {
@@ -85,9 +83,9 @@ abstract public class StorageReaderDAO {
 		}
 		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
 		if (tenantDataSource == null) {
-			
+
 			tenantDataSource = createDataSourceForTenantId(tenantidvalue);
-			
+
 			resolvedDataSources.put(tenantidvalue, tenantDataSource);
 		}
 
@@ -109,21 +107,21 @@ abstract public class StorageReaderDAO {
 
 	public List<String> query(QueryParams qp) throws ResponseException {
 		String tenantId = qp.getTenant();
-		setTenant(tenantId);
+		JdbcTemplate template = getJDBCTemplate(tenantId);
 		try {
 			if (qp.getCheck() != null) {
 				String sqlQuery = typesAndAttributeQuery(qp);
-				return readerJdbcTemplate.queryForList(sqlQuery, String.class);
+				return template.queryForList(sqlQuery, String.class);
 			}
 			String sqlQuery = translateNgsildQueryToSql(qp);
 			logger.info("NGSI-LD to SQL: " + sqlQuery);
 			// SqlRowSet result = readerJdbcTemplate.queryForRowSet(sqlQuery);
 			if (qp.getLimit() == 0 && qp.getCountResult() == true) {
-				List<String> list = readerJdbcTemplate.queryForList(sqlQuery, String.class);
+				List<String> list = template.queryForList(sqlQuery, String.class);
 				countHeader = countHeader + list.size();
 				return new ArrayList<String>();
 			}
-			List<String> list = readerJdbcTemplate.queryForList(sqlQuery, String.class);
+			List<String> list = template.queryForList(sqlQuery, String.class);
 			countHeader = countHeader + list.size();
 			return list;
 		} catch (DataIntegrityViolationException e) {
@@ -137,22 +135,33 @@ abstract public class StorageReaderDAO {
 
 	}
 
-	protected void setTenant(String tenantId) throws ResponseException {
-		if (tenantId != null) {
-			DataSource finaldatasource = determineTargetDataSource(tenantId);
-			if (finaldatasource == null) {
-				throw new ResponseException(ErrorType.TenantNotFound);
-			}
-			synchronized (readerJdbcTemplate) {
-				readerJdbcTemplate = new JdbcTemplate(finaldatasource);
-			}
+	protected JdbcTemplate getJDBCTemplate(String tenantId) throws ResponseException {
+		JdbcTemplate result;
+		if (tenantId == null) {
+			result = readerJdbcTemplate;
 		} else {
-			synchronized (readerJdbcTemplate) {
-				readerJdbcTemplate = new JdbcTemplate(masterDataSource);
+			result = tenant2Template.get(tenantId);
+			if (result == null) {
+				DataSource finaldatasource = determineTargetDataSource(tenantId);
+				if (finaldatasource == null) {
+					throw new ResponseException(ErrorType.TenantNotFound);
+				}
+				result = new JdbcTemplate(finaldatasource);
+				tenant2Template.put(tenantId, result);
 			}
 		}
+		return result;
 	}
 
+	/*
+	 * protected void setTenant(String tenantId) throws ResponseException { if
+	 * (tenantId != null) { DataSource finaldatasource =
+	 * determineTargetDataSource(tenantId); if (finaldatasource == null) { throw new
+	 * ResponseException(ErrorType.TenantNotFound); } synchronized
+	 * (readerJdbcTemplate) { readerJdbcTemplate = new
+	 * JdbcTemplate(finaldatasource); } } else { synchronized (readerJdbcTemplate) {
+	 * readerJdbcTemplate = new JdbcTemplate(masterDataSource); } } }
+	 */
 	public String getListAsJsonArray(List<String> s) {
 		return "[" + String.join(",", s) + "]";
 	}
@@ -438,5 +447,27 @@ abstract public class StorageReaderDAO {
 			String geoproperty) throws ResponseException {
 		return this.translateNgsildGeoqueryToPostgisQuery(georel, geometry, coordinates, geoproperty, null);
 	}
+	protected List<String> getTenants() throws ResponseException {
+		ArrayList<String> result = new ArrayList<String>();
+		try {
+			List<Map<String, Object>> temp = getJDBCTemplate(null).queryForList("SELECT tenant_id FROM tenant");
+			for (Map<String, Object> entry : temp) {
+				result.add(entry.get("tenant_id").toString());
+			}
+		} catch (Exception e) {
+			System.out.println("tenant table not found");
+		}
+		return result;
+	}
+	protected String getTenant(String tenantId) {
+		if (tenantId == null) {
+			return null;
+		}
+		if (AppConstants.INTERNAL_NULL_KEY.equals(tenantId)) {
+			return null;
+		}
+		return tenantId;
+	}
+
 
 }
