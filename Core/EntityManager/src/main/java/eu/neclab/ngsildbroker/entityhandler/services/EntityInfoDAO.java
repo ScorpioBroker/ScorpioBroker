@@ -27,7 +27,7 @@ public class EntityInfoDAO extends StorageReaderDAO {
 	}
 
 	public String getEntity(String entityId, String tenantId) throws ResponseException {
-		List<String> tempList = getJDBCTemplate(tenantId)
+		List<String> tempList = getJDBCTemplate(getTenant(tenantId))
 				.queryForList("SELECT data FROM entity WHERE id='" + entityId + "'", String.class);
 		return tempList.get(0);
 	}

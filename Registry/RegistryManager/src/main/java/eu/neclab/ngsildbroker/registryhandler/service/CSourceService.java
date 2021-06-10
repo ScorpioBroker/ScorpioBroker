@@ -335,11 +335,12 @@ public class CSourceService {
 			}
 		}
 
-		String csourceBody = null;
-		if (directDB) {
-			csourceBody = this.csourceInfoDAO.getEntity(tenantId, registrationId);
-
-		}
+		/*
+		 * String csourceBody = null; if (directDB) { csourceBody =
+		 * this.csourceInfoDAO.getEntity(tenantId, registrationId);
+		 * 
+		 * }
+		 */
 		// CSourceRegistration csourceRegistration =
 		// DataSerializer.getCSourceRegistration(csourceBody);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);

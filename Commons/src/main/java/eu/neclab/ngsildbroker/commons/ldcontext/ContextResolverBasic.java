@@ -154,7 +154,7 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.InvalidRequest);
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new ResponseException(ErrorType.InvalidRequest);
+			throw new ResponseException(ErrorType.InvalidRequest, e.getMessage());
 		}
 	}
 
