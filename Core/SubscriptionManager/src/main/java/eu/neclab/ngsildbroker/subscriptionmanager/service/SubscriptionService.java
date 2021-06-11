@@ -826,7 +826,7 @@ public class SubscriptionService implements SubscriptionManager {
 	private void checkSubscriptionsWithUpdate(EntityRequest updateRequest, long messageTime) {
 		Entity update = DataSerializer.getPartialEntity(updateRequest.getWithSysAttrs());
 		String id = updateRequest.getId();
-		String type = getTypeForId(id, updateRequest.getTenant());
+		String type = getTypeForId(updateRequest.getTenant(), id);
 		try {
 			update.setId(new URI(id));
 		} catch (URISyntaxException e) {

@@ -126,7 +126,7 @@ abstract public class StorageReaderDAO {
 			return list;
 		} catch (DataIntegrityViolationException e) {
 			// Empty result don't worry
-			logger.warn("SQL Result Exception::", e);
+			logger.debug("SQL Result Exception::", e);
 			return new ArrayList<String>();
 		} catch (Exception e) {
 			logger.error("Exception ::", e);
