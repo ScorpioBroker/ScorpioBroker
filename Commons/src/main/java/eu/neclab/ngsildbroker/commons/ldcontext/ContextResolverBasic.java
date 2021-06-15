@@ -139,7 +139,7 @@ public class ContextResolverBasic {
 
 			Object context = bodyMap.get(NGSIConstants.JSON_LD_CONTEXT);
 			if (context == null) {
-				return null;
+				return new ArrayList<Object>();
 			}
 			if (context instanceof List) {
 				return (List<Object>) context;
