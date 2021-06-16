@@ -92,9 +92,11 @@ public class SubscriptionController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = HttpUtils.getAtContext(request);
+			
 			// System.out.println("RECEIVING SUBSCRIPTION: " + payload + " at " +
 			// System.currentTimeMillis());
 			subscription = contextResolver.expandSubscription(payload, context);
+			context.addAll(ContextResolverBasic.getAtContextFromBody(payload));
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
 					HttpUtils.getHeaders(request));
 			URI subId = manager.subscribe(subRequest);

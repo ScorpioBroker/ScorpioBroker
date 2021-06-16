@@ -46,14 +46,15 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 @Component
-@SuppressWarnings({"unchecked", "rawtypes"})//Map<String, Object>/List<Object> is always returned here. Json LD lib uses rawtypes 
+@SuppressWarnings({ "unchecked", "rawtypes" }) // Map<String, Object>/List<Object> is always returned here. Json LD lib
+												// uses rawtypes
 public class ContextResolverBasic {
 	private final static Logger logger = LogManager.getLogger(ContextResolverBasic.class);
 	private URI CORE_CONTEXT_URL;
 	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	private String CORE_CONTEXT_URL_STR;
-	
-	//private String USED_CORE_CONTEXT_URL_STR;
+
+	// private String USED_CORE_CONTEXT_URL_STR;
 	// private URI DEFAULT_CONTEXT_URL;
 
 	@Autowired
@@ -107,7 +108,6 @@ public class ContextResolverBasic {
 		}
 	}
 
-
 	public ContextResolverBasic(String atContextBaseUrl) {
 		this();
 		if (atContextBaseUrl != null) {
@@ -130,6 +130,26 @@ public class ContextResolverBasic {
 		}
 		subscriptionParser = Pattern.compile(regex.toString());
 
+	}
+
+	public static List<Object> getAtContextFromBody(String body) throws ResponseException {
+		Map<String, Object> bodyMap;
+		try {
+			bodyMap = (Map<String, Object>) JsonUtils.fromString(body);
+
+			Object context = bodyMap.get(NGSIConstants.JSON_LD_CONTEXT);
+			if (context == null) {
+				return new ArrayList<Object>();
+			}
+			if (context instanceof List) {
+				return (List<Object>) context;
+			}
+			ArrayList<Object> result = new ArrayList<Object>();
+			result.add(context);
+			return result;
+		} catch (IOException e) {
+			throw new ResponseException(ErrorType.InvalidRequest, e.getMessage());
+		}
 	}
 
 	public String expand(String body, List<Object> contextLinks, boolean check, int endPoint) throws ResponseException {
@@ -174,7 +194,7 @@ public class ContextResolverBasic {
 			context.addAll(contextLinks);
 		}
 		ArrayList<Object> usedContext = new ArrayList<Object>();
-		
+
 		usedContext.addAll(context);
 		usedContext.remove(CORE_CONTEXT_URL_STR);
 		usedContext.add(BASE_CONTEXT);
@@ -230,7 +250,7 @@ public class ContextResolverBasic {
 		}
 		return hasAttributes;
 	}
-	
+
 	private boolean preFlightCheck(Map<String, Object> objMap, List<Object> usedContext, boolean root,
 			int calledEndpoint, boolean customKey) throws ResponseException, JsonGenerationException, IOException {
 
@@ -339,12 +359,11 @@ public class ContextResolverBasic {
 		}
 		if (mapValue instanceof List) {
 			List tempList = (List) mapValue;
-			if(tempList.size() != 1) {
+			if (tempList.size() != 1) {
 				throw new ResponseException(ErrorType.BadRequestData, "Only one entry per relationship is allowed");
 			}
 		}
-		
-		
+
 	}
 
 	public Subscription expandSubscription(String body, List<Object> contextLinks) throws ResponseException {
@@ -357,7 +376,7 @@ public class ContextResolverBasic {
 			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse document. JSON is invalid");
 		}
 		Map<String, Object> rawSub = (Map<String, Object>) expanded.get(1).get(0);
-		
+
 		boolean hasEntities = false;
 		boolean hasWatchedAttributes = false;
 		boolean hasNotificaition = false;
@@ -455,7 +474,8 @@ public class ContextResolverBasic {
 					subscription.setNotification(notification);
 					hasNotificaition = true;
 				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse notification parameter.\n" + e.getMessage());
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Failed to parse notification parameter.\n" + e.getMessage());
 				}
 			} else if (keyType == 14) {
 				// NGSI_LD_QUERY
@@ -541,10 +561,10 @@ public class ContextResolverBasic {
 		String accept = AppConstants.NGB_APPLICATION_JSONLD;
 		Format format = Format.normalized;
 		List<String> watchedAttribs = new ArrayList<String>();
-		String mqttVersion= null;
+		String mqttVersion = null;
 		Integer qos = null;
 		NotificationParam notifyParam = new NotificationParam();
-		Map<String,String>notifierInfo = new HashMap<String,String>();
+		Map<String, String> notifierInfo = new HashMap<String, String>();
 		for (Entry<String, Object> entry : map.entrySet()) {
 			switch (entry.getKey()) {
 			case NGSIConstants.NGSI_LD_ATTRIBUTES:
@@ -565,7 +585,7 @@ public class ContextResolverBasic {
 								.get(0).get(NGSIConstants.JSON_LD_VALUE));
 						endPoint.setUri(endPointURI);
 						break;
-                    
+
 					case NGSIConstants.NGSI_LD_NOTIFIERINFO:
 
 						for (Entry<String, Object> endPointNotifier : ((List<Map<String, Object>>) endPointEntry
@@ -585,18 +605,19 @@ public class ContextResolverBasic {
 								break;
 							default:
 								notifierInfo.put(NGSIConstants.MQTT_VERSION, NGSIConstants.DEFAULT_MQTT_VERSION);
-								notifierInfo.put(NGSIConstants.MQTT_QOS,String.valueOf(NGSIConstants.DEFAULT_MQTT_QOS));
+								notifierInfo.put(NGSIConstants.MQTT_QOS,
+										String.valueOf(NGSIConstants.DEFAULT_MQTT_QOS));
 							}
 						}
 						endPoint.setNotifierInfo(notifierInfo);
 						break;
-				   	
+
 					default:
 						throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for endpoint");
 					}
 				}
 				endPoint.setAccept(accept);
-				//endPoint.setNotifierInfo(notifierInfo);
+				// endPoint.setNotifierInfo(notifierInfo);
 				notifyParam.setEndPoint(endPoint);
 				break;
 			case NGSIConstants.NGSI_LD_FORMAT:
@@ -816,18 +837,18 @@ public class ContextResolverBasic {
 			return;
 		}
 
-		
 		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, usedContext, defaultOptions);
 		compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
 		String geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
-		//This is needed because one context could map from type which wouldn't work with the used context.
-		//Used context is needed because something could map point 
-		//This is not good but new geo type will come so this can go away at some time
-		if(geoType == null) {
+		// This is needed because one context could map from type which wouldn't work
+		// with the used context.
+		// Used context is needed because something could map point
+		// This is not good but new geo type will come so this can go away at some time
+		if (geoType == null) {
 			compactedFull = JsonLdProcessor.compact(value, CORE_CONTEXT, defaultOptions);
 			compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
 			geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
-			
+
 		}
 		List geoValues = (List) compactedFull.get(NGSIConstants.GEO_JSON_COORDINATES);
 		Object entry1, entry2;
@@ -836,7 +857,8 @@ public class ContextResolverBasic {
 			// nothing to be done here point is ok like this
 			entry1 = geoValues.get(0);
 			entry2 = geoValues.get(1);
-			if((!(entry1 instanceof Double) && !(entry1 instanceof Integer)) || (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
+			if ((!(entry1 instanceof Double) && !(entry1 instanceof Integer))
+					|| (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
 				throw new ResponseException(ErrorType.BadRequestData, "Provided coordinate entry is not a float value");
 			}
 			break;
@@ -846,8 +868,10 @@ public class ContextResolverBasic {
 				ArrayList<Object> container = new ArrayList<Object>();
 				entry1 = geoValues.get(i);
 				entry2 = geoValues.get(i + 1);
-				if((!(entry1 instanceof Double) && !(entry1 instanceof Integer)) || (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
-					throw new ResponseException(ErrorType.BadRequestData, "Provided coordinate entry is not a float value");
+				if ((!(entry1 instanceof Double) && !(entry1 instanceof Integer))
+						|| (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Provided coordinate entry is not a float value");
 				}
 				container.add(entry1);
 				container.add(entry2);
@@ -859,15 +883,18 @@ public class ContextResolverBasic {
 		case NGSIConstants.GEO_TYPE_POLYGON:
 			ArrayList<Object> topLevelContainerList = new ArrayList<Object>();
 			ArrayList<Object> polyContainerList = new ArrayList<Object>();
-			if(!geoValues.get(0).equals(geoValues.get(geoValues.size()-2)) || !geoValues.get(1).equals(geoValues.get(geoValues.size()-1))) {
+			if (!geoValues.get(0).equals(geoValues.get(geoValues.size() - 2))
+					|| !geoValues.get(1).equals(geoValues.get(geoValues.size() - 1))) {
 				throw new ResponseException(ErrorType.BadRequestData, "Polygon does not close");
 			}
 			for (int i = 0; i < geoValues.size(); i += 2) {
 				ArrayList<Object> container = new ArrayList<Object>();
 				entry1 = geoValues.get(i);
 				entry2 = geoValues.get(i + 1);
-				if((!(entry1 instanceof Double) && !(entry1 instanceof Integer)) || (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
-					throw new ResponseException(ErrorType.BadRequestData, "Provided coordinate entry is not a float value");
+				if ((!(entry1 instanceof Double) && !(entry1 instanceof Integer))
+						|| (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Provided coordinate entry is not a float value");
 				}
 				container.add(entry1);
 				container.add(entry2);
@@ -884,11 +911,14 @@ public class ContextResolverBasic {
 				ArrayList<Object> container = new ArrayList<Object>();
 				entry1 = geoValues.get(i);
 				entry2 = geoValues.get(i + 1);
-				if((!(entry1 instanceof Double) && !(entry1 instanceof Integer)) || (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
-					throw new ResponseException(ErrorType.BadRequestData, "Provided coordinate entry is not a float value");
+				if ((!(entry1 instanceof Double) && !(entry1 instanceof Integer))
+						|| (!(entry2 instanceof Double) && !(entry2 instanceof Integer))) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Provided coordinate entry is not a float value");
 				}
 				container.add(entry1);
-				container.add(entry2);multiPolyContainerList.add(container);
+				container.add(entry2);
+				multiPolyContainerList.add(container);
 			}
 			multiMidLevelContainerList.add(multiPolyContainerList);
 			multiTopLevelContainerList.add(multiMidLevelContainerList);
@@ -1065,7 +1095,7 @@ public class ContextResolverBasic {
 //			unprotectLocationFromRegistry(tempResult);
 			if (tempResult.containsKey("@graph")) {
 				// we are in a multiresult set
-				//Object atContext = tempResult.get(NGSIConstants.JSON_LD_CONTEXT);
+				// Object atContext = tempResult.get(NGSIConstants.JSON_LD_CONTEXT);
 				List<Map<String, Object>> toCompact = (List<Map<String, Object>>) tempResult.get("@graph");
 				result.setCompacted(JsonUtils.toPrettyString(toCompact));
 				for (Map<String, Object> entry : toCompact) {
@@ -1088,28 +1118,29 @@ public class ContextResolverBasic {
 	}
 
 	private void cleanExpandedJson(Object json) {
-		if(json instanceof List) {
-			List tempList = (List)json;
-			for(Object entry: tempList) {
+		if (json instanceof List) {
+			List tempList = (List) json;
+			for (Object entry : tempList) {
 				cleanExpandedJson(entry);
 			}
-		}else if(json instanceof Map) {
-			Map tempMap = (Map)json;
+		} else if (json instanceof Map) {
+			Map tempMap = (Map) json;
 			Iterator<Entry> it = tempMap.entrySet().iterator();
-			while(it.hasNext()) {
+			while (it.hasNext()) {
 				Entry next = it.next();
 				Object key = next.getKey();
 				Object value = next.getValue();
-				if(NGSIConstants.NGSI_LD_DATA_SET_ID.equals(key) && NGSIConstants.DEFAULT_DATA_SET_ID.equals(((Map)((List)value).get(0)).get(NGSIConstants.JSON_LD_ID))) {
+				if (NGSIConstants.NGSI_LD_DATA_SET_ID.equals(key) && NGSIConstants.DEFAULT_DATA_SET_ID
+						.equals(((Map) ((List) value).get(0)).get(NGSIConstants.JSON_LD_ID))) {
 					it.remove();
 					continue;
 				}
-				if(value instanceof Map || value instanceof List) {
+				if (value instanceof Map || value instanceof List) {
 					cleanExpandedJson(value);
 				}
 			}
 		}
-		 
+
 	}
 
 	private String generateAtContextServing(List<Object> rawContext, int hash) {
@@ -1193,6 +1224,7 @@ public class ContextResolverBasic {
 		}
 
 	}
+
 //Check not used anymore
 	/*
 	 * private void validateAndCleanContext(Map<String, Object> contextToMerge)
@@ -1208,7 +1240,7 @@ public class ContextResolverBasic {
 	 * }
 	 * 
 	 * } }
-	 */	
+	 */
 	private String validateSubNotifierInfoMqttVersion(String string) throws ResponseException {
 		try {
 			if (!Arrays.asList(NGSIConstants.VALID_MQTT_VERSION).contains(string)) {
