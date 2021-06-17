@@ -268,7 +268,7 @@ public class CSourceService {
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		synchronized (this.csourceIds) {
-			if (this.csourceIds.containsValue(request.getId())) {
+			if (this.csourceIds.containsEntry(tenantId, request.getId())) {
 				throw new ResponseException(ErrorType.AlreadyExists);
 			}
 			this.csourceIds.put(tenantId, request.getId());

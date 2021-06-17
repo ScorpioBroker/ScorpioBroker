@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -26,6 +27,7 @@ import javax.annotation.PreDestroy;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
@@ -49,6 +51,7 @@ import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.gson.JsonParseException;
 import com.netflix.appinfo.InstanceInfo;
@@ -149,11 +152,11 @@ public class SubscriptionService implements SubscriptionManager {
 
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
-	HashMap<String, SubscriptionRequest> subscriptionId2Subscription = new HashMap<String, SubscriptionRequest>();
+	Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
 	HashMap<String, TimerTask> subId2TimerTask = new HashMap<String, TimerTask>();
-	ArrayListMultimap<String, SubscriptionRequest> type2EntitiesSubscriptions = ArrayListMultimap.create();
+	Table<String, String, List<SubscriptionRequest>> type2EntitiesSubscriptions = HashBasedTable.create();
 	HashMap<SubscriptionRequest, Long> sub2CreationTime = new HashMap<SubscriptionRequest, Long>();
-	ArrayListMultimap<String, Object> subscriptionId2Context = ArrayListMultimap.create();
+	Table<String, String, List<Object>> tenantId2subscriptionId2Context = HashBasedTable.create();
 	HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
 	@Value("${bootstrap.servers}")
 	String BOOTSTRAP_SERVERS;
@@ -230,12 +233,14 @@ public class SubscriptionService implements SubscriptionManager {
 		if (subscription.getId() == null) {
 			subscription.setId(generateUniqueSubId(subscription));
 		} else {
-			if (this.subscriptionId2Subscription.containsKey(subscription.getId().toString())) {
+			if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
+					subscription.getId().toString())) {
 				throw new ResponseException(ErrorType.AlreadyExists);
 			}
 		}
 
-		this.subscriptionId2Subscription.put(subscription.getId().toString(), subscriptionRequest);
+		this.tenant2subscriptionId2Subscription.put(subscriptionRequest.getTenant(), subscription.getId().toString(),
+				subscriptionRequest);
 		if (subscription.getLdQuery() != null && !subscription.getLdQuery().trim().equals("")) {
 			subscription
 					.setQueryTerm(queryParser.parseQuery(subscription.getLdQuery(), subscriptionRequest.getContext()));
@@ -248,14 +253,17 @@ public class SubscriptionService implements SubscriptionManager {
 				intervalHandlerREST.addSub(subscriptionRequest);
 			}
 		} else {
-			this.subscriptionId2Context.putAll(subscription.getId().toString(), subscriptionRequest.getContext());
+			this.tenantId2subscriptionId2Context.put(subscriptionRequest.getTenant(), subscription.getId().toString(),
+					subscriptionRequest.getContext());
 			this.sub2CreationTime.put(subscriptionRequest, System.currentTimeMillis());
 			List<EntityInfo> entities = subscription.getEntities();
 			if (entities == null || entities.isEmpty()) {
-				this.type2EntitiesSubscriptions.put(ALL_TYPES_TYPE, subscriptionRequest);
+				putInTable(this.type2EntitiesSubscriptions, subscriptionRequest.getTenant(), ALL_TYPES_TYPE,
+						subscriptionRequest);
 			} else {
 				for (EntityInfo info : subscription.getEntities()) {
-					this.type2EntitiesSubscriptions.put(info.getType(), subscriptionRequest);
+					putInTable(this.type2EntitiesSubscriptions, subscriptionRequest.getTenant(), info.getType(),
+							subscriptionRequest);
 
 				}
 
@@ -280,6 +288,12 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 		}
 		return subscription.getId();
+	}
+
+	private void putInTable(Table<String, String, List<SubscriptionRequest>> type2EntitiesSubscriptions2, String tenant,
+			String aLL_TYPES_TYPE2, SubscriptionRequest subscriptionRequest) {
+		// TODO Auto-generated method stub
+
 	}
 
 	private void validateSub(Subscription subscription) throws ResponseException {
@@ -327,34 +341,36 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 	}
 
-	private void checkTenant(ArrayListMultimap<String, String> headers, ArrayListMultimap<String, String> headers2)
-			throws ResponseException {
-		List<String> tenant1 = headers.get(NGSIConstants.TENANT_HEADER);
-		List<String> tenant2 = headers2.get(NGSIConstants.TENANT_HEADER);
-		if (tenant1.size() != tenant2.size()) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		if (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2.get(0))) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-
-	}
+	/*
+	 * private void checkTenant(ArrayListMultimap<String, String> headers,
+	 * ArrayListMultimap<String, String> headers2) throws ResponseException {
+	 * List<String> tenant1 = headers.get(NGSIConstants.TENANT_HEADER); List<String>
+	 * tenant2 = headers2.get(NGSIConstants.TENANT_HEADER); if (tenant1.size() !=
+	 * tenant2.size()) { throw new ResponseException(ErrorType.NotFound); } if
+	 * (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2.get(0))) { throw new
+	 * ResponseException(ErrorType.NotFound); }
+	 * 
+	 * }
+	 */
 
 	@Override
 	public void unsubscribe(URI id, ArrayListMultimap<String, String> headers) throws ResponseException {
-		if (!this.subscriptionId2Subscription.containsKey(id.toString())) {
+		String tenant = HttpUtils.getInternalTenant(headers);
+		if (!this.tenant2subscriptionId2Subscription.contains(tenant, id.toString())) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
-		SubscriptionRequest removedSub = this.subscriptionId2Subscription.get(id.toString());
-		checkTenant(headers, removedSub.getHeaders());
-		synchronized (subscriptionId2Subscription) {
-			removedSub = this.subscriptionId2Subscription.remove(id.toString());
+		SubscriptionRequest removedSub = this.tenant2subscriptionId2Subscription.get(tenant, id.toString());
+		if (removedSub == null) {
+			throw new ResponseException(ErrorType.NotFound);
+		}
+		synchronized (tenant2subscriptionId2Subscription) {
+			removedSub = this.tenant2subscriptionId2Subscription.remove(tenant, id.toString());
 			this.kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(), id.toString().getBytes(),
 					AppConstants.NULL_BYTES);
 		}
 
-		synchronized (subscriptionId2Context) {
-			this.subscriptionId2Context.removeAll(id.toString());
+		synchronized (tenantId2subscriptionId2Context) {
+			this.tenantId2subscriptionId2Context.remove(tenant, id.toString());
 		}
 		intervalHandlerREST.removeSub(id.toString());
 		intervalHandlerMQTT.removeSub(id.toString());
@@ -388,13 +404,14 @@ public class SubscriptionService implements SubscriptionManager {
 	@Override
 	public SubscriptionRequest updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		Subscription subscription = subscriptionRequest.getSubscription();
-		SubscriptionRequest oldSubRequest = subscriptionId2Subscription.get(subscription.getId().toString());
-		checkTenant(subscriptionRequest.getHeaders(), oldSubRequest.getHeaders());
-		Subscription oldSub = oldSubRequest.getSubscription();
-
-		if (oldSub == null) {
+		String tenant = subscriptionRequest.getTenant();
+		SubscriptionRequest oldSubRequest = tenant2subscriptionId2Subscription.get(tenant,
+				subscription.getId().toString());
+		if (oldSubRequest == null) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
+		Subscription oldSub = oldSubRequest.getSubscription();
+
 		if (subscription.getAttributeNames() != null) {
 			oldSub.setAttributeNames(subscription.getAttributeNames());
 		}
@@ -431,8 +448,9 @@ public class SubscriptionService implements SubscriptionManager {
 		if (subscription.getTimeInterval() != 0) {
 			oldSub.setTimeInterval(subscription.getTimeInterval());
 		}
-		synchronized (this.subscriptionId2Context) {
-			this.subscriptionId2Context.putAll(oldSub.getId().toString(), subscriptionRequest.getContext());
+		synchronized (this.tenantId2subscriptionId2Context) {
+			this.tenantId2subscriptionId2Context.put(tenant, oldSub.getId().toString(),
+					subscriptionRequest.getContext());
 		}
 		SubscriptionRequest result = new SubscriptionRequest(oldSub, subscriptionRequest.getContext(),
 				subscriptionRequest.getHeaders());
@@ -442,17 +460,9 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@Override
 	public List<SubscriptionRequest> getAllSubscriptions(int limit, ArrayListMultimap<String, String> headers) {
-		List<SubscriptionRequest> result = new ArrayList<SubscriptionRequest>();
-		
-		for (SubscriptionRequest sub : subscriptionId2Subscription.values()) {
-			try {
-				checkTenant(headers, sub.getHeaders());
-			} catch (ResponseException e) {
-				continue;
-			}
-			result.add(sub);
-			
-		}
+		String tenantId = HttpUtils.getInternalTenant(headers);
+		List<SubscriptionRequest> result = new ArrayList<SubscriptionRequest>(
+				tenant2subscriptionId2Subscription.row(tenantId).values());
 		if (limit > 0) {
 			if (limit < result.size()) {
 				result = result.subList(0, limit);
@@ -464,14 +474,12 @@ public class SubscriptionService implements SubscriptionManager {
 	@Override
 	public SubscriptionRequest getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers)
 			throws ResponseException {
-		if (subscriptionId2Subscription.containsKey(subscriptionId)) {
-			SubscriptionRequest sub = subscriptionId2Subscription.get(subscriptionId);
-			checkTenant(headers, sub.getHeaders());
-			return sub;
-		} else {
+		SubscriptionRequest sub = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers),
+				subscriptionId);
+		if (sub == null) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
-
+		return sub;
 	}
 
 	@KafkaListener(topics = "${entity.create.topic}", groupId = "submanager")
@@ -488,27 +496,27 @@ public class SubscriptionService implements SubscriptionManager {
 		synchronized (this.tenant2Ids2Type) {
 			this.tenant2Ids2Type.put(createRequest.getTenant(), id, create.getType());
 		}
-		
+
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
-		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(create.getType())) {
-			try {
-				checkTenant(createRequest.getHeaders(), sub.getHeaders());
-			} catch (ResponseException e) {
-				continue;
-			}
-			
-			for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
-				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
-					subsToCheck.add(sub);
-					break;
-				}
-				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
-					subsToCheck.add(sub);
-					break;
-				}
-				if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
-					subsToCheck.add(sub);
-					break;
+
+		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(createRequest.getTenant(),
+				create.getType());
+		if (subs != null) {
+			for (SubscriptionRequest sub : subs) {
+
+				for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
+					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
+						subsToCheck.add(sub);
+						break;
+					}
+					if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
+						subsToCheck.add(sub);
+						break;
+					}
+					if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
+						subsToCheck.add(sub);
+						break;
+					}
 				}
 			}
 		}
@@ -518,18 +526,16 @@ public class SubscriptionService implements SubscriptionManager {
 
 	}
 
-	private void addAllTypeSubscriptions(ArrayListMultimap<String, String> entityOpHeaders, List<SubscriptionRequest> subsToCheck) {
-		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE)) {
-			try {
-				checkTenant(entityOpHeaders, sub.getHeaders());
-			} catch (ResponseException e) {
-				continue;
-			}
-			subsToCheck.add(sub);
+	private void addAllTypeSubscriptions(ArrayListMultimap<String, String> entityOpHeaders,
+			List<SubscriptionRequest> subsToCheck) {
+		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE,
+				HttpUtils.getInternalTenant(entityOpHeaders));
+		if (subs == null) {
+			return;
 		}
+		subsToCheck.addAll(subs);
 	}
 
-	
 	private void checkSubscriptions(ArrayList<SubscriptionRequest> subsToCheck, Entity entity, int methodType,
 			long messageTime) {
 
@@ -593,9 +599,11 @@ public class SubscriptionService implements SubscriptionManager {
 					subscription.getSubscription().getNotification().getEndPoint().getUri(),
 					subscription.getSubscription().getNotification().getEndPoint().getAccept(),
 					subscription.getSubscription().getId().toString(),
-					subscriptionId2Context.get(subscription.getSubscription().getId().toString()),
+					tenantId2subscriptionId2Context.get(subscription.getTenant(),
+							subscription.getSubscription().getId().toString()),
 					subscription.getSubscription().getThrottling(),
-					subscription.getSubscription().getNotification().getEndPoint().getNotifierInfo());
+					subscription.getSubscription().getNotification().getEndPoint().getNotifierInfo(),
+					subscription.getTenant());
 		} catch (URISyntaxException e) {
 			logger.error("Exception ::", e);
 			// Left empty intentionally
@@ -835,26 +843,25 @@ public class SubscriptionService implements SubscriptionManager {
 			e.printStackTrace();
 		}
 		update.setType(type);
-		
+
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
-		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(type)) {
-			try{
-				checkTenant(updateRequest.getHeaders(), sub.getHeaders());
-			}catch (ResponseException e) {
-				continue;
-			}
-			for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
-				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
-					subsToCheck.add(sub);
-					break;
-				}
-				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
-					subsToCheck.add(sub);
-					break;
-				}
-				if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
-					subsToCheck.add(sub);
-					break;
+
+		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(updateRequest.getTenant(), type);
+		if (subs != null) {
+			for (SubscriptionRequest sub : subs) {
+				for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
+					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
+						subsToCheck.add(sub);
+						break;
+					}
+					if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
+						subsToCheck.add(sub);
+						break;
+					}
+					if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
+						subsToCheck.add(sub);
+						break;
+					}
 				}
 			}
 		}
@@ -886,26 +893,24 @@ public class SubscriptionService implements SubscriptionManager {
 			e.printStackTrace();
 		}
 		append.setType(type);
-		
+
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
-		for (SubscriptionRequest sub : this.type2EntitiesSubscriptions.get(type)) {
-			try{
-				checkTenant(appendRequest.getHeaders(), sub.getHeaders());
-			}catch (ResponseException e) {
-				continue;
-			}
-			for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
-				if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
-					subsToCheck.add(sub);
-					break;
-				}
-				if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
-					subsToCheck.add(sub);
-					break;
-				}
-				if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
-					subsToCheck.add(sub);
-					break;
+		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(appendRequest.getTenant(), type);
+		if (subs != null) {
+			for (SubscriptionRequest sub : subs) {
+				for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
+					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
+						subsToCheck.add(sub);
+						break;
+					}
+					if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
+						subsToCheck.add(sub);
+						break;
+					}
+					if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
+						subsToCheck.add(sub);
+						break;
+					}
 				}
 			}
 		}
@@ -926,7 +931,10 @@ public class SubscriptionService implements SubscriptionManager {
 		String payload = new String(message.getPayload());
 		String key = KafkaOps.getMessageKey(message);
 		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
-		subscribeToRemote(subscriptionId2Subscription.get(key), endPoints);
+		Map<String, SubscriptionRequest> temp = tenant2subscriptionId2Subscription.row(key);
+		for (SubscriptionRequest sub : temp.values()) {
+			subscribeToRemote(sub, endPoints);
+		}
 	}
 
 	// @KafkaListener(topics = "${csource.registry.topic}", groupId = "submanager")
@@ -1049,9 +1057,9 @@ public class SubscriptionService implements SubscriptionManager {
 
 	}
 
-	public void reportNotification(String subId, Long now) {
-		synchronized (subscriptionId2Subscription) {
-			SubscriptionRequest subscription = subscriptionId2Subscription.get(subId);
+	public void reportNotification(String tenant, String subId, Long now) {
+		synchronized (tenant2subscriptionId2Subscription) {
+			SubscriptionRequest subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
 			if (subscription != null) {
 				subscription.getSubscription().getNotification().setLastNotification(new Date(now));
 				subscription.getSubscription().getNotification().setLastSuccessfulNotification(new Date(now));
@@ -1059,18 +1067,18 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 	}
 
-	public void reportFailedNotification(String subId, Long now) {
-		synchronized (subscriptionId2Subscription) {
-			SubscriptionRequest subscription = subscriptionId2Subscription.get(subId);
+	public void reportFailedNotification(String tenant, String subId, Long now) {
+		synchronized (tenant2subscriptionId2Subscription) {
+			SubscriptionRequest subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
 			if (subscription != null) {
 				subscription.getSubscription().getNotification().setLastFailedNotification(new Date(now));
 			}
 		}
 	}
 
-	public void reportSuccessfulNotification(String subId, Long now) {
-		synchronized (subscriptionId2Subscription) {
-			SubscriptionRequest subscription = subscriptionId2Subscription.get(subId);
+	public void reportSuccessfulNotification(String tenant, String subId, Long now) {
+		synchronized (tenant2subscriptionId2Subscription) {
+			SubscriptionRequest subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
 			if (subscription != null) {
 				subscription.getSubscription().getNotification().setLastSuccessfulNotification(new Date(now));
 			}

@@ -74,7 +74,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 	@Override
 	public void notify(Notification notification, URI callback, String acceptHeader, String subId, List<Object> context,
-			int throttling, Map<String, String> clientSettings) {
+			int throttling, Map<String, String> clientSettings, String tenantId) {
 
 		ArrayList<String> subIds = new ArrayList<String>();
 		subIds.add(subId);
@@ -102,7 +102,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 							String jsonStr = DataSerializer.toJson(sendOutNotification);
 							Long now = System.currentTimeMillis();
 							subId2LastReport.put(subId, now / 1000);
-							subscriptionManagerService.reportNotification(subId, now);
+							subscriptionManagerService.reportNotification(tenantId, subId, now);
 							try {
 								logger.trace("Sending notification");
 								logger.debug("Json to be sent: " + jsonStr);
@@ -110,10 +110,10 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 										context);
 								logger.debug("body to be sent: " + reply.getBody().toString());
 								sendReply(reply, callback, clientSettings);
-								subscriptionManagerService.reportSuccessfulNotification(subId, now);
+								subscriptionManagerService.reportSuccessfulNotification(tenantId, subId, now);
 							} catch (Exception e) {
 								logger.error("Exception ::", e);
-								subscriptionManagerService.reportFailedNotification(subId, now);
+								subscriptionManagerService.reportFailedNotification(tenantId, subId, now);
 								e.printStackTrace();
 							}
 						}
@@ -132,10 +132,10 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 				reply = generateNotificationResponse(acceptHeader, jsonStr, context);
 				logger.debug(new String(reply.getBody()));
 				sendReply(reply, callback, clientSettings);
-				subscriptionManagerService.reportNotification(subId, now);
+				subscriptionManagerService.reportNotification(tenantId, subId, now);
 			} catch (Exception e) {
 				logger.error("Excep	tion ::", e);
-				subscriptionManagerService.reportFailedNotification(subId, now);
+				subscriptionManagerService.reportFailedNotification(tenantId, subId, now);
 				e.printStackTrace();
 			}
 

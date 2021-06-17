@@ -189,7 +189,7 @@ public class EntityService {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 
 		synchronized (this.entityIds) {
-			if (this.entityIds.containsValue(request.getId())) {
+			if (this.entityIds.containsEntry(tenantId, request.getId())) {
 				throw new ResponseException(ErrorType.AlreadyExists);
 			}
 			this.entityIds.put(tenantId, request.getId());

@@ -18,6 +18,6 @@ public interface NotificationHandler {
 	 * @param notification
 	 * @param ldContext 
 	 */
-	public void notify(Notification notification, URI callback, String acceptHeader, String subId, List<Object> context, int throttling, Map<String, String> clientSettings);
+	public void notify(Notification notification, URI callback, String acceptHeader, String subId, List<Object> context, int throttling, Map<String, String> clientSettings, String tenantId);
 
 }

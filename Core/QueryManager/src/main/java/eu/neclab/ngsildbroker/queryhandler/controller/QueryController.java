@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.common.collect.ArrayListMultimap;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
@@ -233,6 +235,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
 			Map<String, String[]> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
 			List<String> options, Boolean showServices, boolean retrieve, Boolean countResult, String check) {
+		//long start = System.currentTimeMillis();
 		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 		
 		if (limit == null) {
@@ -247,7 +250,9 @@ public class QueryController {// implements QueryHandlerInterface {
 			if (countResult == false && limit == 0) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 			}
+			//long prelink = System.currentTimeMillis();
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
+			//long postlink = System.currentTimeMillis();
 			if (retrieve || request.getRequestURI().equals(MY_REQUEST_URL)
 					|| request.getRequestURI().equals(MY_REQUEST_URL_ALT)) {
 				if (retrieve || originalQueryParams != null) {
@@ -276,10 +281,22 @@ public class QueryController {// implements QueryHandlerInterface {
 					}
 
 					checkParamsForValidity(qp);
+					//long pregenheades = System.currentTimeMillis();
+					ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+					//long postgenheaders = System.currentTimeMillis();
 					QueryResult qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
-							qToken, showServices, countResult, check, HttpUtils.getHeaders(request));
-
-					return generateReply(request, qResult, !retrieve);
+							qToken, showServices, countResult, check, headers);
+					//long pregenresult = System.currentTimeMillis();
+					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve);
+					//long end = System.currentTimeMillis();
+					//System.err.println(start);
+					//System.err.println(prelink);
+					//System.err.println(postlink);
+					//System.err.println(pregenheades);
+					//System.err.println(postgenheaders);
+					//System.err.println(pregenresult);
+					//System.err.println(end);
+					return result;
 
 				} else {
 
