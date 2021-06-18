@@ -153,7 +153,7 @@ public class SubscriptionService implements SubscriptionManager {
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
-	HashMap<String, TimerTask> subId2TimerTask = new HashMap<String, TimerTask>();
+	Table<String, String, TimerTask> subId2TimerTask = HashBasedTable.create();
 	Table<String, String, List<SubscriptionRequest>> type2EntitiesSubscriptions = HashBasedTable.create();
 	HashMap<SubscriptionRequest, Long> sub2CreationTime = new HashMap<SubscriptionRequest, Long>();
 	Table<String, String, List<Object>> tenantId2subscriptionId2Context = HashBasedTable.create();
@@ -283,17 +283,17 @@ public class SubscriptionService implements SubscriptionManager {
 						}
 					}
 				};
-				subId2TimerTask.put(subscription.getId().toString(), cancel);
+				subId2TimerTask.put(subscriptionRequest.getTenant(), subscription.getId().toString(), cancel);
 				watchDog.schedule(cancel, subscription.getExpires() - System.currentTimeMillis());
 			}
 		}
 		return subscription.getId();
 	}
 
-	private void putInTable(Table<String, String, List<SubscriptionRequest>> table, String row,
-			String colum, SubscriptionRequest subscriptionRequest) {
+	private void putInTable(Table<String, String, List<SubscriptionRequest>> table, String row, String colum,
+			SubscriptionRequest subscriptionRequest) {
 		List<SubscriptionRequest> subs = table.get(row, colum);
-		if(subs == null) {
+		if (subs == null) {
 			subs = new ArrayList<SubscriptionRequest>();
 			table.put(row, colum, subs);
 		}
@@ -390,7 +390,7 @@ public class SubscriptionService implements SubscriptionManager {
 				}
 			}
 		}
-		TimerTask task = subId2TimerTask.get(id.toString());
+		TimerTask task = subId2TimerTask.get(tenant, id.toString());
 		if (task != null) {
 			task.cancel();
 		}
@@ -428,7 +428,7 @@ public class SubscriptionService implements SubscriptionManager {
 		if (subscription.getExpires() != null) {
 			oldSub.setExpires(subscription.getExpires());
 			synchronized (subId2TimerTask) {
-				TimerTask task = subId2TimerTask.get(oldSub.getId().toString());
+				TimerTask task = subId2TimerTask.get(subscriptionRequest.getTenant(), oldSub.getId().toString());
 				task.cancel();
 				watchDog.schedule(task, subscription.getExpires() - System.currentTimeMillis());
 			}
