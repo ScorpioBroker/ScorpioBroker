@@ -300,6 +300,18 @@ public class SubscriptionService implements SubscriptionManager {
 		subs.add(subscriptionRequest);
 	}
 
+	private void removeFromTable(Table<String, String, List<SubscriptionRequest>> table, String row, String colum,
+			SubscriptionRequest subscriptionRequest) {
+		List<SubscriptionRequest> subs = table.get(row, colum);
+		if (subs == null) {
+			return;
+		}
+		subs.remove(subscriptionRequest);
+		if (subs.isEmpty()) {
+			table.remove(row, colum);
+		}
+	}
+
 	private void validateSub(Subscription subscription) throws ResponseException {
 		if (subscription.getThrottling() > 0 && subscription.getTimeInterval() > 0) {
 			throw new ResponseException(ErrorType.BadRequestData, "throttling  and timeInterval cannot both be set");
@@ -381,12 +393,12 @@ public class SubscriptionService implements SubscriptionManager {
 		List<EntityInfo> entities = removedSub.getSubscription().getEntities();
 		if (entities == null || entities.isEmpty()) {
 			synchronized (type2EntitiesSubscriptions) {
-				type2EntitiesSubscriptions.remove(ALL_TYPES_TYPE, removedSub);
+				removeFromTable(type2EntitiesSubscriptions, tenant, ALL_TYPES_TYPE, removedSub);
 			}
 		} else {
 			for (EntityInfo info : entities) {
 				synchronized (type2EntitiesSubscriptions) {
-					type2EntitiesSubscriptions.remove(info.getType(), removedSub);
+					removeFromTable(type2EntitiesSubscriptions, tenant, info.getType(), removedSub);
 				}
 			}
 		}
