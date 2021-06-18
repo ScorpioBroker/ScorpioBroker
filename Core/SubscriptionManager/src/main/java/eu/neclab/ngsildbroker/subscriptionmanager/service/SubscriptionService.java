@@ -290,10 +290,14 @@ public class SubscriptionService implements SubscriptionManager {
 		return subscription.getId();
 	}
 
-	private void putInTable(Table<String, String, List<SubscriptionRequest>> type2EntitiesSubscriptions2, String tenant,
-			String aLL_TYPES_TYPE2, SubscriptionRequest subscriptionRequest) {
-		// TODO Auto-generated method stub
-
+	private void putInTable(Table<String, String, List<SubscriptionRequest>> table, String row,
+			String colum, SubscriptionRequest subscriptionRequest) {
+		List<SubscriptionRequest> subs = table.get(row, colum);
+		if(subs == null) {
+			subs = new ArrayList<SubscriptionRequest>();
+			table.put(row, colum, subs);
+		}
+		subs.add(subscriptionRequest);
 	}
 
 	private void validateSub(Subscription subscription) throws ResponseException {
