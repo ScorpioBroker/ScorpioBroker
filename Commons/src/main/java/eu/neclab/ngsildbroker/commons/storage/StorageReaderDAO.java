@@ -106,8 +106,14 @@ abstract public class StorageReaderDAO {
 	}
 
 	public List<String> query(QueryParams qp) throws ResponseException {
-		String tenantId = qp.getTenant();
-		JdbcTemplate template = getJDBCTemplate(tenantId);
+		JdbcTemplate template;
+		try {
+			String tenantId = qp.getTenant();
+			template = getJDBCTemplate(tenantId);
+		} catch (Exception e) {
+			throw new ResponseException(ErrorType.TenantNotFound);
+		}
+
 		try {
 			if (qp.getCheck() != null) {
 				String sqlQuery = typesAndAttributeQuery(qp);
@@ -447,6 +453,7 @@ abstract public class StorageReaderDAO {
 			String geoproperty) throws ResponseException {
 		return this.translateNgsildGeoqueryToPostgisQuery(georel, geometry, coordinates, geoproperty, null);
 	}
+
 	protected List<String> getTenants() throws ResponseException {
 		ArrayList<String> result = new ArrayList<String>();
 		try {
@@ -459,6 +466,7 @@ abstract public class StorageReaderDAO {
 		}
 		return result;
 	}
+
 	protected String getTenant(String tenantId) {
 		if (tenantId == null) {
 			return null;
@@ -468,6 +476,5 @@ abstract public class StorageReaderDAO {
 		}
 		return tenantId;
 	}
-
 
 }

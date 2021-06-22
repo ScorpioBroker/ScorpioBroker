@@ -336,7 +336,11 @@ public class QueryService {
 					logger.trace("Asynchronous Callable storage manager");
 					// TAKE CARE OF PAGINATION HERE
 					if (queryDAO != null) {
-						return queryDAO.query(qp);
+						try {
+							return queryDAO.query(qp);
+						} catch (Exception e) {
+							throw new ResponseException(ErrorType.TenantNotFound);
+						}
 					} else {
 						return getFromStorageManager(DataSerializer.toJson(qp));
 					}
@@ -376,9 +380,9 @@ public class QueryService {
 							logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
 							Callable<String> callable = () -> {
 								HttpHeaders callHeaders = new HttpHeaders();
-								for(Entry<String, String> entry: headers.entries()) {
+								for (Entry<String, String> entry : headers.entries()) {
 									String key = entry.getKey();
-									if(key.equals(NGSIConstants.TENANT_HEADER)) {
+									if (key.equals(NGSIConstants.TENANT_HEADER)) {
 										continue;
 									}
 									callHeaders.add(key, entry.getValue());
@@ -470,7 +474,7 @@ public class QueryService {
 		result.setResultsLeftBefore(offset);
 		return result;
 	}
-	//TODO decide on removal
+	// TODO decide on removal
 	/*
 	 * private void writeFullResultToKafka(String qToken, List<String>
 	 * aggregatedResult) throws IOException, ResponseException { // write to byte

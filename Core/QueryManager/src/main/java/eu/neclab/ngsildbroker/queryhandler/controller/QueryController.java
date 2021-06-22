@@ -284,8 +284,14 @@ public class QueryController {// implements QueryHandlerInterface {
 					//long pregenheades = System.currentTimeMillis();
 					ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 					//long postgenheaders = System.currentTimeMillis();
-					QueryResult qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
+					QueryResult qResult;
+					try {
+					 qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
 							qToken, showServices, countResult, check, headers);
+					}catch(Exception e){
+						return ResponseEntity.status(HttpStatus.NOT_FOUND)
+								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
+					}
 					//long pregenresult = System.currentTimeMillis();
 					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve);
 					//long end = System.currentTimeMillis();
