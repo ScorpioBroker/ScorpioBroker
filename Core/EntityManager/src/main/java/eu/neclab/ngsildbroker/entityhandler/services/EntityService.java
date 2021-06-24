@@ -333,7 +333,9 @@ public class EntityService {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		synchronized (this.entityIds) {
-			if (!this.entityIds.containsEntry(tenantId, entityId)) {
+			if (!this.entityIds.containsKey(tenantId)) {
+				throw new ResponseException(ErrorType.TenantNotFound);
+			} if (!this.entityIds.containsValue(entityId)) {
 				throw new ResponseException(ErrorType.NotFound);
 			}
 		}
