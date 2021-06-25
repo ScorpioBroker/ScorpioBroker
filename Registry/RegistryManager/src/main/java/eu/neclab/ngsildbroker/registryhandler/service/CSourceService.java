@@ -445,7 +445,9 @@ public class CSourceService {
 		}
 
 		synchronized (this.csourceIds) {
-			if (!this.csourceIds.containsEntry(tenantId, registrationid)) {
+			if (!this.csourceIds.containsKey(tenantId)) {
+				throw new ResponseException(ErrorType.TenantNotFound);
+			} if (!this.csourceIds.containsValue(registrationid)) {
 				throw new ResponseException(ErrorType.NotFound);
 			}
 		}
