@@ -48,12 +48,11 @@ public class StorageWriterDAO {
 
 	@Autowired
 	private DataSource writerDataSource;
-	
+
 	@Autowired
 	private HikariConfig hikariConfig;
-	
-	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 
+	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 
 	private TransactionTemplate writerTransactionTemplate;
 	private JdbcTemplate writerJdbcTemplateWithTransaction;
@@ -139,11 +138,16 @@ public class StorageWriterDAO {
 		 * request.getModifiedAt();
 		 */
 		String instanceId = request.getInstanceId();
-
-		for (HistoryAttribInstance entry : request.getAttribs()) {
-			result = result && doTemporalSqlAttrInsert(templates, entry.getElementValue(), entry.getEntityId(),
-					entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
-					entry.getEntityModifiedAt(), instanceId, entry.getOverwriteOp());
+		if (request.getAttribs().isEmpty()) {
+			result = doTemporalSqlAttrInsert(templates, "null", request.getId(),
+					request.getType(), null, request.getCreatedAt(),
+					request.getModifiedAt(), instanceId, null);
+		} else {
+			for (HistoryAttribInstance entry : request.getAttribs()) {
+				result = result && doTemporalSqlAttrInsert(templates, entry.getElementValue(), entry.getEntityId(),
+						entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
+						entry.getEntityModifiedAt(), instanceId, entry.getOverwriteOp());
+			}
 		}
 		return result;
 	}
@@ -283,8 +287,8 @@ public class StorageWriterDAO {
 			tenant = request.getHeaders().get(NGSIConstants.TENANT_HEADER).get(0);
 			String databasename = "ngb" + tenant;
 			try {
-				storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT,
-						DBConstants.DBCOLUMN_DATA_TENANT, tenant, databasename);
+				storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT, tenant,
+						databasename);
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -317,8 +321,9 @@ public class StorageWriterDAO {
 			return null;
 		}
 	}
+
 	public DataSource determineTargetDataSource(String tenantidvalue) {
-		
+
 		if (tenantidvalue == null)
 			return writerDataSource;
 

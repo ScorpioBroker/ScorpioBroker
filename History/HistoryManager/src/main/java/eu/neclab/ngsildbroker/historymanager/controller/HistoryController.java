@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.historymanager.controller;
 
 import java.net.URI;
+import java.util.List;
+
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
@@ -128,7 +130,11 @@ public class HistoryController {
 			qp.setId(entityId);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(req.getQp())));
+			List<String> queryResult = historyDAO.query(req.getQp());
+			if(queryResult.isEmpty()) {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(queryResult));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
