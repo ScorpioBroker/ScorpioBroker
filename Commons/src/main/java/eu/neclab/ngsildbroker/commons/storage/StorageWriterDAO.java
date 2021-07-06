@@ -139,9 +139,8 @@ public class StorageWriterDAO {
 		 */
 		String instanceId = request.getInstanceId();
 		if (request.getAttribs().isEmpty()) {
-			result = doTemporalSqlAttrInsert(templates, "null", request.getId(),
-					request.getType(), null, request.getCreatedAt(),
-					request.getModifiedAt(), instanceId, null);
+			result = doTemporalSqlAttrInsert(templates, "null", request.getId(), request.getType(), null,
+					request.getCreatedAt(), request.getModifiedAt(), instanceId, null);
 		} else {
 			for (HistoryAttribInstance entry : request.getAttribs()) {
 				result = result && doTemporalSqlAttrInsert(templates, entry.getElementValue(), entry.getEntityId(),
@@ -304,9 +303,7 @@ public class StorageWriterDAO {
 		if (tenantidvalue == null)
 			return null;
 		try {
-			String databasename;
-			databasename = writerJdbcTemplate.queryForObject("SELECT database_name FROM tenant WHERE tenant_id = ?",
-					String.class, tenantidvalue);
+			String databasename = "ngb" + tenantidvalue;
 			List<String> data;
 			data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
 			if (data.contains(databasename)) {
