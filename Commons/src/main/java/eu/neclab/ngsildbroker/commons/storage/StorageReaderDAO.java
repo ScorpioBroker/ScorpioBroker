@@ -58,12 +58,7 @@ abstract public class StorageReaderDAO {
 			return null;
 		try {
 
-			// String databasename="ngbcsource2";
-			// SELECT EXISTS(SELECT datname FROM pg_database WHERE datname = 'tenant2');
-			String sql = "SELECT database_name FROM tenant WHERE tenant_id = ?";
-			String databasename;
-			databasename = readerJdbcTemplate.queryForObject(sql, new Object[] { tenantidvalue }, String.class);
-
+			String databasename = "ngb" + tenantidvalue;
 			List<String> data;
 			data = readerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
 			if (data.contains(databasename)) {
