@@ -29,6 +29,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DBWriteTemplates;
+import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
@@ -138,7 +139,7 @@ public class StorageWriterDAO {
 		 * request.getModifiedAt();
 		 */
 		String instanceId = request.getInstanceId();
-		if (request.getAttribs().isEmpty()) {
+		if (request instanceof DeleteHistoryEntityRequest) {
 			result = doTemporalSqlAttrInsert(templates, "null", request.getId(),
 					request.getType(), null, request.getCreatedAt(),
 					request.getModifiedAt(), instanceId, null);
