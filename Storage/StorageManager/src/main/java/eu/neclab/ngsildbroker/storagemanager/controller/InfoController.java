@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.google.common.collect.ArrayListMultimap;
+
 import eu.neclab.ngsildbroker.commons.exceptions.HttpErrorResponseException;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.storagemanager.repository.EntityStorageReaderDAO;
@@ -105,10 +108,12 @@ public class InfoController {
 	}
 
 	@GetMapping(path = "/stats")
-	public ResponseEntity<Object> getStats(HttpServletRequest request) {
+	public ResponseEntity<Object> getStats(HttpServletRequest request) throws ResponseException {
 		HashMap<String, Object> result = new HashMap<String, Object>();
-		result.put("number of local available entities", storageReaderDao.getLocalEntitiesCount());
-		result.put("number of local available types", storageReaderDao.getLocalTypesCount());
+		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+		String tenant = HttpUtils.getTenantFromHeaders(headers);
+		result.put("number of local available entities", storageReaderDao.getLocalEntitiesCount(tenant));
+		result.put("number of local available types", storageReaderDao.getLocalTypesCount(tenant));
 		return ResponseEntity.status(HttpStatus.ACCEPTED).header("Content-Type", "application/json")
 				.body(DataSerializer.toJson(result));
 	}

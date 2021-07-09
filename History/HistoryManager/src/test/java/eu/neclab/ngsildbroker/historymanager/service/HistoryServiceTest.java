@@ -145,7 +145,7 @@ public class HistoryServiceTest {
 	@Test
 	public void addAttrib2TemporalEntityTest() {
 		try {
-			Mockito.doReturn(true).when(historyDAO).entityExists(any());
+			Mockito.doReturn(true).when(historyDAO).entityExists(any(), any());
 			historyService.addAttrib2TemporalEntity(ArrayListMultimap.create(), "urn:ngsi-ld:testunit:151",
 					temporalPayload);
 			verify(kafkaOperations, times(3)).pushToKafka(any(), any(), any());

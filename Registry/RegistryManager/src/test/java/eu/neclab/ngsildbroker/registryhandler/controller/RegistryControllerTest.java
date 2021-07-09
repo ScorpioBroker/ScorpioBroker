@@ -23,7 +23,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceInfoDAO;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 
@@ -40,9 +39,6 @@ public class RegistryControllerTest {
 	
 	@MockBean
 	private CSourceInfoDAO cSourceInfoDAO;
-	
-	@MockBean
-	private TenantAwareDataSource tenantAwareDataSource;
 
 	private String payload;
 	private String updatePayload;

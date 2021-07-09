@@ -23,8 +23,6 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
-import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
-import eu.neclab.ngsildbroker.commons.tenant.TenantContext;
 
 @Service
 @ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)
@@ -41,9 +39,6 @@ public class StorageWriterService {
 	@Autowired
 	@Qualifier("storagewriterdao")
 	StorageWriterDAO storageWriterDao;
-
-	@Autowired
-	TenantAwareDataSource tenantAwareDataSource;
 
 	@Value("${entity.stopListenerIfDbFails:true}")
 	boolean entityStopListenerIfDbFails;
@@ -154,7 +149,6 @@ public class StorageWriterService {
 		String headervalue;
 		if (jsonObjectheader.has(NGSIConstants.TENANT_HEADER)) {
 			headervalue = jsonObjectheader.get(NGSIConstants.TENANT_HEADER).getAsString();
-			TenantContext.setCurrentTenant(headervalue);
 			String databasename = "ngb" + headervalue;
 			if (datavalue != null) {
 				storageWriterDao.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,

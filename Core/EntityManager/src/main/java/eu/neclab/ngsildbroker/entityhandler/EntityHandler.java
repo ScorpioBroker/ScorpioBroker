@@ -14,6 +14,7 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
+import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
@@ -75,6 +76,12 @@ public class EntityHandler {
 	@Primary
 	EntityTopicMap entityTopicMap() {
 		return new EntityTopicMap();
+	}
+	
+	@Bean("emstorage")
+	@Primary
+	StorageWriterDAO storageWriterDAO() {
+		return new StorageWriterDAO();
 	}
 
 //	@Bean(name = "tenantAwareDataSource")

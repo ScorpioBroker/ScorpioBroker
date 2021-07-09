@@ -28,10 +28,11 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	}
 
 	public UpdateHistoryEntityRequest(EntityRequest entityRequest) {
+		
 		logger.trace("Listener handleEntityUpdate...");
 		// logger.debug("Received key: " + key);
 		// String payload = new String(message);
-
+		setHeaders(entityRequest.getHeaders());
 		final JsonObject jsonObject = parser.parse(entityRequest.getWithSysAttrs()).getAsJsonObject();
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());

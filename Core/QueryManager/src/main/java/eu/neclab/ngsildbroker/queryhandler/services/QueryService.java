@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -335,7 +336,11 @@ public class QueryService {
 					logger.trace("Asynchronous Callable storage manager");
 					// TAKE CARE OF PAGINATION HERE
 					if (queryDAO != null) {
-						return queryDAO.query(qp);
+						try {
+							return queryDAO.query(qp);
+						} catch (Exception e) {
+							throw new ResponseException(ErrorType.TenantNotFound);
+						}
 					} else {
 						return getFromStorageManager(DataSerializer.toJson(qp));
 					}
@@ -374,15 +379,18 @@ public class QueryService {
 							}
 							logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
 							Callable<String> callable = () -> {
-								HttpHeaders headers = new HttpHeaders();
-								for (Object link : linkHeaders) {
-									headers.add("Link", "<" + link.toString()
-											+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+								HttpHeaders callHeaders = new HttpHeaders();
+								for (Entry<String, String> entry : headers.entries()) {
+									String key = entry.getKey();
+									if (key.equals(NGSIConstants.TENANT_HEADER)) {
+										continue;
+									}
+									callHeaders.add(key, entry.getValue());
 								}
 								if (uri_tenant != null) {
-									headers.add(NGSIConstants.TENANT_HEADER, uri_tenant);
+									callHeaders.add(NGSIConstants.TENANT_HEADER, uri_tenant);
 								}
-								HttpEntity entity = new HttpEntity<>(headers);
+								HttpEntity entity = new HttpEntity<>(callHeaders);
 								String result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
 										HttpMethod.GET, entity, String.class).getBody();
 								logger.debug("http call result :: ::" + result);
@@ -466,7 +474,7 @@ public class QueryService {
 		result.setResultsLeftBefore(offset);
 		return result;
 	}
-	//TODO decide on removal
+	// TODO decide on removal
 	/*
 	 * private void writeFullResultToKafka(String qToken, List<String>
 	 * aggregatedResult) throws IOException, ResponseException { // write to byte

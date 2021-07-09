@@ -1,63 +1,34 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import javax.sql.DataSource;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
-import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 
 @Repository
 public class EntityInfoDAO extends StorageReaderDAO {
 
-	@Autowired
-	TenantAwareDataSource tenantAwareDataSource;
-
-	@Autowired
-	private DataSource readerDataSource;
-
-	public Set<String> getAllIds() {
-		synchronized (readerJdbcTemplate) {
-			readerJdbcTemplate = new JdbcTemplate(readerDataSource);
+	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
+		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+		result.putAll(AppConstants.INTERNAL_NULL_KEY,
+				getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM entity", String.class));
+		List<String> tenants = getTenants();
+		for (String tenant : tenants) {
+			result.putAll(tenant,
+					getJDBCTemplate(tenant).queryForList("SELECT DISTINCT id FROM entity", String.class));
 		}
-		List<String> tempList = readerJdbcTemplate.queryForList("SELECT id FROM entity", String.class);
-		return new HashSet<String>(tempList);
+
+		return result;
 	}
 
-	public Set<String> getAllTenantIds() throws ResponseException {
-		DataSource finaldatasource = tenantAwareDataSource.determineTargetDataSource();
-		if (finaldatasource == null)
-			throw new ResponseException(ErrorType.TenantNotFound);
-		readerJdbcTemplate = new JdbcTemplate(finaldatasource);
-		List<String> tempTenantList = readerJdbcTemplate.queryForList("SELECT id FROM entity", String.class);
-		return new HashSet<String>(tempTenantList);
-	}
-
-	public String getEntity(String entityId) {
-		synchronized (readerJdbcTemplate) {
-			readerJdbcTemplate = new JdbcTemplate(readerDataSource);
-		}
-		List<String> tempList = readerJdbcTemplate.queryForList("SELECT data FROM entity WHERE id='" + entityId + "'",
-				String.class);
+	public String getEntity(String entityId, String tenantId) throws ResponseException {
+		List<String> tempList = getJDBCTemplate(getTenant(tenantId))
+				.queryForList("SELECT data FROM entity WHERE id='" + entityId + "'", String.class);
 		return tempList.get(0);
 	}
-
-	public String getTenantEntity(String entityId) {
-		DataSource finaldatasource = tenantAwareDataSource.determineTargetDataSource();
-		synchronized (readerJdbcTemplate) {
-			readerJdbcTemplate = new JdbcTemplate(finaldatasource);
-		}
-		List<String> tempTenantList = readerJdbcTemplate
-				.queryForList("SELECT data FROM entity WHERE id='" + entityId + "'", String.class);
-		return tempTenantList.get(0);
-	}
-
 }

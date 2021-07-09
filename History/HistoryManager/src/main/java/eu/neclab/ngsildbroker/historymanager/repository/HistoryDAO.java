@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
@@ -208,8 +209,8 @@ public class HistoryDAO extends StorageReaderDAO {
 		return sqlWhere.toString();
 	}
 
-	public boolean entityExists(String entityId) {
-		List<Map<String, Object>> list = readerJdbcTemplate.queryForList("Select id from temporalentity where id='" + entityId + "';");
+	public boolean entityExists(String entityId, String tenantId) throws ResponseException {
+		List<Map<String, Object>> list = getJDBCTemplate(tenantId).queryForList("Select id from temporalentity where id='" + entityId + "';");
 		if (list == null || list.isEmpty()) {
 			return false;
 		}

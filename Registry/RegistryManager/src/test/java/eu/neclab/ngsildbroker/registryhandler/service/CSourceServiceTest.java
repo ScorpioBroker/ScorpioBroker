@@ -1,10 +1,11 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
 import java.net.URI;
-import java.util.HashSet;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -13,7 +14,6 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -22,11 +22,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.commons.tenant.TenantAwareDataSource;
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceInfoDAO;
 
@@ -42,8 +43,6 @@ public class CSourceServiceTest {
 	CSourceService csourceService;
 	@MockBean
 	ObjectMapper objectMapper;
-	@MockBean
-	TenantAwareDataSource tenantAwareDataSource;
 	@Mock
 	CSourceSubscriptionService csourceSubService;
 	@Mock
@@ -132,8 +131,8 @@ public class CSourceServiceTest {
 	public void updateCSourceTest() {
 		try {
 			MockitoAnnotations.initMocks(this);
-			HashSet<String> hashset = new HashSet<>();
-			hashset.add("urn:ngsi-ld:ContextSourceRegistration:csr1a3456");
+			ArrayListMultimap<String, String> hashset = ArrayListMultimap.create();
+			hashset.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr1a3456");
 			when(csourceInfoDAO.getAllIds()).thenReturn(hashset);
 
 			// call post-constructor
@@ -150,7 +149,7 @@ public class CSourceServiceTest {
 			Mockito.doReturn(true).when(csourceSubService).checkSubscriptions(any(CSourceRequest.class),
 					any(CSourceRequest.class));
 			Mockito.doReturn(updateCSourceReg).when(csourceInfoDAO)
-					.getTenantEntity("urn:ngsi-ld:ContextSourceRegistration:csr1a3456");
+					.getEntity(null, "urn:ngsi-ld:ContextSourceRegistration:csr1a3456");
 			boolean result = csourceService.updateCSourceRegistration(multimaparr,
 					"urn:ngsi-ld:ContextSourceRegistration:csr1a3456", updatePayload);
 			Assert.assertTrue(result);
@@ -163,8 +162,8 @@ public class CSourceServiceTest {
 	public void deleteCSorceTest() throws Exception {
 		try {
 			MockitoAnnotations.initMocks(this);
-			HashSet<String> hashset = new HashSet<>();
-			hashset.add("urn:ngsi-ld:ContextSourceRegistration:csr1a3456");
+			ArrayListMultimap<String, String> hashset = ArrayListMultimap.create();
+			hashset.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr1a3456");
 			when(csourceInfoDAO.getAllIds()).thenReturn(hashset);
 
 			// call post-constructor
