@@ -1,5 +1,5 @@
 RELEASE NOTES
-Scorpio FIWARE 8.0.1
+Scorpio FIWARE 8.1.0
  - This release mainly contains optimizations of the tenant support.
  - Various bugfixes where done to the history manager.
  - History manager supports the directDB flag now and it is set by default
