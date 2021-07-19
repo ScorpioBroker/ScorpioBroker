@@ -582,7 +582,7 @@ You can basically update every part of an entity with two exceptions. The type a
 To update our room1 we will do an HTTP POST like this.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1 -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
+	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
 	{
 		"temperature": {
 		"value": 25,
