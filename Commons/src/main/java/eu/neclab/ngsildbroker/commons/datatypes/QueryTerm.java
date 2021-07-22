@@ -710,7 +710,7 @@ public class QueryTerm {
 				for (String subPart : attribute.split("\\.")) {
 					if (subPart.contains("[")) {
 						for (String subParts : subPart.split("\\[")) {
-							subParts = subParts.replaceAll("\\]", "");
+							//subParts = subParts.replaceAll("\\]", "");
 							attribPath.add(expandAttributeName(subParts));
 						}
 					} else {
