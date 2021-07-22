@@ -43,7 +43,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonSyntaxException;
-import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
@@ -111,9 +110,6 @@ public class QueryService {
 	boolean directDbConnection;
 
 	@SuppressWarnings("unused")
-
-	@Autowired
-	private EurekaClient eurekaClient;
 
 	@Autowired
 	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;

@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -56,9 +55,6 @@ public class SubscriptionController {
 	@Autowired
 	@Qualifier("smops")
 	KafkaOps kafkaOps;
-
-	@Autowired
-	EurekaClient eurekaClient;
 
 	@Value("${atcontext.url}")
 	String atContextServerUrl;

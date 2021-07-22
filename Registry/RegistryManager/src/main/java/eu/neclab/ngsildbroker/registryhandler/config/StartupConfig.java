@@ -22,10 +22,10 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.discovery.EurekaClient;
+//import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+//import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 
 @Service
@@ -34,8 +34,8 @@ public class StartupConfig {
 	@Autowired
 	@Qualifier("rmrestTemplate")
 	RestTemplate restTemplate;
-	@Autowired
-	EurekaClient eurekaClient;
+//	@Autowired
+//	EurekaClient eurekaClient;
 	@Value("${broker.id:#{null}}")
 	String id;
 	@Value("${broker.geoCoverage:#{null}}")
@@ -90,7 +90,8 @@ public class StartupConfig {
 			// TODO this has to be changed because the registry manager just straight up
 			// crashes if the gateway is not up yet
 			try {
-				endpoint = MicroServiceUtils.getResourceURL(eurekaClient, "");
+				endpoint = "gateway end pont need to be filled" ;
+//						MicroServiceUtils.getResourceURL(eurekaClient, "");
 			} catch (Exception e) {
 				logger.error(
 						"Failed to retrieve endpoint url. Please make sure that the gateway is running or provide a customEndpoint entry");

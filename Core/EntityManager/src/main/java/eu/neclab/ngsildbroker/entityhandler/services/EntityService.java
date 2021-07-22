@@ -32,9 +32,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.github.filosganga.geogson.model.Geometry;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
-import com.netflix.discovery.EurekaClient;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
@@ -66,7 +64,6 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.IdValidationRule;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.PropertyValidatioRule;
@@ -124,8 +121,10 @@ public class EntityService {
 	}
 
 	ObjectMapper objectMapper;
-	@Autowired
-	private EurekaClient eurekaClient;
+	
+//	@Autowired
+//	private EurekaClient eurekaClient;
+	
 	@Autowired
 	@Qualifier("emconRes")
 	ContextResolverBasic contextResolver;
@@ -545,7 +544,7 @@ public class EntityService {
 
 		// Entity to CSourceRegistration conversion.
 		csourceRegistration.setId(entity.getId());
-		csourceRegistration.setEndpoint(MicroServiceUtils.getGatewayURL(eurekaClient));
+//		csourceRegistration.setEndpoint(MicroServiceUtils.getGatewayURL(eurekaClient));
 		// location node
 		GeoProperty geoLocationProperty = entity.getLocation();
 		if (geoLocationProperty != null) {
@@ -582,9 +581,9 @@ public class EntityService {
 
 	public URI getResourceURL(String resource) throws URISyntaxException {
 		logger.trace("getResourceURL() :: started");
-		URI uri = MicroServiceUtils.getGatewayURL(eurekaClient);
+//		URI uri = MicroServiceUtils.getGatewayURL(eurekaClient);
 		logger.trace("getResourceURL() :: completed");
-		return new URI(uri.toString() + "/" + resource);
+		return new URI("gatewayurl need to be filled" + "/" + resource);
 	}
 
 	/*

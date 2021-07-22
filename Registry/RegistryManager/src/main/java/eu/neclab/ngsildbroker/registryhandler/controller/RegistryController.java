@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -56,8 +55,6 @@ public class RegistryController {
 	private final static String MY_REQUEST_MAPPING = "/ngsi-ld/v1/csourceRegistrations";
 	private final static String MY_REQUEST_MAPPING_ALT = "/ngsi-ld/v1/csourceRegistrations/";
 
-	@Autowired
-	EurekaClient eurekaClient;
 	@Autowired
 	CSourceService csourceService;
 	@Autowired
