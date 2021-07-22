@@ -48,6 +48,7 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
     HelloWorld.rst
     multivalue.rst
 	Batch_operation_support.rst
+	multiTenant.rst
 
 .. toctree::
     :maxdepth: 1

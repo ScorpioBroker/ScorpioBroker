@@ -107,11 +107,11 @@ public class EntityBatchControllerTest {
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A102");
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A103");
-			when(entityService.createMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.createMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isCreated());
-			verify(entityService, times(1)).createMultipleMessage(any());
+			verify(entityService, times(1)).createMultipleMessage(any(),any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -131,11 +131,11 @@ public class EntityBatchControllerTest {
 			RestResponse restResponse = new RestResponse(ErrorType.AlreadyExists,"Already exists.");
 			BatchFailure batchFailure = new BatchFailure("urn:ngsi-ld:Vehicle:A103",restResponse);
 			batchResult.addFail(batchFailure);
-			when(entityService.createMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.createMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isMultiStatus());
-			verify(entityService, times(1)).createMultipleMessage(any());	
+			verify(entityService, times(1)).createMultipleMessage(any(),any());	
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -151,11 +151,11 @@ public class EntityBatchControllerTest {
 		try {
 
 			BatchResult batchResult = new BatchResult();
-			when(entityService.createMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.createMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isBadRequest());
-			verify(entityService, times(1)).createMultipleMessage(any());
+			verify(entityService, times(1)).createMultipleMessage(any(),any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -172,11 +172,11 @@ public class EntityBatchControllerTest {
 			BatchResult batchResult = new BatchResult();
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A102");
-			when(entityService.updateMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.updateMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isNoContent());
-			verify(entityService, times(1)).updateMultipleMessage(any());	
+			verify(entityService, times(1)).updateMultipleMessage(any(),any());	
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -196,11 +196,11 @@ public class EntityBatchControllerTest {
 			RestResponse restResponse = new RestResponse(ErrorType.NotFound,"Resource not found.");
 			BatchFailure batchFailure = new BatchFailure("urn:ngsi-ld:Vehicle:A110",restResponse);
 			batchResult.addFail(batchFailure);
-			when(entityService.updateMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.updateMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isMultiStatus());
-			verify(entityService, times(1)).updateMultipleMessage(any());	
+			verify(entityService, times(1)).updateMultipleMessage(any(),any());	
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -216,11 +216,11 @@ public class EntityBatchControllerTest {
 		try {
 
 			BatchResult batchResult = new BatchResult();
-			when(entityService.updateMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.updateMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isBadRequest());
-			verify(entityService, times(1)).updateMultipleMessage(any());
+			verify(entityService, times(1)).updateMultipleMessage(any(),any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -238,11 +238,11 @@ public class EntityBatchControllerTest {
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A102");
 			EntityService.checkEntity = false;
-			when(entityService.upsertMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.upsertMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isNoContent());
-			verify(entityService, times(1)).upsertMultipleMessage(any());	
+			verify(entityService, times(1)).upsertMultipleMessage(any(),any());	
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -259,11 +259,11 @@ public class EntityBatchControllerTest {
 			BatchResult batchResult = new BatchResult();
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
 			EntityService.checkEntity = true;
-			when(entityService.upsertMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.upsertMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isCreated());
-			verify(entityService, times(1)).upsertMultipleMessage(any());	
+			verify(entityService, times(1)).upsertMultipleMessage(any(),any());	
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -279,11 +279,11 @@ public class EntityBatchControllerTest {
 		try {
 
 			BatchResult batchResult = new BatchResult();
-			when(entityService.upsertMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.upsertMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isBadRequest());
-			verify(entityService, times(1)).upsertMultipleMessage(any());
+			verify(entityService, times(1)).upsertMultipleMessage(any(),any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -300,11 +300,11 @@ public class EntityBatchControllerTest {
 			BatchResult batchResult = new BatchResult();
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A101");
 			batchResult.addSuccess("urn:ngsi-ld:Vehicle:A102");
-			when(entityService.deleteMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.deleteMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/delete").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(deletePayload))
 					.andExpect(status().isNoContent());
-			verify(entityService, times(1)).deleteMultipleMessage(any());
+			verify(entityService, times(1)).deleteMultipleMessage(any(),any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();
@@ -323,11 +323,11 @@ public class EntityBatchControllerTest {
 			RestResponse restResponse = new RestResponse(ErrorType.NotFound,"Resource not found.");
 			BatchFailure batchFailure = new BatchFailure("urn:ngsi-ld:Vehicle:A104",restResponse);
 			batchResult.addFail(batchFailure);
-			when(entityService.deleteMultipleMessage(any())).thenReturn(batchResult);
+			when(entityService.deleteMultipleMessage(any(),any())).thenReturn(batchResult);
 			mockMvc.perform(post("/ngsi-ld/v1/entityOperations/delete").contentType(AppConstants.NGB_APPLICATION_JSON)
 					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(deletePayload))
 					.andExpect(status().isMultiStatus());
-			verify(entityService, times(1)).deleteMultipleMessage(any());
+			verify(entityService, times(1)).deleteMultipleMessage(any(),any());
 		} catch (Exception e) {
 			Assert.fail();
 			e.printStackTrace();

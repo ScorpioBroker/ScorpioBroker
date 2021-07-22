@@ -46,7 +46,7 @@ public class EntityBatchController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
-			BatchResult result = entityService.createMultipleMessage(resolved);
+			BatchResult result = entityService.createMultipleMessage(HttpUtils.getHeaders(request), resolved);
 			return generateBatchResultReply(result, HttpStatus.CREATED);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
@@ -76,12 +76,13 @@ public class EntityBatchController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
-			BatchResult result = entityService.upsertMultipleMessage(resolved);
-			if(result.getFails().size() == 0 && EntityService.checkEntity == true) {
+			BatchResult result = entityService.upsertMultipleMessage(HttpUtils.getHeaders(request), resolved);
+			if (result.getFails().size() == 0 && EntityService.checkEntity == true) {
 				return generateBatchResultReply(result, HttpStatus.CREATED);
 			} else {
-				return generateBatchResultReply(result, HttpStatus.NO_CONTENT);	
+				return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 			}
+
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
@@ -93,7 +94,7 @@ public class EntityBatchController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
-			BatchResult result = entityService.updateMultipleMessage(resolved);
+			BatchResult result = entityService.updateMultipleMessage(HttpUtils.getHeaders(request), resolved);
 			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
@@ -106,7 +107,7 @@ public class EntityBatchController {
 		try {
 //			String resolved = httpUtils.expandPayload(request, payload);
 			// it's an array of uris which is not json-ld so no expanding here
-			BatchResult result = entityService.deleteMultipleMessage(payload);
+			BatchResult result = entityService.deleteMultipleMessage(HttpUtils.getHeaders(request), payload);
 			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 		} catch (ResponseException e) {
 			throw new ResponseException(ErrorType.BadRequestData);

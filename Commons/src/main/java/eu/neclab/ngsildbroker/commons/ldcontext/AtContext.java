@@ -8,7 +8,6 @@ import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 import com.google.gson.Gson;
@@ -51,7 +50,7 @@ public class AtContext {
 	public Map<String, byte[]> getAllContextes() {
 		return kafkaOps.pullFromKafka(KafkaConstants.ATCONTEXT_TOPIC);
 	}
-	@SuppressWarnings("unchecked")
+	//@SuppressWarnings("unchecked")
 	public List<Object> getContextes(String id){
 //		byte[] kafkaBytes = kafkaOps.pullFromKafka(KafkaConstants.ATCONTEXT_TOPIC).get(id);
 //		if(kafkaBytes == null || kafkaBytes == AppConstants.NULL_BYTES) {
@@ -70,10 +69,11 @@ public class AtContext {
 		
 	}
 
+	@SuppressWarnings("unchecked")//No class object from generics cast into Object so no problem.
 	@KafkaListener(topics = "ATCONTEXT", groupId = "atCon")
 	public void listenContext(Message<byte[]> message) {
 		List<Object> context = gson.fromJson(new String(message.getPayload()), List.class);
-		String key = kafkaOps.getMessageKey(message);
+		String key = KafkaOps.getMessageKey(message);
 		id2Contextes.put(key, context);
 	}
 }

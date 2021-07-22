@@ -16,13 +16,12 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -39,7 +38,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -51,7 +49,6 @@ import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.params.ConnRouteParams;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ByteArrayEntity;
@@ -62,7 +59,6 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.params.HttpParams;
 import org.apache.http.ssl.SSLContextBuilder;
@@ -73,6 +69,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
+
+import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -1068,6 +1066,33 @@ public final class HttpUtils {
 		}
 
 		return baos.toByteArray();
+	}
+	public static ArrayListMultimap<String, String> getHeaders(HttpServletRequest request) {
+		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+		Iterator<String> it = request.getHeaderNames().asIterator();
+		while(it.hasNext()) {
+			String key = it.next();
+			Iterator<String> it2 = request.getHeaders(key).asIterator();
+			while(it2.hasNext()) {
+				result.put(key, it2.next());
+			}
+		}
+		return result;
+	}
+	
+	public static String getTenantFromHeaders(ArrayListMultimap<String, String> headers) {
+		if(headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
+		}
+		return null;
+	}
+
+	public static String getInternalTenant(ArrayListMultimap<String, String> headers) {
+		String tenantId = getTenantFromHeaders(headers);
+		if (tenantId == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
+		return tenantId;
 	}
 
 	// public static ResponseEntity<Object> generateReply(String acceptHeader,

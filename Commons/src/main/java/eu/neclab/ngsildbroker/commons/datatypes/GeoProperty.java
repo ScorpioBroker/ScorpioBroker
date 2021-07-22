@@ -2,8 +2,6 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.HashMap;
 
-import com.github.filosganga.geogson.model.Geometry;
-
 /**
  * @author hebgen
  * @version 1.0

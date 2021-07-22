@@ -1,8 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.net.URI;
-import java.util.UUID;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class RelationshipEntry extends BaseEntry{

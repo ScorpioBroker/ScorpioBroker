@@ -10,9 +10,7 @@ spring:
     admin:
       properties:
         cleanup:
-          policy: compact
-  flyway:
-    baselineOnMigrate: true
+          policy: compact 
   datasource:
     url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_registrymanager"
     username: ngb
@@ -24,6 +22,8 @@ spring:
       poolName: SpringBootHikariCP
       maxLifetime: 2000000
       connectionTimeout: 30000
+
+
   cloud:
     stream:
       kafka:
@@ -83,6 +83,33 @@ bootstrap:
 # (default) spring.datasource.type=com.zaxxer.hikari.HikariDataSource
 
 
+reader:
+  enabled: true
+  datasource:
+    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_reader"
+    username: ngb
+    password: ngb
+    hikari:
+      minimumIdle: 5
+      maximumPoolSize: 20
+      idleTimeout: 30000
+      poolName: SpringBootHikariCP_Reader
+      maxLifetime: 2000000
+      connectionTimeout: 30000
+
+writer:
+  enabled: true
+  datasource:
+    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_writer"
+    username: ngb
+    password: ngb
+    hikari:
+      minimumIdle: 5
+      maximumPoolSize: 20
+      idleTimeout: 30000
+      poolName: SpringBootHikariCP_Writer
+      maxLifetime: 2000000
+      connectionTimeout: 30000
 
 
 management:
