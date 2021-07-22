@@ -2,10 +2,8 @@ package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
-
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -34,9 +32,9 @@ public class EntityBatchController {
 	@Autowired
 	@Qualifier("emconRes")
 	ContextResolverBasic contextResolver;
-
+	
 	HttpUtils httpUtils;
-
+	
 	@PostConstruct
 	private void setup() {
 		httpUtils = HttpUtils.getInstance(contextResolver);
@@ -64,8 +62,8 @@ public class EntityBatchController {
 		}
 		if (result.getSuccess().isEmpty()) {
 			status = HttpStatus.BAD_REQUEST;
-		}
-
+		} 
+         
 		if (body == null) {
 			return ResponseEntity.status(status).build();
 		}
@@ -79,7 +77,12 @@ public class EntityBatchController {
 			HttpUtils.doPreflightCheck(request, payload);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			BatchResult result = entityService.upsertMultipleMessage(HttpUtils.getHeaders(request), resolved);
-			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
+			if (result.getFails().size() == 0 && EntityService.checkEntity == true) {
+				return generateBatchResultReply(result, HttpStatus.CREATED);
+			} else {
+				return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
+			}
+
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}

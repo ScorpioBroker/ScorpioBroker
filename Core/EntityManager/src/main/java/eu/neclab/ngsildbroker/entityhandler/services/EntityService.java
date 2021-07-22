@@ -73,6 +73,7 @@ import eu.neclab.ngsildbroker.entityhandler.validationutil.PropertyValidatioRule
 import eu.neclab.ngsildbroker.entityhandler.validationutil.RelationshipValidationRule;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.TypeValidationRule;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.ValidationRules;
+import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
 
 @Service
 public class EntityService {
@@ -104,6 +105,7 @@ public class EntityService {
 	int maxDeleteBatch;
 
 	boolean directDB = true;
+	public static boolean checkEntity = false;
 	@Autowired
 	@Qualifier("emstorage")
 	StorageWriterDAO storageWriterDao;
@@ -636,15 +638,16 @@ public class EntityService {
 			Iterator<JsonNode> it = myArray.iterator();
 			while (it.hasNext()) {
 				JsonNode next = it.next();
-
+				String entityId = "NOT AVAILABLE";
+				if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
+					entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
+				}
 				try {
+					boolean validatePayload =  Validator.validatePayloadType(next, entityId, result);
+					if(validatePayload == false) {
 					result.addSuccess(createMessage(headers, objectMapper.writeValueAsString(next)));
-				} catch (Exception e) {
-
-					String entityId = "NOT AVAILABLE";
-					if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
-						entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
 					}
+				} catch (Exception e) {
 					RestResponse response;
 					if (e instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e);
@@ -728,17 +731,27 @@ public class EntityService {
 					result.addFail(new BatchFailure(entityId,
 							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
 					continue;
-				}
+				} 
+				
+				if (!next.hasNonNull(NGSIConstants.JSON_LD_TYPE)) {
+					result.addFail(new BatchFailure(entityId,
+							new RestResponse(ErrorType.BadRequestData, "Bad Request Data.")));
+					continue; 
+				} 
 				try {
-					AppendResult updateResult = appendMessage(headers, entityId, objectMapper.writeValueAsString(next),
-							null);
-					if (updateResult.getStatus()) {
-						result.addSuccess(entityId);
-					} else {
-						result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
-								objectMapper.writeValueAsString(updateResult.getJsonToAppend()) + " was not added")));
+					boolean validatePayload = Validator.validatePayloadType(next, entityId, result);
+					if (validatePayload == false) {
+						AppendResult updateResult = appendMessage(headers, entityId,
+								objectMapper.writeValueAsString(next), null);
+						if (updateResult.getStatus()) {
+							result.addSuccess(entityId);
+						} else {
+							result.addFail(new BatchFailure(entityId,
+									new RestResponse(ErrorType.MultiStatus,
+											objectMapper.writeValueAsString(updateResult.getJsonToAppend())
+													+ " was not added")));
+						}
 					}
-
 				} catch (Exception e) {
 
 					RestResponse response;
@@ -761,6 +774,7 @@ public class EntityService {
 	public BatchResult upsertMultipleMessage(ArrayListMultimap<String, String> headers, String resolved)
 			throws ResponseException {
 		try {
+			checkEntity = false;
 			BatchResult result = new BatchResult();
 			JsonNode myTree = objectMapper.readTree(resolved);
 			if (!myTree.isArray()) {
@@ -785,9 +799,14 @@ public class EntityService {
 				}
 				String entityString = objectMapper.writeValueAsString(next);
 				try {
-
-					result.addSuccess(createMessage(headers, entityString));
-
+					boolean validatePayload =  Validator.validatePayloadType(next, entityId, result);
+					if(validatePayload == false) {
+                    String ids = createMessage(headers,entityString);
+                    if(ids != null && !ids.isEmpty()) {
+                    	checkEntity = true;
+                    }
+					result.addSuccess(ids);
+				  }
 				} catch (Exception e) {
 
 					RestResponse response;
@@ -796,8 +815,9 @@ public class EntityService {
 						if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
 							AppendResult updateResult;
 							try {
+								boolean validatePayload =  Validator.validatePayloadType(next, entityId, result);
+								if(validatePayload == false) {
 								updateResult = appendMessage(headers, entityId, entityString, null);
-
 								if (updateResult.getStatus()) {
 									result.addSuccess(entityId);
 								} else {
@@ -806,6 +826,7 @@ public class EntityService {
 													objectMapper.writeValueAsString(updateResult.getJsonToAppend())
 															+ " was not added")));
 								}
+							  }
 							} catch (Exception e1) {
 
 								if (e1 instanceof ResponseException) {

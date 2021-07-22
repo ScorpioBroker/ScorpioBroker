@@ -1,10 +1,16 @@
 package eu.neclab.ngsildbroker.entityhandler.validationutil;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchFailure;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
+import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 
 public class Validator {
 
@@ -26,4 +32,26 @@ public class Validator {
 			}
 		}
 	}
+	
+	public static boolean validatePayloadType(JsonNode next,String entityId,BatchResult result) {
+		boolean validatePayload = false;
+		ObjectNode objectNode = (ObjectNode) next;
+		Iterator<Map.Entry<String, JsonNode>> iter = objectNode.fields();
+		while (iter.hasNext()) {
+			validatePayload = false;
+			Map.Entry<String, JsonNode> entry = iter.next();
+			if (entry.getValue().isArray() && entry.getValue().has(0) && entry.getValue().get(0).isObject()) {
+				ObjectNode attrObj = (ObjectNode) entry.getValue().get(0);
+				if (attrObj.has(NGSIConstants.JSON_LD_TYPE) && attrObj.get(NGSIConstants.JSON_LD_TYPE).isArray()
+						&& attrObj.get(NGSIConstants.JSON_LD_TYPE).has(0)) {
+				} else {
+					validatePayload = true;
+					result.addFail(new BatchFailure(entityId,
+							new RestResponse(ErrorType.BadRequestData, "Bad Request Data.")));
+					break;
+				}
+			}
+		}
+		return validatePayload;
+	} 
 }
