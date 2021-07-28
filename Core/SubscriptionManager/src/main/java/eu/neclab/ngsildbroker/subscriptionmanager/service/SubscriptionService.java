@@ -7,7 +7,6 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_INT
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEAR;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -21,13 +20,10 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
@@ -45,7 +41,6 @@ import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
@@ -57,9 +52,7 @@ import com.google.gson.JsonParseException;
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.discovery.shared.Application;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
@@ -270,7 +263,7 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 			storeSubscription(subscriptionRequest);
 
-			if (subscription.getExpires() != null) {
+			if (subscription.getExpiresAt() != null) {
 				TimerTask cancel = new TimerTask() {
 
 					@Override
@@ -284,7 +277,7 @@ public class SubscriptionService implements SubscriptionManager {
 					}
 				};
 				subId2TimerTask.put(subscriptionRequest.getTenant(), subscription.getId().toString(), cancel);
-				watchDog.schedule(cancel, subscription.getExpires() - System.currentTimeMillis());
+				watchDog.schedule(cancel, subscription.getExpiresAt() - System.currentTimeMillis());
 			}
 		}
 		return subscription.getId();
@@ -437,12 +430,12 @@ public class SubscriptionService implements SubscriptionManager {
 		if (subscription.getEntities() != null && !subscription.getEntities().isEmpty()) {
 			oldSub.setEntities(subscription.getEntities());
 		}
-		if (subscription.getExpires() != null) {
-			oldSub.setExpires(subscription.getExpires());
+		if (subscription.getExpiresAt() != null) {
+			oldSub.setExpiresAt(subscription.getExpiresAt());
 			synchronized (subId2TimerTask) {
 				TimerTask task = subId2TimerTask.get(subscriptionRequest.getTenant(), oldSub.getId().toString());
 				task.cancel();
-				watchDog.schedule(task, subscription.getExpires() - System.currentTimeMillis());
+				watchDog.schedule(task, subscription.getExpiresAt() - System.currentTimeMillis());
 			}
 
 		}
@@ -967,15 +960,15 @@ public class SubscriptionService implements SubscriptionManager {
 			public void run() {
 
 				Subscription remoteSub = new Subscription();
-				Subscription subscription = subscriptionRequest.getSubscription();
+                Subscription subscription = subscriptionRequest.getSubscription();
 				remoteSub.setCustomFlags(subscription.getCustomFlags());
 				remoteSub.setDescription(subscription.getDescription());
 				remoteSub.setEntities(subscription.getEntities());
-				remoteSub.setExpires(subscription.getExpires());
+				remoteSub.setExpiresAt(subscription.getExpiresAt());
 				remoteSub.setLdGeoQuery(subscription.getLdGeoQuery());
 				remoteSub.setLdQuery(subscription.getLdQuery());
 				remoteSub.setLdTempQuery(subscription.getLdTempQuery());
-				remoteSub.setName(subscription.getName());
+				remoteSub.setSubscriptionName(subscription.getSubscriptionName());
 				remoteSub.setStatus(subscription.getStatus());
 				remoteSub.setThrottling(subscription.getThrottling());
 				remoteSub.setTimeInterval(subscription.getTimeInterval());

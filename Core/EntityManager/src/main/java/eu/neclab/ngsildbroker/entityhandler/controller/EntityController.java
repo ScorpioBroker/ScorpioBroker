@@ -76,8 +76,8 @@ public class EntityController {// implements EntityHandlerInterface {
 		this.httpUtils = HttpUtils.getInstance(contextResolver);
 	}
 
-	LocalDateTime start;
-	LocalDateTime end;
+	LocalDateTime startAt;
+	LocalDateTime endAt;
 
 	public EntityController() {
 	}

@@ -43,12 +43,12 @@ public class QueryParams {
 	@SerializedName("timerel")
 	@Expose
 	private String timerel;
-	@SerializedName("time")
+	@SerializedName("timeAt")
 	@Expose
-	private String time;
-	@SerializedName("endTime")
+	private String timeAt;
+	@SerializedName("endTimeAt")
 	@Expose
-	private String endTime;
+	private String endTimeAt;
 	@SerializedName("timeproperty")
 	@Expose
 	private String timeproperty;
@@ -222,29 +222,29 @@ public class QueryParams {
 		return this;
 	}
 
-	public String getTime() {
-		return time;
+	public String getTimeAt() {
+		return timeAt;
 	}
 
-	public void setTime(String time) {
-		this.time = time;
+	public void setTimeAt(String timeAt) {
+		this.timeAt = timeAt;
 	}
 
-	public QueryParams withTime(String time) {
-		this.time = time;
+	public QueryParams withTime(String timeAt) {
+		this.timeAt = timeAt;
 		return this;
 	}
 
-	public String getEndTime() {
-		return endTime;
+	public String getEndTimeAt() {
+		return endTimeAt;
 	}
 
-	public void setEndTime(String endTime) {
-		this.endTime = endTime;
+	public void setEndTimeAt(String endTimeAt) {
+		this.endTimeAt = endTimeAt;
 	}
 
-	public QueryParams withEndTime(String endTime) {
-		this.endTime = endTime;
+	public QueryParams withEndTime(String endTimeAt) {
+		this.endTimeAt = endTimeAt;
 		return this;
 	}
 
@@ -337,7 +337,7 @@ public class QueryParams {
 		return new ToStringBuilder(this).append("id", id).append("type", type).append("attrs", attrs)
 				.append("idPattern", idPattern).append("q", q).append("georel", georel).append("geometry", geometry)
 				.append("coordinates", coordinates).append("geoproperty", geoproperty).append("timerel", timerel)
-				.append("time", time).append("endTime", endTime).append("timeproperty", timeproperty)
+				.append("time", timeAt).append("endTimeAt", endTimeAt).append("timeproperty", timeproperty)
 				.append("tenant", tenant).toString();
 	}
 

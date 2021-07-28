@@ -33,8 +33,6 @@ import com.github.filosganga.geogson.model.Geometry;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
-
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
@@ -139,10 +137,9 @@ public class EntityService {
 
 	private final EntityProducerChannel producerChannels;
 
-	LocalDateTime start;
-	LocalDateTime end;
+	LocalDateTime startAt;
+	LocalDateTime endAt;
 	private ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
 
 	public EntityService(EntityProducerChannel producerChannels, ObjectMapper objectMapper) {
@@ -563,15 +560,15 @@ public class EntityService {
 
 		entities.add(new EntityInfo(entity.getId(), null, entity.getType()));
 
-		info.setProperties(propertiesList);
-		info.setRelationships(relationshipsList);
+		info.setPropertyNames(propertiesList);
+		info.setRelationshipNames(relationshipsList);
 		information.add(info);
 		csourceRegistration.setInformation(information);
 
 		// location node.
 
 		TimeInterval timestamp = new TimeInterval();
-		timestamp.setStart(new Date().getTime());
+		timestamp.setStartAt(new Date().getTime());
 		csourceRegistration.setTimestamp(timestamp);
 		logger.trace("getCSourceRegistrationFromJson() :: completed");
 		return csourceRegistration;

@@ -61,7 +61,7 @@ public class CreateCSourceRequest extends CSourceRequest {
 			logger.error("Information is empty!");
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		if (csourceRegistration.getExpires() != null && !isValidFutureDate(csourceRegistration.getExpires())) {
+		if (csourceRegistration.getExpiresAt() != null && !isValidFutureDate(csourceRegistration.getExpiresAt())) {
 			logger.error("Invalid expire date!");
 			throw new ResponseException(ErrorType.BadRequestData);
 		}

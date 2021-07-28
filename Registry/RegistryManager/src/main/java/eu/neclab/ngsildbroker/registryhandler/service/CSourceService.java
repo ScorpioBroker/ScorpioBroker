@@ -6,19 +6,15 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 import javax.annotation.PostConstruct;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +26,6 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
@@ -38,7 +33,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
@@ -261,7 +255,7 @@ public class CSourceService {
 			logger.error("Information is empty!");
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		if (csourceRegistration.getExpires() != null && !isValidFutureDate(csourceRegistration.getExpires())) {
+		if (csourceRegistration.getExpiresAt() != null && !isValidFutureDate(csourceRegistration.getExpiresAt())) {
 			logger.error("Invalid expire date!");
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
@@ -303,7 +297,7 @@ public class CSourceService {
 	}
 
 	public void csourceTimerTask(ArrayListMultimap<String, String> headers, CSourceRegistration csourceReg) {
-		if (csourceReg.getExpires() != null) {
+		if (csourceReg.getExpiresAt() != null) {
 			TimerTask cancel = new TimerTask() {
 				@Override
 				public void run() {
@@ -317,7 +311,7 @@ public class CSourceService {
 				}
 			};
 			regId2TimerTask.put(csourceReg.getId().toString(), cancel);
-			watchDog.schedule(cancel, csourceReg.getExpires() - System.currentTimeMillis());
+			watchDog.schedule(cancel, csourceReg.getExpiresAt() - System.currentTimeMillis());
 		}
 	}
 
