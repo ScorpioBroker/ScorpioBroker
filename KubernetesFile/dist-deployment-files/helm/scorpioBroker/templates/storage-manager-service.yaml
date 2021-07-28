@@ -1,0 +1,17 @@
+{{- if .Values.StorageManager.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: {{ .Values.StorageManager.name }}
+  name: {{ .Values.StorageManager.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  ports:
+  - name: "1029"
+    port: 1029
+    targetPort: 1029
+  selector:
+    service: {{ .Values.StorageManager.name }}
+status: {}
+{{- end }}

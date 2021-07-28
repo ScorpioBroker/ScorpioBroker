@@ -1,0 +1,15 @@
+{{- if and .Values.RegistryManager.enabled .Values.RegistryManager.hpa.enabled }}
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+ name: {{ .Values.RegistryManager.name }}-hpa
+ namespace: {{.Values.namespace}}
+spec:
+ scaleTargetRef:
+   apiVersion: apps/v1
+   kind: Deployment
+   name: {{ .Values.RegistryManager.name }}
+ minReplicas: {{ .Values.RegistryManager.hpa.minReplicas }}
+ maxReplicas: {{ .Values.RegistryManager.hpa.maxReplicas }}
+ targetCPUUtilizationPercentage: {{ .Values.RegistryManager.hpa.targetCPUUtilizationPercentage }}
+{{- end }}

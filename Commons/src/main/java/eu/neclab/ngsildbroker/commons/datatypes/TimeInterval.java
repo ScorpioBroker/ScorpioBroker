@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.util.Date;
-
 /**
  * @author hebgen
  * @version 1.0

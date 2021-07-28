@@ -1,0 +1,59 @@
+{{- if .Values.SubscriptionManager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: {{ .Values.SubscriptionManager.name }}
+  name: {{ .Values.SubscriptionManager.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  replicas: {{ .Values.SubscriptionManager.replicas }}
+  selector:
+    matchLabels:
+      service: {{ .Values.SubscriptionManager.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: {{ .Values.SubscriptionManager.name }}
+    spec:
+      containers:
+      - image: {{ .Values.SubscriptionManager.image.repository }}:{{ .Values.SubscriptionManager.image.tag }}
+        imagePullPolicy: {{ .Values.SubscriptionManager.image.pullPolicy }}
+        name: {{ .Values.SubscriptionManager.name }}
+        ports:
+        - containerPort: 2025
+          protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/SUBSCRIPTION-MANAGER/$HOSTNAME:subscription-manager:2025/status?value=OUT_OF_SERVICE"
+        {{- if .Values.SubscriptionManager.readinessProbe.enabled }}
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:2025/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: {{ .Values.SubscriptionManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.SubscriptionManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.SubscriptionManager.readinessProbe.periodSeconds }}
+          {{- end}}
+        resources:
+{{ toYaml .Values.SubscriptionManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.SubscriptionManager.restartPolicy }}
+      {{- if .Values.SubscriptionManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.SubscriptionManager.serviceAccount.name }}
+      {{- end}}
+      securityContext: {{ .Values.SubscriptionManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.SubscriptionManager.terminationGracePeriodSeconds }}
+status: {}
+{{- end }}

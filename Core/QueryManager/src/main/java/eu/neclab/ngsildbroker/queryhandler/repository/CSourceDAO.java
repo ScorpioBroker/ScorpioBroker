@@ -55,12 +55,12 @@ public class CSourceDAO extends StorageReaderDAO {
 	private boolean externalCsourcesOnly = false; 
 	
 	@Override
-	public List<String> query(QueryParams qp) {
+	public List<String> query(QueryParams qp) throws ResponseException {
 		this.externalCsourcesOnly = false;
 		return super.query(qp);
 	}
 	
-	public List<String> queryExternalCsources(QueryParams qp) throws SQLException {
+	public List<String> queryExternalCsources(QueryParams qp) throws SQLException, ResponseException {
 		this.externalCsourcesOnly = true;
 		return super.query(qp);
 	}

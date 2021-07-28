@@ -13,6 +13,7 @@ public enum ErrorType {
 	TooComplexQuery(403, "http://uri.etsi.org/ngsi-ld/errors/TooComplexQuery", "Too complex query"),
 	TooManyResults(403, "http://uri.etsi.org/ngsi-ld/errors/TooManyResults ", "Too many results"),
 	NotFound(404, "http://uri.etsi.org/ngsi-ld/errors/ResourceNotFound", "Resource not found."),
+	TenantNotFound(404, "http://uri.etsi.org/ngsi-ld/errors/TenantNotFound", "Tenant not found."),
 
 	// ResourceNotFound(404,"Resource not found."),
 	// MethodNotAllowed(405,"Method not allowed"),

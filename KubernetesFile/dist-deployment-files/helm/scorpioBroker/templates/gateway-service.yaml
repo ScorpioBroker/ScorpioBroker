@@ -1,0 +1,17 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: {{ .Values.gateway.name }}
+  name: {{ .Values.gateway.name }}
+  namespace: {{.Values.namespace}}
+spec:
+  ports:
+  - name: "9090"
+    port: 9090
+    targetPort: 9090
+  selector:
+    service: {{ .Values.gateway.name }}
+status: {}
+{{- end }}

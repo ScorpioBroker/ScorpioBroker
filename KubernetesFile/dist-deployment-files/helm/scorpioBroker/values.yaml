@@ -1,0 +1,702 @@
+## namespace for deployment
+namespace: scorpio-broker
+################################### Eureka Server #######################################################################
+eureka:
+## Enable the eureka deployment & service
+  enabled: true 
+  name: eureka
+## Number of eureka instances to deploy
+##
+  replicas: 1
+## Scorpio Broker eureka image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: eureka-server_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## eureka containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## eureka containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for eureka
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80
+
+################################### Gateway ##########################################################################
+gateway:
+## Enable the gateway deployment & service
+  enabled: true 
+  name: gateway
+## Number of gateway instances to deploy
+##
+  replicas: 1
+## Scorpio Broker gateway image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: gateway_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## gateway containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## gateway containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for gateway
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80
+
+################################### AtContextServer ##########################################################################
+AtContextServer:
+## Enable the AtContextServer deployment & service
+  enabled: true 
+  name: at-context-server
+## Number of AtContextServer instances to deploy
+##
+  replicas: 1
+## Scorpio Broker AtContextServer image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: AtContextServer_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## AtContextServer containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## AtContextServer containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for AtContextServer
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80
+   
+################################### ConfigServer ##########################################################################
+ConfigServer:
+## Enable the ConfigServer deployment & service
+  enabled: true 
+  name: config-server
+## Number of ConfigServer instances to deploy
+##
+  replicas: 1
+## Scorpio Broker ConfigServer image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: config-server_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## ConfigServer containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## ConfigServer containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for ConfigServer
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80
+   
+################################### EntityManager ##########################################################################
+EntityManager:
+## Enable the EntityManager deployment & service
+  enabled: true 
+  name: entity-manager
+## Number of EntityManager instances to deploy
+##
+  replicas: 1
+## Scorpio Broker EntityManager image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: EntityManager_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## EntityManager containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## EntityManager containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for EntityManager
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80
+   
+################################### HistoryManager ##########################################################################
+HistoryManager:
+## Enable the HistoryManager deployment & service
+  enabled: true 
+  name: history-manager
+## Number of HistoryManager instances to deploy
+##
+  replicas: 1
+## Scorpio Broker HistoryManager image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: HistoryManager_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## HistoryManager containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## HistoryManager containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for HistoryManager
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80
+
+################################### QueryManager ##########################################################################
+QueryManager:
+## Enable the QueryManager deployment & service
+  enabled: true 
+  name: query-manager
+## Number of QueryManager instances to deploy
+##
+  replicas: 1
+## Scorpio Broker QueryManager image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: QueryManager_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## QueryManager containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## QueryManager containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for QueryManager
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80
+   
+################################### RegistryManager ##########################################################################
+RegistryManager:
+## Enable the RegistryManager deployment & service
+  enabled: true 
+  name: registry-manager
+## Number of RegistryManager instances to deploy
+##
+  replicas: 1
+## Scorpio Broker RegistryManager image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: RegistryManager_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## RegistryManager containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## RegistryManager containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for RegistryManager
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80
+
+################################### StorageManager ##########################################################################
+StorageManager:
+## Enable the StorageManager deployment & service
+  enabled: true 
+  name: storage-manager
+## Number of StorageManager instances to deploy
+##
+  replicas: 1
+## Scorpio Broker StorageManager image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: StorageManager_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## StorageManager containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## StorageManager containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for StorageManager
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80
+   
+
+################################### SubscriptionManager ##########################################################################
+SubscriptionManager:
+## Enable the SubscriptionManager deployment & service
+  enabled: true 
+  name: subscription-manager
+## Number of SubscriptionManager instances to deploy
+##
+  replicas: 1
+## Scorpio Broker SubscriptionManager image version
+## ref: https://hub.docker.com/r/scorpiobroker/scorpio
+## Please use only latest version of docker images as few older images might not work with kubernetes. 
+##
+  image:
+   repository: scorpiobroker/scorpio
+   tag: SubscriptionManager_latest
+## Specify a imagePullPolicy
+## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+##
+   pullPolicy: Always
+
+## SubscriptionManager containers' resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+##
+  resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to use HPA or specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits: 
+  #   cpu: 250m
+  #   memory: 1Gi
+  # requests: 
+  #   cpu: 250m
+  #   memory: 256Mi
+  
+## SubscriptionManager containers'  readiness probes. Evaluated as a template.
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
+##
+  readinessProbe:
+   enabled: true
+   initialDelaySeconds: 40
+   failureThreshold: 6
+   periodSeconds: 10
+ 
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+  securityContext: {}
+  
+## Pod restart policy
+  restartPolicy: Always
+
+## Pod Service Account
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  serviceAccount:
+   enabled: false
+  ## Name of an already existing service account. Setting this value disables the automatic service account creation.
+   name: ""
+
+  terminationGracePeriodSeconds: 30
+
+## Enable HPA for SubscriptionManager
+## ref: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+##
+  hpa:
+   enabled: true
+   minReplicas: 1
+   maxReplicas: 5
+   targetCPUUtilizationPercentage: 80

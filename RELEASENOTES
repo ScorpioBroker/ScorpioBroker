@@ -1,0 +1,18 @@
+RELEASE NOTES
+Scorpio FIWARE 8.1.0
+ - This release mainly contains optimizations of the tenant support.
+ - Various bugfixes where done to the history manager.
+ - History manager supports the directDB flag now and it is set by default
+ - Minor fixes which to bugs introduces in 8.0.0 (wrong return codes etc.) 
+Scorpio FIWARE 8.0.0
+ - This release contains as main update multi tenant support. This means scorpio supports the "ngsild-tenant" header to support data separation. On the cSource side of things we do support the short name tenant in the payload and respect it in all operations. In this release we still support the v1.2.2 core context so this is effectivly a back port of the tenant feature into 1.2.2. This has an implication on the expanded stored versions of registrations. In this release they will be stored as extra property with the default prefix.
+ - As we progress to merge in 1.3.1 changes we will provide the necessary migration scripts to adapt this, however anyone dealing directly with the database or kafka (which you shouldn't) be aware.
+ - Tenant Entity create handling: If you create an entity with a tenant the subsequent csource registration and temporal entity creations from scorpio will also be in the registry and temporal database for the provided tenant.
+ - Federated queries/subscriptions: Similar to the create queries/subscriptions will only ever use the registry of the provided tenant.
+ - Default Tenant: If no tenant header is provided scorpio will behave in its default behaviour.
+ - Various bugfixes were adressed 
+Scorpio FIWARE 7.8.2 
+ - The release contains various bugfixes as well as support for Kubernetes using Helm files. 
+ - CI was changed to github actions from travis ci. 
+ - spring_args in docker-compose will now be forwarded to the gateway as well. this allows external configuration of oauth without changing the application.yml file.
+ - various bugfixes for subscription triggering

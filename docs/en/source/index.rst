@@ -27,6 +27,7 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
     onepageTutorial.rst
     buildScorpio.rst
     mqtt.rst
+	NewFeatures_Changes_NGSILDv1.3.1.rst
 
 .. toctree::
     :maxdepth: 1
@@ -46,6 +47,8 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
     security.rst
     HelloWorld.rst
     multivalue.rst
+	Batch_operation_support.rst
+	multiTenant.rst
 
 .. toctree::
     :maxdepth: 1
@@ -58,3 +61,12 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
     docker.rst
     config.rst
     troubleshooting.rst
+	
+.. toctree::
+    :maxdepth: 1
+    :caption: Kubernetes
+    :numbered:
+     
+	k8Introduction.rst
+    kubernetesDeployment.rst
+

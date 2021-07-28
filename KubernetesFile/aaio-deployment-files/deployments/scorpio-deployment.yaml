@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+      component: scorpio
+  name: scorpio
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      component: scorpio
+  strategy: {}
+  template:
+    metadata:
+      labels:
+       component: scorpio
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:scorpio-aaio_1.0.0
+        imagePullPolicy: ""
+        name: scorpio
+        ports:
+        - containerPort: 9090
+        resources: {}
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes: null
+status: {}
+
+

@@ -1,4 +1,4 @@
-FROM openjdk:8-jre
+FROM openjdk:11-jre
 
 WORKDIR /usr/src/scorpio
 
@@ -30,7 +30,7 @@ COPY ${BUILD_DIR_SCR}/target/${JAR_FILE_BUILD_SCR} ./scr/${JAR_FILE_RUN_SCR}
 COPY ${BUILD_DIR_SES}/src/main/resources/application-aaio.yml ./ses/config/application.yml
 COPY ${BUILD_DIR_SCS}/src/main/resources/application-aaio.yml ./scs/config/application.yml
 COPY ${BUILD_DIR_SGW}/src/main/resources/application-aaio.yml ./sgw/config/application.yml
-#COPY ${BUILD_DIR_SCR}/src/main/resources/application-aaio.yml ./scr/config/application.yml
+COPY ${BUILD_DIR_SCR}/src/main/resources/application-aaio.yml ./scr/config/application.yml
 
 ENV sesdir ses
 ENV sesjar ${JAR_FILE_RUN_SES}

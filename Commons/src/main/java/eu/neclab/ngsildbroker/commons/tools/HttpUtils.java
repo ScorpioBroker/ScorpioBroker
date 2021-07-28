@@ -16,13 +16,12 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -39,7 +38,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -51,7 +49,6 @@ import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.params.ConnRouteParams;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ByteArrayEntity;
@@ -62,7 +59,6 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.params.HttpParams;
 import org.apache.http.ssl.SSLContextBuilder;
@@ -73,6 +69,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
+
+import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -122,14 +120,48 @@ public final class HttpUtils {
 	 */
 	public static HttpUtils getInstance(ContextResolverBasic contextResolver) {
 		if(contextResolver == null) {
+			getSystemProxy(NULL_INSTANCE);
 			return NULL_INSTANCE;
 		}
 		if (SINGLETON == null) {
 			SINGLETON = new HttpUtils(contextResolver);
+			getSystemProxy(SINGLETON);
 		}
 		return SINGLETON;
 	}
-
+	private static void getSystemProxy(HttpUtils instance) {
+		String httpProxy = null;
+		String httpsProxy = null;
+		
+		for(Entry<String, String> entry: System.getenv().entrySet()) {
+			if(entry.getKey().equalsIgnoreCase("http_proxy")) {
+				httpProxy = entry.getValue();
+			}
+			if(entry.getKey().equalsIgnoreCase("https_proxy")) {
+				httpsProxy = entry.getValue();
+			}
+		}
+		if(httpsProxy != null) {
+			try {
+				setHttpProxy(new URL(httpsProxy), instance);
+			} catch (MalformedURLException e) {
+				LOG.error("Your configured https_proxy setting is not valid.", e);
+			}
+		}else if(httpProxy != null) {
+			try {
+				setHttpProxy(new URL(httpProxy), instance);
+			} catch (MalformedURLException e) {
+				LOG.error("Your configured http_proxy setting is not valid.", e);
+			}
+		}
+	}
+	public static String denormalize(String attrId) {
+		String result = attrId.replace(":/", "://");
+		if(result.endsWith("/")) {
+			return result.substring(0, result.length() - 2);
+		}
+		return result;
+	}
 	public static void doPreflightCheck(HttpServletRequest req, String payload) throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
 		if (contentType == null) {
@@ -189,15 +221,15 @@ public final class HttpUtils {
 	 * 
 	 * @param httpProxy a URL with the HTTP proxy
 	 */
-	public static void setHttpProxy(URL httpProxy) {
+	public static void setHttpProxy(URL httpProxy, HttpUtils instance) {
 		if (httpProxy != null) {
 			int port = httpProxy.getPort();
 			if (port == -1) {
 				port = DEFAULT_PROXY_PORT;
 			}
-			SINGLETON.httpProxy = new HttpHost(httpProxy.getHost(), port, httpProxy.getProtocol());
+			instance.httpProxy = new HttpHost(httpProxy.getHost(), port, httpProxy.getProtocol());
 		} else {
-			SINGLETON.httpProxy = null;
+			instance.httpProxy = null;
 		}
 	}
 
@@ -1034,6 +1066,33 @@ public final class HttpUtils {
 		}
 
 		return baos.toByteArray();
+	}
+	public static ArrayListMultimap<String, String> getHeaders(HttpServletRequest request) {
+		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+		Iterator<String> it = request.getHeaderNames().asIterator();
+		while(it.hasNext()) {
+			String key = it.next();
+			Iterator<String> it2 = request.getHeaders(key).asIterator();
+			while(it2.hasNext()) {
+				result.put(key, it2.next());
+			}
+		}
+		return result;
+	}
+	
+	public static String getTenantFromHeaders(ArrayListMultimap<String, String> headers) {
+		if(headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
+		}
+		return null;
+	}
+
+	public static String getInternalTenant(ArrayListMultimap<String, String> headers) {
+		String tenantId = getTenantFromHeaders(headers);
+		if (tenantId == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
+		return tenantId;
 	}
 
 	// public static ResponseEntity<Object> generateReply(String acceptHeader,

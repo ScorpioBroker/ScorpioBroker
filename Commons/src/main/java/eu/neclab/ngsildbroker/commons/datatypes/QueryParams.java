@@ -1,8 +1,9 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import org.apache.commons.lang.builder.ToStringBuilder;
 
 public class QueryParams {
 
@@ -12,6 +13,9 @@ public class QueryParams {
 	@SerializedName("type")
 	@Expose
 	private String type;
+	@SerializedName("tenant")
+	@Expose
+	private String tenant;
 	@SerializedName("attrs")
 	@Expose
 	private String attrs;
@@ -61,10 +65,19 @@ public class QueryParams {
 	@SerializedName("limit")
 	@Expose
 	private int limit = -1;
-
+	private Boolean countResult;
 	@SerializedName("offSet")
 	@Expose
 	private int offSet = -1;
+	private String check;
+
+	public String getCheck() {
+		return check;
+	}
+
+	public void setCheck(String check) {
+		this.check = check;
+	}
 
 	public String getId() {
 		return id;
@@ -303,12 +316,29 @@ public class QueryParams {
 		this.offSet = offSet;
 	}
 
+	public Boolean getCountResult() {
+		return countResult;
+	}
+
+	public void setCountResult(Boolean countResult) {
+		this.countResult = countResult;
+	}
+
+	public String getTenant() {
+		return tenant;
+	}
+
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
+	}
+
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this).append("id", id).append("type", type).append("attrs", attrs)
 				.append("idPattern", idPattern).append("q", q).append("georel", georel).append("geometry", geometry)
 				.append("coordinates", coordinates).append("geoproperty", geoproperty).append("timerel", timerel)
-				.append("time", timeAt).append("endTimeAt", endTimeAt).append("timeproperty", timeproperty).toString();
+				.append("time", timeAt).append("endTimeAt", endTimeAt).append("timeproperty", timeproperty)
+				.append("tenant", tenant).toString();
 	}
 
 }

@@ -2,11 +2,10 @@ package eu.neclab.ngsildbroker.registryhandler.controller;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
@@ -29,8 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -38,7 +35,6 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
-import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
@@ -104,6 +100,7 @@ public class RegistryController {
 		try {
 			logger.trace("getCSources() ::");
 			String queryParams = request.getQueryString();
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING)
 					|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)) && queryParams != null) {
 
@@ -111,6 +108,7 @@ public class RegistryController {
 				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
 				if (qp == null) // invalid query
 					throw new ResponseException(ErrorType.InvalidRequest);
+				qp.setTenant(tenantid);
 				List<String> csourceList = csourceDAO.query(qp);
 				if (csourceList.size() > 0) {
 					return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
@@ -120,7 +118,8 @@ public class RegistryController {
 			} else {
 				// spec v0.9.0 section 5.10.2.4: if neither Entity types nor Attribute names are
 				// provided, an error of BadRequestData shall be raised
-				throw new ResponseException(ErrorType.BadRequestData, "You must provide at least type or attrs as parameter");
+				throw new ResponseException(ErrorType.BadRequestData,
+						"You must provide at least type or attrs as parameter");
 			}
 		} catch (ResponseException exception) {
 			logger.error("Exception ::", exception);
@@ -146,7 +145,7 @@ public class RegistryController {
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
 			logger.debug("Csource :: " + csourceRegistration);
-			URI uri = csourceService.registerCSource(csourceRegistration);
+			URI uri = csourceService.registerCSource(HttpUtils.getHeaders(request), csourceRegistration);
 
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri).build();
 		} catch (ResponseException exception) {
@@ -163,8 +162,9 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
-			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(registrationId)));
+			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
 			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 		} catch (ResponseException exception) {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
@@ -182,7 +182,7 @@ public class RegistryController {
 			logger.debug("update CSource() ::" + registrationId);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
 
-			csourceService.updateCSourceRegistration(registrationId, resolved);
+			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request), registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {
@@ -195,10 +195,11 @@ public class RegistryController {
 	}
 
 	@DeleteMapping("{registrationId}")
-	public ResponseEntity<byte[]> deleteCSource(@PathVariable("registrationId") String registrationId) {
+	public ResponseEntity<byte[]> deleteCSource(HttpServletRequest request,
+			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("delete CSource() ::" + registrationId);
-			csourceService.deleteCSourceRegistration(registrationId);
+			csourceService.deleteCSourceRegistration(HttpUtils.getHeaders(request), registrationId);
 			logger.debug("delete CSource() completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {

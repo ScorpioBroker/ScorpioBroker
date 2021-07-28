@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: eureka 
+  name: eureka-node-port
+  namespace: scorpio-broker
+spec:
+  type: NodePort
+  ports:
+  - port: 8761
+    targetPort: 8761
+    nodePort : 30000
+  selector:
+    service: eureka
+
+
