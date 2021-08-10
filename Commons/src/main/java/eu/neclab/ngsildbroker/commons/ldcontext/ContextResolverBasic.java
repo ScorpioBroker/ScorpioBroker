@@ -178,7 +178,7 @@ public class ContextResolverBasic {
 		}
 	}
 
-	private Map<Integer, List<Object>> expand(Map<String, Object> json, List<Object> contextLinks) {
+	private Map<Integer, List<Object>> expand(Map<String, Object> json, List<Object> contextLinks) throws ResponseException {
 		Object tempCtx = json.get(NGSIConstants.JSON_LD_CONTEXT);
 		List<Object> context;
 		if (tempCtx == null) {
@@ -193,6 +193,7 @@ public class ContextResolverBasic {
 		if (contextLinks != null && !contextLinks.isEmpty()) {
 			context.addAll(contextLinks);
 		}
+		try {
 		ArrayList<Object> usedContext = new ArrayList<Object>();
 
 		usedContext.addAll(context);
@@ -200,12 +201,14 @@ public class ContextResolverBasic {
 		usedContext.add(BASE_CONTEXT);
 
 		json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
-
+        
 		Map<Integer, List<Object>> result = new HashMap<Integer, List<Object>>();
 		result.put(1, JsonLdProcessor.expand(json));
 		result.put(2, usedContext);
 		return result;
-
+		} catch (Exception e) {
+			throw new ResponseException(ErrorType.LdContextNotAvailable, e.getMessage());
+		}
 	}
 
 	public String expand(Map<String, Object> json, List<Object> contextLinks, boolean check, int endPoint)
