@@ -98,7 +98,7 @@ public class HistoryController {
 			if (qp.getTimerel() == null || qp.getTime() == null) {
 				throw new ResponseException(ErrorType.BadRequestData, "Time filter is required");
 			}
-			if (qp.getType() == null && qp.getAttrs() == null) {
+			if (qp.getEntities() == null && qp.getAttrs() == null) {
 				throw new ResponseException(ErrorType.BadRequestData, "Type or attrs is required");
 			}
 
@@ -127,7 +127,7 @@ public class HistoryController {
 
 			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
-			qp.setId(entityId);
+			qp.getEntities().get(0).put(NGSIConstants.JSON_LD_ID, entityId);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp());

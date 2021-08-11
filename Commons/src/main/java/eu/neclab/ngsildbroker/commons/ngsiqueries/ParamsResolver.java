@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -56,22 +57,26 @@ public class ParamsResolver {
 	}
 
 	public List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
-
+//TODO check if this can be changed now since a list of entityinfos is in queryparam
 		ArrayList<QueryParams> result = new ArrayList<QueryParams>();
 		for (EntityInfo entityInfo : subscription.getEntities()) {
 			QueryParams temp = new QueryParams();
-
+			//String type = null, id = null, idPattern = null;
+			List<Map<String, String>> entities = new ArrayList<Map<String,String>>();
 			if (subscription.getNotification().getAttributeNames() != null
 					&& !subscription.getNotification().getAttributeNames().isEmpty()) {
 				temp.setAttrs(String.join(",", subscription.getNotification().getAttributeNames()));
 			}
-			temp.setType(entityInfo.getType());
+			HashMap<String, String> temp1 = new HashMap<String, String>();
+			temp1.put(NGSIConstants.JSON_LD_TYPE, entityInfo.getType());
 			if (entityInfo.getId() != null) {
-				temp.setId(entityInfo.getId().toString());
+				temp1.put(NGSIConstants.JSON_LD_ID, entityInfo.getId().toString());
 			}
 			if (entityInfo.getIdPattern() != null) {
-				temp.setIdPattern(entityInfo.getIdPattern());
+				temp1.put(NGSIConstants.NGSI_LD_ID_PATTERN, entityInfo.getIdPattern());
 			}
+			entities.add(temp1);
+			temp.setEntities(entities);
 			if (subscription.getLdGeoQuery() != null) {
 				temp.setGeometry(subscription.getLdGeoQuery().getGeometry().name());
 				temp.setGeoproperty(subscription.getLdGeoQuery().getGeoProperty());
@@ -116,6 +121,7 @@ public class ParamsResolver {
 		try {
 			QueryParams qp = new QueryParams();
 			Iterator<String> it = ngsildQueryParams.keySet().iterator();
+			String id = null, type = null, idPattern = null;
 			while (it.hasNext()) {
 				String queryParameter = it.next();
 				String queryValue = ngsildQueryParams.get(queryParameter)[0];
@@ -123,14 +129,14 @@ public class ParamsResolver {
 				GeoqueryRel geoqueryTokens;
 				switch (queryParameter) {
 				case NGSIConstants.QUERY_PARAMETER_ID:
-					qp.setId(queryValue);
+					id = queryValue;
 					break;
 				case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
-					qp.setIdPattern(queryValue);
+					idPattern = queryValue;
 					break;
 				case NGSIConstants.QUERY_PARAMETER_TYPE:
 					queryValue = expandQueryValues(linkHeaders, queryValue);
-					qp.setType(queryValue);
+					type = queryValue;
 					break;
 				case NGSIConstants.QUERY_PARAMETER_ATTRS:
 					queryValue = expandQueryValues(linkHeaders, queryValue);
@@ -214,6 +220,8 @@ public class ParamsResolver {
 					break;
 				}
 			}
+			List<Map<String, String>> entities = new ArrayList<Map<String,String>>();
+			qp.setEntities(entities );
 			return qp;
 		} catch (ResponseException e) {
 			throw e; // rethrow response exception object
@@ -229,7 +237,7 @@ public class ParamsResolver {
 
 	}
 
-	private String expandQueryValues(List<Object> linkHeaders, String queryValue) throws ResponseException {
+	public String expandQueryValues(List<Object> linkHeaders, String queryValue) throws ResponseException {
 		String[] temp = queryValue.split(",");
 		StringBuilder builder = new StringBuilder();
 		for (String element : temp) {

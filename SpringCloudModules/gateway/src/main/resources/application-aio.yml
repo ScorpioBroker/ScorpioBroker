@@ -68,7 +68,11 @@ zuul:
       path: /ngsi-ld/v1/types/**     
       serviceId: QUERY-MANAGER
       stripPrefix: false
-
+    postquery:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/entityOperations/query/**
+      serviceId: aio-runner
+      stripPrefix: false
     subscription-manager:
       sensitiveHeaders:
       path: /ngsi-ld/v1/subscriptions/**

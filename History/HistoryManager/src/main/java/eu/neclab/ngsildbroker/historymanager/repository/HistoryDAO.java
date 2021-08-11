@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,25 +44,39 @@ public class HistoryDAO extends StorageReaderDAO {
 		StringBuilder fullSqlWhere = new StringBuilder(70);
 		String sqlWhereGeoquery = "";
 		String sqlWhere = "";
-
-		if (qp.getType() != null) {
-			sqlWhere = getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_TYPE, qp.getType());
-			fullSqlWhere.append(sqlWhere + " AND ");
+		List<Map<String, String>> entities = qp.getEntities();
+		if (entities != null) {
+			for (Map<String, String> entityInfo : entities) {
+				fullSqlWhere.append("(");
+				for (Entry<String, String> entry : entityInfo.entrySet()) {
+					switch (entry.getKey()) {
+					case NGSIConstants.JSON_LD_ID:
+						fullSqlWhere.append(getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_ID, entry.getValue()));
+						break;
+					case NGSIConstants.JSON_LD_TYPE:
+						fullSqlWhere
+								.append(getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_TYPE, entry.getValue()));
+						break;
+					case NGSIConstants.NGSI_LD_ID_PATTERN:
+						fullSqlWhere.append("te." + DBCOLUMN_HISTORY_ENTITY_ID + " ~ '" + entry.getValue() + "'");
+						break;
+					default:
+						break;
+					}
+					fullSqlWhere.append(" AND ");
+				}
+				fullSqlWhere.delete(fullSqlWhere.length() - 5, fullSqlWhere.length());
+				fullSqlWhere.append(") OR ");
+			}
+			fullSqlWhere.delete(fullSqlWhere.length() - 4, fullSqlWhere.length());
 		}
+
 		if (qp.getAttrs() != null) {
 			sqlWhere = getSqlWhereForField("teai." + DBCOLUMN_HISTORY_ATTRIBUTE_ID, qp.getAttrs());
 			fullSqlWhere.append(sqlWhere + " AND ");
 		}
 		if (qp.getInstanceId() != null) {
 			sqlWhere = getSqlWhereForField("teai." + DBCOLUMN_HISTORY_INSTANCE_ID, qp.getInstanceId());
-			fullSqlWhere.append(sqlWhere + " AND ");
-		}
-		if (qp.getId() != null) {
-			sqlWhere = getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_ID, qp.getId());
-			fullSqlWhere.append(sqlWhere + " AND ");
-		}
-		if (qp.getIdPattern() != null) {
-			sqlWhere = "te." + DBCOLUMN_HISTORY_ENTITY_ID + " ~ '" + qp.getIdPattern() + "'";
 			fullSqlWhere.append(sqlWhere + " AND ");
 		}
 
@@ -88,7 +103,6 @@ public class HistoryDAO extends StorageReaderDAO {
 			}
 		}
 
-
 		String sqlQuery = "with r as ("
 				+ "  select te.id, te.type, te.createdat, te.modifiedat, coalesce(teai.attributeid, '') as attributeid, jsonb_agg(teai.data";
 
@@ -106,28 +120,28 @@ public class HistoryDAO extends StorageReaderDAO {
 				+ "          ('{\"" + NGSIConstants.JSON_LD_TYPE + "\":[\"' || type || '\"]}')::jsonb ";
 		if (qp.getIncludeSysAttrs()) {
 			sqlQuery += "         || ('{\"" + NGSIConstants.NGSI_LD_CREATED_AT + "\":";
-			//if (!qp.getTemporalValues()) {
-				sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME
-						+ "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"' ";
-			//} else {
-			//	sqlQuery += "\"'";
-			//}
+			// if (!qp.getTemporalValues()) {
+			sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \""
+					+ NGSIConstants.JSON_LD_VALUE + "\": \"' ";
+			// } else {
+			// sqlQuery += "\"'";
+			// }
 			sqlQuery += "|| to_char(createdat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\"";
-			//if (!qp.getTemporalValues()) {
-				sqlQuery += "}]";
-			//}
+			// if (!qp.getTemporalValues()) {
+			sqlQuery += "}]";
+			// }
 			sqlQuery += "}')::jsonb || ";
 			sqlQuery += " ('{\"" + NGSIConstants.NGSI_LD_MODIFIED_AT + "\":";
-			//if (!qp.getTemporalValues()) {
-				sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME
-						+ "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"' ";
-			//} else {
-			//	sqlQuery += "\"'";
-			//}
+			// if (!qp.getTemporalValues()) {
+			sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \""
+					+ NGSIConstants.JSON_LD_VALUE + "\": \"' ";
+			// } else {
+			// sqlQuery += "\"'";
+			// }
 			sqlQuery += "|| to_char(modifiedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\"";
-			//if (!qp.getTemporalValues()) {
-				sqlQuery += "}]";
-			//}
+			// if (!qp.getTemporalValues()) {
+			sqlQuery += "}]";
+			// }
 			sqlQuery += "}')::jsonb";
 		}
 		sqlQuery += "  as tedata, " + "jsonb_object_agg(attributeid,";
@@ -154,11 +168,11 @@ public class HistoryDAO extends StorageReaderDAO {
 		sqlQuery += "  group by id, type, createdat, modifiedat ";
 		sqlQuery += "  order by modifiedat desc ";
 		sqlQuery += ") as m";
-		
+
 		// advanced query "q"
-		//THIS DOESN'T WORK 
+		// THIS DOESN'T WORK
 		if (qp.getQ() != null) {
-			sqlQuery += " where " + qp.getQ(); 
+			sqlQuery += " where " + qp.getQ();
 		}
 
 		return sqlQuery;
@@ -210,7 +224,8 @@ public class HistoryDAO extends StorageReaderDAO {
 	}
 
 	public boolean entityExists(String entityId, String tenantId) throws ResponseException {
-		List<Map<String, Object>> list = getJDBCTemplate(tenantId).queryForList("Select id from temporalentity where id='" + entityId + "';");
+		List<Map<String, Object>> list = getJDBCTemplate(tenantId)
+				.queryForList("Select id from temporalentity where id='" + entityId + "';");
 		if (list == null || list.isEmpty()) {
 			return false;
 		}
