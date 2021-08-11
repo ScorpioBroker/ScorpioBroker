@@ -375,8 +375,8 @@ public class ContextResolverBasic {
 		Map<Integer, List<Object>> expanded;
 		try {
 			expanded = expand((Map<String, Object>) JsonUtils.fromString(body), contextLinks);
-		} catch (Exception e) {
-			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse document. JSON is invalid");
+		} catch (Exception exception) {
+			throw new ResponseException(ErrorType.LdContextNotAvailable, exception.getMessage());
 		}
 		Map<String, Object> rawSub = (Map<String, Object>) expanded.get(1).get(0);
 
