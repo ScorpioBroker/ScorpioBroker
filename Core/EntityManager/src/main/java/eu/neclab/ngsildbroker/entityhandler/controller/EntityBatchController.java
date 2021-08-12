@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
+import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
@@ -50,6 +50,9 @@ public class EntityBatchController {
 			return generateBatchResultReply(result, HttpStatus.CREATED);
 		} catch (MalformedURLException | UnsupportedEncodingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
+		} catch (ResponseException responseException) {
+			return ResponseEntity.status(responseException.getHttpStatus())
+					.body(new RestResponse(responseException).toJsonBytes());
 		}
 	}
 
