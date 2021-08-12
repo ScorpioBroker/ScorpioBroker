@@ -390,7 +390,7 @@ abstract public class StorageReaderDAO {
 		}
 		String sqlQuery = "SELECT " + dataColumn + " as data FROM " + DBConstants.DBTABLE_ENTITY + " ";
 		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " 1=1 ";
+			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
 		}
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();

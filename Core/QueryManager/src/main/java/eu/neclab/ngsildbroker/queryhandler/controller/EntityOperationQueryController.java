@@ -53,7 +53,7 @@ public class EntityOperationQueryController {
 	@Autowired
 	@Qualifier("qmconRes")
 	ContextResolverBasic contextResolver;
-	
+
 	@Autowired
 	QueryParser queryParser;
 
@@ -65,9 +65,9 @@ public class EntityOperationQueryController {
 	private final byte[] emptyResult1 = { '{', ' ', '}' };
 	private final byte[] emptyResult2 = { '{', '}' };
 
-	private Object defaultContext;
+	private Object defaultContext = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld";
 
-	private JsonLdOptions defaultOptions;
+	private JsonLdOptions defaultOptions = new JsonLdOptions();
 	public static Boolean countResult = false;
 
 	@PostConstruct
@@ -81,35 +81,57 @@ public class EntityOperationQueryController {
 		try {
 			String expandedPayload = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			Map<String, Object> queries = (Map<String, Object>) JsonUtils.fromString(expandedPayload);
-			List<Map<String, Object>> entities = null;
-			QueryParams paramsTemplate = new QueryParams();
-			StringBuilder templateString = new StringBuilder();
+
+			QueryParams params = new QueryParams();
 			for (Entry<String, Object> entry : queries.entrySet()) {
 				switch (entry.getKey()) {
 				case NGSIConstants.NGSI_LD_ATTRS:
-					List<Map<String, String>> attrs =  (List<Map<String, String>>) entry.getValue();
+					List<Map<String, String>> attrs = (List<Map<String, String>>) entry.getValue();
 					StringBuilder builder = new StringBuilder();
-					for(Map<String, String> attr: attrs) {
-							builder.append(paramsResolver.expandAttribute(attr.get(NGSIConstants.JSON_LD_VALUE), getAtContext()));
-							builder.append(',');
+					for (Map<String, String> attr : attrs) {
+						builder.append(
+								paramsResolver.expandAttribute(attr.get(NGSIConstants.JSON_LD_VALUE), getAtContext()));
+						builder.append(',');
 					}
-					paramsTemplate.setAttrs(builder.substring(0, builder.length() - 1));
+					params.setAttrs(builder.substring(0, builder.length() - 1));
 					break;
 				case NGSIConstants.NGSI_LD_ENTITIES:
-					entities = (List<Map<String, Object>>) entry.getValue();
+					List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
+					for (Map<String, Object> entry2 : (List<Map<String, Object>>) entry.getValue()) {
+						HashMap<String, String> temp = new HashMap<String, String>();
+						for (Entry<String, Object> entry3 : entry2.entrySet()) {
+							if (entry3.getValue() instanceof String) {
+								temp.put(entry3.getKey(), (String) entry3.getValue());
+							} else {
+								Object tempItem = ((List) entry3.getValue()).get(0);
+								if (tempItem instanceof String) {
+									temp.put(entry3.getKey(), (String) tempItem);
+								} else {
+									temp.put(entry3.getKey(), (String) ((List<Map<String, Object>>) entry3.getValue())
+											.get(0).get(NGSIConstants.JSON_LD_VALUE));
+								}
+							}
+						}
+						entities.add(temp);
+					}
+					params.setEntities(entities);
 					break;
 				case NGSIConstants.NGSI_LD_GEO_QUERY:
-					Map<String, Object> geoQuery = (Map<String, Object>) entry.getValue();
-					paramsTemplate.setCoordinates(protectGeoProp(geoQuery));
-					paramsTemplate.setGeometry((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEOMETRY)));
-					paramsTemplate.setGeoproperty((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEOPROPERTY)));
-					paramsTemplate.setGeorel(queryParser.parseGeoRel((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEO_REL))));
+					Map<String, Object> geoQuery = ((List<Map<String, Object>>) entry.getValue()).get(0);
+					params.setCoordinates(protectGeoProp(geoQuery));
+					params.setGeometry((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEOMETRY)));
+					if (geoQuery.containsKey(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
+						params.setGeoproperty((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEOPROPERTY)));
+					}
+					params.setGeorel(
+							queryParser.parseGeoRel((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEO_REL))));
 					break;
 				case NGSIConstants.NGSI_LD_QUERY:
-					paramsTemplate.setQ(queryParser.parseQuery((String) getValue(entry.getValue()), getAtContext()).toSql(false));
+					params.setQ(
+							queryParser.parseQuery((String) getValue(entry.getValue()), getAtContext()).toSql(false));
 					break;
 				case NGSIConstants.JSON_LD_TYPE:
-
+					// if(entry.getValue().toString().equals(anObject))
 					break;
 
 				default:
@@ -117,7 +139,7 @@ public class EntityOperationQueryController {
 				}
 				System.out.println(entry);
 			}
-//			queryService.getData(qp, rawQueryString, linkHeaders, limit, offset, qToken, showServices, countResult, check, headers)
+			//return queryService.getData(params, payload, linkHeaders, limit, offset, qToken, showServices, countResult, check, headers)
 
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
@@ -144,7 +166,7 @@ public class EntityOperationQueryController {
 
 		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, defaultContext, defaultOptions);
 		compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
-		String geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
+		String geoType = (String) compactedFull.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
 		// This is needed because one context could map from type which wouldn't work
 		// with the used context.
 		// Used context is needed because something could map point
@@ -247,11 +269,12 @@ public class EntityOperationQueryController {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
 	private Object getValue(Object original) {
-		if(original instanceof List) {
-			original = ((List)original).get(0);
+		if (original instanceof List) {
+			original = ((List) original).get(0);
 		}
-		return ((Map<String,Object>) original).get(NGSIConstants.JSON_LD_VALUE);
-		
+		return ((Map<String, Object>) original).get(NGSIConstants.JSON_LD_VALUE);
+
 	}
 }

@@ -61,8 +61,8 @@ public class ParamsResolver {
 		ArrayList<QueryParams> result = new ArrayList<QueryParams>();
 		for (EntityInfo entityInfo : subscription.getEntities()) {
 			QueryParams temp = new QueryParams();
-			//String type = null, id = null, idPattern = null;
-			List<Map<String, String>> entities = new ArrayList<Map<String,String>>();
+			// String type = null, id = null, idPattern = null;
+			List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
 			if (subscription.getNotification().getAttributeNames() != null
 					&& !subscription.getNotification().getAttributeNames().isEmpty()) {
 				temp.setAttrs(String.join(",", subscription.getNotification().getAttributeNames()));
@@ -220,8 +220,19 @@ public class ParamsResolver {
 					break;
 				}
 			}
-			List<Map<String, String>> entities = new ArrayList<Map<String,String>>();
-			qp.setEntities(entities );
+			List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
+			HashMap<String, String> temp = new HashMap<String, String>();
+			if (id != null) {
+				temp.put(NGSIConstants.JSON_LD_ID, id);
+			}
+			if (type != null) {
+				temp.put(NGSIConstants.JSON_LD_TYPE, type);
+			}
+			if (idPattern != null) {
+				temp.put(NGSIConstants.NGSI_LD_ID_PATTERN, idPattern);
+			}
+			entities.add(temp);
+			qp.setEntities(entities);
 			return qp;
 		} catch (ResponseException e) {
 			throw e; // rethrow response exception object
