@@ -65,10 +65,10 @@ public class HistoryDAO extends StorageReaderDAO {
 					}
 					fullSqlWhere.append(" AND ");
 				}
-				fullSqlWhere.delete(fullSqlWhere.length() - 5, fullSqlWhere.length());
+				fullSqlWhere.delete(fullSqlWhere.length() - 5, fullSqlWhere.length() - 1);
 				fullSqlWhere.append(") OR ");
 			}
-			fullSqlWhere.delete(fullSqlWhere.length() - 4, fullSqlWhere.length());
+			fullSqlWhere.delete(fullSqlWhere.length() - 4, fullSqlWhere.length() - 1);
 		}
 
 		if (qp.getAttrs() != null) {
