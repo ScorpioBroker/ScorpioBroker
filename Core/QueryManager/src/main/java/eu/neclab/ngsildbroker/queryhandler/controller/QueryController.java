@@ -38,8 +38,8 @@ import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.Validator;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
-import eu.neclab.ngsildbroker.queryhandler.utils.Validator;
 
 @RestController
 @RequestMapping("/ngsi-ld/v1")
@@ -57,7 +57,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	@Autowired
 	@Qualifier("qmconRes")
 	ContextResolverBasic contextResolver;
-
+	
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
 
@@ -87,12 +87,19 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @param entityId
 	 * @param attrs
 	 * @return
+	 * @throws ResponseException 
 	 */
 	@GetMapping(path = "/entities/**")
 	public ResponseEntity<byte[]> getEntity(HttpServletRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
-			@RequestParam(value = "options", required = false) List<String> options) {
+			@RequestParam(value = "options", required = false) List<String> options) throws ResponseException{
 		String entityId = HttpUtils.denormalize(request.getServletPath().replace("/ngsi-ld/v1/entities/", ""));
+		try {
+		Validator.validateUri(entityId);
+		} catch(ResponseException exception){
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJsonBytes());
+		}
 		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
 		HashMap<String, String[]> paramMap = new HashMap<String, String[]>();
 		paramMap.put(NGSIConstants.QUERY_PARAMETER_ID, new String[] { entityId });

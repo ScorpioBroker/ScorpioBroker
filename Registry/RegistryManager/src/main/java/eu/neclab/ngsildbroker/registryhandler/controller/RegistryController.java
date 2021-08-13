@@ -43,7 +43,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
-
+import eu.neclab.ngsildbroker.commons.tools.Validator;
 /**
  * 
  * @version 1.0
@@ -162,8 +162,10 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
+			Validator.validateUri(registrationId);
 			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
+			
 			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
 			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 		} catch (ResponseException exception) {

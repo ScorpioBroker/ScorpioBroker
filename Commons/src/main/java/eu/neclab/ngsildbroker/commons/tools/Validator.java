@@ -1,5 +1,7 @@
-package eu.neclab.ngsildbroker.queryhandler.utils;
+package eu.neclab.ngsildbroker.commons.tools;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -28,10 +30,6 @@ public class Validator {
 		validParams.add(NGSIConstants.QUERY_PARAMETER_DETAILS);
 		validParams.add(NGSIConstants.COUNT_HEADER_RESULT);
 	}
-	
-
-
-
 	public static void validate(Map<String, String[]> parameterMap, int maxLimit, boolean ignoreType) throws ResponseException{
 		
 		if(!ignoreType && !parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_TYPE) && !parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_ATTRS)) {
@@ -49,5 +47,16 @@ public class Validator {
 			}
 		}
 		
+	}
+	public static String validateUri(String mapValue) throws ResponseException {
+		try {
+			if (!new URI(mapValue).isAbsolute()) {
+				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+			}
+			return mapValue;
+		} catch (URISyntaxException e) {
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+		}
+
 	}
 }
