@@ -15,10 +15,12 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,6 +52,11 @@ public class EntityOperationQueryController {
 	@Qualifier("qmparamsResolver")
 	ParamsResolver paramsResolver;
 
+	@Value("${defaultLimit}")
+	int defaultLimit = 50;
+	@Value("${maxLimit}")
+	int maxLimit = 1000;
+
 	@Autowired
 	@Qualifier("qmconRes")
 	ContextResolverBasic contextResolver;
@@ -76,13 +83,26 @@ public class EntityOperationQueryController {
 	}
 
 	@PostMapping("/query")
-	public ResponseEntity<byte[]> postQuery(HttpServletRequest request, @RequestBody String payload)
-			throws ResponseException {
+	public ResponseEntity<byte[]> postQuery(HttpServletRequest request, @RequestBody String payload,
+			@RequestParam(value = "limit", required = false) Integer limit,
+			@RequestParam(value = "offset", required = false) Integer offset,
+			@RequestParam(value = "qtoken", required = false) String qToken,
+			@RequestParam(name = "options", required = false) List<String> options) throws ResponseException {
 		try {
+			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
 			String expandedPayload = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			Map<String, Object> queries = (Map<String, Object>) JsonUtils.fromString(expandedPayload);
-
+			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
+			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+				linkHeaders.add(rawPayload.get(NGSIConstants.JSON_LD_CONTEXT));
+			}
 			QueryParams params = new QueryParams();
+			if (limit == null) {
+				limit = defaultLimit;
+			}
+			if (offset == null) {
+				offset = 0;
+			}
 			for (Entry<String, Object> entry : queries.entrySet()) {
 				switch (entry.getKey()) {
 				case NGSIConstants.NGSI_LD_ATTRS:
@@ -137,9 +157,9 @@ public class EntityOperationQueryController {
 				default:
 					break;
 				}
-				System.out.println(entry);
 			}
-			//return queryService.getData(params, payload, linkHeaders, limit, offset, qToken, showServices, countResult, check, headers)
+			return QueryController.generateReply(httpUtils, request, queryService.getData(params, payload, linkHeaders,
+					limit, offset, qToken, false, countResult, HttpUtils.getHeaders(request), true), true);
 
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
@@ -151,6 +171,9 @@ public class EntityOperationQueryController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

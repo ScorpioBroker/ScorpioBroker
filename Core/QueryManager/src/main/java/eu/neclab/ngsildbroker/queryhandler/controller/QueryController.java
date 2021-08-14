@@ -285,7 +285,7 @@ public class QueryController {// implements QueryHandlerInterface {
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}
 					//long pregenresult = System.currentTimeMillis();
-					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve);
+					ResponseEntity<byte[]> result = generateReply(httpUtils, request, qResult, !retrieve);
 					//long end = System.currentTimeMillis();
 					//System.err.println(start);
 					//System.err.println(prelink);
@@ -342,7 +342,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	}
 
-	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult, boolean forceArray)
+	public static ResponseEntity<byte[]> generateReply(HttpUtils httpUtils, HttpServletRequest request, QueryResult qResult, boolean forceArray)
 			throws ResponseException {
 		String nextLink = generateNextLink(request, qResult);
 		String prevLink = generatePrevLink(request, qResult);
@@ -368,7 +368,7 @@ public class QueryController {// implements QueryHandlerInterface {
 				additionalHeaders, null, forceArray);
 	}
 
-	private String generateNextLink(HttpServletRequest request, QueryResult qResult) {
+	private static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
 			return null;
 		}
@@ -376,7 +376,7 @@ public class QueryController {// implements QueryHandlerInterface {
 				qResult.getqToken(), "next");
 	}
 
-	private String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
+	private static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
 			String rel) {
 
 		StringBuilder builder = new StringBuilder("</");
@@ -406,7 +406,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		return builder.toString();
 	}
 
-	private String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
+	private static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
 			return null;
 		}
