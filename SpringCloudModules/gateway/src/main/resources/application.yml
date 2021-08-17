@@ -86,7 +86,11 @@ zuul:
       path: /ngsi-ld/v1/types/**     
       serviceId: QUERY-MANAGER
       stripPrefix: false
-
+    postquery:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/entityOperations/query/**
+      serviceId: QUERY-MANAGER
+      stripPrefix: false
     batchoperations:
       sensitiveHeaders:
       path: /ngsi-ld/v1/entityOperations/**
