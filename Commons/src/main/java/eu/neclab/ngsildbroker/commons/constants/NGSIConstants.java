@@ -119,6 +119,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TENANT = "https://uri.etsi.org/ngsi-ld/default-context/tenant";
 	public final static String NGSI_LD_ATTRIBUTE_TYPES = "https://uri.etsi.org/ngsi-ld/attributeTypes";
 	public final static String NGSI_LD_ATTRIBUTE = "https://uri.etsi.org/ngsi-ld/Attribute";
+	public final static String NGSI_LD_ATTRS = "https://uri.etsi.org/ngsi-ld/default-context/attrs";
 	public final static String NGSI_LD_ATTRIBUTE_LIST_1 = "https://uri.etsi.org/ngsi-ld/AttributeList";
 	public final static String NGSI_LD_ATTRIBUTE_LIST_2 = "https://uri.etsi.org/ngsi-ld/attributeList";
 	public final static String NGSI_LD_TYPE_NAMES = "https://uri.etsi.org/ngsi-ld/typeNames";

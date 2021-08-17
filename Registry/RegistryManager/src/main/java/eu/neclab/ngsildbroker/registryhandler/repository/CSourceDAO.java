@@ -76,36 +76,44 @@ public class CSourceDAO extends StorageReaderDAO {
 			fullSqlWhere.append("(c.internal = false) AND ");
 		}
 		
+		List<Map<String, String>> entities = qp.getEntities();
 		// query by type + (id, idPattern)
-		if (qp.getType()!=null) {
-			
-			String typeValue = qp.getType();
-			String idValue = "";
-			String idPatternValue = "";
-			if (qp.getId()!=null)
-				idValue = qp.getId();
-			if (qp.getIdPattern()!=null)
-				idPatternValue = qp.getIdPattern();
-			// id takes precedence on idPattern. clear idPattern if both are given
-			if (!idValue.isEmpty() && !idPatternValue.isEmpty())
-				idPatternValue = "";
+		if (entities != null) {
+			for (Map<String, String> entityInfo : entities) {
+				sqlWhere += "(";
+				String typeValue = entityInfo.get(NGSIConstants.JSON_LD_TYPE);
+				String idValue = "";
+				String idPatternValue = "";
+				if (entityInfo.containsKey(NGSIConstants.JSON_LD_ID)) {
+					idValue = entityInfo.get(NGSIConstants.JSON_LD_ID);
+				}
+				if (entityInfo.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
+					idPatternValue = entityInfo.get(NGSIConstants.NGSI_LD_ID_PATTERN);
+				}
+				// id takes precedence on idPattern. clear idPattern if both are given
+				if (!idValue.isEmpty() && !idPatternValue.isEmpty())
+					idPatternValue = "";
 
-			// query by type + (id, idPattern) + attrs
-			if (qp.getAttrs()!=null) {
-				String attrsValue = qp.getAttrs();
-				sqlWhere = getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
-				sqlWhere += " AND ";
-				sqlWhere += getSqlWhereByAttrsInTypeFiltering(attrsValue);
-				
-			} else {  // query by type + (id, idPattern) only (no attrs)
-				
-				sqlWhere = "(c.has_registrationinfo_with_attrs_only) OR ";	
-				sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
-				
+				// query by type + (id, idPattern) + attrs
+				if (qp.getAttrs() != null) {
+					String attrsValue = qp.getAttrs();
+					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
+					sqlWhere += " AND ";
+					sqlWhere += getSqlWhereByAttrsInTypeFiltering(attrsValue);
+
+				} else { // query by type + (id, idPattern) only (no attrs)
+
+					sqlWhere += "(c.has_registrationinfo_with_attrs_only) OR ";
+					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
+
+				}
+				fullSqlWhere.append("(" + sqlWhere + ") AND ");
+				csourceInformationIsNeeded = true;
+				sqlOk = true;
+
+				sqlWhere += ") OR ";
 			}
-			fullSqlWhere.append("(" + sqlWhere + ") AND ");
-			csourceInformationIsNeeded = true;
-			sqlOk = true;
+			sqlWhere = sqlWhere.substring(0, sqlWhere.length() - 4);
 			
 		// query by attrs only		
 		} else if (qp.getAttrs()!=null) {

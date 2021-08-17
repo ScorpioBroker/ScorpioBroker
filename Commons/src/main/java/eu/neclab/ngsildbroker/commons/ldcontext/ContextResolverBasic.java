@@ -830,7 +830,7 @@ public class ContextResolverBasic {
 		return tempList;
 	}
 
-	private void protectGeoProp(Map<String, Object> objMap, Object value, List<Object> usedContext)
+	public void protectGeoProp(Map<String, Object> objMap, Object value, List<Object> usedContext)
 			throws JsonGenerationException, IOException, ResponseException {
 		Object potentialStringValue = ((Map) value).get(NGSIConstants.JSON_LD_VALUE);
 		if (potentialStringValue != null) {

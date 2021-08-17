@@ -97,7 +97,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		HashMap<String, String[]> paramMap = new HashMap<String, String[]>();
 		paramMap.put(NGSIConstants.QUERY_PARAMETER_ID, new String[] { entityId });
 		ResponseEntity<byte[]> result = getQueryData(request, originalQuery, paramMap, attrs, null, null, null, options,
-				false, true, false, null);
+				false, true, false);
 		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
@@ -166,18 +166,15 @@ public class QueryController {// implements QueryHandlerInterface {
 		}
 
 		return getQueryData(request, request.getQueryString(), request.getParameterMap(), attrs, limit, offset, qToken,
-				options, showServices, false, countResult, null);
+				options, showServices, false, countResult);
 	}
 
 	@GetMapping(path = "/types")
 	public ResponseEntity<byte[]> getAllTypes(HttpServletRequest request,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
-		String check = "NonDeatilsType";
-		if (details == true) {
-			check = "deatilsType";
-		}
+		
 		ResponseEntity<byte[]> result = getQueryData(request, null, request.getParameterMap(), null, null, null, null,
-				null, false, true, false, check);
+				null, false, true, false);
 		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
@@ -188,11 +185,10 @@ public class QueryController {// implements QueryHandlerInterface {
 	@GetMapping(path = "/types/{entityType}")
 	public ResponseEntity<byte[]> getType(HttpServletRequest request, @PathVariable("entityType") String type,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
-		String check = "type";
 		ArrayList<String> types = new ArrayList<String>();
 		types.add(type);
 		ResponseEntity<byte[]> result = getQueryData(request, null, request.getParameterMap(), types, null, null, null,
-				null, false, true, false, check);
+				null, false, true, false);
 		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
@@ -203,12 +199,9 @@ public class QueryController {// implements QueryHandlerInterface {
 	@GetMapping(path = "/attributes")
 	public ResponseEntity<byte[]> getAllAttribute(HttpServletRequest request,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
-		String check = "NonDeatilsAttributes";
-		if (details == true) {
-			check = "deatilsAttributes";
-		}
+		
 		ResponseEntity<byte[]> result = getQueryData(request, null, request.getParameterMap(), null, null, null, null,
-				null, false, true, false, check);
+				null, false, true, false);
 		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
@@ -220,11 +213,10 @@ public class QueryController {// implements QueryHandlerInterface {
 	public ResponseEntity<byte[]> getAttributes(HttpServletRequest request,
 			@PathVariable("attributes") String attributes,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
-		String check = "Attribute";
 		ArrayList<String> types = new ArrayList<String>();
 		types.add(attributes);
 		ResponseEntity<byte[]> result = getQueryData(request, null, request.getParameterMap(), types, null, null, null,
-				null, false, true, false, check);
+				null, false, true, false);
 		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
@@ -234,7 +226,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
 			Map<String, String[]> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
-			List<String> options, Boolean showServices, boolean retrieve, Boolean countResult, String check) {
+			List<String> options, Boolean showServices, boolean retrieve, Boolean countResult) {
 		//long start = System.currentTimeMillis();
 		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 		
@@ -287,13 +279,13 @@ public class QueryController {// implements QueryHandlerInterface {
 					QueryResult qResult;
 					try {
 					 qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
-							qToken, showServices, countResult, check, headers);
+							qToken, showServices, countResult, headers, false);
 					}catch(Exception e){
 						return ResponseEntity.status(HttpStatus.NOT_FOUND)
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}
 					//long pregenresult = System.currentTimeMillis();
-					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve);
+					ResponseEntity<byte[]> result = generateReply(httpUtils, request, qResult, !retrieve);
 					//long end = System.currentTimeMillis();
 					//System.err.println(start);
 					//System.err.println(prelink);
@@ -350,7 +342,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	}
 
-	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult, boolean forceArray)
+	public static ResponseEntity<byte[]> generateReply(HttpUtils httpUtils, HttpServletRequest request, QueryResult qResult, boolean forceArray)
 			throws ResponseException {
 		String nextLink = generateNextLink(request, qResult);
 		String prevLink = generatePrevLink(request, qResult);
@@ -376,7 +368,7 @@ public class QueryController {// implements QueryHandlerInterface {
 				additionalHeaders, null, forceArray);
 	}
 
-	private String generateNextLink(HttpServletRequest request, QueryResult qResult) {
+	private static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
 			return null;
 		}
@@ -384,7 +376,7 @@ public class QueryController {// implements QueryHandlerInterface {
 				qResult.getqToken(), "next");
 	}
 
-	private String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
+	private static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
 			String rel) {
 
 		StringBuilder builder = new StringBuilder("</");
@@ -414,7 +406,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		return builder.toString();
 	}
 
-	private String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
+	private static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
 			return null;
 		}

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 
 import javax.annotation.PostConstruct;
@@ -280,73 +281,85 @@ abstract public class StorageReaderDAO {
 	 */
 	protected String translateNgsildQueryToSql(QueryParams qp) throws ResponseException {
 		StringBuilder fullSqlWhereProperty = new StringBuilder(70);
-
-		// https://stackoverflow.com/questions/3333974/how-to-loop-over-a-class-attributes-in-java
-		ReflectionUtils.doWithFields(qp.getClass(), field -> {
-			String dbColumn, sqlOperator;
-			String sqlWhereProperty = "";
-
-			field.setAccessible(true);
-			String queryParameter = field.getName();
-			Object fieldValue = field.get(qp);
-			if (fieldValue != null) {
-
-				logger.trace("Query parameter:" + queryParameter);
-
-				String queryValue = "";
-				if (fieldValue instanceof String) {
-					queryValue = fieldValue.toString();
-					logger.trace("Query value: " + queryValue);
-				}
-
-				switch (queryParameter) {
-				case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
-					dbColumn = DBConstants.DBCOLUMN_ID;
-					sqlOperator = "~";
-					sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + queryValue + "'";
-					break;
-				case NGSIConstants.QUERY_PARAMETER_TYPE:
-				case NGSIConstants.QUERY_PARAMETER_ID:
-					dbColumn = queryParameter;
-					if (queryValue.indexOf(",") == -1) {
+		String dbColumn, sqlOperator;
+		String sqlWhereProperty = null;
+		List<Map<String, String>> entities = qp.getEntities();
+		fullSqlWhereProperty.append("(");
+		for (Map<String, String> entityInfo : entities) {
+			fullSqlWhereProperty.append("(");
+			for (Entry<String, String> entry : entityInfo.entrySet()) {
+				switch (entry.getKey()) {
+				case NGSIConstants.JSON_LD_ID:
+					dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
+					if (entry.getValue().indexOf(",") == -1) {
 						sqlOperator = "=";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + queryValue + "'";
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
 					} else {
 						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + queryValue.replace(",", "','") + "')";
-					}
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','") + "')";
+					}			
 					break;
-				case NGSIConstants.QUERY_PARAMETER_ATTRS:
-					dbColumn = "data";
-					sqlOperator = "?";
-					if (queryValue.indexOf(",") == -1) {
-						sqlWhereProperty = dbColumn + " " + sqlOperator + "'" + queryValue + "'";
+				case NGSIConstants.JSON_LD_TYPE:
+					dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
+					if (entry.getValue().indexOf(",") == -1) {
+						sqlOperator = "=";
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
 					} else {
-						sqlWhereProperty = "(" + dbColumn + " " + sqlOperator + " '"
-								+ queryValue.replace(",", "' OR " + dbColumn + " " + sqlOperator + "'") + "')";
-					}
+						sqlOperator = "IN";
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','") + "')";
+					}			
+
 					break;
-				case NGSIConstants.QUERY_PARAMETER_GEOREL:
-					if (fieldValue instanceof GeoqueryRel) {
-						GeoqueryRel gqr = (GeoqueryRel) fieldValue;
-						logger.trace("Georel value " + gqr.getGeorelOp());
-						try {
-							sqlWhereProperty = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(),
-									qp.getCoordinates(), qp.getGeoproperty());
-						} catch (ResponseException e) {
-							e.printStackTrace();
-						}
-					}
+				case NGSIConstants.NGSI_LD_ID_PATTERN:
+					dbColumn = DBConstants.DBCOLUMN_ID;
+					sqlOperator = "~";
+					sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
 					break;
-				case NGSIConstants.QUERY_PARAMETER_QUERY:
-					sqlWhereProperty = queryValue;
+
+				default:
 					break;
 				}
 				fullSqlWhereProperty.append(sqlWhereProperty);
-				if (!sqlWhereProperty.isEmpty())
-					fullSqlWhereProperty.append(" AND ");
+				fullSqlWhereProperty.append(" AND ");
 			}
-		});
+			fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 5, fullSqlWhereProperty.length());
+			fullSqlWhereProperty.append(") OR ");
+		}
+		fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 4, fullSqlWhereProperty.length());
+		fullSqlWhereProperty.append(")");
+		if (qp.getAttrs() != null) {
+			String queryValue;
+			queryValue = qp.getAttrs();
+			dbColumn = "data";
+			sqlOperator = "?";
+			if (queryValue.indexOf(",") == -1) {
+				sqlWhereProperty = dbColumn + " " + sqlOperator + "'" + queryValue + "'";
+			} else {
+				sqlWhereProperty = "(" + dbColumn + " " + sqlOperator + " '"
+						+ queryValue.replace(",", "' OR " + dbColumn + " " + sqlOperator + "'") + "')";
+			}
+			fullSqlWhereProperty.append(" AND ");
+			fullSqlWhereProperty.append(sqlWhereProperty);
+
+		}
+		if (qp.getGeorel() != null) {
+			GeoqueryRel gqr = qp.getGeorel();
+			logger.trace("Georel value " + gqr.getGeorelOp());
+			try {
+				sqlWhereProperty = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
+						qp.getGeoproperty());
+			} catch (ResponseException e) {
+				e.printStackTrace();
+			}
+			fullSqlWhereProperty.append(" AND ");
+			fullSqlWhereProperty.append(sqlWhereProperty);
+
+		}
+		if (qp.getQ() != null) {
+			sqlWhereProperty = qp.getQ();
+			fullSqlWhereProperty.append(" AND ");
+			fullSqlWhereProperty.append(sqlWhereProperty);
+		}
 
 		String tableDataColumn;
 		if (qp.getKeyValues()) {
@@ -375,9 +388,9 @@ abstract public class StorageReaderDAO {
 			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each(" + tableDataColumn + ") WHERE key IN ( "
 					+ expandedAttributeList + "))";
 		}
-		String sqlQuery = "SELECT " + dataColumn + " as data FROM " + DBConstants.DBTABLE_ENTITY + " ";
+		String sqlQuery = "SELECT DISTINCT " + dataColumn + " as data FROM " + DBConstants.DBTABLE_ENTITY + " ";
 		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " 1=1 ";
+			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
 		}
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();

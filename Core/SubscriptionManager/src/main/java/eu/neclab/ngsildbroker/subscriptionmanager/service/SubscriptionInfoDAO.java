@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +15,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
@@ -46,7 +49,11 @@ public class SubscriptionInfoDAO extends StorageReaderDAO {
 	public String getEntity(String entityId, String tenantId) {
 		tenantId = getTenant(tenantId);
 		QueryParams qp = new QueryParams();
-		qp.setId(entityId);
+		Map<String, String> entityInfo = new HashMap<String, String>();
+		entityInfo.put(NGSIConstants.JSON_LD_ID, entityId);
+		List<Map<String, String>> temp = new ArrayList<Map<String,String>>();
+		temp.add(entityInfo);
+		qp.setEntities(temp);
 		qp.setTenant(tenantId);
 		try {
 			return super.query(qp).get(0);
