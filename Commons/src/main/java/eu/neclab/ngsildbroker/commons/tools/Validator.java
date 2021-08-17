@@ -48,15 +48,4 @@ public class Validator {
 		}
 		
 	}
-	public static String validateUri(String mapValue) throws ResponseException {
-		try {
-			if (!new URI(mapValue).isAbsolute()) {
-				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
-			}
-			return mapValue;
-		} catch (URISyntaxException e) {
-			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
-		}
-
-	}
 }

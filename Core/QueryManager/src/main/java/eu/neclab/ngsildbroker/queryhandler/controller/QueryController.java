@@ -39,6 +39,7 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.Validator;
+import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 
 @RestController
@@ -95,7 +96,7 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(value = "options", required = false) List<String> options) throws ResponseException{
 		String entityId = HttpUtils.denormalize(request.getServletPath().replace("/ngsi-ld/v1/entities/", ""));
 		try {
-		Validator.validateUri(entityId);
+			ValidateURI.validateUri(entityId);
 		} catch(ResponseException exception){
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJsonBytes());

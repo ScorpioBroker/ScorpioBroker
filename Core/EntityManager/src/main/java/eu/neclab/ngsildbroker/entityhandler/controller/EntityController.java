@@ -27,11 +27,10 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
-
+import eu.neclab.ngsildbroker.commons.tools.*;
 /**
  * 
  * @version 1.0
@@ -286,6 +285,7 @@ public class EntityController {// implements EntityHandlerInterface {
 				String[] split = path.split("/attrs/");
 				String attrId = HttpUtils.denormalize(split[1]);
 				String entityId = HttpUtils.denormalize(split[0]);
+				ValidateURI.validateUri(entityId);
 				logger.trace("delete attribute :: started");
 				Validator.validate(request.getParameterMap());
 				String expandedAttrib = paramsResolver.expandAttribute(attrId, HttpUtils.getAtContext(request));
@@ -325,6 +325,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			String entityId = HttpUtils.denormalize(request.getServletPath().replace("/ngsi-ld/v1/entities/", ""));
 			logger.trace("delete entity :: started");
+			ValidateURI.validateUri(entityId);
 			entityService.deleteEntity(HttpUtils.getHeaders(request), entityId);
 			logger.trace("delete entity :: completed");
 			return ResponseEntity.noContent().build();

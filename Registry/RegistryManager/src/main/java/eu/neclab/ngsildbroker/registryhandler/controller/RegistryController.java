@@ -41,9 +41,9 @@ import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
-import eu.neclab.ngsildbroker.commons.tools.Validator;
 /**
  * 
  * @version 1.0
@@ -162,7 +162,7 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
-			Validator.validateUri(registrationId);
+			ValidateURI.validateUri(registrationId);
 			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
 			
@@ -180,6 +180,7 @@ public class RegistryController {
 	public ResponseEntity<byte[]> updateCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
 		try {
+			ValidateURI.validateUri(registrationId);
 			HttpUtils.doPreflightCheck(request, payload);
 			logger.debug("update CSource() ::" + registrationId);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
@@ -200,6 +201,7 @@ public class RegistryController {
 	public ResponseEntity<byte[]> deleteCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
+			ValidateURI.validateUri(registrationId);
 			logger.debug("delete CSource() ::" + registrationId);
 			csourceService.deleteCSourceRegistration(HttpUtils.getHeaders(request), registrationId);
 			logger.debug("delete CSource() completed::" + registrationId);
