@@ -113,7 +113,16 @@
 			<artifactId>junit</artifactId>
 			<scope>test</scope>
 		</dependency>
-		
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>Commons</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>RegistryManager</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
 		<!-- <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>LDContextResolver</artifactId> 
 			<version>0.0.1-SNAPSHOT</version> </dependency> -->
 	</dependencies>

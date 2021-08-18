@@ -53,9 +53,11 @@ public class CreateCSourceRequest extends CSourceRequest {
 			logger.error("Invalid type!");
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
-		if (!isValidURL(csourceRegistration.getEndpoint().toString())) {
-			logger.error("Invalid endpoint URL!");
-			throw new ResponseException(ErrorType.BadRequestData);
+		if (csourceRegistration.getEndpoint() != null) {
+			if (!isValidURL(csourceRegistration.getEndpoint().toString())) {
+				logger.error("Invalid endpoint URL!");
+				throw new ResponseException(ErrorType.BadRequestData);
+			}
 		}
 		if (csourceRegistration.getInformation() == null) {
 			logger.error("Information is empty!");

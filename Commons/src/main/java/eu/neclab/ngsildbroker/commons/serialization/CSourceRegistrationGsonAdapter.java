@@ -39,10 +39,12 @@ public class CSourceRegistrationGsonAdapter
 
 		jsonArray = new JsonArray();
 		JsonObject jsonObject = new JsonObject();
-		jsonObject.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getEndpoint().toString()));
-		jsonArray.add(jsonObject);
-		top.add(NGSIConstants.NGSI_LD_ENDPOINT, jsonArray);
-
+		if (src.getEndpoint() != null) {
+			jsonObject.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getEndpoint().toString()));
+			jsonArray.add(jsonObject);
+			top.add(NGSIConstants.NGSI_LD_ENDPOINT, jsonArray);
+		}
+		
 		if (src.getTenant() != null) {
 			jsonArray = new JsonArray();
 			jsonObject = new JsonObject();
