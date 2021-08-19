@@ -28,7 +28,7 @@ spring:
     stream:
       kafka:
         binder:
-          brokers: cema.nlehd.de:2092
+          brokers: localhost:9092
       bindings:
         CSOURCE_REGISTRATION_WRITE_CHANNEL:
           destination: CONTEXT_SOURCE
@@ -75,7 +75,7 @@ submanager:
 
 #kafka broker path
 bootstrap:
-  servers: cema.nlehd.de:2092
+  servers: localhost:9092
 
 #enable log compaction
 
