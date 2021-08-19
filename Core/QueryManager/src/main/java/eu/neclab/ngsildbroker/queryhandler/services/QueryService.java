@@ -318,8 +318,8 @@ public class QueryService {
 	 * @throws Exception
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
-			Integer offset, String qToken, Boolean showServices, Boolean countResult, String check,
-			ArrayListMultimap<String, String> headers) throws ResponseException, Exception {
+			Integer offset, String qToken, Boolean showServices, Boolean countResult,
+			ArrayListMultimap<String, String> headers, Boolean postQuery) throws ResponseException, Exception {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
@@ -390,9 +390,19 @@ public class QueryService {
 								if (uri_tenant != null) {
 									callHeaders.add(NGSIConstants.TENANT_HEADER, uri_tenant);
 								}
-								HttpEntity entity = new HttpEntity<>(callHeaders);
-								String result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
-										HttpMethod.GET, entity, String.class).getBody();
+								HttpEntity entity;
+
+								String result;
+								if (postQuery) {
+									entity = new HttpEntity<String>(rawQueryString, callHeaders);
+									result = restTemplate.exchange(uri + "/ngsi-ld/v1/entityOperations/query",
+											HttpMethod.POST, entity, String.class).getBody();
+								} else {
+									entity = new HttpEntity<>(callHeaders);
+									result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
+											HttpMethod.GET, entity, String.class).getBody();
+								}
+
 								logger.debug("http call result :: ::" + result);
 								return result;
 							};
