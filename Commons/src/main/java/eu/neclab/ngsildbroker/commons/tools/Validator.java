@@ -30,7 +30,7 @@ public class Validator {
 		validParams.add(NGSIConstants.QUERY_PARAMETER_DETAILS);
 		validParams.add(NGSIConstants.COUNT_HEADER_RESULT);
 	}
-	public static void validate(Map<String, String[]> parameterMap, int maxLimit, boolean ignoreType) throws ResponseException{
+	public static void validate(Map<String, String[]> parameterMap, int maxLimit, boolean ignoreType) throws ResponseException, URISyntaxException{
 		
 		if(!ignoreType && !parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_TYPE) && !parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_ATTRS)) {
 			throw new ResponseException(ErrorType.BadRequestData, "Missing mandatory minimum parameter " + NGSIConstants.QUERY_PARAMETER_TYPE + " or " + NGSIConstants.QUERY_PARAMETER_ATTRS);
@@ -45,7 +45,19 @@ public class Validator {
 					throw new ResponseException(ErrorType.TooManyResults, "The limit in the request is too big. To request with the max limit of " + maxLimit + " remove the limit parameter");
 				}
 			}
-		}
-		
+			//validate idpattern and id
+			if(key.equals(NGSIConstants.QUERY_PARAMETER_IDPATTERN)) {
+				String value = parameterMap.get(key)[0];
+				if (!new URI(value).isAbsolute()) {
+					throw new ResponseException(ErrorType.BadRequestData, "idPattern is not a URI");
+				}
+			}
+			if(key.equals(NGSIConstants.QUERY_PARAMETER_ID)) {
+				String value = parameterMap.get(key)[0];
+				if (!new URI(value).isAbsolute()) {
+					throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+				}
+			}
+		}	
 	}
 }
