@@ -42,6 +42,7 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
+import eu.neclab.ngsildbroker.commons.tools.Validator;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 /**
@@ -99,6 +100,7 @@ public class RegistryController {
 			@RequestParam HashMap<String, String> queryMap) {
 		try {
 			logger.trace("getCSources() ::");
+			Validator.validateCsourceGetParameter(request.getParameterMap());
 			String queryParams = request.getQueryString();
 			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING)
