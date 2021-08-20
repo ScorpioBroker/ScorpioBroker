@@ -4,10 +4,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.netflix.discovery.EurekaClient;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -39,7 +35,7 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-
+import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 @RestController
 @RequestMapping("/ngsi-ld/v1/subscriptions")
 public class SubscriptionController {
@@ -136,6 +132,7 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) String id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
+			ValidateURI.validateUri(id);
 			logger.trace("call getSubscriptions() ::");
 			return httpUtils.generateReply(request,
 					DataSerializer.toJson(manager.getSubscription(id, HttpUtils.getHeaders(request)).getSubscription()));
@@ -152,8 +149,7 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
-			// System.out.println("DELETING SUBSCRIPTION: " + id + " at " +
-			// System.currentTimeMillis());
+			ValidateURI.validateUriInSubs(id);
 			manager.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);

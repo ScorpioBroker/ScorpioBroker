@@ -18,4 +18,15 @@ public class ValidateURI {
 		}
 
 	}
+	public static URI validateUriInSubs(URI mapValue) throws ResponseException {
+		try {
+			if (!mapValue.isAbsolute()) {
+				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+			}
+			return mapValue;
+		} catch (ResponseException e) {
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+		}
+
+	}
 }
