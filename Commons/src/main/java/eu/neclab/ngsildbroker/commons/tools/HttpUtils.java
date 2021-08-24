@@ -168,7 +168,7 @@ public final class HttpUtils {
 			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
 		}
 		if (!contentType.toLowerCase().contains("application/json")
-				&& !contentType.toLowerCase().contains("application/ld+json")) {
+				&& !contentType.toLowerCase().contains("application/ld+json") && !contentType.toLowerCase().contains("application/merge-patch+json")) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType,
 					"Unsupported content type. Allowed are application/json and application/ld+json. You provided "
 							+ contentType);
@@ -191,7 +191,10 @@ public final class HttpUtils {
 
 		final String contentType = request.getContentType();
 		final List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
-
+		boolean isValidateContentType = false;
+        if(request.getMethod().equalsIgnoreCase(AppConstants.HTTP_METHOD_PATCH)) {
+        	isValidateContentType = true;
+        }
 		// PayloadValidationRule rule = new PayloadValidationRule();
 		// rule.validateEntity(payload, request);
 
@@ -208,7 +211,12 @@ public final class HttpUtils {
 
 			ldResolved = contextResolver.expand(payload, null, true, endPoint);
 
-		} else {
+		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON_PATCH) &&(isValidateContentType == true) ) {
+
+			ldResolved = contextResolver.expand(payload, linkHeaders, true, endPoint);
+
+		} 
+		else {
 			throw new ResponseException(ErrorType.BadRequestData,
 					"Missing or unknown Content-Type header. Content-Type header is mandatory. Only application/json or application/ld+json mime type is allowed");
 		}
