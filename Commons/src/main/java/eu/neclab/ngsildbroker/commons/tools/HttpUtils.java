@@ -198,6 +198,7 @@ public final class HttpUtils {
 		if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON)) {
 
 			ldResolved = contextResolver.expand(payload, linkHeaders, true, endPoint);
+			
 
 		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD)) {
 			if (!payload.contains("@context")) {
@@ -209,7 +210,7 @@ public final class HttpUtils {
 			ldResolved = contextResolver.expand(payload, null, true, endPoint);
 
 		} else {
-			throw new ResponseException(ErrorType.BadRequestData,
+			throw new ResponseException(ErrorType.UnsupportedMediaType,
 					"Missing or unknown Content-Type header. Content-Type header is mandatory. Only application/json or application/ld+json mime type is allowed");
 		}
 
