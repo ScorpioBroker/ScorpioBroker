@@ -31,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
 import eu.neclab.ngsildbroker.historymanager.utils.Validator;
@@ -122,6 +123,7 @@ public class HistoryController {
 		try {
 			logger.trace("retrieveTemporalEntityById :: started " + entityId);
 			logger.debug("entityId : " + entityId);
+			ValidateURI.validateUri(entityId);
 			if (params != null && !Validator.validate(params))
 				throw new ResponseException(ErrorType.BadRequestData);
 
@@ -151,6 +153,7 @@ public class HistoryController {
 		try {
 			logger.trace("deleteTemporalEntityById :: started");
 			logger.debug("entityId : " + entityId);
+			ValidateURI.validateUri(entityId);
 			historyService.delete(HttpUtils.getHeaders(request), entityId, null, null,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteTemporalEntityById :: completed");
