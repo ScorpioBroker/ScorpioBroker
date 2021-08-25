@@ -61,4 +61,7 @@ public class AppConstants {
 	// public static final String TENANT_HEADER = "ngsild-tenant";
 	public static final String INTERNAL_NULL_KEY = ")$%^&";
 
+	public static final String HTTP_METHOD_PATCH = "patch";
+	public final static String NGB_APPLICATION_JSON_PATCH = "application/merge-patch+json";
+
 }

@@ -110,16 +110,17 @@ public final class HttpUtils {
 		this.contextResolver = contextResolver;
 		// Nothing to do, but make sure not more than one instance is created.
 	}
-	
-	//Dummy instance with out context resolving. only used for gets and posts etc.
+
+	// Dummy instance with out context resolving. only used for gets and posts etc.
 	private static HttpUtils NULL_INSTANCE = new HttpUtils(null);
+
 	/**
 	 * Returns the singleton instance of this class.
 	 * 
 	 * @return an HttpUtils instance
 	 */
 	public static HttpUtils getInstance(ContextResolverBasic contextResolver) {
-		if(contextResolver == null) {
+		if (contextResolver == null) {
 			getSystemProxy(NULL_INSTANCE);
 			return NULL_INSTANCE;
 		}
@@ -129,25 +130,26 @@ public final class HttpUtils {
 		}
 		return SINGLETON;
 	}
+
 	private static void getSystemProxy(HttpUtils instance) {
 		String httpProxy = null;
 		String httpsProxy = null;
-		
-		for(Entry<String, String> entry: System.getenv().entrySet()) {
-			if(entry.getKey().equalsIgnoreCase("http_proxy")) {
+
+		for (Entry<String, String> entry : System.getenv().entrySet()) {
+			if (entry.getKey().equalsIgnoreCase("http_proxy")) {
 				httpProxy = entry.getValue();
 			}
-			if(entry.getKey().equalsIgnoreCase("https_proxy")) {
+			if (entry.getKey().equalsIgnoreCase("https_proxy")) {
 				httpsProxy = entry.getValue();
 			}
 		}
-		if(httpsProxy != null) {
+		if (httpsProxy != null) {
 			try {
 				setHttpProxy(new URL(httpsProxy), instance);
 			} catch (MalformedURLException e) {
 				LOG.error("Your configured https_proxy setting is not valid.", e);
 			}
-		}else if(httpProxy != null) {
+		} else if (httpProxy != null) {
 			try {
 				setHttpProxy(new URL(httpProxy), instance);
 			} catch (MalformedURLException e) {
@@ -155,20 +157,23 @@ public final class HttpUtils {
 			}
 		}
 	}
+
 	public static String denormalize(String attrId) {
 		String result = attrId.replace(":/", "://");
-		if(result.endsWith("/")) {
+		if (result.endsWith("/")) {
 			return result.substring(0, result.length() - 2);
 		}
 		return result;
 	}
+
 	public static void doPreflightCheck(HttpServletRequest req, String payload) throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
 		if (contentType == null) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
 		}
 		if (!contentType.toLowerCase().contains("application/json")
-				&& !contentType.toLowerCase().contains("application/ld+json")) {
+				&& !contentType.toLowerCase().contains("application/ld+json")
+				&& !contentType.toLowerCase().contains("application/merge-patch+json")) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType,
 					"Unsupported content type. Allowed are application/json and application/ld+json. You provided "
 							+ contentType);
@@ -191,14 +196,16 @@ public final class HttpUtils {
 
 		final String contentType = request.getContentType();
 		final List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
-
+		boolean isValidateContentType = false;
+		if (request.getMethod().equalsIgnoreCase(AppConstants.HTTP_METHOD_PATCH)) {
+			isValidateContentType = true;
+		}
 		// PayloadValidationRule rule = new PayloadValidationRule();
 		// rule.validateEntity(payload, request);
 
 		if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON)) {
 
 			ldResolved = contextResolver.expand(payload, linkHeaders, true, endPoint);
-			
 
 		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD)) {
 			if (!payload.contains("@context")) {
@@ -208,6 +215,11 @@ public final class HttpUtils {
 			}
 
 			ldResolved = contextResolver.expand(payload, null, true, endPoint);
+
+		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON_PATCH)
+				&& (isValidateContentType == true)) {
+
+			ldResolved = contextResolver.expand(payload, linkHeaders, true, endPoint);
 
 		} else {
 			throw new ResponseException(ErrorType.UnsupportedMediaType,
@@ -916,7 +928,7 @@ public final class HttpUtils {
 			}
 
 		}
-		
+
 	}
 
 	private int parseAcceptHeader(Enumeration<String> acceptHeaders) {
@@ -925,7 +937,7 @@ public final class HttpUtils {
 
 		while (acceptHeaders.hasMoreElements()) {
 			String header = acceptHeaders.nextElement();
-			
+
 			Matcher m = headerPattern.matcher(header.toLowerCase());
 			while (m.find()) {
 				String floatString = m.group(8);
@@ -1068,21 +1080,22 @@ public final class HttpUtils {
 
 		return baos.toByteArray();
 	}
+
 	public static ArrayListMultimap<String, String> getHeaders(HttpServletRequest request) {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		Iterator<String> it = request.getHeaderNames().asIterator();
-		while(it.hasNext()) {
+		while (it.hasNext()) {
 			String key = it.next();
 			Iterator<String> it2 = request.getHeaders(key).asIterator();
-			while(it2.hasNext()) {
+			while (it2.hasNext()) {
 				result.put(key, it2.next());
 			}
 		}
 		return result;
 	}
-	
+
 	public static String getTenantFromHeaders(ArrayListMultimap<String, String> headers) {
-		if(headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
 			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
 		}
 		return null;
