@@ -37,6 +37,7 @@ import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceSubscriptionService;
 
 @RestController
@@ -130,6 +131,7 @@ public class RegistrySubscriptionController {
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
 			logger.trace("call getSubscriptions() ::");
+			ValidateURI.validateUriInSubs(id);
 			return httpUtils.generateReply(request,
 					DataSerializer.toJson(manager.getSubscription(HttpUtils.getHeaders(request), id)));
 
