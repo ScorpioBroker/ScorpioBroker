@@ -263,6 +263,9 @@ public class CSourceSubscriptionService {
 
 	public boolean unsubscribe(URI id, ArrayListMultimap<String, String> headers) throws ResponseException {
 		SubscriptionRequest req = this.subscriptionId2Subscription.get(id);
+		if (req == null) {
+			throw new ResponseException(ErrorType.NotFound);
+		}
 		checkTenant(headers, req.getHeaders());
 		return unsubscribe(id);
 	}
