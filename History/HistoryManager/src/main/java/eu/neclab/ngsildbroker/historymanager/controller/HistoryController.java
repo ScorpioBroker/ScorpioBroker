@@ -193,6 +193,7 @@ public class HistoryController {
 	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
+			ValidateURI.validateUri(entityId);
 			logger.trace("deleteAttrib2TemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId);
 			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null,
