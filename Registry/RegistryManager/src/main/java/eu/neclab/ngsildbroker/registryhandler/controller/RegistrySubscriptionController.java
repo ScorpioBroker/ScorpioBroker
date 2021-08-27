@@ -147,6 +147,7 @@ public class RegistrySubscriptionController {
 	public ResponseEntity<byte[]> deleteSubscription(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
+			ValidateURI.validateUriInSubs(id);
 			logger.trace("call deleteSubscription() ::");
 			manager.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (ResponseException e) {
@@ -171,6 +172,7 @@ public class RegistrySubscriptionController {
 			return badRequestResponse;
 		}
 		try {
+			ValidateURI.validateUriInSubs(id);
 			manager.updateSubscription(new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request)));
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
