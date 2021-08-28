@@ -213,7 +213,11 @@ public final class HttpUtils {
 						"You have to provide an @context entry in the body with Content-Type: "
 								+ AppConstants.NGB_APPLICATION_JSONLD);
 			}
-
+			if (payload.contains("@context") && !linkHeaders.isEmpty()) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"You have to provide an @context entry in the body with Content-Type: "
+								+ AppConstants.NGB_APPLICATION_JSONLD);
+			}
 			ldResolved = contextResolver.expand(payload, null, true, endPoint);
 
 		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON_PATCH)
