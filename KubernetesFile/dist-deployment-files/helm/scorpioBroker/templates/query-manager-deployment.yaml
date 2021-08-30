@@ -26,7 +26,7 @@ spec:
         {{- if .Values.springArgs.overrideSpringArgs }}
         env:
           - name: spring_args
-          value: {{ .Values.springArgs.value }}
+            value: {{ .Values.springArgs.value }}
         {{- end}}
         imagePullPolicy: {{ .Values.QueryManager.image.pullPolicy }}
         name: {{ .Values.QueryManager.name }}
