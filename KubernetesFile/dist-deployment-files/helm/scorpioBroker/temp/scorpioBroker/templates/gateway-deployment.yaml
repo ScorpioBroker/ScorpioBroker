@@ -1,0 +1,54 @@
+---
+# Source: scorpioBroker/templates/gateway-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: gateway
+  name: gateway
+  namespace: scorpio-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: gateway
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: gateway
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:gateway_latest
+        imagePullPolicy: Always
+        name: gateway
+        ports:
+        - containerPort: 9090
+          protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/GATEWAY/$HOSTNAME:gateway:9090/status?value=OUT_OF_SERVICE"
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:9090/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 6
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        resources:
+          {}
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}

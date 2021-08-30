@@ -1,5 +1,11 @@
 ## namespace for deployment
 namespace: scorpio-broker
+
+################################### SpringArgs #######################################################################
+springArgs:
+  overrideSpringArgs: false
+  value: >
+
 ################################### Eureka Server #######################################################################
 eureka:
 ## Enable the eureka deployment & service

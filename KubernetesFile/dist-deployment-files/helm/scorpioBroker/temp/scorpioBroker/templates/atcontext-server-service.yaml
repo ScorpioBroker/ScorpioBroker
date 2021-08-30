@@ -1,0 +1,17 @@
+---
+# Source: scorpioBroker/templates/atcontext-server-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: at-context-server
+  name: at-context-server
+  namespace: scorpio-broker
+spec:
+  ports:
+  - name: "27015"
+    port: 27015
+    targetPort: 27015
+  selector:
+    service: at-context-server
+status: {}

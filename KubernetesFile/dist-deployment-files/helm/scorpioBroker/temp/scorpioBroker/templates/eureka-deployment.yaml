@@ -1,0 +1,47 @@
+---
+# Source: scorpioBroker/templates/eureka-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: eureka
+  name: eureka
+  namespace: scorpio-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: eureka
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: eureka
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:eureka-server_latest
+        imagePullPolicy: Always
+        name: eureka
+        ports:
+        - containerPort: 8761
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:8761/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 6
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        resources:
+          {}
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}

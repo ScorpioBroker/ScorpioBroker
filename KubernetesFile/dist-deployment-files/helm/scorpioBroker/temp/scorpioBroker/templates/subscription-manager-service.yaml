@@ -1,0 +1,17 @@
+---
+# Source: scorpioBroker/templates/subscription-manager-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: subscription-manager
+  name: subscription-manager
+  namespace: scorpio-broker
+spec:
+  ports:
+  - name: "2025"
+    port: 2025
+    targetPort: 2025
+  selector:
+    service: subscription-manager
+status: {}

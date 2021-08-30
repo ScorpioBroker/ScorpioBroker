@@ -1,0 +1,54 @@
+---
+# Source: scorpioBroker/templates/entity-manager-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: entity-manager
+  name: entity-manager
+  namespace: scorpio-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: entity-manager
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: entity-manager
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:EntityManager_latest
+        imagePullPolicy: Always
+        name: entity-manager
+        ports:
+        - containerPort: 1025
+          protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/ENTITY-MANAGER/$HOSTNAME:entity-manager:1025/status?value=OUT_OF_SERVICE"
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1025/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 6
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        resources:
+          {}
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}

@@ -1,0 +1,54 @@
+---
+# Source: scorpioBroker/templates/registration-manager-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: registry-manager
+  name: registry-manager
+  namespace: scorpio-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: registry-manager
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        service: registry-manager
+    spec:
+      containers:
+      - image: scorpiobroker/scorpio:RegistryManager_latest
+        imagePullPolicy: Always
+        name: registry-manager
+        ports:
+        - containerPort: 1030
+          protocol: TCP
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://eureka:8761/eureka/apps/C-SOURCES/$HOSTNAME:c-sources:1030/status?value=OUT_OF_SERVICE"
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1030/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 6
+          initialDelaySeconds: 40
+          periodSeconds: 10
+        resources:
+          {}
+      restartPolicy: Always
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
