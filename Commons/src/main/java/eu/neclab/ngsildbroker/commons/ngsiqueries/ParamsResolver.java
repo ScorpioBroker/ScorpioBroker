@@ -241,7 +241,7 @@ public class ParamsResolver {
 
 	public String expandAttribute(String attribute, String payload, HttpServletRequest req) throws ResponseException {
 		List<Object> context;
-		if (req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON)) {
+		if (req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON)||req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON_PATCH)) {
 			context = HttpUtils.getAtContext(req);
 		} else {
 			JsonNode json;
