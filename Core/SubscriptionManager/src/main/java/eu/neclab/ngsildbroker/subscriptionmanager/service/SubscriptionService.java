@@ -865,7 +865,8 @@ public class SubscriptionService implements SubscriptionManager {
 		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(updateRequest.getTenant(), type);
 		if (subs != null) {
 			for (SubscriptionRequest sub : subs) {
-				if (sub.getSubscription().getAttributeNames().contains(updateRequest.getUpdAttrName())) {
+				if (sub.getSubscription().getAttributeNames().contains(updateRequest.getUpdAttrName())
+						|| updateRequest.getUpdAttrName() == null) {
 					for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
 						if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 							subsToCheck.add(sub);
