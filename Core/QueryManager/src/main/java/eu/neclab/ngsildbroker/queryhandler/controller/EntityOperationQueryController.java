@@ -87,8 +87,14 @@ public class EntityOperationQueryController {
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
-			@RequestParam(name = "options", required = false) List<String> options) throws ResponseException {
+			@RequestParam(name = "options", required = false) List<String> options,
+			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) throws ResponseException {
 		try {
+			if (count == true) {
+				countResult = true;
+			} else {
+				countResult = false;
+			}
 			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
 			String expandedPayload = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			Map<String, Object> queries = (Map<String, Object>) JsonUtils.fromString(expandedPayload);
