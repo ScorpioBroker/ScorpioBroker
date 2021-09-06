@@ -36,7 +36,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import eu.neclab.ngsildbroker.queryhandler.utils.Validator;
@@ -158,7 +157,6 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(name = "services", required = false) Boolean showServices,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
-		StorageReaderDAO.countHeader = 0;
 		if (count == true) {
 			countResult = true;
 		} else {
@@ -347,6 +345,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		String nextLink = generateNextLink(request, qResult);
 		String prevLink = generatePrevLink(request, qResult);
 		ArrayList<String> additionalLinks = new ArrayList<String>();
+		List<String> list = qResult.getDataString();
 		if (nextLink != null) {
 			additionalLinks.add(nextLink);
 		}
@@ -355,15 +354,16 @@ public class QueryController {// implements QueryHandlerInterface {
 		}
 		ArrayList<String> additionalHeaerCount = new ArrayList<String>();
 		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
-
+       
 		if (countResult == true) {
-			additionalHeaerCount.add(String.valueOf(StorageReaderDAO.countHeader));
+			String resultCount = list.get(list.size()-1);
+			additionalHeaerCount.add(String.valueOf(resultCount));
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaerCount);
 		}
+		
 		if (!additionalLinks.isEmpty()) {
 			additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
 		}
-
 		return httpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
 				additionalHeaders, null, forceArray);
 	}
