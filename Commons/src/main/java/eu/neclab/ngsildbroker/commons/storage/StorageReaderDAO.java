@@ -112,6 +112,8 @@ abstract public class StorageReaderDAO {
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
+			System.out.println("qp.getCountResult(::"+qp.getCountResult());
+			if(qp.getCountResult() != null) {
 			if (qp.getCountResult() == false) {
 				String sqlQuery = translateNgsildQueryToSql(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
@@ -131,6 +133,12 @@ abstract public class StorageReaderDAO {
 				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
 				queryResult.setCount(count);
 				return queryResult;
+			} else {
+				String sqlQuery = translateNgsildQueryToSql(qp);
+				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setActualDataString(list);
+				return queryResult;
+			}
 		} catch (DataIntegrityViolationException e) {
 			// Empty result don't worry
 			logger.debug("SQL Result Exception::", e);

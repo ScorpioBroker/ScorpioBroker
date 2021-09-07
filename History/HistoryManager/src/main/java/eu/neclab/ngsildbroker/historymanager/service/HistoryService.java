@@ -187,8 +187,11 @@ public class HistoryService {
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
 		QueryResult queryResult = historyDAO.query(qp);
+		System.out.println("queryResult::"+queryResult);
 		List<String> entityList = queryResult.getActualDataString(); 
-		if (entityList.size() == 0) {
+		
+		System.out.println("entity list"+entityList.size());
+		if (entityList.size() == 0 || entityList == null) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
 		String oldEntry = historyDAO.getListAsJsonArray(entityList);
