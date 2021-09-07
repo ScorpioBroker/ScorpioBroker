@@ -104,7 +104,7 @@ public class HistoryController {
 
 			logger.trace("retrieveTemporalEntity :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(req.getQp())));
+			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(req.getQp()).getActualDataString()));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
@@ -130,7 +130,7 @@ public class HistoryController {
 			qp.getEntities().get(0).put(NGSIConstants.JSON_LD_ID, entityId);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
-			List<String> queryResult = historyDAO.query(req.getQp());
+			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
 			if(queryResult.isEmpty()) {
 				throw new ResponseException(ErrorType.NotFound);
 			}

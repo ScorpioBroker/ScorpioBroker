@@ -345,7 +345,6 @@ public class QueryController {// implements QueryHandlerInterface {
 		String nextLink = generateNextLink(request, qResult);
 		String prevLink = generatePrevLink(request, qResult);
 		ArrayList<String> additionalLinks = new ArrayList<String>();
-		List<String> list = qResult.getDataString();
 		if (nextLink != null) {
 			additionalLinks.add(nextLink);
 		}
@@ -356,8 +355,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
        
 		if (countResult == true) {
-			String resultCount = list.get(list.size()-1);
-			additionalHeaerCount.add(String.valueOf(resultCount));
+			additionalHeaerCount.add(String.valueOf(qResult.getCount()));
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaerCount);
 		}
 		

@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -185,7 +186,8 @@ public class HistoryService {
 		qp.setEntities(temp1);
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
-		List<String> entityList = historyDAO.query(qp);
+		QueryResult queryResult = historyDAO.query(qp);
+		List<String> entityList = queryResult.getActualDataString(); 
 		if (entityList.size() == 0) {
 			throw new ResponseException(ErrorType.NotFound);
 		}

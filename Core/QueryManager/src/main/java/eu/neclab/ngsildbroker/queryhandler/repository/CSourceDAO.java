@@ -15,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
@@ -55,12 +56,12 @@ public class CSourceDAO extends StorageReaderDAO {
 	private boolean externalCsourcesOnly = false;
 
 	@Override
-	public List<String> query(QueryParams qp) throws ResponseException {
+	public QueryResult query(QueryParams qp) throws ResponseException {
 		this.externalCsourcesOnly = false;
 		return super.query(qp);
 	}
 
-	public List<String> queryExternalCsources(QueryParams qp) throws SQLException, ResponseException {
+	public QueryResult queryExternalCsources(QueryParams qp) throws SQLException, ResponseException {
 		this.externalCsourcesOnly = true;
 		return super.query(qp);
 	}

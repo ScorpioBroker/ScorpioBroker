@@ -250,8 +250,9 @@ public class QueryService {
 	 * @return String
 	 * @throws Exception
 	 */
-	public List<String> getFromStorageManager(String storageManagerQuery) throws Exception {
+	public QueryResult getFromStorageManager(String storageManagerQuery) throws Exception {
 		// create producer record
+		QueryResult queryResult =  new QueryResult(null, null, ErrorType.None, -1, true);
 		logger.trace("getFromStorageManager() :: started");
 		ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(requestTopic,
 				storageManagerQuery.getBytes());
@@ -269,7 +270,8 @@ public class QueryService {
 		}
 		// return consumer value
 		logger.trace("getFromStorageManager() :: completed");
-		return entityList;
+		queryResult.setActualDataString(entityList);
+		return queryResult;
 	}
 
 	/**
@@ -280,9 +282,10 @@ public class QueryService {
 	 * @return String
 	 * @throws Exception
 	 */
-	public List<String> getFromContextRegistry(String contextRegistryQuery) throws Exception {
+	public QueryResult getFromContextRegistry(String contextRegistryQuery) throws Exception {
 		// create producer record
 		String contextRegistryData = null;
+		QueryResult queryResult =  new QueryResult(null, null, ErrorType.None, -1, true);
 		logger.trace("getFromContextRegistry() :: started");
 		ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(csourceQueryTopic,
 				contextRegistryQuery.getBytes());
@@ -296,7 +299,8 @@ public class QueryService {
 		logger.debug("getFromContextRegistry() :: completed");
 		contextRegistryData = new String((byte[]) consumerRecord.value());
 		logger.debug("getFromContextRegistry() data broker list::" + contextRegistryData);
-		return DataSerializer.getStringList(contextRegistryData);
+		queryResult.setActualDataString(DataSerializer.getStringList(contextRegistryData));
+		return queryResult;
 	}
 
 	/**
@@ -323,7 +327,6 @@ public class QueryService {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
-		List<String> realResult;
 		qp.setLimit(limit);
 		qp.setOffSet(offset);
 		qp.setCountResult(countResult);
@@ -331,8 +334,8 @@ public class QueryService {
 		if (qToken == null) {
 			ExecutorService executorService = Executors.newFixedThreadPool(2);
 
-			Future<List<String>> futureStorageManager = executorService.submit(new Callable<List<String>>() {
-				public List<String> call() throws Exception {
+			Future<QueryResult> futureStorageManager = executorService.submit(new Callable<QueryResult>() {
+				public QueryResult call() throws Exception {
 					logger.trace("Asynchronous Callable storage manager");
 					// TAKE CARE OF PAGINATION HERE
 					if (queryDAO != null) {
@@ -347,13 +350,13 @@ public class QueryService {
 				}
 			});
 
-			Future<List<String>> futureContextRegistry = executorService.submit(new Callable<List<String>>() {
-				public List<String> call() throws Exception {
+			Future<QueryResult> futureContextRegistry = executorService.submit(new Callable<QueryResult>() {
+				public QueryResult call() throws Exception {
 					try {
 
 						List<String> fromCsources = new ArrayList<String>();
 						logger.trace("Asynchronous 1 context registry");
-						List<String> brokerList;
+					    QueryResult brokerList; 	
 						if (cSourceDAO != null) {
 							brokerList = cSourceDAO.queryExternalCsources(qp);
 						} else {
@@ -364,7 +367,7 @@ public class QueryService {
 						Matcher m;
 						Matcher mtenant;
 						Set<Callable<String>> callablesCollection = new HashSet<Callable<String>>();
-						for (String brokerInfo : brokerList) {
+						for (String brokerInfo : brokerList.getActualDataString()) {
 							m = p.matcher(brokerInfo);
 							m.find();
 							final String uri_tenant;
@@ -409,11 +412,12 @@ public class QueryService {
 							callablesCollection.add(callable);
 
 						}
+						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 						fromCsources = getDataFromCsources(callablesCollection);
 						logger.debug("csource call response :: ");
 						// fromCsources.forEach(e -> logger.debug(e));
-
-						return fromCsources;
+						queryResult.setActualDataString(fromCsources);
+						return queryResult;
 					} catch (Exception e) {
 						e.printStackTrace();
 						logger.error(
@@ -430,14 +434,29 @@ public class QueryService {
 
 			// storage response
 			logger.trace("storage task status completed :: " + futureStorageManager.isDone());
-			List<String> fromStorage = (List<String>) futureStorageManager.get();
-			List<String> fromCsources = (List<String>) futureContextRegistry.get();
+			QueryResult fromStorage = futureStorageManager.get();
+			QueryResult fromCsources = futureContextRegistry.get();
 			// logger.trace("response from storage :: ");
 			// fromStorage.forEach(e -> logger.debug(e));
-
-			aggregatedResult.addAll(fromStorage);
-			if (fromCsources != null) {
-				aggregatedResult.addAll(fromCsources);
+			List<String> fromStorageDataList = fromStorage.getActualDataString();
+			List<String> fromCsourceDataList = new ArrayList<String>();
+			if(fromCsources != null) {
+				fromCsourceDataList = fromCsources.getActualDataString();	
+			}
+			int count = 0;
+			if(fromStorage.getCount() != null) {
+				count = fromStorage.getCount();
+			}
+			
+			if(fromStorageDataList != null) {
+				aggregatedResult.addAll(fromStorageDataList);	
+			}
+		  
+			if (fromCsourceDataList.size()> 0) {
+				aggregatedResult.addAll(fromCsourceDataList);
+			} 
+			if(count != 0) {
+				result.setCount(count);
 			}
 			// logger.trace("aggregated");
 			// aggregatedResult.forEach(e -> logger.debug(e));
@@ -454,7 +473,6 @@ public class QueryService {
 			 * 
 			 * } }; }.start(); } else {
 			 */
-			realResult = aggregatedResult;
 			// }
 		} else {
 			// read from byte array
@@ -472,11 +490,11 @@ public class QueryService {
 			if (end > aggregatedResult.size()) {
 				end = aggregatedResult.size();
 			}
-			realResult = aggregatedResult.subList(offset, end);
+			aggregatedResult.subList(offset, end);
 			dataLeft = aggregatedResult.size() - end;
 
 		}
-		result.setDataString(realResult);
+		result.setDataString(aggregatedResult);
 		result.setqToken(qToken);
 		result.setLimit(limit);
 		result.setOffset(offset);

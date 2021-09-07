@@ -21,6 +21,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tenant.DBUtil;
@@ -94,9 +95,11 @@ abstract public class StorageReaderDAO {
 		return new HikariDataSource(tenantHikariConfig);
 	}
 
-	public List<String> query(QueryParams qp) throws ResponseException {
+	public QueryResult query(QueryParams qp) throws ResponseException {
 		JdbcTemplate template;
+		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		try {
+			
 			String tenantId = qp.getTenant();
 			template = getJDBCTemplate(tenantId);
 		} catch (Exception e) {
@@ -105,31 +108,37 @@ abstract public class StorageReaderDAO {
 		try {
 			if (qp.getCheck() != null) {
 				String sqlQuery = typesAndAttributeQuery(qp);
-				return template.queryForList(sqlQuery, String.class);
+				List<String> list =  template.queryForList(sqlQuery, String.class);
+				queryResult.setActualDataString(list);
+				return queryResult;
 			}
 			if (qp.getCountResult() == false) {
 				String sqlQuery = translateNgsildQueryToSql(qp);
-				return template.queryForList(sqlQuery, String.class);
+				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setActualDataString(list);
+				return queryResult;
 			}
 			if (qp.getLimit() == 0 && qp.getCountResult() == true) {
 				String sqlQueryCount = translateNgsildQueryToCountResult(qp);
-				List<String> list = template.queryForList(sqlQueryCount, String.class);
-				return list;
+				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
+				queryResult.setCount(count);
+				return queryResult;
 			}
 				String sqlQuery = translateNgsildQueryToSql(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setActualDataString(list);
 				String sqlQueryCount = translateNgsildQueryToCountResult(qp);
-				List<String> listCount = template.queryForList(sqlQueryCount, String.class);
-				list.addAll(listCount);
-				return list;
+				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
+				queryResult.setCount(count);
+				return queryResult;
 		} catch (DataIntegrityViolationException e) {
 			// Empty result don't worry
 			logger.debug("SQL Result Exception::", e);
-			return new ArrayList<String>();
+			return queryResult;
 		} catch (Exception e) {
 			logger.error("Exception ::", e);
 		}
-		return new ArrayList<String>();
+		return queryResult;
 
 	}
 
