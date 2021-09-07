@@ -113,12 +113,6 @@ abstract public class StorageReaderDAO {
 				return queryResult;
 			}
 			if(qp.getCountResult() != null) {
-			if (qp.getCountResult() == false) {
-				String sqlQuery = translateNgsildQueryToSql(qp);
-				List<String> list = template.queryForList(sqlQuery, String.class);
-				queryResult.setActualDataString(list);
-				return queryResult;
-			}
 			if (qp.getLimit() == 0 && qp.getCountResult() == true) {
 				String sqlQueryCount = translateNgsildQueryToCountResult(qp);
 				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
