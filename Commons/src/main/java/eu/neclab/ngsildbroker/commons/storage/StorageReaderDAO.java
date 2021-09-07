@@ -112,7 +112,6 @@ abstract public class StorageReaderDAO {
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
-			System.out.println("qp.getCountResult(::"+qp.getCountResult());
 			if(qp.getCountResult() != null) {
 			if (qp.getCountResult() == false) {
 				String sqlQuery = translateNgsildQueryToSql(qp);
