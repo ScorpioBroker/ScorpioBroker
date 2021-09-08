@@ -307,6 +307,9 @@ public class CSourceSubscriptionService {
 	public Subscription updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		SubscriptionRequest oldSubRequest = subscriptionId2Subscription.get(subscription.getId());
+		if (oldSubRequest == null) {
+			throw new ResponseException(ErrorType.NotFound);
+		}
 		checkTenant(subscriptionRequest.getHeaders(), oldSubRequest.getHeaders());
 		Subscription oldSub = oldSubRequest.getSubscription();
 		if (oldSub == null) {
