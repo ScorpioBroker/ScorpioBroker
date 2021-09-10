@@ -4,7 +4,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
-
+import java.util.Map.Entry;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -85,6 +88,27 @@ public class Validator {
 			String value = parameterMap.get(key)[0];
 			if (!new URI(value).isAbsolute()) {
 				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+			}
+		}
+	}
+
+	public static void subscriptionValidation(String payload) throws ResponseException {
+
+		JsonElement jsonElement = new JsonParser().parse(payload);
+		JsonObject top = jsonElement.getAsJsonObject();
+		if (!top.has(NGSIConstants.CSOURCE_TYPE)) {
+			throw new ResponseException(ErrorType.BadRequestData, "type is a mandatory field");
+		}
+		for (Entry<String, JsonElement> entry : top.entrySet()) {
+			String key = entry.getKey();
+			JsonElement value = entry.getValue();
+			if (key.equals(NGSIConstants.NOTIFICATION)) {
+				JsonObject ldObj = value.getAsJsonObject();
+				if (ldObj.has(NGSIConstants.CSOURCE_ENDPOINT)) {
+					if (ldObj.get(NGSIConstants.CSOURCE_ENDPOINT).isJsonNull()) {
+						throw new ResponseException(ErrorType.BadRequestData, "endpoint is not empty field");
+					}
+				}
 			}
 		}
 	}

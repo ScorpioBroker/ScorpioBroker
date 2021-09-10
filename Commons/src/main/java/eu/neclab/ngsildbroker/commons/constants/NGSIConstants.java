@@ -239,4 +239,5 @@ public interface NGSIConstants {
 	public static final String REGEX_NGSI_LD_ATTR_TYPES = new String(
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
 	public static final String TENANT_HEADER = "ngsild-tenant";
+	public final static String NOTIFICATION = "notification";
 }

@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.logging.log4j.LogManager;
@@ -36,6 +37,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
+import eu.neclab.ngsildbroker.commons.tools.Validator;
 @RestController
 @RequestMapping("/ngsi-ld/v1/subscriptions")
 public class SubscriptionController {
@@ -179,6 +181,7 @@ public class SubscriptionController {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			ValidateURI.validateUriInSubs(id);
+			Validator.subscriptionValidation(payload);
 			List<Object> context = HttpUtils.getAtContext(request);
 			String resolved = contextResolver.expand(payload, context, true, AppConstants.SUBSCRIPTIONS_URL_ID);
 			Subscription subscription = DataSerializer.getSubscription(resolved);
