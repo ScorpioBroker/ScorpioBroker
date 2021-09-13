@@ -327,6 +327,7 @@ public class QueryService {
 		qp.setLimit(limit);
 		qp.setOffSet(offset);
 		qp.setCountResult(countResult);
+		qp.setCheck(check);
 		int dataLeft = 0;
 		if (qToken == null) {
 			ExecutorService executorService = Executors.newFixedThreadPool(2);
