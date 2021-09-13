@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -99,18 +100,39 @@ public class Validator {
 		if (!top.has(NGSIConstants.CSOURCE_TYPE)) {
 			throw new ResponseException(ErrorType.BadRequestData, "type is a mandatory field");
 		}
+		if (!top.has(NGSIConstants.NOTIFICATION)) {
+			throw new ResponseException(ErrorType.BadRequestData, "no notification parameter provided");
+		}
+		
 		for (Entry<String, JsonElement> entry : top.entrySet()) {
 			String key = entry.getKey();
 			JsonElement value = entry.getValue();
 			if (key.equals(NGSIConstants.NOTIFICATION)) {
+				if(!value.isJsonNull()) {
 				JsonObject ldObj = value.getAsJsonObject();
 				if (ldObj.has(NGSIConstants.CSOURCE_ENDPOINT)) {
 					if (ldObj.get(NGSIConstants.CSOURCE_ENDPOINT).isJsonNull()) {
 						throw new ResponseException(ErrorType.BadRequestData, "endpoint is not empty field");
 					}
 				}
+			  } else {
+				  throw new ResponseException(ErrorType.BadRequestData, "notification parameter is not empty field");
+			  }
 			}
 		}
+		
+		if(top.has(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES_SHORT)) {
+			JsonArray tempJson = top.get(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES_SHORT).getAsJsonArray();
+			if(tempJson.size() == 0) {
+				throw new ResponseException(ErrorType.BadRequestData, "watchedAttributes is not empty field");
+			} else {
+				String temp = tempJson.toString();
+				if (temp.matches(NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX)) {
+					throw new ResponseException(ErrorType.BadRequestData, "Invalid character in attribute names");
+				}	
+			}
+		  }
+
 	}
 }
 

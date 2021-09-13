@@ -6,7 +6,6 @@ import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.netflix.discovery.EurekaClient;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -38,6 +35,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
+import eu.neclab.ngsildbroker.commons.tools.Validator;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceSubscriptionService;
 
 @RestController
@@ -84,20 +82,20 @@ public class RegistrySubscriptionController {
 	// }
 
 	@PostMapping
-	public ResponseEntity<byte[]> subscribeRest(HttpServletRequest request, @RequestBody String payload)
-			throws ResponseException {
+	public ResponseEntity<byte[]> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
 		logger.trace("subscribeRest() :: started");
-		Subscription subscription;
-
-		List<Object> context = HttpUtils.getAtContext(request);
-		String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
-
-		subscription = DataSerializer.getSubscription(resolved);
-		if (resolved == null || subscription == null) {
-			return badRequestResponse;
-		}
-
+		Subscription subscription = null;
 		try {
+
+			Validator.subscriptionValidation(payload);
+			List<Object> context = HttpUtils.getAtContext(request);
+			String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
+
+			subscription = DataSerializer.getSubscription(resolved);
+			if (resolved == null || subscription == null) {
+				return badRequestResponse;
+			}
+
 			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context,
 					HttpUtils.getHeaders(request));
 			URI subId = manager.subscribe(subscriptionRequest);
