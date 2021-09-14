@@ -157,19 +157,21 @@ public class RegistrySubscriptionController {
 
 	@PatchMapping("{id}")
 	public ResponseEntity<byte[]> updateSubscription(HttpServletRequest request,
-			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id, @RequestBody String payload)
-			throws ResponseException {
+			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
+			@RequestBody String payload) {
 		logger.trace("call updateSubscription() ::");
-		List<Object> context = HttpUtils.getAtContext(request);
-		String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
-		Subscription subscription = DataSerializer.getSubscription(resolved);
-		if (subscription.getId() == null) {
-			subscription.setId(id);
-		}
-		if (resolved == null || subscription == null || !id.equals(subscription.getId())) {
-			return badRequestResponse;
-		}
 		try {
+			Validator.subscriptionValidation(payload);
+			List<Object> context = HttpUtils.getAtContext(request);
+			String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
+			Subscription subscription = DataSerializer.getSubscription(resolved);
+			if (subscription.getId() == null) {
+				subscription.setId(id);
+			}
+			if (resolved == null || subscription == null || !id.equals(subscription.getId())) {
+				return badRequestResponse;
+			}
+
 			ValidateURI.validateUriInSubs(id);
 			manager.updateSubscription(new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request)));
 		} catch (ResponseException e) {

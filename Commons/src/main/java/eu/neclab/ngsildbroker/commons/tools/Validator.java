@@ -94,7 +94,7 @@ public class Validator {
 	}
 
 	public static void subscriptionValidation(String payload) throws ResponseException {
-
+		
 		JsonElement jsonElement = new JsonParser().parse(payload);
 		JsonObject top = jsonElement.getAsJsonObject();
 		if (!top.has(NGSIConstants.CSOURCE_TYPE)) {
@@ -103,36 +103,42 @@ public class Validator {
 		if (!top.has(NGSIConstants.NOTIFICATION)) {
 			throw new ResponseException(ErrorType.BadRequestData, "no notification parameter provided");
 		}
-		
+
 		for (Entry<String, JsonElement> entry : top.entrySet()) {
 			String key = entry.getKey();
 			JsonElement value = entry.getValue();
-			if (key.equals(NGSIConstants.NOTIFICATION)) {
-				if(!value.isJsonNull()) {
-				JsonObject ldObj = value.getAsJsonObject();
-				if (ldObj.has(NGSIConstants.CSOURCE_ENDPOINT)) {
-					if (ldObj.get(NGSIConstants.CSOURCE_ENDPOINT).isJsonNull()) {
-						throw new ResponseException(ErrorType.BadRequestData, "endpoint is not empty field");
-					}
+			if (key.equals(NGSIConstants.CSOURCE_TYPE)) {
+				if (value.isJsonNull()) {
+					throw new ResponseException(ErrorType.BadRequestData, "type is a mandatory field");
 				}
-			  } else {
-				  throw new ResponseException(ErrorType.BadRequestData, "notification parameter is not empty field");
-			  }
+			}
+			if (key.equals(NGSIConstants.NOTIFICATION)) {
+				if (!value.isJsonNull()) {
+					JsonObject ldObj = value.getAsJsonObject();
+					if (ldObj.has(NGSIConstants.CSOURCE_ENDPOINT)) {
+						if (ldObj.get(NGSIConstants.CSOURCE_ENDPOINT).isJsonNull()) {
+							throw new ResponseException(ErrorType.BadRequestData, "endpoint is a mandatory field");
+						}
+					} else {
+						throw new ResponseException(ErrorType.BadRequestData, "endpoint is a mandatory field");
+					}
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData, "notification parameter is mandatory field");
+				}
 			}
 		}
-		
-		if(top.has(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES_SHORT)) {
+
+		if (top.has(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES_SHORT)) {
 			JsonArray tempJson = top.get(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES_SHORT).getAsJsonArray();
-			if(tempJson.size() == 0) {
+			if (tempJson.size() == 0) {
 				throw new ResponseException(ErrorType.BadRequestData, "watchedAttributes is not empty field");
 			} else {
 				String temp = tempJson.toString();
 				if (temp.matches(NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX)) {
 					throw new ResponseException(ErrorType.BadRequestData, "Invalid character in attribute names");
-				}	
+				}
 			}
-		  }
-
+		}
 	}
 }
 
