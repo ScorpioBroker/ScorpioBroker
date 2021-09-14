@@ -252,7 +252,7 @@ public class QueryService {
 	 */
 	public QueryResult getFromStorageManager(String storageManagerQuery) throws Exception {
 		// create producer record
-		QueryResult queryResult =  new QueryResult(null, null, ErrorType.None, -1, true);
+		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		logger.trace("getFromStorageManager() :: started");
 		ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(requestTopic,
 				storageManagerQuery.getBytes());
@@ -285,7 +285,7 @@ public class QueryService {
 	public QueryResult getFromContextRegistry(String contextRegistryQuery) throws Exception {
 		// create producer record
 		String contextRegistryData = null;
-		QueryResult queryResult =  new QueryResult(null, null, ErrorType.None, -1, true);
+		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		logger.trace("getFromContextRegistry() :: started");
 		ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(csourceQueryTopic,
 				contextRegistryQuery.getBytes());
@@ -356,7 +356,7 @@ public class QueryService {
 
 						List<String> fromCsources = new ArrayList<String>();
 						logger.trace("Asynchronous 1 context registry");
-					    QueryResult brokerList; 	
+						QueryResult brokerList;
 						if (cSourceDAO != null) {
 							brokerList = cSourceDAO.queryExternalCsources(qp);
 						} else {
@@ -366,7 +366,11 @@ public class QueryService {
 						Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);
 						Matcher m;
 						Matcher mtenant;
+						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 						Set<Callable<String>> callablesCollection = new HashSet<Callable<String>>();
+						if (brokerList.getActualDataString() == null) {
+							return queryResult;
+						}
 						for (String brokerInfo : brokerList.getActualDataString()) {
 							m = p.matcher(brokerInfo);
 							m.find();
@@ -412,7 +416,7 @@ public class QueryService {
 							callablesCollection.add(callable);
 
 						}
-						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+
 						fromCsources = getDataFromCsources(callablesCollection);
 						logger.debug("csource call response :: ");
 						// fromCsources.forEach(e -> logger.debug(e));
@@ -440,22 +444,22 @@ public class QueryService {
 			// fromStorage.forEach(e -> logger.debug(e));
 			List<String> fromStorageDataList = fromStorage.getActualDataString();
 			List<String> fromCsourceDataList = new ArrayList<String>();
-			if(fromCsources != null) {
-				fromCsourceDataList = fromCsources.getActualDataString();	
+			if (fromCsources != null) {
+				fromCsourceDataList = fromCsources.getActualDataString();
 			}
 			int count = 0;
-			if(fromStorage.getCount() != null) {
+			if (fromStorage.getCount() != null) {
 				count = fromStorage.getCount();
 			}
-			
-			if(fromStorageDataList != null) {
-				aggregatedResult.addAll(fromStorageDataList);	
+
+			if (fromStorageDataList != null) {
+				aggregatedResult.addAll(fromStorageDataList);
 			}
-		  
-			if (fromCsourceDataList.size()> 0) {
+
+			if (fromCsourceDataList.size() > 0) {
 				aggregatedResult.addAll(fromCsourceDataList);
-			} 
-			if(count != 0) {
+			}
+			if (count != 0) {
 				result.setCount(count);
 			}
 			// logger.trace("aggregated");
