@@ -112,7 +112,7 @@ public class HistoryDAO extends StorageReaderDAO {
 		sqlQuery += " order by teai.modifiedat desc) as attributedata" + "  from " + DBConstants.DBTABLE_TEMPORALENTITY
 				+ " te" + "  left join " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 				+ " teai on (teai.temporalentity_id = te.id)" + "  where ";
-		sqlQuery += fullSqlWhere.toString() + " 1=1 ";
+		sqlQuery += fullSqlWhere.toString();
 		sqlQuery += "  group by te.id, te.type, te.createdat, te.modifiedat, teai.attributeid "
 				+ "  order by te.id, teai.attributeid " + ") "
 				+ "select tedata || case when attrdata <> '{\"\": [null]}'::jsonb then attrdata else tedata end as data from ( "
