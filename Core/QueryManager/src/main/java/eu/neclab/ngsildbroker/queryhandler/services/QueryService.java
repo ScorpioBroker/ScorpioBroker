@@ -353,8 +353,7 @@ public class QueryService {
 			Future<QueryResult> futureContextRegistry = executorService.submit(new Callable<QueryResult>() {
 				public QueryResult call() throws Exception {
 					try {
-
-						List<String> fromCsources = new ArrayList<String>();
+						QueryResult fromCsources = new QueryResult(null, null, ErrorType.None, -1, true);
 						logger.trace("Asynchronous 1 context registry");
 						QueryResult brokerList;
 						if (cSourceDAO != null) {
@@ -417,11 +416,10 @@ public class QueryService {
 
 						}
 
-						fromCsources = getDataFromCsources(callablesCollection);
+						fromCsources = getDataFromCsources(callablesCollection,qp);
 						logger.debug("csource call response :: ");
 						// fromCsources.forEach(e -> logger.debug(e));
-						queryResult.setActualDataString(fromCsources);
-						return queryResult;
+						return fromCsources;
 					} catch (Exception e) {
 						e.printStackTrace();
 						logger.error(
@@ -444,7 +442,7 @@ public class QueryService {
 			// fromStorage.forEach(e -> logger.debug(e));
 			List<String> fromStorageDataList = fromStorage.getActualDataString();
 			List<String> fromCsourceDataList = new ArrayList<String>();
-			if (fromCsources != null) {
+			if (fromCsources.getActualDataString() != null) {
 				fromCsourceDataList = fromCsources.getActualDataString();
 			}
 			int count = 0;
@@ -455,12 +453,21 @@ public class QueryService {
 			if (fromStorageDataList != null) {
 				aggregatedResult.addAll(fromStorageDataList);
 			}
-
+			int countremote = 0;
+			if (fromCsources.getCount() != null) {
+				countremote = fromCsources.getCount();
+			}
 			if (fromCsourceDataList.size() > 0) {
 				aggregatedResult.addAll(fromCsourceDataList);
 			}
-			if (count != 0) {
+			if (count != 0 && countremote != 0 ) {
+				result.setCount(count+countremote);
+			}
+			if (count != 0 && countremote == 0) {
 				result.setCount(count);
+			}
+			if (count == 0 && countremote != 0) {
+				result.setCount(countremote);
 			}
 			// logger.trace("aggregated");
 			// aggregatedResult.forEach(e -> logger.debug(e));
@@ -533,11 +540,11 @@ public class QueryService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	private List<String> getDataFromCsources(Set<Callable<String>> callablesCollection)
+	private QueryResult getDataFromCsources(Set<Callable<String>> callablesCollection,QueryParams qp)
 			throws ResponseException, Exception {
-		List<String> allDiscoveredEntities = new ArrayList<String>();
 		ExecutorService executorService = Executors.newFixedThreadPool(2);
 		List<Future<String>> futures = executorService.invokeAll(callablesCollection);
+		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		// TODO: why sleep?
 		// Thread.sleep(5000);
 		for (Future<String> future : futures) {
@@ -556,13 +563,23 @@ public class QueryService {
 						}
 					}
 				}
+				if(qp.getCountResult() != null) {
+				if (qp.getLimit() == 0 && qp.getCountResult() == true) {
+					queryResult.setCount(entitiesList.size());
+				} else {
+					queryResult.setActualDataString(entitiesList);
+					queryResult.setCount(entitiesList.size());
+				}
+			} else {
+				queryResult.setActualDataString(entitiesList);
+			}
+				
 			} catch (JsonSyntaxException | ExecutionException e) {
 				logger.error("Exception  ::", e);
 			}
-			allDiscoveredEntities.addAll(entitiesList);
 		}
 		executorService.shutdown();
 		logger.trace("getDataFromCsources() completed ::");
-		return allDiscoveredEntities;
+		return queryResult;
 	}
 }
