@@ -183,6 +183,7 @@ public class HistoryService {
 		List<Map<String, String>> temp1 = new ArrayList<Map<String, String>>();
 		HashMap<String, String> temp2 = new HashMap<String, String>();
 		temp2.put(NGSIConstants.JSON_LD_ID, entityId);
+		temp1.add(temp2);
 		qp.setEntities(temp1);
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
