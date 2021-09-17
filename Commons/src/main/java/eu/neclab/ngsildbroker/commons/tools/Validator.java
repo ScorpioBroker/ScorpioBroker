@@ -109,7 +109,9 @@ public class Validator {
 			JsonElement value = entry.getValue();
 			if (key.equals(NGSIConstants.CSOURCE_TYPE)) {
 				if (value.isJsonNull()) {
-					throw new ResponseException(ErrorType.BadRequestData, "type is a mandatory field");
+					throw new ResponseException(ErrorType.BadRequestData, "invalid type value");
+				} if(!value.getAsString().equalsIgnoreCase(NGSIConstants.NGSI_LD_SUBSCRIPTION_SHORT)) {
+					throw new ResponseException(ErrorType.BadRequestData, "No type or type is not Subscription");
 				}
 			}
 			if (key.equals(NGSIConstants.NOTIFICATION)) {
