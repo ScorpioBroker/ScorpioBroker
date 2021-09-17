@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.ngsiqueries;
 
 import java.util.List;
+import java.util.PrimitiveIterator.OfInt;
 import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,8 +106,9 @@ public class QueryParser {
 		String attribName = "";
 		String operator = "";
 		String operant = "";
-		for (byte b : input.getBytes()) {
-
+		OfInt it = input.chars().iterator();
+		while(it.hasNext()) {
+			char b = (char) it.next().intValue();
 			if (b == '(') {
 				QueryTerm child = new QueryTerm(linkHeaders, paramsResolver);
 				current.setFirstChild(child);
