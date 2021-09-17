@@ -44,6 +44,7 @@ public class SubscriptionController {
 
 	private final static Logger logger = LogManager.getLogger(SubscriptionController.class);
 	private final static String MY_REQUEST_MAPPING = "/ngsi-ld/v1/subscriptions";
+	private final static String MY_REQUEST_MAPPING_ALT = "/ngsi-ld/v1/subscriptions/";
 
 	@Autowired
 	SubscriptionManager manager;
@@ -116,7 +117,7 @@ public class SubscriptionController {
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException {
 		logger.trace("getAllSubscriptions() :: started");
 		List<SubscriptionRequest> result = null;
-		if (request.getRequestURI().equals(MY_REQUEST_MAPPING)){
+		if (request.getRequestURI().equals(MY_REQUEST_MAPPING)|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)){
 		result = manager.getAllSubscriptions(limit, HttpUtils.getHeaders(request));
 		logger.trace("getAllSubscriptions() :: completed");
 		return httpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(result)));
