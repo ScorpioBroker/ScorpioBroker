@@ -72,7 +72,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	private final byte[] emptyResult1 = { '{', ' ', '}' };
 	private final byte[] emptyResult2 = { '{', '}' };
-	public static Boolean countResult = false;
+	
 
 	@PostConstruct
 	private void setup() {
@@ -157,14 +157,9 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(name = "services", required = false) Boolean showServices,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
-		if (count == true) {
-			countResult = true;
-		} else {
-			countResult = false;
-		}
-
+		
 		return getQueryData(request, request.getQueryString(), request.getParameterMap(), attrs, limit, offset, qToken,
-				options, showServices, false, countResult);
+				options, showServices, false, count);
 	}
 
 	@GetMapping(path = "/types")
@@ -283,7 +278,7 @@ public class QueryController {// implements QueryHandlerInterface {
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}
 					//long pregenresult = System.currentTimeMillis();
-					ResponseEntity<byte[]> result = generateReply(httpUtils, request, qResult, !retrieve);
+					ResponseEntity<byte[]> result = generateReply(httpUtils, request, qResult, !retrieve, countResult);
 					//long end = System.currentTimeMillis();
 					//System.err.println(start);
 					//System.err.println(prelink);
@@ -340,7 +335,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpUtils httpUtils, HttpServletRequest request, QueryResult qResult, boolean forceArray)
+	public static ResponseEntity<byte[]> generateReply(HttpUtils httpUtils, HttpServletRequest request, QueryResult qResult, boolean forceArray, boolean count)
 			throws ResponseException {
 		String nextLink = generateNextLink(request, qResult);
 		String prevLink = generatePrevLink(request, qResult);
@@ -351,12 +346,12 @@ public class QueryController {// implements QueryHandlerInterface {
 		if (prevLink != null) {
 			additionalLinks.add(prevLink);
 		}
-		ArrayList<String> additionalHeaerCount = new ArrayList<String>();
+		ArrayList<String> additionalHeaderCount = new ArrayList<String>();
 		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
        
-		if (countResult == true) {
-			additionalHeaerCount.add(String.valueOf(qResult.getCount()));
-			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaerCount);
+		if (count == true) {
+			additionalHeaderCount.add(String.valueOf(qResult.getCount()));
+			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaderCount);
 		}
 		
 		if (!additionalLinks.isEmpty()) {
