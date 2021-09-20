@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -15,6 +16,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class Validator {
 
+	private static Gson gson = new Gson();
 	private static HashSet<String> validParams = new HashSet<String>();
 	static {
 		validParams.add(NGSIConstants.QUERY_PARAMETER_TYPE);
@@ -94,7 +96,10 @@ public class Validator {
 	}
 
 	public static void subscriptionValidation(String payload) throws ResponseException {
-		
+		boolean validatePayload = isJSONValid(payload);
+		if (validatePayload == false) {
+			throw new ResponseException(ErrorType.BadRequestData, "Json is not valid");
+		}
 		JsonElement jsonElement = new JsonParser().parse(payload);
 		JsonObject top = jsonElement.getAsJsonObject();
 		if (!top.has(NGSIConstants.CSOURCE_TYPE)) {
@@ -141,6 +146,39 @@ public class Validator {
 				}
 			}
 		}
+		if (top.has(NGSIConstants.CSOURCE_EXPIRES)) {
+			String dateExpiredAt = top.get(NGSIConstants.CSOURCE_EXPIRES).getAsString();
+			try {
+				checkExpiredAtDate(dateExpiredAt);
+				Long expiredAtValidate = SerializationTools.date2Long(dateExpiredAt) - System.currentTimeMillis();
+				System.out.println("expiredAtValidate::"+expiredAtValidate);
+				if(expiredAtValidate <= 0 ) {
+					System.out.println("inside if condition");
+					throw new ResponseException(ErrorType.BadRequestData, "ExpiredAt should be greater then current date");
+				}
+			} catch (Exception e) {
+				throw new ResponseException(ErrorType.BadRequestData,e.getMessage());
+			}
+		}
 	}
+	private static void checkExpiredAtDate(String expiredAt) throws ResponseException {
+		try {
+			SerializationTools.date2Long(expiredAt);
+			
+		} catch (Exception e) {
+			throw new ResponseException(ErrorType.BadRequestData,"Failed to parse expiresAt");
+		}
+		
+	}
+	
+	private static boolean isJSONValid(String jsonInString) {
+		try {
+			gson.fromJson(jsonInString, Object.class);
+			return true;
+		} catch (com.google.gson.JsonSyntaxException ex) {
+			return false;
+		}
+	}
+
 }
 
