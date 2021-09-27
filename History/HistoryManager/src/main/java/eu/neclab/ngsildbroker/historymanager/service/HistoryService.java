@@ -187,6 +187,7 @@ public class HistoryService {
 		qp.setEntities(temp1);
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
+		qp.setIncludeSysAttrs(true);
 		QueryResult queryResult = historyDAO.query(qp);
 		List<String> entityList = queryResult.getActualDataString(); 
 		if (entityList.size() == 0) {
