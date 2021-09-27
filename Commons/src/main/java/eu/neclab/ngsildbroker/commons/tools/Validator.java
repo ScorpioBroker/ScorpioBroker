@@ -149,6 +149,8 @@ public class Validator {
 			}
 		}
 		if (top.has(NGSIConstants.CSOURCE_EXPIRES)) {
+			JsonElement json = top.get(NGSIConstants.CSOURCE_EXPIRES);
+			if(!json.isJsonNull()) {
 			String dateExpiredAt = top.get(NGSIConstants.CSOURCE_EXPIRES).getAsString();
 			try {
 				checkExpiredAtDate(dateExpiredAt);
@@ -162,6 +164,7 @@ public class Validator {
 				throw new ResponseException(ErrorType.BadRequestData,e.getMessage());
 			}
 		}
+	  }
 	}
 	private static void checkExpiredAtDate(String expiredAt) throws ResponseException {
 		try {
