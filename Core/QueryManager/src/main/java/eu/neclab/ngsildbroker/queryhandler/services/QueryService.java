@@ -377,7 +377,7 @@ public class QueryService {
 							final String uri_tenant;
 							String uri = m.group(1);
 							mtenant = ptenant.matcher(brokerInfo);
-							if (mtenant != null) {
+							if (mtenant != null && mtenant.matches()) {
 								mtenant.find();
 								uri_tenant = mtenant.group(1);
 
@@ -586,12 +586,13 @@ public class QueryService {
 		for (Future<QueryResult> future : futures) {
 			logger.trace("future.isDone = " + future.isDone());
 			QueryResult tempResult = future.get();
-			entities.addAll(tempResult.getActualDataString());
+			entities.addAll(tempResult.getDataString());
 			count += tempResult.getCount();
 		}
 		executorService.shutdown();
 		logger.trace("getDataFromCsources() completed ::");
 		queryResult.setActualDataString(entities);
+		queryResult.setDataString(entities);
 		queryResult.setCount(count);
 		return queryResult;
 	}
