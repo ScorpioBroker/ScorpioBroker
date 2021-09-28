@@ -154,11 +154,9 @@ public class Validator {
 			String dateExpiredAt = top.get(NGSIConstants.CSOURCE_EXPIRES).getAsString();
 			try {
 				checkExpiredAtDate(dateExpiredAt);
-				Long expiredAtValidate = SerializationTools.date2Long(dateExpiredAt) - System.currentTimeMillis();
-				System.out.println("expiredAtValidate::"+expiredAtValidate);
-				if(expiredAtValidate <= 0 ) {
-					System.out.println("inside if condition");
-					throw new ResponseException(ErrorType.BadRequestData, "ExpiredAt should be greater then current date");
+				Long expiredAtValidate = SerializationTools.date2Long(dateExpiredAt);
+				if(!isValidFutureDate(expiredAtValidate)) {
+					throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 				}
 			} catch (Exception e) {
 				throw new ResponseException(ErrorType.BadRequestData,e.getMessage());
@@ -184,6 +182,11 @@ public class Validator {
 			return false;
 		}
 	}
+	private static boolean isValidFutureDate(Long date) {
+
+		return System.currentTimeMillis() < date;
+	}
+
 
 }
 

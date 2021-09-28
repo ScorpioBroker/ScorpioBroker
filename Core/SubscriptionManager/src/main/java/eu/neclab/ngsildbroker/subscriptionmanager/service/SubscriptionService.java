@@ -316,6 +316,10 @@ public class SubscriptionService implements SubscriptionManager {
 			throw new ResponseException(ErrorType.BadRequestData,
 					"watchedAttributes  and timeInterval cannot both be set");
 		}
+		if (subscription.getExpiresAt() != null && !isValidFutureDate(subscription.getExpiresAt())) {
+			logger.error("Invalid expire date!");
+			throw new ResponseException(ErrorType.BadRequestData);
+		}
 
 	}
 
@@ -1093,5 +1097,10 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 		}
 	}
+	
+	// return true for future date validation
+	private boolean isValidFutureDate(Long date) {
 
+		return System.currentTimeMillis() < date;
+	}
 }
