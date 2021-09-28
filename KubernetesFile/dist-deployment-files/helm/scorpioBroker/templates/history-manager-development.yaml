@@ -23,6 +23,11 @@ spec:
     spec:
       containers:
       - image: {{ .Values.HistoryManager.image.repository }}:{{ .Values.HistoryManager.image.tag }}
+        {{- if .Values.springArgs.overrideSpringArgs }}
+        env:
+          - name: spring_args
+            value: {{ .Values.springArgs.value }}
+        {{- end}}
         imagePullPolicy: {{ .Values.HistoryManager.image.pullPolicy }}
         name: {{ .Values.HistoryManager.name }}
         ports:

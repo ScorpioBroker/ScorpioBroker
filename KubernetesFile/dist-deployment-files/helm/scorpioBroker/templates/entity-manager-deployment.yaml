@@ -23,6 +23,11 @@ spec:
     spec:
       containers:
       - image: {{ .Values.EntityManager.image.repository }}:{{ .Values.EntityManager.image.tag }}
+        {{- if .Values.springArgs.overrideSpringArgs }}
+        env:
+          - name: spring_args
+            value: {{ .Values.springArgs.value }}
+        {{- end}}
         imagePullPolicy: {{ .Values.EntityManager.image.pullPolicy }}
         name: {{ .Values.EntityManager.name }}
         ports:
