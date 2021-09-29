@@ -99,7 +99,7 @@ abstract public class StorageReaderDAO {
 		JdbcTemplate template;
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		try {
-			
+
 			String tenantId = qp.getTenant();
 			template = getJDBCTemplate(tenantId);
 		} catch (Exception e) {
@@ -108,17 +108,17 @@ abstract public class StorageReaderDAO {
 		try {
 			if (qp.getCheck() != null) {
 				String sqlQuery = typesAndAttributeQuery(qp);
-				List<String> list =  template.queryForList(sqlQuery, String.class);
+				List<String> list = template.queryForList(sqlQuery, String.class);
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
-			if(qp.getCountResult() != null) {
-			if (qp.getLimit() == 0 && qp.getCountResult() == true) {
-				String sqlQueryCount = translateNgsildQueryToCountResult(qp);
-				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
-				queryResult.setCount(count);
-				return queryResult;
-			}
+			if (qp.getCountResult() != null) {
+				if (qp.getLimit() == 0 && qp.getCountResult() == true) {
+					String sqlQueryCount = translateNgsildQueryToCountResult(qp);
+					Integer count = template.queryForObject(sqlQueryCount, Integer.class);
+					queryResult.setCount(count);
+					return queryResult;
+				}
 				String sqlQuery = translateNgsildQueryToSql(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
 				queryResult.setActualDataString(list);
@@ -302,8 +302,9 @@ abstract public class StorageReaderDAO {
 						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
 					} else {
 						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','") + "')";
-					}			
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
+								+ "')";
+					}
 					break;
 				case NGSIConstants.JSON_LD_TYPE:
 					dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
@@ -312,8 +313,9 @@ abstract public class StorageReaderDAO {
 						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
 					} else {
 						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','") + "')";
-					}			
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
+								+ "')";
+					}
 
 					break;
 				case NGSIConstants.NGSI_LD_ID_PATTERN:
@@ -490,7 +492,7 @@ abstract public class StorageReaderDAO {
 		}
 		return tenantId;
 	}
-	
+
 	/*
 	 * TODO: query for count the no of result
 	 */
@@ -511,8 +513,9 @@ abstract public class StorageReaderDAO {
 						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
 					} else {
 						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','") + "')";
-					}			
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
+								+ "')";
+					}
 					break;
 				case NGSIConstants.JSON_LD_TYPE:
 					dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
@@ -521,8 +524,9 @@ abstract public class StorageReaderDAO {
 						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
 					} else {
 						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','") + "')";
-					}			
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
+								+ "')";
+					}
 
 					break;
 				case NGSIConstants.NGSI_LD_ID_PATTERN:

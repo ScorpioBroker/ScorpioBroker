@@ -111,7 +111,7 @@ public class EntityOperationQueryController {
 					StringBuilder builder = new StringBuilder();
 					for (Map<String, String> attr : attrs) {
 						builder.append(
-								paramsResolver.expandAttribute(attr.get(NGSIConstants.JSON_LD_VALUE), getAtContext()));
+								paramsResolver.expandAttribute(attr.get(NGSIConstants.JSON_LD_VALUE), linkHeaders));
 						builder.append(',');
 					}
 					params.setAttrs(builder.substring(0, builder.length() - 1));
@@ -149,7 +149,7 @@ public class EntityOperationQueryController {
 					break;
 				case NGSIConstants.NGSI_LD_QUERY:
 					params.setQ(
-							queryParser.parseQuery((String) getValue(entry.getValue()), getAtContext()).toSql(false));
+							queryParser.parseQuery((String) getValue(entry.getValue()), linkHeaders).toSql(false));
 					break;
 				case NGSIConstants.JSON_LD_TYPE:
 					// if(entry.getValue().toString().equals(anObject))
@@ -286,10 +286,7 @@ public class EntityOperationQueryController {
 		return protectedValue;
 	}
 
-	private List<Object> getAtContext() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	
 
 	private Object getValue(Object original) {
 		if (original instanceof List) {
