@@ -324,7 +324,7 @@ public class QueryService {
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
 			Integer offset, String qToken, Boolean showServices, Boolean countResult,
-			ArrayListMultimap<String, String> headers, Boolean postQuery) throws ResponseException, Exception {
+			ArrayListMultimap<String, String> headers, Boolean postQuery) throws ResponseException {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
@@ -446,8 +446,20 @@ public class QueryService {
 
 			// storage response
 			logger.trace("storage task status completed :: " + futureStorageManager.isDone());
-			QueryResult fromStorage = futureStorageManager.get();
-			QueryResult fromCsources = futureContextRegistry.get();
+			QueryResult fromStorage;
+			try {
+				fromStorage = futureStorageManager.get();
+			} catch (Exception e) {
+				logger.error("Failed to get data from storage", e);
+				throw new ResponseException(ErrorType.InternalError, "Failed to get data from storage");
+			}
+			QueryResult fromCsources;
+			try {
+				fromCsources = futureContextRegistry.get();
+			} catch (Exception e) {
+				logger.error("Failed to get data from registry", e);
+				throw new ResponseException(ErrorType.InternalError, "Failed to get data from registry");
+			}
 			// logger.trace("response from storage :: ");
 			// fromStorage.forEach(e -> logger.debug(e));
 			List<String> fromStorageDataList = fromStorage.getActualDataString();
@@ -504,8 +516,13 @@ public class QueryService {
 			}
 			ByteArrayInputStream bais = new ByteArrayInputStream(data);
 			DataInputStream in = new DataInputStream(bais);
-			while (in.available() > 0) {
-				aggregatedResult.add(in.readUTF());
+			try {
+				while (in.available() > 0) {
+					aggregatedResult.add(in.readUTF());
+				}
+			} catch (IOException e) {
+				logger.error("failed reading in utf of data", e);
+				throw new ResponseException(ErrorType.BadRequestData, "failed reading in utf of data"); 
 			}
 			int end = offset + limit;
 			if (end > aggregatedResult.size()) {

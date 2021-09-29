@@ -1,11 +1,8 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,6 +10,8 @@ import java.util.Map.Entry;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -31,7 +29,6 @@ import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -67,10 +64,9 @@ public class EntityOperationQueryController {
 	@Autowired
 	ObjectMapper objectMapper;
 
-	private HttpUtils httpUtils;
+	private final static Logger logger = LoggerFactory.getLogger(EntityOperationQueryController.class);
 
-	private final byte[] emptyResult1 = { '{', ' ', '}' };
-	private final byte[] emptyResult2 = { '{', '}' };
+	private HttpUtils httpUtils;
 
 	private Object defaultContext = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld";
 
@@ -81,6 +77,9 @@ public class EntityOperationQueryController {
 		httpUtils = HttpUtils.getInstance(contextResolver);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	// these are known structures in try catch. failed parsing would rightfully
+	// result in an error
 	@PostMapping("/query")
 	public ResponseEntity<byte[]> postQuery(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(value = "limit", required = false) Integer limit,
@@ -90,6 +89,7 @@ public class EntityOperationQueryController {
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count)
 			throws ResponseException {
 		try {
+			HttpUtils.doPreflightCheck(request, payload);
 			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
 			String expandedPayload = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			Map<String, Object> queries = (Map<String, Object>) JsonUtils.fromString(expandedPayload);
@@ -148,35 +148,26 @@ public class EntityOperationQueryController {
 							queryParser.parseGeoRel((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEO_REL))));
 					break;
 				case NGSIConstants.NGSI_LD_QUERY:
-					params.setQ(
-							queryParser.parseQuery((String) getValue(entry.getValue()), linkHeaders).toSql(false));
+					params.setQ(queryParser.parseQuery((String) getValue(entry.getValue()), linkHeaders).toSql(false));
 					break;
 				case NGSIConstants.JSON_LD_TYPE:
-					// if(entry.getValue().toString().equals(anObject))
+					if (!entry.getValue().toString().equals(NGSIConstants.QUERY_TYPE)) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"Type has to be Query for this operation");
+					}
 					break;
 
 				default:
-					break;
+					throw new ResponseException(ErrorType.BadRequestData, entry.getKey() + " is an unknown entry");
 				}
 			}
 			return QueryController.generateReply(httpUtils, request, queryService.getData(params, payload, linkHeaders,
 					limit, offset, qToken, false, count, HttpUtils.getHeaders(request), true), true, count);
 
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error("Failed to parse request data", e);
+			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse request data\n" + e.getMessage());
 		}
-
-		return null;
 	}
 
 	private String protectGeoProp(Map<String, Object> value) throws ResponseException {
@@ -198,6 +189,8 @@ public class EntityOperationQueryController {
 			geoType = (String) compactedFull.get(NGSIConstants.GEO_JSON_TYPE);
 
 		}
+		@SuppressWarnings("rawtypes")
+		// this is fine we check types later on
 		List geoValues = (List) compactedFull.get(NGSIConstants.GEO_JSON_COORDINATES);
 		Object entry1, entry2;
 		switch (geoType) {
@@ -286,8 +279,8 @@ public class EntityOperationQueryController {
 		return protectedValue;
 	}
 
-	
-
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	// known structure from json ld lib
 	private Object getValue(Object original) {
 		if (original instanceof List) {
 			original = ((List) original).get(0);

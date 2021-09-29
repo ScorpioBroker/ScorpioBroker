@@ -11,7 +11,6 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WIT
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
