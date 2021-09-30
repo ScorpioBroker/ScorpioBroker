@@ -1,12 +1,7 @@
 package eu.neclab.ngsildbroker.registryhandler.repository;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import javax.sql.DataSource;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import com.google.common.collect.ArrayListMultimap;

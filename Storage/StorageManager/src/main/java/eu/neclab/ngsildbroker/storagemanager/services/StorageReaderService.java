@@ -60,7 +60,7 @@ public class StorageReaderService {
 		List<String> entityList = new ArrayList<String>();
 		try {
 			QueryParams qp = DataSerializer.getQueryParams(payload);
-			entityList = storageReaderDao.query(qp);
+			entityList = storageReaderDao.query(qp).getActualDataString();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

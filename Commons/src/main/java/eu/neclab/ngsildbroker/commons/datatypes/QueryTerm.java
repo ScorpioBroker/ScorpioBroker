@@ -619,7 +619,12 @@ public class QueryTerm {
 				attributeFilterProperty.append(charcount);
 				attributeFilterProperty.append("a WHERE ");
 				attributeFilterProperty.append(charcount);
-				attributeFilterProperty.append("a#>'{@id}' ");
+				attributeFilterProperty.append("a#>");
+				if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
+						|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
+					attributeFilterProperty.append(">");
+				}
+				attributeFilterProperty.append("'{@id}' ");
 				applyOperator(attributeFilterProperty);
 				attributeFilterProperty.append(")) OR ");
 			}

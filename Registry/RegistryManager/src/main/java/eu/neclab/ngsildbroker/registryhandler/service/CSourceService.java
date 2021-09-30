@@ -6,11 +6,9 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -46,6 +44,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -428,8 +427,8 @@ public class CSourceService {
 		String resultPayload = "";
 		try {
 			QueryParams qp = DataSerializer.getQueryParams(payload);
-			List<String> csourceList = csourceDAO.queryExternalCsources(qp);
-			resultPayload = csourceDAO.getListAsJsonArray(csourceList);
+			QueryResult csourceList = csourceDAO.queryExternalCsources(qp);
+			resultPayload = csourceDAO.getListAsJsonArray(csourceList.getActualDataString());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
