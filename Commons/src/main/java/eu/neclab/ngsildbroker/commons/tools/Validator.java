@@ -104,9 +104,6 @@ public class Validator {
 		}
 		JsonElement jsonElement = new JsonParser().parse(payload);
 		JsonObject top = jsonElement.getAsJsonObject();
-		if (!top.has(NGSIConstants.CSOURCE_TYPE)) {
-			throw new ResponseException(ErrorType.BadRequestData, "type is a mandatory field");
-		}
 		if (!top.has(NGSIConstants.NOTIFICATION)) {
 			throw new ResponseException(ErrorType.BadRequestData, "no notification parameter provided");
 		}
