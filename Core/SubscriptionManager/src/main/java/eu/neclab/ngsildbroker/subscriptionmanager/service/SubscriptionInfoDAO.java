@@ -56,7 +56,7 @@ public class SubscriptionInfoDAO extends StorageReaderDAO {
 		qp.setEntities(temp);
 		qp.setTenant(tenantId);
 		try {
-			return super.query(qp).get(0);
+			return super.query(qp).getActualDataString().get(0);
 		} catch (ResponseException e) {
 			logger.info("Failed to get info for entity with id " + entityId);
 			logger.debug(e);

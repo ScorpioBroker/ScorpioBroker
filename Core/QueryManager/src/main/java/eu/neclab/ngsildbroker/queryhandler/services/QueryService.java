@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.kafka.support.KafkaHeaders;
@@ -250,8 +251,9 @@ public class QueryService {
 	 * @return String
 	 * @throws Exception
 	 */
-	public List<String> getFromStorageManager(String storageManagerQuery) throws Exception {
+	public QueryResult getFromStorageManager(String storageManagerQuery) throws Exception {
 		// create producer record
+		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		logger.trace("getFromStorageManager() :: started");
 		ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(requestTopic,
 				storageManagerQuery.getBytes());
@@ -269,7 +271,8 @@ public class QueryService {
 		}
 		// return consumer value
 		logger.trace("getFromStorageManager() :: completed");
-		return entityList;
+		queryResult.setActualDataString(entityList);
+		return queryResult;
 	}
 
 	/**
@@ -280,9 +283,10 @@ public class QueryService {
 	 * @return String
 	 * @throws Exception
 	 */
-	public List<String> getFromContextRegistry(String contextRegistryQuery) throws Exception {
+	public QueryResult getFromContextRegistry(String contextRegistryQuery) throws Exception {
 		// create producer record
 		String contextRegistryData = null;
+		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		logger.trace("getFromContextRegistry() :: started");
 		ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(csourceQueryTopic,
 				contextRegistryQuery.getBytes());
@@ -296,7 +300,8 @@ public class QueryService {
 		logger.debug("getFromContextRegistry() :: completed");
 		contextRegistryData = new String((byte[]) consumerRecord.value());
 		logger.debug("getFromContextRegistry() data broker list::" + contextRegistryData);
-		return DataSerializer.getStringList(contextRegistryData);
+		queryResult.setActualDataString(DataSerializer.getStringList(contextRegistryData));
+		return queryResult;
 	}
 
 	/**
@@ -319,11 +324,10 @@ public class QueryService {
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
 			Integer offset, String qToken, Boolean showServices, Boolean countResult,
-			ArrayListMultimap<String, String> headers, Boolean postQuery) throws ResponseException, Exception {
+			ArrayListMultimap<String, String> headers, Boolean postQuery) throws ResponseException {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
-		List<String> realResult;
 		qp.setLimit(limit);
 		qp.setOffSet(offset);
 		qp.setCountResult(countResult);
@@ -331,8 +335,8 @@ public class QueryService {
 		if (qToken == null) {
 			ExecutorService executorService = Executors.newFixedThreadPool(2);
 
-			Future<List<String>> futureStorageManager = executorService.submit(new Callable<List<String>>() {
-				public List<String> call() throws Exception {
+			Future<QueryResult> futureStorageManager = executorService.submit(new Callable<QueryResult>() {
+				public QueryResult call() throws Exception {
 					logger.trace("Asynchronous Callable storage manager");
 					// TAKE CARE OF PAGINATION HERE
 					if (queryDAO != null) {
@@ -347,13 +351,12 @@ public class QueryService {
 				}
 			});
 
-			Future<List<String>> futureContextRegistry = executorService.submit(new Callable<List<String>>() {
-				public List<String> call() throws Exception {
+			Future<QueryResult> futureContextRegistry = executorService.submit(new Callable<QueryResult>() {
+				public QueryResult call() throws Exception {
 					try {
-
-						List<String> fromCsources = new ArrayList<String>();
+						QueryResult fromCsources = new QueryResult(null, null, ErrorType.None, -1, true);
 						logger.trace("Asynchronous 1 context registry");
-						List<String> brokerList;
+						QueryResult brokerList;
 						if (cSourceDAO != null) {
 							brokerList = cSourceDAO.queryExternalCsources(qp);
 						} else {
@@ -363,14 +366,18 @@ public class QueryService {
 						Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);
 						Matcher m;
 						Matcher mtenant;
-						Set<Callable<String>> callablesCollection = new HashSet<Callable<String>>();
-						for (String brokerInfo : brokerList) {
+						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+						Set<Callable<QueryResult>> callablesCollection = new HashSet<Callable<QueryResult>>();
+						if (brokerList.getActualDataString() == null) {
+							return queryResult;
+						}
+						for (String brokerInfo : brokerList.getActualDataString()) {
 							m = p.matcher(brokerInfo);
 							m.find();
 							final String uri_tenant;
 							String uri = m.group(1);
 							mtenant = ptenant.matcher(brokerInfo);
-							if (mtenant != null) {
+							if (mtenant != null && mtenant.matches()) {
 								mtenant.find();
 								uri_tenant = mtenant.group(1);
 
@@ -378,7 +385,7 @@ public class QueryService {
 								uri_tenant = null;
 							}
 							logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
-							Callable<String> callable = () -> {
+							Callable<QueryResult> callable = () -> {
 								HttpHeaders callHeaders = new HttpHeaders();
 								for (Entry<String, String> entry : headers.entries()) {
 									String key = entry.getKey();
@@ -392,27 +399,36 @@ public class QueryService {
 								}
 								HttpEntity entity;
 
-								String result;
+								String resultBody;
+								ResponseEntity<String> response;
+								int count = 0;
 								if (postQuery) {
 									entity = new HttpEntity<String>(rawQueryString, callHeaders);
-									result = restTemplate.exchange(uri + "/ngsi-ld/v1/entityOperations/query",
-											HttpMethod.POST, entity, String.class).getBody();
+									response = restTemplate.exchange(uri + "/ngsi-ld/v1/entityOperations/query",
+											HttpMethod.POST, entity, String.class);
+									resultBody = response.getBody();
 								} else {
-									entity = new HttpEntity<>(callHeaders);
-									result = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
-											HttpMethod.GET, entity, String.class).getBody();
+									entity = new HttpEntity<String>(callHeaders);
+									response = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
+											HttpMethod.GET, entity, String.class);
+									resultBody = response.getBody();
 								}
-
-								logger.debug("http call result :: ::" + result);
+								if (response.getHeaders().containsKey(NGSIConstants.COUNT_HEADER_RESULT)) {
+									count = Integer.parseInt(response.getHeaders().get(NGSIConstants.COUNT_HEADER_RESULT).get(0));
+								}
+								logger.debug("http call result :: ::" + resultBody);
+								
+								QueryResult result = new QueryResult(getDataListFromResult(resultBody), null, ErrorType.None, -1, true);
+								result.setCount(count);
 								return result;
 							};
 							callablesCollection.add(callable);
 
 						}
+
 						fromCsources = getDataFromCsources(callablesCollection);
 						logger.debug("csource call response :: ");
 						// fromCsources.forEach(e -> logger.debug(e));
-
 						return fromCsources;
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -430,14 +446,50 @@ public class QueryService {
 
 			// storage response
 			logger.trace("storage task status completed :: " + futureStorageManager.isDone());
-			List<String> fromStorage = (List<String>) futureStorageManager.get();
-			List<String> fromCsources = (List<String>) futureContextRegistry.get();
+			QueryResult fromStorage;
+			try {
+				fromStorage = futureStorageManager.get();
+			} catch (Exception e) {
+				logger.error("Failed to get data from storage", e);
+				throw new ResponseException(ErrorType.InternalError, "Failed to get data from storage");
+			}
+			QueryResult fromCsources;
+			try {
+				fromCsources = futureContextRegistry.get();
+			} catch (Exception e) {
+				logger.error("Failed to get data from registry", e);
+				throw new ResponseException(ErrorType.InternalError, "Failed to get data from registry");
+			}
 			// logger.trace("response from storage :: ");
 			// fromStorage.forEach(e -> logger.debug(e));
+			List<String> fromStorageDataList = fromStorage.getActualDataString();
+			List<String> fromCsourceDataList = new ArrayList<String>();
+			if (fromCsources.getActualDataString() != null) {
+				fromCsourceDataList = fromCsources.getActualDataString();
+			}
+			int count = 0;
+			if (fromStorage.getCount() != null) {
+				count = fromStorage.getCount();
+			}
 
-			aggregatedResult.addAll(fromStorage);
-			if (fromCsources != null) {
-				aggregatedResult.addAll(fromCsources);
+			if (fromStorageDataList != null) {
+				aggregatedResult.addAll(fromStorageDataList);
+			}
+			int countremote = 0;
+			if (fromCsources.getCount() != null) {
+				countremote = fromCsources.getCount();
+			}
+			if (fromCsourceDataList.size() > 0) {
+				aggregatedResult.addAll(fromCsourceDataList);
+			}
+			if (count != 0 && countremote != 0) {
+				result.setCount(count + countremote);
+			}
+			if (count != 0 && countremote == 0) {
+				result.setCount(count);
+			}
+			if (count == 0 && countremote != 0) {
+				result.setCount(countremote);
 			}
 			// logger.trace("aggregated");
 			// aggregatedResult.forEach(e -> logger.debug(e));
@@ -454,7 +506,6 @@ public class QueryService {
 			 * 
 			 * } }; }.start(); } else {
 			 */
-			realResult = aggregatedResult;
 			// }
 		} else {
 			// read from byte array
@@ -465,18 +516,23 @@ public class QueryService {
 			}
 			ByteArrayInputStream bais = new ByteArrayInputStream(data);
 			DataInputStream in = new DataInputStream(bais);
-			while (in.available() > 0) {
-				aggregatedResult.add(in.readUTF());
+			try {
+				while (in.available() > 0) {
+					aggregatedResult.add(in.readUTF());
+				}
+			} catch (IOException e) {
+				logger.error("failed reading in utf of data", e);
+				throw new ResponseException(ErrorType.BadRequestData, "failed reading in utf of data"); 
 			}
 			int end = offset + limit;
 			if (end > aggregatedResult.size()) {
 				end = aggregatedResult.size();
 			}
-			realResult = aggregatedResult.subList(offset, end);
+			aggregatedResult.subList(offset, end);
 			dataLeft = aggregatedResult.size() - end;
 
 		}
-		result.setDataString(realResult);
+		result.setDataString(aggregatedResult);
 		result.setqToken(qToken);
 		result.setLimit(limit);
 		result.setOffset(offset);
@@ -484,6 +540,30 @@ public class QueryService {
 		result.setResultsLeftBefore(offset);
 		return result;
 	}
+	protected List<String> getDataListFromResult(String resultBody) throws ResponseException{
+		List<String> entitiesList = new ArrayList<String>();
+		try {
+			
+			logger.debug("response from invoke all ::" + resultBody);
+			if (!("[]").equals(resultBody) && resultBody != null) {
+				JsonNode jsonNode = objectMapper.readTree(resultBody);
+				for (int i = 0; i <= jsonNode.size(); i++) {
+					if (jsonNode.get(i) != null && !jsonNode.isNull()) {
+						String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true,
+								AppConstants.ENTITIES_URL_ID);// , linkHeaders);
+						entitiesList.add(payload);
+					}
+				}
+			}
+			return entitiesList;
+		} catch (JsonSyntaxException | IOException e) {
+			logger.error("Exception  ::", e);
+			return new ArrayList<String>();
+		}
+
+		
+	}
+
 	// TODO decide on removal
 	/*
 	 * private void writeFullResultToKafka(String qToken, List<String>
@@ -511,36 +591,26 @@ public class QueryService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	private List<String> getDataFromCsources(Set<Callable<String>> callablesCollection)
+	private QueryResult getDataFromCsources(Set<Callable<QueryResult>> callablesCollection)
 			throws ResponseException, Exception {
-		List<String> allDiscoveredEntities = new ArrayList<String>();
 		ExecutorService executorService = Executors.newFixedThreadPool(2);
-		List<Future<String>> futures = executorService.invokeAll(callablesCollection);
+		List<Future<QueryResult>> futures = executorService.invokeAll(callablesCollection);
+		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		// TODO: why sleep?
 		// Thread.sleep(5000);
-		for (Future<String> future : futures) {
+		List<String> entities = new ArrayList<String>();
+		int count = 0;
+		for (Future<QueryResult> future : futures) {
 			logger.trace("future.isDone = " + future.isDone());
-			List<String> entitiesList = new ArrayList<String>();
-			try {
-				String response = (String) future.get();
-				logger.debug("response from invoke all ::" + response);
-				if (!("[]").equals(response) && response != null) {
-					JsonNode jsonNode = objectMapper.readTree(response);
-					for (int i = 0; i <= jsonNode.size(); i++) {
-						if (jsonNode.get(i) != null && !jsonNode.isNull()) {
-							String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true,
-									AppConstants.ENTITIES_URL_ID);// , linkHeaders);
-							entitiesList.add(payload);
-						}
-					}
-				}
-			} catch (JsonSyntaxException | ExecutionException e) {
-				logger.error("Exception  ::", e);
-			}
-			allDiscoveredEntities.addAll(entitiesList);
+			QueryResult tempResult = future.get();
+			entities.addAll(tempResult.getDataString());
+			count += tempResult.getCount();
 		}
 		executorService.shutdown();
 		logger.trace("getDataFromCsources() completed ::");
-		return allDiscoveredEntities;
+		queryResult.setActualDataString(entities);
+		queryResult.setDataString(entities);
+		queryResult.setCount(count);
+		return queryResult;
 	}
 }

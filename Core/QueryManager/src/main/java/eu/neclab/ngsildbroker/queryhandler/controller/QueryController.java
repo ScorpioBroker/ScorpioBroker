@@ -36,7 +36,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import eu.neclab.ngsildbroker.queryhandler.utils.Validator;
@@ -73,7 +72,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	private final byte[] emptyResult1 = { '{', ' ', '}' };
 	private final byte[] emptyResult2 = { '{', '}' };
-	public static Boolean countResult = false;
+	
 
 	@PostConstruct
 	private void setup() {
@@ -158,15 +157,9 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(name = "services", required = false) Boolean showServices,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
-		StorageReaderDAO.countHeader = 0;
-		if (count == true) {
-			countResult = true;
-		} else {
-			countResult = false;
-		}
-
+		
 		return getQueryData(request, request.getQueryString(), request.getParameterMap(), attrs, limit, offset, qToken,
-				options, showServices, false, countResult);
+				options, showServices, false, count);
 	}
 
 	@GetMapping(path = "/types")
@@ -285,7 +278,7 @@ public class QueryController {// implements QueryHandlerInterface {
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}
 					//long pregenresult = System.currentTimeMillis();
-					ResponseEntity<byte[]> result = generateReply(httpUtils, request, qResult, !retrieve);
+					ResponseEntity<byte[]> result = generateReply(httpUtils, request, qResult, !retrieve, countResult);
 					//long end = System.currentTimeMillis();
 					//System.err.println(start);
 					//System.err.println(prelink);
@@ -342,7 +335,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpUtils httpUtils, HttpServletRequest request, QueryResult qResult, boolean forceArray)
+	public static ResponseEntity<byte[]> generateReply(HttpUtils httpUtils, HttpServletRequest request, QueryResult qResult, boolean forceArray, boolean count)
 			throws ResponseException {
 		String nextLink = generateNextLink(request, qResult);
 		String prevLink = generatePrevLink(request, qResult);
@@ -353,17 +346,17 @@ public class QueryController {// implements QueryHandlerInterface {
 		if (prevLink != null) {
 			additionalLinks.add(prevLink);
 		}
-		ArrayList<String> additionalHeaerCount = new ArrayList<String>();
+		ArrayList<String> additionalHeaderCount = new ArrayList<String>();
 		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
-
-		if (countResult == true) {
-			additionalHeaerCount.add(String.valueOf(StorageReaderDAO.countHeader));
-			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaerCount);
+       
+		if (count == true) {
+			additionalHeaderCount.add(String.valueOf(qResult.getCount()));
+			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaderCount);
 		}
+		
 		if (!additionalLinks.isEmpty()) {
 			additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
 		}
-
 		return httpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
 				additionalHeaders, null, forceArray);
 	}

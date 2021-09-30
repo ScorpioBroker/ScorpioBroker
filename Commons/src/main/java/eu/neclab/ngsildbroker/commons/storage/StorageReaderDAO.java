@@ -6,26 +6,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.util.ReflectionUtils;
-
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tenant.DBUtil;
@@ -46,8 +42,6 @@ abstract public class StorageReaderDAO {
 	private HikariConfig hikariConfig;
 
 	public Random random = new Random();
-
-	public static int countHeader = 0;
 
 	@PostConstruct
 	public void init() {
@@ -101,39 +95,51 @@ abstract public class StorageReaderDAO {
 		return new HikariDataSource(tenantHikariConfig);
 	}
 
-	public List<String> query(QueryParams qp) throws ResponseException {
+	public QueryResult query(QueryParams qp) throws ResponseException {
 		JdbcTemplate template;
+		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		try {
+
 			String tenantId = qp.getTenant();
 			template = getJDBCTemplate(tenantId);
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.TenantNotFound);
 		}
-
 		try {
 			if (qp.getCheck() != null) {
 				String sqlQuery = typesAndAttributeQuery(qp);
-				return template.queryForList(sqlQuery, String.class);
-			}
-			String sqlQuery = translateNgsildQueryToSql(qp);
-			logger.info("NGSI-LD to SQL: " + sqlQuery);
-			// SqlRowSet result = readerJdbcTemplate.queryForRowSet(sqlQuery);
-			if (qp.getLimit() == 0 && qp.getCountResult() == true) {
 				List<String> list = template.queryForList(sqlQuery, String.class);
-				countHeader = countHeader + list.size();
-				return new ArrayList<String>();
+				queryResult.setActualDataString(list);
+				return queryResult;
 			}
-			List<String> list = template.queryForList(sqlQuery, String.class);
-			countHeader = countHeader + list.size();
-			return list;
+			if (qp.getCountResult() != null) {
+				if (qp.getLimit() == 0 && qp.getCountResult() == true) {
+					String sqlQueryCount = translateNgsildQueryToCountResult(qp);
+					Integer count = template.queryForObject(sqlQueryCount, Integer.class);
+					queryResult.setCount(count);
+					return queryResult;
+				}
+				String sqlQuery = translateNgsildQueryToSql(qp);
+				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setActualDataString(list);
+				String sqlQueryCount = translateNgsildQueryToCountResult(qp);
+				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
+				queryResult.setCount(count);
+				return queryResult;
+			} else {
+				String sqlQuery = translateNgsildQueryToSql(qp);
+				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setActualDataString(list);
+				return queryResult;
+			}
 		} catch (DataIntegrityViolationException e) {
 			// Empty result don't worry
 			logger.debug("SQL Result Exception::", e);
-			return new ArrayList<String>();
+			return queryResult;
 		} catch (Exception e) {
 			logger.error("Exception ::", e);
 		}
-		return new ArrayList<String>();
+		return queryResult;
 
 	}
 
@@ -296,8 +302,9 @@ abstract public class StorageReaderDAO {
 						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
 					} else {
 						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','") + "')";
-					}			
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
+								+ "')";
+					}
 					break;
 				case NGSIConstants.JSON_LD_TYPE:
 					dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
@@ -306,8 +313,9 @@ abstract public class StorageReaderDAO {
 						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
 					} else {
 						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','") + "')";
-					}			
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
+								+ "')";
+					}
 
 					break;
 				case NGSIConstants.NGSI_LD_ID_PATTERN:
@@ -483,6 +491,110 @@ abstract public class StorageReaderDAO {
 			return null;
 		}
 		return tenantId;
+	}
+
+	/*
+	 * TODO: query for count the no of result
+	 */
+	protected String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+		StringBuilder fullSqlWhereProperty = new StringBuilder(70);
+		String dbColumn, sqlOperator;
+		String sqlWhereProperty = null;
+		List<Map<String, String>> entities = qp.getEntities();
+		fullSqlWhereProperty.append("(");
+		for (Map<String, String> entityInfo : entities) {
+			fullSqlWhereProperty.append("(");
+			for (Entry<String, String> entry : entityInfo.entrySet()) {
+				switch (entry.getKey()) {
+				case NGSIConstants.JSON_LD_ID:
+					dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
+					if (entry.getValue().indexOf(",") == -1) {
+						sqlOperator = "=";
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+					} else {
+						sqlOperator = "IN";
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
+								+ "')";
+					}
+					break;
+				case NGSIConstants.JSON_LD_TYPE:
+					dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
+					if (entry.getValue().indexOf(",") == -1) {
+						sqlOperator = "=";
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+					} else {
+						sqlOperator = "IN";
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
+								+ "')";
+					}
+
+					break;
+				case NGSIConstants.NGSI_LD_ID_PATTERN:
+					dbColumn = DBConstants.DBCOLUMN_ID;
+					sqlOperator = "~";
+					sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+					break;
+
+				default:
+					break;
+				}
+				fullSqlWhereProperty.append(sqlWhereProperty);
+				fullSqlWhereProperty.append(" AND ");
+			}
+			fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 5, fullSqlWhereProperty.length());
+			fullSqlWhereProperty.append(") OR ");
+		}
+		fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 4, fullSqlWhereProperty.length());
+		fullSqlWhereProperty.append(")");
+		if (qp.getAttrs() != null) {
+			String queryValue;
+			queryValue = qp.getAttrs();
+			dbColumn = "data";
+			sqlOperator = "?";
+			if (queryValue.indexOf(",") == -1) {
+				sqlWhereProperty = dbColumn + " " + sqlOperator + "'" + queryValue + "'";
+			} else {
+				sqlWhereProperty = "(" + dbColumn + " " + sqlOperator + " '"
+						+ queryValue.replace(",", "' OR " + dbColumn + " " + sqlOperator + "'") + "')";
+			}
+			fullSqlWhereProperty.append(" AND ");
+			fullSqlWhereProperty.append(sqlWhereProperty);
+
+		}
+		if (qp.getGeorel() != null) {
+			GeoqueryRel gqr = qp.getGeorel();
+			logger.trace("Georel value " + gqr.getGeorelOp());
+			try {
+				sqlWhereProperty = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
+						qp.getGeoproperty());
+			} catch (ResponseException e) {
+				e.printStackTrace();
+			}
+			fullSqlWhereProperty.append(" AND ");
+			fullSqlWhereProperty.append(sqlWhereProperty);
+
+		}
+		if (qp.getQ() != null) {
+			sqlWhereProperty = qp.getQ();
+			fullSqlWhereProperty.append(" AND ");
+			fullSqlWhereProperty.append(sqlWhereProperty);
+		}
+
+		String sqlQuery = "SELECT Count(*) FROM " + DBConstants.DBTABLE_ENTITY + " ";
+		if (fullSqlWhereProperty.length() > 0) {
+			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
+		}
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+
+		if (limit > 0) {
+			sqlQuery += "LIMIT " + limit + " ";
+		}
+		if (offSet > 0) {
+			sqlQuery += "OFFSET " + offSet + " ";
+		}
+		// order by ?
+		return sqlQuery;
 	}
 
 }

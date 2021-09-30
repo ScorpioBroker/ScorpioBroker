@@ -34,7 +34,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;

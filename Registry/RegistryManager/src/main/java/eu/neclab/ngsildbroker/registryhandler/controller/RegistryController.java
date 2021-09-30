@@ -34,6 +34,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -109,7 +110,8 @@ public class RegistryController {
 				if (qp == null) // invalid query
 					throw new ResponseException(ErrorType.InvalidRequest);
 				qp.setTenant(tenantid);
-				List<String> csourceList = csourceDAO.query(qp);
+				QueryResult queryResult = csourceDAO.query(qp);
+				List<String> csourceList = queryResult.getActualDataString();
 				if (csourceList.size() > 0) {
 					return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 				} else {

@@ -15,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
@@ -55,12 +56,12 @@ public class CSourceDAO extends StorageReaderDAO {
 	private boolean externalCsourcesOnly = false;
 
 	@Override
-	public List<String> query(QueryParams qp) throws ResponseException {
+	public QueryResult query(QueryParams qp) throws ResponseException {
 		this.externalCsourcesOnly = false;
 		return super.query(qp);
 	}
 
-	public List<String> queryExternalCsources(QueryParams qp) throws SQLException, ResponseException {
+	public QueryResult queryExternalCsources(QueryParams qp) throws SQLException, ResponseException {
 		this.externalCsourcesOnly = true;
 		return super.query(qp);
 	}
@@ -107,14 +108,14 @@ public class CSourceDAO extends StorageReaderDAO {
 					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
 
 				}
-				fullSqlWhere.append("(" + sqlWhere + ") AND ");
+				
 				csourceInformationIsNeeded = true;
 				sqlOk = true;
 
 				sqlWhere += ") OR ";
 			}
 			sqlWhere = sqlWhere.substring(0, sqlWhere.length() - 4);
-
+			fullSqlWhere.append("(" + sqlWhere + ") AND ");
 			// query by attrs only
 		} else if (qp.getAttrs() != null) {
 			String attrsValue = qp.getAttrs();
@@ -173,14 +174,18 @@ public class CSourceDAO extends StorageReaderDAO {
 			sqlWhere += getSqlWhereByType(typeValue, false);
 		} else if (!idValue.isEmpty() && idPatternValue.isEmpty()) { // case 2: type+id
 			sqlWhere += "(";
-			sqlWhere += getSqlWhereByType(typeValue, true);
-			sqlWhere += " OR ";
+			if (typeValue != null) {
+				sqlWhere += getSqlWhereByType(typeValue, true);
+				sqlWhere += " OR ";
+			}
 			sqlWhere += getSqlWhereById(typeValue, idValue);
 			sqlWhere += ")";
 		} else if (idValue.isEmpty() && !idPatternValue.isEmpty()) { // case 3: type+idPattern
 			sqlWhere += "(";
-			sqlWhere += getSqlWhereByType(typeValue, true);
-			sqlWhere += " OR ";
+			if (typeValue != null) {
+				sqlWhere += getSqlWhereByType(typeValue, true);
+				sqlWhere += " OR ";
+			}
 			sqlWhere += getSqlWhereByIdPattern(typeValue, idPatternValue);
 			sqlWhere += ")";
 		}
@@ -188,6 +193,9 @@ public class CSourceDAO extends StorageReaderDAO {
 	}
 
 	private String getSqlWhereByType(String typeValue, boolean includeIdAndIdPatternNullTest) {
+		if (typeValue == null || typeValue.isEmpty()) {
+			return "";
+		}
 		String sqlWhere = "(";
 		if (typeValue.indexOf(",") == -1) {
 			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = '" + typeValue + "' ";
@@ -203,14 +211,14 @@ public class CSourceDAO extends StorageReaderDAO {
 
 	private String getSqlWhereById(String typeValue, String idValue) {
 		String sqlWhere = "( ";
-
-		if (typeValue.indexOf(",") == -1) {
-			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = '" + typeValue + "' AND ";
-		} else {
-			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN ('" + typeValue.replace(",", "','")
-					+ "') AND ";
+		if (typeValue != null) {
+			if (typeValue.indexOf(",") == -1) {
+				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = '" + typeValue + "' AND ";
+			} else {
+				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN ('" + typeValue.replace(",", "','")
+						+ "') AND ";
+			}
 		}
-
 		if (idValue.indexOf(",") == -1) {
 			sqlWhere += "(" + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_ID + " = '" + idValue + "' OR " + "'" + idValue
 					+ "' ~ " + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + ")";
