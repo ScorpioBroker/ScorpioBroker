@@ -100,7 +100,7 @@ public class Validator {
 	public static void subscriptionValidation(String payload) throws ResponseException {
 		boolean validatePayload = isJSONValid(payload);
 		if (validatePayload == false) {
-			throw new ResponseException(ErrorType.BadRequestData, "Json is not valid");
+			throw new ResponseException(ErrorType.InvalidRequest, "Json is not valid");
 		}
 		JsonElement jsonElement = new JsonParser().parse(payload);
 		JsonObject top = jsonElement.getAsJsonObject();
