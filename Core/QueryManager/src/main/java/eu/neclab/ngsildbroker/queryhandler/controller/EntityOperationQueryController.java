@@ -159,7 +159,6 @@ public class EntityOperationQueryController {
 						}
 					}
 					throw new ResponseException(ErrorType.BadRequestData, "Type has to be Query for this operation");
-
 				default:
 					throw new ResponseException(ErrorType.BadRequestData, entry.getKey() + " is an unknown entry");
 				}
