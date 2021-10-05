@@ -18,7 +18,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.annotation.PostConstruct;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeader;
@@ -372,9 +374,14 @@ public class QueryService {
 						}
 						for (String brokerInfo : brokerList.getActualDataString()) {
 							m = p.matcher(brokerInfo);
-							m.find();
+							final String uri;
 							final String uri_tenant;
-							String uri = m.group(1);
+							if(m.matches()) {
+								m.find();
+								uri = m.group(1);
+							} else {
+								uri = null;
+							}
 							mtenant = ptenant.matcher(brokerInfo);
 							if (mtenant != null && mtenant.matches()) {
 								mtenant.find();
@@ -383,49 +390,56 @@ public class QueryService {
 							} else {
 								uri_tenant = null;
 							}
-							logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
-							Callable<QueryResult> callable = () -> {
-								HttpHeaders callHeaders = new HttpHeaders();
-								for (Entry<String, String> entry : headers.entries()) {
-									String key = entry.getKey();
-									if (key.equals(NGSIConstants.TENANT_HEADER)) {
-										continue;
+							
+							if (uri != null) {
+								logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
+								Callable<QueryResult> callable = () -> {
+									HttpHeaders callHeaders = new HttpHeaders();
+									for (Entry<String, String> entry : headers.entries()) {
+										String key = entry.getKey();
+										if (key.equals(NGSIConstants.TENANT_HEADER)) {
+											continue;
+										}
+										callHeaders.add(key, entry.getValue());
 									}
-									callHeaders.add(key, entry.getValue());
-								}
-								if (uri_tenant != null) {
-									callHeaders.add(NGSIConstants.TENANT_HEADER, uri_tenant);
-								}
-								HttpEntity entity;
+									if (uri_tenant != null) {
+										callHeaders.add(NGSIConstants.TENANT_HEADER, uri_tenant);
+									}
+									HttpEntity entity;
 
-								String resultBody;
-								ResponseEntity<String> response;
-								int count = 0;
-								if (postQuery) {
-									entity = new HttpEntity<String>(rawQueryString, callHeaders);
-									response = restTemplate.exchange(uri + "/ngsi-ld/v1/entityOperations/query",
-											HttpMethod.POST, entity, String.class);
-									resultBody = response.getBody();
-								} else {
-									entity = new HttpEntity<String>(callHeaders);
-									response = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
-											HttpMethod.GET, entity, String.class);
-									resultBody = response.getBody();
-								}
-								if (response.getHeaders().containsKey(NGSIConstants.COUNT_HEADER_RESULT)) {
-									count = Integer.parseInt(response.getHeaders().get(NGSIConstants.COUNT_HEADER_RESULT).get(0));
-								}
-								logger.debug("http call result :: ::" + resultBody);
-								
-								QueryResult result = new QueryResult(getDataListFromResult(resultBody), null, ErrorType.None, -1, true);
-								result.setCount(count);
-								return result;
-							};
-							callablesCollection.add(callable);
+									String resultBody;
+									ResponseEntity<String> response;
+									int count = 0;
+									if (postQuery) {
+										entity = new HttpEntity<String>(rawQueryString, callHeaders);
+										response = restTemplate.exchange(uri + "/ngsi-ld/v1/entityOperations/query",
+												HttpMethod.POST, entity, String.class);
+										resultBody = response.getBody();
+									} else {
+										entity = new HttpEntity<String>(callHeaders);
+										response = restTemplate.exchange(
+												uri + "/ngsi-ld/v1/entities/?" + rawQueryString, HttpMethod.GET, entity,
+												String.class);
+										resultBody = response.getBody();
+									}
+									if (response.getHeaders().containsKey(NGSIConstants.COUNT_HEADER_RESULT)) {
+										count = Integer.parseInt(
+												response.getHeaders().get(NGSIConstants.COUNT_HEADER_RESULT).get(0));
+									}
+									logger.debug("http call result :: ::" + resultBody);
 
+									QueryResult result = new QueryResult(getDataListFromResult(resultBody), null,
+											ErrorType.None, -1, true);
+									result.setCount(count);
+									return result;
+								};
+								callablesCollection.add(callable);
+							}
 						}
-
-						fromCsources = getDataFromCsources(callablesCollection);
+                        
+						if (!callablesCollection.isEmpty()) {
+							fromCsources = getDataFromCsources(callablesCollection);
+						}
 						logger.debug("csource call response :: ");
 						// fromCsources.forEach(e -> logger.debug(e));
 						return fromCsources;
