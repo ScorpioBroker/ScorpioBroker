@@ -162,7 +162,7 @@ public class EntityOperationQueryController {
 				}
 			}
 			return QueryController.generateReply(httpUtils, request, queryService.getData(params, payload, linkHeaders,
-					limit, offset, qToken, false, count, HttpUtils.getHeaders(request), true), true, count);
+					limit, offset, qToken, false, count, HttpUtils.getHeaders(request), true, null), true, count);
 
 		} catch (IOException e) {
 			logger.error("Failed to parse request data", e);

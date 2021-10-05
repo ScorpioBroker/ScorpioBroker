@@ -18,9 +18,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.annotation.PostConstruct;
-
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeader;
@@ -324,13 +322,14 @@ public class QueryService {
 	 */
 	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders, Integer limit,
 			Integer offset, String qToken, Boolean showServices, Boolean countResult,
-			ArrayListMultimap<String, String> headers, Boolean postQuery) throws ResponseException {
+			ArrayListMultimap<String, String> headers, Boolean postQuery, String check) throws ResponseException {
 
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
 		qp.setLimit(limit);
 		qp.setOffSet(offset);
 		qp.setCountResult(countResult);
+		qp.setCheck(check);
 		int dataLeft = 0;
 		if (qToken == null) {
 			ExecutorService executorService = Executors.newFixedThreadPool(2);
