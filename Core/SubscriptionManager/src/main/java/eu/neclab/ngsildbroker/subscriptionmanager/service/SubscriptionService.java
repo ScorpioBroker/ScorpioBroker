@@ -536,7 +536,7 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 		addAllTypeSubscriptions(createRequest.getHeaders(), subsToCheck);
 
-		checkSubscriptions(subsToCheck, create, CREATE, messageTime);
+		checkSubscriptions(subsToCheck, create, CREATE, messageTime, null);
 
 	}
 
@@ -551,7 +551,7 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private void checkSubscriptions(ArrayList<SubscriptionRequest> subsToCheck, Entity entity, int methodType,
-			long messageTime) {
+			long messageTime, String updattrname) {
 
 		for (SubscriptionRequest subscription : subsToCheck) {
 			if (messageTime >= sub2CreationTime.get(subscription)) {
@@ -565,10 +565,10 @@ public class SubscriptionService implements SubscriptionManager {
 
 								break;
 							case APPEND:
-								data = generateDataFromBaseOp(entity, subscription);
+								data = generateDataFromBaseOp(entity, subscription, null);
 								break;
 							case UPDATE:
-								data = generateDataFromBaseOp(entity, subscription);
+								data = generateDataFromBaseOp(entity, subscription, updattrname);
 								break;
 							case DELETE:
 
@@ -649,7 +649,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private List<BaseProperty> extractBaseProps(Entity entity, SubscriptionRequest subscription) {
 		ArrayList<BaseProperty> result = new ArrayList<BaseProperty>();
-		if (!shouldFire(entity, subscription)) {
+		if (!shouldFire(entity, subscription, null)) {
 			return result;
 		}
 		ArrayList<String> attribNames = getAttribNames(subscription);
@@ -665,24 +665,34 @@ public class SubscriptionService implements SubscriptionManager {
 		return result;
 	}
 
-	private boolean shouldFire(Entity entity, SubscriptionRequest subscription) {
+	private boolean shouldFire(Entity entity, SubscriptionRequest subscription, String updattrname) {
 		if (subscription.getSubscription().getAttributeNames() == null
 				|| subscription.getSubscription().getAttributeNames().isEmpty()) {
 			return true;
 		}
-		for (String attribName : subscription.getSubscription().getAttributeNames()) {
-			for (BaseProperty baseProp : entity.getAllBaseProperties()) {
-				if (attribName.equals(baseProp.getIdString())) {
+		if (updattrname == null) {
+			for (String attribName : subscription.getSubscription().getAttributeNames()) {
+				for (BaseProperty baseProp : entity.getAllBaseProperties()) {
+					if (attribName.equals(baseProp.getIdString())) {
+						return true;
+					}
+				}
+			}
+		} else {
+			for (String attribName : subscription.getSubscription().getAttributeNames()) {
+				if (attribName.contains(updattrname)) {
 					return true;
 				}
+
 			}
 		}
 		return false;
 	}
 
-	private Entity generateDataFromBaseOp(Entity deltaInfo, SubscriptionRequest subscription) throws ResponseException {
+	private Entity generateDataFromBaseOp(Entity deltaInfo, SubscriptionRequest subscription, String updattrname)
+			throws ResponseException {
 		String entityBody = null;
-		if (!shouldFire(deltaInfo, subscription)) {
+		if (!shouldFire(deltaInfo, subscription, updattrname)) {
 			return null;
 		}
 
@@ -885,7 +895,7 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 		}
 		addAllTypeSubscriptions(updateRequest.getHeaders(), subsToCheck);
-		checkSubscriptions(subsToCheck, update, UPDATE, messageTime);
+		checkSubscriptions(subsToCheck, update, UPDATE, messageTime, updateRequest.getUpdAttrName());
 
 	}
 
@@ -934,7 +944,7 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 		}
 		addAllTypeSubscriptions(appendRequest.getHeaders(), subsToCheck);
-		checkSubscriptions(subsToCheck, append, APPEND, messageTime);
+		checkSubscriptions(subsToCheck, append, APPEND, messageTime, null);
 
 	}
 
@@ -1047,7 +1057,7 @@ public class SubscriptionService implements SubscriptionManager {
 		 * subsToCheck.addAll(this.idBasedSubscriptions.get(key));
 		 * subsToCheck.addAll(this.typeBasedSubscriptions.get(delete.getType()));
 		 */
-		checkSubscriptions(subsToCheck, delete, DELETE, messageTime);
+		checkSubscriptions(subsToCheck, delete, DELETE, messageTime, null);
 
 	}
 
