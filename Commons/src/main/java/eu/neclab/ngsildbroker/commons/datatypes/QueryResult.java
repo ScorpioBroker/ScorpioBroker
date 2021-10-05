@@ -22,64 +22,45 @@ public class QueryResult extends BaseResult {
 	private Integer offset;
 	private Integer resultsLeftAfter;
 	private Integer resultsLeftBefore;
-
 	private List<String> dataString;
+	private List<String> actualDataString;
+	private Integer count;
 	
-	
-
 	public Integer getResultsLeftBefore() {
 		return resultsLeftBefore;
 	}
-
-
 
 	public void setResultsLeftBefore(Integer resultsLeftBefore) {
 		this.resultsLeftBefore = resultsLeftBefore;
 	}
 
-
-
 	public Integer getResultsLeftAfter() {
 		return resultsLeftAfter;
 	}
-
-
 
 	public void setResultsLeftAfter(Integer resultsLeft) {
 		this.resultsLeftAfter = resultsLeft;
 	}
 
-
-
 	public String getqToken() {
 		return qToken;
 	}
-
-
 
 	public void setqToken(String qToken) {
 		this.qToken = qToken;
 	}
 
-
-
 	public Integer getLimit() {
 		return limit;
 	}
-
-
 
 	public void setLimit(Integer limit) {
 		this.limit = limit;
 	}
 
-
-
 	public Integer getOffset() {
 		return offset;
 	}
-
-
 
 	public void setOffset(Integer offset) {
 		this.offset = offset;
@@ -94,8 +75,23 @@ public class QueryResult extends BaseResult {
 		this.dataString = dataString;
 	}
 
+	public List<String> getActualDataString() {
+		return actualDataString;
+	}
+
+	public void setActualDataString(List<String> actualDataString) {
+		this.actualDataString = actualDataString;
+	}
+	
+	public Integer getCount() {
+		return count;
+	}
+
+	public void setCount(Integer count) {
+		this.count = count;
+	}
+
 	public void finalize() throws Throwable {
 
 	}
-
 }

@@ -2,7 +2,10 @@ package eu.neclab.ngsildbroker.historymanager.service;
 
 import java.net.URI;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -18,11 +21,13 @@ import org.springframework.stereotype.Service;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParser;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -87,11 +92,12 @@ public class HistoryService {
 
 	private void pushToKafka(HistoryEntityRequest request) throws ResponseException {
 		try {
-			kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(), UUID.randomUUID().toString().getBytes(),
-					DataSerializer.toJson(request).getBytes());
+			kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(),
+					UUID.randomUUID().toString().getBytes(), DataSerializer.toJson(request).getBytes());
 		} catch (ResponseException e) {
 			e.printStackTrace();
-			throw new ResponseException(ErrorType.InternalError, "Failed to push entity to kafka. " + e.getLocalizedMessage());
+			throw new ResponseException(ErrorType.InternalError,
+					"Failed to push entity to kafka. " + e.getLocalizedMessage());
 		}
 
 	}
@@ -136,11 +142,11 @@ public class HistoryService {
 
 		String resolvedAttrId = null;
 		QueryParams qp = new QueryParams();
-		qp.setId(entityId);
+		//qp.setId(entityId);
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
-		List<String> entityList = historyDAO.query(qp);
-		if (entityList.size() == 0) {
+		QueryResult queryResult = historyDAO.query(qp);
+		if (queryResult.getActualDataString().size() == 0) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
 		if (attributeId != null) {
@@ -182,10 +188,16 @@ public class HistoryService {
 		// check if entityId + attribId + instanceid exists. if not, throw exception
 		// ResourceNotFound
 		QueryParams qp = new QueryParams();
-		qp.setId(entityId);
+		List<Map<String, String>> temp1 = new ArrayList<Map<String, String>>();
+		HashMap<String, String> temp2 = new HashMap<String, String>();
+		temp2.put(NGSIConstants.JSON_LD_ID, entityId);
+		temp1.add(temp2);
+		qp.setEntities(temp1);
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
-		List<String> entityList = historyDAO.query(qp);
+		qp.setIncludeSysAttrs(true);
+		QueryResult queryResult = historyDAO.query(qp);
+		List<String> entityList = queryResult.getActualDataString(); 
 		if (entityList.size() == 0) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
