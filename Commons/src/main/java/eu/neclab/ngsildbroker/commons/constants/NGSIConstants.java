@@ -3,6 +3,10 @@ package eu.neclab.ngsildbroker.commons.constants;
 import java.util.HashMap;
 import java.util.List;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.util.Arrays;
 
 public interface NGSIConstants {
@@ -240,4 +244,8 @@ public interface NGSIConstants {
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
 	public static final String TENANT_HEADER = "ngsild-tenant";
 	public static final String QUERY_TYPE = "Query";
+	public static final String NGSI_LD_RELATIONSHIP_SHORT = "Relationship";
+	public static final String NGSI_LD_PROPERTY_SHORT = "Property";
+	public static final String TYPE = "type";
+	public static final String FIWARE_SERVICE_HEADER = "Fiware-Service";
 }

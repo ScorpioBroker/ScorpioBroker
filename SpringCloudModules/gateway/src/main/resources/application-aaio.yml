@@ -117,6 +117,11 @@ zuul:
       path: /corecontext/**
       serviceId: aio-runner
       stripPrefix: false
+    v2told:
+      sensitiveHeaders:
+      path: /ngsi/v2told/entities/**
+      serviceId: aio-runner
+      stripPrefix: false
     test-manager:
       sensitiveHeaders:
       path: /test/**

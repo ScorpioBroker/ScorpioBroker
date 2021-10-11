@@ -141,6 +141,11 @@ zuul:
       path: /corecontext/**
       serviceId: INFO-SERVER
       stripPrefix: false
+    v2told:
+      sensitiveHeaders:
+      path: /ngsi/v2told/entities/**
+      serviceId: ENTITY-MANAGER
+      stripPrefix: false
     test-manager:
       sensitiveHeaders:
       path: /test/**
