@@ -87,12 +87,9 @@ public class HistoryController {
 
 	@GetMapping
 	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request) {
-		String params = request.getQueryString();
+		
 		try {
 			logger.trace("retrieveTemporalEntity :: started");
-			if (params != null && !Validator.validate(params))
-				throw new ResponseException(ErrorType.BadRequestData);
-
 			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
 			if (qp == null) // invalid query
