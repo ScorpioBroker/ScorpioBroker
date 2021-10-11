@@ -108,7 +108,7 @@ public class CSourceDAO extends StorageReaderDAO {
 					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
 
 				}
-				fullSqlWhere.append("(" + sqlWhere + ") AND ");
+				fullSqlWhere.append(sqlWhere + ") AND ");
 				csourceInformationIsNeeded = true;
 				sqlOk = true;
 
