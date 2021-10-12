@@ -26,6 +26,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -69,7 +70,7 @@ public class V2Endpoint {
 			System.out.println("--------------------------------");
 			List<Object> contextLinks = (List) headers.get("Link");
 			String ldResolved = contextResolver.expand(ldPayload, contextLinks, true, AppConstants.ENTITIES_URL_ID);
-			String result = entityService.createMessage(headers, ldResolved);
+			BatchResult result = entityService.createMultipleMessage(headers, ldResolved);
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
 					.build();
 		} catch (ResponseException e) {
@@ -94,7 +95,20 @@ public class V2Endpoint {
 	private String getLdPayloadFromV2(String payload) throws IOException {
 		JsonNode root = objectMapper.readTree(payload);
 		String datasetIdPrefix = "urn:v2told:" + root.get("id").asText() + ":";
-		return objectMapper.writeValueAsString(getLdPayloadFromV2(root, "", datasetIdPrefix));
+		ArrayNode temp;
+		ArrayNode result = objectMapper.createArrayNode();
+		if(!root.isArray()) {
+			temp = objectMapper.createArrayNode();
+			temp.add(root);
+		}else {
+			temp = (ArrayNode) root;
+		}
+		Iterator<JsonNode> it = temp.iterator();
+		while(it.hasNext()) {
+			JsonNode next = it.next();
+			result.add(getLdPayloadFromV2(next, "", datasetIdPrefix));
+		}
+		return objectMapper.writeValueAsString(result);
 	}
 
 	private JsonNode getLdPayloadFromV2(JsonNode root, String path, String datasetIdPrefix) {

@@ -25,7 +25,6 @@
 		<module>Storage</module>
 		<module>History</module>
 		<module>AllInOneRunner</module>
-		<module>V2Endpoint</module>
 	</modules>
 	<profiles>
 		
