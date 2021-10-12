@@ -46,7 +46,7 @@ public class V2Endpoint {
 	ContextResolverBasic contextResolver;
 
 	private final String URI_PREFIX = "urn:v2told:";
-	private boolean shortenProperties = false;
+	private boolean shortenProperties = true;
 	private String splitString = "%^&*(";
 
 	private ArrayList<String> dateTimes = new ArrayList<String>();
@@ -174,8 +174,11 @@ public class V2Endpoint {
 						Entry<String, JsonNode> next2 = it2.next();
 						String newKey = next2.getKey();
 						String newPath = newBasePath + splitString + newKey;
+						ObjectNode temp = objectMapper.createObjectNode();
+						temp.set(newKey, next2.getValue());
+						JsonNode newValue = getLdPayloadFromV2(temp, newPath, datasetIdPrefix); 
 						((ObjectNode) result).set(newKey,
-								getLdPayloadFromV2(next2.getValue(), newPath, datasetIdPrefix));
+								newValue.get(newKey));
 					}
 				} else {
 					((ObjectNode) result).set(tempKey, getLdPayloadFromV2(next.getValue(), path, datasetIdPrefix));
@@ -217,14 +220,14 @@ public class V2Endpoint {
 				int i = 0;
 				while (it.hasNext()) {
 					i++;
-					String datasetId = datasetIdPrefix + i;
+					String datasetId = datasetIdPrefix + key + ":" + i;
 					JsonNode next = it.next();
 					if (!next.isNull()) {
 						ObjectNode result = objectMapper.createObjectNode();
-						if (relValue.isArray()) {
-							relValue = ((ArrayNode) relValue).get(0);
+						if (next.isArray()) {
+							next = ((ArrayNode) next).get(0);
 						}
-						String id = relValue.asText();
+						String id = next.asText();
 						if (id.indexOf(':') == -1) {
 							id = URI_PREFIX + id;
 						}
