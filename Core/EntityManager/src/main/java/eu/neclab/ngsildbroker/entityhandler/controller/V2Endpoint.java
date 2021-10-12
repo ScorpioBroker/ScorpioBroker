@@ -70,7 +70,7 @@ public class V2Endpoint {
 			System.out.println("--------------------------------");
 			List<Object> contextLinks = (List) headers.get("Link");
 			String ldResolved = contextResolver.expand(ldPayload, contextLinks, true, AppConstants.ENTITIES_URL_ID);
-			BatchResult result = entityService.createMultipleMessage(headers, ldResolved);
+			BatchResult result = entityService.upsertMultipleMessage(headers, ldResolved);
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
 					.build();
 		} catch (ResponseException e) {
