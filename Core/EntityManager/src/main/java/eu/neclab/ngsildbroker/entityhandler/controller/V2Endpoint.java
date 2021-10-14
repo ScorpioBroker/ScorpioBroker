@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +36,9 @@ import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 @RequestMapping("/ngsi/v2told/entities")
 public class V2Endpoint {
 
+	private static final String SHORTEN_PROPS_PARAM = "shortenprops";
+	private static final String OBSERVED_AT_PARAM = "observedat";
+
 	@Autowired
 	ObjectMapper objectMapper;
 
@@ -47,22 +50,20 @@ public class V2Endpoint {
 	ContextResolverBasic contextResolver;
 
 	private final String URI_PREFIX = "urn:v2told:";
-	private boolean shortenProperties = true;
+	// private boolean shortenProperties = true;
 	private String splitString = "%^&*(";
 
-	private ArrayList<String> dateTimes = new ArrayList<String>();
-
-	@PostConstruct
-	private void setup() {
-		dateTimes.add("timeinstant");
-	}
+	// private ArrayList<String> dateTimes = new ArrayList<String>();
 
 	@PostMapping
 	public ResponseEntity<byte[]> createEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
+		Map<String, String[]> params = request.getParameterMap();
+		boolean shortenProps = getShortenProps(params);
+		ArrayList<String> observedAtParams = getObservedAtParams(params);
 		ArrayListMultimap<String, String> headers = getLDHeadersFromV2Headers(request);
 		try {
-			String ldPayload = getLdPayloadFromV2(payload);
+			String ldPayload = getLdPayloadFromV2(payload, shortenProps, observedAtParams);
 			System.out.println("--------------------------------");
 			System.out.println(payload);
 			System.out.println("--------------------------------");
@@ -83,6 +84,32 @@ public class V2Endpoint {
 		return null;
 	}
 
+	private ArrayList<String> getObservedAtParams(Map<String, String[]> params) {
+		ArrayList<String> result = new ArrayList<String>();
+		if (params.containsKey(OBSERVED_AT_PARAM)) {
+			for (String entry : params.get(OBSERVED_AT_PARAM)) {
+				for (String param : entry.split(",")) {
+					result.add(param);
+				}
+			}
+		}
+		return result;
+	}
+
+	private boolean getShortenProps(Map<String, String[]> params) {
+		if (params.containsKey(SHORTEN_PROPS_PARAM)) {
+			if (params.get(SHORTEN_PROPS_PARAM).length == 0) {
+				return true;
+			}
+			String param = params.get(SHORTEN_PROPS_PARAM)[0].strip().toLowerCase();
+			if (!param.equals("false") && !param.equals("0")) {
+				return true;
+			}
+
+		}
+		return false;
+	}
+
 	/**
 	 * { "type": "Store", "id": "urn:ngsi-ld:Store:002", "address": { "type":
 	 * "PostalAddress", "value": { "streetAddress": "Friedrichstraße 44",
@@ -92,26 +119,28 @@ public class V2Endpoint {
 	 * "coordinates": [13.3903, 52.5075] } }, "name": { "type": "Text", "value":
 	 * "Checkpoint Markt" } }
 	 */
-	private String getLdPayloadFromV2(String payload) throws IOException {
+	private String getLdPayloadFromV2(String payload, boolean shortenProps, ArrayList<String> observedAtParams)
+			throws IOException {
 		JsonNode root = objectMapper.readTree(payload);
 		String datasetIdPrefix = "urn:v2told:" + root.get("id").asText() + ":";
 		ArrayNode temp;
 		ArrayNode result = objectMapper.createArrayNode();
-		if(!root.isArray()) {
+		if (!root.isArray()) {
 			temp = objectMapper.createArrayNode();
 			temp.add(root);
-		}else {
+		} else {
 			temp = (ArrayNode) root;
 		}
 		Iterator<JsonNode> it = temp.iterator();
-		while(it.hasNext()) {
+		while (it.hasNext()) {
 			JsonNode next = it.next();
-			result.add(getLdPayloadFromV2(next, "", datasetIdPrefix));
+			result.add(getLdPayloadFromV2(next, "", datasetIdPrefix, shortenProps, observedAtParams));
 		}
 		return objectMapper.writeValueAsString(result);
 	}
 
-	private JsonNode getLdPayloadFromV2(JsonNode root, String path, String datasetIdPrefix) {
+	private JsonNode getLdPayloadFromV2(JsonNode root, String path, String datasetIdPrefix, boolean shortenProps,
+			ArrayList<String> observedAtParams) {
 		ObjectNode result = objectMapper.createObjectNode();
 		Iterator<Entry<String, JsonNode>> it = root.fields();
 		while (it.hasNext()) {
@@ -131,23 +160,26 @@ public class V2Endpoint {
 				result.set("type", value);
 				break;
 			case "location":
-				JsonNode geoPropValue = getGeoPropValue(key, newPath, value, datasetIdPrefix);
+				JsonNode geoPropValue = getGeoPropValue(key, newPath, value, datasetIdPrefix, shortenProps,
+						observedAtParams).getNode();
 				result.set("location", geoPropValue);
 				break;
 			default:
-				JsonNode newValue = getRelationship(key, newPath, value, datasetIdPrefix);
+				MyEntry newValue = getRelationship(key, newPath, value, datasetIdPrefix, shortenProps,
+						observedAtParams);
 				if (newValue == null) {
-					newValue = getGeoPropValue(key, newPath, value, datasetIdPrefix);
+					newValue = getGeoPropValue(key, newPath, value, datasetIdPrefix, shortenProps, observedAtParams);
 				}
 				if (newValue == null) {
-					newValue = getProperty(key, newPath, value, datasetIdPrefix);
+					newValue = getProperty(key, newPath, value, datasetIdPrefix, shortenProps, observedAtParams);
 				}
 				/*
 				 * if (newValue.isArray()) { Iterator<JsonNode> it2 = newValue.elements(); while
 				 * (it2.hasNext()) { JsonNode next2 = it2.next(); String name =
 				 * next2.fieldNames().next(); result.set(name, next2.get(name)); } } else {
 				 */
-				result.set(key, newValue);
+
+				result.set(newValue.getKey(), newValue.getNode());
 				// }
 				break;
 			}
@@ -156,20 +188,18 @@ public class V2Endpoint {
 		return result;
 	}
 
-	private JsonNode getProperty(String key, String path, JsonNode value, String datasetIdPrefix) {
+	private MyEntry getProperty(String key, String path, JsonNode value, String datasetIdPrefix, boolean shortenProps,
+			ArrayList<String> observedAtParams) {
 		JsonNode result;
-		if (dateTimes.contains(key)) {
-			result = objectMapper.createArrayNode();
-			ObjectNode temp = objectMapper.createObjectNode();
-			temp.set("observedAt", value.get("value"));
-			((ArrayNode) result).add(temp);
+		if (observedAtParams.contains(key)) {
+			return new MyEntry(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT, value.get("value"));
 		} else {
 			result = objectMapper.createObjectNode();
-			((ObjectNode) result).put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.NGSI_LD_PROPERTY_SHORT);
-			if (!shortenProperties && value.has(NGSIConstants.CSOURCE_TYPE) && value.has(NGSIConstants.VALUE)) {
+			((ObjectNode) result).put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_PROPERTY_SHORT);
+			if (!shortenProps && value.has(NGSIConstants.TYPE) && value.has(NGSIConstants.VALUE)) {
 				ObjectNode temp = objectMapper.createObjectNode();
 				temp.set(NGSIConstants.VALUE, value.get(NGSIConstants.VALUE));
-				temp.set(NGSIConstants.CSOURCE_TYPE, value.get(NGSIConstants.CSOURCE_TYPE));
+				temp.set(NGSIConstants.TYPE, value.get(NGSIConstants.TYPE));
 				((ObjectNode) result).set(NGSIConstants.VALUE, temp);
 			} else {
 				((ObjectNode) result).set(NGSIConstants.VALUE, value.get(NGSIConstants.VALUE));
@@ -178,7 +208,7 @@ public class V2Endpoint {
 			while (it.hasNext()) {
 				Entry<String, JsonNode> next = it.next();
 				String tempKey = next.getKey();
-				if (tempKey.equals(NGSIConstants.CSOURCE_TYPE) || tempKey.equals(NGSIConstants.VALUE)) {
+				if (tempKey.equals(NGSIConstants.TYPE) || tempKey.equals(NGSIConstants.VALUE)) {
 					continue;
 				}
 				if (tempKey.equals("metadata")) {
@@ -190,22 +220,25 @@ public class V2Endpoint {
 						String newPath = newBasePath + splitString + newKey;
 						ObjectNode temp = objectMapper.createObjectNode();
 						temp.set(newKey, next2.getValue());
-						JsonNode newValue = getLdPayloadFromV2(temp, newPath, datasetIdPrefix); 
-						((ObjectNode) result).set(newKey,
-								newValue.get(newKey));
+						JsonNode newValue = getLdPayloadFromV2(temp, newPath, datasetIdPrefix, shortenProps,
+								observedAtParams);
+						Entry<String, JsonNode> first = newValue.fields().next();
+						((ObjectNode) result).set(first.getKey(), first.getValue());
 					}
 				} else {
-					((ObjectNode) result).set(tempKey, getLdPayloadFromV2(next.getValue(), path, datasetIdPrefix));
+					((ObjectNode) result).set(tempKey,
+							getLdPayloadFromV2(next.getValue(), path, datasetIdPrefix, shortenProps, observedAtParams));
 				}
 			}
 		}
-		return result;
+		return new MyEntry(key, result);
 	}
 
-	private JsonNode getRelationship(String key, String path, JsonNode value, String datasetIdPrefix) {
+	private MyEntry getRelationship(String key, String path, JsonNode value, String datasetIdPrefix,
+			boolean shortenProps, ArrayList<String> observedAtParams) {
 
-		if (key.startsWith("ref") || value.has(NGSIConstants.CSOURCE_TYPE)
-				&& value.get(NGSIConstants.CSOURCE_TYPE).asText().equals("Relationship")) {
+		if (key.startsWith("ref") || value.has(NGSIConstants.TYPE)
+				&& value.get(NGSIConstants.TYPE).asText().equals("Relationship")) {
 			JsonNode relValue = value.get(NGSIConstants.VALUE);
 			if (!relValue.isArray() || ((ArrayNode) relValue).size() == 1) {
 				ObjectNode result = objectMapper.createObjectNode();
@@ -216,18 +249,19 @@ public class V2Endpoint {
 				if (id.indexOf(':') == -1) {
 					id = URI_PREFIX + id;
 				}
-				result.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.NGSI_LD_RELATIONSHIP_SHORT);
+				result.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_RELATIONSHIP_SHORT);
 				result.put(NGSIConstants.OBJECT, id);
 				Iterator<Entry<String, JsonNode>> it = value.fields();
 				while (it.hasNext()) {
 					Entry<String, JsonNode> next = it.next();
 					String tempKey = next.getKey();
-					if (tempKey.equals(NGSIConstants.CSOURCE_TYPE) || tempKey.equals(NGSIConstants.VALUE)) {
+					if (tempKey.equals(NGSIConstants.TYPE) || tempKey.equals(NGSIConstants.VALUE)) {
 						continue;
 					}
-					result.set(tempKey, getLdPayloadFromV2(next.getValue(), path, datasetIdPrefix));
+					result.set(tempKey,
+							getLdPayloadFromV2(next.getValue(), path, datasetIdPrefix, shortenProps, observedAtParams));
 				}
-				return result;
+				return new MyEntry(key, result);
 			} else {
 				ArrayNode resultArray = objectMapper.createArrayNode();
 				Iterator<JsonNode> it = ((ArrayNode) relValue).iterator();
@@ -245,23 +279,24 @@ public class V2Endpoint {
 						if (id.indexOf(':') == -1) {
 							id = URI_PREFIX + id;
 						}
-						result.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.NGSI_LD_RELATIONSHIP_SHORT);
+						result.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_RELATIONSHIP_SHORT);
 						result.put(NGSIConstants.OBJECT, id);
 						result.put(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID, datasetId);
 						Iterator<Entry<String, JsonNode>> it2 = value.fields();
 						while (it2.hasNext()) {
 							Entry<String, JsonNode> next2 = it2.next();
 							String tempKey = next2.getKey();
-							if (tempKey.equals(NGSIConstants.CSOURCE_TYPE) || tempKey.equals(NGSIConstants.VALUE)) {
+							if (tempKey.equals(NGSIConstants.TYPE) || tempKey.equals(NGSIConstants.VALUE)) {
 								continue;
 							}
-							result.set(tempKey, getLdPayloadFromV2(next2.getValue(), path, datasetIdPrefix));
+							result.set(tempKey, getLdPayloadFromV2(next2.getValue(), path, datasetIdPrefix,
+									shortenProps, observedAtParams));
 						}
 						resultArray.add(result);
 					}
 
 				}
-				return resultArray;
+				return new MyEntry(key, resultArray);
 			}
 		}
 		return null;
@@ -269,13 +304,14 @@ public class V2Endpoint {
 
 //	"location": { "type": "geo:json", "value": { "type": "Point",
 //		 * "coordinates": [13.3903, 52.5075] }
-	private JsonNode getGeoPropValue(String key, String path, JsonNode value, String datasetIdPrefix) {
+	private MyEntry getGeoPropValue(String key, String path, JsonNode value, String datasetIdPrefix,
+			boolean shortenProps, ArrayList<String> observedAtParams) {
 		if (value.has(NGSIConstants.VALUE) && value.get(NGSIConstants.VALUE).has(NGSIConstants.GEO_JSON_COORDINATES)
-				&& value.get(NGSIConstants.VALUE).has(NGSIConstants.CSOURCE_TYPE)
-				|| value.has(NGSIConstants.GEO_JSON_COORDINATES) && value.has(NGSIConstants.CSOURCE_TYPE)) {
+				&& value.get(NGSIConstants.VALUE).has(NGSIConstants.TYPE)
+				|| value.has(NGSIConstants.GEO_JSON_COORDINATES) && value.has(NGSIConstants.TYPE)) {
 			ObjectNode result = objectMapper.createObjectNode();
-			result.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
-			if (value.has(NGSIConstants.GEO_JSON_COORDINATES) && value.has(NGSIConstants.CSOURCE_TYPE)) {
+			result.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
+			if (value.has(NGSIConstants.GEO_JSON_COORDINATES) && value.has(NGSIConstants.TYPE)) {
 				result.set(NGSIConstants.VALUE, value);
 			} else {
 				result.set(NGSIConstants.VALUE, value.get(NGSIConstants.VALUE));
@@ -284,12 +320,13 @@ public class V2Endpoint {
 			while (it.hasNext()) {
 				Entry<String, JsonNode> next = it.next();
 				String tempKey = next.getKey();
-				if (tempKey.equals(NGSIConstants.CSOURCE_TYPE) || tempKey.equals(NGSIConstants.VALUE)) {
+				if (tempKey.equals(NGSIConstants.TYPE) || tempKey.equals(NGSIConstants.VALUE)) {
 					continue;
 				}
-				result.set(tempKey, getLdPayloadFromV2(next.getValue(), path, datasetIdPrefix));
+				result.set(tempKey,
+						getLdPayloadFromV2(next.getValue(), path, datasetIdPrefix, shortenProps, observedAtParams));
 			}
-			return result;
+			return new MyEntry(key, result);
 		}
 		return null;
 	}
@@ -301,5 +338,26 @@ public class V2Endpoint {
 			result.putAll(NGSIConstants.TENANT_HEADER, tenant);
 		}
 		return result;
+	}
+
+	private class MyEntry {
+
+		String key;
+		JsonNode node;
+
+		public MyEntry(String key, JsonNode node) {
+			super();
+			this.key = key;
+			this.node = node;
+		}
+
+		public String getKey() {
+			return key;
+		}
+
+		public JsonNode getNode() {
+			return node;
+		}
+
 	}
 }
