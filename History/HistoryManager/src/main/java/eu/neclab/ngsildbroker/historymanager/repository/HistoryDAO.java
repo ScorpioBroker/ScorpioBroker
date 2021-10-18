@@ -178,7 +178,9 @@ public class HistoryDAO extends StorageReaderDAO {
 		
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();
-        sqlQuery += "LIMIT " + limit + " ";
+		if (limit > 0) {
+			sqlQuery += "LIMIT " + limit + " ";
+		}
 		if (offSet > 0) {
 			sqlQuery += "OFFSET " + offSet + " ";
 		}
