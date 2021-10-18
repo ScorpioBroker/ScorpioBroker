@@ -168,14 +168,20 @@ public class HistoryDAO extends StorageReaderDAO {
 		sqlQuery += sqlWhereGeoquery;
 		sqlQuery += "  group by id, type, createdat, modifiedat ";
 		sqlQuery += "  order by modifiedat desc ";
-		sqlQuery += ") as m";
+		sqlQuery += ") as m"+ " ";
 
 		// advanced query "q"
 		// THIS DOESN'T WORK
 		if (qp.getQ() != null) {
-			sqlQuery += " where " + qp.getQ();
+			sqlQuery += " where " + qp.getQ()+ " ";
 		}
-
+		
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+        sqlQuery += "LIMIT " + limit + " ";
+		if (offSet > 0) {
+			sqlQuery += "OFFSET " + offSet + " ";
+		}
 		return sqlQuery;
 	}
 

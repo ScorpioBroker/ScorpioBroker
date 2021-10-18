@@ -1,8 +1,10 @@
 package eu.neclab.ngsildbroker.historymanager.controller;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map.Entry;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
@@ -20,11 +22,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryHistoryEntitiesRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -53,6 +57,10 @@ public class HistoryController {
 	ContextResolverBasic contextResolver;
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
+	@Value("${defaultLimit}")
+	int defaultLimit = 50;
+	@Value("${maxLimit}")
+	int maxLimit = 1000;
 
 	private HttpUtils httpUtils;
 
@@ -84,15 +92,22 @@ public class HistoryController {
 	}
 
 	@GetMapping
-	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request) {
-		String params = request.getQueryString();
+	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request,
+			@RequestParam(value = "limit", required = false) Integer limit,
+			@RequestParam(value = "offset", required = false) Integer offset,
+			@RequestParam(value = "qtoken", required = false) String qToken,
+			@RequestParam(name = "options", required = false) List<String> options) {
+		
 		try {
 			logger.trace("retrieveTemporalEntity :: started");
-			if (params != null && !Validator.validate(params))
-				throw new ResponseException(ErrorType.BadRequestData);
-
 			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
+			if (limit == null) {
+				limit = defaultLimit;
+			}
+			if (offset == null) {
+				offset = 0;
+			}
 			if (qp == null) // invalid query
 				throw new ResponseException(ErrorType.InvalidRequest);
 			if (qp.getTimerel() == null || qp.getTime() == null) {
@@ -103,7 +118,23 @@ public class HistoryController {
 			}
 
 			logger.trace("retrieveTemporalEntity :: completed");
+			qp.setLimit(limit);
+			qp.setOffSet(offset);
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
+			QueryResult qResult =  historyDAO.query(req.getQp());
+			String nextLink = generateNextLink(request, qResult);
+			String prevLink = generatePrevLink(request, qResult);
+			ArrayList<String> additionalLinks = new ArrayList<String>();
+			if (nextLink != null) {
+				additionalLinks.add(nextLink);
+			}
+			if (prevLink != null) {
+				additionalLinks.add(prevLink);
+			}
+			HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
+			if (!additionalLinks.isEmpty()) {
+				additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
+			}
 			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(req.getQp()).getActualDataString()));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
@@ -251,6 +282,57 @@ public class HistoryController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
+	}
+	
+	private static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
+		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
+			return null;
+		}
+		return generateFollowUpLinkHeader(request, qResult.getOffset() + qResult.getLimit(), qResult.getLimit(),
+				qResult.getqToken(), "next");
+	}
+
+	private static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
+			String rel) {
+
+		StringBuilder builder = new StringBuilder("</");
+		builder.append("?");
+
+		for (Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
+			String[] values = entry.getValue();
+			String key = entry.getKey();
+			if (key.equals("offset")) {
+				continue;
+			}
+			if (key.equals("qtoken")) {
+				continue;
+			}
+			if (key.equals("limit")) {
+				continue;
+			}
+
+			for (String value : values) {
+				builder.append(key + "=" + value + "&");
+			}
+
+		}
+		builder.append("offset=" + offset + "&");
+		builder.append("limit=" + limit + "&");
+		builder.append("qtoken=" + token + ">;rel=\"" + rel + "\"");
+		return builder.toString();
+	}
+
+	private static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
+		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
+			return null;
+		}
+		int offset = qResult.getOffset() - qResult.getLimit();
+		if (offset < 0) {
+			offset = 0;
+		}
+		int limit = qResult.getLimit();
+
+		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
 	}
 
 }
