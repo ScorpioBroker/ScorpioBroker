@@ -30,6 +30,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
@@ -87,7 +88,7 @@ public class EntityOperationQueryController {
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count)
-			throws ResponseException {
+			 {
 		try {
 			HttpUtils.doPreflightCheck(request, payload);
 			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
@@ -151,22 +152,29 @@ public class EntityOperationQueryController {
 					params.setQ(queryParser.parseQuery((String) getValue(entry.getValue()), linkHeaders).toSql(false));
 					break;
 				case NGSIConstants.JSON_LD_TYPE:
-					if (!entry.getValue().toString().equals(NGSIConstants.QUERY_TYPE)) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								"Type has to be Query for this operation");
+					if (entry.getValue() instanceof List) {
+						if (((List) entry.getValue()).get(0).toString()
+								.equals(NGSIConstants.NGSI_LD_DEFAULT_PREFIX + NGSIConstants.QUERY_TYPE)) {
+							break;
+						}
 					}
-					break;
-
+					throw new ResponseException(ErrorType.BadRequestData, "Type has to be Query for this operation");
 				default:
 					throw new ResponseException(ErrorType.BadRequestData, entry.getKey() + " is an unknown entry");
 				}
 			}
+			params.setKeyValues(
+					(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)));
+			params.setIncludeSysAttrs(
+					(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)));
 			return QueryController.generateReply(httpUtils, request, queryService.getData(params, payload, linkHeaders,
 					limit, offset, qToken, false, count, HttpUtils.getHeaders(request), true, null), true, count);
 
 		} catch (IOException e) {
 			logger.error("Failed to parse request data", e);
-			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse request data\n" + e.getMessage());
+			return ResponseEntity.status(ErrorType.BadRequestData.getCode()).body(new RestResponse(ErrorType.BadRequestData, e.getMessage()).toJsonBytes());
+		} catch (ResponseException e) {
+			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		}
 	}
 

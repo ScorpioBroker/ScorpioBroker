@@ -417,7 +417,7 @@ public class QueryTerm {
 	}
 
 	public void setAttribute(String attribute) {
-		this.attribute = attribute;
+		this.attribute = attribute.strip();
 	}
 
 	public String getOperator() {
@@ -433,8 +433,11 @@ public class QueryTerm {
 	}
 
 	public void setOperant(String operant) {
+		operant = operant.strip();
 		if (operant.matches(URI) && !operant.matches(TIME)) { // uri and time patterns are ambiguous in the abnf grammar
 			this.operant = "\"" + operant + "\"";
+		} else if(operant.startsWith("'") && operant.endsWith("'")) {
+			this.operant = "\"" + operant.substring(1,operant.length() - 1) + "\"";
 		} else {
 			this.operant = operant;
 		}
