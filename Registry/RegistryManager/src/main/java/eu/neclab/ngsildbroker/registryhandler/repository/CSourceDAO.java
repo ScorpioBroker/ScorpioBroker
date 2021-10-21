@@ -108,7 +108,7 @@ public class CSourceDAO extends StorageReaderDAO {
 					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
 
 				}
-				fullSqlWhere.append("(" + sqlWhere + ") AND ");
+				fullSqlWhere.append(sqlWhere + ") AND ");
 				csourceInformationIsNeeded = true;
 				sqlOk = true;
 
@@ -159,6 +159,10 @@ public class CSourceDAO extends StorageReaderDAO {
 	
 			if (fullSqlWhere.length() > 0) {
 				sqlQuery += "WHERE " + fullSqlWhere.toString() + " 1=1 ";
+			}
+			int limit = qp.getLimit();
+			if (limit > 0) {
+				sqlQuery += "LIMIT " + limit + " ";
 			}
 			// order by ?
 			return sqlQuery;

@@ -97,7 +97,8 @@ public class RegistryController {
 
 	@GetMapping
 	public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
-			@RequestParam HashMap<String, String> queryMap) {
+			@RequestParam HashMap<String, String> queryMap,
+			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
 			logger.trace("getCSources() ::");
 			String queryParams = request.getQueryString();
@@ -110,6 +111,7 @@ public class RegistryController {
 				if (qp == null) // invalid query
 					throw new ResponseException(ErrorType.InvalidRequest);
 				qp.setTenant(tenantid);
+				qp.setLimit(limit);
 				QueryResult queryResult = csourceDAO.query(qp);
 				List<String> csourceList = queryResult.getActualDataString();
 				if (csourceList.size() > 0) {

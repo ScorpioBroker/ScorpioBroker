@@ -444,10 +444,17 @@ public class CSourceService {
 		}
 
 		synchronized (this.csourceIds) {
-			if (!this.csourceIds.containsKey(tenantId)) {
-				throw new ResponseException(ErrorType.TenantNotFound);
-			} if (!this.csourceIds.containsValue(registrationid)) {
-				throw new ResponseException(ErrorType.NotFound);
+			if (tenantId != null) {
+				if (!this.csourceIds.containsKey(tenantId)) {
+					throw new ResponseException(ErrorType.TenantNotFound);
+				}
+				if (!this.csourceIds.containsValue(registrationid)) {
+					throw new ResponseException(ErrorType.NotFound);
+				}
+			} else {
+				if (!this.csourceIds.containsValue(registrationid)) {
+					throw new ResponseException(ErrorType.NotFound);
+				}
 			}
 		}
 		String entityBody = null;
