@@ -141,14 +141,6 @@ public class HistoryService {
 		logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
 
 		String resolvedAttrId = null;
-		/*QueryParams qp = new QueryParams();
-		qp.setId(entityId);
-		qp.setAttrs(resolvedAttrId);
-		qp.setInstanceId(instanceId);
-		QueryResult queryResult = historyDAO.query(qp);
-		if (queryResult.getActualDataString().size() == 0) {
-			throw new ResponseException(ErrorType.NotFound);
-		}*/
 		if (attributeId != null) {
 			resolvedAttrId = paramsResolver.expandAttribute(attributeId, linkHeaders);
 		}

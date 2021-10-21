@@ -186,6 +186,15 @@ public class HistoryController {
 			logger.trace("deleteTemporalEntityById :: started");
 			logger.debug("entityId : " + entityId);
 			ValidateURI.validateUri(entityId);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
+					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
+			qp.getEntities().get(0).put(NGSIConstants.JSON_LD_ID, entityId);
+			logger.trace("retrieveTemporalEntityById :: completed");
+			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
+			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
+			if(queryResult.isEmpty()) {
+				throw new ResponseException(ErrorType.NotFound);
+			}
 			historyService.delete(HttpUtils.getHeaders(request), entityId, null, null,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteTemporalEntityById :: completed");
