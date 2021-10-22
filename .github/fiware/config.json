@@ -1,7 +1,7 @@
 {
     "enabler": "Scorpio NGSI-LD Broker",
     "chapter": "core",
-    "academy": "",
+    "academy": "core/scorpio",
     "readthedocs": "scorpio",
     "helpdesk": "",
     "coveralls": "",
