@@ -565,10 +565,10 @@ public class SubscriptionService implements SubscriptionManager {
 
 								break;
 							case APPEND:
-								data = generateDataFromBaseOp(entity, subscription, null);
+								data = generateDataFromBaseOp(entity, subscription);
 								break;
 							case UPDATE:
-								data = generateDataFromBaseOp(entity, subscription, updattrname);
+								data = generateDataFromBaseOp(entity, subscription);
 								break;
 							case DELETE:
 
@@ -649,7 +649,7 @@ public class SubscriptionService implements SubscriptionManager {
 
 	private List<BaseProperty> extractBaseProps(Entity entity, SubscriptionRequest subscription) {
 		ArrayList<BaseProperty> result = new ArrayList<BaseProperty>();
-		if (!shouldFire(entity, subscription, null)) {
+		if (!shouldFire(entity, subscription)) {
 			return result;
 		}
 		ArrayList<String> attribNames = getAttribNames(subscription);
@@ -665,34 +665,34 @@ public class SubscriptionService implements SubscriptionManager {
 		return result;
 	}
 
-	private boolean shouldFire(Entity entity, SubscriptionRequest subscription, String updattrname) {
+     private boolean shouldFire(Entity entity, SubscriptionRequest subscription) {
+		
 		if (subscription.getSubscription().getAttributeNames() == null
 				|| subscription.getSubscription().getAttributeNames().isEmpty()) {
 			return true;
 		}
-		if (updattrname == null) {
-			for (String attribName : subscription.getSubscription().getAttributeNames()) {
-				for (BaseProperty baseProp : entity.getAllBaseProperties()) {
-					if (attribName.equals(baseProp.getIdString())) {
-						return true;
-					}
-				}
+		
+		if(entity.getAttrname() != null) {
+			if(subscription.getSubscription().getAttributeNames().contains(entity.getAttrname())) {
+			    return true;
+			} else {
+				return false;
 			}
-		} else {
-			for (String attribName : subscription.getSubscription().getAttributeNames()) {
-				if (attribName.contains(updattrname)) {
+		}
+		for (String attribName : subscription.getSubscription().getAttributeNames()) {
+			for (BaseProperty baseProp : entity.getAllBaseProperties()) {
+				if (attribName.equals(baseProp.getIdString())) {
 					return true;
 				}
-
-			}
+			}		
 		}
 		return false;
 	}
 
-	private Entity generateDataFromBaseOp(Entity deltaInfo, SubscriptionRequest subscription, String updattrname)
+	private Entity generateDataFromBaseOp(Entity deltaInfo, SubscriptionRequest subscription)
 			throws ResponseException {
 		String entityBody = null;
-		if (!shouldFire(deltaInfo, subscription, updattrname)) {
+		if (!shouldFire(deltaInfo, subscription)) {
 			return null;
 		}
 
@@ -867,30 +867,25 @@ public class SubscriptionService implements SubscriptionManager {
 			e.printStackTrace();
 		}
 		update.setType(type);
-
+		update.setAttrname(updateRequest.getUpdAttrName());
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 
 		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(updateRequest.getTenant(), type);
 		if (subs != null) {
 			for (SubscriptionRequest sub : subs) {
-				if (sub.getSubscription().getAttributeNames().contains(updateRequest.getUpdAttrName())
-						|| updateRequest.getUpdAttrName() == null) {
-					for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
-						if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
-							subsToCheck.add(sub);
-							break;
-						}
-						if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
-							subsToCheck.add(sub);
-							break;
-						}
-						if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
-							subsToCheck.add(sub);
-							break;
-						}
+				for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
+					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
+						subsToCheck.add(sub);
+						break;
 					}
-				} else {
-					break;
+					if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
+						subsToCheck.add(sub);
+						break;
+					}
+					if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
+						subsToCheck.add(sub);
+						break;
+					}
 				}
 			}
 		}
