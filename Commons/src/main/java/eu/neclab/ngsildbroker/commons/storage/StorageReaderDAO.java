@@ -286,89 +286,7 @@ abstract public class StorageReaderDAO {
 	 * TODO: optimize sql queries by using prepared statements (if possible)
 	 */
 	protected String translateNgsildQueryToSql(QueryParams qp) throws ResponseException {
-		StringBuilder fullSqlWhereProperty = new StringBuilder(70);
-		String dbColumn, sqlOperator;
-		String sqlWhereProperty = null;
-		List<Map<String, String>> entities = qp.getEntities();
-		fullSqlWhereProperty.append("(");
-		for (Map<String, String> entityInfo : entities) {
-			fullSqlWhereProperty.append("(");
-			for (Entry<String, String> entry : entityInfo.entrySet()) {
-				switch (entry.getKey()) {
-				case NGSIConstants.JSON_LD_ID:
-					dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
-					if (entry.getValue().indexOf(",") == -1) {
-						sqlOperator = "=";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-					} else {
-						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
-								+ "')";
-					}
-					break;
-				case NGSIConstants.JSON_LD_TYPE:
-					dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
-					if (entry.getValue().indexOf(",") == -1) {
-						sqlOperator = "=";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-					} else {
-						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
-								+ "')";
-					}
-
-					break;
-				case NGSIConstants.NGSI_LD_ID_PATTERN:
-					dbColumn = DBConstants.DBCOLUMN_ID;
-					sqlOperator = "~";
-					sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-					break;
-
-				default:
-					break;
-				}
-				fullSqlWhereProperty.append(sqlWhereProperty);
-				fullSqlWhereProperty.append(" AND ");
-			}
-			fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 5, fullSqlWhereProperty.length());
-			fullSqlWhereProperty.append(") OR ");
-		}
-		fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 4, fullSqlWhereProperty.length());
-		fullSqlWhereProperty.append(")");
-		if (qp.getAttrs() != null) {
-			String queryValue;
-			queryValue = qp.getAttrs();
-			dbColumn = "data";
-			sqlOperator = "?";
-			if (queryValue.indexOf(",") == -1) {
-				sqlWhereProperty = dbColumn + " " + sqlOperator + "'" + queryValue + "'";
-			} else {
-				sqlWhereProperty = "(" + dbColumn + " " + sqlOperator + " '"
-						+ queryValue.replace(",", "' OR " + dbColumn + " " + sqlOperator + "'") + "')";
-			}
-			fullSqlWhereProperty.append(" AND ");
-			fullSqlWhereProperty.append(sqlWhereProperty);
-
-		}
-		if (qp.getGeorel() != null) {
-			GeoqueryRel gqr = qp.getGeorel();
-			logger.trace("Georel value " + gqr.getGeorelOp());
-			try {
-				sqlWhereProperty = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
-						qp.getGeoproperty());
-			} catch (ResponseException e) {
-				e.printStackTrace();
-			}
-			fullSqlWhereProperty.append(" AND ");
-			fullSqlWhereProperty.append(sqlWhereProperty);
-
-		}
-		if (qp.getQ() != null) {
-			sqlWhereProperty = qp.getQ();
-			fullSqlWhereProperty.append(" AND ");
-			fullSqlWhereProperty.append(sqlWhereProperty);
-		}
-
+		StringBuilder fullSqlWhereProperty = commonTranslateSql(qp);
 		String tableDataColumn;
 		if (qp.getKeyValues()) {
 			if (qp.getIncludeSysAttrs()) {
@@ -497,13 +415,33 @@ abstract public class StorageReaderDAO {
 	 * TODO: query for count the no of result
 	 */
 	protected String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+		StringBuilder fullSqlWhereProperty = commonTranslateSql(qp);
+		String sqlQuery = "SELECT Count(*) FROM " + DBConstants.DBTABLE_ENTITY + " ";
+		if (fullSqlWhereProperty.length() > 0) {
+			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
+		}
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+
+		if (limit > 0) {
+			sqlQuery += "LIMIT " + limit + " ";
+		}
+		if (offSet > 0) {
+			sqlQuery += "OFFSET " + offSet + " ";
+		}
+		// order by ?
+		return sqlQuery;
+	}
+	private StringBuilder commonTranslateSql(QueryParams qp) {
 		StringBuilder fullSqlWhereProperty = new StringBuilder(70);
 		String dbColumn, sqlOperator;
 		String sqlWhereProperty = null;
 		List<Map<String, String>> entities = qp.getEntities();
+		boolean entitiesAdded = false;
 		fullSqlWhereProperty.append("(");
 		for (Map<String, String> entityInfo : entities) {
 			fullSqlWhereProperty.append("(");
+			entitiesAdded = true;
 			for (Entry<String, String> entry : entityInfo.entrySet()) {
 				switch (entry.getKey()) {
 				case NGSIConstants.JSON_LD_ID:
@@ -544,8 +482,12 @@ abstract public class StorageReaderDAO {
 			fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 5, fullSqlWhereProperty.length());
 			fullSqlWhereProperty.append(") OR ");
 		}
-		fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 4, fullSqlWhereProperty.length());
-		fullSqlWhereProperty.append(")");
+		if (entitiesAdded) {
+			fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 4, fullSqlWhereProperty.length());
+			fullSqlWhereProperty.append(")");
+		} else {
+			fullSqlWhereProperty.delete(0, 1);
+		}
 		if (qp.getAttrs() != null) {
 			String queryValue;
 			queryValue = qp.getAttrs();
@@ -557,7 +499,9 @@ abstract public class StorageReaderDAO {
 				sqlWhereProperty = "(" + dbColumn + " " + sqlOperator + " '"
 						+ queryValue.replace(",", "' OR " + dbColumn + " " + sqlOperator + "'") + "')";
 			}
-			fullSqlWhereProperty.append(" AND ");
+			if (entitiesAdded) {
+				fullSqlWhereProperty.append(" AND ");
+			}
 			fullSqlWhereProperty.append(sqlWhereProperty);
 
 		}
@@ -579,22 +523,7 @@ abstract public class StorageReaderDAO {
 			fullSqlWhereProperty.append(" AND ");
 			fullSqlWhereProperty.append(sqlWhereProperty);
 		}
-
-		String sqlQuery = "SELECT Count(*) FROM " + DBConstants.DBTABLE_ENTITY + " ";
-		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
-		}
-		int limit = qp.getLimit();
-		int offSet = qp.getOffSet();
-
-		if (limit > 0) {
-			sqlQuery += "LIMIT " + limit + " ";
-		}
-		if (offSet > 0) {
-			sqlQuery += "OFFSET " + offSet + " ";
-		}
-		// order by ?
-		return sqlQuery;
+		return fullSqlWhereProperty;
 	}
 
 }
