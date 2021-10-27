@@ -536,7 +536,7 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 		addAllTypeSubscriptions(createRequest.getHeaders(), subsToCheck);
 
-		checkSubscriptions(subsToCheck, create, CREATE, messageTime, null);
+		checkSubscriptions(subsToCheck, create, CREATE, messageTime);
 
 	}
 
@@ -551,7 +551,7 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private void checkSubscriptions(ArrayList<SubscriptionRequest> subsToCheck, Entity entity, int methodType,
-			long messageTime, String updattrname) {
+			long messageTime) {
 
 		for (SubscriptionRequest subscription : subsToCheck) {
 			if (messageTime >= sub2CreationTime.get(subscription)) {
@@ -890,7 +890,7 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 		}
 		addAllTypeSubscriptions(updateRequest.getHeaders(), subsToCheck);
-		checkSubscriptions(subsToCheck, update, UPDATE, messageTime, updateRequest.getUpdAttrName());
+		checkSubscriptions(subsToCheck, update, UPDATE, messageTime);
 
 	}
 
@@ -939,7 +939,7 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 		}
 		addAllTypeSubscriptions(appendRequest.getHeaders(), subsToCheck);
-		checkSubscriptions(subsToCheck, append, APPEND, messageTime, null);
+		checkSubscriptions(subsToCheck, append, APPEND, messageTime);
 
 	}
 
@@ -1052,7 +1052,7 @@ public class SubscriptionService implements SubscriptionManager {
 		 * subsToCheck.addAll(this.idBasedSubscriptions.get(key));
 		 * subsToCheck.addAll(this.typeBasedSubscriptions.get(delete.getType()));
 		 */
-		checkSubscriptions(subsToCheck, delete, DELETE, messageTime, null);
+		checkSubscriptions(subsToCheck, delete, DELETE, messageTime);
 
 	}
 
