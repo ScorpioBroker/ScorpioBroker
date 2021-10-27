@@ -5,6 +5,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -13,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -98,7 +100,9 @@ public class RegistryController {
 	@GetMapping
 	public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
 			@RequestParam HashMap<String, String> queryMap,
-			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
+			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
+			@RequestParam(value = "offset", required = false) Integer offset,
+			@RequestParam(value = "qtoken", required = false) String qToken) {
 		try {
 			logger.trace("getCSources() ::");
 			String queryParams = request.getQueryString();
@@ -108,11 +112,28 @@ public class RegistryController {
 
 				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
+				if (offset == null) {
+					offset = 0;
+				}
 				if (qp == null) // invalid query
 					throw new ResponseException(ErrorType.InvalidRequest);
 				qp.setTenant(tenantid);
 				qp.setLimit(limit);
+				qp.setOffSet(offset);
 				QueryResult queryResult = csourceDAO.query(qp);
+				String nextLink = generateNextLink(request, queryResult);
+				String prevLink = generatePrevLink(request, queryResult);
+				ArrayList<String> additionalLinks = new ArrayList<String>();
+				if (nextLink != null) {
+					additionalLinks.add(nextLink);
+				}
+				if (prevLink != null) {
+					additionalLinks.add(prevLink);
+				}
+				HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
+				if (!additionalLinks.isEmpty()) {
+					additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
+				}
 				List<String> csourceList = queryResult.getActualDataString();
 				if (csourceList.size() > 0) {
 					return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
@@ -239,6 +260,57 @@ public class RegistryController {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		logger.trace("validation :: completed");
+	}
+	
+	private static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
+		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
+			return null;
+		}
+		return generateFollowUpLinkHeader(request, qResult.getOffset() + qResult.getLimit(), qResult.getLimit(),
+				qResult.getqToken(), "next");
+	}
+
+	private static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
+			String rel) {
+
+		StringBuilder builder = new StringBuilder("</");
+		builder.append("?");
+
+		for (Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
+			String[] values = entry.getValue();
+			String key = entry.getKey();
+			if (key.equals("offset")) {
+				continue;
+			}
+			if (key.equals("qtoken")) {
+				continue;
+			}
+			if (key.equals("limit")) {
+				continue;
+			}
+
+			for (String value : values) {
+				builder.append(key + "=" + value + "&");
+			}
+
+		}
+		builder.append("offset=" + offset + "&");
+		builder.append("limit=" + limit + "&");
+		builder.append("qtoken=" + token + ">;rel=\"" + rel + "\"");
+		return builder.toString();
+	}
+
+	private static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
+		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
+			return null;
+		}
+		int offset = qResult.getOffset() - qResult.getLimit();
+		if (offset < 0) {
+			offset = 0;
+		}
+		int limit = qResult.getLimit();
+
+		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
 	}
 
 }
