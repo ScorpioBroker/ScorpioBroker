@@ -432,6 +432,7 @@ abstract public class StorageReaderDAO {
 		// order by ?
 		return sqlQuery;
 	}
+
 	private StringBuilder commonTranslateSql(QueryParams qp) {
 		StringBuilder fullSqlWhereProperty = new StringBuilder(70);
 		String dbColumn, sqlOperator;
@@ -439,48 +440,50 @@ abstract public class StorageReaderDAO {
 		List<Map<String, String>> entities = qp.getEntities();
 		boolean entitiesAdded = false;
 		fullSqlWhereProperty.append("(");
-		for (Map<String, String> entityInfo : entities) {
-			fullSqlWhereProperty.append("(");
-			entitiesAdded = true;
-			for (Entry<String, String> entry : entityInfo.entrySet()) {
-				switch (entry.getKey()) {
-				case NGSIConstants.JSON_LD_ID:
-					dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
-					if (entry.getValue().indexOf(",") == -1) {
-						sqlOperator = "=";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-					} else {
-						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
-								+ "')";
-					}
-					break;
-				case NGSIConstants.JSON_LD_TYPE:
-					dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
-					if (entry.getValue().indexOf(",") == -1) {
-						sqlOperator = "=";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-					} else {
-						sqlOperator = "IN";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " ('" + entry.getValue().replace(",", "','")
-								+ "')";
-					}
+		if (entities != null) {
+			for (Map<String, String> entityInfo : entities) {
+				fullSqlWhereProperty.append("(");
+				entitiesAdded = true;
+				for (Entry<String, String> entry : entityInfo.entrySet()) {
+					switch (entry.getKey()) {
+					case NGSIConstants.JSON_LD_ID:
+						dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
+						if (entry.getValue().indexOf(",") == -1) {
+							sqlOperator = "=";
+							sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+						} else {
+							sqlOperator = "IN";
+							sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
+									+ entry.getValue().replace(",", "','") + "')";
+						}
+						break;
+					case NGSIConstants.JSON_LD_TYPE:
+						dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
+						if (entry.getValue().indexOf(",") == -1) {
+							sqlOperator = "=";
+							sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+						} else {
+							sqlOperator = "IN";
+							sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
+									+ entry.getValue().replace(",", "','") + "')";
+						}
 
-					break;
-				case NGSIConstants.NGSI_LD_ID_PATTERN:
-					dbColumn = DBConstants.DBCOLUMN_ID;
-					sqlOperator = "~";
-					sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-					break;
+						break;
+					case NGSIConstants.NGSI_LD_ID_PATTERN:
+						dbColumn = DBConstants.DBCOLUMN_ID;
+						sqlOperator = "~";
+						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+						break;
 
-				default:
-					break;
+					default:
+						break;
+					}
+					fullSqlWhereProperty.append(sqlWhereProperty);
+					fullSqlWhereProperty.append(" AND ");
 				}
-				fullSqlWhereProperty.append(sqlWhereProperty);
-				fullSqlWhereProperty.append(" AND ");
+				fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 5, fullSqlWhereProperty.length());
+				fullSqlWhereProperty.append(") OR ");
 			}
-			fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 5, fullSqlWhereProperty.length());
-			fullSqlWhereProperty.append(") OR ");
 		}
 		if (entitiesAdded) {
 			fullSqlWhereProperty.delete(fullSqlWhereProperty.length() - 4, fullSqlWhereProperty.length());
