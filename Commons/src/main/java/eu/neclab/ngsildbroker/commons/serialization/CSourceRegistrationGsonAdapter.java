@@ -71,16 +71,22 @@ public class CSourceRegistrationGsonAdapter
 					tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(property));
 					attribs.add(tempObj);
 				}
+				
+				if(!attribs.isJsonNull() &&  attribs.size() > 0) {
 				infoObject.add(NGSIConstants.NGSI_LD_PROPERTIES, attribs);
-
+				}
+				
 				attribs = new JsonArray();
 				for (String relation : relationsships) {
 					JsonObject tempObj = new JsonObject();
 					tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(relation));
 					attribs.add(tempObj);
 				}
+				
+				if(!attribs.isJsonNull() &&  attribs.size() > 0) {
 				infoObject.add(NGSIConstants.NGSI_LD_RELATIONSHIPS, attribs);
-
+				}
+				
 				attribs = new JsonArray();
 				JsonArray tempArray = new JsonArray();
 				if (entities != null) {
