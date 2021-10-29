@@ -5,14 +5,13 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,12 +23,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.discovery.EurekaClient;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
@@ -98,7 +95,10 @@ public class RegistryController {
 
 	@GetMapping
 	public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
-			@RequestParam HashMap<String, String> queryMap) {
+			@RequestParam HashMap<String, String> queryMap,
+			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
+			@RequestParam(value = "offset", required = false) Integer offset,
+			@RequestParam(value = "qtoken", required = false) String qToken) {
 		try {
 			logger.trace("getCSources() ::");
 			Validator.validateCsourceGetParameter(request.getParameterMap());
@@ -109,10 +109,28 @@ public class RegistryController {
 
 				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
+				if (offset == null) {
+					offset = 0;
+				}
 				if (qp == null) // invalid query
 					throw new ResponseException(ErrorType.InvalidRequest);
 				qp.setTenant(tenantid);
+				qp.setLimit(limit);
+				qp.setOffSet(offset);
 				QueryResult queryResult = csourceDAO.query(qp);
+				String nextLink = HttpUtils.generateNextLink(request, queryResult);
+				String prevLink = HttpUtils.generatePrevLink(request, queryResult);
+				ArrayList<String> additionalLinks = new ArrayList<String>();
+				if (nextLink != null) {
+					additionalLinks.add(nextLink);
+				}
+				if (prevLink != null) {
+					additionalLinks.add(prevLink);
+				}
+				HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
+				if (!additionalLinks.isEmpty()) {
+					additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
+				}
 				List<String> csourceList = queryResult.getActualDataString();
 				if (csourceList.size() > 0) {
 					return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
@@ -244,5 +262,4 @@ public class RegistryController {
 		}
 		logger.trace("validation :: completed");
 	}
-
 }

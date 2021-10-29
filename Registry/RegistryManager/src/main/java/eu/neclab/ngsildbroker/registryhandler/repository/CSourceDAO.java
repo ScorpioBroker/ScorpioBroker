@@ -160,6 +160,14 @@ public class CSourceDAO extends StorageReaderDAO {
 			if (fullSqlWhere.length() > 0) {
 				sqlQuery += "WHERE " + fullSqlWhere.toString() + " 1=1 ";
 			}
+			int limit = qp.getLimit();
+			int offSet = qp.getOffSet();
+			if (limit > 0) {
+				sqlQuery += "LIMIT " + limit + " ";
+			}
+			if (offSet > 0) {
+				sqlQuery += "OFFSET " + offSet + " ";
+			}
 			// order by ?
 			return sqlQuery;
 		} else {
