@@ -329,6 +329,7 @@ public class QueryService {
 		List<String> aggregatedResult = new ArrayList<String>();
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
 		qp.setLimit(limit);
+		qp.setCheck("string");
 		qp.setOffSet(offset);
 		qp.setCountResult(countResult);
 		int dataLeft = 0;

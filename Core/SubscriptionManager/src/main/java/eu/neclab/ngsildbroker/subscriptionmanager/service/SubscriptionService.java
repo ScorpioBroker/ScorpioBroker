@@ -665,32 +665,24 @@ public class SubscriptionService implements SubscriptionManager {
 		return result;
 	}
 
-     private boolean shouldFire(Entity entity, SubscriptionRequest subscription) {
-		
+	private boolean shouldFire(Entity entity, SubscriptionRequest subscription) {
+
 		if (subscription.getSubscription().getAttributeNames() == null
 				|| subscription.getSubscription().getAttributeNames().isEmpty()) {
 			return true;
 		}
-		
-		if(entity.getAttrname() != null) {
-			if(subscription.getSubscription().getAttributeNames().contains(entity.getAttrname())) {
-			    return true;
-			} else {
-				return false;
-			}
-		}
+
 		for (String attribName : subscription.getSubscription().getAttributeNames()) {
 			for (BaseProperty baseProp : entity.getAllBaseProperties()) {
 				if (attribName.equals(baseProp.getIdString())) {
 					return true;
 				}
-			}		
+			}
 		}
 		return false;
 	}
 
-	private Entity generateDataFromBaseOp(Entity deltaInfo, SubscriptionRequest subscription)
-			throws ResponseException {
+	private Entity generateDataFromBaseOp(Entity deltaInfo, SubscriptionRequest subscription) throws ResponseException {
 		String entityBody = null;
 		if (!shouldFire(deltaInfo, subscription)) {
 			return null;
@@ -856,18 +848,16 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private void checkSubscriptionsWithUpdate(EntityRequest updateRequest, long messageTime) {
-		Entity update = DataSerializer.getPartialEntity(updateRequest.getWithSysAttrs());
+		Entity update = DataSerializer.getPartialEntity(updateRequest.getOperationValue());
 		String id = updateRequest.getId();
 		String type = getTypeForId(updateRequest.getTenant(), id);
 		try {
 			update.setId(new URI(id));
 		} catch (URISyntaxException e) {
-			// left empty intentionally should never happen because the uri should be
-			// already checked
+
 			e.printStackTrace();
 		}
 		update.setType(type);
-		update.setAttrname(updateRequest.getUpdAttrName());
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 
 		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(updateRequest.getTenant(), type);

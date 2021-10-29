@@ -3,10 +3,15 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.time.Instant;
 import java.util.Iterator;
 
+import org.codehaus.jackson.map.ObjectMapper;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -14,14 +19,14 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
-public class UpdateEntityRequest extends EntityRequest{
+public class UpdateEntityRequest extends EntityRequest {
 
 	private UpdateResult updateResult;
 
-	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, String old, String update, String attrName) throws ResponseException {
+	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, String old, String update,
+			String attrName) throws ResponseException {
 		super(AppConstants.OPERATION_UPDATE_ENTITY, headers);
-		this.id=id;
-		this.updAttrName=attrName;
+		this.id = id;		
 		generateUpdate(update, old, attrName);
 	}
 
@@ -31,14 +36,25 @@ public class UpdateEntityRequest extends EntityRequest{
 			updateNode = objectMapper.readTree(update);
 			this.updateResult = updateFields(old, updateNode, attrName);
 			this.entityWithoutSysAttrs = updateResult.getJsonWithoutSysAttrs();
+
+			if (attrName != null) {
+				JsonElement jsonElement = new JsonParser().parse(entityWithoutSysAttrs);
+				JsonObject top = jsonElement.getAsJsonObject();
+				JsonElement jsonElement1 = top.get(attrName);
+				JsonObject jsonObject = new JsonObject();
+				jsonObject.add(attrName, jsonElement1);
+				this.operationValue = jsonObject.toString();
+
+			} else if (attrName == null) {
+				this.operationValue = objectMapper.writeValueAsString(updateResult.getJsonToAppend());
+			}
+
 			this.withSysAttrs = updateResult.getJson();
-			this.operationValue = withSysAttrs;
 			this.keyValue = objectMapper.writeValueAsString(getKeyValueEntity(updateResult.getFinalNode()));
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.NotFound, e.getMessage());
 		}
-		
-		
+
 	}
 
 	/**
@@ -168,5 +184,5 @@ public class UpdateEntityRequest extends EntityRequest{
 	public void setUpdateResult(UpdateResult updateResult) {
 		this.updateResult = updateResult;
 	}
-	
+
 }
