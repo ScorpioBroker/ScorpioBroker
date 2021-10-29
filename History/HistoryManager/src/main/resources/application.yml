@@ -86,6 +86,7 @@ writer:
       poolName: SpringBootHikariCP_Writer
       maxLifetime: 2000000
       connectionTimeout: 30000
-
+defaultLimit: 50
+maxLimit: 500
                
           
