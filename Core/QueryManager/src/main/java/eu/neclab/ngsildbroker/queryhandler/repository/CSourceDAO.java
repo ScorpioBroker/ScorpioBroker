@@ -79,7 +79,7 @@ public class CSourceDAO extends StorageReaderDAO {
 
 		List<Map<String, String>> entities = qp.getEntities();
 		// query by type + (id, idPattern)
-		if (entities != null) {
+		if (entities != null && !entities.isEmpty()) {
 			for (Map<String, String> entityInfo : entities) {
 				sqlWhere += "(";
 				String typeValue = entityInfo.get(NGSIConstants.JSON_LD_TYPE);
@@ -108,16 +108,20 @@ public class CSourceDAO extends StorageReaderDAO {
 					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
 
 				}
-				
+
 				csourceInformationIsNeeded = true;
 				sqlOk = true;
 
 				sqlWhere += ") OR ";
 			}
+
 			sqlWhere = sqlWhere.substring(0, sqlWhere.length() - 4);
 			fullSqlWhere.append("(" + sqlWhere + ") AND ");
-			// query by attrs only
-		} else if (qp.getAttrs() != null) {
+		}
+		// query by attrs only
+		if (qp.getAttrs() != null && !qp.getAttrs().isBlank())
+
+		{
 			String attrsValue = qp.getAttrs();
 			if (attrsValue.indexOf(",") == -1) {
 				sqlWhere = "ci." + DBCOLUMN_CSOURCE_INFO_PROPERTY_ID + " = '" + attrsValue + "' OR " + "ci."

@@ -6,11 +6,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
@@ -337,8 +332,8 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	public static ResponseEntity<byte[]> generateReply(HttpUtils httpUtils, HttpServletRequest request, QueryResult qResult, boolean forceArray, boolean count)
 			throws ResponseException {
-		String nextLink = generateNextLink(request, qResult);
-		String prevLink = generatePrevLink(request, qResult);
+		String nextLink = HttpUtils.generateNextLink(request, qResult);
+		String prevLink = HttpUtils.generatePrevLink(request, qResult);
 		ArrayList<String> additionalLinks = new ArrayList<String>();
 		if (nextLink != null) {
 			additionalLinks.add(nextLink);
@@ -359,56 +354,5 @@ public class QueryController {// implements QueryHandlerInterface {
 		}
 		return httpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
 				additionalHeaders, null, forceArray);
-	}
-
-	private static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
-		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
-			return null;
-		}
-		return generateFollowUpLinkHeader(request, qResult.getOffset() + qResult.getLimit(), qResult.getLimit(),
-				qResult.getqToken(), "next");
-	}
-
-	private static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
-			String rel) {
-
-		StringBuilder builder = new StringBuilder("</");
-		builder.append("?");
-
-		for (Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
-			String[] values = entry.getValue();
-			String key = entry.getKey();
-			if (key.equals("offset")) {
-				continue;
-			}
-			if (key.equals("qtoken")) {
-				continue;
-			}
-			if (key.equals("limit")) {
-				continue;
-			}
-
-			for (String value : values) {
-				builder.append(key + "=" + value + "&");
-			}
-
-		}
-		builder.append("offset=" + offset + "&");
-		builder.append("limit=" + limit + "&");
-		builder.append("qtoken=" + token + ">;rel=\"" + rel + "\"");
-		return builder.toString();
-	}
-
-	private static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
-		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
-			return null;
-		}
-		int offset = qResult.getOffset() - qResult.getLimit();
-		if (offset < 0) {
-			offset = 0;
-		}
-		int limit = qResult.getLimit();
-
-		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
-	}
+	}	
 }
