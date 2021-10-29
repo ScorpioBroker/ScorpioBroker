@@ -31,7 +31,6 @@ public class Entity {
 	private Property createdAtProp = new Property();
 	private Property modifiedAtProp = new Property();
 	private Property observedAtProp = new Property();
-	private String attrname;
 	
 	public Entity(URI id, String type, List<BaseProperty> baseProps, Object refToAccessControl) {
 		this.id = id;
@@ -273,14 +272,6 @@ public class Entity {
 		this.geoProperties = geoProperties;
 	}
 	
-	public String getAttrname() {
-		return attrname;
-	}
-
-	public void setAttrname(String attrname) {
-		this.attrname = attrname;
-	}
-
 	@Override
 	public String toString() {
 		return "Entity [id=" + id + ", location=" + location + ", observationSpace=" + observationSpace
