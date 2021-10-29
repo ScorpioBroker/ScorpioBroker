@@ -164,7 +164,8 @@ public class EntityGsonAdapter implements JsonDeserializer<Entity>, JsonSerializ
 					} else {
 						throw new JsonParseException("Unknown top level entry provided " + key);
 					}
-				} else {
+					
+				}else {
 					throw new JsonParseException("Unknown top level entry provided " + key);
 				}
 
