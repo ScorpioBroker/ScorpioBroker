@@ -20,7 +20,7 @@ public class EntityRequest extends BaseRequest {
 	protected String entityWithoutSysAttrs;
 	protected String keyValue;
 	protected String operationValue;
-	protected String updAttrName;
+	
 
 	public EntityRequest() {
 
@@ -87,13 +87,6 @@ public class EntityRequest extends BaseRequest {
 		this.objectMapper = objectMapper;
 	}
 
-	public String getUpdAttrName() {
-		return updAttrName;
-	}
-
-	public void setUpdAttrName(String updAttrName) {
-		this.updAttrName = updAttrName;
-	}
 
 	protected JsonNode getKeyValueEntity(JsonNode json) {
 		ObjectNode kvJsonObject = objectMapper.createObjectNode();
