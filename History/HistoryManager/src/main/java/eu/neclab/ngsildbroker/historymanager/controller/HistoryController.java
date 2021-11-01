@@ -155,11 +155,9 @@ public class HistoryController {
 			logger.debug("entityId : " + entityId);
 			if (params != null && !Validator.validate(params))
 				throw new ResponseException(ErrorType.BadRequestData);
-			HashMap<String, String[]> queryMap = new HashMap<String, String[]>();
-			String[] entityArray = new String[] {entityId};
-			queryMap.put(NGSIConstants.QUERY_PARAMETER_ID,entityArray);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryMap,
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
+			qp.getEntities().get(0).put(NGSIConstants.JSON_LD_ID, entityId);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
