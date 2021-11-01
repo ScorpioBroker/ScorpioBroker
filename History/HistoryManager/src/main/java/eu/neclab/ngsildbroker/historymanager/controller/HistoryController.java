@@ -4,7 +4,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
@@ -159,9 +159,11 @@ public class HistoryController {
 			if (params != null && !Validator.validate(params))
 				throw new ResponseException(ErrorType.BadRequestData);
 
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
+			Map<String,String[]> queryParam = new HashMap<>(request.getParameterMap());
+			String[] entityArray = new String[] {entityId};
+			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
-			qp.getEntities().get(0).put(NGSIConstants.JSON_LD_ID, entityId);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
