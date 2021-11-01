@@ -231,9 +231,9 @@ public class ParamsResolver {
 			if (idPattern != null) {
 				temp.put(NGSIConstants.NGSI_LD_ID_PATTERN, idPattern);
 			}
-			//if (id != null || idPattern != null || type != null) {
+			if (id != null || idPattern != null || type != null) {
 				entities.add(temp);
-			//}
+			}
 			qp.setEntities(entities);
 			return qp;
 		} catch (ResponseException e) {
