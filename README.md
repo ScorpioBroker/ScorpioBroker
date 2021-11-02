@@ -4,11 +4,13 @@
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD%203%20Clause-blue.svg)](https://spdx.org/licenses/BSD-3-Clause.html)
 [![Docker](https://img.shields.io/docker/pulls/scorpiobroker/scorpio.svg)](https://hub.docker.com/r/scorpiobroker/scorpio/)
 [![fiware](https://nexus.lab.fiware.org/repository/raw/public/badges/stackoverflow/fiware.svg)](https://stackoverflow.com/questions/tagged/fiware)
-[![NGSI LD](https://nexus.lab.fiware.org/repository/raw/public/badges/specifications/ngsild.svg)](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf)
+![NGSI-LD badge](https://img.shields.io/badge/NGSI-LD-red.svg) 
 <br>
-[![Documentation badge](https://img.shields.io/readthedocs/scorpio.svg)](https://scorpio.readthedocs.io/en/latest/?badge=latest)
-![Status](https://nexus.lab.fiware.org/static/badges/statuses/full.svg)
-![Travis-CI](https://travis-ci.org/ScorpioBroker/ScorpioBroker.svg?branch=master)
+[![Documentation badge](https://img.shields.io/readthedocs/scorpio.svg)](https://scorpio.readthedocs.io/en/latest/?badge=latest) 
+![Status](https://nexus.lab.fiware.org/static/badges/statuses/full.svg) 
+![NGSI-LD Test Suite](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/node.js.yml/badge.svg) 
+![PMD](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/pmd.yml/badge.svg) 
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4781/badge)](https://bestpractices.coreinfrastructure.org/projects/4781)
 
 Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India. It implements the full [NGSI-LD API](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf) as specified by the ETSI Industry Specification Group on cross cutting Context Information Management ([ETSI ISG CIM](https://www.etsi.org/committee/cim)).
 

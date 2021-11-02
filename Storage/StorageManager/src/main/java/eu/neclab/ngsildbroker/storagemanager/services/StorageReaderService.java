@@ -15,8 +15,6 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Splitter;
-import com.google.gson.Gson;
-
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.storagemanager.repository.EntityStorageReaderDAO;
@@ -62,7 +60,7 @@ public class StorageReaderService {
 		List<String> entityList = new ArrayList<String>();
 		try {
 			QueryParams qp = DataSerializer.getQueryParams(payload);
-			entityList = storageReaderDao.query(qp);
+			entityList = storageReaderDao.query(qp).getActualDataString();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -131,8 +131,7 @@ spring:
     url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_registrymanager
     username: ngb
   flyway:
-    baselineOnMigrate: true
-  
+    baselineOnMigrate: true  
 writer:
   datasource:
     hikari:

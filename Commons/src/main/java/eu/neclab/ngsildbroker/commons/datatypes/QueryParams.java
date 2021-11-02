@@ -1,26 +1,25 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.List;
+import java.util.Map;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import org.apache.commons.lang.builder.ToStringBuilder;
 
 public class QueryParams {
 
-	@SerializedName("id")
+	@SerializedName("tenant")
 	@Expose
-	private String id;
-	@SerializedName("type")
-	@Expose
-	private String type;
+	private String tenant;
 	@SerializedName("attrs")
 	@Expose
 	private String attrs;
 	@SerializedName("instanceId")
 	@Expose
 	private String instanceId;
-	@SerializedName("idPattern")
+	@SerializedName("entities")
 	@Expose
-	private String idPattern;
+	private List<Map<String, String>> entities;
 	@SerializedName("q")
 	@Expose
 	private String q;
@@ -61,7 +60,7 @@ public class QueryParams {
 	@SerializedName("limit")
 	@Expose
 	private int limit = -1;
-    private Boolean countResult;
+	private Boolean countResult;
 	@SerializedName("offSet")
 	@Expose
 	private int offSet = -1;
@@ -73,32 +72,6 @@ public class QueryParams {
 
 	public void setCheck(String check) {
 		this.check = check;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public QueryParams withId(String id) {
-		this.id = id;
-		return this;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
-
-	public QueryParams withType(String type) {
-		this.type = type;
-		return this;
 	}
 
 	public String getAttrs() {
@@ -124,19 +97,6 @@ public class QueryParams {
 
 	public QueryParams withInstanceId(String instanceId) {
 		this.instanceId = instanceId;
-		return this;
-	}
-
-	public String getIdPattern() {
-		return idPattern;
-	}
-
-	public void setIdPattern(String idPattern) {
-		this.idPattern = idPattern;
-	}
-
-	public QueryParams withIdPattern(String idPattern) {
-		this.idPattern = idPattern;
 		return this;
 	}
 
@@ -311,7 +271,7 @@ public class QueryParams {
 	public void setOffSet(int offSet) {
 		this.offSet = offSet;
 	}
-    
+
 	public Boolean getCountResult() {
 		return countResult;
 	}
@@ -320,12 +280,30 @@ public class QueryParams {
 		this.countResult = countResult;
 	}
 
+	public String getTenant() {
+		return tenant;
+	}
+
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
+	}
+
+	public List<Map<String, String>> getEntities() {
+		return entities;
+	}
+
+	public void setEntities(List<Map<String, String>> entities) {
+		this.entities = entities;
+	}
+
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this).append("id", id).append("type", type).append("attrs", attrs)
-				.append("idPattern", idPattern).append("q", q).append("georel", georel).append("geometry", geometry)
-				.append("coordinates", coordinates).append("geoproperty", geoproperty).append("timerel", timerel)
-				.append("time", time).append("endTime", endTime).append("timeproperty", timeproperty).toString();
+		return "QueryParams [tenant=" + tenant + ", attrs=" + attrs + ", instanceId=" + instanceId + ", entities="
+				+ entities + ", q=" + q + ", georel=" + georel + ", geometry=" + geometry + ", coordinates="
+				+ coordinates + ", geoproperty=" + geoproperty + ", timerel=" + timerel + ", time=" + time
+				+ ", endTime=" + endTime + ", timeproperty=" + timeproperty + ", includeSysAttrs=" + includeSysAttrs
+				+ ", keyValues=" + keyValues + ", temporalValues=" + temporalValues + ", limit=" + limit
+				+ ", countResult=" + countResult + ", offSet=" + offSet + ", check=" + check + "]";
 	}
 
 }

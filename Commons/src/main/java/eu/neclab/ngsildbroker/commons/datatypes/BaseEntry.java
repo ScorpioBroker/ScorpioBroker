@@ -112,7 +112,7 @@ public abstract class BaseEntry {
 	}
 
 	public void setModifiedAt(Long modifiedAt) {
-		if (createdAt == null) {
+		if (modifiedAt == null) {
 			this.modifiedAt = -1l;
 		} else {
 			this.modifiedAt = modifiedAt;

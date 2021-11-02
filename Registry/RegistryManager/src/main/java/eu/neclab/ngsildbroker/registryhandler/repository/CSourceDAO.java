@@ -15,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
@@ -55,12 +56,12 @@ public class CSourceDAO extends StorageReaderDAO {
 	private boolean externalCsourcesOnly = false; 
 	
 	@Override
-	public List<String> query(QueryParams qp) {
+	public QueryResult query(QueryParams qp) throws ResponseException {
 		this.externalCsourcesOnly = false;
 		return super.query(qp);
 	}
 	
-	public List<String> queryExternalCsources(QueryParams qp) throws SQLException {
+	public QueryResult queryExternalCsources(QueryParams qp) throws SQLException, ResponseException {
 		this.externalCsourcesOnly = true;
 		return super.query(qp);
 	}
@@ -76,36 +77,44 @@ public class CSourceDAO extends StorageReaderDAO {
 			fullSqlWhere.append("(c.internal = false) AND ");
 		}
 		
+		List<Map<String, String>> entities = qp.getEntities();
 		// query by type + (id, idPattern)
-		if (qp.getType()!=null) {
-			
-			String typeValue = qp.getType();
-			String idValue = "";
-			String idPatternValue = "";
-			if (qp.getId()!=null)
-				idValue = qp.getId();
-			if (qp.getIdPattern()!=null)
-				idPatternValue = qp.getIdPattern();
-			// id takes precedence on idPattern. clear idPattern if both are given
-			if (!idValue.isEmpty() && !idPatternValue.isEmpty())
-				idPatternValue = "";
+		if (entities != null) {
+			for (Map<String, String> entityInfo : entities) {
+				sqlWhere += "(";
+				String typeValue = entityInfo.get(NGSIConstants.JSON_LD_TYPE);
+				String idValue = "";
+				String idPatternValue = "";
+				if (entityInfo.containsKey(NGSIConstants.JSON_LD_ID)) {
+					idValue = entityInfo.get(NGSIConstants.JSON_LD_ID);
+				}
+				if (entityInfo.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
+					idPatternValue = entityInfo.get(NGSIConstants.NGSI_LD_ID_PATTERN);
+				}
+				// id takes precedence on idPattern. clear idPattern if both are given
+				if (!idValue.isEmpty() && !idPatternValue.isEmpty())
+					idPatternValue = "";
 
-			// query by type + (id, idPattern) + attrs
-			if (qp.getAttrs()!=null) {
-				String attrsValue = qp.getAttrs();
-				sqlWhere = getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
-				sqlWhere += " AND ";
-				sqlWhere += getSqlWhereByAttrsInTypeFiltering(attrsValue);
-				
-			} else {  // query by type + (id, idPattern) only (no attrs)
-				
-				sqlWhere = "(c.has_registrationinfo_with_attrs_only) OR ";	
-				sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
-				
+				// query by type + (id, idPattern) + attrs
+				if (qp.getAttrs() != null) {
+					String attrsValue = qp.getAttrs();
+					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
+					sqlWhere += " AND ";
+					sqlWhere += getSqlWhereByAttrsInTypeFiltering(attrsValue);
+
+				} else { // query by type + (id, idPattern) only (no attrs)
+
+					sqlWhere += "(c.has_registrationinfo_with_attrs_only) OR ";
+					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
+
+				}
+				fullSqlWhere.append(sqlWhere + ") AND ");
+				csourceInformationIsNeeded = true;
+				sqlOk = true;
+
+				sqlWhere += ") OR ";
 			}
-			fullSqlWhere.append("(" + sqlWhere + ") AND ");
-			csourceInformationIsNeeded = true;
-			sqlOk = true;
+			sqlWhere = sqlWhere.substring(0, sqlWhere.length() - 4);
 			
 		// query by attrs only		
 		} else if (qp.getAttrs()!=null) {
@@ -150,6 +159,14 @@ public class CSourceDAO extends StorageReaderDAO {
 	
 			if (fullSqlWhere.length() > 0) {
 				sqlQuery += "WHERE " + fullSqlWhere.toString() + " 1=1 ";
+			}
+			int limit = qp.getLimit();
+			int offSet = qp.getOffSet();
+			if (limit > 0) {
+				sqlQuery += "LIMIT " + limit + " ";
+			}
+			if (offSet > 0) {
+				sqlQuery += "OFFSET " + offSet + " ";
 			}
 			// order by ?
 			return sqlQuery;

@@ -107,6 +107,7 @@ public class KafkaOps {
 		Map<String, Object> adminClientProperties = kafkaProperties.buildAdminProperties();
 		try (AdminClient adminClient = AdminClient.create(adminClientProperties)) {
 			// TODO what's up with this result??
+			@SuppressWarnings("unused")
 			DeleteTopicsResult deleteTopicResult = adminClient.deleteTopics(topicName);
 		}
 	}

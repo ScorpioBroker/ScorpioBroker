@@ -2,9 +2,9 @@ package eu.neclab.ngsildbroker.historymanager.controller;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
@@ -22,10 +22,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryHistoryEntitiesRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -54,6 +57,10 @@ public class HistoryController {
 	ContextResolverBasic contextResolver;
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
+	@Value("${defaultLimit}")
+	int defaultLimit = 50;
+	@Value("${maxLimit}")
+	int maxLimit = 1000;
 
 	private HttpUtils httpUtils;
 
@@ -71,7 +78,7 @@ public class HistoryController {
 
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
-			URI uri = historyService.createTemporalEntityFromBinding(resolved);
+			URI uri = historyService.createTemporalEntityFromBinding(HttpUtils.getHeaders(request), resolved);
 			logger.trace("createTemporalEntity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString()).body(uri.toString().getBytes());
 		} catch (ResponseException exception) {
@@ -85,26 +92,50 @@ public class HistoryController {
 	}
 
 	@GetMapping
-	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request) {
-		String params = request.getQueryString();
+	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request,
+			@RequestParam(value = "limit", required = false) Integer limit,
+			@RequestParam(value = "offset", required = false) Integer offset,
+			@RequestParam(value = "qtoken", required = false) String qToken,
+			@RequestParam(name = "options", required = false) List<String> options) {
+		
 		try {
 			logger.trace("retrieveTemporalEntity :: started");
-			if (params != null && !Validator.validate(params))
-				throw new ResponseException(ErrorType.BadRequestData);
-
 			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
+			if (limit == null) {
+				limit = defaultLimit;
+			}
+			if (offset == null) {
+				offset = 0;
+			}
 			if (qp == null) // invalid query
 				throw new ResponseException(ErrorType.InvalidRequest);
 			if (qp.getTimerel() == null || qp.getTime() == null) {
 				throw new ResponseException(ErrorType.BadRequestData, "Time filter is required");
 			}
-			if (qp.getType() == null && qp.getAttrs() == null) {
+			if (qp.getEntities() == null && qp.getAttrs() == null) {
 				throw new ResponseException(ErrorType.BadRequestData, "Type or attrs is required");
 			}
 
 			logger.trace("retrieveTemporalEntity :: completed");
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)));
+			qp.setLimit(limit);
+			qp.setOffSet(offset);
+			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
+			QueryResult qResult =  historyDAO.query(req.getQp());
+			String nextLink = HttpUtils.generateNextLink(request, qResult);
+			String prevLink = HttpUtils.generatePrevLink(request, qResult);
+			ArrayList<String> additionalLinks = new ArrayList<String>();
+			if (nextLink != null) {
+				additionalLinks.add(nextLink);
+			}
+			if (prevLink != null) {
+				additionalLinks.add(prevLink);
+			}
+			HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
+			if (!additionalLinks.isEmpty()) {
+				additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
+			}
+			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(req.getQp()).getActualDataString()));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
@@ -124,12 +155,18 @@ public class HistoryController {
 			logger.debug("entityId : " + entityId);
 			if (params != null && !Validator.validate(params))
 				throw new ResponseException(ErrorType.BadRequestData);
-
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
+			Map<String,String[]> queryParam = new HashMap<>(request.getParameterMap());
+			String[] entityArray = new String[] {entityId};
+			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
-			qp.setId(entityId);
 			logger.trace("retrieveTemporalEntityById :: completed");
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(qp)));
+			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
+			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
+			if(queryResult.isEmpty()) {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(queryResult));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
@@ -146,7 +183,7 @@ public class HistoryController {
 		try {
 			logger.trace("deleteTemporalEntityById :: started");
 			logger.debug("entityId : " + entityId);
-			historyService.delete(entityId, null, null,
+			historyService.delete(HttpUtils.getHeaders(request), entityId, null, null,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteTemporalEntityById :: completed");
 			return ResponseEntity.noContent().build();
@@ -168,7 +205,7 @@ public class HistoryController {
 			logger.debug("entityId : " + entityId);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
 
-			historyService.addAttrib2TemporalEntity(entityId, resolved);
+			historyService.addAttrib2TemporalEntity(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("addAttrib2TemopralEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
@@ -187,7 +224,7 @@ public class HistoryController {
 		try {
 			logger.trace("deleteAttrib2TemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId);
-			historyService.delete(entityId, attrId, null,
+			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteAttrib2TemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
@@ -213,7 +250,7 @@ public class HistoryController {
 
 			// TODO : TBD- conflict between specs and implementation <mentioned no request
 			// body in specs>
-			historyService.modifyAttribInstanceTemporalEntity(entityId, resolved, attrId, instanceId,
+			historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId, resolved, attrId, instanceId,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("modifyAttribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
@@ -234,7 +271,7 @@ public class HistoryController {
 		try {
 			logger.trace("deleteAtrribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
-			historyService.delete(entityId, attrId, instanceId,
+			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
@@ -247,5 +284,4 @@ public class HistoryController {
 					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
 		}
 	}
-
 }

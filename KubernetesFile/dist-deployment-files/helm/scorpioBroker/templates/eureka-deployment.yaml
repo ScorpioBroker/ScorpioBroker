@@ -23,6 +23,11 @@ spec:
     spec:
       containers:
       - image: {{ .Values.eureka.image.repository }}:{{ .Values.eureka.image.tag }}
+        {{- if .Values.springArgs.overrideSpringArgs }}
+        env:
+          - name: spring_args
+            value: {{ .Values.springArgs.value }}
+        {{- end}}
         imagePullPolicy: {{ .Values.eureka.image.pullPolicy }}
         name: {{ .Values.eureka.name }}
         ports:

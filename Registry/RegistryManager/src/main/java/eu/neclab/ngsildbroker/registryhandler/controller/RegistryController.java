@@ -2,18 +2,16 @@ package eu.neclab.ngsildbroker.registryhandler.controller;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,20 +23,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.netflix.discovery.EurekaClient;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
-import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
@@ -100,18 +94,42 @@ public class RegistryController {
 
 	@GetMapping
 	public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
-			@RequestParam HashMap<String, String> queryMap) {
+			@RequestParam HashMap<String, String> queryMap,
+			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
+			@RequestParam(value = "offset", required = false) Integer offset,
+			@RequestParam(value = "qtoken", required = false) String qToken) {
 		try {
 			logger.trace("getCSources() ::");
 			String queryParams = request.getQueryString();
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING)
 					|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)) && queryParams != null) {
 
 				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
+				if (offset == null) {
+					offset = 0;
+				}
 				if (qp == null) // invalid query
 					throw new ResponseException(ErrorType.InvalidRequest);
-				List<String> csourceList = csourceDAO.query(qp);
+				qp.setTenant(tenantid);
+				qp.setLimit(limit);
+				qp.setOffSet(offset);
+				QueryResult queryResult = csourceDAO.query(qp);
+				String nextLink = HttpUtils.generateNextLink(request, queryResult);
+				String prevLink = HttpUtils.generatePrevLink(request, queryResult);
+				ArrayList<String> additionalLinks = new ArrayList<String>();
+				if (nextLink != null) {
+					additionalLinks.add(nextLink);
+				}
+				if (prevLink != null) {
+					additionalLinks.add(prevLink);
+				}
+				HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
+				if (!additionalLinks.isEmpty()) {
+					additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
+				}
+				List<String> csourceList = queryResult.getActualDataString();
 				if (csourceList.size() > 0) {
 					return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 				} else {
@@ -120,7 +138,8 @@ public class RegistryController {
 			} else {
 				// spec v0.9.0 section 5.10.2.4: if neither Entity types nor Attribute names are
 				// provided, an error of BadRequestData shall be raised
-				throw new ResponseException(ErrorType.BadRequestData, "You must provide at least type or attrs as parameter");
+				throw new ResponseException(ErrorType.BadRequestData,
+						"You must provide at least type or attrs as parameter");
 			}
 		} catch (ResponseException exception) {
 			logger.error("Exception ::", exception);
@@ -146,7 +165,7 @@ public class RegistryController {
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
 			logger.debug("Csource :: " + csourceRegistration);
-			URI uri = csourceService.registerCSource(csourceRegistration);
+			URI uri = csourceService.registerCSource(HttpUtils.getHeaders(request), csourceRegistration);
 
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri).build();
 		} catch (ResponseException exception) {
@@ -163,8 +182,9 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
-			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(registrationId)));
+			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
 			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 		} catch (ResponseException exception) {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
@@ -182,7 +202,7 @@ public class RegistryController {
 			logger.debug("update CSource() ::" + registrationId);
 			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
 
-			csourceService.updateCSourceRegistration(registrationId, resolved);
+			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request), registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {
@@ -195,10 +215,11 @@ public class RegistryController {
 	}
 
 	@DeleteMapping("{registrationId}")
-	public ResponseEntity<byte[]> deleteCSource(@PathVariable("registrationId") String registrationId) {
+	public ResponseEntity<byte[]> deleteCSource(HttpServletRequest request,
+			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("delete CSource() ::" + registrationId);
-			csourceService.deleteCSourceRegistration(registrationId);
+			csourceService.deleteCSourceRegistration(HttpUtils.getHeaders(request), registrationId);
 			logger.debug("delete CSource() completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {
@@ -235,5 +256,4 @@ public class RegistryController {
 		}
 		logger.trace("validation :: completed");
 	}
-
 }

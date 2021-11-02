@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.serialization;
 
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -9,21 +8,33 @@ import java.util.List;
 import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
 import com.github.filosganga.geogson.jts.JtsAdapterFactory;
 import com.github.filosganga.geogson.model.Geometry;
-import com.github.filosganga.geogson.model.MultiPolygon;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
+import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.DeleteCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Entity;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoValue;
+import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.TemporalEntityStorageKey;
 import eu.neclab.ngsildbroker.commons.datatypes.TypedValue;
+import eu.neclab.ngsildbroker.commons.datatypes.UpdateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
 
 public class DataSerializer {
 
@@ -93,8 +104,23 @@ public class DataSerializer {
 		builder.registerTypeAdapterFactory(new JtsAdapterFactory());
 		builder.registerTypeAdapter(Notification.class, new NotificationGsonAdapter());
 		builder.registerTypeAdapter(TypedValue.class, new TypedValueGsonAdapter());
+		builder.registerTypeAdapter(EntityRequest.class, new EntityRequestGsonAdapter());
+		builder.registerTypeAdapter(CreateEntityRequest.class, new EntityRequestGsonAdapter());
+		builder.registerTypeAdapter(UpdateEntityRequest.class, new EntityRequestGsonAdapter());
+		builder.registerTypeAdapter(AppendEntityRequest.class, new EntityRequestGsonAdapter());
+		builder.registerTypeAdapter(DeleteEntityRequest.class, new EntityRequestGsonAdapter());
+		builder.registerTypeAdapter(CreateHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
+		builder.registerTypeAdapter(UpdateHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
+		builder.registerTypeAdapter(AppendHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
+		builder.registerTypeAdapter(DeleteHistoryEntityRequest.class, new HistoryEntityRequestGsonAdapter());
+		builder.registerTypeAdapter(SubscriptionRequest.class, new SubscriptionRequestGsonAdapter());
 		builder.registerTypeAdapter(SerializationTypes.entitiesType, new EntitiesGsonAdapter());
 		// builder.registerTypeAdapter(propertiesType, new PropertiesGsonAdapter());
+		builder.registerTypeAdapter(CreateCSourceRequest.class, new CSourceRequestGsonAdapter());
+		builder.registerTypeAdapter(CSourceRequest.class, new CSourceRequestGsonAdapter());
+		builder.registerTypeAdapter(AppendCSourceRequest.class, new CSourceRequestGsonAdapter());
+		builder.registerTypeAdapter(DeleteCSourceRequest.class, new CSourceRequestGsonAdapter());
+
 	}
 
 	public static List<Entity> getEntities(String json) {
@@ -115,6 +141,22 @@ public class DataSerializer {
 
 	public static SubscriptionRequest getSubscriptionRequest(String json) {
 		return GSON.fromJson(json, SubscriptionRequest.class);
+	}
+
+	public static EntityRequest getEntityRequest(String json) {
+		return GSON.fromJson(json, EntityRequest.class);
+	}
+
+	public static CreateEntityRequest getCreateEntityRequest(String json) {
+		return GSON.fromJson(json, CreateEntityRequest.class);
+	}
+
+	public static UpdateEntityRequest getUpdateEntityRequest(String json) {
+		return GSON.fromJson(json, UpdateEntityRequest.class);
+	}
+
+	public static AppendEntityRequest getAppendEntityRequest(String json) {
+		return GSON.fromJson(json, AppendEntityRequest.class);
 	}
 
 	public static Notification getNotification(String json) {
@@ -154,6 +196,7 @@ public class DataSerializer {
 		return GSON.fromJson(json, QueryParams.class);
 	}
 
+	@SuppressWarnings("unchecked")//Always a String list. No class object from generics
 	public static ArrayList<String> getStringList(String json) {
 		return GSON.fromJson(json, ArrayList.class);
 	}
@@ -161,5 +204,27 @@ public class DataSerializer {
 	public static TemporalEntityStorageKey getTemporalEntityStorageKey(String json) {
 		return GSON.fromJson(json, TemporalEntityStorageKey.class);
 	}
+	// ---------------------------------------------------------------------------------------
+
+	public static CSourceRequest getCSourceRequest(String json) {
+		return GSON.fromJson(json, CSourceRequest.class);
+	}
+
+	public static CreateCSourceRequest getCreateCSourceRequest(String json) {
+		return GSON.fromJson(json, CreateCSourceRequest.class);
+	}
+
+	public static AppendCSourceRequest getAppendCSourceRequest(String json) {
+		return GSON.fromJson(json, AppendCSourceRequest.class);
+	}
+
+	public static DeleteCSourceRequest getDeleteCSourceRequest(String json) {
+		return GSON.fromJson(json, DeleteCSourceRequest.class);
+	}
+
+	public static HistoryEntityRequest getHistoryEntityRequest(String json) {
+		return GSON.fromJson(json, HistoryEntityRequest.class);
+	}
+	// ------------------------------------------------------------------------------------------
 
 }
