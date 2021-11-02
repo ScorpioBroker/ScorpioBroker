@@ -31,7 +31,7 @@ public class Entity {
 	private Property createdAtProp = new Property();
 	private Property modifiedAtProp = new Property();
 	private Property observedAtProp = new Property();
-
+	
 	public Entity(URI id, String type, List<BaseProperty> baseProps, Object refToAccessControl) {
 		this.id = id;
 		this.type = type;
@@ -271,7 +271,7 @@ public class Entity {
 		}
 		this.geoProperties = geoProperties;
 	}
-
+	
 	@Override
 	public String toString() {
 		return "Entity [id=" + id + ", location=" + location + ", observationSpace=" + observationSpace

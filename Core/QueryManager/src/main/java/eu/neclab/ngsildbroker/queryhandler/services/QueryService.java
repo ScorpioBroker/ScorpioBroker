@@ -535,7 +535,7 @@ public class QueryService {
 				}
 			} catch (IOException e) {
 				logger.error("failed reading in utf of data", e);
-				throw new ResponseException(ErrorType.BadRequestData, "failed reading in utf of data"); 
+				throw new ResponseException(ErrorType.BadRequestData, "failed reading in utf of data");
 			}
 			int end = offset + limit;
 			if (end > aggregatedResult.size()) {
@@ -553,10 +553,11 @@ public class QueryService {
 		result.setResultsLeftBefore(offset);
 		return result;
 	}
-	protected List<String> getDataListFromResult(String resultBody) throws ResponseException{
+
+	protected List<String> getDataListFromResult(String resultBody) throws ResponseException {
 		List<String> entitiesList = new ArrayList<String>();
 		try {
-			
+
 			logger.debug("response from invoke all ::" + resultBody);
 			if (!("[]").equals(resultBody) && resultBody != null) {
 				JsonNode jsonNode = objectMapper.readTree(resultBody);
@@ -574,7 +575,6 @@ public class QueryService {
 			return new ArrayList<String>();
 		}
 
-		
 	}
 
 	// TODO decide on removal
