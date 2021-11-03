@@ -74,6 +74,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.HttpErrorResponseException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -1095,6 +1096,57 @@ public final class HttpUtils {
 		return tenantId;
 	}
 
+	public static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
+		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
+			return null;
+		}
+		return generateFollowUpLinkHeader(request, qResult.getOffset() + qResult.getLimit(), qResult.getLimit(),
+				qResult.getqToken(), "next");
+	}
+
+	private static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
+			String rel) {
+
+		StringBuilder builder = new StringBuilder("</");
+		builder.append("?");
+
+		for (Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
+			String[] values = entry.getValue();
+			String key = entry.getKey();
+			if (key.equals("offset")) {
+				continue;
+			}
+			if (key.equals("qtoken")) {
+				continue;
+			}
+			if (key.equals("limit")) {
+				continue;
+			}
+
+			for (String value : values) {
+				builder.append(key + "=" + value + "&");
+			}
+
+		}
+		builder.append("offset=" + offset + "&");
+		builder.append("limit=" + limit + "&");
+		builder.append("qtoken=" + token + ">;rel=\"" + rel + "\"");
+		return builder.toString();
+	}
+
+	public static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
+		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
+			return null;
+		}
+		int offset = qResult.getOffset() - qResult.getLimit();
+		if (offset < 0) {
+			offset = 0;
+		}
+		int limit = qResult.getLimit();
+
+		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
+	}
+	
 	// public static ResponseEntity<Object> generateReply(String acceptHeader,
 	// List<Object> contextLinks,
 	// String expandedJson, ContextResolverBasic contextResolver, String
