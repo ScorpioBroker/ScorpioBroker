@@ -51,35 +51,41 @@ public abstract class EntityTools {
 				break;
 
 			}
-			
+
 		}
 		long now = System.currentTimeMillis();
 		try {
-		if(!newData.isEmpty()) {
-				result.add(new CSourceNotification(getRandomID("csource"),data.get(0).getSubscriptionId(),new Date(now),TriggerReason.newlyMatching,newData, data.get(0).getErrorMsg(),data.get(0).getErrorType(),data.get(0).getShortErrorMsg(),data.get(0).isSuccess()));
-		}
-		if(!updatedData.isEmpty()) {
-			result.add(new CSourceNotification(getRandomID("csource"),data.get(0).getSubscriptionId(),new Date(now),TriggerReason.updated,updatedData, data.get(0).getErrorMsg(),data.get(0).getErrorType(),data.get(0).getShortErrorMsg(),data.get(0).isSuccess()));
-		}
-		if(!deletedData.isEmpty()) {
-			result.add(new CSourceNotification(getRandomID("csource"),data.get(0).getSubscriptionId(),new Date(now),TriggerReason.noLongerMatching,deletedData, data.get(0).getErrorMsg(),data.get(0).getErrorType(),data.get(0).getShortErrorMsg(),data.get(0).isSuccess()));
-		}
+			if (!newData.isEmpty()) {
+				result.add(new CSourceNotification(getRandomID("csource"), data.get(0).getSubscriptionId(),
+						new Date(now), TriggerReason.newlyMatching, newData, data.get(0).getErrorMsg(),
+						data.get(0).getErrorType(), data.get(0).getShortErrorMsg(), data.get(0).isSuccess()));
+			}
+			if (!updatedData.isEmpty()) {
+				result.add(new CSourceNotification(getRandomID("csource"), data.get(0).getSubscriptionId(),
+						new Date(now), TriggerReason.updated, updatedData, data.get(0).getErrorMsg(),
+						data.get(0).getErrorType(), data.get(0).getShortErrorMsg(), data.get(0).isSuccess()));
+			}
+			if (!deletedData.isEmpty()) {
+				result.add(new CSourceNotification(getRandomID("csource"), data.get(0).getSubscriptionId(),
+						new Date(now), TriggerReason.noLongerMatching, deletedData, data.get(0).getErrorMsg(),
+						data.get(0).getErrorType(), data.get(0).getShortErrorMsg(), data.get(0).isSuccess()));
+			}
 		} catch (URISyntaxException e) {
-			//left empty intentionally should never happen
+			// left empty intentionally should never happen
 			throw new AssertionError();
 		}
-			
+
 		return result;
 	}
 
 	public static Notification squashNotifications(List<Notification> data) {
 		List<Entity> newData = new ArrayList<Entity>();
 		for (Notification notification : data) {
-			newData.addAll(notification.getData());
+			newData.addAll(notification.getEntityData());
 		}
-		return new Notification(data.get(0).getId(), System.currentTimeMillis(),
-				data.get(0).getSubscriptionId(), newData, data.get(0).getErrorMsg(), data.get(0).getErrorType(),
-				data.get(0).getShortErrorMsg(), data.get(0).isSuccess());
+		return new Notification(data.get(0).getId(), System.currentTimeMillis(), data.get(0).getSubscriptionId(),
+				newData, data.get(0).getErrorMsg(), data.get(0).getErrorType(), data.get(0).getShortErrorMsg(),
+				data.get(0).isSuccess());
 	}
 
 }

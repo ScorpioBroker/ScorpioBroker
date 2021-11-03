@@ -97,7 +97,7 @@ abstract public class StorageReaderDAO {
 
 	public QueryResult query(QueryParams qp) throws ResponseException {
 		JdbcTemplate template;
-		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+		QueryResult queryResult = new QueryResult(new ArrayList<String>(), null, ErrorType.None, -1, true);
 		try {
 
 			String tenantId = qp.getTenant();

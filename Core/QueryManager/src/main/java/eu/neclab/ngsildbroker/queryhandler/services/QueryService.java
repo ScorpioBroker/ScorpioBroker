@@ -41,6 +41,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonSyntaxException;
@@ -550,6 +551,11 @@ public class QueryService {
 			logger.debug("response from invoke all ::" + resultBody);
 			if (!("[]").equals(resultBody) && resultBody != null) {
 				JsonNode jsonNode = objectMapper.readTree(resultBody);
+				if(!jsonNode.isArray()) {
+					ArrayNode temp = objectMapper.createArrayNode();
+					temp.add(jsonNode);
+					jsonNode = temp;
+				}
 				for (int i = 0; i <= jsonNode.size(); i++) {
 					if (jsonNode.get(i) != null && !jsonNode.isNull()) {
 						String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true,

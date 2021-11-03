@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -14,7 +15,7 @@ public class Notification extends QueryResult {
 	
 	
 	public Notification(URI id, Long notifiedAt, URI subscriptionId, List<Entity> data) {
-		super(null, null, null, -1, true);
+		super(new ArrayList<String>(), null, null, -1, true);
 		this.id = id;
 		this.notifiedAt = notifiedAt;
 		this.subscriptionId = subscriptionId;
@@ -24,7 +25,7 @@ public class Notification extends QueryResult {
 	
 	
 	public Notification(URI id, Long notifiedAt, URI subscriptionId, List<Entity> data, String errorMsg, ErrorType errorType, int shortErrorMsg, boolean success) {
-		super(null, errorMsg, errorType, shortErrorMsg, success);
+		super(new ArrayList<String>(), errorMsg, errorType, shortErrorMsg, success);
 		this.id = id;
 		this.notifiedAt = notifiedAt;
 		this.subscriptionId = subscriptionId;
@@ -82,7 +83,7 @@ public class Notification extends QueryResult {
 	}
 
 
-	public List<Entity> getData() {
+	public List<Entity> getEntityData() {
 		return data;
 	}
 
