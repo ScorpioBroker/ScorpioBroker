@@ -11,7 +11,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
-public class EntityRequest extends BaseRequest{
+public class EntityRequest extends BaseRequest {
 
 	protected int operationType;
 	protected String id;
@@ -21,8 +21,9 @@ public class EntityRequest extends BaseRequest{
 	protected String keyValue;
 	protected String operationValue;
 	
+
 	public EntityRequest() {
-		
+
 	}
 
 	public EntityRequest(int operationType, ArrayListMultimap<String, String> headers) {
@@ -30,8 +31,6 @@ public class EntityRequest extends BaseRequest{
 		this.operationType = operationType;
 	}
 
-
-	
 	public String getOperationValue() {
 		return operationValue;
 	}
@@ -87,7 +86,8 @@ public class EntityRequest extends BaseRequest{
 	public void setObjectMapper(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
 	}
-	
+
+
 	protected JsonNode getKeyValueEntity(JsonNode json) {
 		ObjectNode kvJsonObject = objectMapper.createObjectNode();
 		Iterator<Map.Entry<String, JsonNode>> iter = json.fields();
@@ -150,6 +150,7 @@ public class EntityRequest extends BaseRequest{
 			}
 		}
 	}
+
 	/**
 	 * this method use for update the value of jsonNode.
 	 * 

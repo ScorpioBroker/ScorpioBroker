@@ -666,10 +666,12 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private boolean shouldFire(Entity entity, SubscriptionRequest subscription) {
+
 		if (subscription.getSubscription().getAttributeNames() == null
 				|| subscription.getSubscription().getAttributeNames().isEmpty()) {
 			return true;
 		}
+
 		for (String attribName : subscription.getSubscription().getAttributeNames()) {
 			for (BaseProperty baseProp : entity.getAllBaseProperties()) {
 				if (attribName.equals(baseProp.getIdString())) {
@@ -846,18 +848,16 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private void checkSubscriptionsWithUpdate(EntityRequest updateRequest, long messageTime) {
-		Entity update = DataSerializer.getPartialEntity(updateRequest.getWithSysAttrs());
+		Entity update = DataSerializer.getPartialEntity(updateRequest.getOperationValue());
 		String id = updateRequest.getId();
 		String type = getTypeForId(updateRequest.getTenant(), id);
 		try {
 			update.setId(new URI(id));
 		} catch (URISyntaxException e) {
-			// left empty intentionally should never happen because the uri should be
-			// already checked
+
 			e.printStackTrace();
 		}
 		update.setType(type);
-
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 
 		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(updateRequest.getTenant(), type);
