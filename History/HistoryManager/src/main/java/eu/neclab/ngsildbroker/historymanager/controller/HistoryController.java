@@ -82,7 +82,8 @@ public class HistoryController {
 
 			URI uri = historyService.createTemporalEntityFromBinding(HttpUtils.getHeaders(request), resolved);
 			logger.trace("createTemporalEntity :: completed");
-			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString()).body(uri.toString().getBytes());
+			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString())
+					.body(uri.toString().getBytes());
 		} catch (ResponseException exception) {
 			logger.error("Exception", exception);
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
@@ -99,7 +100,7 @@ public class HistoryController {
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(name = "options", required = false) List<String> options) {
-		
+
 		try {
 			logger.trace("retrieveTemporalEntity :: started");
 			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
@@ -123,7 +124,7 @@ public class HistoryController {
 			qp.setLimit(limit);
 			qp.setOffSet(offset);
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
-			QueryResult qResult =  historyDAO.query(req.getQp());
+			QueryResult qResult = historyDAO.query(req.getQp());
 			String nextLink = HttpUtils.generateNextLink(request, qResult);
 			String prevLink = HttpUtils.generatePrevLink(request, qResult);
 			ArrayList<String> additionalLinks = new ArrayList<String>();
@@ -137,7 +138,8 @@ public class HistoryController {
 			if (!additionalLinks.isEmpty()) {
 				additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
 			}
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(historyDAO.query(req.getQp()).getActualDataString()));
+			return httpUtils.generateReply(request,
+					historyDAO.getListAsJsonArray(historyDAO.query(req.getQp()).getActualDataString()));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
@@ -159,15 +161,15 @@ public class HistoryController {
 			if (params != null && !Validator.validate(params))
 				throw new ResponseException(ErrorType.BadRequestData);
 
-			Map<String,String[]> queryParam = new HashMap<>(request.getParameterMap());
-			String[] entityArray = new String[] {entityId};
+			Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
+			String[] entityArray = new String[] { entityId };
 			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
 			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
-			if(queryResult.isEmpty()) {
+			if (queryResult.isEmpty()) {
 				throw new ResponseException(ErrorType.NotFound);
 			}
 			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(queryResult));
@@ -188,13 +190,15 @@ public class HistoryController {
 			logger.trace("deleteTemporalEntityById :: started");
 			logger.debug("entityId : " + entityId);
 			ValidateURI.validateUri(entityId);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
+			Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
+			String[] entityArray = new String[] { entityId };
+			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
-			qp.getEntities().get(0).put(NGSIConstants.JSON_LD_ID, entityId);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
-			if(queryResult.isEmpty()) {
+			if (queryResult.isEmpty()) {
 				throw new ResponseException(ErrorType.NotFound);
 			}
 			historyService.delete(HttpUtils.getHeaders(request), entityId, null, null,
@@ -216,7 +220,7 @@ public class HistoryController {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}
-	
+
 	@PostMapping("/{entityId}/attrs")
 	public ResponseEntity<byte[]> addAttrib2TemopralEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload) {
@@ -271,8 +275,8 @@ public class HistoryController {
 
 			// TODO : TBD- conflict between specs and implementation <mentioned no request
 			// body in specs>
-			historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId, resolved, attrId, instanceId,
-					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
+			historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId, resolved, attrId,
+					instanceId, HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
 			logger.trace("modifyAttribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
