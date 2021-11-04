@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -421,8 +420,9 @@ public class QueryService {
 								}
 								logger.debug("http call result :: ::" + resultBody);
 								
-								RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, count, true);
-								result.addData(objectMapper.readTree(resultBody));
+								RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, -1, true);
+								result.setCount(count);
+								result.addData(objectMapper.readTree(contextResolver.expand(resultBody, linkHeaders, false, AppConstants.ENTITIES_URL_ID)));
 								return result;
 							};
 							callablesCollection.add(callable);
@@ -469,7 +469,7 @@ public class QueryService {
 					e.printStackTrace();
 				}
 			}
-			result = fromCsources;
+			result = fromStorage;
 			// logger.trace("response from storage :: ");
 			// fromStorage.forEach(e -> logger.debug(e));
 			// logger.trace("aggregated");

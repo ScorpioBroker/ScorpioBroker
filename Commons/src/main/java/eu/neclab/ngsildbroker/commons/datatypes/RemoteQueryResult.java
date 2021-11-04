@@ -24,10 +24,15 @@ public class RemoteQueryResult extends QueryResult {
 
 	private HashMap<String, ObjectNode> id2Data = new HashMap<String, ObjectNode>();
 	private ObjectMapper objectMapper = new ObjectMapper();
+	private ArrayList<String> DO_NOT_MERGE = new ArrayList<String>();
 
 	public RemoteQueryResult(String errorMsg, ErrorType errorType, int shortErrorMsg, boolean success) {
 		super(null, errorMsg, errorType, shortErrorMsg, success);
-
+		DO_NOT_MERGE.add(NGSIConstants.JSON_LD_ID);
+		DO_NOT_MERGE.add(NGSIConstants.JSON_LD_TYPE);
+		DO_NOT_MERGE.add(NGSIConstants.NGSI_LD_CREATED_AT);
+		DO_NOT_MERGE.add(NGSIConstants.NGSI_LD_OBSERVED_AT);
+		DO_NOT_MERGE.add(NGSIConstants.NGSI_LD_MODIFIED_AT);
 	}
 
 	public void addData(JsonNode node) {
@@ -50,7 +55,7 @@ public class RemoteQueryResult extends QueryResult {
 	}
 
 	private boolean mergeEntity(ObjectNode oldNode, ObjectNode newNode) {
-		if (oldNode.get(NGSIConstants.JSON_LD_TYPE).get(0).asText()
+		if (!oldNode.get(NGSIConstants.JSON_LD_TYPE).get(0).asText()
 				.equals(newNode.get(NGSIConstants.JSON_LD_TYPE).get(0).asText())) {
 			return false;
 		}
@@ -71,6 +76,10 @@ public class RemoteQueryResult extends QueryResult {
 
 	private void mergeAttributeValue(JsonNode oldAttrValue, JsonNode attrValue, ObjectNode oldNode, String fieldName) {
 		// make everything into arrays for equal treatment
+
+		if (DO_NOT_MERGE.contains(fieldName)) {
+			return;
+		}
 		if (!oldAttrValue.isArray()) {
 			ArrayNode temp = objectMapper.createArrayNode();
 			temp.add(oldAttrValue);
