@@ -32,9 +32,9 @@ public class EntityBatchController {
 	@Autowired
 	@Qualifier("emconRes")
 	ContextResolverBasic contextResolver;
-	
+
 	HttpUtils httpUtils;
-	
+
 	@PostConstruct
 	private void setup() {
 		httpUtils = HttpUtils.getInstance(contextResolver);
@@ -56,7 +56,8 @@ public class EntityBatchController {
 		}
 	}
 
-	private ResponseEntity<byte[]> generateBatchResultReply(BatchResult result, HttpStatus okStatus) {
+	private ResponseEntity<byte[]> generateBatchResultReply(BatchResult result, HttpStatus okStatus)
+			throws ResponseException {
 		HttpStatus status = HttpStatus.MULTI_STATUS;
 		String body = DataSerializer.toJson(result);
 		if (result.getFails().isEmpty()) {
@@ -65,8 +66,8 @@ public class EntityBatchController {
 		}
 		if (result.getSuccess().isEmpty()) {
 			status = HttpStatus.BAD_REQUEST;
-		} 
-         
+		}
+
 		if (body == null) {
 			return ResponseEntity.status(status).build();
 		}
@@ -112,8 +113,9 @@ public class EntityBatchController {
 			// it's an array of uris which is not json-ld so no expanding here
 			BatchResult result = entityService.deleteMultipleMessage(HttpUtils.getHeaders(request), payload);
 			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
-		} catch (ResponseException e) {
-			throw new ResponseException(ErrorType.BadRequestData);
+		} catch (ResponseException responseException) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+					new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json").toJsonBytes());
 		}
 	}
 

@@ -672,7 +672,11 @@ public class EntityService {
 				throw new ResponseException(ErrorType.InvalidRequest,
 						"This interface only supports arrays of entities");
 			}
-			ArrayNode myArray = (ArrayNode) myTree;
+			
+			ArrayNode myArray = (ArrayNode) myTree;			
+			if(myArray.size()==0) {
+				throw new ResponseException(ErrorType.BadRequestData);
+			}
 			if (maxDeleteBatch != -1 && myArray.size() > maxDeleteBatch) {
 				throw new ResponseException(ErrorType.RequestEntityTooLarge,
 						"Maximum allowed number of entities for this operation is " + maxDeleteBatch);
