@@ -123,8 +123,7 @@ public class HistoryEntityRequest extends BaseRequest {
 			valueCreatedAt = date;
 		}
 		// append/overwrite temporal fields. as we are creating new instances,
-		// modifiedAt and createdAt are the same
-		//jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_CREATED_AT, valueCreatedAt);
+		// modifiedAt and createdAt are the same		
 		jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, valueCreatedAt);
 		// system generated instance id
 		UUID uuid = UUID.randomUUID();
