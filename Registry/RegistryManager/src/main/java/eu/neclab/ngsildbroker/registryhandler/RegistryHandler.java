@@ -34,7 +34,7 @@ import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
 public class RegistryHandler {
 	
 	public static void main(String[] args) {
-		SpringApplication.run(RegistryHandler.class);
+		SpringApplication.run(RegistryHandler.class, args);
 	}
 	
 	@Autowired
