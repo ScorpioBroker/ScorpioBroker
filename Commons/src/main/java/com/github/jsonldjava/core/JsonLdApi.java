@@ -27,6 +27,8 @@ import com.github.jsonldjava.core.JsonLdConsts.Embed;
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.Obj;
 
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+
 /**
  * A container object to maintain state relating to JsonLdOptions and the
  * current Context, and push these into the relevant algorithms in
@@ -488,20 +490,12 @@ public class JsonLdApi {
 	 * @return The expanded JSON-LD object.
 	 * @throws JsonLdError If there was an error during expansion.
 	 */
-	public Object expand(Context activeCtx, String activeProperty, Object element) throws JsonLdError {
+	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject element, int payloadType) throws JsonLdError, ResponseException {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
 		// 1)
 		if (element == null) {
-			// System.out.println("+++++++++++++++++++++++++++++++++");
-			// System.out.println("null");
-			// System.out.println("+++++++++++++++++++++++++++++++++");
 			return null;
 		}
-		// //System.out.println("((((((((((((((((((((((((((((((");
-		// //System.out.println(activeProperty);
-		// //System.out.println(element.toString());
-		// //System.out.println(element.getClass().toString());
-		// //System.out.println("((((((((((((((((((((((((((((((");
 		// GK: This would be the point to set `propertyScopedContext` to the `@context`
 		// entry for any term definition associated with `activeProperty`.
 		// 3)
