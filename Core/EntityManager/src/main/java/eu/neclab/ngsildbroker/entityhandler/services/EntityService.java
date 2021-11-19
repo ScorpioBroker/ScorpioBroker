@@ -124,8 +124,6 @@ public class EntityService {
 
 	ObjectMapper objectMapper;
 	@Autowired
-	private EurekaClient eurekaClient;
-	@Autowired
 	@Qualifier("emconRes")
 	ContextResolverBasic contextResolver;
 	/*
@@ -544,7 +542,7 @@ public class EntityService {
 
 		// Entity to CSourceRegistration conversion.
 		csourceRegistration.setId(entity.getId());
-		csourceRegistration.setEndpoint(MicroServiceUtils.getGatewayURL(eurekaClient));
+		csourceRegistration.setEndpoint(MicroServiceUtils.getGatewayURL());
 		// location node
 		GeoProperty geoLocationProperty = entity.getLocation();
 		if (geoLocationProperty != null) {
@@ -581,7 +579,7 @@ public class EntityService {
 
 	public URI getResourceURL(String resource) throws URISyntaxException {
 		logger.trace("getResourceURL() :: started");
-		URI uri = MicroServiceUtils.getGatewayURL(eurekaClient);
+		URI uri = MicroServiceUtils.getGatewayURL();
 		logger.trace("getResourceURL() :: completed");
 		return new URI(uri.toString() + "/" + resource);
 	}

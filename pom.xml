@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
@@ -18,18 +19,31 @@
 		<module>OverallParent</module>
 		<module>BrokerParent</module>
 		<module>Commons</module>
-		<module>SpringCloudParent</module>
-		<module>SpringCloudModules</module>
 		<module>Core</module>
 		<module>Registry</module>
 		<module>Storage</module>
 		<module>History</module>
-		<module>AllInOneRunner</module>
+
 	</modules>
 	<profiles>
-		
+		<profile>
+			<id>default</id>
+			<activation>
+				<property>
+					<name>!skipEureka</name>
+				</property>
+			</activation>
+			<modules>
+				<module>SpringCloudParent</module>
+				<module>SpringCloudModules</module>
+			</modules>
+		</profile>
+
 		<profile>
 			<id>docker-aaio</id>
+			<modules>
+				<module>AllInOneRunner</module>
+			</modules>
 			<build>
 				<plugins>
 					<plugin>
@@ -89,5 +103,38 @@
 			</build>
 
 		</profile>
+		<profile>
+			<id>docker-aaio-eureka-free</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.12</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+									<goal>push</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<dockerfile>dockerfile4maven_eureka_free</dockerfile>
+							<repository>scorpiobroker/scorpio</repository>
+							<tag>scorpio-aaio-eureka-free_${project.version}</tag>
+							<buildArgs>
+								<BUILD_DIR_SCR>AllInOneRunner</BUILD_DIR_SCR>
+								<JAR_FILE_BUILD_SCR>AllInOneRunner-${project.version}.jar</JAR_FILE_BUILD_SCR>
+								<JAR_FILE_RUN_SCR>runner.jar</JAR_FILE_RUN_SCR>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+
+		</profile>
+
 	</profiles>
 </project>
