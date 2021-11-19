@@ -12,7 +12,7 @@ ARG JAR_FILE_RUN_SCR
 
 COPY ${BUILD_DIR_SCR}/target/${JAR_FILE_BUILD_SCR} ./scr/${JAR_FILE_RUN_SCR}
 
-COPY ${BUILD_DIR_SCR}/src/main/resources/application-aaio.yml ./scr/config/application.yml
+COPY ${BUILD_DIR_SCR}/src/main/resources/application-aaio-eureka-free.yml ./scr/config/application.yml
 
 ENV scrdir scr
 ENV scrjar ${JAR_FILE_RUN_SCR}
