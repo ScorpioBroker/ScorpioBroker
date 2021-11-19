@@ -18,4 +18,4 @@ ENV scrdir scr
 ENV scrjar ${JAR_FILE_RUN_SCR}
 ENV spring_args ""
 
-CMD java -jar ./scr/${JAR_FILE_RUN_SCR} ${spring_args}
+CMD java -jar ./scr/${scrjar} ${spring_args}
