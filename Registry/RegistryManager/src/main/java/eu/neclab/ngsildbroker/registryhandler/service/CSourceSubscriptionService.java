@@ -45,7 +45,6 @@ import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
-import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
@@ -86,8 +85,6 @@ public class CSourceSubscriptionService {
 	@Qualifier("rmconRes")
 	ContextResolverBasic contextResolverService;
 
-	@Autowired
-	EurekaClient eurekaClient;
 
 	@Autowired
 	CSourceService cSourceService;
