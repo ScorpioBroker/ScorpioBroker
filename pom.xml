@@ -13,8 +13,6 @@
 		<relativePath>./OverallParent</relativePath>
 	</parent>
 	<version>1.1.0-SNAPSHOT</version>
-
-
 	<modules>
 		<module>OverallParent</module>
 		<module>BrokerParent</module>
@@ -83,10 +81,12 @@
 					</plugin>
 				</plugins>
 			</build>
-
 		</profile>
 		<profile>
 			<id>docker-aaio-eureka-free</id>
+			<modules>
+				<module>AllInOneRunner</module>
+			</modules>
 			<build>
 				<plugins>
 					<plugin>
@@ -115,8 +115,6 @@
 					</plugin>
 				</plugins>
 			</build>
-
 		</profile>
-
 	</profiles>
 </project>
