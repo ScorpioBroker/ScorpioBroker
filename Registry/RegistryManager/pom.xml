@@ -6,10 +6,10 @@
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>BrokerParent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.1.0-SNAPSHOT</version>
 		<relativePath>../../BrokerParent</relativePath>
 	</parent>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<profiles>
 		<profile>
 			<id>docker</id>
@@ -40,7 +40,36 @@
 					</plugin>
 				</plugins>
 			</build>
-
+		</profile>
+				<profile>
+			<id>docker-no-eureka</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.12</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+									<goal>push</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<dockerfile>dockerfile4maven</dockerfile>
+							<repository>scorpiobroker/scorpio</repository>
+							<tag>${project.artifactId}_${project.version}</tag>
+							<buildArgs>
+								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>
+								<JAR_FILE_RUN>${project.artifactId}.jar</JAR_FILE_RUN>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 	</profiles>
 	<dependencies>
@@ -57,15 +86,11 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 		</dependency>
-		
-		<!-- <dependency> <groupId>com.coasttocoastresearch</groupId> <artifactId>apg</artifactId> 
-			<version>1.0</version> </dependency> -->
 		<dependency>
 			<groupId>org.locationtech.spatial4j</groupId>
 			<artifactId>spatial4j</artifactId>
 			<version>0.7</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.locationtech.jts/jts-core -->
 		<dependency>
 			<groupId>org.locationtech.jts</groupId>
 			<artifactId>jts-core</artifactId>
@@ -85,6 +110,5 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 		</dependency>
-
 	</dependencies>
 </project>

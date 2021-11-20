@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>eu.neclab.ngsildbroker</groupId>
 	<artifactId>OverallParent</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<name>NGSI-LD Broker Overall Parent</name>
 
 	<!-- <parent> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-parent</artifactId> 
@@ -67,17 +67,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-		<!-- <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId> 
-			</dependency> -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream</artifactId>
-			<!-- <version>2.2.1.RELEASE</version> -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream-binder-kafka</artifactId>
-			<!-- <version>2.2.1.RELEASE</version> -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.kafka</groupId>
@@ -122,10 +118,6 @@
 				<artifactId>maven-dependency-plugin</artifactId>
 				<version>3.0.2</version>
 			</plugin>
-			<!-- <plugin> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-maven-plugin</artifactId> 
-				<executions> <execution> <goals> <goal>repackage</goal> </goals> </execution> 
-				</executions> </plugin> -->
-
 		</plugins>
 	</build>
 
