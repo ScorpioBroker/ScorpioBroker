@@ -13,10 +13,7 @@
 	<packaging>jar</packaging>
 	<profiles>
 		<profile>
-			<id>default</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
+			<id>docker-aaio</id>
 			<dependencies>
 				<dependency>
 					<groupId>org.springframework.cloud</groupId>
@@ -28,7 +25,45 @@
 				</dependency>
 			</dependencies>
 		</profile>
-
+		<profile>
+			<id>docker</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-oauth2</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-config</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>dist</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-oauth2</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-config</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>aaio</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-oauth2</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-config</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
 		<profile>
 			<id>docker-aaio-no-eureka</id>
 			<dependencies>
@@ -37,17 +72,20 @@
 					<artifactId>commons-lang</artifactId>
 					<version>2.1</version>
 				</dependency>
-				<dependency>
-					<groupId>org.springframework.cloud</groupId>
-					<artifactId>spring-cloud-starter-oauth2</artifactId>
-					<scope>provided</scope>
-				</dependency>
-				<dependency>
-					<groupId>org.springframework.cloud</groupId>
-					<artifactId>spring-cloud-starter-config</artifactId>
-					<scope>provided</scope>
-				</dependency>
 			</dependencies>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>**/eu/neclab/ngsildbroker/commons/securityConfig/ResourceConfigDetails.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 		<profile>
 			<id>docker-no-eureka</id>
@@ -57,17 +95,20 @@
 					<artifactId>commons-lang</artifactId>
 					<version>2.1</version>
 				</dependency>
-				<dependency>
-					<groupId>org.springframework.cloud</groupId>
-					<artifactId>spring-cloud-starter-oauth2</artifactId>
-					<scope>provided</scope>
-				</dependency>
-				<dependency>
-					<groupId>org.springframework.cloud</groupId>
-					<artifactId>spring-cloud-starter-config</artifactId>
-					<scope>provided</scope>
-				</dependency>
 			</dependencies>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>**/eu/neclab/ngsildbroker/commons/securityConfig/ResourceConfigDetails.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 	</profiles>
 	<dependencies>

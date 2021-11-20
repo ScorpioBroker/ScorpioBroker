@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>eu.neclab.ngsildbroker</groupId>
@@ -16,14 +17,6 @@
 		<java.version>1.8</java.version>
 		<spring-cloud.version>Greenwich.RELEASE</spring-cloud.version>
 	</properties>
-	<profiles>
-		<profile>
-			<id>buildForTest</id>
-			<build>
-				<finalName>${project.artifactId}</finalName>
-			</build>
-		</profile>
-	</profiles>
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -88,15 +81,15 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
-	    <groupId>io.springfox</groupId>
-	    <artifactId>springfox-swagger2</artifactId>
-	    <version>2.9.2</version>
-	</dependency>
-			<dependency>
-	      <groupId>io.springfox</groupId>
-	      <artifactId>springfox-swagger-ui</artifactId>
-	      <version>2.9.2</version>
-	       </dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>2.9.2</version>
+		</dependency>
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger-ui</artifactId>
+			<version>2.9.2</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -158,5 +151,45 @@
 			</snapshots>
 		</pluginRepository>
 	</pluginRepositories>
+	<profiles>
+		<profile>
+			<id>docker-aaio-no-eureka</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>**/eu/neclab/ngsildbroker/**/config/*ResourceConfigurer.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>docker-no-eureka</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>**/eu/neclab/ngsildbroker/commons/securityConfig/ResourceConfigDetails.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>buildForTest</id>
+			<build>
+				<finalName>${project.artifactId}</finalName>
+			</build>
+		</profile>
 
+	</profiles>
 </project>
