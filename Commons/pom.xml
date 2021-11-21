@@ -26,7 +26,7 @@
 			</dependencies>
 		</profile>
 		<profile>
-			<id>docker</id>
+			<id>docker-dist</id>
 			<dependencies>
 				<dependency>
 					<groupId>org.springframework.cloud</groupId>
@@ -88,7 +88,7 @@
 			</build>
 		</profile>
 		<profile>
-			<id>docker-no-eureka</id>
+			<id>docker-dist-no-eureka</id>
 			<dependencies>
 				<dependency>
 					<groupId>commons-lang</groupId>

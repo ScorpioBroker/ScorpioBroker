@@ -169,7 +169,7 @@
 			</build>
 		</profile>
 		<profile>
-			<id>docker-no-eureka</id>
+			<id>docker-dist-no-eureka</id>
 			<build>
 				<plugins>
 					<plugin>

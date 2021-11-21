@@ -93,7 +93,7 @@
 	</repositories>
 	<profiles>
 		<profile>
-			<id>docker</id>
+			<id>docker-dist</id>
 			<build>
 				<plugins>
 					<plugin>

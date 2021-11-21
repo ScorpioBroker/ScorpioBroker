@@ -49,6 +49,24 @@
 			</dependencies>
 		</profile>
 		<profile>
+			<id>dist-no-eureka</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<goals>
+									<goal>repackage</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
 			<id>aaio</id>
 			<dependencies>
 				<dependency>
@@ -58,7 +76,10 @@
 			</dependencies>
 		</profile>
 		<profile>
-			<id>docker</id>
+			<id>aaio-no-eureka</id>
+		</profile>
+		<profile>
+			<id>docker-dist</id>
 			<build>
 				<plugins>
 					<plugin>
@@ -89,6 +110,27 @@
 					<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 				</dependency>
 			</dependencies>
+		</profile>
+		<profile>
+			<id>docker-dist-no-eureka</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<goals>
+									<goal>repackage</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>docker-aaio-no-eureka</id>
 		</profile>
 	</profiles>
 </project>
