@@ -161,7 +161,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>src/main/java/eu/neclab/ngsildbroker/**/config/*ResourceConfigurer.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/**/config/*ResourceConfigurer.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -177,7 +177,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>src/main/java/eu/neclab/ngsildbroker/**/config/*ResourceConfigurer.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/**/config/*ResourceConfigurer.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
