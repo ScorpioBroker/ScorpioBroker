@@ -74,13 +74,6 @@
 		</profile>
 	</profiles>
 	<dependencies>
-		<!-- <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-security</artifactId> 
-			</dependency> <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-oauth2</artifactId> 
-			</dependency> -->
-		<!-- <dependency> <groupId>org.springframework.kafka</groupId> <artifactId>spring-kafka-test</artifactId> 
-			<scope>test</scope> <exclusions> <exclusion> <groupId>org.springframework.boot</groupId> 
-			<artifactId>spring-boot-starter-logging</artifactId> </exclusion> </exclusions> 
-			</dependency> -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
