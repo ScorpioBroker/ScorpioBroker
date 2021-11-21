@@ -9,7 +9,6 @@
 	</parent>
 	<artifactId>History</artifactId>
 	<packaging>pom</packaging>
-
 	<modules>
 		<module>HistoryManager</module>
 	</modules>

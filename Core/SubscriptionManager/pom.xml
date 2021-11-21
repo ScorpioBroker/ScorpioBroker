@@ -79,18 +79,15 @@
 			<artifactId>guava</artifactId>
 			<version>29.0-jre</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.locationtech.spatial4j/spatial4j -->
 		<dependency>
 			<groupId>org.locationtech.spatial4j</groupId>
 			<artifactId>spatial4j</artifactId>
 			<version>0.7</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.locationtech.jts/jts-core -->
 		<dependency>
 			<groupId>org.locationtech.jts</groupId>
 			<artifactId>jts-core</artifactId>
@@ -104,8 +101,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-reactor-netty</artifactId>
 		</dependency>
-		<!-- <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>LDContextResolver</artifactId> 
-			<version>0.0.1-SNAPSHOT</version> </dependency> -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -116,10 +111,6 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3 -->
-		<!-- <dependency> <groupId>org.eclipse.paho</groupId> <artifactId>org.eclipse.paho.client.mqttv3</artifactId> 
-			<version>1.2.2</version> </dependency> -->
-		<!-- https://mvnrepository.com/artifact/com.hivemq/hivemq-mqtt-client-shaded -->
 		<dependency>
 			<groupId>com.hivemq</groupId>
 			<artifactId>hivemq-mqtt-client-shaded</artifactId>
@@ -139,7 +130,6 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.mapdb/mapdb -->
 		<dependency>
 			<groupId>org.mapdb</groupId>
 			<artifactId>mapdb</artifactId>

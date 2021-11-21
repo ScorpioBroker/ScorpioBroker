@@ -41,7 +41,7 @@
 				</plugins>
 			</build>
 		</profile>
-				<profile>
+		<profile>
 			<id>docker-dist-no-eureka</id>
 			<build>
 				<plugins>

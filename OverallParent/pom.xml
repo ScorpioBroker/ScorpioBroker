@@ -6,11 +6,7 @@
 	<artifactId>OverallParent</artifactId>
 	<version>1.1.0-SNAPSHOT</version>
 	<name>NGSI-LD Broker Overall Parent</name>
-
-	<!-- <parent> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-parent</artifactId> 
-		<version>2.0.3.RELEASE</version> <relativePath /> </parent> -->
 	<packaging>pom</packaging>
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -27,7 +23,6 @@
 				<scope>import</scope>
 			</dependency>
 			<dependency>
-				<!-- Import dependency management from Spring Boot -->
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
 				<version>2.1.9.RELEASE</version>
@@ -113,7 +108,6 @@
 			</plugin>
 		</plugins>
 	</build>
-
 	<repositories>
 		<repository>
 			<id>spring-snapshots</id>
@@ -132,7 +126,6 @@
 			</snapshots>
 		</repository>
 	</repositories>
-
 	<pluginRepositories>
 		<pluginRepository>
 			<id>spring-snapshots</id>
@@ -153,38 +146,6 @@
 	</pluginRepositories>
 	<profiles>
 		<profile>
-			<id>docker-aaio-no-eureka</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-compiler-plugin</artifactId>
-						<configuration>
-							<excludes>
-								<exclude>eu/neclab/ngsildbroker/**/config/*ResourceConfigurer.java</exclude>
-							</excludes>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>docker-dist-no-eureka</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-compiler-plugin</artifactId>
-						<configuration>
-							<excludes>
-								<exclude>eu/neclab/ngsildbroker/**/config/*ResourceConfigurer.java</exclude>
-							</excludes>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
 			<id>buildForTest</id>
 			<activation>
 				<property>
@@ -195,6 +156,5 @@
 				<finalName>${project.artifactId}</finalName>
 			</build>
 		</profile>
-
 	</profiles>
 </project>

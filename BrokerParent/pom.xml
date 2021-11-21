@@ -26,6 +26,9 @@
 	<profiles>
 		<profile>
 			<id>dist</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
 			<build>
 				<plugins>
 					<plugin>
@@ -74,9 +77,6 @@
 					<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 				</dependency>
 			</dependencies>
-		</profile>
-		<profile>
-			<id>aaio-no-eureka</id>
 		</profile>
 		<profile>
 			<id>docker-dist</id>
@@ -128,9 +128,6 @@
 					</plugin>
 				</plugins>
 			</build>
-		</profile>
-		<profile>
-			<id>docker-aaio-no-eureka</id>
 		</profile>
 	</profiles>
 </project>

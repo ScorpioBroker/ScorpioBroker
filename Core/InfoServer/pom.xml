@@ -71,9 +71,7 @@
 					</plugin>
 				</plugins>
 			</build>
-
-		</profile>
-		
+		</profile>		
 	</profiles>
 	<dependencies>
 		<dependency>
@@ -86,6 +84,5 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		
 	</dependencies>
 </project>
