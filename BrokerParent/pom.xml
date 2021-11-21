@@ -26,9 +26,6 @@
 	<profiles>
 		<profile>
 			<id>dist</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
 			<build>
 				<plugins>
 					<plugin>

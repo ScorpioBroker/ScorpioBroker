@@ -40,9 +40,6 @@
 		</profile>
 		<profile>
 			<id>dist</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
 			<dependencies>
 				<dependency>
 					<groupId>org.springframework.cloud</groupId>

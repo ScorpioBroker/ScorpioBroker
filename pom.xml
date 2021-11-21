@@ -32,9 +32,6 @@
 		</profile>
 		<profile>
 			<id>dist</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
 			<modules>
 				<module>SpringCloudParent</module>
 				<module>SpringCloudModules</module>
