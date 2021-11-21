@@ -45,7 +45,7 @@ jobs:
          cd ../..
       - name: Building Scorpio Components
         run: |
-         mvn clean package -DskipTests -DskipDefault -PbuildForTest -B
+         mvn clean package -DskipTests -Dcitest -Paaio -B
          java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
          sleep 10
          java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar > /dev/null 2>&1 &
