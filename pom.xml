@@ -24,10 +24,14 @@
 	</modules>
 	<profiles>
 		<profile>
-			<id>default</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
+			<id>docker-dist</id>
+			<modules>
+				<module>SpringCloudParent</module>
+				<module>SpringCloudModules</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>dist</id>
 			<modules>
 				<module>SpringCloudParent</module>
 				<module>SpringCloudModules</module>
@@ -39,6 +43,13 @@
 				<module>AllInOneRunner</module>
 			</modules>
 		</profile>
+		<profile>
+			<id>aaio-no-eureka</id>
+			<modules>
+				<module>AllInOneRunner</module>
+			</modules>
+		</profile>
+
 		<profile>
 			<id>docker-aaio</id>
 			<modules>
