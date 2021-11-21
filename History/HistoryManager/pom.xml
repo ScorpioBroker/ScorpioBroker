@@ -67,7 +67,7 @@
 						<configuration>
 							<dockerfile>dockerfile4maven</dockerfile>
 							<repository>scorpiobroker/scorpio</repository>
-							<tag>${project.artifactId}_${project.version}</tag>
+							<tag>${project.artifactId}-no-eureka_${project.version}</tag>
 							<buildArgs>
 								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>
 								<JAR_FILE_RUN>${project.artifactId}.jar</JAR_FILE_RUN>

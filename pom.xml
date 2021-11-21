@@ -94,7 +94,7 @@
 			</build>
 		</profile>
 		<profile>
-			<id>docker-aaio-eureka-free</id>
+			<id>docker-aaio-no-eureka</id>
 			<modules>
 				<module>AllInOneRunner</module>
 			</modules>
