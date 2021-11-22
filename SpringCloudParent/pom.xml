@@ -33,17 +33,4 @@
 			</plugin>
 		</plugins>
 	</build>
-	<profiles>
-		<profile>
-			<id>buildForTest</id>
-			<activation>
-				<property>
-					<name>citest</name>
-				</property>
-			</activation>
-			<build>
-				<finalName>${project.artifactId}</finalName>
-			</build>
-		</profile>
-	</profiles>
 </project>

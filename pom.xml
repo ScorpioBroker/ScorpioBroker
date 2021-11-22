@@ -41,6 +41,8 @@
 			<id>aaio</id>
 			<modules>
 				<module>AllInOneRunner</module>
+				<module>SpringCloudParent</module>
+				<module>SpringCloudModules</module>
 			</modules>
 		</profile>
 		<profile>
@@ -54,6 +56,8 @@
 			<id>docker-aaio</id>
 			<modules>
 				<module>AllInOneRunner</module>
+				<module>SpringCloudParent</module>
+				<module>SpringCloudModules</module>
 			</modules>
 			<build>
 				<plugins>

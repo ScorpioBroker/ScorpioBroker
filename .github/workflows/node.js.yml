@@ -46,9 +46,9 @@ jobs:
       - name: Building Scorpio Components
         run: |
          mvn clean package -DskipTests -Dcitest -Paaio -B
-         java -jar ./SpringCloudModules/eureka/target/eureka-server-1.1.0-SNAPSHOT.jar > /dev/null 2>&1 &
+         java -jar ./SpringCloudModules/eureka/target/eureka-server.jar > /dev/null 2>&1 &
          sleep 10
-         java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway-1.1.0-SNAPSHOT.jar > /dev/null 2>&1 &
+         java -Dspring.profiles.active=aio -jar ./SpringCloudModules/gateway/target/gateway.jar > /dev/null 2>&1 &
          sleep 10
          java -Dspring.profiles.active=dev -jar ./AllInOneRunner/target/AllInOneRunner.jar &
          sleep 80
