@@ -141,5 +141,10 @@
 			<artifactId>SubscriptionManager</artifactId>
 			<version>1.1.0-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.1</version>
+		</dependency>
 	</dependencies>
 </project>
