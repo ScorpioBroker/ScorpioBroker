@@ -114,9 +114,9 @@
 							</execution>
 						</executions>
 						<configuration>
-							<dockerfile>dockerfile4maven_eureka_free</dockerfile>
+							<dockerfile>dockerfile4maven_no_eureka</dockerfile>
 							<repository>scorpiobroker/scorpio</repository>
-							<tag>scorpio-aaio-eureka-free_${project.version}</tag>
+							<tag>scorpio-aaio-no-eureka_${project.version}</tag>
 							<buildArgs>
 								<BUILD_DIR_SCR>AllInOneRunner</BUILD_DIR_SCR>
 								<JAR_FILE_BUILD_SCR>AllInOneRunner-${project.version}.jar</JAR_FILE_BUILD_SCR>
