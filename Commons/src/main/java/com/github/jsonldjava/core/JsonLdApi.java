@@ -490,12 +490,13 @@ public class JsonLdApi {
 	 * @return The expanded JSON-LD object.
 	 * @throws JsonLdError If there was an error during expansion.
 	 */
-	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject element, int payloadType) throws JsonLdError, ResponseException {
+	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType) throws JsonLdError, ResponseException {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
 		// 1)
-		if (element == null) {
+		if (ngsiElement == null || ngsiElement.getElement() == null) {
 			return null;
 		}
+		Object element = ngsiElement.getElement();
 		// GK: This would be the point to set `propertyScopedContext` to the `@context`
 		// entry for any term definition associated with `activeProperty`.
 		// 3)
@@ -505,7 +506,8 @@ public class JsonLdApi {
 			// 3.2)
 			for (final Object item : (List<Object>) element) {
 				// 3.2.1)
-				final Object v = expand(activeCtx, activeProperty, item);
+				NGSIObject ngsiV = expand(activeCtx, activeProperty, ngsiElement.duplicateSettings(item), payloadType);
+				final Object v = ngsiV.getElement();
 				// 3.2.2)
 				if ((JsonLdConsts.LIST.equals(activeProperty)
 						|| JsonLdConsts.LIST.equals(activeCtx.getContainer(activeProperty)))
