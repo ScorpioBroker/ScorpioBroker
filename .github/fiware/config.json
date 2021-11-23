@@ -1,0 +1,19 @@
+{
+    "enabler": "Scorpio NGSI-LD Broker",
+    "chapter": "core",
+    "academy": "core/scorpio",
+    "readthedocs": "scorpio",
+    "helpdesk": "",
+    "coveralls": "",
+    "github": ["ScorpioBroker/ScorpioBroker"],
+    "dockerregistry": ["hub.docker.com"],
+    "docker": ["scorpiobroker/scorpio"],
+    "email": "",
+    "status": "incubating",
+    "compose": "https://github.com/ScorpioBroker/ScorpioBroker/blob/development/docker-compose-dist.yml",
+    "exclude": [""],
+    "stackexchange": [""],
+    "unit-test": "",
+    "smoke-test": "",
+    "dockerfile": "https://github.com/ScorpioBroker/ScorpioBroker/blob/development/dockerfile4maven"
+}
