@@ -117,8 +117,7 @@
 	<repositories>
 		<repository>
 			<id>spring-snapshots</id>
-			<name>Spring 
-		Snapshots</name>
+			<name>Spring Snapshots</name>
 			<url>https://repo.spring.io/snapshot</url>
 			<snapshots>
 				<enabled>true</enabled>
@@ -126,8 +125,7 @@
 		</repository>
 		<repository>
 			<id>spring-milestones</id>
-			<name>Spring 
-		Milestones</name>
+			<name>Spring Milestones</name>
 			<url>https://repo.spring.io/milestone</url>
 			<snapshots>
 				<enabled>false</enabled>

@@ -5,8 +5,6 @@ mysettings:
     port: ${eureka.port:8761}
 eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}
 spring:
-  profiles:
-    active: native
   application:
     name: configserver
   main:
