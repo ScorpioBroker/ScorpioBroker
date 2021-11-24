@@ -518,7 +518,8 @@ public class JsonLdApi {
 					if (v instanceof List) {
 						List list = (List) v;
 						for (Object i : list) {
-							Object expandedValue = expand(activeCtx, activeCtx.getContainer(activeProperty), v);
+							NGSIObject ngsiExpandedValue = expand(activeCtx, activeCtx.getContainer(activeProperty), ngsiV.duplicateSettings(i),payloadType);
+							Object expandedValue = ngsiExpandedValue.getElement();
 							Object tmp = expandedValue;
 							if (!(tmp instanceof List)) {
 								tmp = new ArrayList<Object>();
@@ -547,12 +548,7 @@ public class JsonLdApi {
 					}
 				}
 			}
-			// 3.3)
-			// System.out.println("------------------------------");
-			// System.out.println(result.toString());
-			// System.out.println(result.getClass().toString());
-			// System.out.println("------------------------------");
-			return result;
+			return ngsiElement.duplicateSettings(result);
 		}
 		// 4)
 		else if (element instanceof Map) {
@@ -665,7 +661,8 @@ public class JsonLdApi {
 					}
 					// 7.4.5)
 					else if (JsonLdConsts.GRAPH.equals(expandedProperty)) {
-						expandedValue = expand(activeCtx, JsonLdConsts.GRAPH, value);
+						NGSIObject ngsiExpandedValue = expand(activeCtx, JsonLdConsts.GRAPH, ngsiElement.duplicateSettings(value), payloadType);
+						expandedValue = ngsiExpandedValue.getElement();
 					}
 					// 7.4.6)
 					else if (JsonLdConsts.VALUE.equals(expandedProperty)) {
@@ -714,7 +711,8 @@ public class JsonLdApi {
 							continue;
 						}
 						// 7.4.9.2)
-						expandedValue = expand(activeCtx, activeProperty, value);
+						NGSIObject ngsiExpandedValue = expand(activeCtx, activeProperty, ngsiElement.duplicateSettings(value), payloadType);
+						expandedValue = ngsiExpandedValue.getElement();
 
 						// NOTE: step not in the spec yet
 						if (!(expandedValue instanceof List)) {
@@ -732,7 +730,8 @@ public class JsonLdApi {
 					}
 					// 7.4.10)
 					else if (JsonLdConsts.SET.equals(expandedProperty)) {
-						expandedValue = expand(activeCtx, activeProperty, value);
+						NGSIObject ngsiExpandedValue = expand(activeCtx, activeProperty, ngsiElement.duplicateSettings(value), payloadType);
+						expandedValue = ngsiExpandedValue.getElement();
 					}
 					// 7.4.11)
 					else if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
@@ -740,7 +739,8 @@ public class JsonLdApi {
 							throw new JsonLdError(Error.INVALID_REVERSE_VALUE, "@reverse value must be an object");
 						}
 						// 7.4.11.1)
-						expandedValue = expand(activeCtx, JsonLdConsts.REVERSE, value);
+						NGSIObject ngsiExpandedValue = expand(activeCtx, JsonLdConsts.REVERSE, ngsiElement.duplicateSettings(value), payloadType);
+						expandedValue = ngsiExpandedValue.getElement();
 						// NOTE: algorithm assumes the result is a map
 						// 7.4.11.2)
 						if (((Map<String, Object>) expandedValue).containsKey(JsonLdConsts.REVERSE)) {
