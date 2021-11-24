@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd $sesdir
-java -Dspring.profiles.active=docker -jar $sesjar &
+java -jar $sesjar &
 cd ..
 sleep 10
 #cd $scsdir
