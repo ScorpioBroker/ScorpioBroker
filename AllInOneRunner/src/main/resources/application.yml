@@ -247,4 +247,4 @@ security:
 selfhostcorecontext: http://localhost:9090/corecontext
 logging:
   level:
-    root: DEBUG
+    root: INFO
