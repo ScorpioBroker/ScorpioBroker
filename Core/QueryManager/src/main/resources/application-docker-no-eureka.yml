@@ -1,0 +1,15 @@
+mysettings:
+  application-name: query-manager
+  kafka:
+    bootstrap:
+      host: ${kafka.host:kafka}
+      port: ${kafka.port:9092}
+  postgres:
+    host: ${postgres.host:postgres}
+    port: ${postgres.port:5432}
+    username: ${postgres.user:ngb}
+    password: ${postgres.name:ngb}
+    database-name: ${postgres.dbname:ngb}
+  gateway:
+    host: ${gateway.host:}
+    port: ${gateway.port:9090}

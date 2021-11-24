@@ -1,11 +1,25 @@
+mysettings:
+  application-name: subscription-manager
+  kafka:
+    bootstrap:
+      host: ${kafka.host:localhost}
+      port: ${kafka.port:9092
+  postgres:
+    host: ${postgres.host:localhost}
+    port: ${postgres.port:5432}
+    username: ${postgres.user:ngb}
+    password: ${postgres.name:ngb}
+    database-name: ${postgres.dbname:ngb}
+  gateway:
+    host: ${gateway.host:localhost}
+    port: ${gateway.port:9090}
+jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
+atcontext:
+  url: http://${mysettings.gateway.host}:${mysettings.gateway.port}/ngsi-ld/contextes/
+bootstrap:
+  servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 server:
   port: 2025
-
-
-atcontext:
-  url: http://localhost:9090/ngsi-ld/contextes/
-
-#Entity-Manager topics properties
 entity:
   topic: ENTITY
   create:
@@ -15,8 +29,7 @@ entity:
   update:
     topic: ENTITY_UPDATE
   delete:
-    topic: ENTITY_DELETE
-    
+    topic: ENTITY_DELETE    
 csource:
   registry:
     topic: CSOURCE_REGISTRATION
@@ -26,10 +39,6 @@ query:
   topic: QUERY
   result:
     topic: QUERY_RESULT
-#kafka broker path
-bootstrap:
-  servers: localhost:9092
-
 key:
   deserializer: org.apache.kafka.common.serialization.StringDeserializer
 #Entity Append ovewrite options
@@ -43,8 +52,6 @@ management:
   endpoint:
     restart:
       enabled: true
-      
-
 spring:
   kafka:
     admin:
@@ -53,13 +60,12 @@ spring:
           policy: compact
   main:
     lazy-initialization: true
-  application:
-    name: subscription-manager
+  application.name: ${mysettings.application-name}
   cloud:
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: ${bootstrap.servers}
       bindings:
         SUBSCRIPTIONS_WRITE_CHANNEL:
           destination: SUBSCRIPTIONS
@@ -72,9 +78,9 @@ spring:
       maximumPoolSize: 20
       minimumIdle: 5
       poolName: SpringBootHikariCP
-    password: ngb
-    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_registrymanager
-    username: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
 writer:
   datasource:
     hikari:
@@ -84,16 +90,16 @@ writer:
       maximumPoolSize: 20
       minimumIdle: 5
       poolName: SpringBootHikariCP_Writer
-    password: ngb
-    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_writer
-    username: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
   enabled: true
 reader:
   enabled: true
   datasource:
-    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_reader"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20

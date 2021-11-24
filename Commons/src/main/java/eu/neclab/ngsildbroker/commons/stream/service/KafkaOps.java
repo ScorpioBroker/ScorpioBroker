@@ -73,21 +73,7 @@ public class KafkaOps {
 		}
 	}
 
-	public void createTopic(String topicName) {
 
-		KafkaProperties kafkaProperties = new KafkaProperties();
-		kafkaProperties.setBootstrapServers(Collections.singletonList("localhost:9092"));
-		KafkaBinderConfigurationProperties kafkaBinderConfigurationProperties = new KafkaBinderConfigurationProperties(
-				kafkaProperties);
-		KafkaTopicProvisioner kafkaTopicProvisioner = new KafkaTopicProvisioner(kafkaBinderConfigurationProperties,
-				kafkaProperties);
-		RetryOperations metadataRetryOperations = new RetryTemplate();
-		kafkaTopicProvisioner.setMetadataRetryOperations(metadataRetryOperations);
-		KafkaProducerProperties kafkaProducerProperties = new KafkaProducerProperties();
-		ExtendedProducerProperties<KafkaProducerProperties> extendedProducerProperties = new ExtendedProducerProperties<KafkaProducerProperties>(
-				kafkaProducerProperties);
-		kafkaTopicProvisioner.provisionProducerDestination(topicName, extendedProducerProperties);
-	}
 
 	public Set<String> getTopics() throws Exception {
 		KafkaProperties kafkaProperties = new KafkaProperties();

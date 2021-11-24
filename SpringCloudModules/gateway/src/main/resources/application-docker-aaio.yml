@@ -1,0 +1,83 @@
+mysettings:
+  eureka:
+    host: ${eureka.host:eureka}
+query-manager:
+  request-path: /ngsi-ld/v1/entities
+  target-service: aio-runner
+  http-method: GET
+entity-manager:
+  request-path: /ngsi-ld/v1/entities
+  target-service: aio-runner
+  http-method: POST
+zuul:
+  routes:
+    entity-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/entities/**
+      serviceId: aio-runner
+      stripPrefix: false
+    query-manager_1:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/attributes/**     
+      serviceId: aio-runner
+      stripPrefix: false
+    query-manager_2:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/types/**     
+      serviceId: aio-runner
+      stripPrefix: false
+    postquery:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/entityOperations/query/**
+      serviceId: aio-runner
+      stripPrefix: false
+    subscription-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/subscriptions/**
+      serviceId: aio-runner
+      stripPrefix: false
+    context-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/csourceRegistrations/**
+      serviceId: aio-runner
+      stripPrefix: false
+    subforeg:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/csourceSubscriptions/**
+      serviceId: aio-runner
+      stripPrefix: false
+    batchoperations:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/entityOperations/**
+      serviceId: aio-runner
+      stripPrefix: false
+    history-manager:
+      sensitiveHeaders:
+      path: /ngsi-ld/v1/temporal/entities/**
+      serviceId: aio-runner
+      stripPrefix: false
+    atcontext-server:
+      sensitiveHeaders:
+      path: /ngsi-ld/contextes/**
+      serviceId: aio-runner
+      stripPrefix: false
+    infos:
+      sensitiveHeaders:
+      path: /scorpio/v1/info/**
+      serviceId: aio-runner
+      stripPrefix: false
+    health:
+      sensitiveHeaders:
+      path: /health/**
+      serviceId: aio-runner
+      stripPrefix: false
+    corecontext:
+      sensitiveHeaders:
+      path: /corecontext/**
+      serviceId: aio-runner
+      stripPrefix: false
+    test-manager:
+      sensitiveHeaders:
+      path: /test/**
+      serviceId: testmanager
+      stripPrefix: false

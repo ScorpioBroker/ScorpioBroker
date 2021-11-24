@@ -1,0 +1,5 @@
+mysettings:
+  eureka:
+    protocol: ${eureka.protocol:http}
+    host: ${eureka.host:eureka}
+    port: ${eureka.port:8761}

@@ -1,3 +1,9 @@
+mysettings:
+  eureka:
+    protocol: ${eureka.protocol:http}
+    host: ${eureka.host:localhost}
+    port: ${eureka.port:8761}
+eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}
 spring:
   profiles:
     active: native
@@ -13,7 +19,7 @@ spring:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${eurekaurl}/eureka/
     registerWithEureka: true
     fetchRegistry: true
 server:

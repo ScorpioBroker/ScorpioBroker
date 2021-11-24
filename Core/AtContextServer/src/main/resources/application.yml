@@ -1,6 +1,13 @@
+mysettings:
+  application-name: atcontext-server
+  kafka:
+    bootstrap:
+      host: ${kafka.host:localhost}
+      port: ${kafka.port:9092}
+bootstrap:
+  servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 spring:
-  application:
-    name: atcontext-server
+  application.name: ${mysettings.application-name}
   main:
     lazy-initialization: true
     allow-bean-definition-overriding: true
@@ -13,7 +20,7 @@ spring:
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: ${bootstrap.server}
       bindings:
          ATCONTEXT_WRITE_CHANNEL:
           destination: ATCONTEXT
@@ -34,12 +41,6 @@ query:
 csource:
   query:
     topic: CONTEXT_REGISTRY_QUERY
-    
-bootstrap:
-  servers: localhost:9092
-#enable log compaction
-
-
 management:
   endpoints:
     web:

@@ -1,6 +1,23 @@
+mysettings:
+  application-name: query-manager
+  kafka:
+    bootstrap:
+      host: ${kafka.host:localhost}
+      port: ${kafka.port:9092}
+  postgres:
+    host: ${postgres.host:localhost}
+    port: ${postgres.port:5432}
+    username: ${postgres.user:ngb}
+    password: ${postgres.name:ngb}
+    database-name: ${postgres.dbname:ngb}
+  gateway:
+    host: ${gateway.host:localhost}
+    port: ${gateway.port:9090}
+jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
+bootstrap:
+  servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 spring:
-  application:
-    name: query-manager
+  application.name: ${mysettings.application-name}
   main:
     lazy-initialization: true
   kafka:
@@ -14,15 +31,15 @@ spring:
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: ${bootstrap.servers}
       bindings:
          ATCONTEXT_WRITE_CHANNEL:
           destination: ATCONTEXT
           contentType: application/json
   datasource:
-    url: "jdbc:postgresql://127.0.0.1:5432/ngb?ApplicationName=ngb_querymanager"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20
@@ -47,12 +64,6 @@ query:
   topic: QUERY
   result:
     topic: QUERY_RESULT
-
-bootstrap:
-  servers: localhost:9092
-#enable log compaction
-
-
 csource:
   query:
     topic: CONTEXT_REGISTRY_QUERY
@@ -66,7 +77,7 @@ management:
       enabled: true
       
 atcontext:
-  url: http://localhost:9090/ngsi-ld/contextes/
+  url: http://${mysettings.gateway.host}:${mysettings.gateway.port}/ngsi-ld/contextes/
 ngb:
   debugmode: false
 kafka:

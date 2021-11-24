@@ -1,0 +1,10 @@
+server:
+  port: 9090
+mysettings:
+  kafka:
+    bootstrap:
+      host: ${kafka.host:kafka}
+  postgres:
+    host: ${postgres.host:postgres}
+  gateway:
+    host: ${gateway.host:}

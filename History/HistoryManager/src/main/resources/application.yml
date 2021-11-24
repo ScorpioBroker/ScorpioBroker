@@ -1,12 +1,30 @@
+mysettings:
+  application-name: history-manager
+  kafka:
+    bootstrap:
+      host: ${kafka.host:localhost}
+      port: ${kafka.port:9092}
+  postgres:
+    host: ${postgres.host:localhost}
+    port: ${postgres.port:5432}
+    username: ${postgres.user:ngb}
+    password: ${postgres.name:ngb}
+    database-name: ${postgres.dbname:ngb}
+  gateway:
+    host: ${gateway.host:localhost}
+    port: ${gateway.port:9090}
+jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
+bootstrap:
+  servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
+
 spring:
-  application:
-    name: history-manager
+  application.name: ${mysettings.application-name}
   main:
     lazy-initialization: true
   datasource:
-    url: "jdbc:postgresql://127.0.0.1:5432/ngb?ApplicationName=ngb_historymanager"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20
@@ -18,7 +36,7 @@ spring:
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: ${bootstrap.servers}
       bindings:
          TEMPORAL_ENTITY_WRITE_CHANNEL:
           destination: TEMPORALENTITY
@@ -41,11 +59,6 @@ entity:
   temporal:
     topic: TEMPORALENTITY
 
-#kafka broker path
-bootstrap:
-  servers: localhost:9092
-
-
 management:
   endpoints:
     web:
@@ -57,14 +70,14 @@ management:
 
 
 atcontext:
-  url: http://localhost:9090/ngsi-ld/contextes/
+  url: http://${mysettings.gateway.host}:${mysettings.gateway.port}/ngsi-ld/contextes/
 
 reader:
   enabled: true
   datasource:
-    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_reader"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20
@@ -76,9 +89,9 @@ reader:
 writer:
   enabled: true
   datasource:
-    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_writer"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20

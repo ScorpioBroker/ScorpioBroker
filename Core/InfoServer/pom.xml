@@ -60,7 +60,7 @@
 							</execution>
 						</executions>
 						<configuration>
-							<dockerfile>dockerfile4maven</dockerfile>
+							<dockerfile>dockerfile4maven_no_eureka</dockerfile>
 							<repository>scorpiobroker/scorpio</repository>
 							<tag>${project.artifactId}-no-eureka_${project.version}</tag>
 							<buildArgs>

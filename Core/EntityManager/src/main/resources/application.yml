@@ -1,5 +1,16 @@
-
-
+mysettings:
+  application-name: entity-manager
+  kafka:
+    bootstrap:
+      host: ${kafka.host:localhost}
+      port: ${kafka.port:9092}
+  postgres:
+    host: ${postgres.host:localhost}
+    port: ${postgres.port:5432}
+    username: ${postgres.user:ngb}
+    password: ${postgres.name:ngb}
+    database-name: ${postgres.dbname:ngb}
+jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
 server:
   port: 1025
   tomcat:
@@ -22,9 +33,8 @@ entity:
 csources:
   registration:
     topic: CONTEXT_REGISTRY
-#kafka broker path
 bootstrap:
-  servers: localhost:9092
+  servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 
 batchoperations:
   maxnumber:
@@ -53,8 +63,7 @@ management:
 
 
 spring:
-  application:
-    name: entity-manager
+  application.name: ${mysettings.application-name}
   kafka:
     admin:
       properties:
@@ -64,7 +73,7 @@ spring:
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: ${bootstrap.servers}
       bindings:
         ENTITY_WRITE_CHANNEL:
           destination: ENTITY
@@ -127,9 +136,9 @@ spring:
       maximumPoolSize: 20
       minimumIdle: 5
       poolName: SpringBootHikariCP
-    password: ngb
-    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_registrymanager
-    username: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
   flyway:
     baselineOnMigrate: true  
 writer:
@@ -141,16 +150,16 @@ writer:
       maximumPoolSize: 20
       minimumIdle: 5
       poolName: SpringBootHikariCP_Writer
-    password: ngb
-    url: jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_entitymanager_writer
-    username: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
   enabled: true
 reader:
   enabled: true
   datasource:
-    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_entitymanager_reader"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20

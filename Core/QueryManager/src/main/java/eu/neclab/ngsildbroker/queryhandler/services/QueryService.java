@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -131,7 +132,7 @@ public class QueryService {
 
 	@PostConstruct
 	private void setup() {
-		kafkaTemplate.setReplyTimeout(replyTimeout);
+		kafkaTemplate.setDefaultReplyTimeout(Duration.ofSeconds(replyTimeout));
 	}
 
 	/**
