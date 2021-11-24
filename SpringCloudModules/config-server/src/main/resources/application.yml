@@ -9,11 +9,6 @@ spring:
     name: configserver
   main:
     lazy-initialization: true
-  cloud:
-    config:
-      server:
-        native:
-          searchLocations: classpath:/config
 eureka:
   client:
     serviceUrl:
