@@ -1,6 +1,6 @@
 mysettings:
   eureka:
-    host: ${eureka.host:eureka}
+    host: ${eureka.host:localhost}
 query-manager:
   request-path: /ngsi-ld/v1/entities
   target-service: aio-runner
