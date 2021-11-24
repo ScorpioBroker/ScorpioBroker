@@ -63,6 +63,7 @@ management:
 
 
 spring:
+  mvc.pathpattern.matching-strategy: ant_path_matcher
   application.name: ${mysettings.application-name}
   kafka:
     admin:

@@ -53,6 +53,7 @@ management:
     restart:
       enabled: true
 spring:
+  mvc.pathpattern.matching-strategy: ant_path_matcher
   kafka:
     admin:
       properties:

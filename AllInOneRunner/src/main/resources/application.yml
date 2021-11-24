@@ -191,8 +191,7 @@ spring:
   main:
     lazy-initialization: true
     allow-bean-definition-overriding: true
-
-
+  mvc.pathpattern.matching-strategy: ant_path_matcher
 writer:
   datasource:
     hikari:
