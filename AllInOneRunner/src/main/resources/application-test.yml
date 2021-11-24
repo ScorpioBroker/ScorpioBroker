@@ -2,4 +2,4 @@ server:
   port: 9090
 logging:
   level:
-    root: DEBUG
+    root: INFO

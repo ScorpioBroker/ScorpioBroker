@@ -1,3 +1,5 @@
+server:
+  port: 27015
 mysettings:
   kafka:
     bootstrap:
