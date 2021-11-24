@@ -3,7 +3,9 @@ mysettings:
     bootstrap:
       host: ${kafka.host:kafka}
   eureka:
+    protocol: ${eureka.protocol:http}
     host: ${eureka.host:eureka}
+    port: ${eureka.port:8761}
   postgres:
     host: ${postgres.host:postgres}
   gateway:
