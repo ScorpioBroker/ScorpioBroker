@@ -1,3 +1,3 @@
 #!/bin/bash
 cd $scrdir
-java -jar $scrjar $*
+java -Dspring.profiles.active=docker-no-eureka -jar $scrjar $*

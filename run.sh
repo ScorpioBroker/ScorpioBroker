@@ -1,16 +1,16 @@
 #!/bin/bash
 
 cd $sesdir
-java -jar $sesjar &
+java -Dspring.profiles.active=docker -jar $sesjar &
 cd ..
 sleep 10
 cd $scsdir
-java -jar $scsjar $* &
+java -Dspring.profiles.active=docker -jar $scsjar $* &
 cd ..
 sleep 10
 cd $sgwdir
-java -jar $sgwjar $* &
+java -Dspring.profiles.active=docker-aaio -jar $sgwjar $* &
 cd ..
 sleep 10
 cd $scrdir
-java -jar $scrjar $*
+java -Dspring.profiles.active=docker-aaio -jar $scrjar $*
