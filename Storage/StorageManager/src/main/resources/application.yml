@@ -3,7 +3,7 @@ mysettings:
   kafka:
     bootstrap:
       host: ${kafka.host:localhost}
-      port: ${kafka.port:9092
+      port: ${kafka.port:9092}
   postgres:
     host: ${postgres.host:localhost}
     port: ${postgres.port:5432}
