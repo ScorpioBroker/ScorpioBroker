@@ -13,4 +13,4 @@ java -Dspring.profiles.active=docker-aaio -jar $sgwjar $* &
 cd ..
 sleep 10
 cd $scrdir
-java -Dspring.profiles.active=docker-aaio -jar $scrjar $*
+java -Dspring.profiles.active=docker -jar $scrjar $*
