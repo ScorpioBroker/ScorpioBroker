@@ -50,6 +50,7 @@ import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteQueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
@@ -349,10 +350,10 @@ public class QueryService {
 				}
 			});
 
-			Future<QueryResult> futureContextRegistry = executorService.submit(new Callable<QueryResult>() {
-				public QueryResult call() throws Exception {
+			Future<RemoteQueryResult> futureContextRegistry = executorService.submit(new Callable<RemoteQueryResult>() {
+				public RemoteQueryResult call() throws Exception {
 					try {
-						QueryResult fromCsources = new QueryResult(null, null, ErrorType.None, -1, true);
+						
 						logger.trace("Asynchronous 1 context registry");
 						QueryResult brokerList;
 						if (cSourceDAO != null) {
@@ -364,10 +365,10 @@ public class QueryService {
 						Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);
 						Matcher m;
 						Matcher mtenant;
-						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-						Set<Callable<QueryResult>> callablesCollection = new HashSet<Callable<QueryResult>>();
+
+						Set<Callable<RemoteQueryResult>> callablesCollection = new HashSet<Callable<RemoteQueryResult>>();
 						if (brokerList.getActualDataString() == null) {
-							return queryResult;
+							return null;
 						}
 						for (String brokerInfo : brokerList.getActualDataString()) {
 							m = p.matcher(brokerInfo);
@@ -383,7 +384,7 @@ public class QueryService {
 								uri_tenant = null;
 							}
 							logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
-							Callable<QueryResult> callable = () -> {
+							Callable<RemoteQueryResult> callable = () -> {
 								HttpHeaders callHeaders = new HttpHeaders();
 								for (Entry<String, String> entry : headers.entries()) {
 									String key = entry.getKey();
@@ -416,20 +417,18 @@ public class QueryService {
 											response.getHeaders().get(NGSIConstants.COUNT_HEADER_RESULT).get(0));
 								}
 								logger.debug("http call result :: ::" + resultBody);
-
-								QueryResult result = new QueryResult(getDataListFromResult(resultBody), null,
-										ErrorType.None, -1, true);
+								
+								RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, -1, true);
 								result.setCount(count);
+								result.addData(objectMapper.readTree(contextResolver.expand(resultBody, linkHeaders, false, AppConstants.ENTITIES_URL_ID)));
 								return result;
 							};
 							callablesCollection.add(callable);
 
 						}
-
-						fromCsources = getDataFromCsources(callablesCollection);
 						logger.debug("csource call response :: ");
 						// fromCsources.forEach(e -> logger.debug(e));
-						return fromCsources;
+						return getDataFromCsources(callablesCollection);
 					} catch (Exception e) {
 						e.printStackTrace();
 						logger.error(
@@ -453,44 +452,24 @@ public class QueryService {
 				logger.error("Failed to get data from storage", e);
 				throw new ResponseException(ErrorType.InternalError, "Failed to get data from storage");
 			}
-			QueryResult fromCsources;
+			RemoteQueryResult fromCsources;
 			try {
 				fromCsources = futureContextRegistry.get();
 			} catch (Exception e) {
 				logger.error("Failed to get data from registry", e);
 				throw new ResponseException(ErrorType.InternalError, "Failed to get data from registry");
 			}
+			if (fromCsources != null) {
+				try {
+					fromStorage = mergeStorage(fromCsources, fromStorage);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			result = fromStorage;
 			// logger.trace("response from storage :: ");
 			// fromStorage.forEach(e -> logger.debug(e));
-			List<String> fromStorageDataList = fromStorage.getActualDataString();
-			List<String> fromCsourceDataList = new ArrayList<String>();
-			if (fromCsources.getActualDataString() != null) {
-				fromCsourceDataList = fromCsources.getActualDataString();
-			}
-			int count = 0;
-			if (fromStorage.getCount() != null) {
-				count = fromStorage.getCount();
-			}
-
-			if (fromStorageDataList != null) {
-				aggregatedResult.addAll(fromStorageDataList);
-			}
-			int countremote = 0;
-			if (fromCsources.getCount() != null) {
-				countremote = fromCsources.getCount();
-			}
-			if (fromCsourceDataList.size() > 0) {
-				aggregatedResult.addAll(fromCsourceDataList);
-			}
-			if (count != 0 && countremote != 0) {
-				result.setCount(count + countremote);
-			}
-			if (count != 0 && countremote == 0) {
-				result.setCount(count);
-			}
-			if (count == 0 && countremote != 0) {
-				result.setCount(countremote);
-			}
 			// logger.trace("aggregated");
 			// aggregatedResult.forEach(e -> logger.debug(e));
 			/*
@@ -530,15 +509,26 @@ public class QueryService {
 			}
 			aggregatedResult.subList(offset, end);
 			dataLeft = aggregatedResult.size() - end;
-
+			result.setDataString(aggregatedResult);
 		}
-		result.setDataString(aggregatedResult);
+		
 		result.setqToken(qToken);
 		result.setLimit(limit);
 		result.setOffset(offset);
 		result.setResultsLeftAfter(dataLeft);
 		result.setResultsLeftBefore(offset);
 		return result;
+	}
+
+	private QueryResult mergeStorage(RemoteQueryResult fromCsources, QueryResult fromStorage) throws IOException {
+		if (fromStorage.getActualDataString() != null) {
+			for (String entry : fromStorage.getActualDataString()) {
+				JsonNode entity = objectMapper.readTree(entry);
+				fromCsources.addData(entity);
+			}
+			fromCsources.setCount(fromCsources.getCount() + fromStorage.getCount());
+		}
+		return fromCsources;
 	}
 
 	protected List<String> getDataListFromResult(String resultBody) throws ResponseException {
@@ -591,25 +581,25 @@ public class QueryService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	private QueryResult getDataFromCsources(Set<Callable<QueryResult>> callablesCollection)
+	private RemoteQueryResult getDataFromCsources(Set<Callable<RemoteQueryResult>> callablesCollection)
 			throws ResponseException, Exception {
+		if (callablesCollection == null || callablesCollection.isEmpty()) {
+			return null;
+		}
 		ExecutorService executorService = Executors.newFixedThreadPool(2);
-		List<Future<QueryResult>> futures = executorService.invokeAll(callablesCollection);
-		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-		// TODO: why sleep?
-		// Thread.sleep(5000);
-		List<String> entities = new ArrayList<String>();
+		List<Future<RemoteQueryResult>> futures = executorService.invokeAll(callablesCollection);
+		RemoteQueryResult queryResult = new RemoteQueryResult(null, ErrorType.None, -1, true);
 		int count = 0;
-		for (Future<QueryResult> future : futures) {
+		for (Future<RemoteQueryResult> future : futures) {
 			logger.trace("future.isDone = " + future.isDone());
-			QueryResult tempResult = future.get();
-			entities.addAll(tempResult.getDataString());
+			RemoteQueryResult tempResult = future.get();
+			for (ObjectNode entry : tempResult.getId2Data().values()) {
+				queryResult.addData(entry);
+			}
 			count += tempResult.getCount();
 		}
 		executorService.shutdown();
 		logger.trace("getDataFromCsources() completed ::");
-		queryResult.setActualDataString(entities);
-		queryResult.setDataString(entities);
 		queryResult.setCount(count);
 		return queryResult;
 	}
