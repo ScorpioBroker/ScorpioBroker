@@ -17,7 +17,7 @@ jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.por
 bootstrap:
   servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 spring:
-  mvc.pathpattern.matching-strategy: ant_path_matcher
+#  mvc.pathpattern.matching-strategy: ant_path_matcher
   application.name: ${mysettings.application-name}
   main:
     lazy-initialization: true

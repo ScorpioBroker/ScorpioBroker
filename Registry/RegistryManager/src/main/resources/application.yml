@@ -21,7 +21,7 @@ bootstrap:
 server:
   port: 1030
 spring:
-  mvc.pathpattern.matching-strategy: ant_path_matcher
+#  mvc.pathpattern.matching-strategy: ant_path_matcher
   application.name: ${mysettings.application-name}
   main:
     lazy-initialization: true
