@@ -101,6 +101,12 @@ public class UpdateEntityRequest extends EntityRequest {
 						}
 					} else {
 						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
+							if (innerNode.get(i).has(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+								((ObjectNode) innerNode.get(i)).remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+								((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_MODIFIED_AT).addObject()
+										.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME)
+										.put(NGSIConstants.JSON_LD_VALUE, now);
+							}
 							setFieldValue(jsonToUpdate.fieldNames(), ((ArrayNode) objectNode.get(attrId)), jsonToUpdate,
 									updateResult, i);
 						}
