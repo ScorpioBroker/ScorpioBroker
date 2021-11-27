@@ -238,6 +238,7 @@ public interface NGSIConstants {
 	public static final String COUNT_HEADER_RESULT = "count";
 	public static final String REGEX_NGSI_LD_ATTR_TYPES = new String(
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
-	public static final String TENANT_HEADER = "ngsild-tenant";
+	public static final String TENANT_HEADER = "NGSILD-tenant";
+	public static final String LINK_HEADER = "Link";
 	public static final String QUERY_TYPE = "Query";
 }
