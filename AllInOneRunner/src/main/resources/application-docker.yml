@@ -9,7 +9,7 @@ mysettings:
     host: ${eureka.host:localhost}
     port: ${eureka.port:8761}
   postgres:
-    host: ${postgres.host:postgres}
+    host: ${dbhost:postgres}
   gateway:
     host: ${gateway.host:}
 eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}

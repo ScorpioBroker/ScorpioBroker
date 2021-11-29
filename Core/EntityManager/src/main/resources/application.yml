@@ -5,11 +5,11 @@ mysettings:
       host: ${kafka.host:localhost}
       port: ${kafka.port:9092}
   postgres:
-    host: ${postgres.host:localhost}
-    port: ${postgres.port:5432}
-    username: ${postgres.user:ngb}
-    password: ${postgres.name:ngb}
-    database-name: ${postgres.dbname:ngb}
+    host: ${dbhost:localhost}
+    port: ${dbport:5432}
+    username: ${dbuser:ngb}
+    password: ${dbpass:ngb}
+    database-name: ${dbname:ngb}
 jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
 server:
   port: 1025

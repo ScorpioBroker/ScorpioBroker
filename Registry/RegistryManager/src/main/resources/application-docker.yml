@@ -3,7 +3,7 @@ mysettings:
     bootstrap:
       host: ${kafka.host:kafka}
   postgres:
-    host: ${postgres.host:postgres}
+    host: ${dbhost:postgres}
   gateway:
     host: ${gateway.host:}
   eureka:
