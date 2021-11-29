@@ -47,7 +47,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_PROPERTY = "https://uri.etsi.org/ngsi-ld/Property";
 	public final static String NGSI_LD_HAS_VALUE = "https://uri.etsi.org/ngsi-ld/hasValue";
 	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
-	public final static String NGSI_LD_COORDINATES = "https://uri.etsi.org/ngsi-ld/coordinates";
+	public final static String NGSI_LD_COORDINATES = "https://purl.org/geojson/vocab#coordinates"; //"https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
 	public final static String NGSI_LD_LOCATION = "https://uri.etsi.org/ngsi-ld/location";

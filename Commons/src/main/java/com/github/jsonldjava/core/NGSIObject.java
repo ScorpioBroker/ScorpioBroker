@@ -26,13 +26,22 @@ public class NGSIObject {
 	private boolean hasAtType = false;
 	private boolean isArray = false;
 	private boolean isLdKeyWord = false;
+	private boolean isScalar = false;
+
+	private ArrayList<String> allowedScalarsEntity = new ArrayList<String>();
 	private ArrayList<String> datasetIds = new ArrayList<String>();
 	private String id;
 	private ArrayList<String> types = new ArrayList<String>();
+	private boolean fromHasValue;
 
 	public NGSIObject(Object element) {
 		super();
 		this.element = element;
+		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_HAS_OBJECT);
+		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_HAS_VALUE);
+		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_COORDINATES);
+		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_OBSERVED_AT);
+		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_UNIT_CODE);
 	}
 
 	/*
@@ -65,6 +74,15 @@ public class NGSIObject {
 
 	public boolean isGeoProperty() {
 		return isGeoProperty;
+	}
+
+	public boolean isScalar() {
+		return isScalar;
+	}
+
+	public NGSIObject setScalar(boolean isScalar) {
+		this.isScalar = isScalar;
+		return this;
 	}
 
 	public NGSIObject setGeoProperty(boolean isGeoProperty) {
@@ -180,33 +198,45 @@ public class NGSIObject {
 		return this;
 	}
 
-	public void validate(int payloadType, String activeProperty, JsonLdApi api) throws ResponseException {
+	public void validate(int payloadType, String activeProperty, String expandedProperty, JsonLdApi api)
+			throws ResponseException {
 		switch (payloadType) {
 		case -1:
 		case AppConstants.FULL_ENTITY:
 			if (activeProperty == null) {
 				// we are in root
 			} else {
-				if (isLdKeyWord && !isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
+				if (fromHasValue) {
 					return;
 				}
-				if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
-					throw new ResponseException(ErrorType.BadRequestData,
-							"The key " + activeProperty + " is an invalid entry.");
-				}
-				if (isProperty && !hasValue) {
-					throw new ResponseException(ErrorType.BadRequestData, "You can't have properties without a value");
-				}
-				if ((isRelationship && !hasObject)) {
-					throw new ResponseException(ErrorType.BadRequestData,
-							"You can't have relationships without an object");
-				}
-				if (isGeoProperty) {
-					if (!hasValue) {
+				if (isScalar) {
+					if (!allowedScalarsEntity.contains(expandedProperty)) {
 						throw new ResponseException(ErrorType.BadRequestData,
-								"You can't have geo properties without a value");
-					} else {
-						compactAndValidateGeoProperty(api);
+								"The key " + activeProperty + " is an invalid entry.");
+					}
+				} else {
+					if (isLdKeyWord && !isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
+						return;
+					}
+					if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"The key " + activeProperty + " is an invalid entry.");
+					}
+					if (isProperty && !hasValue) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"You can't have properties without a value");
+					}
+					if ((isRelationship && !hasObject)) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"You can't have relationships without an object");
+					}
+					if (isGeoProperty) {
+						if (!hasValue) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"You can't have geo properties without a value");
+						} else {
+							compactAndValidateGeoProperty(api);
+						}
 					}
 				}
 
@@ -336,5 +366,16 @@ public class NGSIObject {
 				+ ", hasAtId=" + hasAtId + ", hasAtObject=" + hasObject + ", hasAtType=" + hasAtType + ", isArray="
 				+ isArray + ", datasetIds=" + datasetIds + ", id=" + id + ", types=" + types + "]";
 	}
+
+	public NGSIObject setFromHasValue(boolean fromHasValue) {
+		this.fromHasValue = fromHasValue;
+		return this;
+
+	}
+
+	public boolean isFromHasValue() {
+		return fromHasValue;
+	}
+	
 
 }

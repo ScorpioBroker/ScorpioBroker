@@ -8,6 +8,7 @@ import static com.github.jsonldjava.core.JsonLdConsts.RDF_TYPE;
 import static com.github.jsonldjava.core.JsonLdUtils.isKeyword;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -166,7 +167,15 @@ public class JsonLdApi {
 				final Object compactedItem = compact(activeCtx, activeProperty, item, compactArrays);
 				// 2.2.2)
 				if (compactedItem != null) {
-					result.add(compactedItem);
+					final boolean isList = (compactedItem instanceof Map
+							&& ((Map<String, Object>) compactedItem).containsKey(JsonLdConsts.LIST));
+
+					if (isList) {
+						result.add(((Map<String, Object>) compactedItem).get(JsonLdConsts.LIST));
+					} else {
+						result.add(compactedItem);
+					}
+
 				}
 			}
 			// 2.3)
@@ -204,7 +213,9 @@ public class JsonLdApi {
 
 			final List<String> keys = new ArrayList<String>(elem.keySet());
 			Collections.sort(keys);
+			boolean isGeoProperty = false;
 			for (final String expandedProperty : keys) {
+
 				final Object expandedValue = elem.get(expandedProperty);
 				// 7.1)
 				if (JsonLdConsts.ID.equals(expandedProperty) || JsonLdConsts.TYPE.equals(expandedProperty)) {
@@ -235,6 +246,12 @@ public class JsonLdApi {
 							compactedValue = types;
 						}
 					}
+					if (JsonLdConsts.TYPE.equals(expandedProperty)
+							&& ((List) expandedValue).contains(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
+						// NGSI Comment: This is very much relying on the fact that @type comes before
+						// hasValue
+						isGeoProperty = true;
+					}
 					// 7.1.4)
 					result.put(alias, compactedValue);
 					continue;
@@ -243,7 +260,22 @@ public class JsonLdApi {
 					// isArray(compactedValue)
 					// && ((List<Object>) expandedValue).size() == 0);
 				}
-
+				if (isGeoProperty && NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
+					Object potentialString = ((Map<String, Object>) ((List) expandedValue).get(0))
+							.get(JsonLdConsts.VALUE);
+					if (potentialString instanceof String) {
+						try {
+							Object geoProp = JsonUtils.fromString((String) potentialString);
+							Object expandedGeoProp = expandWithCoreContext(geoProp);
+							final String alias = activeCtx.compactIri(expandedProperty, true);
+							result.put(alias, compact(activeCtx, activeProperty, expandedGeoProp, compactArrays));
+						} catch (IOException e) {
+							// Should never happen
+							e.printStackTrace();
+						}
+						continue;
+					}
+				}
 				// 7.2)
 				if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
 					// 7.2.1)
@@ -458,15 +490,25 @@ public class JsonLdApi {
 				}
 			}
 			// 8)
-			if(listResult.isEmpty()) {
+			if (listResult.isEmpty()) {
 				return result;
-			}else {
+			} else {
 				return listResult;
 			}
 		}
 
 		// 2)
 		return element;
+	}
+
+	private Object expandWithCoreContext(Object geoProp) {
+		try {
+			return expand(this.coreContext, geoProp, -2);
+		} catch (JsonLdError | ResponseException e) {
+			// should never happen
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	/**
@@ -522,7 +564,7 @@ public class JsonLdApi {
 			// 3.2)
 			for (final Object item : (List<Object>) element) {
 				// 3.2.1)
-				NGSIObject ngsiV = expand(activeCtx, activeProperty, new NGSIObject(item), payloadType);
+				NGSIObject ngsiV = expand(activeCtx, activeProperty, new NGSIObject(item).setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()), payloadType);
 				final Object v = ngsiV.getElement();
 				// 3.2.2)
 				if ((JsonLdConsts.LIST.equals(activeProperty)
@@ -542,7 +584,7 @@ public class JsonLdApi {
 						 * if (!(tmp instanceof List)) { tmp = new ArrayList<Object>(); ((List<Object>)
 						 * tmp).add(expandedValue); }
 						 * 
-						 */ 
+						 */
 						Object expandedValue = newMap();
 						((Map<String, Object>) expandedValue).put(JsonLdConsts.LIST, v);
 						result.add(expandedValue);
@@ -949,7 +991,8 @@ public class JsonLdApi {
 				}
 				// 7.7)
 				else {
-					NGSIObject ngsiExpandedValue = expand(activeCtx, key, new NGSIObject(value), payloadType);
+					NGSIObject ngsiExpandedValue = expand(activeCtx, key,
+							new NGSIObject(value).setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()), payloadType);
 					expandedValue = ngsiExpandedValue.getElement();
 				}
 				// 7.8)
@@ -1093,7 +1136,7 @@ public class JsonLdApi {
 				}
 			}
 			ngsiElement.setElement(result);
-			ngsiElement.validate(payloadType, activeProperty, this);
+			ngsiElement.validate(payloadType, activeProperty, null, this);
 			return ngsiElement;
 		}
 		// 2) If element is a scalar
@@ -1102,9 +1145,11 @@ public class JsonLdApi {
 			if (activeProperty == null || JsonLdConsts.GRAPH.equals(activeProperty)) {
 				return null;
 			}
+			String expandedProperty = activeCtx.expandIri(activeProperty, false, true, null, null);
 			Object result = activeCtx.expandValue(activeProperty, element);
 			ngsiElement.setElement(result);
-			// ngsiElement.validate(payloadType, activeProperty, this);
+			ngsiElement.setScalar(true);
+			ngsiElement.validate(payloadType, activeProperty, expandedProperty, this);
 			return ngsiElement;
 		}
 	}

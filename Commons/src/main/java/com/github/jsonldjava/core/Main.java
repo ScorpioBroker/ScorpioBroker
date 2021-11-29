@@ -17,9 +17,10 @@ public class Main {
 			String entity = "{\n" + 
 					"	\"id\": \"urn:ngsi-ld:Vehicle:A4567\",\n" + 
 					"	\"type\": \"Vehicle\",\n" +
-					"   \"testing123\": \"test\"," +
+					
+					//"   \"testing123\": \"test\"," +
 					// " \"testing456\": {\"test\":123}," +
-					"	\"brandName\": {\n" + "		\"type\": \"Property\",\n" + "		\"value\": \"Mercedes\"\n"
+					"	\"brandName\": {\"unitCode\": \"EUR\",\n" + "		\"type\": \"Property\",\n" + "		\"value\": [{\"bla1\":\"Mercedes\"},{\"bla2\":\"Audi\"} ]\n"
 					+ "	},\n" +
 					/*
 					 * "	\"street\": {\n" + "		\"type\": \"LanguageProperty\",\n" +
