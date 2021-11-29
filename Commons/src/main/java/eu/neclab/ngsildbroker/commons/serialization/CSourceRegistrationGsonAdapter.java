@@ -22,6 +22,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.Information;
 import eu.neclab.ngsildbroker.commons.datatypes.TimeInterval;
+import eu.neclab.ngsildbroker.commons.datatypes.TimeManagement;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 // TODO : complete serializer - include other fields also i.e. location,name etc.
@@ -145,6 +146,24 @@ public class CSourceRegistrationGsonAdapter
 
 		if (src.getExpires() != null) {
 			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools.getJson(src.getExpires(), context));
+		}
+		
+		if (src.getTimeManagement() != null) {
+			jsonArray = new JsonArray();
+			JsonObject timestampObject = new JsonObject();
+			if (src.getTimeManagement().getStart() != null) {
+
+				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_START,
+						SerializationTools.getJson(src.getTimeManagement().getStart(), context));
+			}
+			if (src.getTimeManagement().getEnd() != null) {
+
+				timestampObject.add(NGSIConstants.NGSI_LD_TIMESTAMP_END,
+						SerializationTools.getJson(src.getTimeManagement().getEnd(), context));
+			}
+			jsonArray.add(timestampObject);
+
+			top.add(NGSIConstants.NGSI_LD_MANAGEMENTINTERVAL, jsonArray);
 		}
 
 		return top;
@@ -271,6 +290,28 @@ public class CSourceRegistrationGsonAdapter
 					result.setExpires(SerializationTools.date2Long(expires));
 				} catch (Exception e) {
 					throw new JsonParseException(e.getMessage());
+				}
+			} 
+			else if (key.equals(NGSIConstants.NGSI_LD_MANAGEMENTINTERVAL)) {
+				result.setTimeManagement(new TimeManagement());
+				JsonObject timestampObject = value.getAsJsonArray().get(0).getAsJsonObject();
+				if (timestampObject.has(NGSIConstants.NGSI_LD_TIMESTAMP_START)) {
+					String dateTime = timestampObject.get(NGSIConstants.NGSI_LD_TIMESTAMP_START).getAsJsonArray().get(0)
+							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
+					try {
+						result.getTimeManagement().setStart(SerializationTools.date2Long(dateTime));
+					} catch (Exception e) {
+						throw new JsonParseException(e.getMessage());
+					}
+				}
+				if (timestampObject.has(NGSIConstants.NGSI_LD_TIMESTAMP_END)) {
+					String dateTime = timestampObject.get(NGSIConstants.NGSI_LD_TIMESTAMP_END).getAsJsonArray().get(0)
+							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
+					try {
+						result.getTimeManagement().setEnd(SerializationTools.date2Long(dateTime));
+					} catch (Exception e) {
+						throw new JsonParseException(e.getMessage());
+					}
 				}
 			}
 		}
