@@ -2,8 +2,8 @@ mysettings:
   application-name: storage-manager
   kafka:
     bootstrap:
-      host: ${kafka.host:localhost}
-      port: ${kafka.port:9092}
+      host: ${bushost:localhost}
+      port: ${busport:9092}
   postgres:
     host: ${dbhost:localhost}
     port: ${dbport:5432}

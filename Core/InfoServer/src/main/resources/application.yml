@@ -1,8 +1,8 @@
 mysettings:
   kafka:
     bootstrap:
-      host: ${kafka.host:localhost}
-      port: ${kafka.port:9092}
+      host: ${bushost:localhost}
+      port: ${busport:9092}
 bootstrap:
   servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 spring:

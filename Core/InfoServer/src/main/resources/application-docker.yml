@@ -1,7 +1,7 @@
 mysettings:
   kafka:
     bootstrap:
-      port: ${kafka.port:9092}
+      port: ${busport:9092}
   eureka:
     protocol: ${eureka.protocol:http}
     host: ${eureka.host:eureka}
