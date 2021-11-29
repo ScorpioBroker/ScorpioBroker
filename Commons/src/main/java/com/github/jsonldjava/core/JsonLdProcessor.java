@@ -12,6 +12,9 @@ import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.impl.NQuadRDFParser;
 import com.github.jsonldjava.impl.NQuadTripleCallback;
 
+
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+
 /**
  * This class implements the <a href=
  * "http://json-ld.org/spec/latest/json-ld-api/#the-jsonldprocessor-interface" >
@@ -103,8 +106,9 @@ public class JsonLdProcessor {
      * @return The expanded JSON-LD document
      * @throws JsonLdError
      *             If there is an error while expanding.
+     * @throws ResponseException 
      */
-    public static List<Object> expand(Object input, JsonLdOptions opts) throws JsonLdError {
+    public static List<Object> expand(Object input, JsonLdOptions opts, int payloadType) throws JsonLdError, ResponseException {
         // 1)
         // TODO: look into java futures/promises
 
@@ -143,7 +147,7 @@ public class JsonLdProcessor {
         // is set to a jsonld compatable format
 
         // 6)
-        Object expanded = new JsonLdApi(opts).expand(activeCtx, input);
+        Object expanded = new JsonLdApi(opts).expand(activeCtx, input, payloadType);
 
         // final step of Expansion Algorithm
         if (expanded instanceof Map && ((Map) expanded).containsKey(JsonLdConsts.GRAPH)
@@ -172,15 +176,16 @@ public class JsonLdProcessor {
      * @return The expanded JSON-LD document
      * @throws JsonLdError
      *             If there is an error while expanding.
+     * @throws ResponseException 
      */
-    public static List<Object> expand(Object input) throws JsonLdError {
-        return expand(input, new JsonLdOptions(""));
+    public static List<Object> expand(Object input) throws JsonLdError, ResponseException {
+        return expand(input, new JsonLdOptions(""), -1);
     }
 
     public static Object flatten(Object input, Object context, JsonLdOptions opts)
-            throws JsonLdError {
+            throws JsonLdError, ResponseException {
         // 2-6) NOTE: these are all the same steps as in expand
-        final Object expanded = expand(input, opts);
+        final Object expanded = expand(input, opts, -1);
         // 7)
         if (context instanceof Map
                 && ((Map<String, Object>) context).containsKey(JsonLdConsts.CONTEXT)) {
@@ -271,8 +276,9 @@ public class JsonLdProcessor {
      * @return The flattened JSON-LD document
      * @throws JsonLdError
      *             If there is an error while flattening.
+     * @throws ResponseException 
      */
-    public static Object flatten(Object input, JsonLdOptions opts) throws JsonLdError {
+    public static Object flatten(Object input, JsonLdOptions opts) throws JsonLdError, ResponseException {
         return flatten(input, null, opts);
     }
 
@@ -293,10 +299,10 @@ public class JsonLdProcessor {
      * @return The framed JSON-LD document
      * @throws JsonLdError
      *             If there is an error while framing.
+     * @throws ResponseException 
      */
     public static Map<String, Object> frame(Object input, Object frame, JsonLdOptions opts)
-            throws JsonLdError {
-
+            throws JsonLdError, ResponseException {
         if (frame instanceof Map) {
             frame = JsonLdUtils.clone(frame);
         }
@@ -304,7 +310,7 @@ public class JsonLdProcessor {
 
         // 2. Set expanded input to the result of using the expand method using
         // input and options.
-        final Object expandedInput = expand(input, opts);
+        final Object expandedInput = expand(input, opts, -1);
 
         // 3. Set expanded frame to the result of using the expand method using
         // frame and options with expandContext set to null and the
@@ -312,7 +318,7 @@ public class JsonLdProcessor {
         final Object savedExpandedContext = opts.getExpandContext();
         opts.setExpandContext(null);
         opts.setFrameExpansion(true);
-        final List<Object> expandedFrame = expand(frame, opts);
+        final List<Object> expandedFrame = expand(frame, opts, -1);
         opts.setExpandContext(savedExpandedContext);
 
         // 4. Set context to the value of @context from frame, if it exists, or
@@ -380,8 +386,9 @@ public class JsonLdProcessor {
      * @return A JSON-LD object.
      * @throws JsonLdError
      *             If there is an error converting the dataset to JSON-LD.
+     * @throws ResponseException 
      */
-    public static Object fromRDF(Object dataset, JsonLdOptions options) throws JsonLdError {
+    public static Object fromRDF(Object dataset, JsonLdOptions options) throws JsonLdError, ResponseException {
         // handle non specified serializer case
 
         RDFParser parser = null;
@@ -411,8 +418,10 @@ public class JsonLdProcessor {
      * @return The JSON-LD object represented by the given RDF dataset
      * @throws JsonLdError
      *             If there was an error converting from RDF to JSON-LD
+
+     * @throws ResponseException 
      */
-    public static Object fromRDF(Object dataset) throws JsonLdError {
+    public static Object fromRDF(Object dataset) throws JsonLdError, ResponseException {
         return fromRDF(dataset, new JsonLdOptions(""));
     }
 
@@ -436,9 +445,10 @@ public class JsonLdProcessor {
      * @return A JSON-LD object.
      * @throws JsonLdError
      *             If there is an error converting the dataset to JSON-LD.
+     * @throws ResponseException 
      */
     public static Object fromRDF(Object input, JsonLdOptions options, RDFParser parser)
-            throws JsonLdError {
+            throws JsonLdError, ResponseException {
 
         final RDFDataset dataset = parser.parse(input);
 
@@ -474,8 +484,9 @@ public class JsonLdProcessor {
      * @return A JSON-LD object.
      * @throws JsonLdError
      *             If there is an error converting the dataset to JSON-LD.
+     * @throws ResponseException 
      */
-    public static Object fromRDF(Object input, RDFParser parser) throws JsonLdError {
+    public static Object fromRDF(Object input, RDFParser parser) throws JsonLdError, ResponseException {
         return fromRDF(input, new JsonLdOptions(""), parser);
     }
 
@@ -498,11 +509,12 @@ public class JsonLdProcessor {
      *         format if it is found, or otherwise the raw {@link RDFDataset}.
      * @throws JsonLdError
      *             If there is an error converting the dataset to JSON-LD.
+     * @throws ResponseException 
      */
     public static Object toRDF(Object input, JsonLdTripleCallback callback, JsonLdOptions options)
-            throws JsonLdError {
+            throws JsonLdError, ResponseException {
 
-        final Object expandedInput = expand(input, options);
+        final Object expandedInput = expand(input, options, -1);
 
         final JsonLdApi api = new JsonLdApi(expandedInput, options);
         final RDFDataset dataset = api.toRDF();
@@ -550,8 +562,9 @@ public class JsonLdProcessor {
      * @return A JSON-LD object.
      * @throws JsonLdError
      *             If there is an error converting the dataset to JSON-LD.
+     * @throws ResponseException 
      */
-    public static Object toRDF(Object input, JsonLdOptions options) throws JsonLdError {
+    public static Object toRDF(Object input, JsonLdOptions options) throws JsonLdError, ResponseException {
         return toRDF(input, null, options);
     }
 
@@ -567,8 +580,9 @@ public class JsonLdProcessor {
      * @return A JSON-LD object.
      * @throws JsonLdError
      *             If there is an error converting the dataset to JSON-LD.
+     * @throws ResponseException 
      */
-    public static Object toRDF(Object input, JsonLdTripleCallback callback) throws JsonLdError {
+    public static Object toRDF(Object input, JsonLdTripleCallback callback) throws JsonLdError, ResponseException {
         return toRDF(input, callback, new JsonLdOptions(""));
     }
 
@@ -581,8 +595,9 @@ public class JsonLdProcessor {
      * @return A JSON-LD object.
      * @throws JsonLdError
      *             If there is an error converting the dataset to JSON-LD.
+     * @throws ResponseException 
      */
-    public static Object toRDF(Object input) throws JsonLdError {
+    public static Object toRDF(Object input) throws JsonLdError, ResponseException {
         return toRDF(input, new JsonLdOptions(""));
     }
 
@@ -600,8 +615,9 @@ public class JsonLdProcessor {
      * @return The JSON-LD object
      * @throws JsonLdError
      *             If there is an error normalizing the dataset.
+     * @throws ResponseException 
      */
-    public static Object normalize(Object input, JsonLdOptions options) throws JsonLdError {
+    public static Object normalize(Object input, JsonLdOptions options) throws JsonLdError, ResponseException {
 
         final JsonLdOptions opts = options.copy();
         opts.format = null;
@@ -620,8 +636,9 @@ public class JsonLdProcessor {
      * @return The JSON-LD object
      * @throws JsonLdError
      *             If there is an error normalizing the dataset.
+     * @throws ResponseException 
      */
-    public static Object normalize(Object input) throws JsonLdError {
+    public static Object normalize(Object input) throws JsonLdError, ResponseException {
         return normalize(input, new JsonLdOptions(""));
     }
 

@@ -14,24 +14,56 @@ public class Main {
 		for (int i = 0; i < 20; i++) {
 
 			long temp1, temp2, temp3, temp4;
-			String entity = "{\n" + "  \"id\" : \"EmissionObserved:1626696072466" + i + "\",\n"
-					+ "  \"type\" : \"EmissionObserved\",\n"
-					+ "  \"https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/co2\" : {\n"
-					+ "    \"type\" : \"Property\",\n" + "    \"value\" : 1.0566390167028306,\n"
-					+ "    \"observedAt\" : \"2021-07-19T12:01:12.466Z\"\n" + "  },\n" + "  \"abstractionLevel\" : {\n"
-					+ "    \"type\" : \"Property\",\n" + "    \"value\" : 17\n" + "  },\n" + "  \"location\" : {\n"
-					+ "    \"type\" : \"GeoProperty\",\n" + "    \"value\" : {\n" + "      \"type\" : \"Polygon\",\n"
-					+ "      \"coordinates\" : [[[ 8.6447165, 49.4184066 ],[ 8.6447165, 49.4184066 ],[ 8.6447165, 49.4184066 ],[ 8.6447165, 49.4184066 ]]]\n"
-					+ "    },\n" + "    \"observedAt\" : \"2021-07-19T12:01:12.466Z\"\n" + "  }\n" + "}";
-
+			String entity = "{\n" + 
+					"	\"id\": \"urn:ngsi-ld:Vehicle:A4567\",\n" + 
+					"	\"type\": \"Vehicle\",\n" +
+					"   \"testing123\": \"test\"," +
+					// " \"testing456\": {\"test\":123}," +
+					"	\"brandName\": {\n" + "		\"type\": \"Property\",\n" + "		\"value\": \"Mercedes\"\n"
+					+ "	},\n" +
+					/*
+					 * "	\"street\": {\n" + "		\"type\": \"LanguageProperty\",\n" +
+					 * "		\"languageMap\": {\n" + "			\"fr\": \"Grand Place\",\n" +
+					 * "			\"nl\": \"Grote Markt\"\n" + "		}\n" + "	},\n" +
+					 */
+					"	\"isParked\": {\n" + "		\"type\": \"Relationship\",\n"
+					+ "		\"object\": \"urn:ngsi-ld:OffStreetParking:Downtown1\",\n"
+					+ "		\"observedAt\": \"2017-07-29T12:00:04Z\",\n" + "		\"providedBy\": {\n"
+					+ "			\"type\": \"Relationship\",\n" + "			\"object\": \"urn:ngsi-ld:Person:Bob\"\n"
+					+ "		}\n" + "	},\n" + "	\"location\": {\n" + "		\"type\": \"GeoProperty\",\n"
+					+ "		\"value\": {\n" + "			\"type\": \"Polygon\",\n" + "			\"coordinates\": [\n"
+					+ "				[\n" + "					[8.6447165, 49.4184066],\n"
+					+ "					[8.6447165, 49.4184066],\n" + "					[8.6447165, 49.4184066],\n"
+					+ "					[8.6447165, 49.4184066]\n" + "				]\n" + "			]\n"
+					+ "		},\n" + "		\"observedAt\": \"2021-07-19T12:01:12.466Z\"\n" + "	},\n"
+					+ "	\"@context\": [\n"
+					+ "		\"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld\"\n" + "	]\n" + "}";
+			/*
+			 * "{\n" + "  \"id\" : \"EmissionObserved:1626696072466" + i + "\",\n" +
+			 * "  \"type\" : \"EmissionObserved\",\n" +
+			 * "  \"https://smart-data-models.github.io/data-models/terms.jsonld#/definitions/co2\" : {\n"
+			 * + "    \"type\" : \"Property\",\n" + "    \"value\" : 1.0566390167028306,\n"
+			 * + "    \"observedAt\" : \"2021-07-19T12:01:12.466Z\"\n" + "  },\n" +
+			 * "  \"abstractionLevel\" : {\n" + "    \"type\" : \"Property\",\n" +
+			 * "    \"value\" : 17\n" + "  },\n" + "  \"location\" : {\n" +
+			 * "    \"type\" : \"GeoProperty\",\n" + "    \"value\" : {\n" +
+			 * "      \"type\" : \"Polygon\",\n" +
+			 * "      \"coordinates\" : [[[ 8.6447165, 49.4184066 ],[ 8.6447165, 49.4184066 ],[ 8.6447165, 49.4184066 ],[ 8.6447165, 49.4184066 ]]]\n"
+			 * + "    },\n" + "    \"observedAt\" : \"2021-07-19T12:01:12.466Z\"\n" +
+			 * "  }\n" + "}";
+			 */
+			//System.out.println(entity);
 			temp1 = System.currentTimeMillis();
 			Object obj = JsonUtils.fromString(entity);
-			((Map<String, Object>) obj).put("@context", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld");
+			((Map<String, Object>) obj).put("@context",
+					"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld");
 			List<Object> bla1 = JsonLdProcessor.expand(obj);
 			temp2 = System.currentTimeMillis();
 			exp2[i] = temp2 - temp1;
 			System.out.println(JsonUtils.toPrettyString(bla1));
-			Map<String, Object> compacted = JsonLdProcessor.compact(bla1, "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld", new JsonLdOptions(JsonLdOptions.JSON_LD_1_1));
+			Map<String, Object> compacted = JsonLdProcessor.compact(bla1,
+					"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld",
+					new JsonLdOptions(JsonLdOptions.JSON_LD_1_1));
 			System.out.println(JsonUtils.toPrettyString(compacted));
 			/*
 			 * String test2 = contextResolver.expand(entity, null, false, 1);

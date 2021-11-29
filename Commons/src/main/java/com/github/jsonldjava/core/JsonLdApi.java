@@ -23,9 +23,17 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import com.github.jsonldjava.core.JsonLdConsts.Embed;
 import com.github.jsonldjava.core.JsonLdError.Error;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.github.jsonldjava.utils.Obj;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 /**
  * A container object to maintain state relating to JsonLdOptions and the
@@ -41,6 +49,10 @@ public class JsonLdApi {
 	JsonLdOptions opts;
 	Object value = null;
 	Context context = null;
+
+	// TODO change back to spring
+	// @Value("${ngsi-ld.corecontext.url:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	private String coreContextUrl = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld";
 
 	/**
 	 * Constructs an empty JsonLdApi object using the default JsonLdOptions, and
@@ -92,6 +104,10 @@ public class JsonLdApi {
 		} else {
 			this.opts = opts;
 		}
+		this.coreContext = new Context(opts);
+		ArrayList<String> temp = new ArrayList<String>();
+		temp.add(coreContextUrl);
+		this.coreContext = this.coreContext.parse(temp);
 	}
 
 	/**
@@ -183,6 +199,9 @@ public class JsonLdApi {
 			// 6)
 			final Map<String, Object> result = newMap();
 			// 7)
+
+			final List<Object> listResult = new ArrayList<Object>();
+
 			final List<String> keys = new ArrayList<String>(elem.keySet());
 			Collections.sort(keys);
 			for (final String expandedProperty : keys) {
@@ -338,19 +357,11 @@ public class JsonLdApi {
 					if (isList) {
 						// 7.6.4.1)
 						if (!(compactedItem instanceof List)) {
-							// //System.out.println("=================================");
-							// //System.out.println(compactedItem.getClass().toString());
-							// //System.out.println(compactedItem.toString());
-							// //System.out.println("=================================");
 							final List<Object> tmp = new ArrayList<Object>();
 							tmp.add(compactedItem);
 							compactedItem = tmp;
 
 						} else {
-							// //System.out.println("++++++++++++++++++++++++++++++++");
-							// //System.out.println(compactedItem.getClass().toString());
-							// //System.out.println(compactedItem.toString());
-							// //System.out.println("++++++++++++++++++++++++++++++++");
 						}
 						// 7.6.4.2)
 						if (!JsonLdConsts.LIST.equals(container)) {
@@ -368,10 +379,9 @@ public class JsonLdApi {
 										activeCtx.compactIri(JsonLdConsts.INDEX, true),
 										((Map<String, Object>) expandedItem).get(JsonLdConsts.INDEX));
 							}
-						}else if (JsonLdConsts.LIST.equals(itemActiveProperty)) {
-							final List<Object> tmp = new ArrayList<Object>();
-							tmp.add(compactedItem);
-							compactedItem = tmp;
+
+						} else if (JsonLdConsts.LIST.equals(itemActiveProperty)) {
+							listResult.add(compactedItem);
 						}
 						// 7.6.4.3)
 						/*
@@ -420,8 +430,9 @@ public class JsonLdApi {
 						// 7.6.6.1)
 						final Boolean check = (!compactArrays || JsonLdConsts.SET.equals(container)
 								|| JsonLdConsts.GRAPH.equals(expandedProperty)) && (!(compactedItem instanceof List));
-						if (isList) {
-							return compactedItem;
+
+						if (isList && JsonLdConsts.LIST.equals(itemActiveProperty)) {
+							continue;
 						}
 						if (check) {
 							final List<Object> tmp = new ArrayList<Object>();
@@ -447,7 +458,11 @@ public class JsonLdApi {
 				}
 			}
 			// 8)
-			return result;
+			if(listResult.isEmpty()) {
+				return result;
+			}else {
+				return listResult;
+			}
 		}
 
 		// 2)
@@ -488,30 +503,27 @@ public class JsonLdApi {
 	 * @return The expanded JSON-LD object.
 	 * @throws JsonLdError If there was an error during expansion.
 	 */
-	public Object expand(Context activeCtx, String activeProperty, Object element) throws JsonLdError {
+
+	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType)
+			throws JsonLdError, ResponseException {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
 		// 1)
-		if (element == null) {
-			// System.out.println("+++++++++++++++++++++++++++++++++");
-			// System.out.println("null");
-			// System.out.println("+++++++++++++++++++++++++++++++++");
+		if (ngsiElement == null || ngsiElement.getElement() == null) {
 			return null;
 		}
-		// //System.out.println("((((((((((((((((((((((((((((((");
-		// //System.out.println(activeProperty);
-		// //System.out.println(element.toString());
-		// //System.out.println(element.getClass().toString());
-		// //System.out.println("((((((((((((((((((((((((((((((");
+		Object element = ngsiElement.getElement();
 		// GK: This would be the point to set `propertyScopedContext` to the `@context`
 		// entry for any term definition associated with `activeProperty`.
 		// 3)
 		if (element instanceof List) {
 			// 3.1)
+			ngsiElement.setArray(true);
 			final List<Object> result = new ArrayList<Object>();
 			// 3.2)
 			for (final Object item : (List<Object>) element) {
 				// 3.2.1)
-				final Object v = expand(activeCtx, activeProperty, item);
+				NGSIObject ngsiV = expand(activeCtx, activeProperty, new NGSIObject(item), payloadType);
+				final Object v = ngsiV.getElement();
 				// 3.2.2)
 				if ((JsonLdConsts.LIST.equals(activeProperty)
 						|| JsonLdConsts.LIST.equals(activeCtx.getContainer(activeProperty)))
@@ -521,17 +533,20 @@ public class JsonLdApi {
 					// permitted.");
 					if (v instanceof List) {
 						List list = (List) v;
-						for (Object i : list) {
-							Object expandedValue = expand(activeCtx, activeCtx.getContainer(activeProperty), v);
-							Object tmp = expandedValue;
-							if (!(tmp instanceof List)) {
-								tmp = new ArrayList<Object>();
-								((List<Object>) tmp).add(expandedValue);
-							}
-							expandedValue = newMap();
-							((Map<String, Object>) expandedValue).put(JsonLdConsts.LIST, tmp);
-							result.add(expandedValue);
-						}
+						/*
+						 * for (Object i : list) { NGSIObject ngsiExpandedValue = expand(activeCtx,
+						 * activeCtx.getContainer(activeProperty), new NGSIObject(i), payloadType);
+						 * Object expandedValue = ngsiExpandedValue.getElement(); Object tmp =
+						 * expandedValue;
+						 * 
+						 * if (!(tmp instanceof List)) { tmp = new ArrayList<Object>(); ((List<Object>)
+						 * tmp).add(expandedValue); }
+						 * 
+						 */ 
+						Object expandedValue = newMap();
+						((Map<String, Object>) expandedValue).put(JsonLdConsts.LIST, v);
+						result.add(expandedValue);
+						// }
 					} else if (v instanceof Map) {
 						// //System.out.println("adding map");
 						// //System.out.println(v);
@@ -551,15 +566,13 @@ public class JsonLdApi {
 					}
 				}
 			}
-			// 3.3)
-			// System.out.println("------------------------------");
-			// System.out.println(result.toString());
-			// System.out.println(result.getClass().toString());
-			// System.out.println("------------------------------");
-			return result;
+			ngsiElement.setElement(result);
+			return ngsiElement;
 		}
 		// 4)
-		else if (element instanceof Map) {
+		else if (element instanceof Map)
+
+		{
 			// access helper
 			final Map<String, Object> elem = (Map<String, Object>) element;
 			// 5)
@@ -601,6 +614,7 @@ public class JsonLdApi {
 				// 7.4)
 				if (isKeyword(expandedProperty)) {
 					// 7.4.1)
+					ngsiElement.setLdKeyWord(true);
 					if (JsonLdConsts.REVERSE.equals(activeProperty)) {
 						throw new JsonLdError(Error.INVALID_REVERSE_PROPERTY_MAP,
 								"a keyword cannot be used as a @reverse propery");
@@ -613,8 +627,21 @@ public class JsonLdApi {
 					Object inputType = elem.get(JsonLdConsts.TYPE);
 					// 7.4.3)
 					if (JsonLdConsts.ID.equals(expandedProperty)) {
+						ngsiElement.setHasAtId(true);
 						if (value instanceof String) {
-							expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
+							// TODO discuss this with martin afaik in ngsild ids need to be already uris in
+							// the
+							// compacted version and should not be expanded
+							// expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
+
+							expandedValue = value;
+							if (((String) expandedValue).indexOf(':') == -1) {
+								throw new ResponseException(ErrorType.BadRequestData, "IDs need to be URIs");
+							}
+
+							// NGSICOMMENT: LD at the moment has no scenario where ids are arrays if this
+							// changes this needs to be updated
+							ngsiElement.setId((String) expandedValue);
 						} else if (frameExpansion) {
 							if (value instanceof Map) {
 								if (((Map<String, Object>) value).size() != 0) {
@@ -642,6 +669,7 @@ public class JsonLdApi {
 					}
 					// 7.4.4)
 					else if (JsonLdConsts.TYPE.equals(expandedProperty)) {
+						ngsiElement.setHasAtType(true);
 						if (value instanceof List) {
 							expandedValue = new ArrayList<String>();
 							for (final Object v : (List) value) {
@@ -649,11 +677,13 @@ public class JsonLdApi {
 									throw new JsonLdError(Error.INVALID_TYPE_VALUE,
 											"@type value must be a string or array of strings");
 								}
-								((List<String>) expandedValue)
-										.add(activeCtx.expandIri((String) v, true, true, null, null));
+								String type = activeCtx.expandIri((String) v, true, true, null, null);
+								((List<String>) expandedValue).add(type);
+								ngsiElement.addType(type);
 							}
 						} else if (value instanceof String) {
 							expandedValue = activeCtx.expandIri((String) value, true, true, null, null);
+							ngsiElement.addType((String) expandedValue);
 						}
 						// TODO: SPEC: no mention of empty map check
 						else if (frameExpansion && value instanceof Map) {
@@ -662,6 +692,7 @@ public class JsonLdApi {
 										"@type value must be a an empty object for framing");
 							}
 							expandedValue = value;
+							ngsiElement.addType((String) expandedValue);
 						} else {
 							throw new JsonLdError(Error.INVALID_TYPE_VALUE,
 									"@type value must be a string or array of strings");
@@ -669,7 +700,9 @@ public class JsonLdApi {
 					}
 					// 7.4.5)
 					else if (JsonLdConsts.GRAPH.equals(expandedProperty)) {
-						expandedValue = expand(activeCtx, JsonLdConsts.GRAPH, value);
+						NGSIObject ngsiExpandedValue = expand(activeCtx, JsonLdConsts.GRAPH, new NGSIObject(value),
+								payloadType);
+						expandedValue = ngsiExpandedValue.getElement();
 					}
 					// 7.4.6)
 					else if (JsonLdConsts.VALUE.equals(expandedProperty)) {
@@ -718,7 +751,9 @@ public class JsonLdApi {
 							continue;
 						}
 						// 7.4.9.2)
-						expandedValue = expand(activeCtx, activeProperty, value);
+						NGSIObject ngsiExpandedValue = expand(activeCtx, activeProperty, new NGSIObject(value),
+								payloadType);
+						expandedValue = ngsiExpandedValue.getElement();
 
 						// NOTE: step not in the spec yet
 						if (!(expandedValue instanceof List)) {
@@ -736,7 +771,9 @@ public class JsonLdApi {
 					}
 					// 7.4.10)
 					else if (JsonLdConsts.SET.equals(expandedProperty)) {
-						expandedValue = expand(activeCtx, activeProperty, value);
+						NGSIObject ngsiExpandedValue = expand(activeCtx, activeProperty, new NGSIObject(value),
+								payloadType);
+						expandedValue = ngsiExpandedValue.getElement();
 					}
 					// 7.4.11)
 					else if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
@@ -744,7 +781,9 @@ public class JsonLdApi {
 							throw new JsonLdError(Error.INVALID_REVERSE_VALUE, "@reverse value must be an object");
 						}
 						// 7.4.11.1)
-						expandedValue = expand(activeCtx, JsonLdConsts.REVERSE, value);
+						NGSIObject ngsiExpandedValue = expand(activeCtx, JsonLdConsts.REVERSE, new NGSIObject(value),
+								payloadType);
+						expandedValue = ngsiExpandedValue.getElement();
 						// NOTE: algorithm assumes the result is a map
 						// 7.4.11.2)
 						if (((Map<String, Object>) expandedValue).containsKey(JsonLdConsts.REVERSE)) {
@@ -810,7 +849,9 @@ public class JsonLdApi {
 							|| JsonLdConsts.REQUIRE_ALL.equals(expandedProperty)
 							|| JsonLdConsts.EMBED_CHILDREN.equals(expandedProperty)
 							|| JsonLdConsts.OMIT_DEFAULT.equals(expandedProperty))) {
-						expandedValue = expand(activeCtx, expandedProperty, value);
+						NGSIObject ngsiExpandedValue = expand(activeCtx, expandedProperty, new NGSIObject(value),
+								payloadType);
+						expandedValue = ngsiExpandedValue.getElement();
 					}
 					// 7.4.12)
 					if (expandedValue != null) {
@@ -823,6 +864,12 @@ public class JsonLdApi {
 					}
 					// 7.4.13)
 					continue;
+				} else if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
+					ngsiElement.setHasAtValue(true);
+				} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
+					ngsiElement.setHasAtObject(true);
+				} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
+					ngsiElement.setDateTime(true);
 				}
 				// jsonld 1.1: 13.5 in https://w3c.github.io/json-ld-api/#algorithm-3
 				String containerMapping = activeCtx.getContainer(key);
@@ -887,7 +934,8 @@ public class JsonLdApi {
 							((List<Object>) indexValue).add(tmp);
 						}
 						// 7.6.2.2)
-						indexValue = expand(activeCtx, key, indexValue);
+						NGSIObject ngsiIndexValue = expand(activeCtx, key, new NGSIObject(indexValue), payloadType);
+						indexValue = ngsiIndexValue.getElement();
 						// 7.6.2.3)
 						for (final Map<String, Object> item : (List<Map<String, Object>>) indexValue) {
 							// 7.6.2.3.1)
@@ -901,7 +949,8 @@ public class JsonLdApi {
 				}
 				// 7.7)
 				else {
-					expandedValue = expand(activeCtx, key, value);
+					NGSIObject ngsiExpandedValue = expand(activeCtx, key, new NGSIObject(value), payloadType);
+					expandedValue = ngsiExpandedValue.getElement();
 				}
 				// 7.8)
 				if (expandedValue == null) {
@@ -987,9 +1036,6 @@ public class JsonLdApi {
 				if (rval == null) {
 					// nothing else is possible with result if we set it to
 					// null, so simply return it
-					// System.out.println("&&&&&&&&&&&&&&&&&&&&");
-					// System.out.println("null");
-					// System.out.println("&&&&&&&&&&&&&&&&&&&&");
 					return null;
 				} else if (result.getOrDefault(JsonLdConsts.TYPE, "").equals(JsonLdConsts.JSON)) {
 					// jsonld 1.1: 14.3 in https://w3c.github.io/json-ld-api/#algorithm-3
@@ -1026,16 +1072,7 @@ public class JsonLdApi {
 				}
 				// 10.2)
 				if (result.containsKey(JsonLdConsts.SET)) {
-					// result becomes an array here, thus the remaining checks
-					// will never be true from here on
-					// so simply return the value rather than have to make
-					// result an object and cast it with every
-					// other use in the function.
-					// System.out.println("#########################3");
-					// System.out.println(result.get(JsonLdConsts.SET).toString());
-					// System.out.println(result.get(JsonLdConsts.SET).getClass().toString());
-					// System.out.println("#########################3");
-					return result.get(JsonLdConsts.SET);
+					return new NGSIObject(result.get(JsonLdConsts.SET));
 				}
 			}
 			// 11)
@@ -1055,13 +1092,9 @@ public class JsonLdApi {
 					result = null;
 				}
 			}
-			// 13)
-			// System.out.println("@@@@@@@@@@@@@@@@@@@@");
-			// System.out.println(result.toString());
-			// System.out.println(result.getClass().toString());
-			// System.out.println("@@@@@@@@@@@@@@@@@@@@");
-
-			return result;
+			ngsiElement.setElement(result);
+			ngsiElement.validate(payloadType, activeProperty, this);
+			return ngsiElement;
 		}
 		// 2) If element is a scalar
 		else {
@@ -1070,12 +1103,9 @@ public class JsonLdApi {
 				return null;
 			}
 			Object result = activeCtx.expandValue(activeProperty, element);
-			// System.out.println("=================================");
-			// System.out.println(result.toString());
-			// System.out.println(result.getClass().toString());
-			// System.out.println("=================================");
-
-			return result;
+			ngsiElement.setElement(result);
+			// ngsiElement.validate(payloadType, activeProperty, this);
+			return ngsiElement;
 		}
 	}
 
@@ -1087,10 +1117,11 @@ public class JsonLdApi {
 	 * @param activeCtx The Active Context
 	 * @param element   The current element
 	 * @return The expanded JSON-LD object.
-	 * @throws JsonLdError If there was an error during expansion.
+	 * @throws JsonLdError       If there was an error during expansion.
+	 * @throws ResponseException
 	 */
-	public Object expand(Context activeCtx, Object element) throws JsonLdError {
-		return expand(activeCtx, null, element);
+	public Object expand(Context activeCtx, Object element, int payloadType) throws JsonLdError, ResponseException {
+		return expand(activeCtx, null, new NGSIObject(element), payloadType).getElement();
 	}
 
 	/***
@@ -1380,6 +1411,8 @@ public class JsonLdApi {
 	}
 
 	private Map<String, Object> nodeMap;
+
+	private Context coreContext;
 
 	/**
 	 * Performs JSON-LD
@@ -2242,6 +2275,10 @@ public class JsonLdApi {
 		// mapping complete, start canonical naming
 		final NormalizeUtils normalizeUtils = new NormalizeUtils(quads, bnodes, new UniqueNamer("_:c14n"), opts);
 		return normalizeUtils.hashBlankNodes(bnodes.keySet());
+	}
+
+	public Map<String, Object> compactWithCoreContext(Object geoJsonValue) {
+		return (Map<String, Object>) compact(this.coreContext, null, geoJsonValue);
 	}
 
 }
