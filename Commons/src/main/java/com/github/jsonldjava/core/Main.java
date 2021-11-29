@@ -14,6 +14,32 @@ public class Main {
 		for (int i = 0; i < 20; i++) {
 
 			long temp1, temp2, temp3, temp4;
+			String entity1 = "{\n" + 
+					"	\"id\": \"urn:ngsi-ld:Vehicle:A4567\",\n" + 
+					"	\"type\": \"Vehicle\",\n" + 
+					"	\"speed\": [{\n" + 
+					"			\"type\": \"Property\",\n" + 
+					"			\"value\": 55,\n" + 
+					"			\"source\": {\n" + 
+					"				\"type\": \"Property\",\n" + 
+					"				\"value\": \"Speedometer\"\n" + 
+					"			},\n" + 
+					"			\"datasetId\": \"urn:ngsi-ld:Property:speedometerA4567-speed\"\n" + 
+					"		},\n" + 
+					"		{\n" + 
+					"			\"type\": \"Property\",\n" + 
+					"			\"value\": 54.5,\n" + 
+					"			\"source\": {\n" + 
+					"				\"type\": \"Property\",\n" + 
+					"				\"value\": \"GPS\"\n" + 
+					"			},\n" + 
+					"			\"datasetId\": \"urn:ngsi-ld:Property:gpsBxyz123-speed\"\n" + 
+					"		}\n" + 
+					"	],\n" + 
+					"	\"@context\": [\n" + 
+					"		\"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld\"\n" + 
+					"	]\n" + 
+					"}"; 
 			String entity = "{\n" + 
 					"	\"id\": \"urn:ngsi-ld:Vehicle:A4567\",\n" + 
 					"	\"type\": \"Vehicle\",\n" +
@@ -21,7 +47,13 @@ public class Main {
 					//"   \"testing123\": \"test\"," +
 					// " \"testing456\": {\"test\":123}," +
 					"	\"brandName\": {\"unitCode\": \"EUR\",\n" + "		\"type\": \"Property\",\n" + "		\"value\": [{\"bla1\":\"Mercedes\"},{\"bla2\":\"Audi\"} ]\n"
-					+ "	},\n" +
+					+ ", \"address\": {\n" + 
+					" \"type\":\"Property\",\n" + 
+					" \"value\": {\n" + 
+					" \"city\":\"Berlin\",\n" + 
+					" \"street\":\"Ulrich Strasse\"\n" + 
+					" }\n" + 
+					" }	},\n" +
 					/*
 					 * "	\"street\": {\n" + "		\"type\": \"LanguageProperty\",\n" +
 					 * "		\"languageMap\": {\n" + "			\"fr\": \"Grand Place\",\n" +

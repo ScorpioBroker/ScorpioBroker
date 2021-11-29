@@ -42,6 +42,7 @@ public class NGSIObject {
 		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_COORDINATES);
 		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_OBSERVED_AT);
 		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_UNIT_CODE);
+		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_DATA_SET_ID);
 	}
 
 	/*
@@ -205,6 +206,15 @@ public class NGSIObject {
 		case AppConstants.FULL_ENTITY:
 			if (activeProperty == null) {
 				// we are in root
+				if(element instanceof Map) {
+					Map<String, Object> tmpMap = (Map<String, Object>) element;
+					if(!tmpMap.containsKey(JsonLdConsts.ID)) {
+						throw new ResponseException(ErrorType.BadRequestData, "An entity id is mandatory");
+					}
+					if(!tmpMap.containsKey(JsonLdConsts.TYPE)) {
+						throw new ResponseException(ErrorType.BadRequestData, "An entity type is mandatory");
+					}
+				}
 			} else {
 				if (fromHasValue) {
 					return;
