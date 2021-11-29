@@ -182,7 +182,7 @@ public class NGSIObject {
 
 	public void validate(int payloadType, String activeProperty, JsonLdApi api) throws ResponseException {
 		switch (payloadType) {
-		//case -1:
+		case -1:
 		case AppConstants.FULL_ENTITY:
 			if (activeProperty == null) {
 				// we are in root
@@ -233,7 +233,7 @@ public class NGSIObject {
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
 			}
 		} else {
-			compacted = api.compactWithCoreContext(element);
+			compacted = api.compactWithCoreContext(geoJsonValue);
 		}
 		Object geometryType = compacted.get(NGSIConstants.GEO_JSON_TYPE);
 		if (geometryType == null) {
@@ -243,7 +243,7 @@ public class NGSIObject {
 			throw new ResponseException(ErrorType.BadRequestData,
 					"Unsupported geometry type: " + geometryType.toString());
 		}
-		Object geoValue = compacted.get(NGSIConstants.VALUE);
+		Object geoValue = compacted.get(NGSIConstants.CSOURCE_COORDINATES);
 		switch ((String) geometryType) {
 		case NGSIConstants.GEO_TYPE_POINT:
 			validatePoint(geoValue);
@@ -269,7 +269,9 @@ public class NGSIObject {
 			// Should never happen
 			e.printStackTrace();
 		}
-		geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, temp);
+		ArrayList<Object> temp1 = new ArrayList<Object>();
+		temp1.add(temp);
+		geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, temp1);
 
 	}
 
@@ -294,7 +296,7 @@ public class NGSIObject {
 		tempList = (List) tempList.get(0);
 		Object first = null, last = null;
 		for (Object entry : tempList) {
-			if (first != null) {
+			if (first == null) {
 				first = entry;
 			}
 			last = entry;
