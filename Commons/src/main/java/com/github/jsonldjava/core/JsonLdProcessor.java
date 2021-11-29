@@ -12,6 +12,7 @@ import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.impl.NQuadRDFParser;
 import com.github.jsonldjava.impl.NQuadTripleCallback;
 
+
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 /**
@@ -302,7 +303,6 @@ public class JsonLdProcessor {
      */
     public static Map<String, Object> frame(Object input, Object frame, JsonLdOptions opts)
             throws JsonLdError, ResponseException {
-
         if (frame instanceof Map) {
             frame = JsonLdUtils.clone(frame);
         }
@@ -418,6 +418,7 @@ public class JsonLdProcessor {
      * @return The JSON-LD object represented by the given RDF dataset
      * @throws JsonLdError
      *             If there was an error converting from RDF to JSON-LD
+
      * @throws ResponseException 
      */
     public static Object fromRDF(Object dataset) throws JsonLdError, ResponseException {

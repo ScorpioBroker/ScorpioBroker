@@ -22,6 +22,7 @@ import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 
 import com.github.jsonldjava.core.JsonLdConsts.Embed;
@@ -48,6 +49,7 @@ public class JsonLdApi {
 	JsonLdOptions opts;
 	Object value = null;
 	Context context = null;
+
 	// TODO change back to spring
 	// @Value("${ngsi-ld.corecontext.url:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	private String coreContextUrl = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld";
@@ -197,7 +199,9 @@ public class JsonLdApi {
 			// 6)
 			final Map<String, Object> result = newMap();
 			// 7)
+
 			final List<Object> listResult = new ArrayList<Object>();
+
 			final List<String> keys = new ArrayList<String>(elem.keySet());
 			Collections.sort(keys);
 			for (final String expandedProperty : keys) {
@@ -375,6 +379,7 @@ public class JsonLdApi {
 										activeCtx.compactIri(JsonLdConsts.INDEX, true),
 										((Map<String, Object>) expandedItem).get(JsonLdConsts.INDEX));
 							}
+
 						} else if (JsonLdConsts.LIST.equals(itemActiveProperty)) {
 							listResult.add(compactedItem);
 						}
@@ -425,9 +430,9 @@ public class JsonLdApi {
 						// 7.6.6.1)
 						final Boolean check = (!compactArrays || JsonLdConsts.SET.equals(container)
 								|| JsonLdConsts.GRAPH.equals(expandedProperty)) && (!(compactedItem instanceof List));
+
 						if (isList && JsonLdConsts.LIST.equals(itemActiveProperty)) {
 							continue;
-							//return compactedItem;
 						}
 						if (check) {
 							final List<Object> tmp = new ArrayList<Object>();
@@ -498,6 +503,7 @@ public class JsonLdApi {
 	 * @return The expanded JSON-LD object.
 	 * @throws JsonLdError If there was an error during expansion.
 	 */
+
 	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType)
 			throws JsonLdError, ResponseException {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
