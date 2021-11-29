@@ -242,4 +242,5 @@ public interface NGSIConstants {
 	public static final String TENANT_HEADER = "ngsild-tenant";
 	public final static String NOTIFICATION = "notification";
 	public static final String QUERY_TYPE = "Query";
+	public static final String[] CORE_CONTEXT_URLS = new String[] {"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"};
 }
