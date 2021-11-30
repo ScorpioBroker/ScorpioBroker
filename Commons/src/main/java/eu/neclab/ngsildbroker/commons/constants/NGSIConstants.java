@@ -68,7 +68,7 @@ public interface NGSIConstants {
 
 	public final static String NGSI_LD_ID_PATTERN = "https://uri.etsi.org/ngsi-ld/idPattern";
 	public final static String NGSI_LD_ENTITIES = "https://uri.etsi.org/ngsi-ld/entities";
-	public final static String NGSI_LD_GEOMETRY = "https://uri.etsi.org/ngsi-ld/geometry";
+	public final static String NGSI_LD_GEOMETRY = "https://purl.org/geojson/vocab#geometry";
 	public final static String NGSI_LD_GEO_QUERY = "https://uri.etsi.org/ngsi-ld/geoQ";
 	public final static String NGSI_LD_ACCEPT = "https://uri.etsi.org/ngsi-ld/accept";
 	public final static String NGSI_LD_URI = "https://uri.etsi.org/ngsi-ld/uri";
@@ -125,6 +125,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ATTRIBUTE_LIST_2 = "https://uri.etsi.org/ngsi-ld/attributeList";
 	public final static String NGSI_LD_TYPE_NAMES = "https://uri.etsi.org/ngsi-ld/typeNames";
 	public final static String NGSI_LD_ATTRIBUTE_COUNT = "https://uri.etsi.org/ngsi-ld/default-context/attributeCount";
+	public final static String NGSI_LD_TEMPORAL_QUERY = "https://uri.etsi.org/ngsi-ld/temporalQ";
 
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
@@ -223,7 +224,8 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_FORBIDDEN_KEY_CHARS = "<,\",',=,;,(,),>,?,*";
 	public static final String[] VALID_SUB_ENDPOINT_SCHEMAS = { "http", "https", "mqtt", "mqtts" };
 	public final static String QUERY_PARAMETER_DELETE_ALL = "deleteAll";
-	public static final String NGSI_LD_NOTIFIERINFO = "https://uri.etsi.org/ngsi-ld/default-context/notifierinfo";
+	public static final String NGSI_LD_NOTIFIERINFO = "https://uri.etsi.org/ngsi-ld/default-context/notifierInfo";
+	public static final String NGSI_LD_RECEIVERINFO = "https://uri.etsi.org/ngsi-ld/default-context/receiverInfo";
 	public static final String NGSI_LD_MQTT_QOS = "https://uri.etsi.org/ngsi-ld/default-context/qos";
 	public static final String NGSI_LD_MQTT_VERSION = "https://uri.etsi.org/ngsi-ld/default-context/version";
 	public static final Integer DEFAULT_MQTT_QOS = 0;
@@ -243,4 +245,8 @@ public interface NGSIConstants {
 	public final static String NOTIFICATION = "notification";
 	public static final String QUERY_TYPE = "Query";
 	public static final String[] CORE_CONTEXT_URLS = new String[] {"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"};
+	public static final String NGSI_LD_END_TIME_AT = "https://uri.etsi.org/ngsi-ld/endTimeAt";
+	public static final String NGSI_LD_TIME_AT = "https://uri.etsi.org/ngsi-ld/timeAt";
+	public static final String NGSI_LD_TIME_POPERTY = "https://uri.etsi.org/ngsi-ld/timeproperty";
+	public static final String NGSI_LD_TIME_REL = "https://uri.etsi.org/ngsi-ld/timerel";
 }

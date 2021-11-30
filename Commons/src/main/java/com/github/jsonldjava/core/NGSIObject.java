@@ -3,10 +3,12 @@ package com.github.jsonldjava.core;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -16,6 +18,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 public class NGSIObject {
 
 	private Object element;
+	// entity stuff
 	private boolean isProperty = false;
 	private boolean isGeoProperty = false;
 	private boolean isRelationship = false;
@@ -27,22 +30,75 @@ public class NGSIObject {
 	private boolean isArray = false;
 	private boolean isLdKeyWord = false;
 	private boolean isScalar = false;
+	// subscription stuff
+	private boolean isGeoQ = false;
+	private boolean isEntities = false;
+	private boolean isNotificationEntry = false;
+	private boolean isTemporalQ = false;
+	private boolean isEndpoint = false;
+	private boolean isNotifierInfo = false;
+	private boolean isReceiverInfo = false;
 
-	private ArrayList<String> allowedScalarsEntity = new ArrayList<String>();
 	private ArrayList<String> datasetIds = new ArrayList<String>();
 	private String id;
+	private String expandedProperty;
+	private NGSIObject parent;
+	private ArrayListMultimap<Integer, String> allowedScalars = ArrayListMultimap.create();
+	private ArrayListMultimap<Integer, String> allowedDateTimes = ArrayListMultimap.create();
+	private ArrayListMultimap<Integer, String> allowedTopLevel = ArrayListMultimap.create();
 	private ArrayList<String> types = new ArrayList<String>();
 	private boolean fromHasValue;
 
-	public NGSIObject(Object element) {
+	public NGSIObject(Object element, NGSIObject parent) {
 		super();
 		this.element = element;
-		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_HAS_OBJECT);
-		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_HAS_VALUE);
-		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_COORDINATES);
-		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_OBSERVED_AT);
-		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_UNIT_CODE);
-		this.allowedScalarsEntity.add(NGSIConstants.NGSI_LD_DATA_SET_ID);
+		this.parent = parent;
+		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME);
+		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DESCRIPTION);
+		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TIME_INTERVAL);
+		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_QUERY);
+		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_IS_ACTIVE);
+		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_EXPIRES);
+		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_THROTTLING);
+		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES);
+
+		this.allowedTopLevel.putAll(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD,
+				this.allowedScalars.get(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD));
+
+		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_ID_PATTERN);
+		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
+		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
+		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
+		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
+		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+
+		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
+		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
+		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
+		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
+		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+
+		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
+		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
+		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
+		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
+		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+
+		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
+		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
+		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
+		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
+		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+
+		this.allowedDateTimes.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
+
+		this.allowedDateTimes.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
+
+		this.allowedDateTimes.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
+
+		this.allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
+		this.allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_CREATED_AT);
+		this.allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_MODIFIED_AT);
 	}
 
 	/*
@@ -57,6 +113,14 @@ public class NGSIObject {
 
 	public Object getElement() {
 		return element;
+	}
+
+	public String getExpandedProperty() {
+		return expandedProperty;
+	}
+
+	public void setExpandedProperty(String expandedProperty) {
+		this.expandedProperty = expandedProperty;
 	}
 
 	public NGSIObject setElement(Object element) {
@@ -202,60 +266,326 @@ public class NGSIObject {
 	public void validate(int payloadType, String activeProperty, String expandedProperty, JsonLdApi api)
 			throws ResponseException {
 		switch (payloadType) {
-		case -1:
-		case AppConstants.FULL_ENTITY:
+		case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
+		case AppConstants.ENTITY_CREATE_PAYLOAD:
 			if (activeProperty == null) {
 				// we are in root
-				if(element instanceof Map) {
-					Map<String, Object> tmpMap = (Map<String, Object>) element;
-					if(!tmpMap.containsKey(JsonLdConsts.ID)) {
-						throw new ResponseException(ErrorType.BadRequestData, "An entity id is mandatory");
-					}
-					if(!tmpMap.containsKey(JsonLdConsts.TYPE)) {
-						throw new ResponseException(ErrorType.BadRequestData, "An entity type is mandatory");
-					}
+				if (!hasAtId) {
+					throw new ResponseException(ErrorType.BadRequestData, "An entity id is mandatory");
 				}
-			} else {
-				if (fromHasValue) {
-					return;
-				}
-				if (isScalar) {
-					if (!allowedScalarsEntity.contains(expandedProperty)) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								"The key " + activeProperty + " is an invalid entry.");
-					}
-				} else {
-					if (isLdKeyWord && !isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
-						return;
-					}
-					if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								"The key " + activeProperty + " is an invalid entry.");
-					}
-					if (isProperty && !hasValue) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								"You can't have properties without a value");
-					}
-					if ((isRelationship && !hasObject)) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								"You can't have relationships without an object");
-					}
-					if (isGeoProperty) {
-						if (!hasValue) {
-							throw new ResponseException(ErrorType.BadRequestData,
-									"You can't have geo properties without a value");
-						} else {
-							compactAndValidateGeoProperty(api);
-						}
-					}
+				if (!hasAtType) {
+					throw new ResponseException(ErrorType.BadRequestData, "An entity type is mandatory");
 				}
 
+			} else {
+				validateAttribute(payloadType, expandedProperty, activeProperty, api);
 			}
 			break;
+		case AppConstants.ENTITY_UPDATE_PAYLOAD:
+			if (activeProperty == null) {
+				// we are in root
+				if (hasAtId) {
+					throw new ResponseException(ErrorType.BadRequestData, "An entity id is allowed");
+				}
+				if (hasAtType) {
+					throw new ResponseException(ErrorType.BadRequestData, "An entity type is not allowed");
+				}
+			} else {
+				validateAttribute(payloadType, expandedProperty, activeProperty, api);
+			}
+			break;
+		case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
+			validateAttribute(payloadType, expandedProperty, activeProperty, api);
+			break;
+		case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
+			if (true) {
+				if (activeProperty == null) {
+					if (!hasAtId) {
+						throw new ResponseException(ErrorType.BadRequestData, "A subscription id is mandatory");
+					}
+					if (!hasAtType || !types.contains(NGSIConstants.NGSI_LD_SUBSCRIPTION)) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"A subscription needs type which is Subscription");
+					}
+				} else {
+					if (isScalar) {
+						switch (expandedProperty) {
+						case NGSIConstants.NGSI_LD_ID_PATTERN:
+							if (!checkForEntities()) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							return;
+						case NGSIConstants.NGSI_LD_COORDINATES:
+							NGSIObject temp = parent;
+							while (temp.isArray && temp.parent != null) {
+								temp = temp.parent;
+							}
+							if (temp.parent == null || !temp.parent.isGeoQ) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							return;
+						case NGSIConstants.NGSI_LD_GEOMETRY:
+							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							validateGeometry();
+							return;
+						case NGSIConstants.NGSI_LD_GEO_REL:
+							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							validateGeoRel();
+							return;
+						case NGSIConstants.NGSI_LD_ACCEPT:
+							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isEndpoint) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							validateAccept();
+							return;
+						case NGSIConstants.NGSI_LD_URI:
+							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isEndpoint) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							validateEndpoint();
+							return;
+						case NGSIConstants.NGSI_LD_FORMAT:
+							if (this.parent == null || this.parent.parent == null
+									|| !this.parent.parent.isNotificationEntry) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							validateFormat();
+							return;
+						case NGSIConstants.NGSI_LD_ATTRIBUTES:
+							if (this.parent == null || this.parent.parent == null || this.parent.parent.parent == null
+									|| !this.parent.parent.parent.isNotificationEntry) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							validateFormat();
+							return;
+						case NGSIConstants.NGSI_LD_END_TIME_AT:
+						case NGSIConstants.NGSI_LD_TIME_AT:
+							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							validateDateTime();
+							return;
+						case NGSIConstants.NGSI_LD_TIME_POPERTY:
+							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							validateTimeProperty();
+							return;
+						case NGSIConstants.NGSI_LD_TIME_REL:
+							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							validateTimeProperty();
+							return;
+						default:
+							if (parent != null && parent.parent != null && parent.parent.isArray
+									&& parent.parent.parent != null
+									&& (parent.parent.parent.isReceiverInfo || parent.parent.parent.isNotifierInfo)) {
+								// custom entries are allowed in receiver and notifier info
+								return;
+							}
+							if (!allowedScalars.get(payloadType).contains(expandedProperty)) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"The key " + activeProperty + " is an invalid entry.");
+							}
+							return;
+						}
 
+					} else {
+						if (checkForEntities()) {
+							return;
+						}
+						if (this.parent != null) {
+							if (this.parent.isGeoQ && this.parent.parent == null) {
+								return;
+							}
+							if (this.parent.isEndpoint && this.parent.parent != null
+									&& this.parent.parent.isNotificationEntry && this.parent.parent.parent == null) {
+								return;
+							}
+							if (this.parent.isNotificationEntry && this.parent.parent == null) {
+								return;
+							}
+							if (this.parent.isTemporalQ && this.parent.parent == null) {
+								return;
+							}
+							if (this.parent.isArray && parent.parent != null
+									&& (parent.parent.isNotifierInfo || parent.parent.isReceiverInfo)
+									&& parent.parent.parent != null && parent.parent.parent.isEndpoint) {
+								return;
+							}
+
+						}
+						throw new ResponseException(ErrorType.BadRequestData,
+								"The key " + activeProperty + " is an invalid entry.");
+					}
+				}
+			}
+			break;
+		case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
+			break;
+		case AppConstants.CSOURCE_REG_CREATE_PAYLOAD:
+			break;
+		case AppConstants.CSOURCE_REG_UPDATE_PAYLOAD:
+			break;
+		case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
+			break;
+		case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
+			break;
+		case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
+			break;
 		default:
 			break;
 		}
+	}
+
+	private void validateTimeProperty() {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void validateFormat() {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void validateEndpoint() {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void validateAccept() {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void validateGeoRel() {
+		// TODO Auto-generated method stub
+
+	}
+
+	private void validateGeometry() {
+		// TODO Auto-generated method stub
+
+	}
+
+	private boolean checkForEntities() throws ResponseException {
+		if (this.parent != null) {
+			if (this.parent.isArray && this.parent.parent != null && this.parent.parent.isEntities) {
+				if (!this.hasAtType) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Entities entry in subscriptions need a type");
+				}
+				return true;
+			} else if (this.parent.parent != null && this.parent.parent.isArray && this.parent.parent.parent != null
+					&& this.parent.parent.parent.isEntities) {
+				/*
+				 * if (!this.parent.hasAtType) { throw new
+				 * ResponseException(ErrorType.BadRequestData,
+				 * "Entities entry in subscriptions need a type"); }
+				 */
+				return true;
+			} else {
+				return false;
+			}
+
+		}
+		return false;
+
+	}
+
+	private void validateAttribute(int payloadType, String expandedProperty, String activeProperty, JsonLdApi api)
+			throws ResponseException {
+		if (fromHasValue) {
+			return;
+		}
+		if (isScalar) {
+			if (allowedDateTimes.get(payloadType).contains(expandedProperty)) {
+				validateDateTime();
+				return;
+			}
+			if (NGSIConstants.NGSI_LD_DATA_SET_ID.equals(expandedProperty)) {
+				validateAndAddDatasetId();
+				return;
+			}
+			if (!allowedScalars.get(payloadType).contains(expandedProperty)) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"The key " + activeProperty + " is an invalid entry.");
+			}
+		} else if (isArray) {
+			validateArray();
+		} else {
+			if (isLdKeyWord && !isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
+				return;
+			}
+			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"The key " + activeProperty + " is an invalid entry.");
+			}
+			if (isProperty && !hasValue) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have properties without a value");
+			}
+			if ((isRelationship && !hasObject)) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have relationships without an object");
+			}
+			if (isGeoProperty) {
+				if (!hasValue) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"You can't have geo properties without a value");
+				} else {
+					compactAndValidateGeoProperty(api);
+				}
+			}
+		}
+
+	}
+
+	private void validateArray() throws ResponseException {
+		if (isProperty && isRelationship) {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"Multi value with Relationship and Property mixed is not allowed");
+		}
+		if (!isProperty && !isRelationship) {
+			return;
+		}
+		HashSet<String> tmp = new HashSet<String>();
+		tmp.addAll(datasetIds);
+		if (tmp.size() != datasetIds.size()) {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"Duplicated datasetId or multiple entries with no datasetId found");
+		}
+	}
+
+	private void validateAndAddDatasetId() throws ResponseException {
+		String dataSetId = ((Map<String, String>) element).get(JsonLdConsts.ID);
+		if (dataSetId.indexOf(':') == -1) {
+			throw new ResponseException(ErrorType.BadRequestData, "datasetId must be a URI");
+		}
+		this.datasetIds.add(dataSetId);
+
+	}
+
+	private void validateDateTime() throws ResponseException {
+		String dateString = (String) ((Map<String, Object>) this.element).get(JsonLdConsts.VALUE);
+		if (!AppConstants.DATE_TIME_MATCHER.matcher(dateString).matches()) {
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid date time found");
+		}
+
 	}
 
 	private void compactAndValidateGeoProperty(JsonLdApi api) throws ResponseException {
@@ -386,6 +716,92 @@ public class NGSIObject {
 	public boolean isFromHasValue() {
 		return fromHasValue;
 	}
-	
+
+	public boolean isGeoQ() {
+		return isGeoQ;
+	}
+
+	public void setGeoQ(boolean isGeoQ) {
+		this.isGeoQ = isGeoQ;
+	}
+
+	public boolean isEntities() {
+		return isEntities;
+	}
+
+	public void setEntities(boolean isEntities) {
+		this.isEntities = isEntities;
+	}
+
+	public boolean isNotificationEntry() {
+		return isNotificationEntry;
+	}
+
+	public void setNotificationEntry(boolean isNotificationEntry) {
+		this.isNotificationEntry = isNotificationEntry;
+	}
+
+	public boolean isTemporalQ() {
+		return isTemporalQ;
+	}
+
+	public void setTemporalQ(boolean isTemporalQ) {
+		this.isTemporalQ = isTemporalQ;
+	}
+
+	public void fillUpForArray(NGSIObject ngsiV) {
+		this.isProperty = this.isProperty || ngsiV.isProperty;
+		this.isGeoProperty = this.isGeoProperty || ngsiV.isGeoProperty;
+		this.isRelationship = this.isRelationship || ngsiV.isRelationship;
+		this.isDateTime = this.isDateTime || ngsiV.isDateTime;
+		this.hasValue = this.hasValue || ngsiV.hasValue;
+		this.hasAtId = this.hasAtId || ngsiV.hasAtId;
+		this.hasObject = this.hasObject || ngsiV.hasObject;
+		this.hasAtType = this.hasAtType || ngsiV.hasAtType;
+		this.isArray = this.isArray || ngsiV.isArray;
+		this.isLdKeyWord = this.isLdKeyWord || ngsiV.isLdKeyWord;
+		this.isScalar = this.isScalar || ngsiV.isScalar;
+		if ((ngsiV.isRelationship || ngsiV.isProperty)) {
+			if (ngsiV.datasetIds.isEmpty()) {
+				this.datasetIds.add(NGSIConstants.DEFAULT_DATA_SET_ID);
+			} else {
+				this.datasetIds.addAll(ngsiV.datasetIds);
+			}
+		}
+	}
+
+	public void resetSubscriptionVars() {
+		isGeoQ = false;
+		isEntities = false;
+		isNotificationEntry = false;
+		isTemporalQ = false;
+		isEndpoint = false;
+		isNotifierInfo = false;
+		isReceiverInfo = false;
+	}
+
+	public boolean isNotifierInfo() {
+		return isNotifierInfo;
+	}
+
+	public void setNotifierInfo(boolean isNotifierInfo) {
+		this.isNotifierInfo = isNotifierInfo;
+	}
+
+	public boolean isReceiverInfo() {
+		return isReceiverInfo;
+	}
+
+	public void setReceiverInfo(boolean isReceiverInfo) {
+		this.isReceiverInfo = isReceiverInfo;
+	}
+
+	public boolean isEndpoint() {
+		return isEndpoint;
+	}
+
+	public void setEndpoint(boolean isEndpoint) {
+		this.isEndpoint = isEndpoint;
+	}
 
 }
