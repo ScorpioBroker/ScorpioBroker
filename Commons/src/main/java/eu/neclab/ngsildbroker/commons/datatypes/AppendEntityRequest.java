@@ -79,8 +79,8 @@ public class AppendEntityRequest extends EntityRequest {
 			 * appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
 			 * appendResult.setStatus(true); continue; }
 			 */
-
-			if (objectNode.has(key)) {
+					
+			if (objectNode.has(key) && ((ArrayNode) objectNode.get(key)).size() > 1) {
 				JsonNode innerNode = ((ArrayNode) objectNode.get(key));
 				ArrayNode myArray = (ArrayNode) innerNode;
 				boolean appendpayload = true;
