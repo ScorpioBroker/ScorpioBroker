@@ -18,6 +18,15 @@
 			<build>
 				<plugins>
 					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>**/eu/neclab/ngsildbroker/runner/security/*.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+					<plugin>
 						<groupId>org.springframework.boot</groupId>
 						<artifactId>spring-boot-maven-plugin</artifactId>
 						<executions>
@@ -35,6 +44,15 @@
 			<id>docker-aaio</id>
 			<build>
 				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>**/eu/neclab/ngsildbroker/runner/security/*.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
 					<plugin>
 						<groupId>org.springframework.boot</groupId>
 						<artifactId>spring-boot-maven-plugin</artifactId>
@@ -72,6 +90,19 @@
 					<artifactId>Commons</artifactId>
 					<version>1.1.0-SNAPSHOT</version>
 				</dependency>
+				<dependency>
+					<groupId>org.springframework.security</groupId>
+					<artifactId>spring-security-config</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.security.oauth</groupId>
+					<artifactId>spring-security-oauth2</artifactId>
+					<version>2.5.1.RELEASE</version>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.security.oauth.boot</groupId>
+					<artifactId>spring-security-oauth2-autoconfigure</artifactId>
+				</dependency>
 			</dependencies>
 		</profile>
 		<profile>
@@ -93,9 +124,17 @@
 			</build>
 			<dependencies>
 				<dependency>
-					<groupId>eu.neclab.ngsildbroker</groupId>
-					<artifactId>Commons</artifactId>
-					<version>1.1.0-SNAPSHOT</version>
+					<groupId>org.springframework.security</groupId>
+					<artifactId>spring-security-config</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.security.oauth</groupId>
+					<artifactId>spring-security-oauth2</artifactId>
+					<version>2.5.1.RELEASE</version>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.security.oauth.boot</groupId>
+					<artifactId>spring-security-oauth2-autoconfigure</artifactId>
 				</dependency>
 			</dependencies>
 		</profile>
