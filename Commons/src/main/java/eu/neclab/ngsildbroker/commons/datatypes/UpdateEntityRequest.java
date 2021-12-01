@@ -26,7 +26,7 @@ public class UpdateEntityRequest extends EntityRequest {
 	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, String old, String update,
 			String attrName) throws ResponseException {
 		super(AppConstants.OPERATION_UPDATE_ENTITY, headers);
-		this.id = id;		
+		this.id = id;
 		generateUpdate(update, old, attrName);
 	}
 
@@ -140,25 +140,136 @@ public class UpdateEntityRequest extends EntityRequest {
 				}
 				logger.trace("field: " + field);
 				if (node.has(field)) {
-					JsonNode originalNode = ((ArrayNode) objectNode.get(field)).get(0);
-					JsonNode attrNode = jsonToUpdate.get(field).get(0);
-					String createdAt = now;
+					JsonNode innerNode = ((ArrayNode) objectNode.get(field));
+					ArrayNode myArray = (ArrayNode) innerNode;
+					boolean availableDatasetId = false;
+					if (myArray.size() > 1) {
+						for (int i = 0; i < myArray.size(); i++) {
+							if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+								availableDatasetId = true;
+								String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+										.get(NGSIConstants.JSON_LD_ID).asText();
 
-					// keep original createdAt value if present in the original json
-					if ((originalNode instanceof ObjectNode)
-							&& ((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
-							&& ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).isArray()) {
-						createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT)
-								.get(0)).get(NGSIConstants.JSON_LD_VALUE).asText();
+								if (jsonToUpdate.get(field).get(0).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+									String datasetId = jsonToUpdate.get(field).get(0)
+											.get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0).get(NGSIConstants.JSON_LD_ID)
+											.asText();
+									if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
+										availableDatasetId = true;
+										logger.trace("field: " + field);
+										// logger.trace("attrId: " + attrId);
+										if (myArray.get(i).get(NGSIConstants.JSON_LD_TYPE).get(0).asText()
+												.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+											((ObjectNode) innerNode.get(i)).replace(NGSIConstants.NGSI_LD_HAS_OBJECT,
+													jsonToUpdate.get(field).get(0)
+															.get(NGSIConstants.NGSI_LD_HAS_OBJECT));
+
+										}
+										if (myArray.get(i).get(NGSIConstants.JSON_LD_TYPE).get(0).asText()
+												.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
+											((ObjectNode) innerNode.get(i)).replace(NGSIConstants.NGSI_LD_HAS_VALUE,
+													jsonToUpdate.get(field).get(0)
+															.get(NGSIConstants.NGSI_LD_HAS_VALUE));
+
+										}
+										((ObjectNode) innerNode.get(i)).remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+										((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_MODIFIED_AT)
+												.addObject()
+												.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME)
+												.put(NGSIConstants.JSON_LD_VALUE, now);
+										logger.trace("appended json fields (partial): "
+												+ updateResult.getAppendedJsonFields().toString());
+										updateResult.setStatus(true);
+
+									}
+
+								} else {
+									if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
+
+										if (myArray.get(i).get(NGSIConstants.JSON_LD_TYPE).get(0).asText()
+												.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+											((ObjectNode) innerNode.get(i)).replace(NGSIConstants.NGSI_LD_HAS_OBJECT,
+													jsonToUpdate.get(field).get(0)
+															.get(NGSIConstants.NGSI_LD_HAS_OBJECT));
+
+										}
+
+										if (myArray.get(i).get(NGSIConstants.JSON_LD_TYPE).get(0).asText()
+												.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
+											((ObjectNode) innerNode.get(i)).replace(NGSIConstants.NGSI_LD_HAS_VALUE,
+													jsonToUpdate.get(field).get(0)
+															.get(NGSIConstants.NGSI_LD_HAS_VALUE));
+
+										}
+
+										((ObjectNode) innerNode.get(i)).remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+										((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_MODIFIED_AT)
+												.addObject()
+												.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME)
+												.put(NGSIConstants.JSON_LD_VALUE, now);
+										logger.trace("appended json fields (partial): "
+												+ updateResult.getAppendedJsonFields().toString());
+										updateResult.setStatus(true);
+
+									}
+								}
+
+							} else {
+
+								if (jsonToUpdate.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+									((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_DATA_SET_ID)
+											.addObject()
+											.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
+								} else {
+									((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_DATA_SET_ID)
+											.addObject()
+											.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
+									if (innerNode.get(i).has(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+										((ObjectNode) innerNode.get(i)).remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+										((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_MODIFIED_AT)
+												.addObject()
+												.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME)
+												.put(NGSIConstants.JSON_LD_VALUE, now);
+									}
+									if (myArray.get(i).get(NGSIConstants.JSON_LD_TYPE).get(0).asText()
+											.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+										((ObjectNode) innerNode.get(i)).replace(NGSIConstants.NGSI_LD_HAS_OBJECT,
+												jsonToUpdate.get(field).get(0).get(NGSIConstants.NGSI_LD_HAS_OBJECT));
+
+									}
+									if (myArray.get(i).get(NGSIConstants.JSON_LD_TYPE).get(0).asText()
+											.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
+										((ObjectNode) innerNode.get(i)).replace(NGSIConstants.NGSI_LD_HAS_VALUE,
+												jsonToUpdate.get(field).get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE));
+
+									}
+									logger.trace("appended json fields (partial): "
+											+ updateResult.getAppendedJsonFields().toString());
+									updateResult.setStatus(true);
+								}
+							}
+						}
+					} else {
+
+						JsonNode originalNode = ((ArrayNode) objectNode.get(field)).get(0);
+						JsonNode attrNode = jsonToUpdate.get(field).get(0);
+						String createdAt = now;
+						// keep original createdAt value if present in the original json
+						if ((originalNode instanceof ObjectNode)
+								&& ((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
+								&& ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).isArray()) {
+							createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT)
+									.get(0)).get(NGSIConstants.JSON_LD_VALUE).asText();
+						}
+						setTemporalProperties(attrNode, createdAt, now, false);
+
+						// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
+						// present ...
+						objectNode.replace(field, jsonToUpdate.get(field));
+						((ObjectNode) updateResult.getAppendedJsonFields()).set(field, jsonToUpdate.get(field));
+						logger.trace("appended json fields: " + updateResult.getAppendedJsonFields().toString());
+						updateResult.setStatus(true);
 					}
-					setTemporalProperties(attrNode, createdAt, now, false);
-
-					// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
-					// present ...
-					objectNode.replace(field, jsonToUpdate.get(field));
-					((ObjectNode) updateResult.getAppendedJsonFields()).set(field, jsonToUpdate.get(field));
-					logger.trace("appended json fields: " + updateResult.getAppendedJsonFields().toString());
-					updateResult.setStatus(true);
 				} else {
 					// throw new ResponseException(ErrorType.NotFound);
 				}
