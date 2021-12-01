@@ -1,7 +1,7 @@
 mysettings:
   kafka:
     bootstrap:
-      host: ${bushost:kafka}
+      host: ${kafka.host:kafka}
   postgres:
     host: ${dbhost:postgres}
   gateway:
