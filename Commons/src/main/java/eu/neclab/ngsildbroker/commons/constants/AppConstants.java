@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.commons.constants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * @version 1.0
@@ -58,11 +59,21 @@ public class AppConstants {
 	public static final String REQUEST_OV = "ov";	
 	public static final String REQUEST_HD = "headers";
 	public static final String REQUEST_CSOURCE = "CSource";
-	// public static final String TENANT_HEADER = "ngsild-tenant";
 	public static final String INTERNAL_NULL_KEY = ")$%^&";
 
 	public static final String HTTP_METHOD_PATCH = "patch";
 	public static final String NGB_APPLICATION_JSON_PATCH = "application/merge-patch+json";
-	public static final int FULL_ENTITY = 0;
+	public static final int ENTITY_CREATE_PAYLOAD = 0;
+	public static final int ENTITY_UPDATE_PAYLOAD = 1;
+	public static final int ENTITY_RETRIEVED_PAYLOAD = 2;
+	public static final int SUBSCRIPTION_CREATE_PAYLOAD = 3;
+	public static final int SUBSCRIPTION_UPDATE_PAYLOAD = 10;
+	public static final int CSOURCE_REG_CREATE_PAYLOAD = 4;
+	public static final int CSOURCE_REG_UPDATE_PAYLOAD = 5;
+	public static final int TEMP_ENTITY_CREATE_PAYLOAD = 6;
+	public static final int TEMP_ENTITY_UPDATE_PAYLOAD = 7;
+	public static final int TEMP_ENTITY_RETRIEVED_PAYLOAD = 8;
+	public static final int ENTITY_ATTRS_UPDATE_PAYLOAD = 9;
+	public static final Pattern DATE_TIME_MATCHER = Pattern.compile("\\d\\d\\d\\d-(0[1-9]|1[0-2])-(0[0-9]|[1-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d{1,6})?Z");
 
 }
