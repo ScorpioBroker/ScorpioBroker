@@ -99,8 +99,8 @@ public class HistoryController {
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
-			@RequestParam(name = "options", required = false) List<String> options) {
-
+			@RequestParam(name = "options", required = false) List<String> options,
+			@RequestParam(value = "count", required = false) Boolean countResult) {
 		try {
 			logger.trace("retrieveTemporalEntity :: started");
 			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
@@ -119,10 +119,13 @@ public class HistoryController {
 			if (qp.getEntities() == null && qp.getAttrs() == null) {
 				throw new ResponseException(ErrorType.BadRequestData, "Type or attrs is required");
 			}
-
+			if ((countResult == null ||countResult == false) && limit == 0) {
+				throw new ResponseException(ErrorType.BadRequestData, "Bad Request Data");
+			}
 			logger.trace("retrieveTemporalEntity :: completed");
 			qp.setLimit(limit);
 			qp.setOffSet(offset);
+			qp.setCountResult(countResult);
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			QueryResult qResult = historyDAO.query(req.getQp());
 			String nextLink = HttpUtils.generateNextLink(request, qResult);
@@ -134,12 +137,24 @@ public class HistoryController {
 			if (prevLink != null) {
 				additionalLinks.add(prevLink);
 			}
+			ArrayList<String> additionalHeaderCount = new ArrayList<String>();
 			HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
+	       
+			if (countResult != null) {
+				if (countResult == true) {
+					additionalHeaderCount.add(String.valueOf(qResult.getCount()));
+					additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaderCount);
+				}
+			}
 			if (!additionalLinks.isEmpty()) {
 				additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
+			}  
+			if (qResult.getActualDataString() != null) {
+				return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(qResult.getActualDataString()),
+						additionalHeaders);
+			} else {
+				return httpUtils.generateReply(request, "[]", additionalHeaders);
 			}
-			return httpUtils.generateReply(request,
-					historyDAO.getListAsJsonArray(historyDAO.query(req.getQp()).getActualDataString()));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
@@ -160,9 +175,8 @@ public class HistoryController {
 			ValidateURI.validateUri(entityId);
 			if (params != null && !Validator.validate(params))
 				throw new ResponseException(ErrorType.BadRequestData);
-
-			Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
-			String[] entityArray = new String[] { entityId };
+			Map<String,String[]> queryParam = new HashMap<>(request.getParameterMap());
+			String[] entityArray = new String[] {entityId};
 			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
 			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);

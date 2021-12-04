@@ -241,8 +241,10 @@ public interface NGSIConstants {
 	public static final String COUNT_HEADER_RESULT = "count";
 	public static final String REGEX_NGSI_LD_ATTR_TYPES = new String(
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
-	public static final String TENANT_HEADER = "ngsild-tenant";
 	public final static String NOTIFICATION = "notification";
+	public static final String TENANT_HEADER = "NGSILD-tenant";
+	public static final String LINK_HEADER = "Link";
+
 	public static final String QUERY_TYPE = "Query";
 	public static final String[] CORE_CONTEXT_URLS = new String[] {"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"};
 	public static final String NGSI_LD_END_TIME_AT = "https://uri.etsi.org/ngsi-ld/endTimeAt";

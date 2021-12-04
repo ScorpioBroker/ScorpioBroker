@@ -286,6 +286,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					 qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
 							qToken, showServices, countResult, headers, false, check);
 					}catch(Exception e){
+						e.printStackTrace();
 						return ResponseEntity.status(HttpStatus.NOT_FOUND)
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}

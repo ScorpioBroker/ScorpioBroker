@@ -5,12 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
-
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
@@ -41,11 +38,90 @@ public class HistoryDAO extends StorageReaderDAO {
 
 	@Override
 	protected String translateNgsildQueryToSql(QueryParams qp) throws ResponseException {
+
+		String fullSqlWhereProperty = commonTranslateSql(qp);
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+		if (limit > 0) {
+			fullSqlWhereProperty += "LIMIT " + limit + " ";
+		}
+		if (offSet > 0) {
+			fullSqlWhereProperty += "OFFSET " + offSet + " ";
+		}
+		return fullSqlWhereProperty;
+	}
+
+	private String getSqlWhereForField(String dbColumn, String value) {
+		String sqlWhere = "";
+		if (value.indexOf(",") == -1) {
+			sqlWhere = dbColumn + "='" + value + "'";
+		} else {
+			sqlWhere = dbColumn + " IN ('" + value.replace(",", "','") + "')";
+		}
+		return sqlWhere;
+	}
+
+	protected String translateNgsildTimequeryToSql(String timerel, String time, String timeproperty, String endTime,
+			String dbPrefix) throws ResponseException {
+		StringBuilder sqlWhere = new StringBuilder(50);
+
+		String sqlTestStatic = dbPrefix + "static = true AND ";
+
+		String dbColumn = NGSILD_TO_SQL_RESERVED_PROPERTIES_MAPPING_TIME.get(timeproperty);
+		if (dbColumn == null) {
+			sqlTestStatic += "data?'" + timeproperty + "' = false";
+			dbColumn = "(" + dbPrefix + "data#>>'{" + timeproperty + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE
+					+ ",0,@value}')::timestamp ";
+		} else {
+			dbColumn = dbPrefix + dbColumn;
+			sqlTestStatic += dbColumn + " IS NULL";
+		}
+
+		sqlWhere.append("( (" + sqlTestStatic + ") OR "); // temporal filters do not apply to static attributes
+
+		switch (timerel) {
+		case NGSIConstants.TIME_REL_BEFORE:
+			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " '" + time + "'::timestamp");
+			break;
+		case NGSIConstants.TIME_REL_AFTER:
+			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " '" + time + "'::timestamp");
+			break;
+		case NGSIConstants.TIME_REL_BETWEEN:
+			sqlWhere.append(dbColumn + " BETWEEN '" + time + "'::timestamp AND '" + endTime + "'::timestamp");
+			break;
+		default:
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);
+		}
+		sqlWhere.append(")");
+		return sqlWhere.toString();
+	}
+
+	public boolean entityExists(String entityId, String tenantId) throws ResponseException {
+		List<Map<String, Object>> list = getJDBCTemplate(tenantId)
+				.queryForList("Select id from temporalentity where id='" + entityId + "';");
+		if (list == null || list.isEmpty()) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	protected String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+		
+		String fullSqlWhereProperty = commonTranslateSql(qp);
+		String sqlQuery = "SELECT Count(*) FROM ";
+		if (fullSqlWhereProperty.length() > 0) {
+			sqlQuery += "( " + fullSqlWhereProperty.toString() + " )AS foo";
+		}
+		return sqlQuery;
+	}
+	
+	private String commonTranslateSql(QueryParams qp) throws ResponseException {
 		StringBuilder fullSqlWhere = new StringBuilder(70);
 		String sqlWhereGeoquery = "";
 		String sqlWhere = "";
 		List<Map<String, String>> entities = qp.getEntities();
-		if (entities != null) {
+		if (entities != null && entities.size() > 0) {
 			for (Map<String, String> entityInfo : entities) {
 				fullSqlWhere.append("(");
 				for (Entry<String, String> entry : entityInfo.entrySet()) {
@@ -175,70 +251,7 @@ public class HistoryDAO extends StorageReaderDAO {
 		if (qp.getQ() != null) {
 			sqlQuery += " where " + qp.getQ()+ " ";
 		}
-		
-		int limit = qp.getLimit();
-		int offSet = qp.getOffSet();
-		if (limit > 0) {
-			sqlQuery += "LIMIT " + limit + " ";
-		}
-		if (offSet > 0) {
-			sqlQuery += "OFFSET " + offSet + " ";
-		}
 		return sqlQuery;
+		
 	}
-
-	private String getSqlWhereForField(String dbColumn, String value) {
-		String sqlWhere = "";
-		if (value.indexOf(",") == -1) {
-			sqlWhere = dbColumn + "='" + value + "'";
-		} else {
-			sqlWhere = dbColumn + " IN ('" + value.replace(",", "','") + "')";
-		}
-		return sqlWhere;
-	}
-
-	protected String translateNgsildTimequeryToSql(String timerel, String timeAT, String timeproperty, String endTimeAT,
-			String dbPrefix) throws ResponseException {
-		StringBuilder sqlWhere = new StringBuilder(50);
-
-		String sqlTestStatic = dbPrefix + "static = true AND ";
-
-		String dbColumn = NGSILD_TO_SQL_RESERVED_PROPERTIES_MAPPING_TIME.get(timeproperty);
-		if (dbColumn == null) {
-			sqlTestStatic += "data?'" + timeproperty + "' = false";
-			dbColumn = "(" + dbPrefix + "data#>>'{" + timeproperty + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE
-					+ ",0,@value}')::timestamp ";
-		} else {
-			dbColumn = dbPrefix + dbColumn;
-			sqlTestStatic += dbColumn + " IS NULL";
-		}
-
-		sqlWhere.append("( (" + sqlTestStatic + ") OR "); // temporal filters do not apply to static attributes
-
-		switch (timerel) {
-		case NGSIConstants.TIME_REL_BEFORE:
-			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " '" + timeAT + "'::timestamp");
-			break;
-		case NGSIConstants.TIME_REL_AFTER:
-			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " '" + timeAT + "'::timestamp");
-			break;
-		case NGSIConstants.TIME_REL_BETWEEN:
-			sqlWhere.append(dbColumn + " BETWEEN '" + timeAT + "'::timestamp AND '" + endTimeAT + "'::timestamp");
-			break;
-		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);
-		}
-		sqlWhere.append(")");
-		return sqlWhere.toString();
-	}
-
-	public boolean entityExists(String entityId, String tenantId) throws ResponseException {
-		List<Map<String, Object>> list = getJDBCTemplate(tenantId)
-				.queryForList("Select id from temporalentity where id='" + entityId + "';");
-		if (list == null || list.isEmpty()) {
-			return false;
-		}
-		return true;
-	}
-
 }
