@@ -451,7 +451,7 @@ public class RDFDataset extends LinkedHashMap<String, Object> {
             context = new Context();
         }
         // Context will do our recursive parsing and initial IRI resolution
-        context = context.parse(contextLike);
+        context = context.parse(contextLike, false);
         // And then leak to us the potential 'prefixes'
         final Map<String, String> prefixes = context.getPrefixes(true);
 

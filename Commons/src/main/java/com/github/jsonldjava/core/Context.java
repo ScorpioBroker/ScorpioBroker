@@ -16,6 +16,8 @@ import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+
 /**
  * A helper class which still stores all the values in a map but gives member
  * variables easily access certain keys
@@ -144,8 +146,8 @@ public class Context extends LinkedHashMap<String, Object> {
      *             If there is an error parsing the contexts.
      */
     @SuppressWarnings("unchecked")
-    public Context parse(Object localContext, List<String> remoteContexts) throws JsonLdError {
-        return parse(localContext, remoteContexts, false);
+    public Context parse(Object localContext, List<String> remoteContexts, boolean checkToRemoveNGSILDContext) throws JsonLdError {
+        return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext);
     }
 
     /**
@@ -167,7 +169,7 @@ public class Context extends LinkedHashMap<String, Object> {
      */
     // GK: Note that parsing may also depend on some options: `override protected and `propagate`
     private Context parse(Object localContext, List<String> remoteContexts,
-            boolean parsingARemoteContext) throws JsonLdError {
+            boolean parsingARemoteContext, boolean checkToRemoveNGSILDContext) throws JsonLdError {
         if (remoteContexts == null) {
             remoteContexts = new ArrayList<String>();
         }
@@ -193,6 +195,9 @@ public class Context extends LinkedHashMap<String, Object> {
             }
             // 3.2)
             else if (context instanceof String) {
+            	if(checkToRemoveNGSILDContext && NGSIConstants.CORE_CONTEXT_URLS.contains(context)) {
+            		continue;
+            	}
                 String uri = (String) result.get(JsonLdConsts.BASE);
                 // GK: Note, the context needs to be resolved against the location of the file containing the reference, not the base association from the context. The spec defines a `context base` for this purpose.
                 uri = JsonLdUrl.resolve(uri, (String) context);
@@ -215,7 +220,7 @@ public class Context extends LinkedHashMap<String, Object> {
                         .get(JsonLdConsts.CONTEXT);
 
                 // 3.2.4
-                result = result.parse(tempContext, remoteContexts, true);
+                result = result.parse(tempContext, remoteContexts, true, checkToRemoveNGSILDContext);
                 // 3.2.5
                 continue;
             } else if (!(context instanceof Map)) {
@@ -325,8 +330,8 @@ public class Context extends LinkedHashMap<String, Object> {
         }
     }
 
-    public Context parse(Object localContext) throws JsonLdError {
-        return this.parse(localContext, new ArrayList<String>());
+    public Context parse(Object localContext, boolean checkToRemoveNGSILDContext) throws JsonLdError {
+        return this.parse(localContext, new ArrayList<String>(), checkToRemoveNGSILDContext);
     }
 
     /**

@@ -2,6 +2,9 @@ package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.List;
+import java.util.Map;
+
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -18,6 +21,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.JsonParseException;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
@@ -51,9 +57,9 @@ public class EntityController {// implements EntityHandlerInterface {
 //	@Qualifier("emops")
 //	KafkaOps kafkaOps;
 
-	@Autowired
-	@Qualifier("emconRes")
-	ContextResolverBasic contextResolver;
+//	@Autowired
+//	@Qualifier("emconRes")
+//	ContextResolverBasic contextResolver;
 
 	@Autowired
 	@Qualifier("emparamsres")
@@ -68,15 +74,17 @@ public class EntityController {// implements EntityHandlerInterface {
 		this.producerChannel = producerChannel;
 	}
 
-	private HttpUtils httpUtils;
+	//private HttpUtils httpUtils;
 
-	@PostConstruct
-	private void setup() {
-		this.httpUtils = HttpUtils.getInstance(contextResolver);
-	}
+	//@PostConstruct
+	//private void setup() {
+	//	this.httpUtils = HttpUtils.getInstance(null);//contextResolver);
+	//}
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
+
+	private JsonLdOptions opts;
 
 	public EntityController() {
 	}
@@ -92,11 +100,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			@RequestBody(required = false) String payload) {
 		String result = null;
 		try {
-			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("create entity :: started");
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
-			// entityService.validateEntity(resolved, request);
-
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts, AppConstants.ENTITY_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0);
 			result = entityService.createMessage(HttpUtils.getHeaders(request), resolved);
 			logger.trace("create entity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
@@ -119,7 +124,6 @@ public class EntityController {// implements EntityHandlerInterface {
 					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
-
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
 	 * 
@@ -131,12 +135,11 @@ public class EntityController {// implements EntityHandlerInterface {
 	public ResponseEntity<byte[]> updateEntity(HttpServletRequest request, @RequestBody String payload) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
-			HttpUtils.doPreflightCheck(request, payload);
+			
 			String[] split = request.getServletPath().replace("/ngsi-ld/v1/entities/", "").split("/attrs");
 			String entityId = HttpUtils.denormalize(split[0]);
 			logger.trace("update entity :: started");
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
-
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0); 
 			UpdateResult update = entityService.updateMessage(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("update entity :: completed");
 			if (update.getUpdateResult()) {

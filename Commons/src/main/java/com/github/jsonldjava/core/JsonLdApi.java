@@ -105,10 +105,6 @@ public class JsonLdApi {
 		} else {
 			this.opts = opts;
 		}
-		this.coreContext = new Context(opts);
-		ArrayList<String> temp = new ArrayList<String>();
-		temp.add(coreContextUrl);
-		this.coreContext = this.coreContext.parse(temp);
 	}
 
 	/**
@@ -130,7 +126,7 @@ public class JsonLdApi {
 		// TODO: string/IO input
 		this.context = new Context(opts);
 		if (context != null) {
-			this.context = this.context.parse(context);
+			this.context = this.context.parse(context, false);
 		}
 	}
 
@@ -503,7 +499,7 @@ public class JsonLdApi {
 
 	private Object expandWithCoreContext(Object geoProp) {
 		try {
-			return expand(this.coreContext, geoProp, -2);
+			return expand(JsonLdProcessor.coreContext, geoProp, -2, false);
 		} catch (JsonLdError | ResponseException e) {
 			// should never happen
 			e.printStackTrace();
@@ -546,8 +542,8 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there was an error during expansion.
 	 */
 
-	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType)
-			throws JsonLdError, ResponseException {
+	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType,
+			boolean atContextAllowed) throws JsonLdError, ResponseException {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
 		// 1)
 		if (ngsiElement == null || ngsiElement.getElement() == null) {
@@ -566,8 +562,10 @@ public class JsonLdApi {
 			resultElement.fillUpForArray(ngsiElement);
 			for (final Object item : (List<Object>) element) {
 				// 3.2.1)
-				NGSIObject ngsiV = expand(activeCtx, activeProperty, new NGSIObject(item, ngsiElement)
-						.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()), payloadType);
+				NGSIObject ngsiV = expand(activeCtx, activeProperty,
+						new NGSIObject(item, ngsiElement)
+								.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
+						payloadType, atContextAllowed);
 				final Object v = ngsiV.getElement();
 				resultElement.fillUpForArray(ngsiV);
 				// 3.2.2)
@@ -631,7 +629,7 @@ public class JsonLdApi {
 			// GK: If we found a `propertyScopedContext` above, we can parse it to create a
 			// new activeCtx using the `override protected` option
 			if (elem.containsKey(JsonLdConsts.CONTEXT)) {
-				activeCtx = activeCtx.parse(elem.get(JsonLdConsts.CONTEXT));
+				activeCtx = activeCtx.parse(elem.get(JsonLdConsts.CONTEXT), true);
 			}
 			// GK: This would be the place to remember this version of activeCtx as
 			// `typeScopedContext`.
@@ -650,7 +648,11 @@ public class JsonLdApi {
 				final Object value = elem.get(key);
 				// 7.1)
 				if (key.equals(JsonLdConsts.CONTEXT)) {
-					continue;
+					if (atContextAllowed) {
+						continue;
+					} else {
+						throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
+					}
 				}
 				// 7.2)
 				final String expandedProperty = activeCtx.expandIri(key, false, true, null, null);
@@ -750,7 +752,7 @@ public class JsonLdApi {
 					// 7.4.5)
 					else if (JsonLdConsts.GRAPH.equals(expandedProperty)) {
 						NGSIObject ngsiExpandedValue = expand(activeCtx, JsonLdConsts.GRAPH,
-								new NGSIObject(value, ngsiElement), payloadType);
+								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 					}
 					// 7.4.6)
@@ -801,7 +803,7 @@ public class JsonLdApi {
 						}
 						// 7.4.9.2)
 						NGSIObject ngsiExpandedValue = expand(activeCtx, activeProperty,
-								new NGSIObject(value, ngsiElement), payloadType);
+								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 
 						// NOTE: step not in the spec yet
@@ -821,7 +823,7 @@ public class JsonLdApi {
 					// 7.4.10)
 					else if (JsonLdConsts.SET.equals(expandedProperty)) {
 						NGSIObject ngsiExpandedValue = expand(activeCtx, activeProperty,
-								new NGSIObject(value, ngsiElement), payloadType);
+								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 					}
 					// 7.4.11)
@@ -831,7 +833,7 @@ public class JsonLdApi {
 						}
 						// 7.4.11.1)
 						NGSIObject ngsiExpandedValue = expand(activeCtx, JsonLdConsts.REVERSE,
-								new NGSIObject(value, ngsiElement), payloadType);
+								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 						// NOTE: algorithm assumes the result is a map
 						// 7.4.11.2)
@@ -899,7 +901,7 @@ public class JsonLdApi {
 							|| JsonLdConsts.EMBED_CHILDREN.equals(expandedProperty)
 							|| JsonLdConsts.OMIT_DEFAULT.equals(expandedProperty))) {
 						NGSIObject ngsiExpandedValue = expand(activeCtx, expandedProperty,
-								new NGSIObject(value, ngsiElement), payloadType);
+								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 					}
 					// 7.4.12)
@@ -1015,7 +1017,7 @@ public class JsonLdApi {
 						}
 						// 7.6.2.2)
 						NGSIObject ngsiIndexValue = expand(activeCtx, key, new NGSIObject(indexValue, ngsiElement),
-								payloadType);
+								payloadType, atContextAllowed);
 						indexValue = ngsiIndexValue.getElement();
 						// 7.6.2.3)
 						for (final Map<String, Object> item : (List<Map<String, Object>>) indexValue) {
@@ -1030,8 +1032,10 @@ public class JsonLdApi {
 				}
 				// 7.7)
 				else {
-					NGSIObject ngsiExpandedValue = expand(activeCtx, key, new NGSIObject(value, ngsiElement)
-							.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()), payloadType);
+					NGSIObject ngsiExpandedValue = expand(activeCtx, key,
+							new NGSIObject(value, ngsiElement)
+									.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
+							payloadType, atContextAllowed);
 					ngsiElement.getDatasetIds().addAll(ngsiExpandedValue.getDatasetIds());
 					expandedValue = ngsiExpandedValue.getElement();
 				}
@@ -1206,8 +1210,9 @@ public class JsonLdApi {
 	 * @throws JsonLdError       If there was an error during expansion.
 	 * @throws ResponseException
 	 */
-	public Object expand(Context activeCtx, Object element, int payloadType) throws JsonLdError, ResponseException {
-		return expand(activeCtx, null, new NGSIObject(element, null), payloadType).getElement();
+	public Object expand(Context activeCtx, Object element, int payloadType, boolean atContextAllowed)
+			throws JsonLdError, ResponseException {
+		return expand(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed).getElement();
 	}
 
 	/***
@@ -1498,7 +1503,7 @@ public class JsonLdApi {
 
 	private Map<String, Object> nodeMap;
 
-	private Context coreContext;
+
 
 	/**
 	 * Performs JSON-LD
@@ -2364,7 +2369,7 @@ public class JsonLdApi {
 	}
 
 	public Map<String, Object> compactWithCoreContext(Object geoJsonValue) {
-		return (Map<String, Object>) compact(this.coreContext, null, geoJsonValue);
+		return (Map<String, Object>) compact(JsonLdProcessor.coreContext, null, geoJsonValue);
 	}
 
 }

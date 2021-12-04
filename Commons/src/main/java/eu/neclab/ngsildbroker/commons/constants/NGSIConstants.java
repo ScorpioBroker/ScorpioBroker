@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.commons.constants;
 
 import java.util.HashMap;
 import java.util.List;
-
 import java.util.Arrays;
 
 public interface NGSIConstants {
@@ -244,7 +243,8 @@ public interface NGSIConstants {
 	public static final String TENANT_HEADER = "ngsild-tenant";
 	public final static String NOTIFICATION = "notification";
 	public static final String QUERY_TYPE = "Query";
-	public static final String[] CORE_CONTEXT_URLS = new String[] {"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"};
+	
+	public static final List<String> CORE_CONTEXT_URLS = Arrays.asList("https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld");
 	public static final String NGSI_LD_END_TIME_AT = "https://uri.etsi.org/ngsi-ld/endTimeAt";
 	public static final String NGSI_LD_TIME_AT = "https://uri.etsi.org/ngsi-ld/timeAt";
 	public static final String NGSI_LD_TIME_POPERTY = "https://uri.etsi.org/ngsi-ld/timeproperty";

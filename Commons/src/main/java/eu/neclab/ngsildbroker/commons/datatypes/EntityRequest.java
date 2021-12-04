@@ -1,7 +1,9 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +22,6 @@ public class EntityRequest extends BaseRequest {
 	protected String entityWithoutSysAttrs;
 	protected String keyValue;
 	protected String operationValue;
-	
 
 	public EntityRequest() {
 
@@ -87,7 +88,6 @@ public class EntityRequest extends BaseRequest {
 		this.objectMapper = objectMapper;
 	}
 
-
 	protected JsonNode getKeyValueEntity(JsonNode json) {
 		ObjectNode kvJsonObject = objectMapper.createObjectNode();
 		Iterator<Map.Entry<String, JsonNode>> iter = json.fields();
@@ -122,29 +122,29 @@ public class EntityRequest extends BaseRequest {
 		return kvJsonObject;
 	}
 
-	protected void removeTemporalProperties(JsonNode jsonNode) {
-		if (!jsonNode.isObject()) {
+	protected void removeTemporalProperties(Object payload) {
+		if (!(payload instanceof Map)) {
 			return;
 		}
-		ObjectNode objectNode = (ObjectNode) jsonNode;
+		Map<String, Object> objectNode = (Map<String, Object>) payload;
 		objectNode.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 		objectNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
 
 		String regexNgsildAttributeTypes = new String(NGSIConstants.NGSI_LD_PROPERTY + "|"
 				+ NGSIConstants.NGSI_LD_RELATIONSHIP + "|" + NGSIConstants.NGSI_LD_GEOPROPERTY);
-		Iterator<Map.Entry<String, JsonNode>> iter = objectNode.fields();
-		while (iter.hasNext()) {
-			Map.Entry<String, JsonNode> entry = iter.next();
-			if (entry.getValue().isArray() && entry.getValue().has(0) && entry.getValue().get(0).isObject()) {
-				// ObjectNode attrObj = (ObjectNode) entry.getValue().get(0);
-				// add createdAt/modifiedAt only to properties, geoproperties and relationships
-				Iterator<JsonNode> valueIterator = ((ArrayNode) entry.getValue()).iterator();
-				while (valueIterator.hasNext()) {
-					ObjectNode attrObj = (ObjectNode) valueIterator.next();
-					if (attrObj.has(NGSIConstants.JSON_LD_TYPE) && attrObj.get(NGSIConstants.JSON_LD_TYPE).isArray()
-							&& attrObj.get(NGSIConstants.JSON_LD_TYPE).has(0) && attrObj.get(NGSIConstants.JSON_LD_TYPE)
-									.get(0).asText().matches(regexNgsildAttributeTypes)) {
-						removeTemporalProperties(attrObj);
+		for (Entry<String, Object> entry : objectNode.entrySet()) {
+			if (entry.getValue() instanceof List && !((List) entry.getValue()).isEmpty()) {
+				List list = ((List) entry.getValue());
+				for (Object entry2 : list) {
+					if (entry2 instanceof Map) {
+						Map<String, Object> map = (Map<String, Object>) entry2;
+						if (map.containsKey(NGSIConstants.JSON_LD_TYPE)
+								&& map.get(NGSIConstants.JSON_LD_TYPE) instanceof List
+								&& !((List) map.get(NGSIConstants.JSON_LD_TYPE)).isEmpty()
+								&& ((List) map.get(NGSIConstants.JSON_LD_TYPE)).get(0).toString()
+										.matches(regexNgsildAttributeTypes)) {
+							removeTemporalProperties(map);
+						}
 					}
 				}
 			}

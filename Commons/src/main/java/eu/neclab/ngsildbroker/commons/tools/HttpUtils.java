@@ -167,26 +167,21 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static void doPreflightCheck(HttpServletRequest req, String payload) throws ResponseException {
+	public static boolean doPreflightCheck(HttpServletRequest req) throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
 		if (contentType == null) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
 		}
+		if (contentType.toLowerCase().contains("application/ld+json")) {
+			return true;
+		}
 		if (!contentType.toLowerCase().contains("application/json")
-				&& !contentType.toLowerCase().contains("application/ld+json")
 				&& !contentType.toLowerCase().contains("application/merge-patch+json")) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType,
 					"Unsupported content type. Allowed are application/json and application/ld+json. You provided "
 							+ contentType);
 		}
-		if (payload == null || payload.trim().isEmpty() || payload.trim().equals("{}") || payload.trim().equals("[]")) {
-			throw new ResponseException(ErrorType.BadRequestData, "empty payloads are not allowed in this operation");
-		}
-
-		if (contentType.toLowerCase().contains("application/json") && payload.contains("@context")) {
-			throw new ResponseException(ErrorType.BadRequestData,
-					"data of the content type application/json cannot provide an @context entry in the body");
-		}
+		return false;
 
 	}
 
@@ -854,17 +849,17 @@ public final class HttpUtils {
 		}
 	}
 
-	public static List<Object> getAtContext(HttpServletRequest req) {
+	public static List<String> getAtContext(HttpServletRequest req) {
 		return parseLinkHeader(req, NGSIConstants.HEADER_REL_LDCONTEXT);
 	}
 
-	public static List<Object> parseLinkHeader(HttpServletRequest req, String headerRelLdcontext) {
+	public static List<String> parseLinkHeader(HttpServletRequest req, String headerRelLdcontext) {
 		return parseLinkHeader(req.getHeaders("Link"), headerRelLdcontext);
 	}
 
-	public static List<Object> parseLinkHeader(Enumeration<String> rawLinks, String headerRelLdcontext) {
+	public static List<String> parseLinkHeader(Enumeration<String> rawLinks, String headerRelLdcontext) {
 
-		ArrayList<Object> result = new ArrayList<Object>();
+		ArrayList<String> result = new ArrayList<String>();
 		if (rawLinks == null) {
 			return result;
 		}
@@ -1164,7 +1159,7 @@ public final class HttpUtils {
 
 		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
 	}
-	
+
 	// public static ResponseEntity<Object> generateReply(String acceptHeader,
 	// List<Object> contextLinks,
 	// String expandedJson, ContextResolverBasic contextResolver, String

@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -23,18 +24,18 @@ public class UpdateEntityRequest extends EntityRequest {
 
 	private UpdateResult updateResult;
 
-	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, String old, String update,
+	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody, Map<String, Object> resolved,
 			String attrName) throws ResponseException {
 		super(AppConstants.OPERATION_UPDATE_ENTITY, headers);
 		this.id = id;		
-		generateUpdate(update, old, attrName);
+		generateUpdate(resolved, entityBody, attrName);
 	}
 
-	private void generateUpdate(String update, String old, String attrName) throws ResponseException {
-		JsonNode updateNode;
+	private void generateUpdate(Map<String, Object> resolved, Map<String, Object> entityBody, String attrName) throws ResponseException {
+		
 		try {
-			updateNode = objectMapper.readTree(update);
-			this.updateResult = updateFields(old, updateNode, attrName);
+		
+			this.updateResult = updateFields(entityBody, resolved, attrName);
 			this.entityWithoutSysAttrs = updateResult.getJsonWithoutSysAttrs();
 
 			if (attrName != null) {
@@ -60,20 +61,20 @@ public class UpdateEntityRequest extends EntityRequest {
 	/**
 	 * Method to merge/update fields in original Entitiy
 	 * 
-	 * @param originalJsonObject
-	 * @param jsonToUpdate
+	 * @param entityBody
+	 * @param resolved
 	 * @param attrId
 	 * @return
 	 * @throws Exception
 	 * @throws ResponseException
 	 */
-	private UpdateResult updateFields(String originalJsonObject, JsonNode jsonToUpdate, String attrId)
+	private UpdateResult updateFields(Map<String, Object> entityBody, Map<String, Object> resolved, String attrId)
 			throws Exception, ResponseException {
 		logger.trace("updateFields() :: started");
 		String now = SerializationTools.formatter.format(Instant.now());
 		JsonNode resultJson = objectMapper.createObjectNode();
-		UpdateResult updateResult = new UpdateResult(jsonToUpdate, resultJson);
-		JsonNode node = objectMapper.readTree(originalJsonObject);
+		UpdateResult updateResult = new UpdateResult(resolved, resultJson);
+		JsonNode node = objectMapper.readTree(entityBody);
 		ObjectNode objectNode = (ObjectNode) node;
 		if (attrId != null) {
 			if (objectNode.get(attrId) == null) {
@@ -91,22 +92,22 @@ public class UpdateEntityRequest extends EntityRequest {
 				if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 					String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
 							.get(NGSIConstants.JSON_LD_ID).asText();
-					if (jsonToUpdate.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						String datasetId = jsonToUpdate.get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+					if (resolved.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						String datasetId = resolved.get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
 								.get(NGSIConstants.JSON_LD_ID).asText();
 						if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
 							availableDatasetId = "available";
-							setFieldValue(jsonToUpdate.fieldNames(), ((ArrayNode) objectNode.get(attrId)), jsonToUpdate,
+							setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)), resolved,
 									updateResult, i);
 						}
 					} else {
 						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
-							setFieldValue(jsonToUpdate.fieldNames(), ((ArrayNode) objectNode.get(attrId)), jsonToUpdate,
+							setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)), resolved,
 									updateResult, i);
 						}
 					}
 				} else {
-					if (jsonToUpdate.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+					if (resolved.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 						((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_DATA_SET_ID).addObject()
 								.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
 					} else {
@@ -118,18 +119,18 @@ public class UpdateEntityRequest extends EntityRequest {
 									.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME)
 									.put(NGSIConstants.JSON_LD_VALUE, now);
 						}
-						setFieldValue(jsonToUpdate.fieldNames(), ((ArrayNode) objectNode.get(attrId)), jsonToUpdate,
+						setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)), resolved,
 								updateResult, i);
 					}
 				}
 			}
-			if (jsonToUpdate.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+			if (resolved.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
 					throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
 				}
 			}
 		} else {
-			Iterator<String> it = jsonToUpdate.fieldNames();
+			Iterator<String> it = resolved.fieldNames();
 			while (it.hasNext()) {
 				String field = it.next();
 				// TOP level updates of context id or type are ignored
@@ -141,7 +142,7 @@ public class UpdateEntityRequest extends EntityRequest {
 				logger.trace("field: " + field);
 				if (node.has(field)) {
 					JsonNode originalNode = ((ArrayNode) objectNode.get(field)).get(0);
-					JsonNode attrNode = jsonToUpdate.get(field).get(0);
+					JsonNode attrNode = resolved.get(field).get(0);
 					String createdAt = now;
 
 					// keep original createdAt value if present in the original json
@@ -155,8 +156,8 @@ public class UpdateEntityRequest extends EntityRequest {
 
 					// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
 					// present ...
-					objectNode.replace(field, jsonToUpdate.get(field));
-					((ObjectNode) updateResult.getAppendedJsonFields()).set(field, jsonToUpdate.get(field));
+					objectNode.replace(field, resolved.get(field));
+					((ObjectNode) updateResult.getAppendedJsonFields()).set(field, resolved.get(field));
 					logger.trace("appended json fields: " + updateResult.getAppendedJsonFields().toString());
 					updateResult.setStatus(true);
 				} else {

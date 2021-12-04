@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,6 +31,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.github.filosganga.geogson.model.Geometry;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
 import com.netflix.discovery.EurekaClient;
@@ -172,18 +174,18 @@ public class EntityService {
 	/**
 	 * Method to publish jsonld message to kafka topic
 	 * 
-	 * @param payload jsonld message
+	 * @param resolved jsonld message
 	 * @param headers
 	 * @return RestResponse
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public String createMessage(ArrayListMultimap<String, String> headers, String payload)
+	public String createMessage(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		// get message channel for ENTITY_CREATE topic.
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
-		EntityRequest request = new CreateEntityRequest(payload, headers);
+		EntityRequest request = new CreateEntityRequest(resolved, headers);
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 
@@ -239,13 +241,13 @@ public class EntityService {
 	 * Method to update a existing Entity in the system/kafka topic
 	 * 
 	 * @param entityId - id of entity to be updated
-	 * @param payload  - jsonld message containing fileds to be updated with updated
+	 * @param resolved  - jsonld message containing fileds to be updated with updated
 	 *                 values
 	 * @return RestResponse
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public UpdateResult updateMessage(ArrayListMultimap<String, String> headers, String entityId, String payload)
+	public UpdateResult updateMessage(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
@@ -254,7 +256,7 @@ public class EntityService {
 		// get entity details
 		String entityBody = validateIdAndGetBody(entityId, tenantid);
 		// String entityBody = validateIdAndGetBody(entityId);
-		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, payload, null);
+		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, resolved, null);
 
 		// update fields
 
@@ -326,7 +328,7 @@ public class EntityService {
 		return request.getAppendResult();
 	}
 
-	private String validateIdAndGetBody(String entityId, String tenantId) throws ResponseException {
+	private Map<String, Object> validateIdAndGetBody(String entityId, String tenantId) throws ResponseException {
 		// null id check
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
@@ -341,8 +343,15 @@ public class EntityService {
 		String entityBody = null;
 		if (directDB) {
 			entityBody = this.entityInfoDAO.getEntity(entityId, tenantId);
+		}else { 
+			//todo add back storage manager calls
 		}
-		return entityBody;
+		
+		try {
+			return (Map<String, Object>) JsonUtils.fromString(entityBody);
+		} catch (IOException e) {
+			throw new AssertionError("can't load internal json");
+		}
 	}
 
 	public boolean deleteEntity(ArrayListMultimap<String, String> headers, String entityId)
