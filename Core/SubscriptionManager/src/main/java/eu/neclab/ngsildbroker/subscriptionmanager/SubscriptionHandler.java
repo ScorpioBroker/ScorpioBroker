@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
@@ -34,11 +33,6 @@ public class SubscriptionHandler {
 	@Bean("smops")
 	KafkaOps ops() {
 		return new KafkaOps();
-	}
-	
-	@Bean("smconRes")
-	ContextResolverBasic conRes() {
-		return new ContextResolverBasic(atContextServerUrl);
 	}
 	
 	@Bean("smsecurityConfig")

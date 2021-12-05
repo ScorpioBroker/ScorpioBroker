@@ -60,7 +60,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.KafkaWriteException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
@@ -128,9 +127,7 @@ public class EntityService {
 	ObjectMapper objectMapper;
 	@Autowired
 	private EurekaClient eurekaClient;
-	@Autowired
-	@Qualifier("emconRes")
-	ContextResolverBasic contextResolver;
+
 	/*
 	 * @Autowired
 	 * 

@@ -40,7 +40,6 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 
@@ -59,8 +58,7 @@ public class QueryControllerTest {
 	private MockMvc mockMvc;
 	@MockBean
 	private QueryService queryService;
-	@Autowired
-	ContextResolverBasic contextResolver;
+
 	@Autowired
 	ParamsResolver paramsResolver;
 //	@InjectMocks

@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
@@ -42,13 +41,6 @@ public class EntityHandler {
 	KafkaOps ops() {
 		return new KafkaOps();
 	}
-	@Bean("emconRes")
-	@Primary
-	ContextResolverBasic conRes() {
-		return new ContextResolverBasic();
-	}
-	
-	
 	
 	@Bean("emsec")
 	SecurityConfig securityConfig() {

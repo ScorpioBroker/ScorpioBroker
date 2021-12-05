@@ -42,6 +42,9 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonSyntaxException;
 import com.netflix.discovery.EurekaClient;
@@ -53,7 +56,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
@@ -81,10 +83,6 @@ public class QueryService {
 
 	@Autowired
 	ObjectMapper objectMapper;
-
-	@Autowired
-	@Qualifier("qmconRes")
-	ContextResolverBasic contextResolver;
 
 	@Value("${query.topic}")
 	String requestTopic;
@@ -122,6 +120,8 @@ public class QueryService {
 	@Autowired
 	@Qualifier("qmrestTemp")
 	RestTemplate restTemplate;
+
+	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	/*
 	 * private QueryProducerChannel producerChannels;
@@ -376,7 +376,7 @@ public class QueryService {
 							m = p.matcher(brokerInfo);
 							final String uri;
 							final String uri_tenant;
-							if(m.matches()) {
+							if (m.matches()) {
 								m.find();
 								uri = m.group(1);
 							} else {
@@ -390,7 +390,7 @@ public class QueryService {
 							} else {
 								uri_tenant = null;
 							}
-							
+
 							if (uri != null) {
 								logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
 								Callable<QueryResult> callable = () -> {
@@ -436,7 +436,7 @@ public class QueryService {
 								callablesCollection.add(callable);
 							}
 						}
-                        
+
 						if (!callablesCollection.isEmpty()) {
 							fromCsources = getDataFromCsources(callablesCollection);
 						}
@@ -563,8 +563,9 @@ public class QueryService {
 				JsonNode jsonNode = objectMapper.readTree(resultBody);
 				for (int i = 0; i <= jsonNode.size(); i++) {
 					if (jsonNode.get(i) != null && !jsonNode.isNull()) {
-						String payload = contextResolver.expand(jsonNode.get(i).toString(), null, true,
-								AppConstants.ENTITIES_URL_ID);// , linkHeaders);
+						String payload = JsonUtils.toPrettyString(
+								JsonLdProcessor.expand(null, JsonUtils.fromString(jsonNode.get(i).toString()), opts,
+										AppConstants.INTERNAL_CALL_ID, true));
 						entitiesList.add(payload);
 					}
 				}

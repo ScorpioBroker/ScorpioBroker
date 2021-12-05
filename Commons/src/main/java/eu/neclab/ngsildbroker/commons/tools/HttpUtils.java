@@ -85,8 +85,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.HttpErrorResponseException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ldcontext.CompactedJson;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 
 /**
  * A utility class to handle HTTP Requests and Responses.

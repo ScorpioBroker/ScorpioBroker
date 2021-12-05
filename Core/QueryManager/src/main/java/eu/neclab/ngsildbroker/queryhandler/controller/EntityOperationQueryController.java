@@ -33,7 +33,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -54,10 +53,6 @@ public class EntityOperationQueryController {
 	int defaultLimit = 50;
 	@Value("${maxLimit}")
 	int maxLimit = 1000;
-
-	@Autowired
-	@Qualifier("qmconRes")
-	ContextResolverBasic contextResolver;
 
 	@Autowired
 	QueryParser queryParser;

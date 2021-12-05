@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
@@ -38,10 +37,6 @@ public class HistoryHandler {
 		return new StorageWriterDAO();
 	}
 	
-	@Bean
-	ContextResolverBasic conRes() {
-		return new ContextResolverBasic();
-	}
 	
 	@Bean
 	KafkaOps ops() {

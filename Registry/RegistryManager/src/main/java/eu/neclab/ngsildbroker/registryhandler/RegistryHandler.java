@@ -12,7 +12,6 @@ import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
@@ -45,11 +44,6 @@ public class RegistryHandler {
 	@Bean("rmops")
 	KafkaOps ops() {
 		return new KafkaOps();
-	}
-
-	@Bean("rmconRes")
-	ContextResolverBasic conRes() {
-		return new ContextResolverBasic();
 	}
 
 	@Bean("rmrestTemplate")

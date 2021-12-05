@@ -36,7 +36,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
@@ -53,9 +52,6 @@ public class SubscriptionControllerTest {
 
 	@InjectMocks
 	private SubscriptionController subscriptionController;
-
-	@Autowired
-	ContextResolverBasic contextResolver;
 
 	@Autowired
 	ParamsResolver paramsResolver;

@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
@@ -40,11 +39,6 @@ public class QueryHandler {// implements QueryHandlerInterface{
 	KafkaOps ops() {
 		return new KafkaOps();
 	}
-	@Bean("qmconRes")
-	ContextResolverBasic conRes() {
-		return new ContextResolverBasic(atContextServerUrl);
-	}
-	
 	
 	@Bean("qmrestTemp")
 	RestTemplate restTemp() {
