@@ -102,8 +102,9 @@ public class HistoryEntityRequest extends BaseRequest {
 				elementValue, overwriteOp));
 	}
 
-	protected JsonElement setCommonTemporalProperties(JsonElement jsonElement, String date, boolean fromEntity) {
+	protected JsonElement setCommonTemporalProperties(JsonElement jsonElement, String date, boolean fromEntity, String opr) {
 		String valueCreatedAt;
+		String valueModifiedAt;		
 		if (fromEntity) {
 			// reuse modifiedAt field from Attribute in Entity, if exists
 			if (jsonElement.getAsJsonObject().has(NGSIConstants.NGSI_LD_MODIFIED_AT)
@@ -114,17 +115,34 @@ public class HistoryEntityRequest extends BaseRequest {
 							.isJsonObject()
 					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0)
 							.getAsJsonObject().has(NGSIConstants.JSON_LD_VALUE)) {
-				valueCreatedAt = jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray()
+				valueModifiedAt = jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray()
+						.get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
+			} else {
+				valueModifiedAt = date;
+			}
+			if (jsonElement.getAsJsonObject().has(NGSIConstants.NGSI_LD_CREATED_AT)
+					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_CREATED_AT).isJsonArray()
+					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray()
+							.get(0) != null
+					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray().get(0)
+							.isJsonObject()
+					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray().get(0)
+							.getAsJsonObject().has(NGSIConstants.JSON_LD_VALUE)) {
+				valueCreatedAt = jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray()
 						.get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 			} else {
 				valueCreatedAt = date;
 			}
 		} else {
 			valueCreatedAt = date;
+			valueModifiedAt = date;
 		}
 		// append/overwrite temporal fields. as we are creating new instances,
-		// modifiedAt and createdAt are the same		
-		jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, valueCreatedAt);
+		// modifiedAt and createdAt are the same
+		if(opr=="C") {
+		jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_CREATED_AT, valueCreatedAt);		
+		jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, valueModifiedAt);
+		}
 		// system generated instance id
 		UUID uuid = UUID.randomUUID();
 		String instanceid = "urn" + ":" + "ngsi-ld" + ":" + uuid;

@@ -71,6 +71,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 	
 	private void createTemporalEntity(String payload, boolean fromEntity) throws ResponseException, Exception {
 		this.jsonObject = parser.parse(payload).getAsJsonObject();
+		String opr="C";
 		if (jsonObject.get(NGSIConstants.JSON_LD_ID) == null || jsonObject.get(NGSIConstants.JSON_LD_TYPE) == null) {
 			throw new ResponseException(ErrorType.InvalidRequest, "id and type are required fields");
 		}
@@ -117,7 +118,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
 				// TODO check if changes in the array are reflect in the object
 				for (JsonElement jsonElement : valueArray) {
-					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity);
+					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity, opr);
 					storeEntry(id, type, createdAt, modifiedAt, attribId, jsonElement.toString(), false);
 					// pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId,
 					// jsonElement.toString(), createTemporalEntityIfNotExists, false);

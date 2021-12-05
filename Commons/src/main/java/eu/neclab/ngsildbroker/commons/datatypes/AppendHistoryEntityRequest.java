@@ -24,6 +24,7 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 	protected void createAppend() {
 		logger.trace("replace attribute in temporal entity");
 		this.jsonObject = parser.parse(payload).getAsJsonObject();
+		String opr="A";
 		
 		
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
@@ -40,7 +41,7 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
 				Integer instanceCount = 0;
 				for (JsonElement jsonElement : valueArray) {
-					jsonElement = setCommonTemporalProperties(jsonElement, now, false);
+					jsonElement = setCommonTemporalProperties(jsonElement, now, false, opr);
 					//
 					Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send the overwrite op to
 																// delete current values

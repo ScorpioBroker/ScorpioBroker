@@ -33,6 +33,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 		// logger.debug("Received key: " + key);
 		// String payload = new String(message);
 		setHeaders(entityRequest.getHeaders());
+		String opr="U";
 		final JsonObject jsonObject = parser.parse(entityRequest.getWithSysAttrs()).getAsJsonObject();
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
@@ -47,7 +48,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 			if (entry.getValue().isJsonArray()) {
 				JsonArray valueArray = entry.getValue().getAsJsonArray();
 				for (JsonElement jsonElement : valueArray) {
-					jsonElement = setCommonTemporalProperties(jsonElement, now, true);
+					jsonElement = setCommonTemporalProperties(jsonElement, now, true, opr);
 					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload, jsonElement.toString(), false);
 				}
 			}
