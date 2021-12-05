@@ -585,7 +585,7 @@ public class Context extends LinkedHashMap<String, Object> {
      * @return
      * @throws JsonLdError
      */
-    String expandIri(String value, boolean relative, boolean vocab, Map<String, Object> context,
+    public String expandIri(String value, boolean relative, boolean vocab, Map<String, Object> context,
             Map<String, Boolean> defined) throws JsonLdError {
         // 1)
         if (value == null || JsonLdUtils.isKeyword(value)) {

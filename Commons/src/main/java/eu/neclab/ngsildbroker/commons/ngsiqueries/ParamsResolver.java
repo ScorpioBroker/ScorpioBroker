@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -287,52 +288,45 @@ public class ParamsResolver {
 
 	public String expandAttribute(String attribute, List<Object> linkHeaders) throws ResponseException {
 		logger.trace("resolveQueryLdContext():: started");
-
+		Context context = JsonLdProcessor.coreContext.clone();
+		context = context.parse(linkHeaders, true);
+		return context.expandIri(attribute, false, true, null, null);
 		// process reserved attributes
-		switch (attribute) {
-		case NGSIConstants.QUERY_PARAMETER_ID:
-			return NGSIConstants.JSON_LD_ID;
-		case NGSIConstants.QUERY_PARAMETER_TYPE:
-			return NGSIConstants.JSON_LD_TYPE;
-		case NGSIConstants.QUERY_PARAMETER_CREATED_AT:
-			return NGSIConstants.NGSI_LD_CREATED_AT;
-		case NGSIConstants.QUERY_PARAMETER_MODIFIED_AT:
-			return NGSIConstants.NGSI_LD_MODIFIED_AT;
-		case NGSIConstants.QUERY_PARAMETER_OBSERVED_AT:
-			return NGSIConstants.NGSI_LD_OBSERVED_AT;
-		case NGSIConstants.QUERY_PARAMETER_LOCATION:
-			return NGSIConstants.NGSI_LD_LOCATION;
-		case NGSIConstants.QUERY_PARAMETER_OBSERVATION_SPACE:
-			return NGSIConstants.NGSI_LD_OBSERVATION_SPACE;
-		case NGSIConstants.QUERY_PARAMETER_OPERATION_SPACE:
-			return NGSIConstants.NGSI_LD_OPERATION_SPACE;
-		}
-
-		// custom attributes
-		String attributeResolved = attribute;
-		logger.debug("link: " + linkHeaders);
-		String jsonLdAttribute = getJsonLdAttribute(attribute, linkHeaders);
-		logger.debug("jsonLdAttribute: " + jsonLdAttribute);
-		// LocalDateTime start = LocalDateTime.now();
-		String jsonLdAttributeResolved;
-		try {
-			jsonLdAttributeResolved = JsonUtils.toString(JsonLdProcessor.expand(linkHeaders,
-					JsonUtils.fromString(jsonLdAttribute), opts, AppConstants.ATTRIBUTE_PAYLOAD, true).get(0));
-		} catch (JsonLdError | IOException | ResponseException e) {
-			return "";
-		} // contextResolver.expand(jsonLdAttribute, context, false,
-			// AppConstants.INTERNAL_CALL_ID);
-			// LocalDateTime end = LocalDateTime.now();
-		logger.debug("jsonLdAttributeResolved: " + jsonLdAttributeResolved);
-		JsonParser parser = new JsonParser();
-		JsonElement jsonTree = parser.parse(jsonLdAttributeResolved);
-		if (jsonTree.isJsonObject()) {
-			JsonObject jsonObject = jsonTree.getAsJsonObject();
-			if (jsonObject.entrySet().size() > 0)
-				attributeResolved = jsonObject.entrySet().iterator().next().getKey();
-		}
-		logger.trace("resolveQueryLdContext():: completed");
-		return attributeResolved;
+		/*
+		 * switch (attribute) { case NGSIConstants.QUERY_PARAMETER_ID: return
+		 * NGSIConstants.JSON_LD_ID; case NGSIConstants.QUERY_PARAMETER_TYPE: return
+		 * NGSIConstants.JSON_LD_TYPE; case NGSIConstants.QUERY_PARAMETER_CREATED_AT:
+		 * return NGSIConstants.NGSI_LD_CREATED_AT; case
+		 * NGSIConstants.QUERY_PARAMETER_MODIFIED_AT: return
+		 * NGSIConstants.NGSI_LD_MODIFIED_AT; case
+		 * NGSIConstants.QUERY_PARAMETER_OBSERVED_AT: return
+		 * NGSIConstants.NGSI_LD_OBSERVED_AT; case
+		 * NGSIConstants.QUERY_PARAMETER_LOCATION: return
+		 * NGSIConstants.NGSI_LD_LOCATION; case
+		 * NGSIConstants.QUERY_PARAMETER_OBSERVATION_SPACE: return
+		 * NGSIConstants.NGSI_LD_OBSERVATION_SPACE; case
+		 * NGSIConstants.QUERY_PARAMETER_OPERATION_SPACE: return
+		 * NGSIConstants.NGSI_LD_OPERATION_SPACE; }
+		 * 
+		 * // custom attributes String attributeResolved = attribute;
+		 * logger.debug("link: " + linkHeaders); String jsonLdAttribute =
+		 * getJsonLdAttribute(attribute, linkHeaders); logger.debug("jsonLdAttribute: "
+		 * + jsonLdAttribute); // LocalDateTime start = LocalDateTime.now(); String
+		 * jsonLdAttributeResolved; try { jsonLdAttributeResolved =
+		 * JsonUtils.toString(JsonLdProcessor.expand(linkHeaders,
+		 * JsonUtils.fromString(jsonLdAttribute), opts, AppConstants.ATTRIBUTE_PAYLOAD,
+		 * true).get(0)); } catch (JsonLdError | IOException | ResponseException e) {
+		 * return ""; } // contextResolver.expand(jsonLdAttribute, context, false, //
+		 * AppConstants.INTERNAL_CALL_ID); // LocalDateTime end = LocalDateTime.now();
+		 * logger.debug("jsonLdAttributeResolved: " + jsonLdAttributeResolved);
+		 * JsonParser parser = new JsonParser(); JsonElement jsonTree =
+		 * parser.parse(jsonLdAttributeResolved); if (jsonTree.isJsonObject()) {
+		 * JsonObject jsonObject = jsonTree.getAsJsonObject(); if
+		 * (jsonObject.entrySet().size() > 0) attributeResolved =
+		 * jsonObject.entrySet().iterator().next().getKey(); }
+		 * logger.trace("resolveQueryLdContext():: completed"); return
+		 * attributeResolved;
+		 */
 	}
 
 	private String getJsonLdAttribute(String attribute, List<Object> context) {
