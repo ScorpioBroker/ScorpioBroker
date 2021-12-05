@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.ngsiqueries;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,18 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -44,8 +35,6 @@ public class ParamsResolver {
 
 	private final static Logger logger = LogManager.getLogger(ParamsResolver.class);
 
-	@Autowired
-	ObjectMapper objectMapper;
 
 	@Autowired
 	QueryParser queryParser;
@@ -268,12 +257,6 @@ public class ParamsResolver {
 				|| req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON_PATCH)) {
 			context = HttpUtils.getAtContext(req);
 		} else {
-			JsonNode json;
-			try {
-				json = objectMapper.readTree(payload);
-			} catch (IOException e) {
-				throw new ResponseException(ErrorType.BadRequestData, "Failed to read json from body");
-			}
 			context = new ArrayList<Object>();
 			// TODO check all of this
 			/*
@@ -329,24 +312,18 @@ public class ParamsResolver {
 		 */
 	}
 
-	private String getJsonLdAttribute(String attribute, List<Object> context) {
-		logger.trace("getJsonLdAttribute():: started");
-		String jsonString = null;
-		try {
-			JsonNode rootNode = objectMapper.createObjectNode();
-			// if (context != null) {
-			// ArrayNode contextNode = objectMapper.valueToTree(context);
-			// ((ObjectNode) rootNode).putArray("@context").addAll(contextNode);
-			// }
-			// cant be in here like that
-			((ObjectNode) rootNode).put(attribute, "");
-			jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
-		} catch (JsonProcessingException e) {
-			logger.error("Exception ::", e);
-			e.printStackTrace();
-		}
-		logger.trace("getJsonLdAttribute():: completed");
-		return jsonString;
-	}
+	/*
+	 * private String getJsonLdAttribute(String attribute, List<Object> context) {
+	 * logger.trace("getJsonLdAttribute():: started"); String jsonString = null; try
+	 * { JsonNode rootNode = objectMapper.createObjectNode(); // if (context !=
+	 * null) { // ArrayNode contextNode = objectMapper.valueToTree(context); //
+	 * ((ObjectNode) rootNode).putArray("@context").addAll(contextNode); // } //
+	 * cant be in here like that ((ObjectNode) rootNode).put(attribute, "");
+	 * jsonString =
+	 * objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode); }
+	 * catch (JsonProcessingException e) { logger.error("Exception ::", e);
+	 * e.printStackTrace(); } logger.trace("getJsonLdAttribute():: completed");
+	 * return jsonString; }
+	 */
 
 }
