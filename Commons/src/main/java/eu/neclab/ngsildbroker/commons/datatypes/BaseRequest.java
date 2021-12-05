@@ -56,10 +56,10 @@ public abstract class BaseRequest {
 		}
 		for (Entry<String, Object> entry : objectNode.entrySet()) {
 			if (entry.getValue() instanceof List && !((List) entry.getValue()).isEmpty()) {
-				List list = (List) entry;
+				List list = (List) entry.getValue();
 				for (Object entry2 : list) {
 					if (entry2 instanceof Map) {
-						Map<String, Object> map = (Map<String, Object>) entry;
+						Map<String, Object> map = (Map<String, Object>) entry2;
 						if (map.containsKey(NGSIConstants.JSON_LD_TYPE)
 								&& map.get(NGSIConstants.JSON_LD_TYPE) instanceof List
 								&& !((List) map.get(NGSIConstants.JSON_LD_TYPE)).isEmpty()

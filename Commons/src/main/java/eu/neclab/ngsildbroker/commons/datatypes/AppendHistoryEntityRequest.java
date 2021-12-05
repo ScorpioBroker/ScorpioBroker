@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
@@ -49,7 +50,12 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 					//
 					Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send the overwrite op to
 																// delete current values
-					storeEntry(id, null, null, now, attribId, jsonElement.toString(), overwriteOp);
+					try {
+						storeEntry(id, null, null, now, attribId, JsonUtils.toPrettyString(jsonElement), overwriteOp);
+					} catch (IOException e) {
+						logger.error(e);
+						//should never happen
+					}
 
 					instanceCount++;
 				}

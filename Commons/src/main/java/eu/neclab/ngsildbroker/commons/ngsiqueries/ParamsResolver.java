@@ -317,7 +317,7 @@ public class ParamsResolver {
 		String jsonLdAttributeResolved;
 		try {
 			jsonLdAttributeResolved = JsonUtils.toString(JsonLdProcessor.expand(linkHeaders,
-					JsonUtils.fromString(jsonLdAttribute), opts, AppConstants.ATTRIBUTE_PAYLOAD, true));
+					JsonUtils.fromString(jsonLdAttribute), opts, AppConstants.ATTRIBUTE_PAYLOAD, true).get(0));
 		} catch (JsonLdError | IOException | ResponseException e) {
 			return "";
 		} // contextResolver.expand(jsonLdAttribute, context, false,

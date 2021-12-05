@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
@@ -54,7 +55,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, true);
-					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload, jsonElement.toString(), false);
+					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement), false);
 				}
 			}
 		}
@@ -113,7 +114,12 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 					}
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, now);
-					storeEntry(id, null, null, now, attribIdPayload, jsonElement.toString(), false);
+					try {
+						storeEntry(id, null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement), false);
+					} catch (IOException e) {
+						logger.error(e);
+						//Should never happen
+					}
 				}
 			}
 		}

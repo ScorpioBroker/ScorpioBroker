@@ -127,7 +127,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 				// TODO check if changes in the array are reflect in the object
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity);
-					storeEntry(id, type, createdAt, modifiedAt, attribId, jsonElement.toString(), false);
+					storeEntry(id, type, createdAt, modifiedAt, attribId, JsonUtils.toPrettyString(jsonElement), false);
 					// pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId,
 					// jsonElement.toString(), createTemporalEntityIfNotExists, false);
 				}
