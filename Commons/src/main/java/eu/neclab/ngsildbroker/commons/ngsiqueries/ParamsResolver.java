@@ -21,6 +21,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -43,19 +46,19 @@ public class ParamsResolver {
 	private final static Logger logger = LogManager.getLogger(ParamsResolver.class);
 
 	@Autowired
-	ContextResolverBasic contextResolver;
-
-	@Autowired
 	ObjectMapper objectMapper;
 
 	@Autowired
 	QueryParser queryParser;
+
+	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, List<Object> linkHeaders)
 			throws ResponseException {
 		return this.getQueryParamsFromUriQuery(ngsildQueryParams, linkHeaders, false);
 	}
 
+//TODO REWORK THIS COMPLETELY 
 	public List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
 //TODO check if this can be changed now since a list of entityinfos is in queryparam
 		ArrayList<QueryParams> result = new ArrayList<QueryParams>();
@@ -262,7 +265,8 @@ public class ParamsResolver {
 
 	public String expandAttribute(String attribute, String payload, HttpServletRequest req) throws ResponseException {
 		List<Object> context;
-		if (req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON)||req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON_PATCH)) {
+		if (req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON)
+				|| req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON_PATCH)) {
 			context = HttpUtils.getAtContext(req);
 		} else {
 			JsonNode json;
@@ -272,19 +276,18 @@ public class ParamsResolver {
 				throw new ResponseException(ErrorType.BadRequestData, "Failed to read json from body");
 			}
 			context = new ArrayList<Object>();
-			if (json.has(NGSIConstants.JSON_LD_CONTEXT)) {
-				JsonNode tempContext = json.get(NGSIConstants.JSON_LD_CONTEXT);
-				try {
-					context.add(JsonUtils.fromString(tempContext.toString()));
-				} catch (IOException e) {
-					throw new ResponseException(ErrorType.BadRequestData);
-				}
-			}
+			// TODO check all of this
+			/*
+			 * if (json.has(NGSIConstants.JSON_LD_CONTEXT)) { JsonNode tempContext =
+			 * json.get(NGSIConstants.JSON_LD_CONTEXT); try {
+			 * context.add(JsonUtils.fromString(tempContext.toString())); } catch
+			 * (IOException e) { throw new ResponseException(ErrorType.BadRequestData); } }
+			 */
 		}
 		return expandAttribute(attribute, context);
 	}
 
-	public String expandAttribute(String attribute, List<Object> context) throws ResponseException {
+	public String expandAttribute(String attribute, List<Object> linkHeaders) throws ResponseException {
 		logger.trace("resolveQueryLdContext():: started");
 
 		// process reserved attributes
@@ -309,13 +312,19 @@ public class ParamsResolver {
 
 		// custom attributes
 		String attributeResolved = attribute;
-		logger.debug("link: " + context);
-		String jsonLdAttribute = getJsonLdAttribute(attribute, context);
+		logger.debug("link: " + linkHeaders);
+		String jsonLdAttribute = getJsonLdAttribute(attribute, linkHeaders);
 		logger.debug("jsonLdAttribute: " + jsonLdAttribute);
 		// LocalDateTime start = LocalDateTime.now();
-		String jsonLdAttributeResolved = contextResolver.expand(jsonLdAttribute, context, false,
-				AppConstants.INTERNAL_CALL_ID);
-		// LocalDateTime end = LocalDateTime.now();
+		String jsonLdAttributeResolved;
+		try {
+			jsonLdAttributeResolved = JsonUtils.toString(JsonLdProcessor.expand(linkHeaders,
+					JsonUtils.fromString(jsonLdAttribute), opts, AppConstants.ATTRIBUTE_PAYLOAD, true));
+		} catch (JsonLdError | IOException | ResponseException e) {
+			return "";
+		} // contextResolver.expand(jsonLdAttribute, context, false,
+			// AppConstants.INTERNAL_CALL_ID);
+			// LocalDateTime end = LocalDateTime.now();
 		logger.debug("jsonLdAttributeResolved: " + jsonLdAttributeResolved);
 		JsonParser parser = new JsonParser();
 		JsonElement jsonTree = parser.parse(jsonLdAttributeResolved);

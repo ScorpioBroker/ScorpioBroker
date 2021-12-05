@@ -22,9 +22,8 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 	private final String CLIENT_ID = "ScorpioMqttNotifier";
 	private HashMap<URI, MqttClient> uri2client = new HashMap<URI, MqttClient>();
 
-	public NotificationHandlerMQTT(SubscriptionService subscriptionManagerService, ContextResolverBasic contextResolver,
-			ObjectMapper objectMapper) {
-		super(subscriptionManagerService, contextResolver, objectMapper);
+	public NotificationHandlerMQTT(SubscriptionService subscriptionManagerService, ObjectMapper objectMapper) {
+		super(subscriptionManagerService, objectMapper);
 
 	}
 
@@ -32,10 +31,10 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 	protected void sendReply(ResponseEntity<byte[]> reply, URI callback, Map<String, String> clientSettings)
 			throws Exception {
 		MqttClient client = getClient(callback, clientSettings);
-		String qosString  = null;
-		if(clientSettings != null) {
+		String qosString = null;
+		if (clientSettings != null) {
 			qosString = clientSettings.get(NGSIConstants.MQTT_QOS);
-			
+
 		} else {
 			qosString = String.valueOf(NGSIConstants.DEFAULT_MQTT_QOS);
 		}
@@ -46,8 +45,8 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 		byte[] payload = getPayload(reply);
 		if (client instanceof Mqtt3BlockingClient) {
 			Mqtt3BlockingClient client3 = (Mqtt3BlockingClient) client;
-			client3.publishWith().topic(callback.getPath().substring(1)).qos(MqttQos.fromCode(qos))
-					.payload(payload).send();
+			client3.publishWith().topic(callback.getPath().substring(1)).qos(MqttQos.fromCode(qos)).payload(payload)
+					.send();
 		} else {
 			Mqtt5BlockingClient client5 = (Mqtt5BlockingClient) client;
 			client5.publishWith().topic(callback.getPath().substring(1))
@@ -58,19 +57,19 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 
 	private byte[] getPayload(ResponseEntity<byte[]> reply) {
 		HttpHeaders headers = reply.getHeaders();
-		//Map<String, String> metaData = new HashMap<String, String>();
-		StringBuilder result = new StringBuilder("{\""+NGSIConstants.METADATA+"\":{");
-		for(Entry<String, List<String>> entry: headers.entrySet()) {
+		// Map<String, String> metaData = new HashMap<String, String>();
+		StringBuilder result = new StringBuilder("{\"" + NGSIConstants.METADATA + "\":{");
+		for (Entry<String, List<String>> entry : headers.entrySet()) {
 			result.append("\"");
 			result.append(entry.getKey());
 			result.append("\":");
-			if(entry.getValue().size() != 1) {
+			if (entry.getValue().size() != 1) {
 				result.append("[");
-				for(String headerValue: entry.getValue()) {
+				for (String headerValue : entry.getValue()) {
 					result.append(headerValue + ",");
 				}
 				result.setCharAt(result.length() - 1, ']');
-			}else {
+			} else {
 				result.append("\"");
 				result.append(entry.getValue().get(0));
 				result.append("\"");
@@ -93,13 +92,13 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 		MqttClient result = uri2client.get(baseURI);
 		if (result == null) {
 			String mqttVersion = null;
-			if(clientSettings != null) {
+			if (clientSettings != null) {
 				mqttVersion = clientSettings.get(NGSIConstants.MQTT_VERSION);
-				
+
 			} else {
-				mqttVersion = NGSIConstants.DEFAULT_MQTT_VERSION; 
+				mqttVersion = NGSIConstants.DEFAULT_MQTT_VERSION;
 			}
-			
+
 			int port = callback.getPort();
 			if (port == -1) {
 				port = 1883;
@@ -108,7 +107,7 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 				result = Mqtt5Client.builder().identifier(CLIENT_ID).serverHost(callback.getHost()).serverPort(port)
 						.buildBlocking();
 				((Mqtt5BlockingClient) result).connect();
-			} else if(mqttVersion.equals(NGSIConstants.MQTT_VERSION_3)) {
+			} else if (mqttVersion.equals(NGSIConstants.MQTT_VERSION_3)) {
 				result = Mqtt3Client.builder().identifier(CLIENT_ID).serverHost(callback.getHost()).serverPort(port)
 						.buildBlocking();
 				((Mqtt3BlockingClient) result).connect();
@@ -118,6 +117,5 @@ public class NotificationHandlerMQTT extends BaseNotificationHandler {
 		}
 		return result;
 	}
-	
 
 }

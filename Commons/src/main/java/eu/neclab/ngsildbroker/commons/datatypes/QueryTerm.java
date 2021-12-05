@@ -36,8 +36,8 @@ public class QueryTerm {
 
 	ParamsResolver paramsResolver;
 
-	public QueryTerm(List<Object> linkHeaders, ParamsResolver paramsResolver) {
-		this.linkHeaders = linkHeaders;
+	public QueryTerm(List<Object> linkHeaders2, ParamsResolver paramsResolver) {
+		this.linkHeaders = linkHeaders2;
 		this.paramsResolver = paramsResolver;
 	}
 

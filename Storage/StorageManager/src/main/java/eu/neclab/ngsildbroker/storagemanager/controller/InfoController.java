@@ -79,7 +79,6 @@ public class InfoController {
 	@Autowired
 	EntityStorageReaderDAO storageReaderDao;
 
-	HttpUtils httpUtils = HttpUtils.getInstance(null);
 
 	@GetMapping
 	public ResponseEntity<Object> getDefault() {
@@ -138,10 +137,10 @@ public class InfoController {
 		try {
 			switch (microService2HttpMethod.get(component)) {
 			case 0:
-				httpUtils.doGet(uri);
+				HttpUtils.doGet(uri);
 				return "Up and running";
 			case 1:
-				httpUtils.doPost(uri, dummyMessage, null);
+				HttpUtils.doPost(uri, dummyMessage, null);
 				return "Up and running";
 			default:
 				return "Unable to determine status";

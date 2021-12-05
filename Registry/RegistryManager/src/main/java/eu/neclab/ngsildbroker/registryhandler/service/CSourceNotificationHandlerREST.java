@@ -18,11 +18,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 public class CSourceNotificationHandlerREST implements CSourceNotificationHandler{
 	
 	private final static Logger logger = LogManager.getLogger(CSourceNotificationHandlerREST.class);
-	HttpUtils httpUtils;
 	
-	public CSourceNotificationHandlerREST(ContextResolverBasic contextResolver) {
-		httpUtils = HttpUtils.getInstance(contextResolver);
-	}
 
 	@Override
 	public void notify(CSourceNotification notification, Subscription sub) {
@@ -34,7 +30,7 @@ public class CSourceNotificationHandlerREST implements CSourceNotificationHandle
 			addHeaders.put("accept", sub.getNotification().getEndPoint().getAccept());
 		}
 		try {
-			httpUtils.doPost(sub.getNotification().getEndPoint().getUri(), regString, addHeaders);
+			HttpUtils.doPost(sub.getNotification().getEndPoint().getUri(), regString, addHeaders);
 		} catch (IOException e) {
 			logger.error("Failed to send notification to endpoint " + sub.getNotification().getEndPoint().getUri());
 		}

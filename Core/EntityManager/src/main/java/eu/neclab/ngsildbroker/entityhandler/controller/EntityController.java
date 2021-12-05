@@ -37,6 +37,7 @@ import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
 import eu.neclab.ngsildbroker.commons.tools.*;
+
 /**
  * 
  * @version 1.0
@@ -74,17 +75,17 @@ public class EntityController {// implements EntityHandlerInterface {
 		this.producerChannel = producerChannel;
 	}
 
-	//private HttpUtils httpUtils;
+	// private HttpUtils httpUtils;
 
-	//@PostConstruct
-	//private void setup() {
-	//	this.httpUtils = HttpUtils.getInstance(null);//contextResolver);
-	//}
+	// @PostConstruct
+	// private void setup() {
+	// this.httpUtils = HttpUtils.getInstance(null);//contextResolver);
+	// }
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
 
-	private JsonLdOptions opts;
+	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	public EntityController() {
 	}
@@ -101,7 +102,10 @@ public class EntityController {// implements EntityHandlerInterface {
 		String result = null;
 		try {
 			logger.trace("create entity :: started");
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts, AppConstants.ENTITY_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0);
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
+							AppConstants.ENTITY_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+					.get(0);
 			result = entityService.createMessage(HttpUtils.getHeaders(request), resolved);
 			logger.trace("create entity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
@@ -124,6 +128,7 @@ public class EntityController {// implements EntityHandlerInterface {
 					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
 		}
 	}
+
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
 	 * 
@@ -135,11 +140,14 @@ public class EntityController {// implements EntityHandlerInterface {
 	public ResponseEntity<byte[]> updateEntity(HttpServletRequest request, @RequestBody String payload) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
-			
+
 			String[] split = request.getServletPath().replace("/ngsi-ld/v1/entities/", "").split("/attrs");
 			String entityId = HttpUtils.denormalize(split[0]);
 			logger.trace("update entity :: started");
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0); 
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
+							AppConstants.ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+					.get(0);
 			UpdateResult update = entityService.updateMessage(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("update entity :: completed");
 			if (update.getUpdateResult()) {
@@ -179,13 +187,14 @@ public class EntityController {// implements EntityHandlerInterface {
 			@RequestParam(required = false, name = "options") String options) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
-			HttpUtils.doPreflightCheck(request, payload);
 			String[] split = request.getServletPath().replace("/ngsi-ld/v1/entities/", "").split("/attrs");
 			String entityId = HttpUtils.denormalize(split[0]);
 
 			logger.trace("append entity :: started");
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
-
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
+							AppConstants.ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+					.get(0);
 			AppendResult append = entityService.appendMessage(HttpUtils.getHeaders(request), entityId, resolved,
 					options);
 			logger.trace("append entity :: completed");
@@ -231,10 +240,11 @@ public class EntityController {// implements EntityHandlerInterface {
 			String attrId = HttpUtils.denormalize(split[1]);
 			String entityId = HttpUtils.denormalize(split[0]);
 
-			HttpUtils.doPreflightCheck(request, payload);
 			logger.trace("partial-update entity :: started");
-			String expandedPayload = httpUtils.expandPayload(request, payload, AppConstants.ENTITIES_URL_ID);
-
+			Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor
+					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
+							AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+					.get(0);
 			String expandedAttrib = paramsResolver.expandAttribute(attrId, payload, request);
 
 			UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,

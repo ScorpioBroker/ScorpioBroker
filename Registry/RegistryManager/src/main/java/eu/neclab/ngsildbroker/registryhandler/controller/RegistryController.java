@@ -26,6 +26,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.netflix.discovery.EurekaClient;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -43,6 +46,7 @@ import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.commons.tools.Validator;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
+
 /**
  * 
  * @version 1.0
@@ -59,9 +63,7 @@ public class RegistryController {
 	EurekaClient eurekaClient;
 	@Autowired
 	CSourceService csourceService;
-	@Autowired
-	@Qualifier("rmconRes")
-	ContextResolverBasic contextResolver;
+
 	@Autowired
 	@Qualifier("rmparamsResolver")
 	ParamsResolver paramsResolver;
@@ -69,12 +71,7 @@ public class RegistryController {
 	CSourceDAO csourceDAO;
 	@Autowired
 	ObjectMapper objectMapper;
-	private HttpUtils httpUtils;
-
-	@PostConstruct
-	private void setup() {
-		this.httpUtils = HttpUtils.getInstance(contextResolver);
-	}
+	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	// @GetMapping
 	// public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
@@ -133,7 +130,7 @@ public class RegistryController {
 				}
 				List<String> csourceList = queryResult.getActualDataString();
 				if (csourceList.size() > 0) {
-					return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
+					return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 				} else {
 					throw new ResponseException(ErrorType.NotFound);
 				}
@@ -157,12 +154,15 @@ public class RegistryController {
 	public ResponseEntity<byte[]> registerCSource(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
-			HttpUtils.doPreflightCheck(request, payload);
+
 			logger.debug("payload received :: " + payload);
 
 			this.validate(payload);
 
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
+			// TODO change this to remove deserialization
+			String resolved = JsonUtils
+					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
+							opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)));
 
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
@@ -187,9 +187,9 @@ public class RegistryController {
 			ValidateURI.validateUri(registrationId);
 			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
-			
+
 			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
-			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
+			return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 		} catch (ResponseException exception) {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
@@ -202,11 +202,10 @@ public class RegistryController {
 	public ResponseEntity<byte[]> updateCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
 		try {
-			ValidateURI.validateUri(registrationId);
-			HttpUtils.doPreflightCheck(request, payload);
 			logger.debug("update CSource() ::" + registrationId);
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
-
+			String resolved = JsonUtils
+					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
+							opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)));
 			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request), registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();

@@ -174,6 +174,10 @@ public class JsonLdApi {
 
 				}
 			}
+			
+			if (AppConstants.FORCE_ARRAY_FIELDS.contains(activeProperty)) {
+				return result;
+			}
 			// 2.3)
 			if (compactArrays && result.size() == 1 && activeCtx.getContainer(activeProperty) == null) {
 				return result.get(0);

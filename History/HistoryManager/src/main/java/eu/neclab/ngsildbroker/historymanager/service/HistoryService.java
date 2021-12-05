@@ -67,19 +67,19 @@ public class HistoryService {
 
 	}
 
-	public URI createTemporalEntityFromEntity(ArrayListMultimap<String, String> headers, String payload)
+	public URI createTemporalEntityFromEntity(ArrayListMultimap<String, String> headers, Map<String, Object> payload)
 			throws ResponseException, Exception {
 		return createTemporalEntity(headers, payload, true);
 	}
 
-	public URI createTemporalEntityFromBinding(ArrayListMultimap<String, String> headers, String payload)
+	public URI createTemporalEntityFromBinding(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
-		return createTemporalEntity(headers, payload, false);
+		return createTemporalEntity(headers, resolved, false);
 	}
 
-	private URI createTemporalEntity(ArrayListMultimap<String, String> headers, String payload, boolean fromEntity)
+	private URI createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved, boolean fromEntity)
 			throws ResponseException, Exception {
-		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, payload, fromEntity);
+		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
 		logger.trace("creating temporal entity");
 		if (directDB) {
 			pushToDB(request);
@@ -154,12 +154,12 @@ public class HistoryService {
 	}
 
 	// endpoint "/entities/{entityId}/attrs"
-	public void addAttrib2TemporalEntity(ArrayListMultimap<String, String> headers, String entityId, String payload)
+	public void addAttrib2TemporalEntity(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		if (!historyDAO.entityExists(entityId, HttpUtils.getTenantFromHeaders(headers))) {
 			throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
 		}
-		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, payload, entityId);
+		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, resolved, entityId);
 		if (directDB) {
 			pushToDB(request);
 		} else {
@@ -169,7 +169,7 @@ public class HistoryService {
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
 	public void modifyAttribInstanceTemporalEntity(ArrayListMultimap<String, String> headers, String entityId,
-			String payload, String attribId, String instanceId, List<Object> linkHeaders)
+			Map<String, Object> resolved, String attribId, String instanceId, List<Object> linkHeaders)
 			throws ResponseException, Exception {
 
 		String resolvedAttrId = null;
@@ -194,7 +194,7 @@ public class HistoryService {
 			throw new ResponseException(ErrorType.NotFound);
 		}
 		String oldEntry = historyDAO.getListAsJsonArray(entityList);
-		UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, payload, entityId, resolvedAttrId,
+		UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, resolved, entityId, resolvedAttrId,
 				instanceId, oldEntry);
 		if (directDB) {
 			pushToDB(request);

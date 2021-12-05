@@ -1,7 +1,12 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -17,9 +22,9 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	private String instanceId;
 	private String resolvedAttrId;
 
-	public UpdateHistoryEntityRequest(ArrayListMultimap<String, String> headers, String payload, String entityId,
-			String resolvedAttrId, String instanceId, String oldEntry) throws ResponseException {
-		super(headers, payload);
+	public UpdateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			String entityId, String resolvedAttrId, String instanceId, String oldEntry) throws ResponseException {
+		super(headers, resolved);
 		this.id = entityId;
 		this.oldEntry = oldEntry;
 		this.resolvedAttrId = resolvedAttrId;
@@ -27,14 +32,15 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 		createUpdate();
 	}
 
-	public UpdateHistoryEntityRequest(EntityRequest entityRequest) {
-		
+	public UpdateHistoryEntityRequest(EntityRequest entityRequest) throws IOException {
+
 		logger.trace("Listener handleEntityUpdate...");
 		// logger.debug("Received key: " + key);
 		// String payload = new String(message);
 		setHeaders(entityRequest.getHeaders());
-		final JsonObject jsonObject = parser.parse(entityRequest.getWithSysAttrs()).getAsJsonObject();
-		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+		Map<String, Object> jsonObject = (Map<String, Object>) JsonUtils.fromString(entityRequest.getWithSysAttrs());
+
+		for (Entry<String, Object> entry : jsonObject.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
@@ -44,9 +50,9 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 			}
 			String attribIdPayload = entry.getKey();
 
-			if (entry.getValue().isJsonArray()) {
-				JsonArray valueArray = entry.getValue().getAsJsonArray();
-				for (JsonElement jsonElement : valueArray) {
+			if (entry.getValue() instanceof List) {
+				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
+				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, true);
 					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload, jsonElement.toString(), false);
 				}
@@ -58,12 +64,12 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	private void createUpdate() throws ResponseException {
 		this.createdAt = now;
 		String instanceIdAdd = null;
-		JsonArray jsonArray = null;
+		List<Map<String, Object>> jsonArray = null;
 		try {
-			jsonArray = parser.parse(oldEntry).getAsJsonArray();
-			this.createdAt = jsonArray.get(0).getAsJsonObject().get(resolvedAttrId).getAsJsonArray().get(0)
-					.getAsJsonObject().get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray().get(0).getAsJsonObject()
-					.get(NGSIConstants.JSON_LD_VALUE).getAsString();
+			jsonArray = (List<Map<String, Object>>) JsonUtils.fromString(oldEntry);
+			this.createdAt = (String) ((List<Map<String, Object>>) ((List<Map<String, Object>>) ((List<Map<String, Object>>) jsonArray)
+					.get(0).get(resolvedAttrId)).get(0).get(NGSIConstants.NGSI_LD_CREATED_AT)).get(0)
+							.get(NGSIConstants.JSON_LD_VALUE);
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.warn("original createdAt element not found, using current timestamp");
@@ -72,9 +78,9 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 		logger.debug(
 				"modify attribute instance in temporal entity " + this.id + " - " + resolvedAttrId + " - " + createdAt);
 
-		this.jsonObject = parser.parse(payload).getAsJsonObject();
 
-		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+
+		for (Entry<String, Object> entry : payload.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
@@ -89,20 +95,19 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 								+ resolvedAttrId + " (URL)");
 			}
 
-			if (entry.getValue().isJsonArray()) {
-				JsonArray valueArray = entry.getValue().getAsJsonArray();
-				for (JsonElement jsonElement : valueArray) {
-					if (jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_INSTANCE_ID) != null) {
-						if (!jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_INSTANCE_ID).getAsJsonArray()
-								.get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_ID).getAsString()
+			if (entry.getValue() instanceof List) {
+				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
+				for (Map<String, Object> jsonElement : valueArray) {
+					if (jsonElement.get(NGSIConstants.NGSI_LD_INSTANCE_ID) != null) {
+						if (!((List<Map<String, Object>>)jsonElement.get(NGSIConstants.NGSI_LD_INSTANCE_ID)).get(0).get(NGSIConstants.JSON_LD_ID)
 								.equals(instanceId)) {
 							throw new ResponseException(ErrorType.InvalidRequest,
 									"instanceId in payload and in URL must be the same");
 						}
 					} else {
-						instanceIdAdd = jsonArray.get(0).getAsJsonObject().get(resolvedAttrId).getAsJsonArray().get(0)
-								.getAsJsonObject().get(NGSIConstants.NGSI_LD_INSTANCE_ID).getAsJsonArray().get(0)
-								.getAsJsonObject().get(NGSIConstants.JSON_LD_ID).getAsString();
+						instanceIdAdd = (String) ((List<Map<String, Object>>) ((List<Map<String, Object>>) jsonArray
+								.get(0).get(resolvedAttrId)).get(0).get(NGSIConstants.NGSI_LD_INSTANCE_ID)).get(0)
+										.get(NGSIConstants.JSON_LD_ID);
 						jsonElement = setTemporalPropertyinstanceId(jsonElement, NGSIConstants.NGSI_LD_INSTANCE_ID,
 								instanceIdAdd);
 					}

@@ -1,12 +1,14 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class AppendResult {
 	
-	private JsonNode jsonToAppend;
-	private JsonNode appendedJsonFields;// = new ArrayList<JsonNode>();
-	private JsonNode finalNode;
+	private Map<String, Object> jsonToAppend;
+	private Map<String, Object> appendedJsonFields;// = new ArrayList<JsonNode>();
+	private Map<String, Object> finalNode;
 	private boolean status=false;
 	private String json;
 	private String jsonWithoutSysAttrs;
@@ -15,33 +17,33 @@ public class AppendResult {
 		return jsonToAppend.size()==appendedJsonFields.size();
 	}
 	
-	public AppendResult(JsonNode jsonToAppend,JsonNode appendedJsonFields) {
+	public AppendResult(Map<String, Object> resolved,Map<String, Object> resultJson) {
 		super();
-		this.jsonToAppend = jsonToAppend;
-		this.appendedJsonFields=appendedJsonFields;
+		this.jsonToAppend = resolved;
+		this.appendedJsonFields=resultJson;
 	}
 
-	public JsonNode getFinalNode() {
+	public Map<String, Object> getFinalNode() {
 		return finalNode;
 	}
 
-	public void setFinalNode(JsonNode finalNode) {
+	public void setFinalNode(Map<String, Object> finalNode) {
 		this.finalNode = finalNode;
 	}
 
-	public JsonNode getJsonToAppend() {
+	public Map<String, Object> getJsonToAppend() {
 		return jsonToAppend;
 	}
 
-	public void setJsonToAppend(JsonNode jsonToAppend) {
+	public void setJsonToAppend(Map<String, Object> jsonToAppend) {
 		this.jsonToAppend = jsonToAppend;
 	}
 
-	public JsonNode getAppendedJsonFields() {
+	public Map<String, Object> getAppendedJsonFields() {
 		return appendedJsonFields;
 	}
 
-	public void setAppendedJsonFields(JsonNode appendedJsonFields) {
+	public void setAppendedJsonFields(Map<String, Object> appendedJsonFields) {
 		this.appendedJsonFields = appendedJsonFields;
 	}
 

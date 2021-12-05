@@ -67,16 +67,10 @@ public class EntityOperationQueryController {
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityOperationQueryController.class);
 
-	private HttpUtils httpUtils;
-
 	private Object defaultContext = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld";
 
 	private JsonLdOptions defaultOptions = new JsonLdOptions();
 
-	@PostConstruct
-	private void setup() {
-		httpUtils = HttpUtils.getInstance(contextResolver);
-	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	// these are known structures in try catch. failed parsing would rightfully
@@ -89,13 +83,13 @@ public class EntityOperationQueryController {
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
 		try {
-			HttpUtils.doPreflightCheck(request, payload);
+			HttpUtils.doPreflightCheck(request);
 			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
-			String expandedPayload = httpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
+			String expandedPayload = "";//HttpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			Map<String, Object> queries = (Map<String, Object>) JsonUtils.fromString(expandedPayload);
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-				linkHeaders.add(rawPayload.get(NGSIConstants.JSON_LD_CONTEXT));
+				linkHeaders.add((String) rawPayload.get(NGSIConstants.JSON_LD_CONTEXT));
 			}
 			QueryParams params = new QueryParams();
 			if (limit == null) {
@@ -171,7 +165,7 @@ public class EntityOperationQueryController {
 			params.setKeyValues((options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)));
 			params.setIncludeSysAttrs(
 					(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)));
-			return QueryController.generateReply(httpUtils, request, queryService.getData(params, payload, linkHeaders,
+			return QueryController.generateReply(request, queryService.getData(params, payload, linkHeaders,
 					limit, offset, qToken, false, count, HttpUtils.getHeaders(request), true, null), true, count);
 
 		} catch (IOException e) {

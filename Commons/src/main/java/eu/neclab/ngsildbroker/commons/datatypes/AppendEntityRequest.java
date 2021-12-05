@@ -2,10 +2,15 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -19,91 +24,77 @@ public class AppendEntityRequest extends EntityRequest {
 	private AppendResult appendResult;
 	private String appendOverwriteFlag;
 
-	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, String old,
-			String update, String overwriteOption, String appendOverwriteFlag) throws ResponseException {
+	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
+			Map<String, Object> resolved, String overwriteOption, String appendOverwriteFlag) throws ResponseException {
 		super(AppConstants.OPERATION_APPEND_ENTITY, headers);
 		this.appendOverwriteFlag = appendOverwriteFlag;
-		this.id=id;
-		generateAppend(update, old, overwriteOption);
+		this.id = id;
+		generateAppend(resolved, entityBody, overwriteOption);
 	}
 
-	private void generateAppend(String update, String old, String overwriteOption) throws ResponseException {
+	private void generateAppend(Map<String, Object> resolved, Map<String, Object> entityBody, String overwriteOption)
+			throws ResponseException {
 		JsonNode updateNode;
-		
+
 		try {
-			updateNode = objectMapper.readTree(update);
-			this.appendResult = appendFields(old, updateNode, overwriteOption);
+
+			this.appendResult = appendFields(entityBody, resolved, overwriteOption);
 			this.entityWithoutSysAttrs = appendResult.getJsonWithoutSysAttrs();
 			this.withSysAttrs = appendResult.getJson();
-			this.keyValue = objectMapper.writeValueAsString(getKeyValueEntity(appendResult.getFinalNode()));
-			this.operationValue = objectMapper.writeValueAsString(appendResult.getJsonToAppend());
+			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(appendResult.getFinalNode()));
+			this.operationValue = JsonUtils.toPrettyString(appendResult.getJsonToAppend());
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.UnprocessableEntity, e.getMessage());
 		}
 
 	}
 
-	
 	/**
 	 * Method to merge/append fileds in original Entity
 	 * 
-	 * @param originalJsonObject
+	 * @param entityBody
 	 * @param jsonToUpdate
 	 * @return AppendResult
 	 * @throws IOException
 	 */
-	private AppendResult appendFields(String originalJsonObject, JsonNode jsonToAppend, String overwriteOption)
-			throws Exception {
+	private AppendResult appendFields(Map<String, Object> entityBody, Map<String, Object> resolved,
+			String overwriteOption) throws Exception {
 		logger.trace("appendFields() :: started");
 		String now = SerializationTools.formatter.format(Instant.now());
-		JsonNode resultJson = objectMapper.createObjectNode();
-		AppendResult appendResult = new AppendResult(jsonToAppend, resultJson);
-		JsonNode node = objectMapper.readTree(originalJsonObject);
-		ObjectNode objectNode = (ObjectNode) node;
-		Iterator<String> it = jsonToAppend.fieldNames();
-		while (it.hasNext()) {
-			String key = it.next();
+		Map<String, Object> resultJson = new HashMap<String, Object>();
+		AppendResult appendResult = new AppendResult(resolved, resultJson);
+		for (Entry<String, Object> entry : resolved.entrySet()) {
+			String key = entry.getKey();
 			if (key.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT) || key.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)) {
 				continue;
 			}
-			// remove if passed attribute have null value.
-			if (jsonToAppend.get(key).isNull()) {
-				objectNode.remove(key);
-				((ObjectNode) appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
+			Object value = entry.getValue();
+			if (value == null) {
+				entityBody.remove(key);
+				appendResult.getAppendedJsonFields().put(key, value);
 				appendResult.setStatus(true);
 				continue;
 			}
-			// validation append payload attribute
-			/*
-			 * if (!Validator.isValidAttribute(jsonToAppend.get(key))) { ((ObjectNode)
-			 * appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
-			 * appendResult.setStatus(true); continue; }
-			 */
-
-			if ((objectNode.has(key) && !appendOverwriteFlag.equalsIgnoreCase(overwriteOption))
-					|| !objectNode.has(key)) {
-				if (jsonToAppend.get(key).isArray() && jsonToAppend.get(key).has(0)) {
+			if ((entityBody.containsKey(key) && !appendOverwriteFlag.equalsIgnoreCase(overwriteOption))
+					|| !entityBody.containsKey(key)) {
+				if (value instanceof List && !((List) value).isEmpty()) {
 					// TODO: should we keep the createdAt value if attribute already exists?
 					// (overwrite operation) => if (objectNode.has(key)) ...
-					JsonNode attrNode = jsonToAppend.get(key).get(0);
-					setTemporalProperties(attrNode, now, now, false);
+					setTemporalProperties(((List) value).get(0), now, now, false);
 				}
-				objectNode.replace(key, jsonToAppend.get(key));
-				((ObjectNode) appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
+				entityBody.put(key, value);
+				appendResult.getAppendedJsonFields().put(key, value);
 				appendResult.setStatus(true);
 			}
 		}
-		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
-		appendResult.setJson(node.toString());
-
-		removeTemporalProperties(node);
-		appendResult.setJsonWithoutSysAttrs(node.toString());
-		appendResult.setFinalNode(node);
-		logger.trace("appendFields() :: completed");
+		setTemporalProperties(entityBody, "", now, true); // root only, modifiedAt only
+		appendResult.setJson(JsonUtils.toPrettyString(entityBody));
+		removeTemporalProperties(entityBody);
+		appendResult.setJsonWithoutSysAttrs(JsonUtils.toPrettyString(entityBody));
+		appendResult.setFinalNode(entityBody);
 		return appendResult;
 	}
 
-	
 	public boolean getStatus() {
 		return appendResult.getStatus();
 	}

@@ -67,13 +67,6 @@ public class InfoServerController {
 		}
 
 	}
-
-
-	HttpUtils httpUtils = HttpUtils.getInstance(null);
-		
-	@PostConstruct
-	private void setup() {
-	}
 	
 	@GetMapping
 	public ResponseEntity<Object> getHealth(HttpServletRequest request) {
@@ -95,10 +88,10 @@ public class InfoServerController {
 		try {
 			switch (microService2HttpMethod.get(component)) {
 			case 0:
-				httpUtils.doGet(uri, headers);
+				HttpUtils.doGet(uri, headers);
 				return "Up and running";
 			case 1:
-				httpUtils.doPost(uri, dummyMessage, null);
+				HttpUtils.doPost(uri, dummyMessage, null);
 				return "Up and running";
 			default:
 				return "Unable to determine status";

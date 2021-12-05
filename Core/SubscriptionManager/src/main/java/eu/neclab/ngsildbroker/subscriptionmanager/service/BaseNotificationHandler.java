@@ -58,14 +58,14 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 	protected abstract void sendReply(ResponseEntity<byte[]> reply, URI callback, Map<String, String> clientSettings) throws Exception;
 	private final Logger logger = LogManager.getLogger(this.getClass());
 	private SubscriptionService subscriptionManagerService;
-	protected HttpUtils httpUtils;
+
 	private ObjectMapper objectMapper;
 	
-	public BaseNotificationHandler(SubscriptionService subscriptionManagerService, ContextResolverBasic contextResolver,
+	public BaseNotificationHandler(SubscriptionService subscriptionManagerService,
 			ObjectMapper objectMapper) {
 		this.subscriptionManagerService = subscriptionManagerService;
 		this.objectMapper = objectMapper;
-		httpUtils = HttpUtils.getInstance(contextResolver);
+
 	}
 
 	HashMap<String, Long> subId2LastReport = new HashMap<String, Long>();
@@ -569,7 +569,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 		};
 
-		ResponseEntity<byte[]> temp = httpUtils.generateReply(request, body, null, context);
+		ResponseEntity<byte[]> temp = HttpUtils.generateReply(request, body, null, context);
 		JsonNode jsonTree;
 		try {
 			jsonTree = objectMapper.readTree(temp.getBody());

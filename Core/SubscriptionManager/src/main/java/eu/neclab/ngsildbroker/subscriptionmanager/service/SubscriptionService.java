@@ -109,10 +109,6 @@ public class SubscriptionService implements SubscriptionManager {
 	ObjectMapper objectMapper;
 
 	@Autowired
-	@Qualifier("smconRes")
-	ContextResolverBasic contextResolverService;
-
-	@Autowired
 	EurekaClient eurekaClient;
 
 	@Autowired
@@ -154,8 +150,6 @@ public class SubscriptionService implements SubscriptionManager {
 	@Value("${bootstrap.servers}")
 	String BOOTSTRAP_SERVERS;
 
-	HttpUtils httpUtils;
-
 	private Table<String, String, String> tenant2Ids2Type;
 
 	private HTreeMap<String, String> subscriptionStore;
@@ -177,11 +171,11 @@ public class SubscriptionService implements SubscriptionManager {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		httpUtils = HttpUtils.getInstance(contextResolverService);
-		notificationHandlerREST = new NotificationHandlerREST(this, contextResolverService, objectMapper);
+
+		notificationHandlerREST = new NotificationHandlerREST(this, objectMapper);
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, queryResultTopic,
 				requestTopic, paramsResolver);
-		notificationHandlerMQTT = new NotificationHandlerMQTT(this, contextResolverService, objectMapper);
+		notificationHandlerMQTT = new NotificationHandlerMQTT(this, objectMapper);
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, queryResultTopic,
 				requestTopic, paramsResolver);
 		logger.trace("call loadStoredSubscriptions() ::");
@@ -964,7 +958,7 @@ public class SubscriptionService implements SubscriptionManager {
 			public void run() {
 
 				Subscription remoteSub = new Subscription();
-                Subscription subscription = subscriptionRequest.getSubscription();
+				Subscription subscription = subscriptionRequest.getSubscription();
 				remoteSub.setCustomFlags(subscription.getCustomFlags());
 				remoteSub.setDescription(subscription.getDescription());
 				remoteSub.setEntities(subscription.getEntities());
@@ -995,7 +989,7 @@ public class SubscriptionService implements SubscriptionManager {
 							temp.deleteCharAt(remoteEndPoint.length() - 1);
 						}
 						temp.append(AppConstants.SUBSCRIPTIONS_URL);
-						httpUtils.doPost(new URI(temp.toString()), body, additionalHeaders);
+						HttpUtils.doPost(new URI(temp.toString()), body, additionalHeaders);
 					} catch (IOException e) {
 						// TODO what to do when a remote sub times out ? at the moment we just fail here
 						e.printStackTrace();
@@ -1097,7 +1091,7 @@ public class SubscriptionService implements SubscriptionManager {
 			}
 		}
 	}
-	
+
 	// return true for future date validation
 	private boolean isValidFutureDate(Long date) {
 

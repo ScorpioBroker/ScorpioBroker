@@ -1,14 +1,19 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -24,17 +29,18 @@ public class UpdateEntityRequest extends EntityRequest {
 
 	private UpdateResult updateResult;
 
-	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody, Map<String, Object> resolved,
-			String attrName) throws ResponseException {
+	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
+			Map<String, Object> resolved, String attrName) throws ResponseException {
 		super(AppConstants.OPERATION_UPDATE_ENTITY, headers);
-		this.id = id;		
+		this.id = id;
 		generateUpdate(resolved, entityBody, attrName);
 	}
 
-	private void generateUpdate(Map<String, Object> resolved, Map<String, Object> entityBody, String attrName) throws ResponseException {
-		
+	private void generateUpdate(Map<String, Object> resolved, Map<String, Object> entityBody, String attrName)
+			throws ResponseException {
+
 		try {
-		
+
 			this.updateResult = updateFields(entityBody, resolved, attrName);
 			this.entityWithoutSysAttrs = updateResult.getJsonWithoutSysAttrs();
 
@@ -72,67 +78,79 @@ public class UpdateEntityRequest extends EntityRequest {
 			throws Exception, ResponseException {
 		logger.trace("updateFields() :: started");
 		String now = SerializationTools.formatter.format(Instant.now());
-		JsonNode resultJson = objectMapper.createObjectNode();
+		Map<String, Object> resultJson = new HashMap<String, Object>();
 		UpdateResult updateResult = new UpdateResult(resolved, resultJson);
-		JsonNode node = objectMapper.readTree(entityBody);
-		ObjectNode objectNode = (ObjectNode) node;
+//		JsonNode node = objectMapper.readTree(entityBody);
+//		ObjectNode objectNode = (ObjectNode) node;
 		if (attrId != null) {
-			if (objectNode.get(attrId) == null) {
+			if (!entityBody.containsKey(attrId)) {
 				throw new ResponseException(ErrorType.NotFound, "Provided attribute is not present");
 			}
-			JsonNode originalNode = ((ArrayNode) objectNode.get(attrId)).get(0);
-			if (((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
-				((ObjectNode) originalNode).remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
-			}
-			JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
-			ArrayNode myArray = (ArrayNode) innerNode;
+			List<Map<String, Object>> list = ((List<Map<String, Object>>) entityBody.get(attrId));
 			String availableDatasetId = null;
-
-			for (int i = 0; i < myArray.size(); i++) {
-				if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-					String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
-							.get(NGSIConstants.JSON_LD_ID).asText();
-					if (resolved.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						String datasetId = resolved.get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
-								.get(NGSIConstants.JSON_LD_ID).asText();
+			for (Map<String, Object> originalNode : list) {
+				if (originalNode.containsKey(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
+					originalNode.remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
+				}
+				if (originalNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+					String payloadDatasetId = (String) ((List<Map<String, Object>>) originalNode
+							.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID);
+					if (resolved.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						String datasetId = (String) ((List<Map<String, Object>>) resolved
+								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID);
 						if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
 							availableDatasetId = "available";
-							setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)), resolved,
-									updateResult, i);
+							originalNode.replace(attrId, resolved.get(attrId));
+							// setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)),
+							// resolved,
+							// updateResult, i);
 						}
 					} else {
 						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
-							setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)), resolved,
-									updateResult, i);
+							originalNode.replace(attrId, resolved.get(attrId));
+							// setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)),
+							// resolved,
+							// updateResult, i);
 						}
 					}
 				} else {
-					if (resolved.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_DATA_SET_ID).addObject()
-								.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
+					if (resolved.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						ArrayList<Object> tmp = new ArrayList<Object>();
+						HashMap<String, Object> tmp2 = new HashMap<String, Object>();
+						tmp2.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
+						tmp.add(tmp2);
+						originalNode.put(NGSIConstants.NGSI_LD_DATA_SET_ID, tmp);
 					} else {
-						((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_DATA_SET_ID).addObject()
-								.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
-						if (innerNode.get(i).has(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-							((ObjectNode) innerNode.get(i)).remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
-							((ObjectNode) innerNode.get(i)).putArray(NGSIConstants.NGSI_LD_MODIFIED_AT).addObject()
-									.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME)
-									.put(NGSIConstants.JSON_LD_VALUE, now);
+						ArrayList<Object> tmp = new ArrayList<Object>();
+						HashMap<String, Object> tmp2 = new HashMap<String, Object>();
+						tmp2.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
+						tmp.add(tmp2);
+						originalNode.put(NGSIConstants.NGSI_LD_DATA_SET_ID, tmp);
+						if (originalNode.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+							originalNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+							tmp = new ArrayList<Object>();
+							tmp2 = new HashMap<String, Object>();
+							tmp2.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+							tmp2.put(NGSIConstants.JSON_LD_VALUE, now);
+							tmp.add(tmp2);
+							originalNode.put(NGSIConstants.NGSI_LD_MODIFIED_AT, tmp);
 						}
-						setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)), resolved,
-								updateResult, i);
+						originalNode.replace(attrId, resolved.get(attrId));
+
+						// setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)),
+						// resolved,
+						// updateResult, i);
 					}
 				}
 			}
-			if (resolved.has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+			if (resolved.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
 					throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
 				}
 			}
 		} else {
-			Iterator<String> it = resolved.fieldNames();
-			while (it.hasNext()) {
-				String field = it.next();
+			for (Entry<String, Object> entry : resolved.entrySet()) {
+				String field = entry.getKey();
 				// TOP level updates of context id or type are ignored
 				if (field.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT)
 						|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
@@ -140,36 +158,33 @@ public class UpdateEntityRequest extends EntityRequest {
 					continue;
 				}
 				logger.trace("field: " + field);
-				if (node.has(field)) {
-					JsonNode originalNode = ((ArrayNode) objectNode.get(field)).get(0);
-					JsonNode attrNode = resolved.get(field).get(0);
+				if (entityBody.containsKey(field)) {
+					Map<String, Object> originalNode = ((List<Map<String, Object>>) entityBody.get(field)).get(0);
+					Map<String, Object> attrNode = ((List<Map<String, Object>>) resolved.get(field)).get(0);
 					String createdAt = now;
 
 					// keep original createdAt value if present in the original json
-					if ((originalNode instanceof ObjectNode)
-							&& ((ObjectNode) originalNode).has(NGSIConstants.NGSI_LD_CREATED_AT)
-							&& ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT).isArray()) {
-						createdAt = ((ObjectNode) ((ObjectNode) originalNode).get(NGSIConstants.NGSI_LD_CREATED_AT)
-								.get(0)).get(NGSIConstants.JSON_LD_VALUE).asText();
+					if (originalNode.containsKey(NGSIConstants.NGSI_LD_CREATED_AT)) {
+						createdAt = (String) ((List<Map<String, Object>>) originalNode
+								.get(NGSIConstants.NGSI_LD_CREATED_AT)).get(0).get(NGSIConstants.JSON_LD_VALUE);
 					}
+
 					setTemporalProperties(attrNode, createdAt, now, false);
 
 					// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
 					// present ...
-					objectNode.replace(field, resolved.get(field));
-					((ObjectNode) updateResult.getAppendedJsonFields()).set(field, resolved.get(field));
+					entityBody.replace(field, resolved.get(field));
+					updateResult.getAppendedJsonFields().put(field, resolved.get(field));
 					logger.trace("appended json fields: " + updateResult.getAppendedJsonFields().toString());
 					updateResult.setStatus(true);
-				} else {
-					// throw new ResponseException(ErrorType.NotFound);
 				}
 			}
 		}
-		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
-		updateResult.setJson(node.toString());
-		updateResult.setFinalNode(node);
-		removeTemporalProperties(node);
-		updateResult.setJsonWithoutSysAttrs(node.toString());
+		setTemporalProperties(entityBody, "", now, true); // root only, modifiedAt only
+		updateResult.setJson(JsonUtils.toString(entityBody));
+		updateResult.setFinalNode(entityBody);
+		removeTemporalProperties(entityBody);
+		updateResult.setJsonWithoutSysAttrs(JsonUtils.toString(entityBody));
 		logger.trace("updateFields() :: completed");
 		return updateResult;
 	}

@@ -49,10 +49,6 @@ public class QueryController {// implements QueryHandlerInterface {
 	@Qualifier("qmparamsResolver")
 	ParamsResolver paramsResolver;
 
-	@Autowired
-	@Qualifier("qmconRes")
-	ContextResolverBasic contextResolver;
-	
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
 
@@ -64,16 +60,8 @@ public class QueryController {// implements QueryHandlerInterface {
 	@Value("${ngb.debugmode}")
 	boolean debug = false;
 
-	private HttpUtils httpUtils;
-
 	private final byte[] emptyResult1 = { '{', ' ', '}' };
 	private final byte[] emptyResult2 = { '{', '}' };
-	
-
-	@PostConstruct
-	private void setup() {
-		httpUtils = HttpUtils.getInstance(contextResolver);
-	}
 
 	/**
 	 * Method(GET) for multiple attributes separated by comma list
@@ -82,16 +70,16 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @param entityId
 	 * @param attrs
 	 * @return
-	 * @throws ResponseException 
+	 * @throws ResponseException
 	 */
 	@GetMapping(path = "/entities/**")
 	public ResponseEntity<byte[]> getEntity(HttpServletRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
-			@RequestParam(value = "options", required = false) List<String> options) throws ResponseException{
+			@RequestParam(value = "options", required = false) List<String> options) throws ResponseException {
 		String entityId = HttpUtils.denormalize(request.getServletPath().replace("/ngsi-ld/v1/entities/", ""));
 		try {
 			ValidateURI.validateUri(entityId);
-		} catch(ResponseException exception){
+		} catch (ResponseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJsonBytes());
 		}
@@ -160,7 +148,7 @@ public class QueryController {// implements QueryHandlerInterface {
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(name = "services", required = false) Boolean showServices,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
-		
+
 		return getQueryData(request, request.getQueryString(), request.getParameterMap(), attrs, limit, offset, qToken,
 				options, showServices, false, count, null);
 	}
@@ -199,7 +187,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	@GetMapping(path = "/attributes")
 	public ResponseEntity<byte[]> getAllAttribute(HttpServletRequest request,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
-		
+
 		String check = "NonDeatilsAttributes";
 		if (details == true) {
 			check = "deatilsAttributes";
@@ -232,9 +220,9 @@ public class QueryController {// implements QueryHandlerInterface {
 	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
 			Map<String, String[]> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
 			List<String> options, Boolean showServices, boolean retrieve, Boolean countResult, String check) {
-		//long start = System.currentTimeMillis();
+		// long start = System.currentTimeMillis();
 		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
-		
+
 		if (limit == null) {
 			limit = defaultLimit;
 		}
@@ -247,9 +235,9 @@ public class QueryController {// implements QueryHandlerInterface {
 			if (countResult == false && limit == 0) {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 			}
-			//long prelink = System.currentTimeMillis();
+			// long prelink = System.currentTimeMillis();
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
-			//long postlink = System.currentTimeMillis();
+			// long postlink = System.currentTimeMillis();
 			if (retrieve || request.getRequestURI().equals(MY_REQUEST_URL)
 					|| request.getRequestURI().equals(MY_REQUEST_URL_ALT)) {
 				if (retrieve || originalQueryParams != null) {
@@ -278,27 +266,27 @@ public class QueryController {// implements QueryHandlerInterface {
 					}
 
 					checkParamsForValidity(qp);
-					//long pregenheades = System.currentTimeMillis();
+					// long pregenheades = System.currentTimeMillis();
 					ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-					//long postgenheaders = System.currentTimeMillis();
+					// long postgenheaders = System.currentTimeMillis();
 					QueryResult qResult;
 					try {
-					 qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset,
-							qToken, showServices, countResult, headers, false, check);
-					}catch(Exception e){
+						qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset, qToken,
+								showServices, countResult, headers, false, check);
+					} catch (Exception e) {
 						return ResponseEntity.status(HttpStatus.NOT_FOUND)
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}
-					//long pregenresult = System.currentTimeMillis();
-					ResponseEntity<byte[]> result = generateReply(httpUtils, request, qResult, !retrieve, countResult);
-					//long end = System.currentTimeMillis();
-					//System.err.println(start);
-					//System.err.println(prelink);
-					//System.err.println(postlink);
-					//System.err.println(pregenheades);
-					//System.err.println(postgenheaders);
-					//System.err.println(pregenresult);
-					//System.err.println(end);
+					// long pregenresult = System.currentTimeMillis();
+					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve, countResult);
+					// long end = System.currentTimeMillis();
+					// System.err.println(start);
+					// System.err.println(prelink);
+					// System.err.println(postlink);
+					// System.err.println(pregenheades);
+					// System.err.println(postgenheaders);
+					// System.err.println(pregenresult);
+					// System.err.println(end);
 					return result;
 
 				} else {
@@ -306,7 +294,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					if (debug) {
 						ArrayList<String> allEntityResult = queryService.retriveAllEntity();
 						if (allEntityResult.size() > 1) {
-							return httpUtils.generateReply(request, allEntityResult.get(0));
+							return HttpUtils.generateReply(request, allEntityResult.get(0));
 						} else {
 							return ResponseEntity.accepted()
 									.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
@@ -347,8 +335,8 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpUtils httpUtils, HttpServletRequest request, QueryResult qResult, boolean forceArray, boolean count)
-			throws ResponseException {
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult,
+			boolean forceArray, boolean count) throws ResponseException {
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
 		ArrayList<String> additionalLinks = new ArrayList<String>();
@@ -358,18 +346,15 @@ public class QueryController {// implements QueryHandlerInterface {
 		if (prevLink != null) {
 			additionalLinks.add(prevLink);
 		}
-		ArrayList<String> additionalHeaderCount = new ArrayList<String>();
-		HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
-       
+		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
 		if (count == true) {
-			additionalHeaderCount.add(String.valueOf(qResult.getCount()));
-			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, additionalHeaderCount);
+			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 		}
-		
+
 		if (!additionalLinks.isEmpty()) {
-			additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
+			additionalHeaders.putAll(HttpHeaders.LINK, additionalLinks);
 		}
-		return httpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
+		return HttpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
 				additionalHeaders, null, forceArray);
-	}	
+	}
 }

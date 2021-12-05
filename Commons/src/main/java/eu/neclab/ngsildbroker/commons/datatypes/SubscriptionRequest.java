@@ -8,10 +8,10 @@ public class SubscriptionRequest extends BaseRequest {
 	Subscription subscription;
 	List<Object> context;
 
-	public SubscriptionRequest(Subscription subscription, List<Object> context,
+	public SubscriptionRequest(Subscription subscription, List<Object> context2,
 			ArrayListMultimap<String, String> headers) {
 		super(headers);
-		this.context = context;
+		this.context = context2;
 		this.subscription = subscription;
 	}
 

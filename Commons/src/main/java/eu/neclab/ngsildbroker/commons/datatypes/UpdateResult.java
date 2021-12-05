@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class UpdateResult {
 	private Map<String, Object> jsonToAppend;
 	private Map<String, Object> updatedJsonFields;// = new ArrayList<JsonNode>();
-	private JsonNode finalNode;
+	private Map<String, Object> finalNode;
 	private boolean status = false;
 	private String json;
 	private String jsonWithoutSysAttrs;
@@ -23,11 +23,11 @@ public class UpdateResult {
 	}
 
 	
-	public JsonNode getFinalNode() {
+	public Map<String, Object> getFinalNode() {
 		return finalNode;
 	}
 
-	public void setFinalNode(JsonNode finalNode) {
+	public void setFinalNode(Map<String, Object> finalNode) {
 		this.finalNode = finalNode;
 	}
 

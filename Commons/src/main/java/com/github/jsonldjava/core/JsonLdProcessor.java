@@ -63,14 +63,14 @@ public class JsonLdProcessor {
 		// final step of Compaction Algorithm
 		// TODO: SPEC: the result result is a NON EMPTY array,
 		if (compacted instanceof List) {
-			if (((List<Object>) compacted).isEmpty()) {
-				compacted = newMap();
-			} else {
-				final Map<String, Object> tmp = newMap();
-				// TODO: SPEC: doesn't specify to use vocab = true here
-				tmp.put(activeCtx.compactIri(JsonLdConsts.GRAPH, true), compacted);
-				compacted = tmp;
-			}
+			// if (((List<Object>) compacted).isEmpty()) {
+			// compacted = newMap();
+			// } else {
+			final Map<String, Object> tmp = newMap();
+			// TODO: SPEC: doesn't specify to use vocab = true here
+			tmp.put(activeCtx.compactIri(JsonLdConsts.GRAPH, true), compacted);
+			compacted = tmp;
+			// }
 		}
 		if (compacted != null && context != null) {
 			// TODO: figure out if we can make "@context" appear at the start of
@@ -102,7 +102,7 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while expanding.
 	 * @throws ResponseException
 	 */
-	public static List<Object> expand(List<String> contextLinks, Object input, JsonLdOptions opts, int payloadType,
+	public static List<Object> expand(List<Object> contextLinks, Object input, JsonLdOptions opts, int payloadType,
 			boolean atContextAllowed) throws JsonLdError, ResponseException {
 		// 1)
 		// TODO: look into java futures/promises

@@ -1,7 +1,9 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -22,6 +24,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.netflix.discovery.EurekaClient;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -48,27 +57,18 @@ public class RegistrySubscriptionController {
 	CSourceSubscriptionService manager;
 
 	@Autowired
-	@Qualifier("rmconRes")
-	ContextResolverBasic contextResolver;
-
-	@Autowired
 	@Qualifier("rmops")
 	KafkaOps kafkaOps;
 
 	@Autowired
 	EurekaClient eurekaClient;
 
-	private HttpUtils httpUtils;
-
-	@PostConstruct
-	private void setup() {
-		this.httpUtils = HttpUtils.getInstance(contextResolver);
-	}
-
 	ResponseException badRequest = new ResponseException(ErrorType.BadRequestData);
 
 	ResponseEntity<byte[]> badRequestResponse = ResponseEntity.status(badRequest.getHttpStatus())
 			.body(new RestResponse(badRequest).toJsonBytes());
+
+	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	// @PostConstruct
 	// private void setupContextResolver() {
 	// this.contextResolver =
@@ -86,10 +86,10 @@ public class RegistrySubscriptionController {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription = null;
 		try {
-
-			Validator.subscriptionValidation(payload);
 			List<Object> context = HttpUtils.getAtContext(request);
-			String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
+			String resolved = JsonUtils
+					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
+							opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)));
 
 			subscription = DataSerializer.getSubscription(resolved);
 			if (resolved == null || subscription == null) {
@@ -109,6 +109,9 @@ public class RegistrySubscriptionController {
 		} catch (URISyntaxException e) {
 			logger.error("Exception ::", e);
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(subscription.getId().toString().getBytes());
+		} catch (IOException e) {
+			logger.error("Exception ::", e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage().getBytes());
 		}
 	}
 
@@ -119,7 +122,7 @@ public class RegistrySubscriptionController {
 		List<Subscription> result = null;
 		result = manager.getAllSubscriptions(HttpUtils.getHeaders(request), limit);
 		logger.trace("getAllSubscriptions() :: completed");
-		return httpUtils.generateReply(request, DataSerializer.toJson(result));
+		return HttpUtils.generateReply(request, DataSerializer.toJson(result));
 	}
 
 	@GetMapping("{id}")
@@ -130,7 +133,7 @@ public class RegistrySubscriptionController {
 		try {
 			logger.trace("call getSubscriptions() ::");
 			ValidateURI.validateUriInSubs(id);
-			return httpUtils.generateReply(request,
+			return HttpUtils.generateReply(request,
 					DataSerializer.toJson(manager.getSubscription(HttpUtils.getHeaders(request), id)));
 
 		} catch (ResponseException e) {
@@ -162,8 +165,11 @@ public class RegistrySubscriptionController {
 		logger.trace("call updateSubscription() ::");
 		try {
 			Validator.subscriptionValidation(payload);
-			List<Object> context = HttpUtils.getAtContext(request);
-			String resolved = contextResolver.expand(payload, context, true, AppConstants.CSOURCE_URL_ID);
+			List<Object> context = new ArrayList<Object>();
+			context.addAll(HttpUtils.getAtContext(request));
+			String resolved = JsonUtils
+					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
+							opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request)));
 			Subscription subscription = DataSerializer.getSubscription(resolved);
 			if (subscription.getId() == null) {
 				subscription.setId(id);
@@ -177,6 +183,9 @@ public class RegistrySubscriptionController {
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
+		} catch (IOException e) {
+			logger.error("Exception ::", e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage().getBytes());
 		}
 		return ResponseEntity.noContent().build();
 	}

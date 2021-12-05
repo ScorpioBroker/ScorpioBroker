@@ -2,6 +2,9 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -17,9 +20,9 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 public class HistoryEntityRequest extends BaseRequest {
 
 	protected ArrayList<HistoryAttribInstance> attribs = new ArrayList<HistoryAttribInstance>();
-	JsonParser parser = new JsonParser();
-	protected String payload;
-	protected JsonObject jsonObject;
+
+	protected Map<String, Object> payload;
+
 	protected String id;
 	protected String type;
 	protected String createdAt;
@@ -27,20 +30,12 @@ public class HistoryEntityRequest extends BaseRequest {
 	protected String now;
 	protected String instanceId;
 
-	public String getPayload() {
+	public Map<String, Object> getPayload() {
 		return payload;
 	}
 
-	public void setPayload(String payload) {
+	public void setPayload(Map<String, Object> payload) {
 		this.payload = payload;
-	}
-
-	public JsonObject getJsonObject() {
-		return jsonObject;
-	}
-
-	public void setJsonObject(JsonObject jsonObject) {
-		this.jsonObject = jsonObject;
 	}
 
 	public String getId() {
@@ -89,9 +84,10 @@ public class HistoryEntityRequest extends BaseRequest {
 	public HistoryEntityRequest() {
 	}
 
-	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, String payload) throws ResponseException {
+	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+			throws ResponseException {
 		super(headers);
-		this.payload = payload;
+		this.payload = resolved;
 		this.now = SerializationTools.formatter.format(Instant.now());
 
 	}
@@ -102,20 +98,19 @@ public class HistoryEntityRequest extends BaseRequest {
 				elementValue, overwriteOp));
 	}
 
-	protected JsonElement setCommonTemporalProperties(JsonElement jsonElement, String date, boolean fromEntity) {
+	protected Map<String, Object> setCommonTemporalProperties(Map<String, Object> jsonElement, String date,
+			boolean fromEntity) {
 		String valueCreatedAt;
 		if (fromEntity) {
 			// reuse modifiedAt field from Attribute in Entity, if exists
-			if (jsonElement.getAsJsonObject().has(NGSIConstants.NGSI_LD_MODIFIED_AT)
-					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).isJsonArray()
-					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray()
-							.get(0) != null
-					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0)
-							.isJsonObject()
-					&& jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0)
-							.getAsJsonObject().has(NGSIConstants.JSON_LD_VALUE)) {
-				valueCreatedAt = jsonElement.getAsJsonObject().get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray()
-						.get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
+			if (jsonElement.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)
+					&& jsonElement.get(NGSIConstants.NGSI_LD_MODIFIED_AT) instanceof List
+					&& !((List) jsonElement.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).isEmpty()
+					&& ((List) jsonElement.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0) instanceof Map
+					&& ((List<Map<String, Object>>) jsonElement.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
+							.containsKey(NGSIConstants.JSON_LD_VALUE)) {
+				valueCreatedAt = (String) ((List<Map<String, Object>>) jsonElement
+						.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0).get(NGSIConstants.JSON_LD_VALUE);
 			} else {
 				valueCreatedAt = date;
 			}
@@ -133,28 +128,29 @@ public class HistoryEntityRequest extends BaseRequest {
 		return jsonElement;
 	}
 
-	protected JsonElement setTemporalProperty(JsonElement jsonElement, String propertyName, String value) {
-		JsonObject objAttribute = jsonElement.getAsJsonObject();
-		objAttribute.remove(propertyName);
-		JsonObject obj = new JsonObject();
-		obj.addProperty(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-		obj.addProperty(NGSIConstants.JSON_LD_VALUE, value);
-		JsonArray arr = new JsonArray();
+	protected Map<String, Object> setTemporalProperty(Map<String, Object> jsonElement, String propertyName,
+			String value) {
+
+		jsonElement.remove(propertyName);
+		HashMap<String, Object> obj = new HashMap<String, Object>();
+		obj.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+		obj.put(NGSIConstants.JSON_LD_VALUE, value);
+		ArrayList<Object> arr = new ArrayList<Object>();
 		arr.add(obj);
-		objAttribute.add(propertyName, arr);
-		return objAttribute;
+		jsonElement.put(propertyName, arr);
+		return jsonElement;
 	}
 
 	// system generated instance id
-	protected JsonElement setTemporalPropertyinstanceId(JsonElement jsonElement, String propertyName, String value) {
-		JsonObject objAttribute = jsonElement.getAsJsonObject();
-		objAttribute.remove(propertyName);
-		JsonObject obj = new JsonObject();
-		obj.addProperty(NGSIConstants.JSON_LD_ID, value);
-		JsonArray arr = new JsonArray();
+	protected Map<String, Object> setTemporalPropertyinstanceId(Map<String, Object> jsonElement, String propertyName,
+			String value) {
+		jsonElement.remove(propertyName);
+		HashMap<String, Object> obj = new HashMap<String, Object>();
+		obj.put(NGSIConstants.JSON_LD_ID, value);
+		ArrayList<Object> arr = new ArrayList<Object>();
 		arr.add(obj);
-		objAttribute.add(propertyName, arr);
-		return objAttribute;
+		jsonElement.put(propertyName, arr);
+		return jsonElement;
 	}
 
 	public String getInstanceId() {
@@ -164,6 +160,5 @@ public class HistoryEntityRequest extends BaseRequest {
 	public void setInstanceId(String instanceId) {
 		this.instanceId = instanceId;
 	}
-	
 
 }

@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,7 @@ public class CreateEntityRequest extends EntityRequest {
 	public CreateEntityRequest() {
 		super(AppConstants.OPERATION_CREATE_ENTITY, null);
 	}
-	
+
 	public CreateEntityRequest(Map<String, Object> resolved, ArrayListMultimap<String, String> headers)
 			throws ResponseException {
 		super(AppConstants.OPERATION_CREATE_ENTITY, headers);
@@ -31,13 +32,13 @@ public class CreateEntityRequest extends EntityRequest {
 	}
 
 	private void generatePayloadVersions(Map<String, Object> payload) throws ResponseException {
-		//JsonNode json = SerializationTools.parseJson(objectMapper, payload);
-		//JsonNode idNode = json.get(NGSIConstants.JSON_LD_ID);
-		//JsonNode type = json.get(NGSIConstants.JSON_LD_TYPE);
+		// JsonNode json = SerializationTools.parseJson(objectMapper, payload);
+		// JsonNode idNode = json.get(NGSIConstants.JSON_LD_ID);
+		// JsonNode type = json.get(NGSIConstants.JSON_LD_TYPE);
 		// null id and type check
-		//if (idNode == null || type == null) {
-		//	throw new ResponseException(ErrorType.BadRequestData);
-		//}
+		// if (idNode == null || type == null) {
+		// throw new ResponseException(ErrorType.BadRequestData);
+		// }
 		this.id = (String) payload.get(NGSIConstants.JSON_LD_ID);
 		logger.debug("entity id " + id);
 		// check in-memory hashmap for id
@@ -46,29 +47,28 @@ public class CreateEntityRequest extends EntityRequest {
 		setTemporalProperties(payload, now, now, false);
 		try {
 			this.withSysAttrs = JsonUtils.toString(payload);
-		} catch (JsonProcessingException e) {
+		} catch (IOException e) {
 			// should never happen error checks are done before hand
 			logger.error(e);
 			throw new ResponseException(ErrorType.UnprocessableEntity, "Failed to parse entity");
 		}
 		removeTemporalProperties(payload); // remove createdAt/modifiedAt fields informed by the user
 		try {
-			this.entityWithoutSysAttrs = objectMapper.writeValueAsString(payload);
-		} catch (JsonProcessingException e) {
+			this.entityWithoutSysAttrs = JsonUtils.toString(payload);
+		} catch (IOException e) {
 			// should never happen error checks are done before hand
 			logger.error(e);
 			throw new ResponseException(ErrorType.UnprocessableEntity, "Failed to parse entity");
 		}
 		if (this.operationType == AppConstants.OPERATION_CREATE_ENTITY) {
 			try {
-				this.keyValue = objectMapper.writeValueAsString(getKeyValueEntity(json));
-			} catch (JsonProcessingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(payload));
+			} catch (IOException e) {
+				// should never happen error checks are done before hand
+				logger.error(e);
+				throw new ResponseException(ErrorType.UnprocessableEntity, "Failed to parse entity");
 			}
 		}
 	}
-
-	
 
 }

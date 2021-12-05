@@ -241,20 +241,20 @@ public class EntityService {
 	 * Method to update a existing Entity in the system/kafka topic
 	 * 
 	 * @param entityId - id of entity to be updated
-	 * @param resolved  - jsonld message containing fileds to be updated with updated
+	 * @param resolved - jsonld message containing fileds to be updated with updated
 	 *                 values
 	 * @return RestResponse
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public UpdateResult updateMessage(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> resolved)
-			throws ResponseException, Exception {
+	public UpdateResult updateMessage(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved) throws ResponseException, Exception {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
 		MessageChannel messageChannel = producerChannels.updateWriteChannel();
 		String tenantid = HttpUtils.getInternalTenant(headers);
 		// get entity details
-		String entityBody = validateIdAndGetBody(entityId, tenantid);
+		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantid);
 		// String entityBody = validateIdAndGetBody(entityId);
 		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, resolved, null);
 
@@ -286,13 +286,13 @@ public class EntityService {
 	 * Method to append fields in existing Entity in system/kafka topic
 	 * 
 	 * @param entityId - id of entity to be appended
-	 * @param payload  - jsonld message containing fileds to be appended
+	 * @param resolved - jsonld message containing fileds to be appended
 	 * @return AppendResult
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public AppendResult appendMessage(ArrayListMultimap<String, String> headers, String entityId, String payload,
-			String overwriteOption) throws ResponseException, Exception {
+	public AppendResult appendMessage(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved, String overwriteOption) throws ResponseException, Exception {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		MessageChannel messageChannel = producerChannels.appendWriteChannel();
@@ -303,8 +303,8 @@ public class EntityService {
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		// get entity details
-		String entityBody = validateIdAndGetBody(entityId, tenantId);
-		AppendEntityRequest request = new AppendEntityRequest(headers, entityId, entityBody, payload, overwriteOption,
+		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantId);
+		AppendEntityRequest request = new AppendEntityRequest(headers, entityId, entityBody, resolved, overwriteOption,
 				this.appendOverwriteFlag);
 		// get entity from ENTITY topic.
 		// pubilsh merged message
@@ -336,17 +336,18 @@ public class EntityService {
 		synchronized (this.entityIds) {
 			if (!this.entityIds.containsKey(tenantId)) {
 				throw new ResponseException(ErrorType.TenantNotFound);
-			} if (!this.entityIds.containsValue(entityId)) {
+			}
+			if (!this.entityIds.containsValue(entityId)) {
 				throw new ResponseException(ErrorType.NotFound);
 			}
 		}
 		String entityBody = null;
 		if (directDB) {
 			entityBody = this.entityInfoDAO.getEntity(entityId, tenantId);
-		}else { 
-			//todo add back storage manager calls
+		} else {
+			// todo add back storage manager calls
 		}
-		
+
 		try {
 			return (Map<String, Object>) JsonUtils.fromString(entityBody);
 		} catch (IOException e) {
@@ -424,7 +425,7 @@ public class EntityService {
 	}
 
 	public UpdateResult partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId, String attrId,
-			String payload) throws ResponseException, Exception {
+			Map<String, Object> expandedPayload) throws ResponseException, Exception {
 		logger.trace("partialUpdateEntity() :: started");
 		// get message channel for ENTITY_APPEND topic
 		MessageChannel messageChannel = producerChannels.updateWriteChannel();
@@ -435,10 +436,10 @@ public class EntityService {
 		String tenantid = HttpUtils.getInternalTenant(headers);
 
 		// get entity details
-		String entityBody = validateIdAndGetBody(entityId, tenantid);
+		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantid);
 
 		// JsonNode originalJsonNode = objectMapper.readTree(originalJson);
-		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, payload, attrId);
+		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, expandedPayload, attrId);
 		// pubilsh merged message
 		// check if anything is changed.
 		if (request.getStatus()) {
@@ -472,7 +473,7 @@ public class EntityService {
 		}
 		String tenantid = HttpUtils.getInternalTenant(headers);
 		// get entity details
-		String entityBody = validateIdAndGetBody(entityId, tenantid);
+		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantid);
 		// get entity details from in-memory hashmap
 
 		DeleteAttributeRequest request = new DeleteAttributeRequest(headers, entityId, entityBody, attrId, datasetId,
@@ -626,52 +627,7 @@ public class EntityService {
 		}
 	}
 
-	public BatchResult createMultipleMessage(ArrayListMultimap<String, String> headers, String payload)
-			throws ResponseException {
-
-		try {
-			BatchResult result = new BatchResult();
-			JsonNode myTree = objectMapper.readTree(payload);
-			if (!myTree.isArray()) {
-				throw new ResponseException(ErrorType.InvalidRequest,
-						"This interface only supports arrays of entities");
-			}
-			ArrayNode myArray = (ArrayNode) myTree;
-			if (maxCreateBatch != -1 && myArray.size() > maxCreateBatch) {
-				throw new ResponseException(ErrorType.RequestEntityTooLarge,
-						"Maximum allowed number of entities for this operation is " + maxCreateBatch);
-			}
-			Iterator<JsonNode> it = myArray.iterator();
-			while (it.hasNext()) {
-				JsonNode next = it.next();
-				String entityId = "NOT AVAILABLE";
-				if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
-					entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
-				}
-				try {
-					boolean validatePayload =  Validator.validatePayloadType(next, entityId, result);
-					if(validatePayload == false) {
-					result.addSuccess(createMessage(headers, objectMapper.writeValueAsString(next)));
-					}
-				} catch (Exception e) {
-					RestResponse response;
-					if (e instanceof ResponseException) {
-						response = new RestResponse((ResponseException) e);
-					} else {
-						response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-					}
-
-					result.addFail(new BatchFailure(entityId, response));
-				}
-
-			}
-			return result;
-		} catch (IOException e) {
-			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
-		}
-
-	}
-
+	
 	public BatchResult deleteMultipleMessage(ArrayListMultimap<String, String> headers, String payload)
 			throws ResponseException {
 		try {
@@ -681,9 +637,9 @@ public class EntityService {
 				throw new ResponseException(ErrorType.InvalidRequest,
 						"This interface only supports arrays of entities");
 			}
-			
-			ArrayNode myArray = (ArrayNode) myTree;			
-			if(myArray.size()==0) {
+
+			ArrayNode myArray = (ArrayNode) myTree;
+			if (myArray.size() == 0) {
 				throw new ResponseException(ErrorType.BadRequestData);
 			}
 			if (maxDeleteBatch != -1 && myArray.size() > maxDeleteBatch) {
@@ -715,154 +671,5 @@ public class EntityService {
 			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
 		}
 
-	}
-
-	public BatchResult updateMultipleMessage(ArrayListMultimap<String, String> headers, String resolved)
-			throws ResponseException {
-		try {
-			BatchResult result = new BatchResult();
-			JsonNode myTree = objectMapper.readTree(resolved);
-			if (!myTree.isArray()) {
-				throw new ResponseException(ErrorType.InvalidRequest,
-						"This interface only supports arrays of entities");
-			}
-			ArrayNode myArray = (ArrayNode) myTree;
-			if (maxUpdateBatch != -1 && myArray.size() > maxUpdateBatch) {
-				throw new ResponseException(ErrorType.RequestEntityTooLarge,
-						"Maximum allowed number of entities for this operation is " + maxUpdateBatch);
-			}
-			Iterator<JsonNode> it = myArray.iterator();
-			while (it.hasNext()) {
-				JsonNode next = it.next();
-				String entityId = "NOT AVAILABLE";
-				if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
-					entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
-				} else {
-					result.addFail(new BatchFailure(entityId,
-							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
-					continue;
-				} 
-				
-				if (!next.hasNonNull(NGSIConstants.JSON_LD_TYPE)) {
-					result.addFail(new BatchFailure(entityId,
-							new RestResponse(ErrorType.BadRequestData, "Bad Request Data.")));
-					continue; 
-				} 
-				try {
-					boolean validatePayload = Validator.validatePayloadType(next, entityId, result);
-					if (validatePayload == false) {
-						AppendResult updateResult = appendMessage(headers, entityId,
-								objectMapper.writeValueAsString(next), null);
-						if (updateResult.getStatus()) {
-							result.addSuccess(entityId);
-						} else {
-							result.addFail(new BatchFailure(entityId,
-									new RestResponse(ErrorType.MultiStatus,
-											objectMapper.writeValueAsString(updateResult.getJsonToAppend())
-													+ " was not added")));
-						}
-					}
-				} catch (Exception e) {
-
-					RestResponse response;
-					if (e instanceof ResponseException) {
-						response = new RestResponse((ResponseException) e);
-					} else {
-						response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-					}
-
-					result.addFail(new BatchFailure(entityId, response));
-				}
-
-			}
-			return result;
-		} catch (IOException e) {
-			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
-		}
-	}
-
-	public BatchResult upsertMultipleMessage(ArrayListMultimap<String, String> headers, String resolved)
-			throws ResponseException {
-		try {
-			checkEntity = false;
-			BatchResult result = new BatchResult();
-			JsonNode myTree = objectMapper.readTree(resolved);
-			if (!myTree.isArray()) {
-				throw new ResponseException(ErrorType.InvalidRequest,
-						"This interface only supports arrays of entities");
-			}
-			ArrayNode myArray = (ArrayNode) myTree;
-			if (maxUpsertBatch != -1 && myArray.size() > maxUpsertBatch) {
-				throw new ResponseException(ErrorType.RequestEntityTooLarge,
-						"Maximum allowed number of entities for this operation is " + maxUpsertBatch);
-			}
-			Iterator<JsonNode> it = myArray.iterator();
-			while (it.hasNext()) {
-				JsonNode next = it.next();
-				String entityId = "NOT AVAILABLE";
-				if (next.hasNonNull(NGSIConstants.JSON_LD_ID)) {
-					entityId = next.get(NGSIConstants.JSON_LD_ID).asText();
-				} else {
-					result.addFail(new BatchFailure(entityId,
-							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
-					continue;
-				}
-				String entityString = objectMapper.writeValueAsString(next);
-				try {
-					boolean validatePayload =  Validator.validatePayloadType(next, entityId, result);
-					if(validatePayload == false) {
-                    String ids = createMessage(headers,entityString);
-                    if(ids != null && !ids.isEmpty()) {
-                    	checkEntity = true;
-                    }
-					result.addSuccess(ids);
-				  }
-				} catch (Exception e) {
-
-					RestResponse response;
-					if (e instanceof ResponseException) {
-						ResponseException responseException = ((ResponseException) e);
-						if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
-							AppendResult updateResult;
-							try {
-								boolean validatePayload =  Validator.validatePayloadType(next, entityId, result);
-								if(validatePayload == false) {
-								updateResult = appendMessage(headers, entityId, entityString, null);
-								if (updateResult.getStatus()) {
-									result.addSuccess(entityId);
-								} else {
-									result.addFail(new BatchFailure(entityId,
-											new RestResponse(ErrorType.MultiStatus,
-													objectMapper.writeValueAsString(updateResult.getJsonToAppend())
-															+ " was not added")));
-								}
-							  }
-							} catch (Exception e1) {
-
-								if (e1 instanceof ResponseException) {
-									response = new RestResponse((ResponseException) e1);
-								} else {
-									response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
-								}
-
-								result.addFail(new BatchFailure(entityId, response));
-							}
-						} else {
-							response = new RestResponse((ResponseException) e);
-							result.addFail(new BatchFailure(entityId, response));
-						}
-
-					} else {
-						response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-						result.addFail(new BatchFailure(entityId, response));
-					}
-
-				}
-
-			}
-			return result;
-		} catch (IOException e) {
-			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
-		}
 	}
 }

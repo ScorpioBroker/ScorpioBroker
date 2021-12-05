@@ -83,10 +83,6 @@ public class CSourceSubscriptionService {
 	ObjectMapper objectMapper;
 
 	@Autowired
-	@Qualifier("rmconRes")
-	ContextResolverBasic contextResolverService;
-
-	@Autowired
 	EurekaClient eurekaClient;
 
 	@Autowired
@@ -134,7 +130,7 @@ public class CSourceSubscriptionService {
 		// this.contextResolver =
 		// ContextResolverService.getInstance(producerChannel.atContextWriteChannel(),
 		// kafkaOps);
-		this.notificationHandler = new CSourceNotificationHandlerREST(contextResolverService);
+		this.notificationHandler = new CSourceNotificationHandlerREST();
 		this.internalNotificationHandler = new CSourceNotificationHandlerInternalKafka(kafkaOps, producerChannel);
 		logger.trace("call loadStoredSubscriptions() ::");
 		Map<String, byte[]> subs = kafkaOps.pullFromKafka(KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC);
@@ -567,8 +563,8 @@ public class CSourceSubscriptionService {
 	}
 
 	private Set<String> extractProperties(Information info, Subscription subscription) {
-		if (info.getPropertyNames() == null || info.getPropertyNames().isEmpty() || subscription.getAttributeNames() == null
-				|| subscription.getAttributeNames().isEmpty()) {
+		if (info.getPropertyNames() == null || info.getPropertyNames().isEmpty()
+				|| subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
 			return new HashSet<String>();
 		}
 		HashSet<String> attribNames = new HashSet<String>();

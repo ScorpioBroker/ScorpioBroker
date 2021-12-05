@@ -23,6 +23,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
+
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.http.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -55,8 +60,6 @@ public class HistoryController {
 
 	@Autowired
 	HistoryService historyService;
-	@Autowired
-	ContextResolverBasic contextResolver;
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
 	@Value("${defaultLimit}")
@@ -64,22 +67,18 @@ public class HistoryController {
 	@Value("${maxLimit}")
 	int maxLimit = 1000;
 
-	private HttpUtils httpUtils;
-
-	@PostConstruct
-	private void setup() {
-		this.httpUtils = HttpUtils.getInstance(contextResolver);
-	}
+	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@PostMapping
 	public ResponseEntity<byte[]> createTemporalEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
 			logger.trace("createTemporalEntity :: started");
-			Validator.validateTemporalEntity(payload);
 
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
-
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
+							AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+					.get(0);
 			URI uri = historyService.createTemporalEntityFromBinding(HttpUtils.getHeaders(request), resolved);
 			logger.trace("createTemporalEntity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString())
@@ -138,7 +137,7 @@ public class HistoryController {
 			if (!additionalLinks.isEmpty()) {
 				additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
 			}
-			return httpUtils.generateReply(request,
+			return HttpUtils.generateReply(request,
 					historyDAO.getListAsJsonArray(historyDAO.query(req.getQp()).getActualDataString()));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
@@ -172,7 +171,7 @@ public class HistoryController {
 			if (queryResult.isEmpty()) {
 				throw new ResponseException(ErrorType.NotFound);
 			}
-			return httpUtils.generateReply(request, historyDAO.getListAsJsonArray(queryResult));
+			return HttpUtils.generateReply(request, historyDAO.getListAsJsonArray(queryResult));
 		} catch (ResponseException ex) {
 			logger.error("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
@@ -227,8 +226,10 @@ public class HistoryController {
 		try {
 			logger.trace("addAttrib2TemopralEntity :: started");
 			logger.debug("entityId : " + entityId);
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
-
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
+							AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+					.get(0);
 			historyService.addAttrib2TemporalEntity(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("addAttrib2TemopralEntity :: completed");
 			return ResponseEntity.noContent().build();
@@ -271,8 +272,10 @@ public class HistoryController {
 			logger.trace("modifyAttribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
 
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.HISTORY_URL_ID);
-
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
+							AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+					.get(0);
 			// TODO : TBD- conflict between specs and implementation <mentioned no request
 			// body in specs>
 			historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId, resolved, attrId,

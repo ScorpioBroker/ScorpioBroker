@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -88,33 +90,38 @@ public class EntityRequest extends BaseRequest {
 		this.objectMapper = objectMapper;
 	}
 
-	protected JsonNode getKeyValueEntity(JsonNode json) {
-		ObjectNode kvJsonObject = objectMapper.createObjectNode();
-		Iterator<Map.Entry<String, JsonNode>> iter = json.fields();
-		while (iter.hasNext()) {
-			Map.Entry<String, JsonNode> entry = iter.next();
-			if (entry.getKey().equals(NGSIConstants.JSON_LD_ID) || entry.getKey().equals(NGSIConstants.JSON_LD_TYPE)) {
-				kvJsonObject.set(entry.getKey(), entry.getValue());
-			} else if (entry.getValue().isArray()) {
-				ArrayNode values = objectMapper.createArrayNode();
-				Iterator<JsonNode> it = entry.getValue().elements();
-				while (it.hasNext()) {
-					ObjectNode attrObj = (ObjectNode) it.next();
-					if (attrObj.has(NGSIConstants.JSON_LD_VALUE)) { // common members like createdAt do not have
+	protected Map<String, Object> getKeyValueEntity(Map<String, Object> map) {
+		Map<String, Object> kvJsonObject = new HashMap<String, Object>();
+		for (Entry<String, Object> entry : map.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+			if (key.equals(NGSIConstants.JSON_LD_ID) || key.equals(NGSIConstants.JSON_LD_TYPE)) {
+				kvJsonObject.put(key, value);
+			} else if (value instanceof List) {
+				ArrayList<Object> values = new ArrayList<Object>();
+				List list = (List) value;
+				for (Object entry2 : list) {
+					if (!(entry2 instanceof Map)) {
+						continue;
+					}
+					Map<String, Object> map2 = (Map<String, Object>) entry2;
+					if (map2.containsKey(NGSIConstants.JSON_LD_VALUE)) { // common members like createdAt do not have
 						// hasValue/hasObject
-						values.add(entry.getValue());
-					} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-						values.add(attrObj.get(NGSIConstants.NGSI_LD_HAS_VALUE));
-					} else if (attrObj.has(NGSIConstants.NGSI_LD_HAS_OBJECT)
-							&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).isArray()
-							&& attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).has(NGSIConstants.JSON_LD_ID)) {
-						values.add(attrObj.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(NGSIConstants.JSON_LD_ID));
+						values.add(value);
+					} else if (map2.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+						values.add(map2.get(NGSIConstants.NGSI_LD_HAS_VALUE));
+					} else if (map2.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)
+							&& map2.get(NGSIConstants.NGSI_LD_HAS_OBJECT) instanceof List
+							&& ((Map<String, Object>) ((List) map2.get(NGSIConstants.NGSI_LD_HAS_OBJECT)).get(0))
+									.containsKey(NGSIConstants.JSON_LD_ID)) {
+						values.add(((Map<String, Object>) ((List) map2.get(NGSIConstants.NGSI_LD_HAS_OBJECT)).get(0))
+								.get(NGSIConstants.JSON_LD_ID));
 					}
 				}
 				if (values.size() == 1) {
-					kvJsonObject.set(entry.getKey(), values.get(0));
+					kvJsonObject.put(key, values.get(0));
 				} else {
-					kvJsonObject.set(entry.getKey(), values);
+					kvJsonObject.put(key, values);
 				}
 
 			}

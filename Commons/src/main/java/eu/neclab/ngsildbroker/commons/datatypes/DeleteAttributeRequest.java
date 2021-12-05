@@ -1,6 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -16,17 +20,18 @@ public class DeleteAttributeRequest extends EntityRequest {
 	private AppendResult appendResult;
 	private String appendOverwriteFlag;
 
-	public DeleteAttributeRequest(ArrayListMultimap<String, String> headers, String entityId, String entityBody,
-			String attrId, String datasetId, String deleteAll) throws ResponseException {
+	public DeleteAttributeRequest(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entityBody, String attrId, String datasetId, String deleteAll)
+			throws ResponseException {
 		super(AppConstants.OPERATION_DELETE_ATTRIBUTE_ENTITY, headers);
 		this.id = entityId;
 		generateDeleteAttrib(entityId, entityBody, attrId, datasetId, deleteAll);
 	}
 
-	private void generateDeleteAttrib(String entityId, String entityBody, String attrId, String datasetId,
+	private void generateDeleteAttrib(String entityId, Map<String, Object> entityBody, String attrId, String datasetId,
 			String deleteAll) throws ResponseException {
 		try {
-			JsonNode finalJson = deleteFields(entityBody, attrId, datasetId, deleteAll);
+			Map<String, Object> finalJson = deleteFields(entityBody, attrId, datasetId, deleteAll);
 			this.withSysAttrs = objectMapper.writeValueAsString(finalJson);
 			removeTemporalProperties(finalJson);
 			this.entityWithoutSysAttrs = objectMapper.writeValueAsString(finalJson);
@@ -39,30 +44,32 @@ public class DeleteAttributeRequest extends EntityRequest {
 	/**
 	 * Method to delete attributes from original Entity
 	 * 
-	 * @param originalJsonObject
+	 * @param entityBody
 	 * @param attrId
 	 * @return
 	 * @throws IOException
 	 * @throws ResponseException
 	 */
-	private JsonNode deleteFields(String originalJsonObject, String attrId, String datasetId, String deleteAll)
-			throws Exception, ResponseException {
+	private Map<String, Object> deleteFields(Map<String, Object> entityBody, String attrId, String datasetId,
+			String deleteAll) throws Exception, ResponseException {
 		logger.trace("deleteFields() :: started");
-		JsonNode node = objectMapper.readTree(originalJsonObject);
-		ObjectNode objectNode = (ObjectNode) node;
-		JsonNode innerNode = ((ArrayNode) objectNode.get(attrId));
-		ArrayNode myArray = (ArrayNode) innerNode;
+		// ArrayNode myArray = (ArrayNode) innerNode;
+
 		String availableDatasetId = null;
-		if (objectNode.has(attrId)) {
+		if (entityBody.containsKey(attrId)) {
 			// below condition remove the existing datasetId
+			List<Map<String, Object>> myArray = (List<Map<String, Object>>) entityBody.get(attrId);
 			if (datasetId != null && !datasetId.isEmpty()) {
-				for (int i = 0; i < myArray.size(); i++) {
-					if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
-								.get(NGSIConstants.JSON_LD_ID).asText();
+				Iterator<Map<String, Object>> it = myArray.iterator();
+				while (it.hasNext()) {
+					Map<String, Object> entry = it.next();
+					if (entry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						String payloadDatasetId = ((Map<String, Object>) ((List) entry
+								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID)
+										.toString();
 						if (payloadDatasetId.equals(datasetId)) {
 							availableDatasetId = "available";
-							myArray.remove(i);
+							it.remove();
 						}
 					}
 				}
@@ -72,9 +79,7 @@ public class DeleteAttributeRequest extends EntityRequest {
 				// below condition remove all the datasetId
 			} else if (deleteAll != null && !deleteAll.isEmpty()) {
 				if (deleteAll.equals("true")) {
-					if (objectNode.has(attrId)) {
-						objectNode.remove(attrId);
-					} else {
+					if (entityBody.remove(attrId) == null) {
 						throw new ResponseException(ErrorType.NotFound);
 					}
 				} else {
@@ -82,17 +87,20 @@ public class DeleteAttributeRequest extends EntityRequest {
 				}
 			} else {
 				// below condition remove the default datasetId
-				for (int i = 0; i < myArray.size(); i++) {
-					if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
-								.get(NGSIConstants.JSON_LD_ID).asText();
+				Iterator<Map<String, Object>> it = myArray.iterator();
+				while (it.hasNext()) {
+					Map<String, Object> entry = it.next();
+					if (entry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						String payloadDatasetId = ((List<Map<String, Object>>) entry
+								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID)
+										.toString();
 						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
 							availableDatasetId = "available";
-							myArray.remove(i);
+							it.remove();
 						}
 					} else {
 						availableDatasetId = "NotAvailable";
-						myArray.remove(i);
+						it.remove();
 					}
 				}
 				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
@@ -100,15 +108,13 @@ public class DeleteAttributeRequest extends EntityRequest {
 				}
 			}
 			if (myArray.size() == 0) {
-				if (objectNode.has(attrId)) {
-					objectNode.remove(attrId);
-				}
+				entityBody.remove(attrId);
 			}
 		} else {
 			throw new ResponseException(ErrorType.NotFound, "Attribute is not present");
 		}
 		logger.trace("deleteFields() :: completed");
-		return objectNode;
+		return entityBody;
 	}
 
 }

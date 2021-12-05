@@ -70,6 +70,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
 
+import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.core.RDFDataset;
+import com.github.jsonldjava.core.RDFDatasetUtils;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -93,44 +100,18 @@ public final class HttpUtils {
 	/** Timeout for all requests to respond. */
 	private static final Integer REQ_TIMEOUT_MS = 10000;
 
-	private static HttpUtils SINGLETON;
-
 	private static final int BUFFER_SIZE = 1024;
 
 	private static final Logger LOG = LoggerFactory.getLogger(HttpUtils.class);
 
 	private static final int DEFAULT_PROXY_PORT = 8080;
 
-	private HttpHost httpProxy = null;
+	private static HttpHost httpProxy = null;
 
-	private ContextResolverBasic contextResolver;
-	private Pattern headerPattern = Pattern.compile(
+	private static Pattern headerPattern = Pattern.compile(
 			"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
 
-	private HttpUtils(ContextResolverBasic contextResolver) {
-		this.contextResolver = contextResolver;
-		// Nothing to do, but make sure not more than one instance is created.
-	}
-
-	// Dummy instance with out context resolving. only used for gets and posts etc.
-	private static HttpUtils NULL_INSTANCE = new HttpUtils(null);
-
-	/**
-	 * Returns the singleton instance of this class.
-	 * 
-	 * @return an HttpUtils instance
-	 */
-	public static HttpUtils getInstance(ContextResolverBasic contextResolver) {
-		if (contextResolver == null) {
-			getSystemProxy(NULL_INSTANCE);
-			return NULL_INSTANCE;
-		}
-		if (SINGLETON == null) {
-			SINGLETON = new HttpUtils(contextResolver);
-			getSystemProxy(SINGLETON);
-		}
-		return SINGLETON;
-	}
+	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	private static void getSystemProxy(HttpUtils instance) {
 		String httpProxy = null;
@@ -185,50 +166,6 @@ public final class HttpUtils {
 
 	}
 
-	public String expandPayload(HttpServletRequest request, String payload, int endPoint)
-			throws ResponseException, MalformedURLException, UnsupportedEncodingException {
-
-		String ldResolved = null;
-
-		final String contentType = request.getContentType();
-		final List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
-		boolean isValidateContentType = false;
-		if (request.getMethod().equalsIgnoreCase(AppConstants.HTTP_METHOD_PATCH)) {
-			isValidateContentType = true;
-		}
-		// PayloadValidationRule rule = new PayloadValidationRule();
-		// rule.validateEntity(payload, request);
-
-		if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON)) {
-
-			ldResolved = contextResolver.expand(payload, linkHeaders, true, endPoint);
-
-		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSONLD)) {
-			if (!payload.contains("@context")) {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"You have to provide an @context entry in the body with Content-Type: "
-								+ AppConstants.NGB_APPLICATION_JSONLD);
-			}
-			if (payload.contains("@context") && !linkHeaders.isEmpty()) {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"You have to provide an @context entry in the body with Content-Type: "
-								+ AppConstants.NGB_APPLICATION_JSONLD);
-			}
-			ldResolved = contextResolver.expand(payload, null, true, endPoint);
-
-		} else if (contentType.equalsIgnoreCase(AppConstants.NGB_APPLICATION_JSON_PATCH)
-				&& (isValidateContentType == true)) {
-
-			ldResolved = contextResolver.expand(payload, linkHeaders, true, endPoint);
-
-		} else {
-			throw new ResponseException(ErrorType.UnsupportedMediaType,
-					"Missing or unknown Content-Type header. Content-Type header is mandatory. Only application/json or application/ld+json mime type is allowed");
-		}
-
-		return ldResolved;
-	}
-
 	/**
 	 * Set the HTTP Proxy that will be used for all future requests.
 	 * 
@@ -246,13 +183,13 @@ public final class HttpUtils {
 		}
 	}
 
-	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
+	private static String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
 			AuthScope authScope, UsernamePasswordCredentials credentials) throws IOException {
 		ErrorAwareResponseHandler handler = new ErrorAwareResponseHandler();
 		return doHTTPRequest2(uri, method, body, additionalHeaders, authScope, credentials, handler);
 	}
 
-	private String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
+	private static String doHTTPRequest(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
 			AuthScope authScope, UsernamePasswordCredentials credentials, ResponseHandler<String> handler)
 			throws IOException {
 		DefaultHttpClient httpClient = new DefaultHttpClient();
@@ -328,7 +265,7 @@ public final class HttpUtils {
 	 *                                    (this is an unchecked exception!)
 	 */
 
-	private String doHTTPRequest2(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
+	private static String doHTTPRequest2(URI uri, HTTPMethod method, Object body, Map<String, String> additionalHeaders,
 			AuthScope authScope, UsernamePasswordCredentials credentials, ResponseHandler<String> handler)
 			throws IOException {
 
@@ -387,7 +324,7 @@ public final class HttpUtils {
 		}
 	}
 
-	private CloseableHttpClient getClient(AuthScope authScope, UsernamePasswordCredentials credentials)
+	private static CloseableHttpClient getClient(AuthScope authScope, UsernamePasswordCredentials credentials)
 			throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
 		SSLContext sslContext = new SSLContextBuilder().loadTrustMaterial(null, (x509CertChain, authType) -> true)
 				.build();
@@ -408,7 +345,7 @@ public final class HttpUtils {
 		return temp.build();
 	}
 
-	private void addBody(File body, HttpEntityEnclosingRequest req) {
+	private static void addBody(File body, HttpEntityEnclosingRequest req) {
 		if (body != null) {
 			FileEntity fileEntity = new FileEntity(body);
 			req.setEntity(fileEntity);
@@ -416,21 +353,21 @@ public final class HttpUtils {
 
 	}
 
-	private void addBody(byte[] body, HttpEntityEnclosingRequest req) {
+	private static void addBody(byte[] body, HttpEntityEnclosingRequest req) {
 		if (body != null) {
 			ByteArrayEntity bodyEntity = new ByteArrayEntity(body, ContentType.APPLICATION_JSON);
 			req.setEntity(bodyEntity);
 		}
 	}
 
-	private void addBody(String body, HttpEntityEnclosingRequest req) {
+	private static void addBody(String body, HttpEntityEnclosingRequest req) {
 		if (body != null) {
 			StringEntity bodyEntity = new StringEntity(body, ContentType.APPLICATION_JSON);
 			req.setEntity(bodyEntity);
 		}
 	}
 
-	private void addHeaders(Map<String, String> headers, HttpRequest req) {
+	private static void addHeaders(Map<String, String> headers, HttpRequest req) {
 		for (Entry<String, String> entry : headers.entrySet()) {
 			req.addHeader(entry.getKey(), entry.getValue());
 		}
@@ -446,7 +383,7 @@ public final class HttpUtils {
 	 *                     specifically an {@link HttpErrorResponseException} if
 	 *                     something other than HTTP 200 OK was returned
 	 */
-	public String doGet(URI uri) throws IOException {
+	public static String doGet(URI uri) throws IOException {
 		return doGet(uri, null, null, null, null);
 	}
 
@@ -454,11 +391,12 @@ public final class HttpUtils {
 		return doGet(uri, null, handler);
 	}
 
-	public String doGet(URI uri, Map<String, String> headers) throws IOException {
+	public static String doGet(URI uri, Map<String, String> headers) throws IOException {
 		return doGet(uri, headers, null);
 	}
 
-	public String doGet(URI uri, Map<String, String> headers, ResponseHandler<String> handler) throws IOException {
+	public static String doGet(URI uri, Map<String, String> headers, ResponseHandler<String> handler)
+			throws IOException {
 		return doGet(uri, headers, null, null, handler);
 	}
 
@@ -487,7 +425,7 @@ public final class HttpUtils {
 		return doGet(uri, headers, authScope, credentials, null);
 	}
 
-	public String doGet(URI uri, Map<String, String> headers, AuthScope authScope,
+	public static String doGet(URI uri, Map<String, String> headers, AuthScope authScope,
 			UsernamePasswordCredentials credentials, ResponseHandler<String> handler) throws IOException {
 		if (handler == null) {
 			return doHTTPRequest(uri, HTTPMethod.GET, null, headers, authScope, credentials);
@@ -536,7 +474,7 @@ public final class HttpUtils {
 	 *                     specifically an {@link HttpErrorResponseException} if
 	 *                     something other than HTTP 200 OK was returned
 	 */
-	public String doPost(URI uri, Object body, Map<String, String> additionalHeaders) throws IOException {
+	public static String doPost(URI uri, Object body, Map<String, String> additionalHeaders) throws IOException {
 		return doPost(uri, body, additionalHeaders, null, null);
 	}
 
@@ -552,7 +490,7 @@ public final class HttpUtils {
 	 *                     specifically an {@link HttpErrorResponseException} if
 	 *                     something other than HTTP 200 OK was returned
 	 */
-	public String doPost(URI uri, Object body, Map<String, String> additionalHeaders, AuthScope authScope,
+	public static String doPost(URI uri, Object body, Map<String, String> additionalHeaders, AuthScope authScope,
 			UsernamePasswordCredentials credentials) throws IOException {
 		return doHTTPRequest(uri, HTTPMethod.POST, body, additionalHeaders, authScope, credentials);
 	}
@@ -849,17 +787,17 @@ public final class HttpUtils {
 		}
 	}
 
-	public static List<String> getAtContext(HttpServletRequest req) {
+	public static List<Object> getAtContext(HttpServletRequest req) {
 		return parseLinkHeader(req, NGSIConstants.HEADER_REL_LDCONTEXT);
 	}
 
-	public static List<String> parseLinkHeader(HttpServletRequest req, String headerRelLdcontext) {
+	public static List<Object> parseLinkHeader(HttpServletRequest req, String headerRelLdcontext) {
 		return parseLinkHeader(req.getHeaders("Link"), headerRelLdcontext);
 	}
 
-	public static List<String> parseLinkHeader(Enumeration<String> rawLinks, String headerRelLdcontext) {
+	public static List<Object> parseLinkHeader(Enumeration<String> rawLinks, String headerRelLdcontext) {
 
-		ArrayList<String> result = new ArrayList<String>();
+		ArrayList<Object> result = new ArrayList<Object>();
 		if (rawLinks == null) {
 			return result;
 		}
@@ -889,19 +827,20 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply) throws ResponseException {
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply)
+			throws ResponseException {
 		return generateReply(request, reply, null);
 
 	}
 
-	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
-			HashMap<String, List<String>> additionalHeaders) throws ResponseException {
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+			ArrayListMultimap<String, String> additionalHeaders) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, null);
 	}
 
-	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
-			HashMap<String, List<String>> additionalHeaders, List<Object> additionalContext) throws ResponseException {
-		return generateReply(request, reply, additionalHeaders, additionalContext, false);
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+			ArrayListMultimap<String, String> additionalHeaders, List<Object> context) throws ResponseException {
+		return generateReply(request, reply, additionalHeaders, context, false);
 	}
 
 	public static void main(String[] args) {
@@ -931,7 +870,7 @@ public final class HttpUtils {
 
 	}
 
-	private int parseAcceptHeader(Enumeration<String> acceptHeaders) {
+	private static int parseAcceptHeader(Enumeration<String> acceptHeaders) {
 		float q = 1;
 		int appGroup = -1;
 
@@ -975,82 +914,108 @@ public final class HttpUtils {
 		}
 	}
 
-	public ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
-			HashMap<String, List<String>> additionalHeaders, List<Object> additionalContext, boolean forceArrayResult)
-			throws ResponseException {
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
+			boolean forceArrayResult) throws ResponseException {
 		List<Object> requestAtContext = getAtContext(request);
-		if (additionalContext != null) {
-			requestAtContext.addAll(additionalContext);
+		if (additionalContext == null) {
+			additionalContext = new ArrayList<Object>();
+		}
+		if (requestAtContext != null) {
+			additionalContext.addAll(requestAtContext);
 		}
 
 		String replyBody;
 
-		CompactedJson compacted = contextResolver.compact(reply, requestAtContext);
-		ArrayList<String> temp = new ArrayList<String>();
-		if (additionalHeaders == null) {
-			additionalHeaders = new HashMap<String, List<String>>();
-		}
-		int sendingContentType = parseAcceptHeader(request.getHeaders(HttpHeaders.ACCEPT));
-		switch (sendingContentType) {
-		case 1:
-			temp.add(AppConstants.NGB_APPLICATION_JSON);
-			replyBody = compacted.getCompacted();
-			List<String> links = additionalHeaders.get(HttpHeaders.LINK);
-			if (links == null) {
-				links = new ArrayList<String>();
-				additionalHeaders.put(HttpHeaders.LINK, links);
-			}
-			links.add("<" + compacted.getContextUrl()
-					+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-			break;
-		case 2:
-			temp.add(AppConstants.NGB_APPLICATION_JSONLD);
-			if (compacted.getCompacted() == null || compacted.getCompacted().isEmpty()
-					|| compacted.getCompacted().trim().equals("{ }") || compacted.getCompacted().trim().equals("{}")) {
-				replyBody = "{ }";
+		// CompactedJson compacted = ContextResolverBasic.compact(reply,
+		// requestAtContext);
+		Map<String, Object> compacted;
+		try {
+			compacted = JsonLdProcessor.compact(JsonUtils.fromString(reply), additionalContext, opts);
+			Object context = compacted.get(JsonLdConsts.CONTEXT);
+			Object result;
+			Object graph = compacted.get(JsonLdConsts.GRAPH);
+			if (graph != null) {
+				result = graph;
 			} else {
-				replyBody = compacted.getCompactedWithContext();
+				result = compacted;
 			}
-			break;
-		case 3:
-			temp.add(AppConstants.NGB_APPLICATION_NQUADS);
-			replyBody = contextResolver.getRDF(reply);
-			break;
-		case -1:
-		default:
-			throw new ResponseException(ErrorType.InvalidRequest, "Provided accept types are not supported");
+			if (forceArrayResult && !(result instanceof List)) {
+				ArrayList<Object> temp = new ArrayList<Object>();
+				temp.add(result);
+				result = temp;
+			}
+			if (additionalHeaders == null) {
+				additionalHeaders = ArrayListMultimap.create();
+			}
+			int sendingContentType = parseAcceptHeader(request.getHeaders(HttpHeaders.ACCEPT));
+			switch (sendingContentType) {
+			case 1:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+				if (result instanceof Map) {
+					((Map) result).remove(JsonLdConsts.CONTEXT);
+				}
+				replyBody = JsonUtils.toPrettyString(result);
+				additionalHeaders.removeAll(HttpHeaders.LINK);
+				for (Object entry : additionalContext) {
+					if (entry instanceof String) {
+						additionalHeaders.put(HttpHeaders.LINK, "<" + entry
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+					}else {
+						additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+					}
+					
+
+				}
+				break;
+			case 2:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+				if (result instanceof List) {
+					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+					for (Map<String, Object> entry : list) {
+						entry.put(JsonLdConsts.CONTEXT, context);
+					}
+				}
+				replyBody = JsonUtils.toPrettyString(result);
+				break;
+			case 3:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
+				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(JsonUtils.fromString(reply)));
+				break;
+			case -1:
+			default:
+				throw new ResponseException(ErrorType.InvalidRequest, "Provided accept types are not supported");
+			}
+
+			boolean compress = false;
+			String options = request.getParameter(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
+				compress = true;
+			}
+			return generateReply(replyBody, additionalHeaders, compress);
+		} catch (JsonLdError | IOException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage().getBytes());
 		}
 
-		additionalHeaders.put(HttpHeaders.CONTENT_TYPE, temp);
-		if (forceArrayResult && !replyBody.startsWith("[")) {
-			if (replyBody.equals("{ }") || replyBody.equals("{}")) {
-				replyBody = "[]";
-			} else {
-				replyBody = "[" + replyBody + "]";
-			}
-		}
-		boolean compress = false;
-		String options = request.getParameter(NGSIConstants.QUERY_PARAMETER_OPTIONS);
-		if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
-			compress = true;
-		}
-		return generateReply(replyBody, additionalHeaders, compress);
 	}
 
-	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,
-			boolean compress) {
+	private static String getAtContextServing(Object entry) {
+		// TODO Auto-generated method stub
+		return "http change this";
+	}
+
+	public static ResponseEntity<byte[]> generateReply(String replyBody,
+			ArrayListMultimap<String, String> additionalHeaders, boolean compress) {
 		return generateReply(replyBody, additionalHeaders, HttpStatus.OK, compress);
 	}
 
-	public ResponseEntity<byte[]> generateReply(String replyBody, HashMap<String, List<String>> additionalHeaders,
-			HttpStatus status, boolean compress) {
+	public static ResponseEntity<byte[]> generateReply(String replyBody,
+			ArrayListMultimap<String, String> additionalHeaders, HttpStatus status, boolean compress) {
 		BodyBuilder builder = ResponseEntity.status(status);
 		if (additionalHeaders != null) {
-			for (Entry<String, List<String>> entry : additionalHeaders.entrySet()) {
-				for (String value : entry.getValue()) {
-					builder.header(entry.getKey(), value);
-				}
-
+			for (Entry<String, String> entry : additionalHeaders.entries()) {
+				builder.header(entry.getKey(), entry.getValue());
 			}
 		}
 		byte[] body;
@@ -1063,7 +1028,7 @@ public final class HttpUtils {
 		return builder.body(body);
 	}
 
-	private byte[] zipResult(String replyBody) {
+	private static byte[] zipResult(String replyBody) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ZipOutputStream zipOutputStream = new ZipOutputStream(baos);
 		ZipEntry entry = new ZipEntry("index.json");

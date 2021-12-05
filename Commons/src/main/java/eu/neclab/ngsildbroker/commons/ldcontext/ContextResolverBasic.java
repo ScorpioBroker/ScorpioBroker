@@ -50,26 +50,26 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 												// uses rawtypes
 public class ContextResolverBasic {
 	private final static Logger logger = LogManager.getLogger(ContextResolverBasic.class);
-	private URI CORE_CONTEXT_URL;
+	private static URI CORE_CONTEXT_URL;
 	@Value("${context.coreurl:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld}")
-	private String CORE_CONTEXT_URL_STR;
+	private static String CORE_CONTEXT_URL_STR;
 
 	// private String USED_CORE_CONTEXT_URL_STR;
 	// private URI DEFAULT_CONTEXT_URL;
 
 	@Autowired
-	KafkaOps kafkaOps;
+	private static KafkaOps kafkaOps;
 
 	@Autowired
-	AtContextProducerChannel producerChannel;
+	private static AtContextProducerChannel producerChannel;
 
-	private JsonLdOptions defaultOptions = new JsonLdOptions();
+	private static JsonLdOptions defaultOptions = new JsonLdOptions();
 
 	@Value("${atcontext.baseurl:http://localhost:9090/ngsi-ld/contextes/}")
-	private String AT_CONTEXT_BASE_URL;
+	private static String AT_CONTEXT_BASE_URL;
 	@Value("${selfhostcorecontext:http://localhost:9090/corecontext}")
 	private String SELF_HOST_CORE_CONTEXT_URL;
-	private HttpUtils httpUtils = HttpUtils.getInstance(this);
+//	private HttpUtils httpUtils = HttpUtils.getInstance(this);
 	private Map<String, Object> CORE_CONTEXT;
 	// private Map<String, Object> DEFAULT_CONTEXT;
 	private Map<String, Object> BASE_CONTEXT = new HashMap<String, Object>();
@@ -81,7 +81,7 @@ public class ContextResolverBasic {
 	private void setup() {
 		try {
 			CORE_CONTEXT_URL = new URI(CORE_CONTEXT_URL_STR);
-			String json = httpUtils.doGet(CORE_CONTEXT_URL);
+			String json = HttpUtils.doGet(CORE_CONTEXT_URL);
 			CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 			BASE_CONTEXT.putAll(CORE_CONTEXT);
 		} catch (URISyntaxException e) {
@@ -93,7 +93,7 @@ public class ContextResolverBasic {
 			// core context not reachable
 			try {
 				CORE_CONTEXT_URL = new URI(SELF_HOST_CORE_CONTEXT_URL);
-				String json = httpUtils.doGet(CORE_CONTEXT_URL);
+				String json = HttpUtils.doGet(CORE_CONTEXT_URL);
 				CORE_CONTEXT = (Map<String, Object>) ((Map) JsonUtils.fromString(json)).get("@context");
 				BASE_CONTEXT.putAll(CORE_CONTEXT);
 			} catch (URISyntaxException e1) {
@@ -152,11 +152,11 @@ public class ContextResolverBasic {
 		}
 	}
 
-	public String expand(String body, List<Object> contextLinks, boolean check, int endPoint) throws ResponseException {
+	public String expand(String body, List<String> context, boolean check, int endPoint) throws ResponseException {
 		try {
 			Object obj = JsonUtils.fromString(body);
 			if (obj instanceof Map) {
-				return expand((Map<String, Object>) obj, contextLinks, check, endPoint);
+				return expand((Map<String, Object>) obj, context, check, endPoint);
 			}
 			if (obj instanceof List) {
 				List<Object> list = (List<Object>) obj;
@@ -165,7 +165,7 @@ public class ContextResolverBasic {
 				}
 				StringBuilder result = new StringBuilder("[");
 				for (Object listObj : list) {
-					result.append(expand((Map<String, Object>) listObj, contextLinks, check, endPoint));
+					result.append(expand((Map<String, Object>) listObj, context, check, endPoint));
 					result.append(",");
 				}
 				result.setCharAt(result.length() - 1, ']');
@@ -178,7 +178,8 @@ public class ContextResolverBasic {
 		}
 	}
 
-	private Map<Integer, List<Object>> expand(Map<String, Object> json, List<Object> contextLinks) throws ResponseException {
+	private Map<Integer, List<Object>> expand(Map<String, Object> json, List<String> contextLinks)
+			throws ResponseException {
 		Object tempCtx = json.get(NGSIConstants.JSON_LD_CONTEXT);
 		List<Object> context;
 		if (tempCtx == null) {
@@ -194,24 +195,24 @@ public class ContextResolverBasic {
 			context.addAll(contextLinks);
 		}
 		try {
-		ArrayList<Object> usedContext = new ArrayList<Object>();
+			ArrayList<Object> usedContext = new ArrayList<Object>();
 
-		usedContext.addAll(context);
-		usedContext.remove(CORE_CONTEXT_URL_STR);
-		usedContext.add(BASE_CONTEXT);
+			usedContext.addAll(context);
+			usedContext.remove(CORE_CONTEXT_URL_STR);
+			usedContext.add(BASE_CONTEXT);
 
-		json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
-        
-		Map<Integer, List<Object>> result = new HashMap<Integer, List<Object>>();
-		result.put(1, JsonLdProcessor.expand(json));
-		result.put(2, usedContext);
-		return result;
+			json.put(NGSIConstants.JSON_LD_CONTEXT, usedContext);
+
+			Map<Integer, List<Object>> result = new HashMap<Integer, List<Object>>();
+			result.put(1, JsonLdProcessor.expand(json));
+			result.put(2, usedContext);
+			return result;
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.LdContextNotAvailable, e.getMessage());
 		}
 	}
 
-	public String expand(Map<String, Object> json, List<Object> contextLinks, boolean check, int endPoint)
+	public String expand(Map<String, Object> json, List<String> contextLinks, boolean check, int endPoint)
 			throws ResponseException {
 		try {
 			// if(!
@@ -369,7 +370,7 @@ public class ContextResolverBasic {
 
 	}
 
-	public Subscription expandSubscription(String body, List<Object> contextLinks) throws ResponseException {
+	public Subscription expandSubscription(String body, List<String> contextLinks) throws ResponseException {
 		Subscription subscription = new Subscription();
 
 		Map<Integer, List<Object>> expanded;
@@ -958,7 +959,7 @@ public class ContextResolverBasic {
 	 * }
 	 */
 
-	private void unprotectGeoProps(Map<String, Object> objMap) throws JsonParseException, IOException {
+	private static void unprotectGeoProps(Map<String, Object> objMap) throws JsonParseException, IOException {
 		boolean typeFound = false;
 		Object value = null;
 		for (Entry<String, Object> mapEntry : objMap.entrySet()) {
@@ -1015,7 +1016,7 @@ public class ContextResolverBasic {
 
 	}
 
-	private void unprotectGeoProps(List<Object> objList) throws JsonParseException, IOException {
+	private static void unprotectGeoProps(List<Object> objList) throws JsonParseException, IOException {
 		for (Object entry : objList) {
 			if (entry instanceof Map) {
 
@@ -1034,7 +1035,7 @@ public class ContextResolverBasic {
 	 * @return rdf representation of entity/entities
 	 * @throws ResponseException
 	 */
-	public String getRDF(String body) throws ResponseException {
+	public static String getRDF(String body) throws ResponseException {
 		try {
 			RDFDataset rdf = (RDFDataset) JsonLdProcessor.toRDF(JsonUtils.fromString(body), defaultOptions);
 
@@ -1048,7 +1049,7 @@ public class ContextResolverBasic {
 		}
 	}
 
-	public CompactedJson compact(String body, List<Object> contextLinks) throws ResponseException {
+	public static CompactedJson compact(String body, List<String> contextLinks) throws ResponseException {
 		try {
 			Object json = JsonUtils.fromString(body);
 			Map<String, Object> context = new HashMap<String, Object>();
@@ -1086,7 +1087,7 @@ public class ContextResolverBasic {
 		}
 	}
 
-	private CompactedJson compact(Object json, Map<String, Object> context, List<Object> rawContext)
+	private static CompactedJson compact(Object json, Map<String, Object> context, List<String> rawContext)
 			throws ResponseException {
 		// validateAndCleanContext(context);
 		CompactedJson result = new CompactedJson();
@@ -1128,7 +1129,7 @@ public class ContextResolverBasic {
 		return result;
 	}
 
-	private void cleanExpandedJson(Object json) {
+	private static void cleanExpandedJson(Object json) {
 		if (json instanceof List) {
 			List tempList = (List) json;
 			for (Object entry : tempList) {
@@ -1154,7 +1155,7 @@ public class ContextResolverBasic {
 
 	}
 
-	private String generateAtContextServing(List<Object> rawContext, int hash) {
+	private static String generateAtContextServing(List<String> rawContext, int hash) {
 		ArrayList<Object> sorted = new ArrayList<Object>();
 		if (rawContext != null && !rawContext.isEmpty()) {
 			sorted.addAll(rawContext);
@@ -1171,7 +1172,7 @@ public class ContextResolverBasic {
 		return AT_CONTEXT_BASE_URL + hash;
 	}
 
-	private Map<String, Object> getFullContext(Object context) throws ResponseException {
+	private static Map<String, Object> getFullContext(Object context) throws ResponseException {
 		Map<String, Object> result = new HashMap<String, Object>();
 		if (context instanceof String) {
 			// just another url
@@ -1219,10 +1220,10 @@ public class ContextResolverBasic {
 		return result;
 	}
 
-	private Map<String, Object> getRemoteContext(String url) throws ResponseException {
+	private static Map<String, Object> getRemoteContext(String url) throws ResponseException {
 		try {
 
-			String body = httpUtils.doGet(new URI(url));
+			String body = HttpUtils.doGet(new URI(url));
 			Map<String, Object> remoteContext = (Map<String, Object>) JsonUtils.fromString(body);
 			Object temp = remoteContext.get(NGSIConstants.JSON_LD_CONTEXT);
 			if (temp == null) {

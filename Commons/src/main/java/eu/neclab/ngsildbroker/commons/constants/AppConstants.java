@@ -56,7 +56,7 @@ public class AppConstants {
 	public static final String REQUEST_WOA = "withoutAtts";
 	public static final String REQUEST_T = "type";
 	public static final String REQUEST_ID = "id";
-	public static final String REQUEST_OV = "ov";	
+	public static final String REQUEST_OV = "ov";
 	public static final String REQUEST_HD = "headers";
 	public static final String REQUEST_CSOURCE = "CSource";
 	public static final String INTERNAL_NULL_KEY = ")$%^&";
@@ -74,6 +74,12 @@ public class AppConstants {
 	public static final int TEMP_ENTITY_UPDATE_PAYLOAD = 7;
 	public static final int TEMP_ENTITY_RETRIEVED_PAYLOAD = 8;
 	public static final int ENTITY_ATTRS_UPDATE_PAYLOAD = 9;
-	public static final Pattern DATE_TIME_MATCHER = Pattern.compile("\\d\\d\\d\\d-(0[1-9]|1[0-2])-(0[0-9]|[1-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d{1,6})?Z");
+	public static final Pattern DATE_TIME_MATCHER = Pattern.compile(
+			"\\d\\d\\d\\d-(0[1-9]|1[0-2])-(0[0-9]|[1-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d{1,6})?Z");
+	public static final List<String> FORCE_ARRAY_FIELDS = Arrays.asList(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES,
+			NGSIConstants.NGSI_LD_ENTITIES, NGSIConstants.NGSI_LD_PROPERTIES, NGSIConstants.NGSI_LD_RELATIONSHIPS,
+			NGSIConstants.NGSI_LD_INFORMATION, NGSIConstants.NGSI_LD_RECEIVERINFO, NGSIConstants.NGSI_LD_NOTIFIERINFO);
+	public static final int ATTRIBUTE_PAYLOAD = 11;
+	public static final int NOTIFICAITION_RECEIVED = 12;
 
 }

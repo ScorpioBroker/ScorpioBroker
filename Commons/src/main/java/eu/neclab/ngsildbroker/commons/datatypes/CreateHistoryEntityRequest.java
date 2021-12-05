@@ -1,8 +1,15 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -16,9 +23,8 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 
-	JsonParser parser = new JsonParser();
 	private boolean fromEntity;
-	private JsonObject jsonObject;
+
 	private URI uriId;
 	private int attributeCount;
 
@@ -48,19 +54,23 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 
 	/**
 	 * Serialization constructor
-	 * @param entityRequest 
-	 * @throws ResponseException 
+	 * 
+	 * @param entityRequest
+	 * @throws ResponseException
+	 * @throws IOException
+	 * @throws JsonParseException
 	 */
-	public CreateHistoryEntityRequest(EntityRequest entityRequest) throws ResponseException {
-		this(entityRequest.getHeaders(), entityRequest.getWithSysAttrs(), true);
+	public CreateHistoryEntityRequest(EntityRequest entityRequest) throws ResponseException, IOException {
+		this(entityRequest.getHeaders(), (Map<String, Object>) JsonUtils.fromString(entityRequest.getWithSysAttrs()),
+				true);
 	}
 
-	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers, String payload, boolean fromEntity)
-			throws ResponseException {
-		super(headers, payload);
+	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			boolean fromEntity) throws ResponseException {
+		super(headers, resolved);
 		this.fromEntity = fromEntity;
 		try {
-			createTemporalEntity(payload, fromEntity);
+			createTemporalEntity(resolved, fromEntity);
 		} catch (ResponseException e) {
 			throw e;
 		} catch (Exception e) {
@@ -68,37 +78,35 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 		}
 		// super(AppConstants.OPERATION_CREATE_HISTORY_ENTITY, headers);
 	}
-	
-	private void createTemporalEntity(String payload, boolean fromEntity) throws ResponseException, Exception {
-		this.jsonObject = parser.parse(payload).getAsJsonObject();
-		if (jsonObject.get(NGSIConstants.JSON_LD_ID) == null || jsonObject.get(NGSIConstants.JSON_LD_TYPE) == null) {
-			throw new ResponseException(ErrorType.InvalidRequest, "id and type are required fields");
-		}
+
+	private void createTemporalEntity(Map<String, Object> resolved, boolean fromEntity)
+			throws ResponseException, Exception {
 		this.attributeCount = 0;
-		if (jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT) == null
-				|| jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT) == null) {
-			JsonArray temp = new JsonArray();
-			JsonObject tempObj = new JsonObject();
-			tempObj.addProperty(NGSIConstants.JSON_LD_TYPE, "DateTime");
-			tempObj.addProperty(NGSIConstants.JSON_LD_VALUE, now);
+		if (resolved.get(NGSIConstants.NGSI_LD_CREATED_AT) == null
+				|| resolved.get(NGSIConstants.NGSI_LD_CREATED_AT) == null) {
+			ArrayList<Object> temp = new ArrayList<Object>();
+			HashMap<String, Object> tempObj = new HashMap<String, Object>();
+			tempObj.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+			tempObj.put(NGSIConstants.JSON_LD_VALUE, now);
 			temp.add(tempObj);
-			if (jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT) == null) {
-				jsonObject.add(NGSIConstants.NGSI_LD_CREATED_AT, temp);
+			if (resolved.get(NGSIConstants.NGSI_LD_CREATED_AT) == null) {
+				resolved.put(NGSIConstants.NGSI_LD_CREATED_AT, temp);
 			}
-			if (jsonObject.get(NGSIConstants.NGSI_LD_MODIFIED_AT) == null) {
-				jsonObject.add(NGSIConstants.NGSI_LD_MODIFIED_AT, temp);
+			if (resolved.get(NGSIConstants.NGSI_LD_MODIFIED_AT) == null) {
+				resolved.put(NGSIConstants.NGSI_LD_MODIFIED_AT, temp);
 			}
 		}
 
-		this.id = jsonObject.get(NGSIConstants.JSON_LD_ID).getAsString();
-		this.type = jsonObject.get(NGSIConstants.JSON_LD_TYPE).getAsJsonArray().get(0).getAsString();
-		this.createdAt = jsonObject.get(NGSIConstants.NGSI_LD_CREATED_AT).getAsJsonArray().get(0).getAsJsonObject()
-				.get(NGSIConstants.JSON_LD_VALUE).getAsString();
-		this.modifiedAt = jsonObject.get(NGSIConstants.NGSI_LD_MODIFIED_AT).getAsJsonArray().get(0).getAsJsonObject()
-				.get(NGSIConstants.JSON_LD_VALUE).getAsString();
+		this.id = (String) resolved.get(NGSIConstants.JSON_LD_ID);
+		this.type = (String) ((List) resolved.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+		this.createdAt = (String) ((List<Map<String, Object>>) resolved.get(NGSIConstants.NGSI_LD_CREATED_AT)).get(0)
+				.get(NGSIConstants.JSON_LD_VALUE);
+		this.modifiedAt = (String) ((List<Map<String, Object>>) resolved.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
+				.get(NGSIConstants.JSON_LD_VALUE);
 
 		Integer attributeCount = 0;
-		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
+
+		for (Entry<String, Object> entry : resolved.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
@@ -109,14 +117,15 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 			}
 
 			String attribId = entry.getKey();
-			// Boolean createTemporalEntityIfNotExists = (attributeCount == 0); // if it's the first attribute, create the
-																				// //
+			// Boolean createTemporalEntityIfNotExists = (attributeCount == 0); // if it's
+			// the first attribute, create the
+			// //
 			// temporalentity record
 
-			if (entry.getValue().isJsonArray()) {
-				JsonArray valueArray = entry.getValue().getAsJsonArray();
+			if (entry.getValue() instanceof List) {
+				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
 				// TODO check if changes in the array are reflect in the object
-				for (JsonElement jsonElement : valueArray) {
+				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity);
 					storeEntry(id, type, createdAt, modifiedAt, attribId, jsonElement.toString(), false);
 					// pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId,
@@ -125,6 +134,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 			}
 			attributeCount++;
 		}
+		this.payload = resolved;
 		// attributeCount++; //move out }if(attributeCount==0)
 
 		// { // create empty temporalentity (no attributes) TemporalEntityStorageKey
@@ -139,5 +149,4 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 		this.uriId = new URI(AppConstants.HISTORY_URL + id);
 	}
 
-	
 }
