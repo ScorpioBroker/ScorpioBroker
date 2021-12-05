@@ -72,9 +72,19 @@ public class JsonLdProcessor {
 			compacted = tmp;
 			// }
 		}
+		if (context == null) {
+			context = new ArrayList<Object>();
+		}
 		if (compacted != null && context != null) {
 			// TODO: figure out if we can make "@context" appear at the start of
 			// the keySet
+			if (context instanceof List) {
+				((List) context).add(coreContextUrl);
+			} else {
+				ArrayList<Object> temp = new ArrayList<Object>();
+				temp.add(context);
+				temp.add(coreContextUrl);
+			}
 			if ((context instanceof Map && !((Map<String, Object>) context).isEmpty())
 					|| (context instanceof List && !((List<Object>) context).isEmpty())) {
 
