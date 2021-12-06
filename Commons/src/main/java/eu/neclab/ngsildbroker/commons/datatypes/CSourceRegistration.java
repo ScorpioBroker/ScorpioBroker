@@ -24,6 +24,7 @@ public class CSourceRegistration {
 	private String name;
 	private TimeInterval timestamp;
 	private boolean isInternal = false;
+	private TimeManagement timeManagement;
 
 	/**
 	 * a
@@ -159,12 +160,20 @@ public class CSourceRegistration {
 	public void setTenant(URI tenant) {
 		this.tenant = tenant;
 	}
+	
+	public TimeManagement getTimeManagement() {
+		return timeManagement;
+	}
+
+	public void setTimeManagement(TimeManagement timeManagement) {
+		this.timeManagement = timeManagement;
+	}
 
 	@Override
 	public String toString() {
 		return "CSourceRegistration [description=" + description + ", endpoint=" + endpoint + ", expires=" + expires
 				+ ", id=" + id + ", information=" + information + ", location=" + location + ", name=" + name
-				+ ", timestamp=" + timestamp + ", type=" + type + " ,tenant=" + tenant + "]";
+				+ ", timestamp=" + timestamp + ", type=" + type + " ,tenant=" + tenant +" timeManagement=" + timeManagement +"]";
 	}
 
 	@Override

@@ -109,6 +109,7 @@ abstract public class StorageReaderDAO {
 			if (qp.getCheck() != null) {
 				String sqlQuery = typesAndAttributeQuery(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
@@ -121,6 +122,7 @@ abstract public class StorageReaderDAO {
 				}
 				String sqlQuery = translateNgsildQueryToSql(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
 				String sqlQueryCount = translateNgsildQueryToCountResult(qp);
 				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
@@ -129,6 +131,7 @@ abstract public class StorageReaderDAO {
 			} else {
 				String sqlQuery = translateNgsildQueryToSql(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
@@ -308,8 +311,8 @@ abstract public class StorageReaderDAO {
 			String expandedAttributeList = "'" + NGSIConstants.JSON_LD_ID + "','" + NGSIConstants.JSON_LD_TYPE + "','"
 					+ qp.getAttrs().replace(",", "','") + "'";
 			if (qp.getIncludeSysAttrs()) {
-				expandedAttributeList += "," + NGSIConstants.NGSI_LD_CREATED_AT + ","
-						+ NGSIConstants.NGSI_LD_MODIFIED_AT;
+				expandedAttributeList += ",'" + NGSIConstants.NGSI_LD_CREATED_AT + "','"
+						+ NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
 			}
 			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each(" + tableDataColumn + ") WHERE key IN ( "
 					+ expandedAttributeList + "))";
