@@ -12,6 +12,7 @@ import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.impl.NQuadRDFParser;
 import com.github.jsonldjava.impl.NQuadTripleCallback;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 /**
@@ -41,13 +42,15 @@ public class JsonLdProcessor {
 	 *                compaction algorithm.
 	 * @return The compacted JSON-LD document
 	 * @throws JsonLdError If there is an error while compacting.
+	 * @throws ResponseException 
 	 */
-	public static Map<String, Object> compact(Object input, Object context, JsonLdOptions opts) throws JsonLdError {
+	public static Map<String, Object> compact(Object input, Object context, JsonLdOptions opts) throws JsonLdError, ResponseException {
 		// 1)
 		// TODO: look into java futures/promises
 
 		// 2-6) NOTE: these are all the same steps as in expand
-		final Object expanded = input;// expand(input, opts);
+		
+		final Object expanded = expand(null, input, opts, -1, true);//input;// 
 		// 7)
 		// NGSIComment: No need to do this expanded items do contain @context
 		/*
@@ -56,7 +59,9 @@ public class JsonLdProcessor {
 		 * Object>) context).get(JsonLdConsts.CONTEXT); }
 		 */
 		Context activeCtx = coreContext.clone();
-		activeCtx = activeCtx.parse(context, false);
+		if (context != null) {
+			activeCtx = activeCtx.parse(context, true);
+		}
 		// 8)
 		Object compacted = new JsonLdApi(opts).compact(activeCtx, null, expanded, opts.getCompactArrays());
 
@@ -138,7 +143,7 @@ public class JsonLdProcessor {
 		// 3)
 		Context activeCtx = coreContext.clone();
 		if (contextLinks != null) {
-			activeCtx.parse(contextLinks, true);
+			activeCtx = activeCtx.parse(contextLinks, true);
 		}
 		// 4)
 		if (opts.getExpandContext() != null) {
