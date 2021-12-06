@@ -45,6 +45,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
+import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
@@ -105,10 +106,6 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@Autowired
 	ObjectMapper objectMapper;
-
-	@Autowired
-	@Qualifier("smqueryParser")
-	QueryParser queryParser;
 
 	@Autowired
 	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
@@ -224,8 +221,8 @@ public class SubscriptionService implements SubscriptionManager {
 		this.tenant2subscriptionId2Subscription.put(subscriptionRequest.getTenant(), subscription.getId().toString(),
 				subscriptionRequest);
 		if (subscription.getLdQuery() != null && !subscription.getLdQuery().trim().equals("")) {
-			subscription
-					.setQueryTerm(queryParser.parseQuery(subscription.getLdQuery(), subscriptionRequest.getContext()));
+			subscription.setQueryTerm(QueryParser.parseQuery(subscription.getLdQuery(),
+					JsonLdProcessor.coreContext.clone().parse(subscriptionRequest.getContext(), true)));
 		}
 		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 		if (subscription.getTimeInterval() > 0) {

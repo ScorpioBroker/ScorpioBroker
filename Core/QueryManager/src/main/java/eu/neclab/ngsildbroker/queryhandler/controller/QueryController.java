@@ -10,6 +10,7 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -235,7 +239,9 @@ public class QueryController {// implements QueryHandlerInterface {
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 			}
 			// long prelink = System.currentTimeMillis();
-			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			Context context = JsonLdProcessor.coreContext.clone();
+			context = context.parse(linkHeaders, true);
 			// long postlink = System.currentTimeMillis();
 			if (retrieve || request.getRequestURI().equals(MY_REQUEST_URL)
 					|| request.getRequestURI().equals(MY_REQUEST_URL_ALT)) {
@@ -244,7 +250,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					if (originalQueryParams != null) {
 						originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
 					}
-					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(paramMap, linkHeaders);
+					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(paramMap, context);
 					if (qp == null) // invalid query
 						throw new ResponseException(ErrorType.InvalidRequest);
 					qp.setTenant(tenantid);
@@ -256,7 +262,7 @@ public class QueryController {// implements QueryHandlerInterface {
 						ArrayList<String> expandedAttrs = new ArrayList<String>();
 						for (String attrib : attrs) {
 							try {
-								expandedAttrs.add(paramsResolver.expandAttribute(attrib, linkHeaders));
+								expandedAttrs.add(paramsResolver.expandAttribute(attrib, context));
 							} catch (ResponseException exception) {
 								continue;
 							}
@@ -278,7 +284,7 @@ public class QueryController {// implements QueryHandlerInterface {
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}
 					// long pregenresult = System.currentTimeMillis();
-					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve, countResult);
+					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve, countResult, context);
 					// long end = System.currentTimeMillis();
 					// System.err.println(start);
 					// System.err.println(prelink);
@@ -336,10 +342,10 @@ public class QueryController {// implements QueryHandlerInterface {
 	}
 
 	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult,
-			boolean forceArray, boolean count) throws ResponseException {
+			boolean forceArray, boolean count, Context context) throws ResponseException {
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
-		ArrayList<String> additionalLinks = new ArrayList<String>();
+		ArrayList<Object> additionalLinks = new ArrayList<Object>();
 		if (nextLink != null) {
 			additionalLinks.add(nextLink);
 		}
@@ -352,9 +358,11 @@ public class QueryController {// implements QueryHandlerInterface {
 		}
 
 		if (!additionalLinks.isEmpty()) {
-			additionalHeaders.putAll(HttpHeaders.LINK, additionalLinks);
+			for (Object entry : additionalLinks) {
+				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
+			}
 		}
 		return HttpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
-				additionalHeaders, null, forceArray);
+				additionalHeaders, context, additionalLinks, forceArray);
 	}
 }

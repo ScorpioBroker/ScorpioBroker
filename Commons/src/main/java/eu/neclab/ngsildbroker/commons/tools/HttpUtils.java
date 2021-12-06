@@ -70,6 +70,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -922,6 +923,13 @@ public final class HttpUtils {
 		if (requestAtContext != null) {
 			additionalContext.addAll(requestAtContext);
 		}
+		Context context = JsonLdProcessor.coreContext.clone().parse(additionalContext, true);
+		return generateReply(request, reply, additionalHeaders, context, additionalContext, forceArrayResult);
+	}
+
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> additionalContext,
+			boolean forceArrayResult) throws ResponseException {
 
 		String replyBody;
 
@@ -929,7 +937,7 @@ public final class HttpUtils {
 		// requestAtContext);
 		Map<String, Object> compacted;
 		try {
-			compacted = JsonLdProcessor.compact(JsonUtils.fromString(reply), additionalContext, opts);
+			compacted = JsonLdProcessor.compact(JsonUtils.fromString(reply), ldContext, opts);
 			Object context = compacted.get(JsonLdConsts.CONTEXT);
 			Object result;
 			Object graph = compacted.get(JsonLdConsts.GRAPH);
@@ -959,11 +967,10 @@ public final class HttpUtils {
 					if (entry instanceof String) {
 						additionalHeaders.put(HttpHeaders.LINK, "<" + entry
 								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					}else {
+					} else {
 						additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
 								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 					}
-					
 
 				}
 				break;

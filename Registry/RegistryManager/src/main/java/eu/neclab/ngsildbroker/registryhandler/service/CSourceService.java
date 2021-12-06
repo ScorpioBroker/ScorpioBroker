@@ -82,10 +82,6 @@ public class CSourceService {
 	@Autowired
 	CSourceSubscriptionService csourceSubService;
 
-	@Autowired
-	@Qualifier("rmqueryParser")
-	QueryParser queryParser;
-
 	@Value("${csource.source.topic}")
 	String CSOURCE_TOPIC;
 

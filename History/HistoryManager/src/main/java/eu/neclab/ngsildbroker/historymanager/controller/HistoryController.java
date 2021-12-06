@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -103,8 +104,10 @@ public class HistoryController {
 
 		try {
 			logger.trace("retrieveTemporalEntity :: started");
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(),
-					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
+			Context context = JsonLdProcessor.coreContext.clone();
+			List<Object> links = HttpUtils.getAtContext(request);
+			context = context.parse(links, true);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), context, true);
 			if (limit == null) {
 				limit = defaultLimit;
 			}
@@ -176,8 +179,10 @@ public class HistoryController {
 			Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
 			String[] entityArray = new String[] { entityId };
 			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam,
-					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
+			Context context = JsonLdProcessor.coreContext.clone();
+			List<Object> links = HttpUtils.getAtContext(request);
+			context = context.parse(links, true);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
@@ -205,16 +210,18 @@ public class HistoryController {
 			Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
 			String[] entityArray = new String[] { entityId };
 			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam,
-					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);
+			Context context = JsonLdProcessor.coreContext.clone();
+			List<Object> links = HttpUtils.getAtContext(request);
+			context = context.parse(links, true);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
 			if (queryResult.isEmpty()) {
 				throw new ResponseException(ErrorType.NotFound);
 			}
-			historyService.delete(HttpUtils.getHeaders(request), entityId, null, null,
-					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
+
+			historyService.delete(HttpUtils.getHeaders(request), entityId, null, null, context);
 			logger.trace("deleteTemporalEntityById :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
@@ -261,10 +268,12 @@ public class HistoryController {
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
 			ValidateURI.validateUri(entityId);
+			Context context = JsonLdProcessor.coreContext.clone();
+			List<Object> links = HttpUtils.getAtContext(request);
+			context = context.parse(links, true);
 			logger.trace("deleteAttrib2TemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId);
-			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null,
-					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
+			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null, context);
 			logger.trace("deleteAttrib2TemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
@@ -284,15 +293,18 @@ public class HistoryController {
 		try {
 			logger.trace("modifyAttribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
+			Context context = JsonLdProcessor.coreContext.clone();
+			List<Object> links = HttpUtils.getAtContext(request);
+			context = context.parse(links, true);
 
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
-							AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+					.expand(links, JsonUtils.fromString(payload), opts, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD,
+							HttpUtils.doPreflightCheck(request))
 					.get(0);
 			// TODO : TBD- conflict between specs and implementation <mentioned no request
 			// body in specs>
 			historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId, resolved, attrId,
-					instanceId, HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
+					instanceId, context);
 			logger.trace("modifyAttribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
@@ -312,8 +324,11 @@ public class HistoryController {
 		try {
 			logger.trace("deleteAtrribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
-			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId,
-					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT));
+			Context context = JsonLdProcessor.coreContext.clone();
+			List<Object> links = HttpUtils.getAtContext(request);
+			context = context.parse(links, true);
+
+			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId, context);
 			logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {

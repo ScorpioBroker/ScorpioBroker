@@ -58,11 +58,7 @@ public class EntityHandler {
 		return new ParamsResolver();
 	}
 	
-	@Bean("emqueryparser")
-	@Primary
-	QueryParser queryParser() {
-		return new QueryParser();
-	}
+
 	
 	@Bean("emtopicmap")
 	@Primary

@@ -58,9 +58,15 @@ public class JsonLdProcessor {
 		 * context).containsKey(JsonLdConsts.CONTEXT)) { context = ((Map<String,
 		 * Object>) context).get(JsonLdConsts.CONTEXT); }
 		 */
-		Context activeCtx = coreContext.clone();
+		
+		Context activeCtx;
+		if(context != null && context instanceof Context) {
+			activeCtx = (Context) context;
+		}else {
+		activeCtx = coreContext.clone();
 		if (context != null) {
 			activeCtx = activeCtx.parse(context, true);
+		}
 		}
 		// 8)
 		Object compacted = new JsonLdApi(opts).compact(activeCtx, null, expanded, opts.getCompactArrays());

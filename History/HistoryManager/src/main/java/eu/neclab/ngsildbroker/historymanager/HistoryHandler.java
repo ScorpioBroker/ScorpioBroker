@@ -54,10 +54,6 @@ public class HistoryHandler {
 	}
 	
 	@Bean
-	QueryParser queryParser() {
-		return new QueryParser();
-	}
-	@Bean
 	ParamsResolver paramsResolver() {
 		return new ParamsResolver();
 	}

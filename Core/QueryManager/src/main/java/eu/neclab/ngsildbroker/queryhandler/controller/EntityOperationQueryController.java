@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -54,8 +55,6 @@ public class EntityOperationQueryController {
 	@Value("${maxLimit}")
 	int maxLimit = 1000;
 
-	@Autowired
-	QueryParser queryParser;
 
 	@Autowired
 	ObjectMapper objectMapper;
@@ -85,6 +84,10 @@ public class EntityOperationQueryController {
 			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				linkHeaders.add((String) rawPayload.get(NGSIConstants.JSON_LD_CONTEXT));
 			}
+			Context context = JsonLdProcessor.coreContext.clone();
+
+			context = context.parse(linkHeaders, true);
+
 			QueryParams params = new QueryParams();
 			if (limit == null) {
 				limit = defaultLimit;
@@ -99,8 +102,7 @@ public class EntityOperationQueryController {
 					List<Map<String, String>> attrs = (List<Map<String, String>>) entry.getValue();
 					StringBuilder builder = new StringBuilder();
 					for (Map<String, String> attr : attrs) {
-						builder.append(
-								paramsResolver.expandAttribute(attr.get(NGSIConstants.JSON_LD_VALUE), linkHeaders));
+						builder.append(paramsResolver.expandAttribute(attr.get(NGSIConstants.JSON_LD_VALUE), context));
 						builder.append(',');
 					}
 					params.setAttrs(builder.substring(0, builder.length() - 1));
@@ -134,10 +136,10 @@ public class EntityOperationQueryController {
 						params.setGeoproperty((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEOPROPERTY)));
 					}
 					params.setGeorel(
-							queryParser.parseGeoRel((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEO_REL))));
+							QueryParser.parseGeoRel((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEO_REL))));
 					break;
 				case NGSIConstants.NGSI_LD_QUERY:
-					params.setQ(queryParser.parseQuery((String) getValue(entry.getValue()), linkHeaders).toSql(false));
+					params.setQ(QueryParser.parseQuery((String) getValue(entry.getValue()), context).toSql(false));
 					break;
 				case NGSIConstants.JSON_LD_TYPE:
 					if (entry.getValue() instanceof List) {
@@ -160,7 +162,7 @@ public class EntityOperationQueryController {
 			params.setIncludeSysAttrs(
 					(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)));
 			return QueryController.generateReply(request, queryService.getData(params, payload, linkHeaders, limit,
-					offset, qToken, false, count, HttpUtils.getHeaders(request), true), true, count);
+					offset, qToken, false, count, HttpUtils.getHeaders(request), true), true, count, context);
 
 		} catch (IOException e) {
 			logger.error("Failed to parse request data", e);

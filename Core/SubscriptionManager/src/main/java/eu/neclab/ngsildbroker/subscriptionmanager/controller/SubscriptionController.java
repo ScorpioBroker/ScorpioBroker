@@ -78,10 +78,6 @@ public class SubscriptionController {
 	String atContextServerUrl;
 
 	@Autowired
-	@Qualifier("smqueryParser")
-	QueryParser queryParser;
-
-	@Autowired
 	@Qualifier("smparamsResolver")
 	ParamsResolver ldTools;
 

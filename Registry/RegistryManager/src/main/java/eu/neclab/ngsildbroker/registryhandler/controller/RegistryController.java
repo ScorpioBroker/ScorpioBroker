@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -105,8 +105,10 @@ public class RegistryController {
 			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING)
 					|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)) && queryParams != null) {
 
-				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
-				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
+				List<Object> linkHeaders = HttpUtils.getAtContext(request);
+				Context context = JsonLdProcessor.coreContext.clone();
+				context = context.parse(linkHeaders, true);
+				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), context);
 				if (offset == null) {
 					offset = 0;
 				}

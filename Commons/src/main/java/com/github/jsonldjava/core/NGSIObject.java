@@ -43,9 +43,7 @@ public class NGSIObject {
 	private String id;
 	private String expandedProperty;
 	private NGSIObject parent;
-	private ArrayListMultimap<Integer, String> allowedScalars = ArrayListMultimap.create();
-	private ArrayListMultimap<Integer, String> allowedDateTimes = ArrayListMultimap.create();
-	private ArrayListMultimap<Integer, String> allowedTopLevel = ArrayListMultimap.create();
+
 	private ArrayList<String> types = new ArrayList<String>();
 	private boolean fromHasValue;
 
@@ -53,52 +51,7 @@ public class NGSIObject {
 		super();
 		this.element = element;
 		this.parent = parent;
-		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME);
-		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DESCRIPTION);
-		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TIME_INTERVAL);
-		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_QUERY);
-		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_IS_ACTIVE);
-		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_EXPIRES);
-		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_THROTTLING);
-		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES);
 
-		this.allowedTopLevel.putAll(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD,
-				this.allowedScalars.get(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD));
-
-		this.allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_ID_PATTERN);
-		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
-		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
-		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
-		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
-		this.allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
-
-		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
-		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
-		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
-		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
-		this.allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
-
-		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
-		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
-		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
-		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
-		this.allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
-
-		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
-		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
-		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
-		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
-		this.allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
-
-		this.allowedDateTimes.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
-
-		this.allowedDateTimes.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
-
-		this.allowedDateTimes.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
-
-		this.allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
-		this.allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_CREATED_AT);
-		this.allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_MODIFIED_AT);
 	}
 
 	/*
@@ -399,7 +352,7 @@ public class NGSIObject {
 								// custom entries are allowed in receiver and notifier info
 								return;
 							}
-							if (!allowedScalars.get(payloadType).contains(expandedProperty)) {
+							if (!Constants.allowedScalars.get(payloadType).contains(expandedProperty)) {
 								throw new ResponseException(ErrorType.BadRequestData,
 										"The key " + activeProperty + " is an invalid entry.");
 							}
@@ -515,7 +468,7 @@ public class NGSIObject {
 			return;
 		}
 		if (isScalar) {
-			if (allowedDateTimes.get(payloadType).contains(expandedProperty)) {
+			if (Constants.allowedDateTimes.get(payloadType).contains(expandedProperty)) {
 				validateDateTime();
 				return;
 			}
@@ -523,7 +476,7 @@ public class NGSIObject {
 				validateAndAddDatasetId();
 				return;
 			}
-			if (!allowedScalars.get(payloadType).contains(expandedProperty)) {
+			if (!Constants.allowedScalars.get(payloadType).contains(expandedProperty)) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
 			}

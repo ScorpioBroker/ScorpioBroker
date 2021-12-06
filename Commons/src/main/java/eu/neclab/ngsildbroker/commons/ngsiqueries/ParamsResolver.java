@@ -7,18 +7,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
-
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
-import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -28,22 +23,17 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 @Component
 public class ParamsResolver {
 
 	private final static Logger logger = LogManager.getLogger(ParamsResolver.class);
 
-
-	@Autowired
-	QueryParser queryParser;
-
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, List<Object> linkHeaders)
+	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, Context context)
 			throws ResponseException {
-		return this.getQueryParamsFromUriQuery(ngsildQueryParams, linkHeaders, false);
+		return this.getQueryParamsFromUriQuery(ngsildQueryParams, context, false);
 	}
 
 //TODO REWORK THIS COMPLETELY 
@@ -106,7 +96,7 @@ public class ParamsResolver {
 	}
 
 	// new simplified format
-	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, List<Object> linkHeaders,
+	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, Context context,
 			boolean temporalEntityFormat) throws ResponseException {
 		logger.trace("call getStorageManagerJsonQuery method ::");
 		try {
@@ -126,11 +116,11 @@ public class ParamsResolver {
 					idPattern = queryValue;
 					break;
 				case NGSIConstants.QUERY_PARAMETER_TYPE:
-					queryValue = expandQueryValues(linkHeaders, queryValue);
+					queryValue = expandQueryValues(context, queryValue);
 					type = queryValue;
 					break;
 				case NGSIConstants.QUERY_PARAMETER_ATTRS:
-					queryValue = expandQueryValues(linkHeaders, queryValue);
+					queryValue = expandQueryValues(context, queryValue);
 					qp.setAttrs(queryValue);
 					break;
 				case NGSIConstants.QUERY_PARAMETER_GEOREL:
@@ -144,12 +134,12 @@ public class ParamsResolver {
 						coordinates = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_COORDINATES)[0];
 					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY) != null) {
 						geoproperty = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY)[0];
-						geoproperty = expandAttribute(geoproperty, linkHeaders);
+						geoproperty = expandAttribute(geoproperty, context);
 					} else {
 						geoproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_GEOPROPERTY;
 					}
 
-					geoqueryTokens = queryParser.parseGeoRel(georel);
+					geoqueryTokens = QueryParser.parseGeoRel(georel);
 					logger.debug("  Geoquery term georelOp: " + geoqueryTokens.getGeorelOp());
 
 					if (geoqueryTokens.getGeorelOp().isEmpty() || geometry.isEmpty() || coordinates.isEmpty()) {
@@ -180,7 +170,7 @@ public class ParamsResolver {
 						timeAt = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME)[0];
 					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY) != null) {
 						timeproperty = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY)[0];
-						timeproperty = expandAttribute(timeproperty, linkHeaders);
+						timeproperty = expandAttribute(timeproperty, context);
 					} else {
 						timeproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY;
 					}
@@ -201,7 +191,7 @@ public class ParamsResolver {
 					qp.setEndTimeAt(endTimeAt);
 					break;
 				case NGSIConstants.QUERY_PARAMETER_QUERY:
-					qp.setQ(queryParser.parseQuery(queryValue, linkHeaders).toSql(temporalEntityFormat));
+					qp.setQ(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
 					break;
 				case NGSIConstants.QUERY_PARAMETER_OPTIONS:
 					List<String> options = Arrays.asList(queryValue.split(","));
@@ -241,38 +231,18 @@ public class ParamsResolver {
 
 	}
 
-	public String expandQueryValues(List<Object> linkHeaders, String queryValue) throws ResponseException {
+	public String expandQueryValues(Context context, String queryValue) throws ResponseException {
 		String[] temp = queryValue.split(",");
 		StringBuilder builder = new StringBuilder();
 		for (String element : temp) {
-			builder.append(expandAttribute(element.trim(), linkHeaders));
+			builder.append(expandAttribute(element.trim(), context));
 			builder.append(",");
 		}
 		return builder.substring(0, builder.length() - 1);
 	}
 
-	public String expandAttribute(String attribute, String payload, HttpServletRequest req) throws ResponseException {
-		List<Object> context;
-		if (req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON)
-				|| req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON_PATCH)) {
-			context = HttpUtils.getAtContext(req);
-		} else {
-			context = new ArrayList<Object>();
-			// TODO check all of this
-			/*
-			 * if (json.has(NGSIConstants.JSON_LD_CONTEXT)) { JsonNode tempContext =
-			 * json.get(NGSIConstants.JSON_LD_CONTEXT); try {
-			 * context.add(JsonUtils.fromString(tempContext.toString())); } catch
-			 * (IOException e) { throw new ResponseException(ErrorType.BadRequestData); } }
-			 */
-		}
-		return expandAttribute(attribute, context);
-	}
-
-	public String expandAttribute(String attribute, List<Object> linkHeaders) throws ResponseException {
+	public String expandAttribute(String attribute, Context context) throws ResponseException {
 		logger.trace("resolveQueryLdContext():: started");
-		Context context = JsonLdProcessor.coreContext.clone();
-		context = context.parse(linkHeaders, true);
 		return context.expandIri(attribute, false, true, null, null);
 		// process reserved attributes
 		/*

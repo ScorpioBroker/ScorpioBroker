@@ -18,6 +18,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParser;
 
@@ -137,7 +138,7 @@ public class HistoryService {
 	 * elementValue, null, null); }
 	 */
 	public void delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
-			String instanceId, List<Object> linkHeaders) throws ResponseException, Exception {
+			String instanceId, Context linkHeaders) throws ResponseException, Exception {
 		logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
 
 		String resolvedAttrId = null;
@@ -169,7 +170,7 @@ public class HistoryService {
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
 	public void modifyAttribInstanceTemporalEntity(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String attribId, String instanceId, List<Object> linkHeaders)
+			Map<String, Object> resolved, String attribId, String instanceId, Context linkHeaders)
 			throws ResponseException, Exception {
 
 		String resolvedAttrId = null;

@@ -23,23 +23,18 @@ import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
 
-
-
-
 //@Component(immediate=true)
 @SpringBootApplication
 @EnableBinding({ CSourceProducerChannel.class, AtContextProducerChannel.class })
-@Import({CommonKafkaConfig.class, SwaggerConfigDetails.class})
+@Import({ CommonKafkaConfig.class, SwaggerConfigDetails.class })
 public class RegistryHandler {
-	
+
 	public static void main(String[] args) {
 		SpringApplication.run(RegistryHandler.class, args);
 	}
-	
+
 	@Autowired
 	RegistryJdbcConfig jdbcConfig;
-	
-	 
 
 	@Bean("rmops")
 	KafkaOps ops() {
@@ -51,7 +46,7 @@ public class RegistryHandler {
 		return new RestTemplate(clientHttpRequestFactory());
 	}
 
-	//rest template timeout configs
+	// rest template timeout configs
 	private ClientHttpRequestFactory clientHttpRequestFactory() {
 		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
 		factory.setReadTimeout(10000);
@@ -68,20 +63,15 @@ public class RegistryHandler {
 	SecurityConfig securityConfig() {
 		return new SecurityConfig();
 	}
-		
+
 	@Bean("rmresourceConfigDetails")
 	ResourceConfigDetails resourceConfigDetails() {
 		return new ResourceConfigDetails();
 	}
-	@Bean("rmqueryParser")
-	QueryParser queryParser() {
-		return new QueryParser();
-	}
+
 	@Bean("rmparamsResolver")
 	ParamsResolver paramsResolver() {
 		return new ParamsResolver();
 	}
-	
-	
-	
+
 }

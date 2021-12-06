@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -238,13 +240,18 @@ public class EntityController {// implements EntityHandlerInterface {
 			String[] split = request.getServletPath().replace("/ngsi-ld/v1/entities/", "").split("/attrs/");
 			String attrId = HttpUtils.denormalize(split[1]);
 			String entityId = HttpUtils.denormalize(split[0]);
-
+			Object jsonPayload = JsonUtils.fromString(payload);
+			List<Object> atContext = HttpUtils.getAtContext(request);
 			logger.trace("partial-update entity :: started");
-			Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor
-					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
-							AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
-					.get(0);
-			String expandedAttrib = paramsResolver.expandAttribute(attrId, payload, request);
+			Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor.expand(atContext, jsonPayload,
+					opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0);
+			Context context = JsonLdProcessor.coreContext.clone();
+			context = context.parse(atContext, true);
+			if (jsonPayload instanceof Map) {
+				Object payloadContext = ((Map<String, Object>) jsonPayload).get(JsonLdConsts.CONTEXT);
+				context = context.parse(payloadContext, true);
+			}
+			String expandedAttrib = paramsResolver.expandAttribute(attrId, context);
 
 			UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,
 					expandedAttrib, expandedPayload);
@@ -300,7 +307,9 @@ public class EntityController {// implements EntityHandlerInterface {
 				ValidateURI.validateUri(entityId);
 				logger.trace("delete attribute :: started");
 				Validator.validate(request.getParameterMap());
-				String expandedAttrib = paramsResolver.expandAttribute(attrId, HttpUtils.getAtContext(request));
+				Context context = JsonLdProcessor.coreContext.clone();
+				context = context.parse(HttpUtils.getAtContext(request), true);
+				String expandedAttrib = paramsResolver.expandAttribute(attrId, context);
 				entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,
 						deleteAll);
 				logger.trace("delete attribute :: completed");

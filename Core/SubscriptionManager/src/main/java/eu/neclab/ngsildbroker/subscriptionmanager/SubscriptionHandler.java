@@ -19,7 +19,7 @@ import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProd
 
 @SpringBootApplication
 @EnableBinding({ SubscriptionManagerProducerChannel.class, AtContextProducerChannel.class })
-@Import({KafkaConfig.class, SwaggerConfigDetails.class})
+@Import({ KafkaConfig.class, SwaggerConfigDetails.class })
 public class SubscriptionHandler {
 
 	@Value("${atcontext.url}")
@@ -29,16 +29,17 @@ public class SubscriptionHandler {
 		SpringApplication.run(SubscriptionHandler.class, args);
 
 	}
-	
+
 	@Bean("smops")
 	KafkaOps ops() {
 		return new KafkaOps();
 	}
-	
+
 	@Bean("smsecurityConfig")
 	SecurityConfig securityConfig() {
 		return new SecurityConfig();
 	}
+
 //	@Bean("smrestTemp")
 //	RestTemplate restTemp() {
 //		return new RestTemplate();
@@ -48,13 +49,9 @@ public class SubscriptionHandler {
 	ResourceConfigDetails resourceConfigDetails() {
 		return new ResourceConfigDetails();
 	}
-	
+
 	@Bean("smparamsResolver")
 	ParamsResolver paramsResolver() {
 		return new ParamsResolver();
-	}	
-	@Bean("smqueryParser")
-	QueryParser queryParser() {
-		return new QueryParser();
 	}
 }

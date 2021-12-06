@@ -18,50 +18,42 @@ import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.queryhandler.config.QueryProducerChannel;
 
-
-
 @SpringBootApplication
-@Import({KafkaConfig.class, SwaggerConfigDetails.class})
-@EnableBinding({ AtContextProducerChannel.class, QueryProducerChannel.class})
+@Import({ KafkaConfig.class, SwaggerConfigDetails.class })
+@EnableBinding({ AtContextProducerChannel.class, QueryProducerChannel.class })
 
 public class QueryHandler {// implements QueryHandlerInterface{
 
-
-
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
-	
+
 	public static void main(String[] args) {
 		SpringApplication.run(QueryHandler.class, args);
 	}
-	
+
 	@Bean("qmops")
 	KafkaOps ops() {
 		return new KafkaOps();
 	}
-	
+
 	@Bean("qmrestTemp")
 	RestTemplate restTemp() {
 		return new RestTemplate();
 	}
-	
+
 	@Bean("qmsecurityConfig")
 	SecurityConfig securityConfig() {
 		return new SecurityConfig();
 	}
-		
+
 	@Bean("qmresourceConfigDetails")
 	ResourceConfigDetails resourceConfigDetails() {
 		return new ResourceConfigDetails();
 	}
-	
-	@Bean("qmqueryParser")
-	QueryParser queryParser() {
-		return new QueryParser();
-	}
+
 	@Bean("qmparamsResolver")
 	ParamsResolver paramsResolver() {
 		return new ParamsResolver();
 	}
-	
+
 }

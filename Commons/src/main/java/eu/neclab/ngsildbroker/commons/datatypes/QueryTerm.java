@@ -6,6 +6,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import com.github.jsonldjava.core.Context;
+
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -25,7 +28,7 @@ public class QueryTerm {
 
 	private static final List<String> TIME_PROPS = Arrays.asList(NGSIConstants.NGSI_LD_OBSERVED_AT,
 			NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_MODIFIED_AT);
-	private List<Object> linkHeaders;
+	private Context linkHeaders;
 	private QueryTerm next = null;
 	private boolean nextAnd = true;
 	private QueryTerm firstChild = null;
@@ -34,11 +37,9 @@ public class QueryTerm {
 	private String operator = "";
 	private String operant = "";
 
-	ParamsResolver paramsResolver;
+	public QueryTerm(Context context) {
+		this.linkHeaders = context;
 
-	public QueryTerm(List<Object> linkHeaders2, ParamsResolver paramsResolver) {
-		this.linkHeaders = linkHeaders2;
-		this.paramsResolver = paramsResolver;
 	}
 
 	public boolean hasNext() {
@@ -74,8 +75,9 @@ public class QueryTerm {
 		}
 
 		return result;
-	} 
-	@SuppressWarnings("rawtypes")//rawtypes are fine here and intentionally used
+	}
+
+	@SuppressWarnings("rawtypes") // rawtypes are fine here and intentionally used
 	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant)
 			throws ResponseException {
 
@@ -194,7 +196,7 @@ public class QueryTerm {
 						if (!(value instanceof List)) {
 							return false;
 						}
-						@SuppressWarnings("unchecked")//check above
+						@SuppressWarnings("unchecked") // check above
 						List<Object> myList = (List<Object>) value;
 						switch (operator) {
 						case "!=":
@@ -327,12 +329,12 @@ public class QueryTerm {
 	 * since the URI constants are // controlled } return result; }
 	 */
 
-	@SuppressWarnings("rawtypes")//Intentional usage of raw type here.
+	@SuppressWarnings("rawtypes") // Intentional usage of raw type here.
 	private Object getCompoundValue(Object value, String[] compound) throws ResponseException {
 		if (!(value instanceof Map)) {
 			return null;
 		}
-		
+
 		Map complexValue = (Map) value;
 		String firstElement = expandAttributeName(compound[0].replaceAll("\\]", "").replaceAll("\\[", ""));
 		Object potentialResult = complexValue.get(firstElement);
@@ -349,7 +351,7 @@ public class QueryTerm {
 		return getCompoundValue(potentialResult, Arrays.copyOfRange(compound, 1, compound.length));
 	}
 
-	@SuppressWarnings("rawtypes")//Intentional usage of raw type here.
+	@SuppressWarnings("rawtypes") // Intentional usage of raw type here.
 	private Object getValue(BaseEntry myEntry) {
 		Object value = null;
 		if (myEntry instanceof PropertyEntry) {
@@ -381,9 +383,7 @@ public class QueryTerm {
 	}
 
 	private String expandAttributeName(String attribute) throws ResponseException {
-
-		return paramsResolver.expandAttribute(attribute, linkHeaders);
-
+		return linkHeaders.expandIri(attribute, false, true, null, null);
 	}
 
 	public QueryTerm getNext() {
@@ -436,8 +436,8 @@ public class QueryTerm {
 		operant = operant.strip();
 		if (operant.matches(URI) && !operant.matches(TIME)) { // uri and time patterns are ambiguous in the abnf grammar
 			this.operant = "\"" + operant + "\"";
-		} else if(operant.startsWith("'") && operant.endsWith("'")) {
-			this.operant = "\"" + operant.substring(1,operant.length() - 1) + "\"";
+		} else if (operant.startsWith("'") && operant.endsWith("'")) {
+			this.operant = "\"" + operant.substring(1, operant.length() - 1) + "\"";
 		} else {
 			this.operant = operant;
 		}
@@ -705,7 +705,7 @@ public class QueryTerm {
 				attributeFilterProperty.append(')');
 			}
 		}
-		if(operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+		if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
 			result.append("NOT ");
 		}
 		result.append("(" + attributeFilterProperty.toString() + ")");
@@ -718,7 +718,7 @@ public class QueryTerm {
 				for (String subPart : attribute.split("\\.")) {
 					if (subPart.contains("[")) {
 						for (String subParts : subPart.split("\\[")) {
-							//subParts = subParts.replaceAll("\\]", "");
+							// subParts = subParts.replaceAll("\\]", "");
 							attribPath.add(expandAttributeName(subParts));
 						}
 					} else {
@@ -846,7 +846,8 @@ public class QueryTerm {
 		}
 		return useRelClause;
 	}
-	//Not used anymore
+
+	// Not used anymore
 	/*
 	 * private boolean applyOperator(StringBuilder attributeFilterProperty,
 	 * StringBuilder attributeFilterRelationship) throws BadRequestException {
@@ -916,7 +917,7 @@ public class QueryTerm {
 	 */
 	private void getAttribQueryForTemporalEntity(StringBuilder result) throws ResponseException {
 		ArrayList<String> attribPath = getAttribPathArray(this.attribute);
-		//https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
+		// https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
 		/*
 		 * String attribId = null; for (String subPath : attribPath) { attribId =
 		 * subPath; break; // sub-properties are not supported yet in HistoryManager }
@@ -1013,7 +1014,7 @@ public class QueryTerm {
 		for (int i = 0; i < attribPath.size(); i++) {
 			result.append(')');
 		}
-		
+
 		/*
 		 * StringBuilder attributeFilterProperty = new StringBuilder("(m.attrdata#");
 		 * StringBuilder attributeFilterRelationship = new StringBuilder("m.attrdata#");
@@ -1055,17 +1056,6 @@ public class QueryTerm {
 		 * operant.matches(TIME) || operant.matches(DATETIME)) { result.append(" and " +
 		 * testValueTypeForDateTime.toString()); } result.append(")"); }
 		 */
-	}
-
-	// Only for testing;
-	public void setParamsResolver(ParamsResolver paramsResolver) {
-		this.paramsResolver = paramsResolver;
-		if (this.hasNext()) {
-			next.setParamsResolver(paramsResolver);
-		}
-		if (this.getFirstChild() != null) {
-			this.getFirstChild().setParamsResolver(paramsResolver);
-		}
 	}
 
 }
