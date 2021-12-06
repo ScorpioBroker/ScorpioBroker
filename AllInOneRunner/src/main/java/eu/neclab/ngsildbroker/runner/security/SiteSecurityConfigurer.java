@@ -8,7 +8,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
 @Configuration
-@EnableOAuth2Sso
+//@EnableOAuth2Sso
 @EnableWebSecurity
 public class SiteSecurityConfigurer extends WebSecurityConfigurerAdapter {
 	
