@@ -311,8 +311,8 @@ abstract public class StorageReaderDAO {
 			String expandedAttributeList = "'" + NGSIConstants.JSON_LD_ID + "','" + NGSIConstants.JSON_LD_TYPE + "','"
 					+ qp.getAttrs().replace(",", "','") + "'";
 			if (qp.getIncludeSysAttrs()) {
-				expandedAttributeList += "," + NGSIConstants.NGSI_LD_CREATED_AT + ","
-						+ NGSIConstants.NGSI_LD_MODIFIED_AT;
+				expandedAttributeList += ",'" + NGSIConstants.NGSI_LD_CREATED_AT + "','"
+						+ NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
 			}
 			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each(" + tableDataColumn + ") WHERE key IN ( "
 					+ expandedAttributeList + "))";
