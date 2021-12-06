@@ -158,9 +158,8 @@ public class HistoryController {
 			ValidateURI.validateUri(entityId);
 			if (params != null && !Validator.validate(params))
 				throw new ResponseException(ErrorType.BadRequestData);
-
-			Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
-			String[] entityArray = new String[] { entityId };
+			Map<String,String[]> queryParam = new HashMap<>(request.getParameterMap());
+			String[] entityArray = new String[] {entityId};
 			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
 			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam,
 					HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT), true);

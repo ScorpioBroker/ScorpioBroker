@@ -45,7 +45,7 @@ public class HistoryDAO extends StorageReaderDAO {
 		String sqlWhereGeoquery = "";
 		String sqlWhere = "";
 		List<Map<String, String>> entities = qp.getEntities();
-		if (entities != null) {
+		if (entities != null && entities.size() > 0) {
 			for (Map<String, String> entityInfo : entities) {
 				fullSqlWhere.append("(");
 				for (Entry<String, String> entry : entityInfo.entrySet()) {
