@@ -36,7 +36,7 @@ The following list of features are planned to be addressed in the medium term, t
 The following list of features are proposals regarding the longer-term evolution of the product even though the development of these features has not yet been scheduled for a release in the near future. Please feel free to contact us if you wish to get involved in the implementation or influence the roadmap:
 1. Access control on entity and/or attribute level and complete multitenancy support
    - supporting multi tenants which should include addressing certain security aspects like access right management. This will need some discussion on the detail level of access rights etc.
-2. Storing, Managing & Serving @context (NGSI-LD v1.5.1) 
+2. Websocket binding (initially for subscribe/notify interaction)  
 3. Enhancements for temporal queries
    - Support of aggregation operators in temporal query language (NGSI-LD v1.4.1) 
    - Pagination for temporal attributes (NGSI-LD v1.5.1)
@@ -44,4 +44,3 @@ The following list of features are proposals regarding the longer-term evolution
 5. Full MQTT Support 
    - Looking further into MQTT 5 to potentially support a full NGSI-LD MQTT binding.
 6. Grouping of Attributes (successor of “Attribute Domains” from NGSIv1)
-7. Websocket binding (initially for subscribe/notify interaction) 
