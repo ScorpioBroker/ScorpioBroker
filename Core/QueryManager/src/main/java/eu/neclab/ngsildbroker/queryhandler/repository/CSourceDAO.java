@@ -172,6 +172,11 @@ public class CSourceDAO extends StorageReaderDAO {
 		}
 	}
 
+	@Override
+	protected String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+		return super.translateNgsildQueryToCountResult(qp, DBConstants.DBTABLE_CSOURCE + " c ");
+	}
+
 	private String getCommonSqlWhereForTypeIdIdPattern(String typeValue, String idValue, String idPatternValue) {
 		String sqlWhere = "";
 		if (idValue.isEmpty() && idPatternValue.isEmpty()) { // case 1: type only

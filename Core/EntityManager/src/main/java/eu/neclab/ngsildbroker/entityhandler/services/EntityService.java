@@ -32,7 +32,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.github.filosganga.geogson.model.Geometry;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
-import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
@@ -123,8 +122,6 @@ public class EntityService {
 	}
 
 	ObjectMapper objectMapper;
-	@Autowired
-	private EurekaClient eurekaClient;
 	@Autowired
 	@Qualifier("emconRes")
 	ContextResolverBasic contextResolver;
@@ -544,7 +541,7 @@ public class EntityService {
 
 		// Entity to CSourceRegistration conversion.
 		csourceRegistration.setId(entity.getId());
-		csourceRegistration.setEndpoint(MicroServiceUtils.getGatewayURL(eurekaClient));
+		csourceRegistration.setEndpoint(MicroServiceUtils.getGatewayURL());
 		// location node
 		GeoProperty geoLocationProperty = entity.getLocation();
 		if (geoLocationProperty != null) {
@@ -581,7 +578,7 @@ public class EntityService {
 
 	public URI getResourceURL(String resource) throws URISyntaxException {
 		logger.trace("getResourceURL() :: started");
-		URI uri = MicroServiceUtils.getGatewayURL(eurekaClient);
+		URI uri = MicroServiceUtils.getGatewayURL();
 		logger.trace("getResourceURL() :: completed");
 		return new URI(uri.toString() + "/" + resource);
 	}

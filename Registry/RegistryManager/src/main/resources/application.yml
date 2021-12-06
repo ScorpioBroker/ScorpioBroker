@@ -1,9 +1,28 @@
-
+mysettings:
+  application-name: c-sources
+  kafka:
+    bootstrap:
+      host: ${bushost:localhost}
+      port: ${busport:9092}
+  postgres:
+    host: ${dbhost:localhost}
+    port: ${dbport:5432}
+    username: ${dbuser:ngb}
+    password: ${dbpass:ngb}
+    database-name: ${dbname:ngb}
+  gateway:
+    host: ${gateway.host:localhost}
+    port: ${gateway.port:9090}
+jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
+atcontext:
+  url: http://${mysettings.gateway.host}:${mysettings.gateway.port}/ngsi-ld/contextes/
+bootstrap:
+  servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 server:
   port: 1030
 spring:
-  application:
-    name: c-sources
+#  mvc.pathpattern.matching-strategy: ant_path_matcher
+  application.name: ${mysettings.application-name}
   main:
     lazy-initialization: true
   kafka:
@@ -12,9 +31,9 @@ spring:
         cleanup:
           policy: compact 
   datasource:
-    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_registrymanager"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20
@@ -22,13 +41,11 @@ spring:
       poolName: SpringBootHikariCP
       maxLifetime: 2000000
       connectionTimeout: 30000
-
-
   cloud:
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: ${bootstrap.servers}
       bindings:
         CSOURCE_REGISTRATION_WRITE_CHANNEL:
           destination: CONTEXT_SOURCE
@@ -36,26 +53,12 @@ spring:
         CSOURCE_NOTIFICATION_WRITE_CHANNEL:
           destination: CONTEXT_SOURCE_NOTIFICATION
           contentType: application/json
-#        CSOURCE_REGISTRATION_READ_CHANNEL:
-#          destination: CONTEXT_SOURCE
-#          contentType: application/json
-#          group: csource
-#       CONTEXT_REGISTRY_READ_CHANNEL:
-#          destination: CONTEXT_REGISTRY
-#          contentType: application/json
-#          group: csourceregistry
-#        CONTEXT_UPDATE_READ_CHANNEL:
-#          destination: CONTEXT_UPDATE
-#          contentType: application/json
-#          group: csourceupdate
         ATCONTEXT_WRITE_CHANNEL:
           destination: ATCONTEXT
           contentType: application/json
         CSOURCE_SUBSCRIPTION_WRITE_CHANNEL:
           destination: CSOURCE_SUBSCRIPTIONS
           contentType: application/json  
-
-#C-Source topics properties
 csource:
   registry:
     topic: CONTEXT_REGISTRY
@@ -71,24 +74,12 @@ csource:
 submanager:
   subscription:
     topic: SUBSCRIPTIONS
-
-
-#kafka broker path
-bootstrap:
-  servers: localhost:9092
-
-#enable log compaction
-
-
-# (default) spring.datasource.type=com.zaxxer.hikari.HikariDataSource
-
-
 reader:
   enabled: true
   datasource:
-    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_reader"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20
@@ -100,9 +91,9 @@ reader:
 writer:
   enabled: true
   datasource:
-    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_writer"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20
@@ -110,8 +101,6 @@ writer:
       poolName: SpringBootHikariCP_Writer
       maxLifetime: 2000000
       connectionTimeout: 30000
-
-
 management:
   endpoints:
     web:
@@ -120,11 +109,6 @@ management:
   endpoint:
     restart:
       enabled: true
-
-atcontext:
-  url: http://localhost:9090/ngsi-ld/contextes/
-
-
 broker:
   id: FedBroker1
   parent:

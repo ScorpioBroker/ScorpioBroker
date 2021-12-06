@@ -3,8 +3,6 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.time.Instant;
 import java.util.Iterator;
 
-import org.codehaus.jackson.map.ObjectMapper;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;

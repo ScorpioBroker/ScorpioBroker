@@ -1,13 +1,44 @@
+mysettings:
+  application-name: storage-manager
+  kafka:
+    bootstrap:
+      host: ${bushost:localhost}
+      port: ${busport:9092}
+  postgres:
+    host: ${dbhost:localhost}
+    port: ${dbport:5432}
+    username: ${dbuser:ngb}
+    password: ${dbpass:ngb}
+    database-name: ${dbname:ngb}
+  gateway:
+    host: ${gateway.host:localhost}
+    port: ${gateway.port:9090}
+jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
+atcontext:
+  url: http://${mysettings.gateway.host}:${mysettings.gateway.port}/ngsi-ld/contextes/
+bootstrap:
+  servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 spring:
-  application:
-    name: storage-manager
+#  mvc.pathpattern.matching-strategy: ant_path_matcher
+  application.name: ${mysettings.application-name}
   main:
     lazy-initialization: true
   cloud:
     stream:
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: ${bootstrap.servers}
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
   flyway:
     baselineOnMigrate: true    
 server:
@@ -16,8 +47,6 @@ server:
 max:
   request:
     size: 104857600
-bootstrap:
-  servers: localhost:9092
 query:
   topic: QUERY
   result:
@@ -35,14 +64,12 @@ entity:
 csource:
   topic: CONTEXT_SOURCE
   stopListenerIfDbFails: false
-
-
 reader:
   enabled: true
   datasource:
-    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_reader"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20
@@ -50,13 +77,12 @@ reader:
       poolName: SpringBootHikariCP_Reader
       maxLifetime: 2000000
       connectionTimeout: 30000
-
 writer:
   enabled: true
   datasource:
-    url: "jdbc:postgresql://localhost:5432/ngb?ApplicationName=ngb_storagemanager_writer"
-    username: ngb
-    password: ngb
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
     hikari:
       minimumIdle: 5
       maximumPoolSize: 20
