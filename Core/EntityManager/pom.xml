@@ -7,13 +7,13 @@
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>BrokerParent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.1.0-SNAPSHOT</version>
 		<relativePath>../../BrokerParent</relativePath>
 	</parent>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<profiles>
-		<profile>
-			<id>docker</id>
+	<profile>
+			<id>docker-dist</id>
 			<build>
 				<plugins>
 					<plugin>
@@ -41,17 +41,39 @@
 					</plugin>
 				</plugins>
 			</build>
-
+		</profile>
+		<profile>
+			<id>docker-dist-no-eureka</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.12</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+									<goal>push</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<dockerfile>dockerfile4maven_no_eureka</dockerfile>
+							<repository>scorpiobroker/scorpio</repository>
+							<tag>${project.artifactId}-no-eureka_${project.version}</tag>
+							<buildArgs>
+								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>
+								<JAR_FILE_RUN>${project.artifactId}.jar</JAR_FILE_RUN>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 	</profiles>
 	<dependencies>
-		<!-- <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-security</artifactId> 
-			</dependency> <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-oauth2</artifactId> 
-			</dependency> -->
-		<!-- <dependency> <groupId>org.springframework.kafka</groupId> <artifactId>spring-kafka-test</artifactId> 
-			<scope>test</scope> <exclusions> <exclusion> <groupId>org.springframework.boot</groupId> 
-			<artifactId>spring-boot-starter-logging</artifactId> </exclusion> </exclusions> 
-			</dependency> -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -81,10 +103,6 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 		</dependency>
-		<!-- <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-web</artifactId> 
-			<exclusions> <exclusion> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-logging</artifactId> 
-			</exclusion> </exclusions> </dependency> -->
-
 		<dependency>
 			<groupId>org.powermock</groupId>
 			<artifactId>powermock-module-junit4</artifactId>
@@ -97,7 +115,6 @@
 			<version>2.0.2</version>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -113,8 +130,5 @@
 			<artifactId>junit</artifactId>
 			<scope>test</scope>
 		</dependency>
-		
-		<!-- <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>LDContextResolver</artifactId> 
-			<version>0.0.1-SNAPSHOT</version> </dependency> -->
 	</dependencies>
 </project>

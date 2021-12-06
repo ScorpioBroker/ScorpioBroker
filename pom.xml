@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
@@ -8,28 +9,56 @@
 	<parent>
 		<artifactId>OverallParent</artifactId>
 		<groupId>eu.neclab.ngsildbroker</groupId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.1.0-SNAPSHOT</version>
 		<relativePath>./OverallParent</relativePath>
 	</parent>
-	<version>1.0.0-SNAPSHOT</version>
-
-
+	<version>1.1.0-SNAPSHOT</version>
 	<modules>
 		<module>OverallParent</module>
 		<module>BrokerParent</module>
 		<module>Commons</module>
-		<module>SpringCloudParent</module>
-		<module>SpringCloudModules</module>
 		<module>Core</module>
 		<module>Registry</module>
 		<module>Storage</module>
 		<module>History</module>
-		<module>AllInOneRunner</module>
 	</modules>
 	<profiles>
-		
+		<profile>
+			<id>docker-dist</id>
+			<modules>
+				<module>SpringCloudParent</module>
+				<module>SpringCloudModules</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>dist</id>
+			<modules>
+				<module>SpringCloudParent</module>
+				<module>SpringCloudModules</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>aaio</id>
+			<modules>
+				<module>AllInOneRunner</module>
+				<module>SpringCloudParent</module>
+				<module>SpringCloudModules</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>aaio-no-eureka</id>
+			<modules>
+				<module>AllInOneRunner</module>
+			</modules>
+		</profile>
+
 		<profile>
 			<id>docker-aaio</id>
+			<modules>
+				<module>AllInOneRunner</module>
+				<module>SpringCloudParent</module>
+				<module>SpringCloudModules</module>
+			</modules>
 			<build>
 				<plugins>
 					<plugin>
@@ -50,44 +79,57 @@
 							<repository>scorpiobroker/scorpio</repository>
 							<tag>scorpio-aaio_${project.version}</tag>
 							<buildArgs>
-
-								<!-- <BUILD_DIR_ACS>Core/AtContextServer</BUILD_DIR_ACS> -->
 								<BUILD_DIR_SCS>SpringCloudModules/config-server</BUILD_DIR_SCS>
 								<BUILD_DIR_SES>SpringCloudModules/eureka</BUILD_DIR_SES>
 								<BUILD_DIR_SGW>SpringCloudModules/gateway</BUILD_DIR_SGW>
 								<BUILD_DIR_SCR>AllInOneRunner</BUILD_DIR_SCR>
-								<!-- <BUILD_DIR_HMG>History/HistoryManager</BUILD_DIR_HMG> <BUILD_DIR_QMG>Core/QueryManager</BUILD_DIR_QMG> 
-									<BUILD_DIR_RMG>Registry/RegistryManager</BUILD_DIR_RMG> <BUILD_DIR_EMG>Core/EntityManager</BUILD_DIR_EMG> 
-									<BUILD_DIR_STRMG>Storage/StorageManager</BUILD_DIR_STRMG> <BUILD_DIR_SUBMG>Core/SubscriptionManager</BUILD_DIR_SUBMG> -->
-
-								<!-- <JAR_FILE_BUILD_ACS>AtContextServer-${project.version}.jar</JAR_FILE_BUILD_ACS> -->
 								<JAR_FILE_BUILD_SCS>config-server-${project.version}.jar</JAR_FILE_BUILD_SCS>
 								<JAR_FILE_BUILD_SES>eureka-server-${project.version}.jar</JAR_FILE_BUILD_SES>
 								<JAR_FILE_BUILD_SGW>gateway-${project.version}.jar</JAR_FILE_BUILD_SGW>
 								<JAR_FILE_BUILD_SCR>AllInOneRunner-${project.version}.jar</JAR_FILE_BUILD_SCR>
-								<!-- <JAR_FILE_BUILD_HMG>HistoryManager-${project.version}.jar</JAR_FILE_BUILD_HMG> 
-									<JAR_FILE_BUILD_QMG>QueryManager-${project.version}.jar</JAR_FILE_BUILD_QMG> 
-									<JAR_FILE_BUILD_RMG>RegistryManager-${project.version}.jar</JAR_FILE_BUILD_RMG> 
-									<JAR_FILE_BUILD_EMG>EntityManager-${project.version}.jar</JAR_FILE_BUILD_EMG> 
-									<JAR_FILE_BUILD_STRMG>StorageManager-${project.version}.jar</JAR_FILE_BUILD_STRMG> 
-									<JAR_FILE_BUILD_SUBMG>SubscriptionManager-${project.version}.jar</JAR_FILE_BUILD_SUBMG> -->
-
-								<!-- <JAR_FILE_RUN_ACS>AtContextServer.jar</JAR_FILE_RUN_ACS> -->
 								<JAR_FILE_RUN_SCS>config-server.jar</JAR_FILE_RUN_SCS>
 								<JAR_FILE_RUN_SES>eureka-server.jar</JAR_FILE_RUN_SES>
 								<JAR_FILE_RUN_SGW>gateway.jar</JAR_FILE_RUN_SGW>
 								<JAR_FILE_RUN_SCR>runner.jar</JAR_FILE_RUN_SCR>
-								<!-- <JAR_FILE_RUN_HMG>HistoryManager.jar</JAR_FILE_RUN_HMG> <JAR_FILE_RUN_QMG>QueryManager.jar</JAR_FILE_RUN_QMG> 
-									<JAR_FILE_RUN_RMG>RegistryManager.jar</JAR_FILE_RUN_RMG> <JAR_FILE_RUN_EMG>EntityManager.jar</JAR_FILE_RUN_EMG> 
-									<JAR_FILE_RUN_STRMG>StorageManager.jar</JAR_FILE_RUN_STRMG> <JAR_FILE_RUN_SUBMG>SubscriptionManager.jar</JAR_FILE_RUN_SUBMG> -->
-
-
 							</buildArgs>
 						</configuration>
 					</plugin>
 				</plugins>
 			</build>
-
+		</profile>
+		<profile>
+			<id>docker-aaio-no-eureka</id>
+			<modules>
+				<module>AllInOneRunner</module>
+			</modules>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.12</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+									<goal>push</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<dockerfile>dockerfile4maven_no_eureka</dockerfile>
+							<repository>scorpiobroker/scorpio</repository>
+							<tag>scorpio-aaio-no-eureka_${project.version}</tag>
+							<buildArgs>
+								<BUILD_DIR_SCR>AllInOneRunner</BUILD_DIR_SCR>
+								<JAR_FILE_BUILD_SCR>AllInOneRunner-${project.version}.jar</JAR_FILE_BUILD_SCR>
+								<JAR_FILE_RUN_SCR>runner.jar</JAR_FILE_RUN_SCR>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 	</profiles>
 </project>

@@ -1,4 +1,12 @@
-
+mysettings:
+  application-name: gateway
+  eureka:
+    protocol: ${eureka.protocol:http}
+    host: ${eureka.host:localhost}
+    port: ${eureka.port:8761}
+  gateway:
+    port: ${gateway.port:9090}
+eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}
 # Increase the Hystrix timeout to 60s (globally)
 hystrix:
   command:
@@ -14,7 +22,7 @@ ribbon:
   ReadTimeout: 60000
   ConnectTimeout: 60000
 server:
-  port: 9090
+  port: ${mysettings.gateway.port}
   tomcat:
     max:
       threads:2000
@@ -37,7 +45,7 @@ eureka:
     register-with-eureka: true
     fetchRegistry: true
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${eurekaurl}/eureka/
 
 # Configure the Authorization Server and User Info Resource Server details
 security:

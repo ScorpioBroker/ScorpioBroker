@@ -66,7 +66,6 @@ public class EntityOperationQueryController {
 
 	private JsonLdOptions defaultOptions = new JsonLdOptions();
 
-
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	// these are known structures in try catch. failed parsing would rightfully
 	// result in an error
@@ -80,7 +79,7 @@ public class EntityOperationQueryController {
 		try {
 			HttpUtils.doPreflightCheck(request);
 			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
-			String expandedPayload = "";//HttpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
+			String expandedPayload = "";// HttpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
 			Map<String, Object> queries = (Map<String, Object>) JsonUtils.fromString(expandedPayload);
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
@@ -160,8 +159,8 @@ public class EntityOperationQueryController {
 			params.setKeyValues((options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)));
 			params.setIncludeSysAttrs(
 					(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)));
-			return QueryController.generateReply(request, queryService.getData(params, payload, linkHeaders,
-					limit, offset, qToken, false, count, HttpUtils.getHeaders(request), true, null), true, count);
+			return QueryController.generateReply(request, queryService.getData(params, payload, linkHeaders, limit,
+					offset, qToken, false, count, HttpUtils.getHeaders(request), true), true, count);
 
 		} catch (IOException e) {
 			logger.error("Failed to parse request data", e);

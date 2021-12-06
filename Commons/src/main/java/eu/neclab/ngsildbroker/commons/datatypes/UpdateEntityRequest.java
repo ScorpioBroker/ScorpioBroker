@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.codehaus.jackson.map.ObjectMapper;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -107,10 +105,17 @@ public class UpdateEntityRequest extends EntityRequest {
 						}
 					} else {
 						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
-							originalNode.replace(attrId, resolved.get(attrId));
-							// setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)),
-							// resolved,
-							// updateResult, i);
+							Map<String, Object> replacement = (Map<String, Object>) resolved.get(attrId);
+							if (replacement.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+								replacement.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+							}
+							ArrayList<Object> tmp = new ArrayList<Object>();
+							HashMap<String, Object> tmp2 = new HashMap<String, Object>();
+							tmp2.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+							tmp2.put(NGSIConstants.JSON_LD_VALUE, now);
+							tmp.add(tmp2);
+							replacement.put(NGSIConstants.NGSI_LD_MODIFIED_AT, tmp);
+							originalNode.replace(attrId, replacement);
 						}
 					}
 				} else {

@@ -109,11 +109,12 @@ abstract public class StorageReaderDAO {
 			if (qp.getCheck() != null) {
 				String sqlQuery = typesAndAttributeQuery(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
-			if (qp.getCountResult() != null) {
-				if (qp.getLimit() == 0 && qp.getCountResult() == true) {
+			if (qp.getCountResult() != null && qp.getCountResult() == true) {
+				if (qp.getLimit() == 0) {
 					String sqlQueryCount = translateNgsildQueryToCountResult(qp);
 					Integer count = template.queryForObject(sqlQueryCount, Integer.class);
 					queryResult.setCount(count);
@@ -121,6 +122,7 @@ abstract public class StorageReaderDAO {
 				}
 				String sqlQuery = translateNgsildQueryToSql(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
 				String sqlQueryCount = translateNgsildQueryToCountResult(qp);
 				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
@@ -129,6 +131,7 @@ abstract public class StorageReaderDAO {
 			} else {
 				String sqlQuery = translateNgsildQueryToSql(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
@@ -308,8 +311,8 @@ abstract public class StorageReaderDAO {
 			String expandedAttributeList = "'" + NGSIConstants.JSON_LD_ID + "','" + NGSIConstants.JSON_LD_TYPE + "','"
 					+ qp.getAttrs().replace(",", "','") + "'";
 			if (qp.getIncludeSysAttrs()) {
-				expandedAttributeList += "," + NGSIConstants.NGSI_LD_CREATED_AT + ","
-						+ NGSIConstants.NGSI_LD_MODIFIED_AT;
+				expandedAttributeList += ",'" + NGSIConstants.NGSI_LD_CREATED_AT + "','"
+						+ NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
 			}
 			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each(" + tableDataColumn + ") WHERE key IN ( "
 					+ expandedAttributeList + "))";
@@ -415,8 +418,15 @@ abstract public class StorageReaderDAO {
 	 * TODO: query for count the no of result
 	 */
 	protected String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+		return translateNgsildQueryToCountResult(qp, DBConstants.DBTABLE_ENTITY);
+	}
+
+	protected String translateNgsildQueryToCountResult(QueryParams qp, String tableName) throws ResponseException {
 		StringBuilder fullSqlWhereProperty = commonTranslateSql(qp);
-		String sqlQuery = "SELECT Count(*) FROM " + DBConstants.DBTABLE_ENTITY + " ";
+		if (tableName == null) {
+			tableName = DBConstants.DBTABLE_ENTITY;
+		}
+		String sqlQuery = "SELECT Count(*) FROM " + tableName + " ";
 		if (fullSqlWhereProperty.length() > 0) {
 			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
 		}

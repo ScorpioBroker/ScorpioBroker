@@ -19,12 +19,14 @@ public class CSourceRegistration {
 
 	private List<Information> information;
 
-	//private GeoProperty location;
-	private Geometry<?> location; // csource location is not the same as entity location. entity location is a GeoProperty, csource location is just a geojson value (string)
+	// private GeoProperty location;
+	private Geometry<?> location; // csource location is not the same as entity location. entity location is a
+									// GeoProperty, csource location is just a geojson value (string)
 	private String registrationName;
 
 	private TimeInterval timestamp;
 	private boolean isInternal = false;
+	private TimeManagement timeManagement;
 
 	/**
 	 * a
@@ -161,11 +163,20 @@ public class CSourceRegistration {
 		this.tenant = tenant;
 	}
 
+	public TimeManagement getTimeManagement() {
+		return timeManagement;
+	}
+
+	public void setTimeManagement(TimeManagement timeManagement) {
+		this.timeManagement = timeManagement;
+	}
+
 	@Override
 	public String toString() {
 		return "CSourceRegistration [description=" + description + ", endpoint=" + endpoint + ", expires=" + expiresAt
-				+ ", id=" + id + ", information=" + information + ", location=" + location + ", name=" + registrationName
-				+ ", timestamp=" + timestamp + ", type=" + type + " ,tenant=" + tenant + "]";
+				+ ", id=" + id + ", information=" + information + ", location=" + location + ", name="
+				+ registrationName + ", timestamp=" + timestamp + ", type=" + type + " ,tenant=" + tenant + "]";
+
 	}
 
 	@Override

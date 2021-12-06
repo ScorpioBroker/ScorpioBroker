@@ -49,9 +49,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.gson.JsonParseException;
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.EurekaClient;
-import com.netflix.discovery.shared.Application;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
@@ -76,6 +74,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 
 @Service
@@ -106,9 +105,6 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@Autowired
 	ObjectMapper objectMapper;
-
-	@Autowired
-	EurekaClient eurekaClient;
 
 	@Autowired
 	@Qualifier("smqueryParser")
@@ -1004,16 +1000,11 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private URI prepareNotificationServlet(SubscriptionRequest subToCheck) {
-		Application application = eurekaClient.getApplication("gateway");
-		InstanceInfo instanceInfo = application.getInstances().get(0);
-		// TODO : search for a better way to resolve http or https
-		String hostIP = instanceInfo.getIPAddr();
-		String uuid = Long.toString(UUID.randomUUID().getLeastSignificantBits());
-		int port = instanceInfo.getPort();
 
+		String uuid = Long.toString(UUID.randomUUID().getLeastSignificantBits());
 		remoteNotifyCallbackId2InternalSub.put(uuid, subToCheck);
-		StringBuilder url = new StringBuilder("http://").append(hostIP).append(":").append(port)
-				.append("/remotenotify/").append(uuid);
+		StringBuilder url = new StringBuilder(MicroServiceUtils.getGatewayURL().toString()).append("/remotenotify/")
+				.append(uuid);
 		// System.out.println("URL : "+url.toString());
 		try {
 			return new URI(url.toString());

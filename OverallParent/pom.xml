@@ -1,29 +1,18 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>eu.neclab.ngsildbroker</groupId>
 	<artifactId>OverallParent</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<name>NGSI-LD Broker Overall Parent</name>
-
-	<!-- <parent> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-parent</artifactId> 
-		<version>2.0.3.RELEASE</version> <relativePath /> </parent> -->
 	<packaging>pom</packaging>
-
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
 		<spring-cloud.version>Greenwich.RELEASE</spring-cloud.version>
 	</properties>
-	<profiles>
-		<profile>
-			<id>buildForTest</id>
-			<build>
-				<finalName>${project.artifactId}</finalName>
-			</build>
-		</profile>
-	</profiles>
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -34,7 +23,6 @@
 				<scope>import</scope>
 			</dependency>
 			<dependency>
-				<!-- Import dependency management from Spring Boot -->
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
 				<version>2.1.9.RELEASE</version>
@@ -48,6 +36,12 @@
 			<groupId>com.sun.xml.bind</groupId>
 			<artifactId>jaxb-core</artifactId>
 			<version>2.3.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.2</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>javax.xml.bind</groupId>
@@ -67,17 +61,13 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-		<!-- <dependency> <groupId>org.springframework.cloud</groupId> <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId> 
-			</dependency> -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream</artifactId>
-			<!-- <version>2.2.1.RELEASE</version> -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream-binder-kafka</artifactId>
-			<!-- <version>2.2.1.RELEASE</version> -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.kafka</groupId>
@@ -92,15 +82,15 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 		<dependency>
-	    <groupId>io.springfox</groupId>
-	    <artifactId>springfox-swagger2</artifactId>
-	    <version>2.9.2</version>
-	</dependency>
-			<dependency>
-	      <groupId>io.springfox</groupId>
-	      <artifactId>springfox-swagger-ui</artifactId>
-	      <version>2.9.2</version>
-	       </dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger2</artifactId>
+			<version>2.9.2</version>
+		</dependency>
+		<dependency>
+			<groupId>io.springfox</groupId>
+			<artifactId>springfox-swagger-ui</artifactId>
+			<version>2.9.2</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>
@@ -122,13 +112,8 @@
 				<artifactId>maven-dependency-plugin</artifactId>
 				<version>3.0.2</version>
 			</plugin>
-			<!-- <plugin> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-maven-plugin</artifactId> 
-				<executions> <execution> <goals> <goal>repackage</goal> </goals> </execution> 
-				</executions> </plugin> -->
-
 		</plugins>
 	</build>
-
 	<repositories>
 		<repository>
 			<id>spring-snapshots</id>
@@ -147,7 +132,6 @@
 			</snapshots>
 		</repository>
 	</repositories>
-
 	<pluginRepositories>
 		<pluginRepository>
 			<id>spring-snapshots</id>
@@ -166,5 +150,17 @@
 			</snapshots>
 		</pluginRepository>
 	</pluginRepositories>
-
+	<profiles>
+		<profile>
+			<id>buildForTest</id>
+			<activation>
+				<property>
+					<name>citest</name>
+				</property>
+			</activation>
+			<build>
+				<finalName>${project.artifactId}</finalName>
+			</build>
+		</profile>
+	</profiles>
 </project>
