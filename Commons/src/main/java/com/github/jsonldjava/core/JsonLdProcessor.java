@@ -29,12 +29,12 @@ public class JsonLdProcessor {
 	private static String coreContextUrl = null;
 	public static Context coreContext = null;
 
-	public synchronized static void init(String coreContextUrl) {
-		if (coreContextUrl != null) {
+	public synchronized static void init(String contextUrl) {
+		if (JsonLdProcessor.coreContextUrl != null) {
 			return;
 		}
-		coreContextUrl = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld";
-		coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl, false);
+		JsonLdProcessor.coreContextUrl = contextUrl;
+		JsonLdProcessor.coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl, false);
 	}
 
 	/**
