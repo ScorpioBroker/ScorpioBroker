@@ -10,16 +10,13 @@ import org.springframework.context.annotation.Primary;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
-import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
+import eu.neclab.ngsildbroker.entityhandler.config.EntityJdbcConfig;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityTopicMap;
-import eu.neclab.ngsildbroker.entityhandler.config.EntityJdbcConfig;
 
 
 
@@ -27,7 +24,7 @@ import eu.neclab.ngsildbroker.entityhandler.config.EntityJdbcConfig;
 //@Component(immediate=true)
 @SpringBootApplication
 @EnableBinding({ EntityProducerChannel.class, AtContextProducerChannel.class }) // enable channel binding with topics
-@Import({CommonKafkaConfig.class, SwaggerConfigDetails.class})
+@Import({CommonKafkaConfig.class})
 public class EntityHandler {
 	public static void main(String[] args) {
 		SpringApplication.run(EntityHandler.class, args);
@@ -45,11 +42,6 @@ public class EntityHandler {
 	@Bean("emsec")
 	SecurityConfig securityConfig() {
 		return new SecurityConfig();
-	}
-		
-	@Bean("emresconfdet")
-	ResourceConfigDetails resourceConfigDetails() {
-		return new ResourceConfigDetails();
 	}
 	
 	@Bean("emparamsres")

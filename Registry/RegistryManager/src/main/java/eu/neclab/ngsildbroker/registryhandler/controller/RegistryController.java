@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -84,7 +85,7 @@ public class RegistryController {
 	}
 
 	// @GetMapping
-	// public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
+	// public ResponseEntity<byte[]> discoverCSource(ServerHttpRequest request,
 	// @RequestParam HashMap<String, String> queryMap) {
 	// try {
 	// return ResponseEntity.status(HttpStatus.OK)
@@ -101,23 +102,24 @@ public class RegistryController {
 	// }
 
 	@GetMapping
-	public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
+	public ResponseEntity<byte[]> discoverCSource(ServerHttpRequest request,
 			@RequestParam HashMap<String, String> queryMap,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken) {
 		try {
 			logger.trace("getCSources() ::");
-			Validator.validateCsourceGetParameter(request.getParameterMap());
-			String queryParams = request.getQueryString();
-			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
-			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING)
-					|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)) && queryParams != null) {
+			MultiValueMap<String, String> params = request.getQueryParams();
+			Validator.validateCsourceGetParameter(params);
+
+			String tenantid = request.getHeaders().getFirst(NGSIConstants.TENANT_HEADER);
+			if ((request.getPath().toString().equals(MY_REQUEST_MAPPING)
+					|| request.getPath().toString().equals(MY_REQUEST_MAPPING_ALT)) && !params.isEmpty()) {
 
 				List<Object> linkHeaders = HttpUtils.getAtContext(request);
 				Context context = JsonLdProcessor.coreContext.clone();
 				context = context.parse(linkHeaders, true);
-				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), context);
+				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getQueryParams(), context);
 				if (offset == null) {
 					offset = 0;
 				}
@@ -163,7 +165,7 @@ public class RegistryController {
 	}
 
 	@PostMapping
-	public ResponseEntity<byte[]> registerCSource(HttpServletRequest request,
+	public ResponseEntity<byte[]> registerCSource(ServerHttpRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
 
@@ -192,12 +194,12 @@ public class RegistryController {
 	}
 
 	@GetMapping("{registrationId}")
-	public ResponseEntity<byte[]> getCSourceById(HttpServletRequest request,
+	public ResponseEntity<byte[]> getCSourceById(ServerHttpRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
 			ValidateURI.validateUri(registrationId);
-			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
+			String tenantid = request.getHeaders().getFirst(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
 
 			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
@@ -211,7 +213,7 @@ public class RegistryController {
 	}
 
 	@PatchMapping("{registrationId}")
-	public ResponseEntity<byte[]> updateCSource(HttpServletRequest request,
+	public ResponseEntity<byte[]> updateCSource(ServerHttpRequest request,
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
 		try {
 			logger.debug("update CSource() ::" + registrationId);
@@ -231,7 +233,7 @@ public class RegistryController {
 	}
 
 	@DeleteMapping("{registrationId}")
-	public ResponseEntity<byte[]> deleteCSource(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteCSource(ServerHttpRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			ValidateURI.validateUri(registrationId);

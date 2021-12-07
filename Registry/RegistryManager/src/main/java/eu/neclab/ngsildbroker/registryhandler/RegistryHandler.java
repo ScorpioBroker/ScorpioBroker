@@ -13,20 +13,15 @@ import org.springframework.web.client.RestTemplate;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
-import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
-
 import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
 
 //@Component(immediate=true)
 @SpringBootApplication
 @EnableBinding({ CSourceProducerChannel.class, AtContextProducerChannel.class })
-@Import({ CommonKafkaConfig.class, SwaggerConfigDetails.class })
+@Import({ CommonKafkaConfig.class })
 public class RegistryHandler {
 
 	public static void main(String[] args) {
@@ -57,16 +52,6 @@ public class RegistryHandler {
 	@Bean("rmgetCsourceRegistration")
 	CSourceRegistration getCsourceRegistration() {
 		return new CSourceRegistration();
-	}
-
-	@Bean("rmsecurityConfig")
-	SecurityConfig securityConfig() {
-		return new SecurityConfig();
-	}
-
-	@Bean("rmresourceConfigDetails")
-	ResourceConfigDetails resourceConfigDetails() {
-		return new ResourceConfigDetails();
 	}
 
 	@Bean("rmparamsResolver")

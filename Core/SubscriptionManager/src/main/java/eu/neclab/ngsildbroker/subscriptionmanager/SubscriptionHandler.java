@@ -9,17 +9,13 @@ import org.springframework.context.annotation.Import;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
-import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 
 @SpringBootApplication
 @EnableBinding({ SubscriptionManagerProducerChannel.class, AtContextProducerChannel.class })
-@Import({ KafkaConfig.class, SwaggerConfigDetails.class })
+@Import({ KafkaConfig.class })
 public class SubscriptionHandler {
 
 	@Value("${atcontext.url}")
@@ -33,21 +29,6 @@ public class SubscriptionHandler {
 	@Bean("smops")
 	KafkaOps ops() {
 		return new KafkaOps();
-	}
-
-	@Bean("smsecurityConfig")
-	SecurityConfig securityConfig() {
-		return new SecurityConfig();
-	}
-
-//	@Bean("smrestTemp")
-//	RestTemplate restTemp() {
-//		return new RestTemplate();
-//	}
-//		
-	@Bean("smresourceConfigDetails")
-	ResourceConfigDetails resourceConfigDetails() {
-		return new ResourceConfigDetails();
 	}
 
 	@Bean("smparamsResolver")

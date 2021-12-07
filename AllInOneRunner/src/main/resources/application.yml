@@ -189,7 +189,7 @@ spring:
         cleanup:
           policy: compact
   main:
-    lazy-initialization: true
+    lazy-initialization: false
     allow-bean-definition-overriding: true
 #  mvc.pathpattern.matching-strategy: ant_path_matcher
 writer:

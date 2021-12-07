@@ -3,6 +3,9 @@ package eu.neclab.ngsildbroker.entityhandler.validationutil;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.springframework.util.MultiValueMap;
+
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -21,19 +24,21 @@ public class Validator {
 	}
 
 	/**
-	 * Validate the query parameter and call this method from EntityController class.
-	 * @param parameterMap
+	 * Validate the query parameter and call this method from EntityController
+	 * class.
+	 * 
+	 * @param multiValueMap
 	 * @throws ResponseException
 	 */
-	public static void validate(Map<String, String[]> parameterMap) throws ResponseException {
-		for (String key : parameterMap.keySet()) {
+	public static void validate(MultiValueMap<String, String> multiValueMap) throws ResponseException {
+		for (String key : multiValueMap.keySet()) {
 			if (!validParams.contains(key)) {
 				throw new ResponseException(ErrorType.BadRequestData, key + " is not valid parameter");
 			}
 		}
 	}
-	
-	public static boolean validatePayloadType(JsonNode next,String entityId,BatchResult result) {
+
+	public static boolean validatePayloadType(JsonNode next, String entityId, BatchResult result) {
 		boolean validatePayload = false;
 		ObjectNode objectNode = (ObjectNode) next;
 		Iterator<Map.Entry<String, JsonNode>> iter = objectNode.fields();
@@ -53,5 +58,5 @@ public class Validator {
 			}
 		}
 		return validatePayload;
-	} 
+	}
 }

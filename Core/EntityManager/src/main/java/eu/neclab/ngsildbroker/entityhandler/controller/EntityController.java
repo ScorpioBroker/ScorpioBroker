@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,13 +14,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -28,6 +31,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.gson.JsonParseException;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -35,10 +39,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
-import eu.neclab.ngsildbroker.commons.tools.*;
 
 /**
  * 
@@ -91,7 +96,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@PostMapping
-	public ResponseEntity<byte[]> createEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> createEntity(ServerHttpRequest request,
 			@RequestBody(required = false) String payload) {
 		String result = null;
 		try {
@@ -130,13 +135,15 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload  json ld message
 	 * @return ResponseEntity object
 	 */
-	@PatchMapping("/**/attrs")
-	public ResponseEntity<byte[]> updateEntity(HttpServletRequest request, @RequestBody String payload) {
+	@PatchMapping("/{entityId}/attrs")
+	public ResponseEntity<byte[]> updateEntity(ServerHttpRequest request, @PathVariable("entityId") String entityId,
+			@RequestBody String payload) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
 
-			String[] split = request.getServletPath().replace("/ngsi-ld/v1/entities/", "").split("/attrs");
-			String entityId = HttpUtils.denormalize(split[0]);
+			// String[] split = request.getPath().toString().replace("/ngsi-ld/v1/entities/",
+			// "").split("/attrs");
+			entityId = HttpUtils.denormalize(entityId);
 			logger.trace("update entity :: started");
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
@@ -176,13 +183,14 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload  jsonld message
 	 * @return ResponseEntity object
 	 */
-	@PostMapping("/**/attrs")
-	public ResponseEntity<byte[]> appendEntity(HttpServletRequest request, @RequestBody String payload,
-			@RequestParam(required = false, name = "options") String options) {
+	@PostMapping("/{entityId}/attrs")
+	public ResponseEntity<byte[]> appendEntity(ServerHttpRequest request, @PathVariable("entityId") String entityId,
+			@RequestBody String payload, @RequestParam(required = false, name = "options") String options) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
-			String[] split = request.getServletPath().replace("/ngsi-ld/v1/entities/", "").split("/attrs");
-			String entityId = HttpUtils.denormalize(split[0]);
+			// String[] split = request.getPath().toString().replace("/ngsi-ld/v1/entities/",
+			// "").split("/attrs");
+			entityId = HttpUtils.denormalize(entityId);
 
 			logger.trace("append entity :: started");
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
@@ -227,12 +235,15 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload
 	 * @return
 	 */
-	@PatchMapping("/**/attrs/**")
-	public ResponseEntity<byte[]> partialUpdateEntity(HttpServletRequest request, @RequestBody String payload) {
+	@PatchMapping("/{entityId}/attrs/{attrId}")
+	public ResponseEntity<byte[]> partialUpdateEntity(ServerHttpRequest request,
+			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
+			@RequestBody String payload) {
 		try {
-			String[] split = request.getServletPath().replace("/ngsi-ld/v1/entities/", "").split("/attrs/");
-			String attrId = HttpUtils.denormalize(split[1]);
-			String entityId = HttpUtils.denormalize(split[0]);
+			// String[] split = request.getPath().toString().replace("/ngsi-ld/v1/entities/",
+			// "").split("/attrs/");
+			attrId = HttpUtils.denormalize(attrId);
+			entityId = HttpUtils.denormalize(entityId);
 			Object jsonPayload = JsonUtils.fromString(payload);
 			List<Object> atContext = HttpUtils.getAtContext(request);
 			logger.trace("partial-update entity :: started");
@@ -288,18 +299,18 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 	@DeleteMapping("/**")
-	public ResponseEntity<byte[]> deleteAttribute(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteAttribute(ServerHttpRequest request,
 			@RequestParam(value = "datasetId", required = false) String datasetId,
 			@RequestParam(value = "deleteAll", required = false) String deleteAll) {
 		try {
-			String path = request.getServletPath().replace("/ngsi-ld/v1/entities/", "");
+			String path = request.getPath().toString().replace("/ngsi-ld/v1/entities/", "");
 			if (path.contains("/attrs/")) {
 				String[] split = path.split("/attrs/");
 				String attrId = HttpUtils.denormalize(split[1]);
 				String entityId = HttpUtils.denormalize(split[0]);
 				ValidateURI.validateUri(entityId);
 				logger.trace("delete attribute :: started");
-				Validator.validate(request.getParameterMap());
+				Validator.validate(request.getQueryParams());
 				Context context = JsonLdProcessor.coreContext.clone();
 				context = context.parse(HttpUtils.getAtContext(request), true);
 				String expandedAttrib = paramsResolver.expandAttribute(attrId, context);
@@ -335,9 +346,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param entityId
 	 * @return
 	 */
-	public ResponseEntity<byte[]> deleteEntity(HttpServletRequest request) {
+	public ResponseEntity<byte[]> deleteEntity(ServerHttpRequest request) {
 		try {
-			String entityId = HttpUtils.denormalize(request.getServletPath().replace("/ngsi-ld/v1/entities/", ""));
+			String entityId = HttpUtils.denormalize(request.getPath().toString().replace("/ngsi-ld/v1/entities/", ""));
 			logger.trace("delete entity :: started");
 			ValidateURI.validateUri(entityId);
 			entityService.deleteEntity(HttpUtils.getHeaders(request), entityId);

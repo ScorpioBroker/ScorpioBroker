@@ -1,25 +1,22 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -37,7 +34,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
-import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
 
 @RestController
 @RequestMapping("/ngsi-ld/v1/entityOperations")
@@ -66,7 +62,7 @@ public class EntityBatchController {
 	}
 
 	@PostMapping("/create")
-	public ResponseEntity<byte[]> createMultiple(HttpServletRequest request, @RequestBody String payload) {
+	public ResponseEntity<byte[]> createMultiple(ServerHttpRequest request, @RequestBody String payload) {
 
 		List<Map<String, Object>> jsonPayload;
 		try {
@@ -158,7 +154,7 @@ public class EntityBatchController {
 	}
 
 	@PostMapping("/upsert")
-	public ResponseEntity<byte[]> upsertMultiple(HttpServletRequest request, @RequestBody String payload,
+	public ResponseEntity<byte[]> upsertMultiple(ServerHttpRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
 
 		List<Map<String, Object>> jsonPayload;
@@ -263,7 +259,7 @@ public class EntityBatchController {
 	}
 
 	@PostMapping("/update")
-	public ResponseEntity<byte[]> updateMultiple(HttpServletRequest request, @RequestBody String payload,
+	public ResponseEntity<byte[]> updateMultiple(ServerHttpRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
 
 		List<Map<String, Object>> jsonPayload;
@@ -345,7 +341,7 @@ public class EntityBatchController {
 	}
 
 	@PostMapping("/delete")
-	public ResponseEntity<byte[]> deleteMultiple(HttpServletRequest request, @RequestBody String payload)
+	public ResponseEntity<byte[]> deleteMultiple(ServerHttpRequest request, @RequestBody String payload)
 			throws ResponseException {
 		try {
 //			String resolved = httpUtils.expandPayload(request, payload);

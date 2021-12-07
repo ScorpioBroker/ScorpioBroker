@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -16,6 +17,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,8 +30,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import javax.net.ssl.SSLContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHost;
@@ -69,6 +69,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.yaml.snakeyaml.reader.StreamReader;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -147,8 +150,8 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static boolean doPreflightCheck(HttpServletRequest req) throws ResponseException {
-		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
+	public static boolean doPreflightCheck(ServerHttpRequest req) throws ResponseException {
+		String contentType = req.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE);
 		if (contentType == null) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
 		}
@@ -558,24 +561,16 @@ public final class HttpUtils {
 	 * @return a String with the body
 	 * @throws IOException if a connection error occurs
 	 */
-	public static String getBody(HttpServletRequest req) throws IOException {
-		BufferedReader reader = null;
-		try {
-			reader = req.getReader();
-			StringBuilder body = new StringBuilder();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				body.append(line);
-			}
-
-			return body.toString();
-		} finally {
-			if (reader != null) {
-				reader.close();
-			}
-		}
-	}
-
+	/*
+	 * public static String getBody(ServerHttpRequest req) throws IOException {
+	 * BufferedReader reader = null; try { reader = new BufferedReader(new
+	 * InputStreamReader(req.getBody().)); StringBuilder body = new StringBuilder();
+	 * String line; while ((line = reader.readLine()) != null) { body.append(line);
+	 * }
+	 * 
+	 * return body.toString(); } finally { if (reader != null) { reader.close(); } }
+	 * }
+	 */
 	/**
 	 * Read and decode the response's body using the encoding in the response. If no
 	 * encoding is found, UTF-8 is used.
@@ -611,8 +606,8 @@ public final class HttpUtils {
 		return true;
 	}
 
-	private static String getSanitizedHeader(HttpServletRequest req, String header) {
-		String dirtyHeader = req.getHeader(header);
+	private static String getSanitizedHeader(ServerHttpRequest req, String header) {
+		String dirtyHeader = req.getHeaders().getFirst(header);
 		if (dirtyHeader != null) {
 			return dirtyHeader.replaceAll("[\r\n]", "");
 		} else {
@@ -630,22 +625,22 @@ public final class HttpUtils {
 	 * @param req  the request (needed due to the origin and methods it requires)
 	 * @param resp the response with the right CORS headers
 	 */
-	private static void enableCORS(HttpServletRequest req, HttpServletResponse resp) {
+	private static void enableCORS(ServerHttpRequest req, ServerHttpResponse resp) {
 		// Sanitize the origin
 		String origin = getSanitizedHeader(req, "Origin");
 		if (origin != null) {
-			resp.addHeader("Access-Control-Allow-Origin", origin);
-			if ("options".equalsIgnoreCase(req.getMethod())) {
-				resp.setHeader("Allow", "GET, HEAD, POST, PUT, DELETE, TRACE, OPTIONS");
+			resp.getHeaders().add("Access-Control-Allow-Origin", origin);
+			if ("options".equalsIgnoreCase(req.getMethod().name())) {
+				resp.getHeaders().addAll("Allow", Arrays.asList("GET, HEAD, POST, PUT, DELETE, TRACE, OPTIONS"));
 				String headers = getSanitizedHeader(req, "Access-Control-Request-Headers");
 				String method = getSanitizedHeader(req, "Access-Control-Request-Method");
-				resp.addHeader("Access-Control-Allow-Methods", method);
-				resp.addHeader("Access-Control-Allow-Headers", headers);
+				resp.getHeaders().add("Access-Control-Allow-Methods", method);
+				resp.getHeaders().add("Access-Control-Allow-Headers", headers);
 			}
 		}
 		// Fix ios6 caching post requests
-		if ("post".equalsIgnoreCase(req.getMethod())) {
-			resp.addHeader("Cache-Control", "no-cache");
+		if ("post".equalsIgnoreCase(req.getMethod().name())) {
+			resp.getHeaders().add("Cache-Control", "no-cache");
 		}
 	}
 
@@ -656,16 +651,16 @@ public final class HttpUtils {
 	 * @param response the response body
 	 * @param resp     the response object
 	 */
-	public static void sendResponse(HttpServletRequest req, String response, HttpServletResponse resp) {
-		enableCORS(req, resp);
-		resp.setContentType(AppConstants.NGB_APPLICATION_JSON);
-		try {
-			resp.getWriter().write(response);
-		} catch (IOException e) {
-			LOG.warn("IOException when sending a response: " + e.getMessage());
-		}
-
-	}
+	/*
+	 * public static void sendResponse(ServerHttpRequest req, String response,
+	 * ServerHttpResponse resp) { enableCORS(req, resp);
+	 * resp.getHeaders().add(HttpHeaders.CONTENT_TYPE,
+	 * AppConstants.NGB_APPLICATION_JSON); try { resp.writeAndFlushWith(new );
+	 * resp.flush(); } catch (IOException e) {
+	 * LOG.warn("IOException when sending a response: " + e.getMessage()); }
+	 * 
+	 * }
+	 */
 
 	/**
 	 * Send an error with the given error code as status and the given message as
@@ -678,15 +673,13 @@ public final class HttpUtils {
 	 * @param resp      the response object
 	 * 
 	 */
-	public static void sendError(HttpServletRequest req, int errorCode, String message, HttpServletResponse resp) {
-		enableCORS(req, resp);
-		try {
-			LOG.warn(message);
-			resp.sendError(errorCode, message);
-		} catch (IOException ioe) {
-			LOG.warn("IOException when sending an error: " + message);
-		}
-	}
+	/*
+	 * public static void sendError(ServerHttpRequest req, int errorCode, String
+	 * message, ServerHttpResponse resp) { enableCORS(req, resp); try {
+	 * LOG.warn(message); resp.setStatusCode(HttpStatus.valueOf(errorCode));
+	 * resp.getBody().write(message.getBytes()); } catch (IOException ioe) {
+	 * LOG.warn("IOException when sending an error: " + message); } }
+	 */
 
 	/**
 	 * Get the path out of the URL from this request, trimming out slashes (both at
@@ -695,8 +688,8 @@ public final class HttpUtils {
 	 * @param req the request object
 	 * @return the clean path
 	 */
-	public static String getCleanPath(HttpServletRequest req) {
-		String path = req.getPathInfo();
+	public static String getCleanPath(ServerHttpRequest req) {
+		String path = req.getURI().toString();
 		if (!StringUtils.isSet(path)) {
 			return "";
 		}
@@ -756,7 +749,7 @@ public final class HttpUtils {
 		response = httpClient.execute(new HttpGet(uri));
 		StatusLine status = response.getStatusLine();
 		httpClient.close();
-		if (status.getStatusCode() != HttpServletResponse.SC_OK) {
+		if (status.getStatusCode() != HttpStatus.OK.value()) {
 			throw new HttpErrorResponseException(status.getStatusCode(), status.getReasonPhrase());
 		}
 		InputStream input = null;
@@ -786,23 +779,23 @@ public final class HttpUtils {
 		}
 	}
 
-	public static List<Object> getAtContext(HttpServletRequest req) {
+	public static List<Object> getAtContext(ServerHttpRequest req) {
 		return parseLinkHeader(req, NGSIConstants.HEADER_REL_LDCONTEXT);
 	}
 
-	public static List<Object> parseLinkHeader(HttpServletRequest req, String headerRelLdcontext) {
-		return parseLinkHeader(req.getHeaders("Link"), headerRelLdcontext);
+	public static List<Object> parseLinkHeader(ServerHttpRequest req, String headerRelLdcontext) {
+		return parseLinkHeader(req.getHeaders().get("Link"), headerRelLdcontext);
 	}
 
-	public static List<Object> parseLinkHeader(Enumeration<String> rawLinks, String headerRelLdcontext) {
+	public static List<Object> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
 
 		ArrayList<Object> result = new ArrayList<Object>();
 		if (rawLinks == null) {
 			return result;
 		}
-
-		while (rawLinks.hasMoreElements()) {
-			String[] rawLinkInfos = rawLinks.nextElement().split(";");
+		Iterator<String> it = rawLinks.iterator();
+		while (it.hasNext()) {
+			String[] rawLinkInfos = it.next().split(";");
 			boolean isWantedRel = false;
 			for (String rawLinkInfo : rawLinkInfos) {
 				if (rawLinkInfo.trim().startsWith("rel=")) {
@@ -826,18 +819,18 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply)
+	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply)
 			throws ResponseException {
 		return generateReply(request, reply, null);
 
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, null);
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> context) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, context, false);
 	}
@@ -869,12 +862,12 @@ public final class HttpUtils {
 
 	}
 
-	private static int parseAcceptHeader(Enumeration<String> acceptHeaders) {
+	private static int parseAcceptHeader(List<String> acceptHeaders) {
 		float q = 1;
 		int appGroup = -1;
-
-		while (acceptHeaders.hasMoreElements()) {
-			String header = acceptHeaders.nextElement();
+		Iterator<String> it = acceptHeaders.iterator();
+		while (it.hasNext()) {
+			String header = it.next();
 
 			Matcher m = headerPattern.matcher(header.toLowerCase());
 			while (m.find()) {
@@ -913,7 +906,7 @@ public final class HttpUtils {
 		}
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
 			boolean forceArrayResult) throws ResponseException {
 		List<Object> requestAtContext = getAtContext(request);
@@ -927,7 +920,7 @@ public final class HttpUtils {
 		return generateReply(request, reply, additionalHeaders, context, additionalContext, forceArrayResult);
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> additionalContext,
 			boolean forceArrayResult) throws ResponseException {
 
@@ -954,7 +947,7 @@ public final class HttpUtils {
 			if (additionalHeaders == null) {
 				additionalHeaders = ArrayListMultimap.create();
 			}
-			int sendingContentType = parseAcceptHeader(request.getHeaders(HttpHeaders.ACCEPT));
+			int sendingContentType = parseAcceptHeader(request.getHeaders().get(HttpHeaders.ACCEPT));
 			switch (sendingContentType) {
 			case 1:
 				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
@@ -994,7 +987,7 @@ public final class HttpUtils {
 			}
 
 			boolean compress = false;
-			String options = request.getParameter(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			String options = request.getQueryParams().getFirst(NGSIConstants.QUERY_PARAMETER_OPTIONS);
 			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
 				compress = true;
 			}
@@ -1051,15 +1044,10 @@ public final class HttpUtils {
 		return baos.toByteArray();
 	}
 
-	public static ArrayListMultimap<String, String> getHeaders(HttpServletRequest request) {
+	public static ArrayListMultimap<String, String> getHeaders(ServerHttpRequest request) {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		Iterator<String> it = request.getHeaderNames().asIterator();
-		while (it.hasNext()) {
-			String key = it.next();
-			Iterator<String> it2 = request.getHeaders(key).asIterator();
-			while (it2.hasNext()) {
-				result.put(key, it2.next());
-			}
+		for (Entry<String, List<String>> entry : request.getHeaders().entrySet()) {
+			result.putAll(entry.getKey(), entry.getValue());
 		}
 		return result;
 	}
@@ -1079,7 +1067,7 @@ public final class HttpUtils {
 		return tenantId;
 	}
 
-	public static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
+	public static String generateNextLink(ServerHttpRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
 			return null;
 		}
@@ -1087,14 +1075,14 @@ public final class HttpUtils {
 				qResult.getqToken(), "next");
 	}
 
-	private static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
+	private static String generateFollowUpLinkHeader(ServerHttpRequest request, int offset, int limit, String token,
 			String rel) {
 
 		StringBuilder builder = new StringBuilder("</");
 		builder.append("?");
 
-		for (Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
-			String[] values = entry.getValue();
+		for (Entry<String, List<String>> entry : request.getQueryParams().entrySet()) {
+			List<String> values = entry.getValue();
 			String key = entry.getKey();
 			if (key.equals("offset")) {
 				continue;
@@ -1117,7 +1105,7 @@ public final class HttpUtils {
 		return builder.toString();
 	}
 
-	public static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
+	public static String generatePrevLink(ServerHttpRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
 			return null;
 		}

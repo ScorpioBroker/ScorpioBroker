@@ -13,7 +13,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,6 +21,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,7 +51,6 @@ import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionManager;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -116,7 +115,7 @@ public class SubscriptionController {
 
 	@RequestMapping(method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<byte[]> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
+	public ResponseEntity<byte[]> subscribeRest(ServerHttpRequest request, @RequestBody String payload) {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription = null;
 
@@ -170,7 +169,7 @@ public class SubscriptionController {
 		return result;
 	}
 
-	public Subscription expandSubscription(String body, HttpServletRequest request) throws ResponseException {
+	public Subscription expandSubscription(String body, ServerHttpRequest request) throws ResponseException {
 		Subscription subscription = new Subscription();
 
 		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request), body,
@@ -444,15 +443,15 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.GET)
-	public ResponseEntity<byte[]> getAllSubscriptions(HttpServletRequest request,
+	public ResponseEntity<byte[]> getAllSubscriptions(ServerHttpRequest request,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException {
 		logger.trace("getAllSubscriptions() :: started");
 		List<SubscriptionRequest> result = null;
-		if (request.getRequestURI().equals(MY_REQUEST_MAPPING)
-				|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)) {
+		if (request.getPath().toString().equals(MY_REQUEST_MAPPING)
+				|| request.getPath().toString().equals(MY_REQUEST_MAPPING_ALT)) {
 			result = manager.getAllSubscriptions(limit, HttpUtils.getHeaders(request));
 			logger.trace("getAllSubscriptions() :: completed");
-			return httpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(result)));
+			return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(result)));
 		} else {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
@@ -469,7 +468,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/{id}")
-	public ResponseEntity<byte[]> getSubscriptions(HttpServletRequest request,
+	public ResponseEntity<byte[]> getSubscriptions(ServerHttpRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) String id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
@@ -486,7 +485,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
-	public ResponseEntity<byte[]> deleteSubscription(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteSubscription(ServerHttpRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
@@ -500,13 +499,13 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE)
-	public ResponseEntity<byte[]> deleteSubscriptionEmptyId(HttpServletRequest request) {
+	public ResponseEntity<byte[]> deleteSubscriptionEmptyId(ServerHttpRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}
 
 	@RequestMapping(method = RequestMethod.PATCH, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
-	public ResponseEntity<byte[]> updateSubscription(HttpServletRequest request,
+	public ResponseEntity<byte[]> updateSubscription(ServerHttpRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestBody String payload) {
 		logger.trace("call updateSubscription() ::");
@@ -555,7 +554,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.PATCH)
-	public ResponseEntity<byte[]> patchubscriptionEmptyId(HttpServletRequest request) {
+	public ResponseEntity<byte[]> patchubscriptionEmptyId(ServerHttpRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}

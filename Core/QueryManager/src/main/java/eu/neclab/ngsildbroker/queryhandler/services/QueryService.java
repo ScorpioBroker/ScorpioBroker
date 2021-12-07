@@ -131,7 +131,7 @@ public class QueryService {
 
 	@PostConstruct
 	private void setup() {
-		kafkaTemplate.setReplyTimeout(replyTimeout);
+		// kafkaTemplate.setReplyTimeout(replyTimeout);
 	}
 
 	/**
@@ -531,8 +531,6 @@ public class QueryService {
 		}
 		return fromCsources;
 	}
-
-
 
 	// TODO decide on removal
 	/*

@@ -5,11 +5,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -69,7 +67,7 @@ public class InfoServerController {
 	}
 	
 	@GetMapping
-	public ResponseEntity<Object> getHealth(HttpServletRequest request) {
+	public ResponseEntity<Object> getHealth(ServerHttpRequest request) {
 		HashMap<String, Object> result = new HashMap<String, Object>();
 
 		result.put("Status of Querymanager", getStatus(QUERY_MANAGER));

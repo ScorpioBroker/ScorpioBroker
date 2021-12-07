@@ -6,11 +6,10 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -87,7 +86,7 @@ public class InfoController {
 	}
 
 	@GetMapping(path = "/types")
-	public ResponseEntity<Object> getTypes(HttpServletRequest request) {
+	public ResponseEntity<Object> getTypes(ServerHttpRequest request) {
 		List<String> types = storageReaderDao.getAllTypes();
 		if (types == null) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("failed to get available types");
@@ -97,7 +96,7 @@ public class InfoController {
 	}
 
 	@GetMapping(path = "/localtypes")
-	public ResponseEntity<Object> getLocalTypes(HttpServletRequest request) {
+	public ResponseEntity<Object> getLocalTypes(ServerHttpRequest request) {
 		List<String> types = storageReaderDao.getLocalTypes();
 		if (types == null) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("failed to get available types");
@@ -107,7 +106,7 @@ public class InfoController {
 	}
 
 	@GetMapping(path = "/stats")
-	public ResponseEntity<Object> getStats(HttpServletRequest request) throws ResponseException {
+	public ResponseEntity<Object> getStats(ServerHttpRequest request) throws ResponseException {
 		HashMap<String, Object> result = new HashMap<String, Object>();
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		String tenant = HttpUtils.getTenantFromHeaders(headers);
@@ -118,7 +117,7 @@ public class InfoController {
 	}
 
 	@GetMapping(path = "/health")
-	public ResponseEntity<Object> getHealth(HttpServletRequest request) {
+	public ResponseEntity<Object> getHealth(ServerHttpRequest request) {
 		HashMap<String, Object> result = new HashMap<String, Object>();
 
 		result.put("Status of Querymanager", getStatus(QUERY_MANAGER));

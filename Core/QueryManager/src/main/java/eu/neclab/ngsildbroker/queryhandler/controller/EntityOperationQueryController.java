@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,7 +28,6 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -76,7 +75,7 @@ public class EntityOperationQueryController {
 	// these are known structures in try catch. failed parsing would rightfully
 	// result in an error
 	@PostMapping("/query")
-	public ResponseEntity<byte[]> postQuery(HttpServletRequest request, @RequestBody String payload,
+	public ResponseEntity<byte[]> postQuery(ServerHttpRequest request, @RequestBody String payload,
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,

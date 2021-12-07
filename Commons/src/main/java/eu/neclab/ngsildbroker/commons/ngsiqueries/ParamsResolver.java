@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -31,7 +32,7 @@ public class ParamsResolver {
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, Context context)
+	public QueryParams getQueryParamsFromUriQuery(MultiValueMap<String,String> ngsildQueryParams, Context context)
 			throws ResponseException {
 		return this.getQueryParamsFromUriQuery(ngsildQueryParams, context, false);
 	}
@@ -96,16 +97,16 @@ public class ParamsResolver {
 	}
 
 	// new simplified format
-	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, Context context,
+	public QueryParams getQueryParamsFromUriQuery(MultiValueMap<String,String> multiValueMap, Context context,
 			boolean temporalEntityFormat) throws ResponseException {
 		logger.trace("call getStorageManagerJsonQuery method ::");
 		try {
 			QueryParams qp = new QueryParams();
-			Iterator<String> it = ngsildQueryParams.keySet().iterator();
+			Iterator<String> it = multiValueMap.keySet().iterator();
 			String id = null, type = null, idPattern = null;
 			while (it.hasNext()) {
 				String queryParameter = it.next();
-				String queryValue = ngsildQueryParams.get(queryParameter)[0];
+				String queryValue = multiValueMap.getFirst(queryParameter);
 				logger.debug("Query parameter:" + queryParameter + ", value=" + queryValue);
 				GeoqueryRel geoqueryTokens;
 				switch (queryParameter) {
@@ -128,12 +129,12 @@ public class ParamsResolver {
 					String geometry = "";
 					String coordinates = "";
 					String geoproperty = "";
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY) != null)
-						geometry = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY)[0];
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_COORDINATES) != null)
-						coordinates = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_COORDINATES)[0];
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY) != null) {
-						geoproperty = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY)[0];
+					if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY) != null)
+						geometry = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+					if (multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_COORDINATES) != null)
+						coordinates = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_COORDINATES);
+					if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY) != null) {
+						geoproperty = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
 						geoproperty = expandAttribute(geoproperty, context);
 					} else {
 						geoproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_GEOPROPERTY;
@@ -166,16 +167,16 @@ public class ParamsResolver {
 					String timeAt = "";
 					String timeproperty = "";
 					String endTimeAt = "";
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME) != null)
-						timeAt = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME)[0];
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY) != null) {
-						timeproperty = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY)[0];
+					if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_TIME) != null)
+						timeAt = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_TIME);
+					if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY) != null) {
+						timeproperty = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY);
 						timeproperty = expandAttribute(timeproperty, context);
 					} else {
 						timeproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY;
 					}
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_ENDTIME) != null)
-						endTimeAt = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_ENDTIME)[0];
+					if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_ENDTIME) != null)
+						endTimeAt = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_ENDTIME);
 
 					if (timeAt.isEmpty()) {
 						throw new ResponseException(ErrorType.BadRequestData, "Time is empty");

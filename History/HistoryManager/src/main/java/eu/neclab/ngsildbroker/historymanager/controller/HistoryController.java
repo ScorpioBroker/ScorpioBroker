@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -69,7 +71,7 @@ public class HistoryController {
 	int maxLimit = 1000;
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
-	
+
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	String coreContext;
 
@@ -79,7 +81,7 @@ public class HistoryController {
 	}
 
 	@PostMapping
-	public ResponseEntity<byte[]> createTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> createTemporalEntity(ServerHttpRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
 			logger.trace("createTemporalEntity :: started");
@@ -103,7 +105,7 @@ public class HistoryController {
 	}
 
 	@GetMapping
-	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> retrieveTemporalEntity(ServerHttpRequest request,
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
@@ -115,7 +117,7 @@ public class HistoryController {
 			Context context = JsonLdProcessor.coreContext.clone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), context, true);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getQueryParams(), context, true);
 			if (limit == null) {
 				limit = defaultLimit;
 			}
@@ -175,22 +177,26 @@ public class HistoryController {
 	}
 
 	@GetMapping("/{entityId}")
-	public ResponseEntity<byte[]> retrieveTemporalEntityById(HttpServletRequest request,
+	public ResponseEntity<byte[]> retrieveTemporalEntityById(ServerHttpRequest request,
 			@PathVariable("entityId") String entityId) {
-		String params = request.getQueryString();
+		// String params = request.getQueryString();
 		try {
 			logger.trace("retrieveTemporalEntityById :: started " + entityId);
 			logger.debug("entityId : " + entityId);
 			ValidateURI.validateUri(entityId);
-			if (params != null && !Validator.validate(params))
-				throw new ResponseException(ErrorType.BadRequestData);
-			Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
-			String[] entityArray = new String[] { entityId };
-			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
+			// if (params != null && !Validator.validate(params))
+			// throw new ResponseException(ErrorType.BadRequestData);
+			// Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
+			// String[] entityArray = new String[] { entityId };
+			// queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
+			LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<String, String>(
+					request.getQueryParams());
+			params.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
+
 			Context context = JsonLdProcessor.coreContext.clone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam, context, true);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(params, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
@@ -209,19 +215,19 @@ public class HistoryController {
 	}
 
 	@DeleteMapping("/{entityId}")
-	public ResponseEntity<byte[]> deleteTemporalEntityById(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteTemporalEntityById(ServerHttpRequest request,
 			@PathVariable("entityId") String entityId) {
 		try {
 			logger.trace("deleteTemporalEntityById :: started");
 			logger.debug("entityId : " + entityId);
 			ValidateURI.validateUri(entityId);
-			Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
-			String[] entityArray = new String[] { entityId };
-			queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
+			LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<String, String>(
+					request.getQueryParams());
+			params.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
 			Context context = JsonLdProcessor.coreContext.clone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(queryParam, context, true);
+			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(params, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
@@ -243,13 +249,13 @@ public class HistoryController {
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE)
-	public ResponseEntity<byte[]> deleteTemporalEntityIdIsEmpty(HttpServletRequest request) {
+	public ResponseEntity<byte[]> deleteTemporalEntityIdIsEmpty(ServerHttpRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}
 
 	@PostMapping("/{entityId}/attrs")
-	public ResponseEntity<byte[]> addAttrib2TemopralEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> addAttrib2TemopralEntity(ServerHttpRequest request,
 			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload) {
 		try {
 			logger.trace("addAttrib2TemopralEntity :: started");
@@ -272,7 +278,7 @@ public class HistoryController {
 	}
 
 	@DeleteMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(ServerHttpRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
 			ValidateURI.validateUri(entityId);
@@ -295,7 +301,7 @@ public class HistoryController {
 	}
 
 	@PatchMapping("/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<byte[]> modifyAttribInstanceTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> modifyAttribInstanceTemporalEntity(ServerHttpRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId, @RequestBody(required = false) String payload) {
 		try {
@@ -326,7 +332,7 @@ public class HistoryController {
 	}
 
 	@DeleteMapping("/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<byte[]> deleteAtrribInstanceTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<byte[]> deleteAtrribInstanceTemporalEntity(ServerHttpRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId) {
 		try {

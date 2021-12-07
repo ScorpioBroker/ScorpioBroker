@@ -16,14 +16,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +31,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.github.filosganga.geogson.model.Geometry;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.JsonParseException;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
@@ -67,12 +64,6 @@ import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
-import eu.neclab.ngsildbroker.entityhandler.validationutil.IdValidationRule;
-import eu.neclab.ngsildbroker.entityhandler.validationutil.PropertyValidatioRule;
-import eu.neclab.ngsildbroker.entityhandler.validationutil.RelationshipValidationRule;
-import eu.neclab.ngsildbroker.entityhandler.validationutil.TypeValidationRule;
-import eu.neclab.ngsildbroker.entityhandler.validationutil.ValidationRules;
-import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
 
 @Service
 public class EntityService {
@@ -602,24 +593,6 @@ public class EntityService {
 	 * else { entityTopicMap.put(key, new EntityDetails(key, partitionId, offset));
 	 * } logger.trace("updateTopicDetails() :: completed"); }
 	 */
-
-	public void validateEntity(String payload, HttpServletRequest request) throws ResponseException {
-		Entity entity;
-		try {
-			entity = DataSerializer.getEntity(payload);
-		} catch (JsonParseException e) {
-			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
-		}
-		List<ValidationRules> rules = new ArrayList<>();
-		rules.add(new IdValidationRule());
-		rules.add(new TypeValidationRule());
-		rules.add(new PropertyValidatioRule());
-		rules.add(new RelationshipValidationRule());
-
-		for (ValidationRules rule : rules) {
-			rule.validateEntity(entity, request);
-		}
-	}
 
 	
 	public BatchResult deleteMultipleMessage(ArrayListMultimap<String, String> headers, String payload)

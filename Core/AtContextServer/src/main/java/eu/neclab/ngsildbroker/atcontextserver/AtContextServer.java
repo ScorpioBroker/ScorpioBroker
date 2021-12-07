@@ -10,16 +10,14 @@ import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContext;
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
-import eu.neclab.ngsildbroker.commons.securityConfig.ResourceConfigDetails;
+
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.commons.swaggerConfig.SwaggerConfigDetails;
 
-
-@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class })
-@Import({KafkaConfig.class, SwaggerConfigDetails.class})
-@EnableBinding({AtContextProducerChannel.class})
+@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class })
+@Import({ KafkaConfig.class })
+@EnableBinding({ AtContextProducerChannel.class })
 public class AtContextServer {// implements QueryHandlerInterface{
 
 	public static void main(String[] args) {
@@ -30,24 +28,15 @@ public class AtContextServer {// implements QueryHandlerInterface{
 	KafkaOps ops() {
 		return new KafkaOps();
 	}
-	
+
 	@Bean
 	AtContext atCon() {
 		return new AtContext();
 	}
-	
+
 	@Bean
 	RestTemplate restTemp() {
 		return new RestTemplate();
 	}
-	
-	@Bean
-	SecurityConfig securityConfig() {
-		return new SecurityConfig();
-	}
-		
-	@Bean
-	ResourceConfigDetails resourceConfigDetails() {
-		return new ResourceConfigDetails();
-	}
+
 }

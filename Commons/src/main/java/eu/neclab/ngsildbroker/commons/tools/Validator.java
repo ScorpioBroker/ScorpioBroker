@@ -5,6 +5,9 @@ import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.springframework.util.MultiValueMap;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -39,16 +42,15 @@ public class Validator {
 		validParams.add(NGSIConstants.QUERY_PARAMETER_TIME);
 	}
 
-	public static void validate(Map<String, String[]> parameterMap, int maxLimit, boolean ignoreType)
+	public static void validate(MultiValueMap<String, String> parameterMap, int maxLimit, boolean ignoreType)
 			throws ResponseException, URISyntaxException {
 
-		
 		for (String key : parameterMap.keySet()) {
 			if (!validParams.contains(key)) {
 				throw new ResponseException(ErrorType.BadRequestData, key + " is not valid parameter");
 			}
 			if (key.equals(NGSIConstants.QUERY_PARAMETER_LIMIT)) {
-				int value = Integer.parseInt(parameterMap.get(key)[0]);
+				int value = Integer.parseInt(parameterMap.getFirst(key));
 				if (value > maxLimit) {
 					throw new ResponseException(ErrorType.TooManyResults,
 							"The limit in the request is too big. To request with the max limit of " + maxLimit
@@ -64,33 +66,33 @@ public class Validator {
 		}
 	}
 
-	public static void validateCsourceGetParameter(Map<String, String[]> parameterMap)
+	public static void validateCsourceGetParameter(MultiValueMap<String, String> multiValueMap)
 			throws ResponseException, URISyntaxException {
 
-		for (String key : parameterMap.keySet()) {
+		for (String key : multiValueMap.keySet()) {
 			if (!validParams.contains(key)) {
 				throw new ResponseException(ErrorType.BadRequestData, key + " is not valid parameter");
 			}
-			validateIdAndIdPattern(key, parameterMap);
+			validateIdAndIdPattern(key, multiValueMap);
 		}
-		if (!parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_TYPE)
-				&& !parameterMap.containsKey(NGSIConstants.QUERY_PARAMETER_ATTRS)) {
+		if (!multiValueMap.containsKey(NGSIConstants.QUERY_PARAMETER_TYPE)
+				&& !multiValueMap.containsKey(NGSIConstants.QUERY_PARAMETER_ATTRS)) {
 			throw new ResponseException(ErrorType.BadRequestData, "Missing mandatory minimum parameter "
 					+ NGSIConstants.QUERY_PARAMETER_TYPE + " or " + NGSIConstants.QUERY_PARAMETER_ATTRS);
 		}
 	}
 
-	private static void validateIdAndIdPattern(String key, Map<String, String[]> parameterMap)
+	private static void validateIdAndIdPattern(String key, MultiValueMap<String, String> multiValueMap)
 			throws ResponseException, URISyntaxException {
 		// validate idpattern and id
 		if (key.equals(NGSIConstants.QUERY_PARAMETER_IDPATTERN)) {
-			String value = parameterMap.get(key)[0];
+			String value = multiValueMap.getFirst(key);
 			if (!new URI(value).isAbsolute()) {
 				throw new ResponseException(ErrorType.BadRequestData, "idPattern is not a URI");
 			}
 		}
 		if (key.equals(NGSIConstants.QUERY_PARAMETER_ID)) {
-			String value = parameterMap.get(key)[0];
+			String value = multiValueMap.getFirst(key);
 			if (!new URI(value).isAbsolute()) {
 				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 			}
@@ -114,7 +116,8 @@ public class Validator {
 			if (key.equals(NGSIConstants.CSOURCE_TYPE)) {
 				if (value.isJsonNull()) {
 					throw new ResponseException(ErrorType.BadRequestData, "invalid type value");
-				} if(!value.getAsString().equalsIgnoreCase(NGSIConstants.NGSI_LD_SUBSCRIPTION_SHORT)) {
+				}
+				if (!value.getAsString().equalsIgnoreCase(NGSIConstants.NGSI_LD_SUBSCRIPTION_SHORT)) {
 					throw new ResponseException(ErrorType.BadRequestData, "No type or type is not Subscription");
 				}
 			}
@@ -147,30 +150,31 @@ public class Validator {
 		}
 		if (top.has(NGSIConstants.CSOURCE_EXPIRES)) {
 			JsonElement json = top.get(NGSIConstants.CSOURCE_EXPIRES);
-			if(!json.isJsonNull()) {
-			String dateExpiredAt = top.get(NGSIConstants.CSOURCE_EXPIRES).getAsString();
-			try {
-				checkExpiredAtDate(dateExpiredAt);
-				Long expiredAtValidate = SerializationTools.date2Long(dateExpiredAt);
-				if(!isValidFutureDate(expiredAtValidate)) {
-					throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
+			if (!json.isJsonNull()) {
+				String dateExpiredAt = top.get(NGSIConstants.CSOURCE_EXPIRES).getAsString();
+				try {
+					checkExpiredAtDate(dateExpiredAt);
+					Long expiredAtValidate = SerializationTools.date2Long(dateExpiredAt);
+					if (!isValidFutureDate(expiredAtValidate)) {
+						throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
+					}
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
 				}
-			} catch (Exception e) {
-				throw new ResponseException(ErrorType.BadRequestData,e.getMessage());
 			}
 		}
-	  }
 	}
+
 	private static void checkExpiredAtDate(String expiredAt) throws ResponseException {
 		try {
 			SerializationTools.date2Long(expiredAt);
-			
+
 		} catch (Exception e) {
-			throw new ResponseException(ErrorType.BadRequestData,"Failed to parse expiresAt");
+			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse expiresAt");
 		}
-		
+
 	}
-	
+
 	private static boolean isJSONValid(String jsonInString) {
 		try {
 			gson.fromJson(jsonInString, Object.class);
@@ -179,11 +183,10 @@ public class Validator {
 			return false;
 		}
 	}
+
 	private static boolean isValidFutureDate(Long date) {
 
 		return System.currentTimeMillis() < date;
 	}
 
-
 }
-
