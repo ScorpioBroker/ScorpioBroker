@@ -67,8 +67,8 @@ public class QueryController {// implements QueryHandlerInterface {
 	@Value("${ngb.debugmode}")
 	boolean debug = false;
 
-	private final byte[] emptyResult1 = { '{', ' ', '}' };
-	private final byte[] emptyResult2 = { '{', '}' };
+	private final byte[] emptyResult1 = { '[', ' ', ']' };
+	private final byte[] emptyResult2 = { '[', ']' };
 
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	String coreContext;
@@ -87,11 +87,11 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @return
 	 * @throws ResponseException
 	 */
-	@GetMapping(path = "/entities/**")
+	@GetMapping(path = "/entities/{entityId}")
 	public ResponseEntity<byte[]> getEntity(ServerHttpRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
-			@RequestParam(value = "options", required = false) List<String> options) throws ResponseException {
-		String entityId = HttpUtils.denormalize(request.getPath().toString().replace("/ngsi-ld/v1/entities/", ""));
+			@RequestParam(value = "options", required = false) List<String> options, @PathVariable("entityId") String entityId) throws ResponseException {
+		
 		try {
 			ValidateURI.validateUri(entityId);
 		} catch (ResponseException exception) {
@@ -296,7 +296,8 @@ public class QueryController {// implements QueryHandlerInterface {
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}
 					// long pregenresult = System.currentTimeMillis();
-					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve, countResult, context);
+					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve, countResult, context,
+							linkHeaders);
 					// long end = System.currentTimeMillis();
 					// System.err.println(start);
 					// System.err.println(prelink);
@@ -354,7 +355,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	}
 
 	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, QueryResult qResult,
-			boolean forceArray, boolean count, Context context) throws ResponseException {
+			boolean forceArray, boolean count, Context context, List<Object> contextLinks) throws ResponseException {
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
 		ArrayList<Object> additionalLinks = new ArrayList<Object>();
@@ -375,6 +376,6 @@ public class QueryController {// implements QueryHandlerInterface {
 			}
 		}
 		return HttpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
-				additionalHeaders, context, additionalLinks, forceArray);
+				additionalHeaders, context, contextLinks, forceArray);
 	}
 }

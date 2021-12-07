@@ -921,7 +921,7 @@ public final class HttpUtils {
 	}
 
 	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
-			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> additionalContext,
+			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult) throws ResponseException {
 
 		String replyBody;
@@ -930,7 +930,7 @@ public final class HttpUtils {
 		// requestAtContext);
 		Map<String, Object> compacted;
 		try {
-			compacted = JsonLdProcessor.compact(JsonUtils.fromString(reply), ldContext, opts);
+			compacted = JsonLdProcessor.compact(JsonUtils.fromString(reply), contextLinks, ldContext, opts);
 			Object context = compacted.get(JsonLdConsts.CONTEXT);
 			Object result;
 			Object graph = compacted.get(JsonLdConsts.GRAPH);
@@ -955,8 +955,7 @@ public final class HttpUtils {
 					((Map) result).remove(JsonLdConsts.CONTEXT);
 				}
 				replyBody = JsonUtils.toPrettyString(result);
-				additionalHeaders.removeAll(HttpHeaders.LINK);
-				for (Object entry : additionalContext) {
+				for (Object entry : contextLinks) {
 					if (entry instanceof String) {
 						additionalHeaders.put(HttpHeaders.LINK, "<" + entry
 								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");

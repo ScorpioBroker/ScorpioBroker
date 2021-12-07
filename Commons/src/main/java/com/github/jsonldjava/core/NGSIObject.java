@@ -544,7 +544,8 @@ public class NGSIObject {
 	private void compactAndValidateGeoProperty(JsonLdApi api) throws ResponseException {
 		Map<String, Object> geoPropMap = (Map<String, Object>) element;
 		Object geoJsonValue = geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE);
-		Object potentialStringValue = ((Map<String, Object>) geoPropMap).get(NGSIConstants.JSON_LD_VALUE);
+		Object potentialStringValue = ((Map<String, Object>) ((List) geoJsonValue).get(0))
+				.get(NGSIConstants.JSON_LD_VALUE);
 		Map<String, Object> compacted;
 		if (potentialStringValue != null) {
 			if (!(potentialStringValue instanceof String)) {

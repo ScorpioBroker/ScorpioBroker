@@ -143,7 +143,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 			// String[] split = request.getPath().toString().replace("/ngsi-ld/v1/entities/",
 			// "").split("/attrs");
-			entityId = HttpUtils.denormalize(entityId);
+			
 			logger.trace("update entity :: started");
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
@@ -242,8 +242,6 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			// String[] split = request.getPath().toString().replace("/ngsi-ld/v1/entities/",
 			// "").split("/attrs/");
-			attrId = HttpUtils.denormalize(attrId);
-			entityId = HttpUtils.denormalize(entityId);
 			Object jsonPayload = JsonUtils.fromString(payload);
 			List<Object> atContext = HttpUtils.getAtContext(request);
 			logger.trace("partial-update entity :: started");

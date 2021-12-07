@@ -841,7 +841,7 @@ public class QueryTerm {
 			attributeFilterProperty.append(" !~ '" + operant + "'");
 			break;
 		default:
-			throw new BadRequestException();
+			throw new BadRequestException("Bad operator in query");
 		}
 		return useRelClause;
 	}

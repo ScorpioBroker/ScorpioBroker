@@ -34,7 +34,8 @@ public class JsonLdProcessor {
 			return;
 		}
 		JsonLdProcessor.coreContextUrl = contextUrl;
-		JsonLdProcessor.coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl, false);
+		JsonLdProcessor.coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl,
+				false);
 	}
 
 	/**
@@ -52,6 +53,30 @@ public class JsonLdProcessor {
 	 */
 	public static Map<String, Object> compact(Object input, Object context, JsonLdOptions opts)
 			throws JsonLdError, ResponseException {
+		Context activeCtx;
+
+		activeCtx = coreContext.clone();
+		if (context != null) {
+			activeCtx = activeCtx.parse(context, true);
+		}
+		return compact(input, context, activeCtx, opts);
+	}
+
+	/**
+	 * Compacts the given input using the context according to the steps in the
+	 * <a href="http://www.w3.org/TR/json-ld-api/#compaction-algorithm"> Compaction
+	 * algorithm</a>.
+	 *
+	 * @param input   The input JSON-LD object.
+	 * @param context The context object to use for the compaction algorithm.
+	 * @param opts    The {@link JsonLdOptions} that are to be sent to the
+	 *                compaction algorithm.
+	 * @return The compacted JSON-LD document
+	 * @throws JsonLdError       If there is an error while compacting.
+	 * @throws ResponseException
+	 */
+	public static Map<String, Object> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts)
+			throws JsonLdError, ResponseException {
 		// 1)
 		// TODO: look into java futures/promises
 
@@ -66,15 +91,6 @@ public class JsonLdProcessor {
 		 * Object>) context).get(JsonLdConsts.CONTEXT); }
 		 */
 
-		Context activeCtx;
-		if (context != null && context instanceof Context) {
-			activeCtx = (Context) context;
-		} else {
-			activeCtx = coreContext.clone();
-			if (context != null) {
-				activeCtx = activeCtx.parse(context, true);
-			}
-		}
 		// 8)
 		Object compacted = new JsonLdApi(opts).compact(activeCtx, null, expanded, opts.getCompactArrays());
 
@@ -102,6 +118,7 @@ public class JsonLdProcessor {
 				ArrayList<Object> temp = new ArrayList<Object>();
 				temp.add(context);
 				temp.add(coreContextUrl);
+
 			}
 			if ((context instanceof Map && !((Map<String, Object>) context).isEmpty())
 					|| (context instanceof List && !((List<Object>) context).isEmpty())) {

@@ -9,7 +9,9 @@ public class BadRequestException extends ResponseException{
 
 	private static final long serialVersionUID = 1L;
 
-	
+	public BadRequestException(String msg) {
+		super(ErrorType.BadRequestData, msg);
+	}
 	
 	public BadRequestException() {
 		super(ErrorType.BadRequestData);

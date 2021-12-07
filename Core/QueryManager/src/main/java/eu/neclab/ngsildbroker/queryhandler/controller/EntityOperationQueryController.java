@@ -168,7 +168,8 @@ public class EntityOperationQueryController {
 			params.setIncludeSysAttrs(
 					(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)));
 			return QueryController.generateReply(request, queryService.getData(params, payload, linkHeaders, limit,
-					offset, qToken, false, count, HttpUtils.getHeaders(request), true), true, count, context);
+					offset, qToken, false, count, HttpUtils.getHeaders(request), true), true, count, context,
+					linkHeaders);
 
 		} catch (IOException e) {
 			logger.error("Failed to parse request data", e);

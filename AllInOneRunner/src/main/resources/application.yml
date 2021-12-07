@@ -247,6 +247,10 @@ security:
 selfhostcorecontext: http://localhost:9090/corecontext
 logging:
   level:
-    root: INFO
+    root: DEBUG
+    org.apache.kafka: ERROR
+    org.spring.kafka: ERROR
+    org.springframework.kafka: ERROR
+    com.zaxxer.hikari: ERROR
 ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
