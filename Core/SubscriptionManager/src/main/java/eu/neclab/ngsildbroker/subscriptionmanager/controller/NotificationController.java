@@ -2,9 +2,11 @@ package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
 import java.io.IOException;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +29,14 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 @RestController
 @RequestMapping("/remotenotify")
 public class NotificationController {
+
+	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	String coreContext;
+
+	@PostConstruct
+	public void init() {
+		JsonLdProcessor.init(coreContext);
+	}
 
 	@Autowired
 	SubscriptionManager subscriptionManager;

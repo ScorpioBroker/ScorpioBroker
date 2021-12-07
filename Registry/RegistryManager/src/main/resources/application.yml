@@ -127,3 +127,5 @@ broker:
 
 #broker.parent.location.url=http://10.0.4.33:9090/ngsi-ld/v1/csourceRegistrations/
 #broker.parent.location.url=http://cema.nlehd.de:2095/ngsi-ld/v1/csourceRegistrations/          
+ngsild:
+  corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld

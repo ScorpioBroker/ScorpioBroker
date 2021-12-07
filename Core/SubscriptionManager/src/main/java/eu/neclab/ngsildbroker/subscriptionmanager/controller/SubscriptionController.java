@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
@@ -73,13 +74,20 @@ public class SubscriptionController {
 	@Qualifier("smops")
 	KafkaOps kafkaOps;
 
-
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
 
 	@Autowired
 	@Qualifier("smparamsResolver")
 	ParamsResolver ldTools;
+
+	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	String coreContext;
+
+	@PostConstruct
+	public void init() {
+		JsonLdProcessor.init(coreContext);
+	}
 
 	ResponseException badRequest = new ResponseException(ErrorType.BadRequestData);
 

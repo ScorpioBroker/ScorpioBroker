@@ -56,6 +56,14 @@ public class EntityBatchController {
 	int maxDeleteBatch;
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	
+	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	String coreContext;
+	
+	@PostConstruct
+	public void init() {
+		JsonLdProcessor.init(coreContext);
+	}
 
 	@PostMapping("/create")
 	public ResponseEntity<byte[]> createMultiple(HttpServletRequest request, @RequestBody String payload) {

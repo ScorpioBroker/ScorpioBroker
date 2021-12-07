@@ -248,3 +248,5 @@ selfhostcorecontext: http://localhost:9090/corecontext
 logging:
   level:
     root: INFO
+ngsild:
+  corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld

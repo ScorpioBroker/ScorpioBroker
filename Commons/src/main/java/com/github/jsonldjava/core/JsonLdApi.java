@@ -51,10 +51,6 @@ public class JsonLdApi {
 	Object value = null;
 	Context context = null;
 
-	// TODO change back to spring
-	// @Value("${ngsi-ld.corecontext.url:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
-	private String coreContextUrl = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld";
-
 	/**
 	 * Constructs an empty JsonLdApi object using the default JsonLdOptions, and
 	 * without initialization.

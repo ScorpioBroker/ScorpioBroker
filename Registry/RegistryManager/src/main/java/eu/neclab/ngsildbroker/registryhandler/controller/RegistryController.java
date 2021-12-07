@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -73,6 +74,14 @@ public class RegistryController {
 	@Autowired
 	ObjectMapper objectMapper;
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+
+	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	String coreContext;
+
+	@PostConstruct
+	public void init() {
+		JsonLdProcessor.init(coreContext);
+	}
 
 	// @GetMapping
 	// public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,

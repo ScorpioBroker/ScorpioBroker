@@ -2,6 +2,10 @@ package eu.neclab.ngsildbroker.commons.constants;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+
 import java.util.Arrays;
 
 public interface NGSIConstants {
@@ -46,7 +50,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_PROPERTY = "https://uri.etsi.org/ngsi-ld/Property";
 	public final static String NGSI_LD_HAS_VALUE = "https://uri.etsi.org/ngsi-ld/hasValue";
 	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
-	public final static String NGSI_LD_COORDINATES = "https://purl.org/geojson/vocab#coordinates"; //"https://uri.etsi.org/ngsi-ld/coordinates";
+	public final static String NGSI_LD_COORDINATES = "https://purl.org/geojson/vocab#coordinates"; // "https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
 	public final static String NGSI_LD_LOCATION = "https://uri.etsi.org/ngsi-ld/location";
@@ -127,7 +131,6 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TEMPORAL_QUERY = "https://uri.etsi.org/ngsi-ld/temporalQ";
 	public final static String NGSI_LD_MANAGEMENTINTERVAL = "https://uri.etsi.org/ngsi-ld/managementInterval";
 
-
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_DEFAULT_PREFIX, NGSI_LD_HAS_VALUE, NGSI_LD_HAS_OBJECT, JSON_LD_VALUE, NGSI_LD_LOCATION,
@@ -138,13 +141,15 @@ public interface NGSIConstants {
 			NGSI_LD_NAME, NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL, NGSI_LD_EXPIRES, NGSI_LD_STATUS,
 			NGSI_LD_DESCRIPTION, NGSI_LD_GEO_REL, NGSI_LD_TIME_STAMP, NGSI_LD_TIMESTAMP_START, NGSI_LD_TIMESTAMP_END,
 			NGSI_LD_SUBSCRIPTION_ID, NGSI_LD_NOTIFIED_AT, NGSI_LD_DATA, NGSI_LD_INTERNAL, NGSI_LD_LAST_NOTIFICATION,
-			NGSI_LD_LAST_FAILURE, NGSI_LD_LAST_SUCCESS, NGSI_LD_TIMES_SEND, NGSI_LD_UNIT_CODE, NGSI_LD_DATA_SET_ID,NGSI_LD_MANAGEMENTINTERVAL };
+			NGSI_LD_LAST_FAILURE, NGSI_LD_LAST_SUCCESS, NGSI_LD_TIMES_SEND, NGSI_LD_UNIT_CODE, NGSI_LD_DATA_SET_ID,
+			NGSI_LD_MANAGEMENTINTERVAL };
 
 	public final static String[] NGSI_LD_SUBSCRIPTON_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_ENTITIES, NGSI_LD_ID_PATTERN, NGSI_LD_GEO_QUERY, NGSI_LD_NOTIFICATION, NGSI_LD_ATTRIBUTES,
 			NGSI_LD_ENDPOINT, NGSI_LD_ACCEPT, NGSI_LD_URI, NGSI_LD_FORMAT, NGSI_LD_QUERY, NGSI_LD_WATCHED_ATTRIBUTES,
 			NGSI_LD_TIMES_SEND, NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL, NGSI_LD_EXPIRES, NGSI_LD_STATUS,
-			NGSI_LD_DESCRIPTION, NGSI_LD_IS_ACTIVE, NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START, NGSI_LD_SUBSCRIPTION_NAME };
+			NGSI_LD_DESCRIPTION, NGSI_LD_IS_ACTIVE, NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START,
+			NGSI_LD_SUBSCRIPTION_NAME };
 
 	public final static String GEO_JSON_COORDINATES = "coordinates";
 	public final static String GEO_JSON_TYPE = "type";
@@ -246,8 +251,11 @@ public interface NGSIConstants {
 	public static final String TENANT_HEADER = "NGSILD-tenant";
 	public static final String LINK_HEADER = "Link";
 	public static final String QUERY_TYPE = "Query";
-	
-	public static final List<String> CORE_CONTEXT_URLS = Arrays.asList("https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld", "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld");
+
+	public static final Set<String> CORE_CONTEXT_URLS = Sets.newHashSet(
+			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld",
+			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld",
+			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld");
 	public static final String NGSI_LD_END_TIME_AT = "https://uri.etsi.org/ngsi-ld/endTimeAt";
 	public static final String NGSI_LD_TIME_AT = "https://uri.etsi.org/ngsi-ld/timeAt";
 	public static final String NGSI_LD_TIME_POPERTY = "https://uri.etsi.org/ngsi-ld/timeproperty";

@@ -55,6 +55,13 @@ public class EntityOperationQueryController {
 	@Value("${maxLimit}")
 	int maxLimit = 1000;
 
+	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	String coreContext;
+
+	@PostConstruct
+	public void init() {
+		JsonLdProcessor.init(coreContext);
+	}
 
 	@Autowired
 	ObjectMapper objectMapper;

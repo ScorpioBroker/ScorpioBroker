@@ -1,13 +1,13 @@
 package com.github.jsonldjava.core;
 
-import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class Constants {
 	;
-	public final static ArrayListMultimap<Integer, String> allowedDateTimes = ArrayListMultimap.create();
+	public final static HashMultimap<Integer, String> allowedDateTimes = HashMultimap.create();
 	static {
 		allowedDateTimes.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
 		allowedDateTimes.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
@@ -17,7 +17,7 @@ public class Constants {
 		allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_MODIFIED_AT);
 	}
 
-	public final static ArrayListMultimap<Integer, String> allowedScalars = ArrayListMultimap.create();
+	public final static HashMultimap<Integer, String> allowedScalars = HashMultimap.create();
 	static {
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DESCRIPTION);
@@ -49,7 +49,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
 	}
-	public final static ArrayListMultimap<Integer, String> allowedTopLevel = ArrayListMultimap.create();
+	public final static HashMultimap<Integer, String> allowedTopLevel = HashMultimap.create();
 	static {
 		allowedTopLevel.putAll(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD,
 				allowedScalars.get(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD));

@@ -87,9 +87,5 @@ kafka:
 defaultLimit: 50
 maxLimit: 500
 directDbConnection: true 
-#if directDbConnection is false then properties below are not used {{{
-
-
-
-               
-          
+ngsild:
+  corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld

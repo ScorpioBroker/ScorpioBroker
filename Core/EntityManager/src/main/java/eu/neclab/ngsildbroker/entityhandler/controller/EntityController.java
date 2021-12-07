@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -55,14 +56,6 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Autowired
 	ObjectMapper objectMapper;
 
-//	@Autowired
-//	@Qualifier("emops")
-//	KafkaOps kafkaOps;
-
-//	@Autowired
-//	@Qualifier("emconRes")
-//	ContextResolverBasic contextResolver;
-
 	@Autowired
 	@Qualifier("emparamsres")
 	ParamsResolver paramsResolver;
@@ -76,17 +69,17 @@ public class EntityController {// implements EntityHandlerInterface {
 		this.producerChannel = producerChannel;
 	}
 
-	// private HttpUtils httpUtils;
-
-	// @PostConstruct
-	// private void setup() {
-	// this.httpUtils = HttpUtils.getInstance(null);//contextResolver);
-	// }
-
 	LocalDateTime startAt;
 	LocalDateTime endAt;
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	String coreContext;
+
+	@PostConstruct
+	public void init() {
+		JsonLdProcessor.init(coreContext);
+	}
 
 	public EntityController() {
 	}

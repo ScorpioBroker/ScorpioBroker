@@ -39,12 +39,12 @@ public class NGSIObject {
 	private boolean isNotifierInfo = false;
 	private boolean isReceiverInfo = false;
 
-	private ArrayList<String> datasetIds = new ArrayList<String>();
+	private HashSet<String> datasetIds = new HashSet<String>();
 	private String id;
 	private String expandedProperty;
 	private NGSIObject parent;
 
-	private ArrayList<String> types = new ArrayList<String>();
+	private HashSet<String> types = new HashSet<String>();
 	private boolean fromHasValue;
 
 	public NGSIObject(Object element, NGSIObject parent) {
@@ -171,7 +171,7 @@ public class NGSIObject {
 		return this;
 	}
 
-	public ArrayList<String> getDatasetIds() {
+	public HashSet<String> getDatasetIds() {
 		return datasetIds;
 	}
 
@@ -189,7 +189,7 @@ public class NGSIObject {
 		return this;
 	}
 
-	public ArrayList<String> getTypes() {
+	public HashSet<String> getTypes() {
 		return types;
 	}
 

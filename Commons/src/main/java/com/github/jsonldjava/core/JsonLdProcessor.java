@@ -26,10 +26,16 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
  *
  */
 public class JsonLdProcessor {
+	private static String coreContextUrl = null;
+	public static Context coreContext = null;
 
-	private static String coreContextUrl = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld";
-	public static Context coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl,
-			false);
+	public synchronized static void init(String coreContextUrl) {
+		if (coreContextUrl != null) {
+			return;
+		}
+		coreContextUrl = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld";
+		coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl, false);
+	}
 
 	/**
 	 * Compacts the given input using the context according to the steps in the
@@ -41,16 +47,17 @@ public class JsonLdProcessor {
 	 * @param opts    The {@link JsonLdOptions} that are to be sent to the
 	 *                compaction algorithm.
 	 * @return The compacted JSON-LD document
-	 * @throws JsonLdError If there is an error while compacting.
-	 * @throws ResponseException 
+	 * @throws JsonLdError       If there is an error while compacting.
+	 * @throws ResponseException
 	 */
-	public static Map<String, Object> compact(Object input, Object context, JsonLdOptions opts) throws JsonLdError, ResponseException {
+	public static Map<String, Object> compact(Object input, Object context, JsonLdOptions opts)
+			throws JsonLdError, ResponseException {
 		// 1)
 		// TODO: look into java futures/promises
 
 		// 2-6) NOTE: these are all the same steps as in expand
-		
-		final Object expanded = expand(null, input, opts, -1, true);//input;// 
+
+		final Object expanded = expand(null, input, opts, -1, true);// input;//
 		// 7)
 		// NGSIComment: No need to do this expanded items do contain @context
 		/*
@@ -58,15 +65,15 @@ public class JsonLdProcessor {
 		 * context).containsKey(JsonLdConsts.CONTEXT)) { context = ((Map<String,
 		 * Object>) context).get(JsonLdConsts.CONTEXT); }
 		 */
-		
+
 		Context activeCtx;
-		if(context != null && context instanceof Context) {
+		if (context != null && context instanceof Context) {
 			activeCtx = (Context) context;
-		}else {
-		activeCtx = coreContext.clone();
-		if (context != null) {
-			activeCtx = activeCtx.parse(context, true);
-		}
+		} else {
+			activeCtx = coreContext.clone();
+			if (context != null) {
+				activeCtx = activeCtx.parse(context, true);
+			}
 		}
 		// 8)
 		Object compacted = new JsonLdApi(opts).compact(activeCtx, null, expanded, opts.getCompactArrays());

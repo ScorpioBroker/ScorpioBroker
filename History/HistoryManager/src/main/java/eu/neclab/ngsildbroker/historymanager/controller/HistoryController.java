@@ -69,6 +69,14 @@ public class HistoryController {
 	int maxLimit = 1000;
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	
+	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	String coreContext;
+
+	@PostConstruct
+	public void init() {
+		JsonLdProcessor.init(coreContext);
+	}
 
 	@PostMapping
 	public ResponseEntity<byte[]> createTemporalEntity(HttpServletRequest request,

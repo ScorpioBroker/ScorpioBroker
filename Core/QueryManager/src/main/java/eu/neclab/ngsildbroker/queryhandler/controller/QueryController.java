@@ -66,6 +66,14 @@ public class QueryController {// implements QueryHandlerInterface {
 	private final byte[] emptyResult1 = { '{', ' ', '}' };
 	private final byte[] emptyResult2 = { '{', '}' };
 
+	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	String coreContext;
+
+	@PostConstruct
+	public void init() {
+		JsonLdProcessor.init(coreContext);
+	}
+
 	/**
 	 * Method(GET) for multiple attributes separated by comma list
 	 * 

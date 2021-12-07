@@ -102,5 +102,5 @@ writer:
       connectionTimeout: 30000
 defaultLimit: 50
 maxLimit: 500
-               
-          
+ngsild:
+  corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
