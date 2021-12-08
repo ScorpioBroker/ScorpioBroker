@@ -1008,8 +1008,11 @@ public class ContextResolverBasic {
 		}
 
 		if (typeFound && value != null) {
-
-			objMap.put(NGSIConstants.VALUE, JsonUtils.fromString((String) value));
+			if (value instanceof String) {
+				objMap.put(NGSIConstants.VALUE, JsonUtils.fromString((String) value));
+			} else {
+				objMap.put(NGSIConstants.VALUE, value);
+			}
 
 		}
 

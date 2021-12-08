@@ -11,6 +11,7 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WIT
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,7 +25,7 @@ import javax.annotation.PostConstruct;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.util.Arrays;
+
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
@@ -45,7 +46,6 @@ import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParseException;
-import com.netflix.discovery.EurekaClient;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
@@ -86,8 +86,6 @@ public class CSourceSubscriptionService {
 	@Qualifier("rmconRes")
 	ContextResolverBasic contextResolverService;
 
-	@Autowired
-	EurekaClient eurekaClient;
 
 	@Autowired
 	CSourceService cSourceService;
@@ -140,7 +138,7 @@ public class CSourceSubscriptionService {
 		Map<String, byte[]> subs = kafkaOps.pullFromKafka(KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC);
 		for (byte[] sub : subs.values()) {
 			try {
-				if (Arrays.areEqual(sub, nullArray)) {
+				if (Arrays.equals(sub, nullArray)) {
 					continue;
 				}
 				SubscriptionRequest subscriptionRequest = DataSerializer.getSubscriptionRequest(new String(sub));
@@ -694,7 +692,7 @@ public class CSourceSubscriptionService {
 
 	@KafkaListener(topics = "${submanager.subscription.topic}", groupId = "csourcemanager")
 	public void handleInternalSub(Message<byte[]> message) {
-		if (Arrays.areEqual(AppConstants.NULL_BYTES, message.getPayload())) {
+		if (Arrays.equals(AppConstants.NULL_BYTES, message.getPayload())) {
 			try {
 				unsubscribe(new URI(KafkaOps.getMessageKey(message)));
 			} catch (ResponseException e) {

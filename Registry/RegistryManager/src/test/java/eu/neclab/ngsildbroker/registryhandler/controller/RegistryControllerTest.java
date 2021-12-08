@@ -29,7 +29,7 @@ import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 @SpringBootTest(properties = { "spring.main.allow-bean-definition-overriding=true" })
 @RunWith(SpringRunner.class)
 //@WebMvcTest
-@AutoConfigureMockMvc(secure = false) 
+@AutoConfigureMockMvc//(secure = false) 
 public class RegistryControllerTest {
 
 	@Autowired
