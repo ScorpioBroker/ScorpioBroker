@@ -119,6 +119,7 @@ spring:
     stream:
       kafka:
         binder:
+          replication-factor: 1
           brokers: ${bootstrap.servers}
       bindings:
         ENTITY_WRITE_CHANNEL:
