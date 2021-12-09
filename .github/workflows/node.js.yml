@@ -47,7 +47,7 @@ jobs:
         run: |
          mvn clean package -DskipTests -Dcitest -Paaio-no-eureka -B -q
          java -Dspring.profiles.active=test -jar ./AllInOneRunner/target/AllInOneRunner.jar &
-         while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -ne 202 ]; do sleep 2; done
+         while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/scorpio/v1/info/` -ne 202 ]; do sleep 2; echo "WAITING"; done
       - name: Building TestSuite 
         run: |
          cd testsuite
