@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Primary;
 
 import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfig;
+
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
 import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
@@ -38,12 +38,7 @@ public class EntityHandler {
 	KafkaOps ops() {
 		return new KafkaOps();
 	}
-	
-	@Bean("emsec")
-	SecurityConfig securityConfig() {
-		return new SecurityConfig();
-	}
-	
+		
 	@Bean("emparamsres")
 	@Primary
 	ParamsResolver paramsResolver() {
