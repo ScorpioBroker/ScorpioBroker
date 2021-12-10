@@ -65,32 +65,6 @@ public class QueryParser {
 	// TODO validate queries still not working ... rework regex ???
 	private static Pattern p = Pattern.compile(query);
 
-	public static void main(String[] args) throws Exception {
-		QueryParser test = new QueryParser();
-		String attribName1 = "test1";
-		String operator1 = "==";
-		String operant1 = "\"teststring\"";
-
-		String attribName2 = "test2";
-		String operator2 = ">=";
-		String operant2 = "12345";
-
-		String attribName3 = "test3";
-		String operator3 = "!=";
-		String operant3 = "\"testst123ring\"";
-
-		String attribName4 = "test4";
-		String operator4 = "<=";
-		String operant4 = "12345";
-		String q = "(" + attribName1 + operator1 + operant1 + ";(" + attribName2 + operator2 + operant2 + "|"
-				+ attribName3 + operator3 + operant3 + "))|" + attribName4 + operator4 + operant4;
-		System.out.println(q);
-		QueryTerm term = test.parseQuery(q, null);
-		System.out.println(term);
-		// Pattern.compile(test.queryTermUnequal).matcher("brandName!=\"Mercedes\"").group();
-
-	}
-
 	public static QueryTerm parseQuery(String input, Context context) throws BadRequestException {
 //		Matcher matcher = p.matcher(input);
 //		if (!matcher.matches()) {

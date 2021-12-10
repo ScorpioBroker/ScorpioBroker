@@ -829,33 +829,7 @@ public final class HttpUtils {
 		return generateReply(request, reply, additionalHeaders, context, false);
 	}
 
-	public static void main(String[] args) {
-		Pattern p = Pattern.compile("([\\w\\/\\+]+)(\\s*\\;\\s*q=(\\d\\.\\d))?");
-		Matcher m = p.matcher("*/*");
-		float q = 1;
-		String app = null;
-		String result = null;
-		while (m.find()) {
-			String floatString = m.group(3);
-			float newQ = 1;
-			if (floatString != null) {
-				newQ = Float.parseFloat(floatString);
-			}
-			if (result != null && (newQ <= q)) {
-				continue;
-			}
-			app = m.group(0);
-			if (app.equalsIgnoreCase("application/ld+json") || app.equalsIgnoreCase("application/*")
-					|| app.equalsIgnoreCase("*/*")) {
-				result = "application/ld+json";
-			} else if (app.equalsIgnoreCase("application/json")) {
-				result = "application/json";
-			}
-
-		}
-
-	}
-
+	
 	private static int parseAcceptHeader(List<String> acceptHeaders) {
 		float q = 1;
 		int appGroup = -1;

@@ -13,18 +13,6 @@ public class DeleteHistoryEntityRequest extends HistoryEntityRequest {
 	private String resolvedAttrId;
 	private String instanceId;
 
-	/**
-	 * Serialization constructor
-	 * 
-	 * @throws NoSuchAlgorithmException
-	 */
-	public static void main(String[] args) throws NoSuchAlgorithmException {
-		String test = "";
-		for (char temp : "http://sdfsdfsdf:!@#$%^&*()__2342/asdas".toCharArray()) {
-			test += "" + ((int) temp);
-		}
-		System.out.println(test);
-	}
 
 	public DeleteHistoryEntityRequest() {
 	}

@@ -47,34 +47,7 @@ public class DataSerializer {
 	//
 	// }.getType();
 
-	public static void main(String[] args) {
-		Entity entity = getEntity("{\r\n" + "    \"http://schema.org/vehicle/brandName\": [\r\n" + "      {\r\n"
-				+ "        \"@type\": [\r\n" + "          \"http://schema.org/ngsi-ld/Property\"\r\n" + "        ],\r\n"
-				+ "        \"http://schema.org/ngsi-ld/hasValue\": [\r\n" + "          {\r\n"
-				+ "            \"@value\": \"Mercedes\"\r\n" + "          }\r\n" + "        ]\r\n" + "      }\r\n"
-				+ "    ],\r\n" + "    \"@id\": \"urn:ngsi-ld:Vehicle:A4010\",\r\n"
-				+ "    \"http://schema.org/common/isParked\": [\r\n" + "      {\r\n"
-				+ "        \"http://schema.org/ngsi-ld/observedAt\": [\r\n" + "          {\r\n"
-				+ "            \"@type\": \"http://schema.org/ngsi-ld/DateTime\",\r\n"
-				+ "            \"@value\": \"2017-07-29T12:00:04\"\r\n" + "          }\r\n" + "        ],\r\n"
-				+ "        \"http://schema.org/common/providedBy\": [\r\n" + "          {\r\n"
-				+ "            \"http://schema.org/ngsi-ld/hasObject\": [\r\n" + "              {\r\n"
-				+ "                \"@id\": \"urn:ngsi-ld:Person:Bob\"\r\n" + "              }\r\n"
-				+ "            ],\r\n" + "            \"@type\": [\r\n"
-				+ "              \"http://schema.org/ngsi-ld/Relationship\"\r\n" + "            ]\r\n"
-				+ "          }\r\n" + "        ],\r\n" + "        \"@type\": [\r\n"
-				+ "          \"http://schema.org/ngsi-ld/Relationship\"\r\n" + "        ],\r\n"
-				+ "        \"http://schema.org/ngsi-ld/hasValue\": [\r\n" + "          {\r\n"
-				+ "            \"@value\": \"urn:ngsi-ld:OffStreetParking:Downtown1\"\r\n" + "          }\r\n"
-				+ "        ]\r\n" + "      }\r\n" + "    ],\r\n" + "    \"@type\": [\r\n"
-				+ "      \"http://schema.org/vehicle/Vehicle\"\r\n" + "    ]\r\n" + "}");
-		System.out.println("Entity :: " + entity);
-		/*
-		 * for(Property p:entity.getProperties()) {
-		 * System.out.println("P : "+p.getValue()); }
-		 */
-		System.out.println("Json simplified ::" + toJson(entity));
-	}
+
 
 	private DataSerializer() {
 		// Do nothing. (prevent instantiation)
