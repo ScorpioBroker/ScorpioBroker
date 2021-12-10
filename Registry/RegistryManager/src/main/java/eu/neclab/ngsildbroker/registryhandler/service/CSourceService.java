@@ -63,7 +63,6 @@ public class CSourceService {
 	String BOOTSTRAP_SERVERS;
 
 	@Autowired
-	@Qualifier("rmops")
 	KafkaOps operations;
 	@Autowired
 	ObjectMapper objectMapper;
@@ -72,7 +71,6 @@ public class CSourceService {
 	StartupConfig startupConfig;
 
 	@Autowired
-	@Qualifier("rmcsourcedao")
 	CSourceDAO csourceDAO;
 
 	@Autowired

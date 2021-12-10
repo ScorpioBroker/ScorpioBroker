@@ -32,7 +32,6 @@ import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 public class StartupConfig {
 
 	@Autowired
-	@Qualifier("rmrestTemplate")
 	RestTemplate restTemplate;
 	@Value("${broker.id:#{null}}")
 	String id;

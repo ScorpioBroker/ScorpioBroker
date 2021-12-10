@@ -54,7 +54,6 @@ public class QueryController {// implements QueryHandlerInterface {
 	QueryService queryService;
 
 	@Autowired
-	@Qualifier("qmparamsResolver")
 	ParamsResolver paramsResolver;
 
 	@Value("${atcontext.url}")

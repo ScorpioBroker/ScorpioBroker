@@ -81,5 +81,6 @@ public class AppConstants {
 			NGSIConstants.NGSI_LD_INFORMATION, NGSIConstants.NGSI_LD_RECEIVERINFO, NGSIConstants.NGSI_LD_NOTIFIERINFO);
 	public static final int ATTRIBUTE_PAYLOAD = 11;
 	public static final int NOTIFICAITION_RECEIVED = 12;
+	public static final int QUERY_PAYLOAD = 13;
 
 }

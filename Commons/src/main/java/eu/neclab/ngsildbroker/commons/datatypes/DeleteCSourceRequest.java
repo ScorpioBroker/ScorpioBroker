@@ -12,7 +12,6 @@ import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 public class DeleteCSourceRequest extends CSourceRequest {
 
 	@Autowired
-	@Qualifier("rmops")
 	KafkaOps operations;
 	@Value("${csource.source.topic}")
 	String CSOURCE_TOPIC;

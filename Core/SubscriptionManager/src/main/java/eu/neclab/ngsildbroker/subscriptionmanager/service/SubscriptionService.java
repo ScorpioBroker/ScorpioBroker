@@ -120,7 +120,6 @@ public class SubscriptionService implements SubscriptionManager {
 	String queryResultTopic;
 
 	@Autowired
-	@Qualifier("smparamsResolver")
 	ParamsResolver paramsResolver;
 
 	SubscriptionManagerProducerChannel producerChannel;

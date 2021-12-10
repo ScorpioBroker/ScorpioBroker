@@ -70,14 +70,12 @@ public class SubscriptionController {
 	SubscriptionManager manager;
 
 	@Autowired
-	@Qualifier("smops")
 	KafkaOps kafkaOps;
 
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
 
 	@Autowired
-	@Qualifier("smparamsResolver")
 	ParamsResolver ldTools;
 
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")

@@ -53,7 +53,6 @@ public class HistoryService {
 	HistoryDAO historyDAO;
 
 	@Autowired
-	@Qualifier("historydao")
 	StorageWriterDAO writerDAO;
 //	public static final Gson GSON = DataSerializer.GSON;
 

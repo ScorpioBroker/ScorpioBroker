@@ -68,7 +68,6 @@ public class RegistryController {
 	CSourceService csourceService;
 
 	@Autowired
-	@Qualifier("rmparamsResolver")
 	ParamsResolver paramsResolver;
 	@Autowired
 	CSourceDAO csourceDAO;

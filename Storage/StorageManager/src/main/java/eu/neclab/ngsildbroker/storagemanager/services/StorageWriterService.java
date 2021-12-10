@@ -37,7 +37,6 @@ public class StorageWriterService {
 	public final static String TEMPORALENTITY_LISTENER_ID = "temporalEntityWriter-1";
 
 	@Autowired
-	@Qualifier("storagewriterdao")
 	StorageWriterDAO storageWriterDao;
 
 	@Value("${entity.stopListenerIfDbFails:true}")

@@ -77,7 +77,6 @@ public class QueryService {
 	String atContextServerUrl;
 
 	@Autowired
-	@Qualifier("qmops")
 	KafkaOps operations;
 
 	@Autowired
@@ -102,7 +101,6 @@ public class QueryService {
 	QueryDAO queryDAO;
 
 	@Autowired
-	@Qualifier("qmcsourcedao")
 	CSourceDAO cSourceDAO;
 
 	@Value("${directDbConnection}")
@@ -114,7 +112,6 @@ public class QueryService {
 	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
 
 	@Autowired
-	@Qualifier("qmrestTemp")
 	RestTemplate restTemplate;
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);

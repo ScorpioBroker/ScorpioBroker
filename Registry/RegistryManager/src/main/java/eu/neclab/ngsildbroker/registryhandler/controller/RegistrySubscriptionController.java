@@ -55,7 +55,6 @@ public class RegistrySubscriptionController {
 	CSourceSubscriptionService manager;
 
 	@Autowired
-	@Qualifier("rmops")
 	KafkaOps kafkaOps;
 
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")

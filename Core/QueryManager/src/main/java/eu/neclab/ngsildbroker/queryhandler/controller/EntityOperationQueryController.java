@@ -28,6 +28,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -46,7 +47,6 @@ public class EntityOperationQueryController {
 	QueryService queryService;
 
 	@Autowired
-	@Qualifier("qmparamsResolver")
 	ParamsResolver paramsResolver;
 
 	@Value("${defaultLimit}")
@@ -69,7 +69,9 @@ public class EntityOperationQueryController {
 
 	private Object defaultContext = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld";
 
-	private JsonLdOptions defaultOptions = new JsonLdOptions();
+	private JsonLdOptions defaultOptions = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+
+
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	// these are known structures in try catch. failed parsing would rightfully
@@ -84,8 +86,8 @@ public class EntityOperationQueryController {
 		try {
 			HttpUtils.doPreflightCheck(request);
 			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
-			String expandedPayload = "";// HttpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
-			Map<String, Object> queries = (Map<String, Object>) JsonUtils.fromString(expandedPayload);
+			//String expandedPayload = "";// HttpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
+			Map<String, Object> queries = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request),rawPayload, defaultOptions, AppConstants.QUERY_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0);
 			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
 			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				linkHeaders.add((String) rawPayload.get(NGSIConstants.JSON_LD_CONTEXT));

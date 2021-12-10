@@ -97,18 +97,15 @@ public class EntityService {
 	boolean directDB = true;
 	public static boolean checkEntity = false;
 	@Autowired
-	@Qualifier("emstorage")
 	StorageWriterDAO storageWriterDao;
 
 	@Autowired
 	EntityInfoDAO entityInfoDAO;
 
 	@Autowired
-	@Qualifier("emops")
 	KafkaOps operations;
 
 	@Autowired
-	@Qualifier("emparamsres")
 	ParamsResolver paramsResolver;
 
 	public void setOperations(KafkaOps operations) {

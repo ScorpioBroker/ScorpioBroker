@@ -63,7 +63,6 @@ public class EntityController {// implements EntityHandlerInterface {
 	ObjectMapper objectMapper;
 
 	@Autowired
-	@Qualifier("emparamsres")
 	ParamsResolver paramsResolver;
 
 	@SuppressWarnings("unused")

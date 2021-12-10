@@ -1108,7 +1108,7 @@ public class JsonLdApi {
 				// 8.1)
 				// TODO: is this method faster than just using containsKey for
 				// each?
-				final Set<String> keySet = new HashSet<>(result.keySet());
+				final Set<String> keySet = new HashSet<String>(result.keySet());
 				keySet.remove(JsonLdConsts.VALUE);
 				keySet.remove(JsonLdConsts.INDEX);
 				final boolean langremoved = keySet.remove(JsonLdConsts.LANGUAGE);

@@ -14,7 +14,7 @@ import com.github.jsonldjava.utils.JsonUtils;
  */
 public class DocumentLoader {
 
-    private final Map<String, Object> m_injectedDocs = new HashMap<>();
+    private final Map<String, Object> m_injectedDocs = new HashMap<String, Object>();
 
     /**
      * Identifies a system property that can be set to "true" in order to

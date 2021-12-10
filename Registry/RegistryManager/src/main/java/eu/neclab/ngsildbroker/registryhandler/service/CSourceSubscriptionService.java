@@ -75,7 +75,6 @@ public class CSourceSubscriptionService {
 	private final byte[] nullArray = "null".getBytes();
 
 	@Autowired
-	@Qualifier("rmops")
 	KafkaOps kafkaOps;
 
 	@Autowired
