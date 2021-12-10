@@ -3,7 +3,6 @@ package eu.neclab.ngsildbroker.commons.tools;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import org.springframework.util.MultiValueMap;

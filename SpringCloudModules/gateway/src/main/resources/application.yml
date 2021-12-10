@@ -1,9 +1,9 @@
 mysettings:
   application-name: gateway
   eureka:
-    protocol: ${eureka.protocol:http}
-    host: ${eureka.host:localhost}
-    port: ${eureka.port:8761}
+    protocol: ${eurekaprotocol:http}
+    host: ${eurekahost:localhost}
+    port: ${eurekaport:8761}
   gateway:
     port: ${gateway.port:9090}
 eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}
@@ -23,23 +23,6 @@ ribbon:
   ConnectTimeout: 60000
 server:
   port: ${mysettings.gateway.port}
-  tomcat:
-    max:
-      threads:2000
-
-
-
-query-manager:
-  request-path: /ngsi-ld/v1/entities
-  target-service: QUERY-MANAGER
-  http-method: GET
-entity-manager:
-  request-path: /ngsi-ld/v1/entities
-  target-service: aio-runner
-  http-method: POST  
-spring:
-  application:
-    name: gateway
 eureka:
   client:
     register-with-eureka: true
@@ -53,106 +36,104 @@ security:
   oauth2:
     client:
     # for keycloak configure
-      #accessTokenUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/token
-      #userAuthorizationUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/auth
+      #accessTokenuri: no://op
+      #userAuthorizationuri: no://op
       #clientId: authserver
       #clientSecret: ae8c99a9-f98d-41e9-8fb2-d348acb987e0
     # for ketrock configure  
-      accessTokenUri: http://172.30.64.120:3000/oauth2/token
-      userAuthorizationUri: http://172.30.64.120:3000/oauth2/authorize
+      accessTokenuri: no://op
+      userAuthorizationuri: no://op
       clientId: a2034c11-d2a9-4cab-9fac-ff65425bd53f
       clientSecret: 7364baec-6d6f-4307-8c71-d66e1e6c3afc
     resource:
     # for keycloak configure
-      #userInfoUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/userinfo
+      #userInfouri: no://op
     # for keycloak configure
-      userInfoUri: http://172.30.64.120:3000/user
-#Zuul routing rules for microservices.
-zuul:
-  ignored-services: '*'
-  ribbon:
-    eager-load:
-      enabled: true
-  semaphore:
-    maxSemaphores: 60000
-  host:
-    connect-timeout-millis: 60000
-    socket-timeout-millis: 60000
-  routes:
-    entity-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/entities/**
-      serviceId: ENTITY-MANAGER
-      stripPrefix: false
-    query-manager_1:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/attributes/**     
-      serviceId: QUERY-MANAGER
-      stripPrefix: false
-    query-manager_2:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/types/**     
-      serviceId: QUERY-MANAGER
-      stripPrefix: false
-    postquery:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/entityOperations/query/**
-      serviceId: QUERY-MANAGER
-      stripPrefix: false
-    batchoperations:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/entityOperations/**
-      serviceId: ENTITY-MANAGER
-      stripPrefix: false
-    subscription-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/subscriptions/**
-      serviceId: SUBSCRIPTION-MANAGER
-      stripPrefix: false
-    context-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/csourceRegistrations/**
-      serviceId: C-SOURCES
-      stripPrefix: false
-    subforeg:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/csourceSubscriptions/**
-      serviceId: C-SOURCES
-      stripPrefix: false
-    history-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/temporal/entities/**
-      serviceId: HISTORY-MANAGER
-      stripPrefix: false
-    atcontext-server:
-      sensitiveHeaders:
-      path: /ngsi-ld/contextes/**
-      serviceId: ATCONTEXT-SERVER
-      stripPrefix: false
-    infos:
-      sensitiveHeaders:
-      path: /scorpio/v1/info/**
-      serviceId: STORAGE-MANAGER
-      stripPrefix: false
-    health:
-      sensitiveHeaders:
-      path: /health/**
-      serviceId: INFO-SERVER
-      stripPrefix: false
-    version:
-      sensitiveHeaders:
-      path: /version/**
-      serviceId: INFO-SERVER
-      stripPrefix: false
-    corecontext:
-      sensitiveHeaders:
-      path: /corecontext/**
-      serviceId: INFO-SERVER
-      stripPrefix: false
-    test-manager:
-      sensitiveHeaders:
-      path: /test/**
-      serviceId: testmanager
+      userInfouri: no://op
+    
+spring:
+  application:
+    name: gateway
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    gateway:
+      routes:
+      - id: QUERY-MANAGER
+        uri: no://op
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/entities/**
+      - id: ENTITY-MANAGER
+        uri: no://op
+        predicates:
+        - Method=POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/entities/**
+      - id: QUERY-MANAGER
+        uri: no://op
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/attributes/**
+      - id: QUERY-MANAGER
+        uri: no://op
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/types/**
+      - id: QUERY-MANAGER
+        uri: no://op
+        predicates:
+        - Method=POST
+        - Path=/ngsi-ld/v1/entityOperations/query/**
+      - id: ENTITY-MANAGER
+        uri: no://op
+        predicates:
+        - Method=POST
+        - Path=/ngsi-ld/v1/entityOperations/**
+      - id: SUBSCRIPTION-MANAGER
+        uri: no://op
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/subscriptions/**
+      - id: C-SOURCES
+        uri: no://op
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/csourceRegistrations/**
+      - id: C-SOURCES
+        uri: no://op
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/csourceSubscriptions/**
+      - id: HISTORY-MANAGER
+        uri: no://op
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/temporal/entities/**
+      - id: ATCONTEXT-SERVER
+        uri: no://op
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/contextes/**
+      - id: STORAGE-MANAGER
+        uri: no://op
+        predicates:
+        - Method=GET
+        - Path=/scorpio/v1/info/**
+      - id: INFO-SERVER
+        uri: no://op
+        predicates:
+        - Method=GET
+        - Path=/health/** 
+      - id: INFO-SERVER
+        uri: no://op
+        predicates:
+        - Method=GET
+        - Path=/version/**
+      - id: testmanager
+        uri: no://op
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/test/**
 logging:
   level:
     root: ERROR

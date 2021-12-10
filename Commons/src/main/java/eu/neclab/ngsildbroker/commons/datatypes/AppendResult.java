@@ -2,8 +2,6 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public class AppendResult {
 	
 	private Map<String, Object> jsonToAppend;

@@ -40,7 +40,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfiguration;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
@@ -54,7 +53,6 @@ import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
  */
 @RestController
 @RequestMapping("/ngsi-ld/v1/entities")
-@Import(SecurityConfiguration.class)
 public class EntityController {// implements EntityHandlerInterface {
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityController.class);

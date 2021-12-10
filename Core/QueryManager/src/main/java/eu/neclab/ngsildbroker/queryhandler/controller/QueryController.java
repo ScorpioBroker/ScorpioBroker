@@ -39,7 +39,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfiguration;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.commons.tools.Validator;
@@ -47,7 +46,6 @@ import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 
 @RestController
 @RequestMapping("/ngsi-ld/v1")
-@Import(SecurityConfiguration.class)
 public class QueryController {// implements QueryHandlerInterface {
 	private final static Logger logger = LogManager.getLogger(QueryController.class);
 	private final static String MY_REQUEST_URL = "/ngsi-ld/v1/entities";

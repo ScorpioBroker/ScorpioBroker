@@ -191,6 +191,7 @@ spring:
   main:
     lazy-initialization: false
     allow-bean-definition-overriding: true
+    allow-circular-references: true
 #  mvc.pathpattern.matching-strategy: ant_path_matcher
 writer:
   datasource:
@@ -226,7 +227,7 @@ server:
     max:
       threads:200
 security:
-  active: true
+  active: false
   oauth2:
     client:
         provider:

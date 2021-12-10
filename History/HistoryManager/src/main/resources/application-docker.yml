@@ -7,9 +7,9 @@ mysettings:
   gateway:
     host: ${gateway.host:}
   eureka:
-    protocol: ${eureka.protocol:http}
+    protocol: ${eurekaprotocol:http}
     host: ${eureka.host:eureka}
-    port: ${eureka.port:8761}
+    port: ${eurekaport:8761}
 eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}
 eureka:
   client:
