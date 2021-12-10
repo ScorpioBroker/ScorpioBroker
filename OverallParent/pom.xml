@@ -155,5 +155,49 @@
 				<finalName>${project.artifactId}</finalName>
 			</build>
 		</profile>
+		<profile>
+			<id>native</id>
+			<activation>
+				<property>
+					<name>native</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.experimental</groupId>
+						<artifactId>spring-aot-maven-plugin</artifactId>
+						<version>0.11.0</version>
+						<executions>
+							<execution>
+								<id>generate</id>
+								<goals>
+									<goal>generate</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<configuration>
+							<image>
+								<builder>paketobuildpacks/builder:tiny</builder>
+								<env>
+									<BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
+								</env>
+							</image>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+			<dependencies>
+				<dependency>
+					<groupId>org.springframework.experimental</groupId>
+					<artifactId>spring-native</artifactId>
+					<version>0.11.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
 	</profiles>
 </project>
