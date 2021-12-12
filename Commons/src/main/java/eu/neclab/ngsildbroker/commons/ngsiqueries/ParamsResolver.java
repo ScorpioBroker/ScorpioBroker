@@ -29,15 +29,15 @@ public class ParamsResolver {
 
 	private final static Logger logger = LogManager.getLogger(ParamsResolver.class);
 
-	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	public QueryParams getQueryParamsFromUriQuery(MultiValueMap<String,String> ngsildQueryParams, Context context)
+	public static QueryParams getQueryParamsFromUriQuery(MultiValueMap<String,String> ngsildQueryParams, Context context)
 			throws ResponseException {
-		return this.getQueryParamsFromUriQuery(ngsildQueryParams, context, false);
+		return getQueryParamsFromUriQuery(ngsildQueryParams, context, false);
 	}
 
 //TODO REWORK THIS COMPLETELY 
-	public List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
+	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
 //TODO check if this can be changed now since a list of entityinfos is in queryparam
 		ArrayList<QueryParams> result = new ArrayList<QueryParams>();
 		for (EntityInfo entityInfo : subscription.getEntities()) {
@@ -96,7 +96,7 @@ public class ParamsResolver {
 	}
 
 	// new simplified format
-	public QueryParams getQueryParamsFromUriQuery(MultiValueMap<String,String> multiValueMap, Context context,
+	public static QueryParams getQueryParamsFromUriQuery(MultiValueMap<String,String> multiValueMap, Context context,
 			boolean temporalEntityFormat) throws ResponseException {
 		logger.trace("call getStorageManagerJsonQuery method ::");
 		try {
@@ -223,7 +223,7 @@ public class ParamsResolver {
 		// return null;
 	}
 
-	private void validateCoordinates(String coordinates) throws ResponseException {
+	private static void validateCoordinates(String coordinates) throws ResponseException {
 		if (!coordinates.matches(
 				"^\\[*(\\[\\s*[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)(,\\d)?,[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)\\],?)+\\]*$")) {
 			throw new ResponseException(ErrorType.BadRequestData, "coordinates are not valid");
@@ -231,7 +231,7 @@ public class ParamsResolver {
 
 	}
 
-	public String expandQueryValues(Context context, String queryValue) throws ResponseException {
+	public static String expandQueryValues(Context context, String queryValue) throws ResponseException {
 		String[] temp = queryValue.split(",");
 		StringBuilder builder = new StringBuilder();
 		for (String element : temp) {
@@ -241,7 +241,7 @@ public class ParamsResolver {
 		return builder.substring(0, builder.length() - 1);
 	}
 
-	public String expandAttribute(String attribute, Context context) throws ResponseException {
+	public static String expandAttribute(String attribute, Context context) throws ResponseException {
 		logger.trace("resolveQueryLdContext():: started");
 		return context.expandIri(attribute, false, true, null, null);
 		// process reserved attributes

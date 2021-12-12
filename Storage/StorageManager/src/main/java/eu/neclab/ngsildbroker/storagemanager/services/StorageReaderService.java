@@ -34,7 +34,7 @@ public class StorageReaderService {
 	@KafkaListener(topics = "${query.topic}", groupId = "queryHandler", properties = { "max.request.size=104857600" })
 	@SendTo
 	// @SendTo("QUERY_RESULT") // for tests without QueryManager
-	public byte[] handleQuery(@Payload byte[] message) throws Exception {
+	public byte[] handleQuery(@Payload String payload) throws Exception {
 
 		/*
 		 * TODO: Ignore old messages in Kafka queue based on producer timestamp. There
@@ -55,7 +55,6 @@ public class StorageReaderService {
 
 		logger.trace("Listener queryHandler, Thread ID: " + Thread.currentThread().getId());
 		logger.trace("handleQuery() :: started");
-		String payload = new String(message);
 		logger.debug("Received message: " + payload);
 		List<String> entityList = new ArrayList<String>();
 		try {
@@ -71,7 +70,7 @@ public class StorageReaderService {
 		DataOutputStream out = new DataOutputStream(baos);
 		for (String element : entityList) {
 			if (element.length() > MAX_UTF_SIZE) {
-				for(String subelement: Splitter.fixedLength(MAX_UTF_SIZE).split(element)) {
+				for (String subelement : Splitter.fixedLength(MAX_UTF_SIZE).split(element)) {
 					out.writeUTF(subelement);
 				}
 			} else {

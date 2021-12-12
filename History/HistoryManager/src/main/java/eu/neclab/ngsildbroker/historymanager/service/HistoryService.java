@@ -12,7 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -20,7 +22,6 @@ import org.springframework.stereotype.Service;
 
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendHistoryEntityRequest;
@@ -35,9 +36,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.historymanager.config.ProducerChannel;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
 @Service
@@ -46,26 +45,19 @@ public class HistoryService {
 	private final static Logger logger = LoggerFactory.getLogger(HistoryService.class);
 
 	@Autowired
-	KafkaOps kafkaOperations;
-	@Autowired
-	ParamsResolver paramsResolver;
-	@Autowired
 	HistoryDAO historyDAO;
 
 	@Autowired
+	@Qualifier("hhdao")
 	StorageWriterDAO writerDAO;
-//	public static final Gson GSON = DataSerializer.GSON;
 
-	JsonParser parser = new JsonParser();
-
-	private final ProducerChannel producerChannels;
+	@Autowired
+	KafkaTemplate<String, String> kafkaTemplate;
 
 	private boolean directDB = true;
 
-	public HistoryService(ProducerChannel producerChannels) {
-		this.producerChannels = producerChannels;
-
-	}
+	@Value("${entity.temporal.topic:TEMPORALENTITY}")
+	private String TEMP_ENTITY_TOPIC;
 
 	public URI createTemporalEntityFromEntity(ArrayListMultimap<String, String> headers, Map<String, Object> payload)
 			throws ResponseException, Exception {
@@ -77,8 +69,8 @@ public class HistoryService {
 		return createTemporalEntity(headers, resolved, false);
 	}
 
-	private URI createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved, boolean fromEntity)
-			throws ResponseException, Exception {
+	private URI createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			boolean fromEntity) throws ResponseException, Exception {
 		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
 		logger.trace("creating temporal entity");
 		if (directDB) {
@@ -91,15 +83,7 @@ public class HistoryService {
 	}
 
 	private void pushToKafka(HistoryEntityRequest request) throws ResponseException {
-		try {
-			kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(),
-					UUID.randomUUID().toString().getBytes(), DataSerializer.toJson(request).getBytes());
-		} catch (ResponseException e) {
-			e.printStackTrace();
-			throw new ResponseException(ErrorType.InternalError,
-					"Failed to push entity to kafka. " + e.getLocalizedMessage());
-		}
-
+		kafkaTemplate.send(TEMP_ENTITY_TOPIC, UUID.randomUUID().toString(), DataSerializer.toJson(request));
 	}
 
 	private void pushToDB(HistoryEntityRequest request) throws ResponseException {
@@ -142,7 +126,7 @@ public class HistoryService {
 
 		String resolvedAttrId = null;
 		if (attributeId != null) {
-			resolvedAttrId = paramsResolver.expandAttribute(attributeId, linkHeaders);
+			resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
 		}
 		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId,
 				entityId);
@@ -154,8 +138,8 @@ public class HistoryService {
 	}
 
 	// endpoint "/entities/{entityId}/attrs"
-	public void addAttrib2TemporalEntity(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> resolved)
-			throws ResponseException, Exception {
+	public void addAttrib2TemporalEntity(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved) throws ResponseException, Exception {
 		if (!historyDAO.entityExists(entityId, HttpUtils.getTenantFromHeaders(headers))) {
 			throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
 		}
@@ -174,7 +158,7 @@ public class HistoryService {
 
 		String resolvedAttrId = null;
 		if (attribId != null) {
-			resolvedAttrId = paramsResolver.expandAttribute(attribId, linkHeaders);
+			resolvedAttrId = ParamsResolver.expandAttribute(attribId, linkHeaders);
 		}
 
 		// check if entityId + attribId + instanceid exists. if not, throw exception
@@ -189,7 +173,7 @@ public class HistoryService {
 		qp.setInstanceId(instanceId);
 		qp.setIncludeSysAttrs(true);
 		QueryResult queryResult = historyDAO.query(qp);
-		List<String> entityList = queryResult.getActualDataString(); 
+		List<String> entityList = queryResult.getActualDataString();
 		if (entityList.size() == 0) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
@@ -206,14 +190,13 @@ public class HistoryService {
 	/*
 	
 	 */
-	@KafkaListener(topics = "${entity.create.topic}", groupId = "historyManagerCreate")
-	public void handleEntityCreate(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
+	@KafkaListener(topics = "${entity.create.topic}")
+	public void handleEntityCreate(@Payload String message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
 			throws Exception {
 		logger.trace("Listener handleEntityCreate...");
-		String payload = new String(message);
-		logger.debug("Received message: " + payload);
-		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(
-				DataSerializer.getEntityRequest(new String(message)));
+		// String payload = new String(message);
+		logger.debug("Received message: " + message);
+		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(DataSerializer.getEntityRequest(message));
 		if (directDB) {
 			pushToDB(request);
 		} else {
@@ -221,11 +204,11 @@ public class HistoryService {
 		}
 	}
 
-	@KafkaListener(topics = "${entity.append.topic}", groupId = "historyManagerAppend")
-	public void handleEntityAppend(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
+	@KafkaListener(topics = "${entity.append.topic}")
+	public void handleEntityAppend(@Payload String message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
 			throws Exception {
 		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(
-				DataSerializer.getEntityRequest(new String(message)));
+				DataSerializer.getEntityRequest(message));
 		if (directDB) {
 			pushToDB(request);
 		} else {
@@ -234,11 +217,11 @@ public class HistoryService {
 
 	}
 
-	@KafkaListener(topics = "${entity.update.topic}", groupId = "historyManagerUpdate")
-	public void handleEntityUpdate(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
+	@KafkaListener(topics = "${entity.update.topic}")
+	public void handleEntityUpdate(@Payload String message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
 			throws Exception {
 		UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(
-				DataSerializer.getEntityRequest(new String(message)));
+				DataSerializer.getEntityRequest(message));
 		if (directDB) {
 			pushToDB(request);
 		} else {
@@ -247,14 +230,13 @@ public class HistoryService {
 
 	}
 
-	@KafkaListener(topics = "${entity.delete.topic}", groupId = "historyManagerDelete")
-	public void handleEntityDelete(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
+	@KafkaListener(topics = "${entity.delete.topic}")
+	public void handleEntityDelete(@Payload String message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
 			throws Exception {
 		logger.trace("Listener handleEntityDelete...");
 
 		logger.debug("Received key: " + key);
-		String payload = new String(message);
-		logger.debug("Received message: " + payload);
+		logger.debug("Received message: " + message);
 	}
 
 }

@@ -30,6 +30,8 @@ entity:
     topic: ENTITY_UPDATE
   delete:
     topic: ENTITY_DELETE    
+subscriptions: 
+  topic: SUBSCRIPTIONS
 csource:
   registry:
     topic: CSOURCE_REGISTRATION
@@ -54,22 +56,22 @@ management:
       enabled: true
 spring:
   kafka:
+    producer:
+      bootstrap-servers: ${bootstrap.servers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      bootstrap-servers: ${bootstrap.servers}
+      group-id: ${mysettings.application-name}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
     admin:
       properties:
         cleanup:
-          policy: compact
+          policy: compact  
   main:
     lazy-initialization: true
   application.name: ${mysettings.application-name}
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: ${bootstrap.servers}
-      bindings:
-        SUBSCRIPTIONS_WRITE_CHANNEL:
-          destination: SUBSCRIPTIONS
-          contentType: application/json
   datasource:
     hikari:
       connectionTimeout: 30000

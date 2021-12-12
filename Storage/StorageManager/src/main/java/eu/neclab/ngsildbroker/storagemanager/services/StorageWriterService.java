@@ -126,7 +126,7 @@ public class StorageWriterService {
 	 * logger.trace("Writing is complete"); }
 	 */
 	@KafkaListener(containerFactory = "kafkaListenerContainerFactoryManualOffsetCommit", topics = "${csource.topic}", id = CSOURCE_LISTENER_ID, groupId = "csourceWriter", containerGroup = "csourceWriter-container")
-	public void writeCSource(Message<byte[]> message, Acknowledgment acknowledgment,
+	public void writeCSource(Message<String> payload, Acknowledgment acknowledgment,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key, @Header(KafkaHeaders.OFFSET) Long offset)
 			throws Exception {
 		logger.trace("Listener csourceWriter, Thread ID: " + Thread.currentThread().getId());
@@ -135,9 +135,8 @@ public class StorageWriterService {
 								// during boot time (probably because of concurrency)
 			return;
 
-		String payload = new String(message.getPayload());
 		String datavalue;
-		JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
+		JsonObject jsonObject = new JsonParser().parse(payload.getPayload()).getAsJsonObject();
 		if (jsonObject.has("CSource")) {
 			datavalue = jsonObject.get("CSource").toString();
 		} else {
@@ -176,7 +175,7 @@ public class StorageWriterService {
 	}
 
 	@KafkaListener(containerFactory = "kafkaListenerContainerFactoryManualOffsetCommit", topics = "${entity.temporal.topic}", id = TEMPORALENTITY_LISTENER_ID, groupId = "temporalEntityWriter", containerGroup = "temporalEntityWriter-container")
-	public void writeTemporalEntity(@Payload byte[] message, Acknowledgment acknowledgment,
+	public void writeTemporalEntity(@Payload String message, Acknowledgment acknowledgment,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key, @Header(KafkaHeaders.OFFSET) Long offset)
 			throws Exception {
 		logger.trace("Listener temporalEntityWriter, Thread ID: " + Thread.currentThread().getId());
@@ -185,7 +184,7 @@ public class StorageWriterService {
 										// during boot time (probably because of concurrency)
 			return;
 
-		storageWriterDao.storeTemporalEntity(DataSerializer.getHistoryEntityRequest(new String(message)));
+		storageWriterDao.storeTemporalEntity(DataSerializer.getHistoryEntityRequest(message));
 //-------------------------------------------------------------------------------------------
 //		String datavalue;
 //		JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();

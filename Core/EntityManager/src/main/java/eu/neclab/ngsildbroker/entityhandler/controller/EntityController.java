@@ -42,7 +42,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
-import eu.neclab.ngsildbroker.entityhandler.config.EntityProducerChannel;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
 
@@ -61,18 +60,6 @@ public class EntityController {// implements EntityHandlerInterface {
 	EntityService entityService;
 	@Autowired
 	ObjectMapper objectMapper;
-
-	@Autowired
-	ParamsResolver paramsResolver;
-
-	@SuppressWarnings("unused")
-	// TODO check to remove ... never used
-	private EntityProducerChannel producerChannel;
-
-	@Autowired
-	public EntityController(EntityProducerChannel producerChannel) {
-		this.producerChannel = producerChannel;
-	}
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
@@ -256,7 +243,7 @@ public class EntityController {// implements EntityHandlerInterface {
 				Object payloadContext = ((Map<String, Object>) jsonPayload).get(JsonLdConsts.CONTEXT);
 				context = context.parse(payloadContext, true);
 			}
-			String expandedAttrib = paramsResolver.expandAttribute(attrId, context);
+			String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
 
 			UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,
 					expandedAttrib, expandedPayload);
@@ -314,7 +301,7 @@ public class EntityController {// implements EntityHandlerInterface {
 				Validator.validate(request.getQueryParams());
 				Context context = JsonLdProcessor.coreContext.clone();
 				context = context.parse(HttpUtils.getAtContext(request), true);
-				String expandedAttrib = paramsResolver.expandAttribute(attrId, context);
+				String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
 				entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,
 						deleteAll);
 				logger.trace("delete attribute :: completed");

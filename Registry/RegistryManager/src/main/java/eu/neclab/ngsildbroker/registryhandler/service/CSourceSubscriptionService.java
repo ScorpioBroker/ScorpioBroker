@@ -11,13 +11,11 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WIT
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -25,17 +23,18 @@ import javax.annotation.PostConstruct;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.Message;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -45,10 +44,7 @@ import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.JsonParseException;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
@@ -64,18 +60,11 @@ import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.CSourceNotificationHandler;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
-import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 
 @Service
 public class CSourceSubscriptionService {
 	private final static Logger logger = LogManager.getLogger(CSourceSubscriptionService.class);
-
-	private final byte[] nullArray = "null".getBytes();
-
-	@Autowired
-	KafkaOps kafkaOps;
 
 	@Autowired
 	ObjectMapper objectMapper;
@@ -86,8 +75,6 @@ public class CSourceSubscriptionService {
 	CSourceNotificationHandler notificationHandler;
 	CSourceNotificationHandler internalNotificationHandler;
 
-	private final CSourceProducerChannel producerChannel;
-
 	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	HashMap<URI, SubscriptionRequest> subscriptionId2Subscription = new HashMap<URI, SubscriptionRequest>();
@@ -95,67 +82,35 @@ public class CSourceSubscriptionService {
 	ArrayListMultimap<String, SubscriptionRequest> typeBasedSubscriptions = ArrayListMultimap.create();
 	ArrayListMultimap<String, SubscriptionRequest> idPatternBasedSubscriptions = ArrayListMultimap.create();
 	HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
-	// HashMap<String, Integer> subId2HashNotificationData = new HashMap<String,
-	// Integer>();
 	@Value("${bootstrap.servers}")
 	String BOOTSTRAP_SERVERS;
+	@Value("${csource.notification.topic:CONTEXT_SOURCE_NOTIFICATION")
+	String notificationChannel;
 
-	// @Value("${notification.port}")
-	// String REMOTE_NOTIFICATION_PORT;
+	@Autowired
+	KafkaTemplate<String, String> kafkaTemplate;
 
-	/*
-	 * Map<String, Object> props = new HashMap<String, Object>(); private
-	 * SubscriptionManagerProducerChannel producerChannel; { // Make configurable
-	 * props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
-	 * props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-	 * ByteArrayDeserializer.class);
-	 * props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-	 * ByteArrayDeserializer.class); props.put(ConsumerConfig.GROUP_ID_CONFIG,
-	 * UUID.randomUUID().toString()); props.put(JsonDeserializer.TRUSTED_PACKAGES,
-	 * "*"); }
-	 */
-
-	public CSourceSubscriptionService(CSourceProducerChannel producerChannel) {
-		this.producerChannel = producerChannel;
-		// loadStoredSubscriptions();
-	}
+	@Value("${csource.subscriptionn.topic:CONTEXT_SUBSCRIPTIONS")
+	private String csourceSubscriptionChannel;
 
 	@PostConstruct
 	private void loadStoredSubscriptions() {
-		// this.contextResolver =
-		// ContextResolverService.getInstance(producerChannel.atContextWriteChannel(),
-		// kafkaOps);
 		this.notificationHandler = new CSourceNotificationHandlerREST();
-		this.internalNotificationHandler = new CSourceNotificationHandlerInternalKafka(kafkaOps, producerChannel);
+		this.internalNotificationHandler = new CSourceNotificationHandlerInternalKafka(kafkaTemplate,
+				notificationChannel);
 		logger.trace("call loadStoredSubscriptions() ::");
-		Map<String, byte[]> subs = kafkaOps.pullFromKafka(KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC);
-		for (byte[] sub : subs.values()) {
-			try {
-				if (Arrays.equals(sub, nullArray)) {
-					continue;
-				}
-				SubscriptionRequest subscriptionRequest = DataSerializer.getSubscriptionRequest(new String(sub));
-				subscribe(subscriptionRequest, false);
-			} catch (JsonParseException e) {
-				logger.error("Exception ::", e);
-				e.printStackTrace();
-				continue;
-			} catch (ResponseException e) {
-				logger.error("Exception ::", e);
-				e.printStackTrace();
-				continue;
-			}
-		}
+		// TODO replace all of this with a load from the DB ... Store subscriptions in
+		// db and reload on restart
 		/*
-		 * subs = kafkaOps.pullFromKafka(KafkaConstants.SUBSCRIPTIONS_TOPIC); for
-		 * (byte[] sub : subs.values()) { try { if (Arrays.areEqual(sub, nullArray)) {
+		 * Map<String, byte[]> subs =
+		 * kafkaOps.pullFromKafka(KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC); for
+		 * (byte[] sub : subs.values()) { try { if (Arrays.equals(sub, nullArray)) {
 		 * continue; } SubscriptionRequest subscriptionRequest =
 		 * DataSerializer.getSubscriptionRequest(new String(sub));
-		 * subscriptionRequest.getSubscription().setInternal(true);
-		 * subscribe(subscriptionRequest, false); } catch (JsonParseException e) { //
-		 * logger.error("Exception ::", e); // e.printStackTrace(); continue; } catch
-		 * (ResponseException e) { // logger.error("Exception ::", e); //
-		 * e.printStackTrace(); continue; } }
+		 * subscribe(subscriptionRequest, false); } catch (JsonParseException e) {
+		 * logger.error("Exception ::", e); e.printStackTrace(); continue; } catch
+		 * (ResponseException e) { logger.error("Exception ::", e); e.printStackTrace();
+		 * continue; } }
 		 */
 	}
 
@@ -192,9 +147,9 @@ public class CSourceSubscriptionService {
 			}
 
 		}
-		if (sync) {
-			syncToMessageBus(subscriptionRequest);
-		}
+
+		storeSubscription(subscriptionRequest);
+
 		if (subscription.isInternal()) {
 			new Thread() {
 				public void run() {
@@ -229,15 +184,18 @@ public class CSourceSubscriptionService {
 
 	}
 
-	private void syncToMessageBus(SubscriptionRequest subscriptionRequest) throws ResponseException {
+	private void storeSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
+		// TODO store subscriptions in the database
 		if (subscriptionRequest.getSubscription().isInternal()) {
 			return;
 		}
-		String id = subscriptionRequest.getSubscription().getId().toString();
-		if (!this.kafkaOps.isMessageExists(id, KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC)) {
-			this.kafkaOps.pushToKafka(producerChannel.csourceSubscriptionWriteChannel(), id.getBytes(),
-					DataSerializer.toJson(subscriptionRequest).getBytes());
-		}
+		/*
+		 * String id = subscriptionRequest.getSubscription().getId().toString(); if
+		 * (!this.kafkaOps.isMessageExists(id,
+		 * KafkaConstants.CSOURCE_SUBSCRIPTIONS_TOPIC)) {
+		 * this.kafkaOps.pushToKafka(producerChannel.csourceSubscriptionWriteChannel(),
+		 * id.getBytes(), DataSerializer.toJson(subscriptionRequest).getBytes()); }
+		 */
 	}
 
 	private URI generateUniqueSubId(Subscription subscription) {
@@ -274,9 +232,8 @@ public class CSourceSubscriptionService {
 				idPatternBasedSubscriptions.remove(info.getIdPattern(), removedSub);
 			}
 		}
+		this.kafkaTemplate.send(csourceSubscriptionChannel, id.toString(), "null");
 
-		this.kafkaOps.pushToKafka(this.producerChannel.csourceSubscriptionWriteChannel(), id.toString().getBytes(),
-				"null".getBytes());
 		return true;
 
 	}
@@ -684,17 +641,17 @@ public class CSourceSubscriptionService {
 	}
 
 	@KafkaListener(topics = "${submanager.subscription.topic}", groupId = "csourcemanager")
-	public void handleInternalSub(Message<byte[]> message) {
-		if (Arrays.equals(AppConstants.NULL_BYTES, message.getPayload())) {
+	public void handleInternalSub(@Payload String message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
+		if (message.equals("null")) {
 			try {
-				unsubscribe(new URI(KafkaOps.getMessageKey(message)));
+				unsubscribe(new URI(key));
 			} catch (ResponseException e) {
 				logger.error(e);
 			} catch (URISyntaxException e) {
 				logger.error(e);
 			}
 		} else {
-			SubscriptionRequest internalSub = DataSerializer.getSubscriptionRequest(new String(message.getPayload()));
+			SubscriptionRequest internalSub = DataSerializer.getSubscriptionRequest(message);
 			internalSub.getSubscription().setInternal(true);
 			try {
 				subscribe(internalSub);

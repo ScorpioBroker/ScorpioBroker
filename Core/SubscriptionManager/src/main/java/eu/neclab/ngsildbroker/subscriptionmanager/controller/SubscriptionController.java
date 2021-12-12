@@ -17,7 +17,6 @@ import javax.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,9 +49,7 @@ import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionManager;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
@@ -69,14 +66,8 @@ public class SubscriptionController {
 	@Autowired
 	SubscriptionManager manager;
 
-	@Autowired
-	KafkaOps kafkaOps;
-
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
-
-	@Autowired
-	ParamsResolver ldTools;
 
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	String coreContext;
@@ -91,10 +82,8 @@ public class SubscriptionController {
 	ResponseEntity<byte[]> badRequestResponse = ResponseEntity.status(badRequest.getHttpStatus())
 			.body(new RestResponse(badRequest).toJsonBytes());
 
-	private HttpUtils httpUtils;
 	private JsonLdOptions opts;
 	private Pattern subscriptionParser;
-	private Pattern attributeChecker;
 
 	public SubscriptionController() {
 		StringBuilder regex = new StringBuilder();
@@ -102,7 +91,7 @@ public class SubscriptionController {
 		for (String payloadItem : NGSIConstants.NGSI_LD_PAYLOAD_KEYS) {
 			regex.append("|(" + payloadItem.replace("/", "\\/").replace(".", "\\.") + ")");
 		}
-		attributeChecker = Pattern.compile(regex.toString());
+
 		regex = new StringBuilder();
 		regex.append(NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX);
 		for (String payloadItem : NGSIConstants.NGSI_LD_SUBSCRIPTON_PAYLOAD_KEYS) {
@@ -111,6 +100,7 @@ public class SubscriptionController {
 		subscriptionParser = Pattern.compile(regex.toString());
 	}
 
+	@SuppressWarnings("unchecked")
 	@RequestMapping(method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<byte[]> subscribeRest(ServerHttpRequest request, @RequestBody String payload) {
@@ -127,7 +117,7 @@ public class SubscriptionController {
 			subscription = expandSubscription(payload, request);
 			Object bodyContext = ((Map<String, Object>) JsonUtils.fromString(payload)).get(JsonLdConsts.CONTEXT);
 			if (bodyContext instanceof List) {
-				context.addAll((List) bodyContext);
+				context.addAll((List<Object>) bodyContext);
 			} else {
 				context.add(bodyContext);
 			}
@@ -167,6 +157,7 @@ public class SubscriptionController {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
 	public Subscription expandSubscription(String body, ServerHttpRequest request) throws ResponseException {
 		Subscription subscription = new Subscription();
 
@@ -207,7 +198,7 @@ public class SubscriptionController {
 				// TYPE
 				String type = null;
 				if (mapValue instanceof List) {
-					type = validateUri((String) ((List) mapValue).get(0));
+					type = validateUri(((List<String>) mapValue).get(0));
 				} else if (mapValue instanceof String) {
 					type = validateUri((String) mapValue);
 				}
@@ -234,12 +225,11 @@ public class SubscriptionController {
 							break;
 						case NGSIConstants.JSON_LD_TYPE:
 							hasType = true;
-							entityInfo.setType(validateUri((String) ((List) entitiesEntry.getValue()).get(0)));
+							entityInfo.setType(validateUri(((List<String>) entitiesEntry.getValue()).get(0)));
 							break;
 						case NGSIConstants.NGSI_LD_ID_PATTERN:
-							entityInfo.setIdPattern(
-									(String) ((Map<String, Object>) ((List) entitiesEntry.getValue()).get(0))
-											.get(NGSIConstants.JSON_LD_VALUE));
+							entityInfo.setIdPattern((String) ((List<Map<String, Object>>) entitiesEntry.getValue())
+									.get(0).get(NGSIConstants.JSON_LD_VALUE));
 							break;
 						default:
 							throw new ResponseException(ErrorType.BadRequestData, "Unknown entry for entities");
@@ -254,7 +244,7 @@ public class SubscriptionController {
 				subscription.setEntities(entities);
 			} else if (keyType == 7) {
 				try {
-					LDGeoQuery ldGeoQuery = getGeoQuery((Map<String, Object>) ((List) mapValue).get(0));
+					LDGeoQuery ldGeoQuery = getGeoQuery(((List<Map<String, Object>>) mapValue).get(0));
 					subscription.setLdGeoQuery(ldGeoQuery);
 				} catch (Exception e) {
 					logger.error(e);
@@ -266,7 +256,7 @@ public class SubscriptionController {
 				// NGSI_LD_NOTIFICATION
 				try {
 					NotificationParam notification = getNotificationParam(
-							(Map<String, Object>) ((List) mapValue).get(0));
+							((List<Map<String, Object>>) mapValue).get(0));
 					subscription.setNotification(notification);
 					hasNotificaition = true;
 				} catch (Exception e) {
@@ -360,6 +350,7 @@ public class SubscriptionController {
 		return subscription;
 	}
 
+	@SuppressWarnings("unchecked")
 	private NotificationParam getNotificationParam(Map<String, Object> map) throws Exception {
 		// Default accept
 		String accept = AppConstants.NGB_APPLICATION_JSONLD;
@@ -472,7 +463,7 @@ public class SubscriptionController {
 		try {
 			ValidateURI.validateUri(id);
 			logger.trace("call getSubscriptions() ::");
-			return httpUtils.generateReply(request, DataSerializer
+			return HttpUtils.generateReply(request, DataSerializer
 					.toJson(manager.getSubscription(id, HttpUtils.getHeaders(request)).getSubscription()));
 
 		} catch (ResponseException e) {
@@ -557,6 +548,7 @@ public class SubscriptionController {
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}
 
+	@SuppressWarnings("unchecked")
 	private LDGeoQuery getGeoQuery(Map<String, Object> map) throws Exception {
 		LDGeoQuery geoQuery = new LDGeoQuery();
 		List<Map<String, Object>> jsonCoordinates = (List<Map<String, Object>>) map
@@ -577,14 +569,14 @@ public class SubscriptionController {
 
 		}
 		geoQuery.setCoordinates(coordinates);
-		String geometry = (String) ((Map<String, Object>) ((List) map.get(NGSIConstants.NGSI_LD_GEOMETRY)).get(0))
+		String geometry = (String) ((List<Map<String, Object>>) map.get(NGSIConstants.NGSI_LD_GEOMETRY)).get(0)
 				.get(NGSIConstants.JSON_LD_VALUE);
 		if (geometry.equalsIgnoreCase("point")) {
 			geoQuery.setGeometry(Geometry.Point);
 		} else if (geometry.equalsIgnoreCase("polygon")) {
 			geoQuery.setGeometry(Geometry.Polygon);
 		}
-		String geoRelString = (String) ((Map<String, Object>) ((List) map.get(NGSIConstants.NGSI_LD_GEO_REL)).get(0))
+		String geoRelString = (String) ((List<Map<String, Object>>) map.get(NGSIConstants.NGSI_LD_GEO_REL)).get(0)
 				.get(NGSIConstants.JSON_LD_VALUE);
 		String[] relSplit = geoRelString.split(";");
 		GeoRelation geoRel = new GeoRelation();

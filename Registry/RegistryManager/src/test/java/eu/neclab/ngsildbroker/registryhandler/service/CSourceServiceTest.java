@@ -27,18 +27,13 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceInfoDAO;
 
 @SpringBootTest
 @RunWith(SpringRunner.class)
 public class CSourceServiceTest {
 
-	@Mock
-	KafkaOps operations;
-	@Mock
-	CSourceProducerChannel producerChannels;
+	
 	@InjectMocks
 	CSourceService csourceService;
 	@MockBean
@@ -119,7 +114,7 @@ public class CSourceServiceTest {
 		try {
 			multimaparr.put("content-type", "application/json");
 			csourceReg.setInternal(true);
-			Mockito.doReturn(false).when(operations).isMessageExists(any(), any());
+			//Mockito.doReturn(false).when(operations).isMessageExists(any(), any());
 			URI uri = csourceService.registerCSource(multimaparr, csourceReg);
 			Assert.assertEquals(uri, new URI("urn:ngsi-ld:ContextSourceRegistration:csr1a3456"));
 		} catch (Exception ex) {
@@ -143,7 +138,7 @@ public class CSourceServiceTest {
 			multimaparr.put("content-type", "application/json");
 			byte[] payloadBytes = payload.getBytes();
 			updateCSourceReg.setInternal(true);
-			Mockito.doReturn(payloadBytes).when(operations).getMessage(any(), any());
+			//Mockito.doReturn(payloadBytes).when(operations).getMessage(any(), any());
 			Mockito.doReturn(blankNode).when(objectMapper).createObjectNode();
 			Mockito.doReturn(payloadNode).when(objectMapper).readTree(any(byte[].class));
 			Mockito.doReturn(true).when(csourceSubService).checkSubscriptions(any(CSourceRequest.class),
@@ -172,7 +167,7 @@ public class CSourceServiceTest {
 			postConstruct.invoke(csourceService);
 			multimaparr.put("content-type", "application/json");
 			byte[] payloadBytes = payload.getBytes();
-			Mockito.doReturn(payloadBytes).when(operations).getMessage(any(), any());
+			//Mockito.doReturn(payloadBytes).when(operations).getMessage(any(), any());
 			Mockito.doReturn(csourceReg).when(objectMapper).readValue(any(byte[].class),
 					Mockito.eq(CSourceRegistration.class));
 			boolean result = csourceService.deleteCSourceRegistration(multimaparr,

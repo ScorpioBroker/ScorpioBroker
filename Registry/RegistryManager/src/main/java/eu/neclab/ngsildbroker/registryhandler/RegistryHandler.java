@@ -1,27 +1,23 @@
 package eu.neclab.ngsildbroker.registryhandler;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
-import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.stream.service.CommonKafkaConfig;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
 
-//@Component(immediate=true)
 @SpringBootApplication
-@EnableBinding({ CSourceProducerChannel.class, AtContextProducerChannel.class })
-@Import({ CommonKafkaConfig.class })
 public class RegistryHandler {
 
 	public static void main(String[] args) {
@@ -30,13 +26,9 @@ public class RegistryHandler {
 
 	@Autowired
 	RegistryJdbcConfig jdbcConfig;
+	
 
-	@Bean("rmops")
-	KafkaOps ops() {
-		return new KafkaOps();
-	}
-
-	@Bean("rmrestTemplate")
+	@Bean
 	RestTemplate restTemplate() {
 		return new RestTemplate(clientHttpRequestFactory());
 	}
@@ -49,14 +41,9 @@ public class RegistryHandler {
 		return factory;
 	}
 
-	@Bean("rmgetCsourceRegistration")
+	@Bean
 	CSourceRegistration getCsourceRegistration() {
 		return new CSourceRegistration();
-	}
-
-	@Bean("rmparamsResolver")
-	ParamsResolver paramsResolver() {
-		return new ParamsResolver();
 	}
 
 }

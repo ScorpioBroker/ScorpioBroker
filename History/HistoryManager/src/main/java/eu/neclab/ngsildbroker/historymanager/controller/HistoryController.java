@@ -53,11 +53,7 @@ public class HistoryController {
 	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
 
 	@Autowired
-	ParamsResolver paramsResolver;
-
-	@Autowired
 	HistoryDAO historyDAO;
-
 	@Autowired
 	HistoryService historyService;
 	@Value("${atcontext.url}")
@@ -83,6 +79,7 @@ public class HistoryController {
 		try {
 			logger.trace("createTemporalEntity :: started");
 
+			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
 							AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
@@ -114,7 +111,7 @@ public class HistoryController {
 			Context context = JsonLdProcessor.coreContext.clone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getQueryParams(), context, true);
+			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(request.getQueryParams(), context, true);
 			if (limit == null) {
 				limit = defaultLimit;
 			}
@@ -193,7 +190,7 @@ public class HistoryController {
 			Context context = JsonLdProcessor.coreContext.clone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(params, context, true);
+			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
@@ -224,7 +221,7 @@ public class HistoryController {
 			Context context = JsonLdProcessor.coreContext.clone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
-			QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(params, context, true);
+			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
@@ -257,6 +254,7 @@ public class HistoryController {
 		try {
 			logger.trace("addAttrib2TemopralEntity :: started");
 			logger.debug("entityId : " + entityId);
+			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
 							AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
@@ -308,6 +306,7 @@ public class HistoryController {
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
 
+			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(links, JsonUtils.fromString(payload), opts, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD,
 							HttpUtils.doPreflightCheck(request))

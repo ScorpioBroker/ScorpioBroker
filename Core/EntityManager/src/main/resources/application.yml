@@ -13,9 +13,6 @@ mysettings:
 jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
 server:
   port: 1025
-  tomcat:
-    max:
-      threads: 50
 #Entity-Manager topics properties
 entity:
   topic: ENTITY
@@ -42,15 +39,8 @@ batchoperations:
     update: 1000
     upsert: 1000
     delete: 1000
-
-
-
-#Entity Append ovewrite options
 append:
   overwrite: noOverwrite
-
-
-
 management:
   endpoints:
     web:
@@ -59,76 +49,22 @@ management:
   endpoint:
     restart:
       enabled: true
-
-
-
 spring:
-#  mvc.pathpattern.matching-strategy: ant_path_matcher
   application.name: ${mysettings.application-name}
   kafka:
+    producer:
+      bootstrap-servers: ${bootstrap.servers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      bootstrap-servers: ${bootstrap.servers}
+      group-id: ${mysettings.application-name}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
     admin:
       properties:
         cleanup:
-          policy: compact
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: ${bootstrap.servers}
-      bindings:
-        ENTITY_WRITE_CHANNEL:
-          destination: ENTITY
-          contentType: application/json
-#        ENTITY_READ_CHANNEL:
-#          destination: ENTITY
-#          contentType: application/json
-#          group: entity
-        KVENTITY_WRITE_CHANNEL:
-          destination: KVENTITY
-          contentType: application/json
-        ENTITY_WITHOUT_SYSATTRS_WRITE_CHANNEL:
-          destination: ENTITY_WITHOUT_SYSATTRS
-          contentType: application/json
-        CREATE_WRITE_CHANNEL:
-          destination: ENTITY_CREATE
-          contentType: application/json
-        #CREATE_READ_CHANNEL:
-          #destination: ENTITY_CREATE
-          #contentType: application/json
-          #group: create
-        APPEND_WRITE_CHANNEL:
-          destination: ENTITY_APPEND
-          contentType: application/json
-        #APPEND_READ_CHANNEL:
-          #destination: ENTITY_APPEND
-          #contentType: application/json
-          #group: append
-        UPDATE_WRITE_CHANNEL:
-          destination: ENTITY_UPDATE
-          contentType: application/json
-        #UPDATE_READ_CHANNEL:
-          #destination: ENTITY_UPDATE
-          #contentType: application/json
-          #group: update
-        DELETE_WRITE_CHANNEL:
-          destination: ENTITY_DELETE
-          contentType: application/json
-        #DELETE_READ_CHANNEL:
-          #destination: ENTITY_DELETE
-          #contentType: application/json
-          #group: delete
-        CONTEXT_REGISTRY_WRITE_CHANNEL:
-          destination: CONTEXT_REGISTRY
-          contentType: application/json
-        CONTEXT_REGISTRY_UPDATE_CHANNEL:
-          destination: CONTEXT_UPDATE
-          contentType: application/json
-        INDEX_WRITE_CHANNEL:
-          destination: ENTITY_INDEX
-          contentType: application/json
-        ATCONTEXT_WRITE_CHANNEL:
-          destination: ATCONTEXT
-          contentType: application/json
+          policy: compact  
   datasource:
     hikari:
       connectionTimeout: 30000

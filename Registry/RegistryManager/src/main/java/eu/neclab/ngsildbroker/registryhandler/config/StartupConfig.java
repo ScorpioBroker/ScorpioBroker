@@ -10,7 +10,6 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -23,8 +22,6 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 
@@ -45,8 +42,7 @@ public class StartupConfig {
 	String customEndpoint;
 	@Value("${broker.regOnlyLocal:#{false}}")
 	boolean localOnlyAutoReg;
-	@Autowired
-	KafkaOps operations;
+
 	@Value("${csource.source.topic}")
 	String CSOURCE_TOPIC;
 	@Autowired

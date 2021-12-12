@@ -3,19 +3,12 @@ package eu.neclab.ngsildbroker.subscriptionmanager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-
-import eu.neclab.ngsildbroker.commons.ldcontext.AtContextProducerChannel;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
-import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 
 @SpringBootApplication
-@EnableBinding({ SubscriptionManagerProducerChannel.class, AtContextProducerChannel.class })
-@Import({ KafkaConfig.class })
 public class SubscriptionHandler {
 
 	@Value("${atcontext.url}")
@@ -26,13 +19,12 @@ public class SubscriptionHandler {
 
 	}
 
-	@Bean("smops")
-	KafkaOps ops() {
-		return new KafkaOps();
-	}
+	@Value("${query.result.topic}")
+	String queryResultTopic;
 
-	@Bean("smparamsResolver")
-	ParamsResolver paramsResolver() {
-		return new ParamsResolver();
+	@Bean // register and configure replying kafka template
+	public ReplyingKafkaTemplate<String, String, String> replyingTemplate(ProducerFactory<String, String> pf,
+			ConcurrentKafkaListenerContainerFactory<String, String> containerFactory) {
+		return new ReplyingKafkaTemplate<>(pf, containerFactory.createContainer(queryResultTopic));
 	}
 }

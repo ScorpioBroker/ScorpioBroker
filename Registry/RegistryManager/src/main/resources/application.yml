@@ -27,10 +27,19 @@ spring:
     lazy-initialization: true
     allow-circular-references: true
   kafka:
+    producer:
+      bootstrap-servers: ${bootstrap.servers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      bootstrap-servers: ${bootstrap.servers}
+      group-id: ${mysettings.application-name}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
     admin:
       properties:
         cleanup:
-          policy: compact 
+          policy: compact  
   datasource:
     password: ${mysettings.postgres.password}
     url: ${jdbcurl}
@@ -42,24 +51,7 @@ spring:
       poolName: SpringBootHikariCP
       maxLifetime: 2000000
       connectionTimeout: 30000
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: ${bootstrap.servers}
-      bindings:
-        CSOURCE_REGISTRATION_WRITE_CHANNEL:
-          destination: CONTEXT_SOURCE
-          contentType: application/json
-        CSOURCE_NOTIFICATION_WRITE_CHANNEL:
-          destination: CONTEXT_SOURCE_NOTIFICATION
-          contentType: application/json
-        ATCONTEXT_WRITE_CHANNEL:
-          destination: ATCONTEXT
-          contentType: application/json
-        CSOURCE_SUBSCRIPTION_WRITE_CHANNEL:
-          destination: CSOURCE_SUBSCRIPTIONS
-          contentType: application/json  
+
 csource:
   registry:
     topic: CONTEXT_REGISTRY
@@ -71,7 +63,8 @@ csource:
     topic: CONTEXT_REGISTRY_QUERY
     result:
       topic: CONTEXT_REGISTRY_QUERY_RESULT
-      
+  subscriptionn:
+    topic: CONTEXT_SUBSCRIPTIONS
 submanager:
   subscription:
     topic: SUBSCRIPTIONS

@@ -11,7 +11,6 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -68,8 +67,6 @@ public class RegistryController {
 	CSourceService csourceService;
 
 	@Autowired
-	ParamsResolver paramsResolver;
-	@Autowired
 	CSourceDAO csourceDAO;
 	@Autowired
 	ObjectMapper objectMapper;
@@ -82,23 +79,6 @@ public class RegistryController {
 	public void init() {
 		JsonLdProcessor.init(coreContext);
 	}
-
-	// @GetMapping
-	// public ResponseEntity<byte[]> discoverCSource(ServerHttpRequest request,
-	// @RequestParam HashMap<String, String> queryMap) {
-	// try {
-	// return ResponseEntity.status(HttpStatus.OK)
-	// .body(csourceService.getCSourceRegistrations(queryMap));
-	// } catch (ResponseException exception) {
-	// return ResponseEntity.status(exception.getHttpStatus()).body(new
-	// RestResponse(exception));
-	// } catch (Exception e) {
-	// return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	// .body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server
-	// error",
-	// "Internal error")));
-	// }
-	// }
 
 	@GetMapping
 	public ResponseEntity<byte[]> discoverCSource(ServerHttpRequest request,
@@ -118,7 +98,7 @@ public class RegistryController {
 				List<Object> linkHeaders = HttpUtils.getAtContext(request);
 				Context context = JsonLdProcessor.coreContext.clone();
 				context = context.parse(linkHeaders, true);
-				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getQueryParams(), context);
+				QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(request.getQueryParams(), context);
 				if (offset == null) {
 					offset = 0;
 				}
@@ -259,14 +239,7 @@ public class RegistryController {
 			if (json.isNull()) {
 				throw new ResponseException(ErrorType.UnprocessableEntity);
 			}
-//			if (json.get(NGSIConstants.QUERY_PARAMETER_ID) == null) {
-//				if(json.isObject()) {
-//					((ObjectNode)json).set(NGSIConstants.QUERY_PARAMETER_ID, new TextNode(generateUniqueRegId(payload)));
-//				}else {
-//					throw new ResponseException(ErrorType.BadRequestData);
-//				}
-//				
-//			}
+
 		} catch (JsonParseException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		} catch (IOException e) {

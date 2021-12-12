@@ -9,7 +9,6 @@
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
 	<artifactId>AllInOneRunner</artifactId>
-	<version>1.1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<profiles>
@@ -170,11 +169,11 @@
 			<artifactId>RegistryManager</artifactId>
 			<version>1.1.0-SNAPSHOT</version>
 		</dependency>
-		<dependency>
+		<!-- <dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>StorageManager</artifactId>
 			<version>1.1.0-SNAPSHOT</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>SubscriptionManager</artifactId>

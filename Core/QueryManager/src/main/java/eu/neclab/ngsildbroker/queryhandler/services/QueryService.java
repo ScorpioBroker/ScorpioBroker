@@ -5,10 +5,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -27,7 +25,6 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -46,6 +43,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.KafkaConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -54,9 +52,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteQueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 
@@ -75,9 +71,6 @@ public class QueryService {
 	String ENTITY_WITHOUT_SYSATTRS_TOPIC;
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
-
-	@Autowired
-	KafkaOps operations;
 
 	@Autowired
 	ObjectMapper objectMapper;
@@ -106,10 +99,8 @@ public class QueryService {
 	@Value("${directDbConnection}")
 	boolean directDbConnection;
 
-	@SuppressWarnings("unused")
-
 	@Autowired
-	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
+	ReplyingKafkaTemplate<String, String, String> kafkaTemplate;
 
 	@Autowired
 	RestTemplate restTemplate;
@@ -129,113 +120,8 @@ public class QueryService {
 		// kafkaTemplate.setReplyTimeout(replyTimeout);
 	}
 
-	/**
-	 * Method is used for get entity based on entity id or attributes
-	 * 
-	 * @param entityId
-	 * @param attrs
-	 * @return String
-	 * @throws ResponseException
-	 * @throws IOException
-	 */
-	public String retrieveEntity(String entityId, List<String> attrs, boolean keyValues, boolean includeSysAttrs)
-			throws ResponseException, IOException {
-
-		logger.trace("call retriveEntity method in QueryService class");
-		// null id check
-		/*
-		 * if (entityId == null) throw new ResponseException(ErrorType.BadRequestData);
-		 */
-		boolean checkData = entityId.contains("=");
-		if (checkData) {
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-		// get entity from ENTITY topic.
-		byte[] entityJson;
-		if (keyValues) {
-			entityJson = operations.getMessage(entityId, this.KVENTITY_TOPIC);
-		} else {
-			if (includeSysAttrs)
-				entityJson = operations.getMessage(entityId, this.ENTITY_TOPIC);
-			else
-				entityJson = operations.getMessage(entityId, this.ENTITY_WITHOUT_SYSATTRS_TOPIC);
-		}
-		// check whether exists.
-		if (entityJson == null)
-			throw new ResponseException(ErrorType.NotFound);
-
-		JsonNode entityJsonBody = objectMapper.createObjectNode();
-		if (attrs != null && !attrs.isEmpty()) {
-			JsonNode entityChildJsonBody = objectMapper.createObjectNode();
-			entityChildJsonBody = objectMapper.readTree(entityJson).get(NGSIConstants.JSON_LD_ID);
-			((ObjectNode) entityJsonBody).set(NGSIConstants.JSON_LD_ID, entityChildJsonBody);
-			entityChildJsonBody = objectMapper.readTree(entityJson).get(NGSIConstants.JSON_LD_TYPE);
-			((ObjectNode) entityJsonBody).set(NGSIConstants.JSON_LD_TYPE, entityChildJsonBody);
-
-			if (includeSysAttrs) {
-				entityChildJsonBody = objectMapper.readTree(entityJson).get(NGSIConstants.NGSI_LD_CREATED_AT);
-				((ObjectNode) entityJsonBody).set(NGSIConstants.NGSI_LD_CREATED_AT, entityChildJsonBody);
-				entityChildJsonBody = objectMapper.readTree(entityJson).get(NGSIConstants.NGSI_LD_MODIFIED_AT);
-				((ObjectNode) entityJsonBody).set(NGSIConstants.NGSI_LD_MODIFIED_AT, entityChildJsonBody);
-			}
-
-			for (int i = 0; i < attrs.size(); i++) {
-				entityChildJsonBody = objectMapper.readTree(entityJson).get(attrs.get(i));
-				((ObjectNode) entityJsonBody).set(attrs.get(i), entityChildJsonBody);
-			}
-		} else {
-			entityJsonBody = objectMapper.readTree(entityJson);
-		}
-		if (keyValues && !includeSysAttrs) { // manually remove createdAt and modifiedAt at root level
-			ObjectNode objectNode = (ObjectNode) entityJsonBody;
-			objectNode.remove(NGSIConstants.NGSI_LD_CREATED_AT);
-			objectNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
-			logger.debug("sysattrs removed");
-		}
-
-		return entityJsonBody.toString();
-	}
-
-	/**
-	 * Method is used for get all entity operation
-	 * 
-	 * @return List<JsonNode>
-	 * @throws ResponseException
-	 * @throws IOException
-	 */
-	public ArrayList<String> retriveAllEntity() throws ResponseException, IOException {
-		logger.trace("retriveAllEntity() in QueryService class :: started");
-		byte[] entity = null;
-		Map<String, byte[]> records = operations.pullFromKafka(this.ENTITY_TOPIC);
-		ArrayList<String> result = new ArrayList<String>();
-		if (records.isEmpty()) {
-			result.add("[]");
-		} else {
-
-			StringBuilder resultString = new StringBuilder("[");
-
-			for (String recordKey : records.keySet()) {
-				entity = records.get(recordKey);
-				if (Arrays.equals(entity, AppConstants.NULL_BYTES)) {
-					continue;
-				}
-
-				resultString.append(new String(entity));
-				resultString.append(",");
-			}
-			logger.trace("retriveAllEntity() in QueryService class :: completed");
-
-			if (resultString.length() == 1) // it has only the first square bracket, no entities
-				resultString.append("]");
-			else
-				resultString.setCharAt(resultString.length() - 1, ']');
-
-			result.add(resultString.toString());
-			result.addAll(records.keySet());
-		}
-		return result;
-	}
-
+	
+	
 	/**
 	 * Method is used for query request and query response is being implemented as
 	 * synchronized flow
@@ -248,20 +134,17 @@ public class QueryService {
 		// create producer record
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		logger.trace("getFromStorageManager() :: started");
-		ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(requestTopic,
-				storageManagerQuery.getBytes());
+		ProducerRecord<String, String> record = new ProducerRecord<String, String>(requestTopic,
+				storageManagerQuery);
 		// set reply topic in header
 		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()));
-		RequestReplyFuture<String, byte[], byte[]> sendAndReceive = kafkaTemplate.sendAndReceive(record);
+		RequestReplyFuture<String, String, String> sendAndReceive = kafkaTemplate.sendAndReceive(record);
 		// get consumer record
-		ConsumerRecord<String, byte[]> consumerRecord = sendAndReceive.get();
+		ConsumerRecord<String, String> consumerRecord = sendAndReceive.get();
 		// read from byte array
-		ByteArrayInputStream bais = new ByteArrayInputStream(consumerRecord.value());
-		DataInputStream in = new DataInputStream(bais);
 		List<String> entityList = new ArrayList<String>();
-		while (in.available() > 0) {
-			entityList.add(in.readUTF());
-		}
+		
+		entityList.add(consumerRecord.value());
 		// return consumer value
 		logger.trace("getFromStorageManager() :: completed");
 		queryResult.setActualDataString(entityList);
@@ -281,17 +164,17 @@ public class QueryService {
 		String contextRegistryData = null;
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		logger.trace("getFromContextRegistry() :: started");
-		ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(csourceQueryTopic,
-				contextRegistryQuery.getBytes());
+		ProducerRecord<String, String> record = new ProducerRecord<String, String>(csourceQueryTopic,
+				contextRegistryQuery);
 		// set reply topic in header
 		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()))
 				.add(KafkaHeaders.MESSAGE_KEY, "dummy".getBytes());// change with some useful key
-		RequestReplyFuture<String, byte[], byte[]> sendAndReceive = kafkaTemplate.sendAndReceive(record);
+		RequestReplyFuture<String, String, String> sendAndReceive = kafkaTemplate.sendAndReceive(record);
 		// get consumer record
-		ConsumerRecord<String, byte[]> consumerRecord = sendAndReceive.get();
+		ConsumerRecord<String, String> consumerRecord = sendAndReceive.get();
 		// return consumer value
 		logger.debug("getFromContextRegistry() :: completed");
-		contextRegistryData = new String((byte[]) consumerRecord.value());
+		contextRegistryData = new String((String) consumerRecord.value());
 		logger.debug("getFromContextRegistry() data broker list::" + contextRegistryData);
 		queryResult.setActualDataString(DataSerializer.getStringList(contextRegistryData));
 		return queryResult;
@@ -484,22 +367,22 @@ public class QueryService {
 			// }
 		} else {
 			// read from byte array
-			byte[] data = operations.getMessage(qToken, KafkaConstants.PAGINATION_TOPIC);
+			//TODO redo with views in sql and add proper storagemanager solution
+			String data = null; //operations.getMessage(qToken, KafkaConstants.PAGINATION_TOPIC);
 			if (data == null) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The provided qtoken is not valid. Provide a valid qtoken or remove the parameter to start a new query");
 			}
-			ByteArrayInputStream bais = new ByteArrayInputStream(data);
-			DataInputStream in = new DataInputStream(bais);
-			try {
-				while (in.available() > 0) {
-					aggregatedResult.add(in.readUTF());
-				}
-			} catch (IOException e) {
-				logger.error("failed reading in utf of data", e);
-				throw new ResponseException(ErrorType.BadRequestData, "failed reading in utf of data");
-			}
-			int end = offset + limit;
+			
+			
+			/*
+			 * try { DataInputStream in = new DataInputStream(new
+			 * ByteArrayInputStream(data)); while (in.available() > 0) {
+			 * aggregatedResult.add(in.readUTF()); } } catch (IOException e) {
+			 * logger.error("failed reading in utf of data", e); throw new
+			 * ResponseException(ErrorType.BadRequestData, "failed reading in utf of data");
+			 * }
+			 */			int end = offset + limit;
 			if (end > aggregatedResult.size()) {
 				end = aggregatedResult.size();
 			}

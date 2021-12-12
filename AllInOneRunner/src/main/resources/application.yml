@@ -98,8 +98,6 @@ max:
 maxLimit: 500
 ngb:
   debugmode: false
-
-
 reader:
   datasource:
     hikari:
@@ -115,61 +113,21 @@ reader:
   enabled: true
 
 spring:
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: ${bootstrap.servers}
-      bindings:
-        ENTITY_WRITE_CHANNEL:
-          destination: ENTITY
-          contentType: application/json
-        KVENTITY_WRITE_CHANNEL:
-          destination: KVENTITY
-          contentType: application/json
-        ENTITY_WITHOUT_SYSATTRS_WRITE_CHANNEL:
-          destination: ENTITY_WITHOUT_SYSATTRS
-          contentType: application/json
-        CREATE_WRITE_CHANNEL:
-          destination: ENTITY_CREATE
-          contentType: application/json
-        APPEND_WRITE_CHANNEL:
-          destination: ENTITY_APPEND
-          contentType: application/json
-        UPDATE_WRITE_CHANNEL:
-          destination: ENTITY_UPDATE
-          contentType: application/json
-        DELETE_WRITE_CHANNEL:
-          destination: ENTITY_DELETE
-          contentType: application/json
-        CONTEXT_REGISTRY_WRITE_CHANNEL:
-          destination: CONTEXT_REGISTRY
-          contentType: application/json
-        CONTEXT_REGISTRY_UPDATE_CHANNEL:
-          destination: CONTEXT_UPDATE
-          contentType: application/json
-        INDEX_WRITE_CHANNEL:
-          destination: ENTITY_INDEX
-          contentType: application/json
-        ATCONTEXT_WRITE_CHANNEL:
-          destination: ATCONTEXT
-          contentType: application/json
-        TEMPORAL_ENTITY_WRITE_CHANNEL:
-          destination: TEMPORALENTITY
-          contentType: application/json
-        SUBSCRIPTIONS_WRITE_CHANNEL:
-          destination: SUBSCRIPTIONS
-          contentType: application/json
-        CSOURCE_SUBSCRIPTION_WRITE_CHANNEL:
-          destination: CSOURCE_SUBSCRIPTIONS
-          contentType: application/json
-        CSOURCE_REGISTRATION_WRITE_CHANNEL:
-          destination: CONTEXT_SOURCE
-          contentType: application/json
-        CSOURCE_NOTIFICATION_WRITE_CHANNEL:
-          destination: CONTEXT_SOURCE_NOTIFICATION
-          contentType: application/json
   application.name: ${mysettings.application-name}
+  kafka:
+    producer:
+      bootstrap-servers: ${bootstrap.servers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      bootstrap-servers: ${bootstrap.servers}
+      group-id: ${mysettings.application-name}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    admin:
+      properties:
+        cleanup:
+          policy: compact  
   datasource:
     hikari:
       connectionTimeout: 30000
@@ -183,16 +141,10 @@ spring:
     username: ${mysettings.postgres.username}
   flyway:
     baselineOnMigrate: true
-  kafka:
-    admin:
-      properties:
-        cleanup:
-          policy: compact
   main:
     lazy-initialization: false
     allow-bean-definition-overriding: true
     allow-circular-references: true
-#  mvc.pathpattern.matching-strategy: ant_path_matcher
 writer:
   datasource:
     hikari:
@@ -256,9 +208,9 @@ selfhostcorecontext: http://localhost:9090/corecontext
 logging:
   level:
     root: INFO
-    org.apache.kafka: ERROR
-    org.spring.kafka: ERROR
-    org.springframework.kafka: ERROR
-    com.zaxxer.hikari: ERROR
+    #org.apache.kafka: ERROR
+    #org.spring.kafka: ERROR
+    #org.springframework.kafka: ERROR
+    #com.zaxxer.hikari: ERROR
 ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld

@@ -3,18 +3,14 @@ package eu.neclab.ngsildbroker.queryhandler.controller;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +27,6 @@ import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
@@ -52,9 +47,6 @@ public class QueryController {// implements QueryHandlerInterface {
 	private final static String MY_REQUEST_URL_ALT = "/ngsi-ld/v1/entities/";
 	@Autowired
 	QueryService queryService;
-
-	@Autowired
-	ParamsResolver paramsResolver;
 
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
@@ -90,8 +82,9 @@ public class QueryController {// implements QueryHandlerInterface {
 	@GetMapping(path = "/entities/{entityId}")
 	public ResponseEntity<byte[]> getEntity(ServerHttpRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
-			@RequestParam(value = "options", required = false) List<String> options, @PathVariable("entityId") String entityId) throws ResponseException {
-		
+			@RequestParam(value = "options", required = false) List<String> options,
+			@PathVariable("entityId") String entityId) throws ResponseException {
+
 		try {
 			ValidateURI.validateUri(entityId);
 		} catch (ResponseException exception) {
@@ -262,7 +255,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					if (originalQueryParams != null) {
 						originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
 					}
-					QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(paramMap, context);
+					QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(paramMap, context);
 					if (qp == null) // invalid query
 						throw new ResponseException(ErrorType.InvalidRequest);
 					qp.setTenant(tenantid);
@@ -274,7 +267,7 @@ public class QueryController {// implements QueryHandlerInterface {
 						ArrayList<String> expandedAttrs = new ArrayList<String>();
 						for (String attrib : attrs) {
 							try {
-								expandedAttrs.add(paramsResolver.expandAttribute(attrib, context));
+								expandedAttrs.add(ParamsResolver.expandAttribute(attrib, context));
 							} catch (ResponseException exception) {
 								continue;
 							}
@@ -283,9 +276,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					}
 
 					checkParamsForValidity(qp);
-					// long pregenheades = System.currentTimeMillis();
 					ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-					// long postgenheaders = System.currentTimeMillis();
 					QueryResult qResult;
 					try {
 						qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset, qToken,
@@ -295,42 +286,17 @@ public class QueryController {// implements QueryHandlerInterface {
 						return ResponseEntity.status(HttpStatus.NOT_FOUND)
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}
-					// long pregenresult = System.currentTimeMillis();
 					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve, countResult, context,
 							linkHeaders);
-					// long end = System.currentTimeMillis();
-					// System.err.println(start);
-					// System.err.println(prelink);
-					// System.err.println(postlink);
-					// System.err.println(pregenheades);
-					// System.err.println(postgenheaders);
-					// System.err.println(pregenresult);
-					// System.err.println(end);
 					return result;
 
 				} else {
-
-					if (debug) {
-						ArrayList<String> allEntityResult = queryService.retriveAllEntity();
-						if (allEntityResult.size() > 1) {
-							return HttpUtils.generateReply(request, allEntityResult.get(0));
-						} else {
-							return ResponseEntity.accepted()
-									.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
-									.body(allEntityResult.get(0).getBytes());
-						}
-					} else {
-						// as per [5.7.2.4]
-						throw new ResponseException(ErrorType.BadRequestData);
-					}
-
+					throw new ResponseException(ErrorType.BadRequestData);
 				}
 			} else {
 				throw new ResponseException(ErrorType.BadRequestData);
 			}
-		} catch (
-
-		ResponseException exception) {
+		} catch (ResponseException exception) {
 			logger.error("Exception ::", exception);
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception exception) {

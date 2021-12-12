@@ -29,7 +29,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+
 
 @SpringBootTest(properties= {"spring.main.allow-bean-definition-overriding=true"})
 @RunWith(SpringRunner.class)
@@ -37,8 +37,7 @@ import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 
 public class SubscriptionServiceTest {
 	
-	@Mock
-	private KafkaOps kafkaOperations;
+
 	
 	@Mock 
 	SubscriptionRequest subscriptionRequest;
@@ -87,7 +86,7 @@ public class SubscriptionServiceTest {
 	    subscription = DataSerializer.getSubscription(resolved);
 	    SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context, ArrayListMultimap.create());
 		URI subId = manager.subscribe(subRequest);
-		verify(kafkaOperations, times(1)).pushToKafka(any(),any(),any());
+		//verify(kafkaOperations, times(1)).pushToKafka(any(),any(),any());
 	 
  }
    

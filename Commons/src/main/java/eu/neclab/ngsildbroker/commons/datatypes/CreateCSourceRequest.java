@@ -3,23 +3,15 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
+import java.util.UUID;
 
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 
 public class CreateCSourceRequest extends CSourceRequest {
 
-	@Autowired
-	KafkaOps operations;
-	@Value("${csource.source.topic}")
-	String CSOURCE_TOPIC;
 
 	/**
 	 * constructor for serialization
@@ -88,10 +80,8 @@ public class CreateCSourceRequest extends CSourceRequest {
 
 		try {
 
-			String key = "urn:ngsi-ld:csourceregistration:" + csourceRegistration.hashCode();
-			while (this.operations.isMessageExists(key, this.CSOURCE_TOPIC)) {
-				key = key + "1";
-			}
+			String key = "urn:ngsi-ld:csourceregistration:"
+					+ UUID.fromString("" + csourceRegistration.hashCode()).toString();
 			return new URI(key);
 		} catch (URISyntaxException e) {
 			// Left empty intentionally should never happen

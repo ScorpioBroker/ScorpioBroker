@@ -7,6 +7,7 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_INT
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEAR;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -20,8 +21,10 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.locationtech.spatial4j.SpatialPredicate;
@@ -33,7 +36,6 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -41,6 +43,7 @@ import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
@@ -69,14 +72,11 @@ import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionManager;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import eu.neclab.ngsildbroker.subscriptionmanager.config.SubscriptionManagerProducerChannel;
 
 @Service
 public class SubscriptionService implements SubscriptionManager {
@@ -108,7 +108,7 @@ public class SubscriptionService implements SubscriptionManager {
 	ObjectMapper objectMapper;
 
 	@Autowired
-	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
+	ReplyingKafkaTemplate<String, String, String> kafkaTemplate;
 
 	@Autowired
 	SubscriptionInfoDAO subscriptionInfoDAO;
@@ -118,14 +118,6 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@Value("${query.result.topic}")
 	String queryResultTopic;
-
-	@Autowired
-	ParamsResolver paramsResolver;
-
-	SubscriptionManagerProducerChannel producerChannel;
-
-	@Autowired
-	KafkaOps kafkaOps;
 
 	@Value("${subscription.directdb:true}")
 	boolean directDB;
@@ -146,13 +138,11 @@ public class SubscriptionService implements SubscriptionManager {
 	private HTreeMap<String, String> subscriptionStore;
 	@Value("${subscriptions.store:subscriptionstore.db}")
 	private String subscriptionStoreLocation;
+	@Value("${subscriptions.topic:SUBSCRIPTIONS}")
+	protected String subscriptionTopic;
 
 	// @Value("${notification.port}")
 	// String REMOTE_NOTIFICATION_PORT;
-
-	public SubscriptionService(SubscriptionManagerProducerChannel producerChannel) {
-		this.producerChannel = producerChannel;
-	}
 
 	@PostConstruct
 	private void setup() {
@@ -165,10 +155,10 @@ public class SubscriptionService implements SubscriptionManager {
 
 		notificationHandlerREST = new NotificationHandlerREST(this, objectMapper);
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, queryResultTopic,
-				requestTopic, paramsResolver);
+				requestTopic);
 		notificationHandlerMQTT = new NotificationHandlerMQTT(this, objectMapper);
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, queryResultTopic,
-				requestTopic, paramsResolver);
+				requestTopic);
 		logger.trace("call loadStoredSubscriptions() ::");
 		this.subscriptionStore = DBMaker.fileDB(this.subscriptionStoreLocation).closeOnJvmShutdown()
 				.checksumHeaderBypass().transactionEnable().make()
@@ -314,14 +304,9 @@ public class SubscriptionService implements SubscriptionManager {
 				synchronized (subscriptionStore) {
 					subscriptionStore.put(subscription.getSubscription().getId().toString(),
 							DataSerializer.toJson(subscription));
-					try {
-						kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(),
-								subscription.getSubscription().getId().toString().getBytes(),
-								DataSerializer.toJson(subscription).getBytes());
-					} catch (ResponseException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					kafkaTemplate.send(subscriptionTopic, subscription.getSubscription().getId().toString(),
+							DataSerializer.toJson(subscription));
+
 				}
 
 			};
@@ -363,8 +348,7 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 		synchronized (tenant2subscriptionId2Subscription) {
 			removedSub = this.tenant2subscriptionId2Subscription.remove(tenant, id.toString());
-			this.kafkaOps.pushToKafka(producerChannel.subscriptionWriteChannel(), id.toString().getBytes(),
-					AppConstants.NULL_BYTES);
+			kafkaTemplate.send(subscriptionTopic, id.toString(), "null");
 		}
 
 		synchronized (tenantId2subscriptionId2Context) {
@@ -480,9 +464,9 @@ public class SubscriptionService implements SubscriptionManager {
 		return sub;
 	}
 
-	@KafkaListener(topics = "${entity.create.topic}", groupId = "submanager")
-	public void handleCreate(Message<byte[]> message) {
-		String key = KafkaOps.getMessageKey(message);
+	@KafkaListener(topics = "${entity.create.topic}")
+	public void handleCreate(Message<String> message) {
+		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
 		logger.debug("Create got called: " + key);
 		checkSubscriptionsWithCreate(DataSerializer.getEntityRequest(new String(message.getPayload())),
 				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
@@ -821,10 +805,10 @@ public class SubscriptionService implements SubscriptionManager {
 	// return null;
 	// }
 
-	@KafkaListener(topics = "${entity.update.topic}", groupId = "submanager")
-	public void handleUpdate(Message<byte[]> message) {
+	@KafkaListener(topics = "${entity.update.topic}")
+	public void handleUpdate(Message<String> message) {
 		String payload = new String(message.getPayload());
-		String key = KafkaOps.getMessageKey(message);
+		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
 		logger.debug("update got called: " + payload);
 		logger.debug(key);
 		EntityRequest updateRequest = DataSerializer.getEntityRequest(payload);
@@ -868,10 +852,10 @@ public class SubscriptionService implements SubscriptionManager {
 
 	}
 
-	@KafkaListener(topics = "${entity.append.topic}", groupId = "submanager")
-	public void handleAppend(Message<byte[]> message) {
+	@KafkaListener(topics = "${entity.append.topic}")
+	public void handleAppend(Message<String> message) {
 		String payload = new String(message.getPayload());
-		String key = KafkaOps.getMessageKey(message);
+		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
 		logger.debug("Append got called: " + payload);
 		logger.debug(key);
 		checkSubscriptionsWithAppend(DataSerializer.getEntityRequest(new String(message.getPayload())),
@@ -918,16 +902,16 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	// @StreamListener(SubscriptionManagerConsumerChannel.deleteReadChannel)
-	@KafkaListener(topics = "${entity.delete.topic}", groupId = "submanager")
-	public void handleDelete(Message<byte[]> message) throws Exception {
+	@KafkaListener(topics = "${entity.delete.topic}")
+	public void handleDelete(Message<String> message) throws Exception {
 		EntityRequest req = DataSerializer.getEntityRequest(new String(message.getPayload()));
 		this.tenant2Ids2Type.remove(req.getTenant(), req.getId());
 	}
 
-	@KafkaListener(topics = "${csource.notification.topic}", groupId = "submanager")
-	public void handleCSourceNotification(Message<byte[]> message) {
+	@KafkaListener(topics = "${csource.notification.topic}")
+	public void handleCSourceNotification(Message<String> message) {
 		String payload = new String(message.getPayload());
-		String key = KafkaOps.getMessageKey(message);
+		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
 		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
 		Map<String, SubscriptionRequest> temp = tenant2subscriptionId2Subscription.row(key);
 		for (SubscriptionRequest sub : temp.values()) {
@@ -936,8 +920,8 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	// @KafkaListener(topics = "${csource.registry.topic}", groupId = "submanager")
-	// public void handleCSourceRegistry(Message<byte[]> message) throws Exception {
-	// CSourceRegistration csourceRegistration = objectMapper.readValue((byte[])
+	// public void handleCSourceRegistry(Message<String> message) throws Exception {
+	// CSourceRegistration csourceRegistration = objectMapper.readValue((String)
 	// message.getPayload(),
 	// CSourceRegistration.class);
 	// checkSubscriptionsWithCSource(csourceRegistration);
@@ -1030,7 +1014,7 @@ public class SubscriptionService implements SubscriptionManager {
 			return this.tenant2Ids2Type.get(tenantId, entityId);
 		}
 		/*
-		 * //this has to be db handled byte[] json = kafkaOps.getMessage(key,
+		 * //this has to be db handled String json = kafkaOps.getMessage(key,
 		 * KafkaConstants.ENTITY_TOPIC); if (json == null) { return ""; } try { return
 		 * objectMapper.readTree(json).get(JSON_LD_TYPE).get(0).asText(""); } catch
 		 * (IOException e) { logger.error("Exception ::", e); e.printStackTrace(); }

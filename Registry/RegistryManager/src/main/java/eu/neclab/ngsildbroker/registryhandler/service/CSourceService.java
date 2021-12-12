@@ -7,25 +7,27 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
 import javax.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
@@ -33,6 +35,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
@@ -45,9 +48,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
 import eu.neclab.ngsildbroker.registryhandler.config.StartupConfig;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
@@ -63,8 +64,6 @@ public class CSourceService {
 	String BOOTSTRAP_SERVERS;
 
 	@Autowired
-	KafkaOps operations;
-	@Autowired
 	ObjectMapper objectMapper;
 
 	@Autowired
@@ -79,13 +78,15 @@ public class CSourceService {
 	@Autowired
 	CSourceSubscriptionService csourceSubService;
 
+	@Autowired
+	KafkaTemplate<String, String> kafkaTemplate;
+
 	@Value("${csource.source.topic}")
 	String CSOURCE_TOPIC;
 
 	@Value("${csource.directdb:true}")
 	boolean directDB = true;
 
-	private final CSourceProducerChannel producerChannels;
 	private ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
@@ -93,11 +94,6 @@ public class CSourceService {
 	private ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(50000, true);
 
 	ThreadPoolExecutor executor = new ThreadPoolExecutor(20, 50, 600000, TimeUnit.MILLISECONDS, workQueue);
-
-	CSourceService(CSourceProducerChannel producerChannels) {
-
-		this.producerChannels = producerChannels;
-	}
 
 	@PostConstruct
 	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
@@ -116,21 +112,18 @@ public class CSourceService {
 			return result;
 		} else {
 			logger.trace("getAll() ::");
-
-			Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
-			Map<String, JsonNode> entityMap = new HashMap<String, JsonNode>();
-			JsonNode entityJsonBody = objectMapper.createObjectNode();
-			byte[] result = null;
-			String key = null;
-
-			for (String recordKey : records.keySet()) {
-				result = records.get(recordKey);
-				key = recordKey;
-				entityJsonBody = objectMapper.readTree(result);
-				if (!entityJsonBody.isNull())
-					entityMap.put(key, entityJsonBody);
-			}
-			return new ArrayList<JsonNode>(entityMap.values());
+			// TODO redo this completely with support of the storagemanager
+			/*
+			 * Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
+			 * Map<String, JsonNode> entityMap = new HashMap<String, JsonNode>(); JsonNode
+			 * entityJsonBody = objectMapper.createObjectNode(); byte[] result = null;
+			 * String key = null;
+			 * 
+			 * for (String recordKey : records.keySet()) { result = records.get(recordKey);
+			 * key = recordKey; entityJsonBody = objectMapper.readTree(result); if
+			 * (!entityJsonBody.isNull()) entityMap.put(key, entityJsonBody); }
+			 */
+			return new ArrayList<JsonNode>();
 		}
 
 	}
@@ -179,7 +172,6 @@ public class CSourceService {
 
 	public boolean updateCSourceRegistration(ArrayListMultimap<String, String> headers, String registrationId,
 			String payload) throws ResponseException, Exception {
-		MessageChannel messageChannel = producerChannels.csourceWriteChannel();
 		if (registrationId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
@@ -211,8 +203,7 @@ public class CSourceService {
 		}
 		csourceSubService.checkSubscriptions(new CreateCSourceRequest(prevCSourceRegistration, headers),
 				new CreateCSourceRequest(newCSourceRegistration, headers));
-		this.operations.pushToKafka(messageChannel, registrationId.getBytes(),
-				DataSerializer.toJson(request).getBytes());
+		kafkaTemplate.send(CSOURCE_TOPIC, registrationId, DataSerializer.toJson(request));
 		handleFed();
 		return true;
 	}
@@ -263,10 +254,7 @@ public class CSourceService {
 		}
 
 		// TODO: [check for valid identifier (id)]
-
-		operations.pushToKafka(producerChannels.csourceWriteChannel(),
-				request.getId().getBytes(NGSIConstants.ENCODE_FORMAT),
-				DataSerializer.toJson(request).getBytes(NGSIConstants.ENCODE_FORMAT));
+		kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
 		this.csourceTimerTask(headers, csourceRegistration);
 		if (!csourceRegistration.isInternal()) {
 			csourceSubService.checkSubscriptions(request, TriggerReason.newlyMatching);
@@ -279,10 +267,8 @@ public class CSourceService {
 
 		try {
 
-			String key = "urn:ngsi-ld:csourceregistration:" + csourceRegistration.hashCode();
-			while (this.operations.isMessageExists(key, this.CSOURCE_TOPIC)) {
-				key = key + "1";
-			}
+			String key = "urn:ngsi-ld:csourceregistration:"
+					+ UUID.fromString(csourceRegistration.hashCode() + "").toString();
 			return new URI(key);
 		} catch (URISyntaxException e) {
 			// Left empty intentionally should never happen
@@ -311,7 +297,6 @@ public class CSourceService {
 
 	public boolean deleteCSourceRegistration(ArrayListMultimap<String, String> headers, String registrationId)
 			throws ResponseException, Exception {
-		MessageChannel messageChannel = producerChannels.csourceWriteChannel();
 		if (registrationId == null) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
@@ -333,8 +318,7 @@ public class CSourceService {
 		// DataSerializer.getCSourceRegistration(csourceBody);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		this.csourceSubService.checkSubscriptions(request, TriggerReason.noLongerMatching);
-		this.operations.pushToKafka(messageChannel, registrationId.getBytes(),
-				DataSerializer.toJson(request).getBytes(NGSIConstants.ENCODE_FORMAT));
+		kafkaTemplate.send(CSOURCE_TOPIC, registrationId, DataSerializer.toJson(request));
 		handleFed();
 		return true;
 		// TODO: [push to other DELETE TOPIC]
@@ -350,21 +334,22 @@ public class CSourceService {
 //		logger.debug("Received message: {} :::: " + payload);
 //	}
 
-	@KafkaListener(topics = "${csource.registry.topic}", groupId = "regmanger") // (CSourceConsumerChannel.contextRegistryReadChannel)
-	public void handleEntityRegistration(Message<?> message) {
+	@KafkaListener(topics = "${csource.registry.topic}") // (CSourceConsumerChannel.contextRegistryReadChannel)
+	public void handleEntityRegistration(@Payload String message,
+			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
 		executor.execute(new Thread() {
 			@Override
 			public void run() {
-				String payload = new String((byte[]) message.getPayload());
+
 				String datavalue;
-				JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
+				JsonObject jsonObject = new JsonParser().parse(message).getAsJsonObject();
 				if (jsonObject.has("CSource")) {
 					datavalue = jsonObject.get("CSource").toString();
 				} else {
 					datavalue = "null";
 				}
 				CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(datavalue);
-				JsonObject jsonObjectpayload = new JsonParser().parse(payload).getAsJsonObject();
+				JsonObject jsonObjectpayload = new JsonParser().parse(message).getAsJsonObject();
 				ArrayListMultimap<String, String> requestheaders = ArrayListMultimap.create();
 				if (jsonObjectpayload.has("headers")) {
 					String headers = jsonObjectpayload.get("headers").toString();
@@ -406,16 +391,14 @@ public class CSourceService {
 		return System.currentTimeMillis() < date;
 	}
 
-	@KafkaListener(topics = "${csource.query.topic}", groupId = "csourceQueryHandler")
-	@SendTo
-	// @SendTo("QUERY_RESULT") // for tests without QueryManager
-	public byte[] handleContextQuery(@Payload byte[] message) throws Exception {
+	@KafkaListener(topics = "${csource.query.topic}")
+	public void handleContextQuery(@Payload String message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
+			throws Exception {
 		logger.trace("handleContextQuery() :: started");
-		String payload = new String((byte[]) message);
-		logger.debug("Received message: " + payload);
+		logger.debug("Received message: " + message);
 		String resultPayload = "";
 		try {
-			QueryParams qp = DataSerializer.getQueryParams(payload);
+			QueryParams qp = DataSerializer.getQueryParams(message);
 			QueryResult csourceList = csourceDAO.queryExternalCsources(qp);
 			resultPayload = csourceDAO.getListAsJsonArray(csourceList.getActualDataString());
 		} catch (Exception e) {
@@ -423,7 +406,7 @@ public class CSourceService {
 		}
 		logger.trace("Pushing result to Kafka... ");
 		logger.trace("handleContextQuery() :: completed");
-		return resultPayload.getBytes();
+		kafkaTemplate.send("${csource.query.result.topic}", key, resultPayload);
 	}
 
 	private String validateIdAndGetBody(String registrationid, String tenantId) throws ResponseException {

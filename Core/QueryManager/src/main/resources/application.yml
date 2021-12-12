@@ -17,26 +17,25 @@ jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.por
 bootstrap:
   servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 spring:
-#  mvc.pathpattern.matching-strategy: ant_path_matcher
   application.name: ${mysettings.application-name}
   main:
-    lazy-initialization: true
+    lazy-initialization: false
   kafka:
+    producer:
+      bootstrap-servers: ${bootstrap.servers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      bootstrap-servers: ${bootstrap.servers}
+      group-id: ${mysettings.application-name}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
     admin:
       properties:
         cleanup:
-          policy: compact
+          policy: compact  
   flyway:
     baselineOnMigrate: true
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: ${bootstrap.servers}
-      bindings:
-         ATCONTEXT_WRITE_CHANNEL:
-          destination: ATCONTEXT
-          contentType: application/json
   datasource:
     password: ${mysettings.postgres.password}
     url: ${jdbcurl}

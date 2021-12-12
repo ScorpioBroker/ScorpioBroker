@@ -4,16 +4,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaConfig;
 import eu.neclab.ngsildbroker.storagemanager.config.JdbcConfig;
 import eu.neclab.ngsildbroker.storagemanager.services.StorageReaderService;
 import eu.neclab.ngsildbroker.storagemanager.services.StorageWriterService;
 
 @SpringBootApplication
-@Import(KafkaConfig.class)
 public class StorageManager {
 
 	@Autowired

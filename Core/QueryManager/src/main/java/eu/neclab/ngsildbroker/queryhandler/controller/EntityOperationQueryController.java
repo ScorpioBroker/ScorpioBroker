@@ -12,7 +12,6 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -46,8 +45,6 @@ public class EntityOperationQueryController {
 	@Autowired
 	QueryService queryService;
 
-	@Autowired
-	ParamsResolver paramsResolver;
 
 	@Value("${defaultLimit}")
 	int defaultLimit = 50;
@@ -110,7 +107,7 @@ public class EntityOperationQueryController {
 					List<Map<String, String>> attrs = (List<Map<String, String>>) entry.getValue();
 					StringBuilder builder = new StringBuilder();
 					for (Map<String, String> attr : attrs) {
-						builder.append(paramsResolver.expandAttribute(attr.get(NGSIConstants.JSON_LD_VALUE), context));
+						builder.append(ParamsResolver.expandAttribute(attr.get(NGSIConstants.JSON_LD_VALUE), context));
 						builder.append(',');
 					}
 					params.setAttrs(builder.substring(0, builder.length() - 1));

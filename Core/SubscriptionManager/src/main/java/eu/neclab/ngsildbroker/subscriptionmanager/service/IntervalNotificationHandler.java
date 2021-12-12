@@ -33,19 +33,18 @@ public class IntervalNotificationHandler {
 
 	String requestTopic;
 	String queryResultTopic;
-	ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate;
+	ReplyingKafkaTemplate<String, String, String> kafkaTemplate;
 
 	private NotificationHandler notificationHandler;
-	private ParamsResolver resolver;
 
 	public IntervalNotificationHandler(NotificationHandler notificationHandler,
-			ReplyingKafkaTemplate<String, byte[], byte[]> kafkaTemplate, String queryResultTopic, String requestTopic,
-			ParamsResolver resolver) {
+			ReplyingKafkaTemplate<String, String, String> kafkaTemplate2, String queryResultTopic,
+			String requestTopic) {
 		this.requestTopic = requestTopic;
 		this.queryResultTopic = queryResultTopic;
-		this.kafkaTemplate = kafkaTemplate;
+		this.kafkaTemplate = kafkaTemplate2;
 		this.notificationHandler = notificationHandler;
-		this.resolver = resolver;
+
 	}
 
 	public void addSub(SubscriptionRequest subscriptionRequest) {
@@ -55,22 +54,20 @@ public class IntervalNotificationHandler {
 	}
 
 	public List<String> getFromStorageManager(String storageManagerQuery) throws Exception {
+		//TODO check if that actualy works
 		// create producer record
 		// logger.trace("getFromStorageManager() :: started");
-		ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(requestTopic,
-				storageManagerQuery.getBytes());
+		ProducerRecord<String, String> record = new ProducerRecord<String, String>(requestTopic, storageManagerQuery);
 		// set reply topic in header
 		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()));
-		RequestReplyFuture<String, byte[], byte[]> sendAndReceive = kafkaTemplate.sendAndReceive(record);
+		RequestReplyFuture<String, String, String> sendAndReceive = kafkaTemplate.sendAndReceive(record);
 		// get consumer record
-		ConsumerRecord<String, byte[]> consumerRecord = sendAndReceive.get();
+		ConsumerRecord<String, String> consumerRecord = sendAndReceive.get();
 		// read from byte array
-		ByteArrayInputStream bais = new ByteArrayInputStream(consumerRecord.value());
-		DataInputStream in = new DataInputStream(bais);
+		
 		List<String> entityList = new ArrayList<String>();
-		while (in.available() > 0) {
-			entityList.add(in.readUTF());
-		}
+		entityList.add(consumerRecord.value());
+
 		// return consumer value
 		// logger.trace("getFromStorageManager() :: completed");
 		return entityList;
@@ -93,7 +90,7 @@ public class IntervalNotificationHandler {
 		public MyTimer(SubscriptionRequest subscriptionRequest) {
 			this.subscriptionRequest = subscriptionRequest;
 			this.subscription = subscriptionRequest.getSubscription();
-			List<QueryParams> params = resolver.getQueryParamsFromSubscription(subscription);
+			List<QueryParams> params = ParamsResolver.getQueryParamsFromSubscription(subscription);
 			this.paramStrings = new ArrayList<String>();
 			for (QueryParams param : params) {
 				paramStrings.add(DataSerializer.toJson(param));
