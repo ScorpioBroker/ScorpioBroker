@@ -11,6 +11,7 @@ import eu.neclab.ngsildbroker.registryhandler.RegistryHandler;
 import eu.neclab.ngsildbroker.subscriptionmanager.SubscriptionHandler;
 
 @SpringBootApplication
+@ResourceHint(patterns = "eu/neclab/ngsildbroker.entityhandler.controller.EntityController.java")
 @ResourceHint(patterns = "org/flywaydb/core/internal/version.txt")
 public class Runner {
 
