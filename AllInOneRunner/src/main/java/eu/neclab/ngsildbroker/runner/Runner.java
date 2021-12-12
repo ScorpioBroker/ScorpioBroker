@@ -15,7 +15,7 @@ import eu.neclab.ngsildbroker.registryhandler.RegistryHandler;
 import eu.neclab.ngsildbroker.subscriptionmanager.SubscriptionHandler;
 
 @SpringBootApplication
-@NativeHint(options = { " — enable-all-security-services" }, resources = {
+@NativeHint(options = {"--enable-all-security-services"},resources = {
 		@ResourceHint(patterns = "eu/neclab/ngsildbroker/*/controller/*.java"),
 		@ResourceHint(patterns = "org/flywaydb/core/internal/version.txt") }, types = {
 				@TypeHint(types = { RestController.class, Service.class }) })
