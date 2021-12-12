@@ -193,6 +193,7 @@
 								<env>
 									<BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
 								</env>
+								<name>scorpiobroker/${project.name}</name>
 							</image>
 						</configuration>
 					</plugin>
