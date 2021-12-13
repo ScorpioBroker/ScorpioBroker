@@ -46,6 +46,18 @@ spec:
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5
+
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:9090/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          initialDelaySeconds: 20
+          periodSeconds: 5
+
+
         resources:
           limits:
             cpu: 500m

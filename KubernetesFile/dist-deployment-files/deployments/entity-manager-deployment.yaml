@@ -22,7 +22,7 @@ spec:
         service: entity-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:EntityManager_latest
+      - image: scorpiobroker/scorpio:EntityManager-no-eureka_latest
         imagePullPolicy: Always
         name: entity-manager
         ports:
@@ -45,6 +45,18 @@ spec:
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5
+
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1025/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          initialDelaySeconds: 20
+          periodSeconds: 5
+
+
         resources:
           limits:
             cpu: 875m

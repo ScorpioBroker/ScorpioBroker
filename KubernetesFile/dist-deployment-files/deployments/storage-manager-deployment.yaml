@@ -22,7 +22,7 @@ spec:
         service: storage-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:StorageManager_latest
+      - image: scorpiobroker/scorpio:StorageManager-no-eureka_latest
         imagePullPolicy: Always
         name: storage-manager
         ports:
@@ -42,9 +42,21 @@ spec:
             - -c
             - curl --silent http://localhost:1029/actuator/health | grep --quiet -e
               '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 7
-          initialDelaySeconds: 25
+          failureThreshold: 10
+          initialDelaySeconds: 20
           periodSeconds: 5
+
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:1029/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          initialDelaySeconds: 20
+          periodSeconds: 5
+
+
         resources:
           limits:
             cpu: 500m

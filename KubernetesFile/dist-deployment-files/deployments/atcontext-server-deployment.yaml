@@ -17,7 +17,7 @@ spec:
         service: atcontext-server
     spec:
       containers:
-      - image: scorpiobroker/scorpio:AtContextServer_latest
+      - image: scorpiobroker/scorpio:AtContextServer-no-eureka_latest
         imagePullPolicy: Always
         name: atcontext-server
         ports:
@@ -30,15 +30,19 @@ spec:
               - -c
               - curl -X PUT "http://eureka:8761/eureka/apps/ATCONTEXT-SERVER/$HOSTNAME:atcontext-server:27015/status?value=OUT_OF_SERVICE"
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:27015/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /actuator/health
+            port: 27015
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 27015
+          initialDelaySeconds: 20
+          periodSeconds: 5  
         resources:
           limits:
             cpu: 575m
