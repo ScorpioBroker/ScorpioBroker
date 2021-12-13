@@ -127,7 +127,26 @@ spring:
     admin:
       properties:
         cleanup:
-          policy: compact  
+          policy: compact
+  security:
+    active: false
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://idp.example.com/auth/realms/demo
+      client:
+        provider:
+          keycloak:
+            issuer-uri: https://idp.example.com/auth/realms/demo
+        registration:
+          keycloak-client:
+            provider: keycloak
+            client-id: spring-security
+            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+            authorization_grant_type: client_credentials
+          keycloak:
+            client-id: spring-security
+            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
   datasource:
     hikari:
       connectionTimeout: 30000
@@ -178,32 +197,6 @@ server:
   tomcat:
     max:
       threads:200
-security:
-  active: false
-  oauth2:
-    client:
-        provider:
-          keycloak:
-            issuer-uri: https://idp.example.com/auth/realms/demo
-        registration:
-          keycloak:
-            client-id: spring-security
-            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
-    # for keycloak configure
-      #accessTokenUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/token
-      #userAuthorizationUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/auth
-      #clientId: authserver
-      #clientSecret: ae8c99a9-f98d-41e9-8fb2-d348acb987e0
-    # for ketrock configure  
-      #accessTokenUri: http://172.30.64.120:3000/oauth2/token
-      #userAuthorizationUri: http://172.30.64.120:3000/oauth2/authorize
-     # clientId: a2034c11-d2a9-4cab-9fac-ff65425bd53f
-     # clientSecret: 7364baec-6d6f-4307-8c71-d66e1e6c3afc
-    #resource:
-    # for keycloak configure
-      #userInfoUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/userinfo
-    # for keycloak configure
-      #userInfoUri: http://172.30.64.120:3000/user
 selfhostcorecontext: http://localhost:9090/corecontext
 logging:
   level:

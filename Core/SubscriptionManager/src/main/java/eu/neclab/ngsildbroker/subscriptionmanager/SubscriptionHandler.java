@@ -4,11 +4,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 
+import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfiguration;
+
 @SpringBootApplication
+@Import(SecurityConfiguration.class)
 public class SubscriptionHandler {
 
 	@Value("${atcontext.url}")
