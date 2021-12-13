@@ -24,7 +24,7 @@ But i have an older version running and don't want to update. What now?
 You should still update!
 
 However in case you really really really can't do it.
-You can deactivate the feature of Log4J which is responsible for the exploit can be deactivated.
+You can deactivate the feature of Log4J which is responsible for the exploit.
 
 For people running Scorpio natively with java -jar. Add -Dlog4j2.formatMsgNoLookups=true before the -jar. So e.g. java -Dlog4j2.formatMsgNoLookups=true -jar myapp.jar
 
