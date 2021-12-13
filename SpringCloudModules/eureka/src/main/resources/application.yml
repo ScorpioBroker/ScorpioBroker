@@ -14,4 +14,4 @@ eureka:
     fetch-registry: false
 logging:
   level:
-    root: ERROR
+    root: INFO

@@ -130,23 +130,23 @@ spring:
           policy: compact
   security:
     active: false
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://idp.example.com/auth/realms/demo
-      client:
-        provider:
-          keycloak:
-            issuer-uri: https://idp.example.com/auth/realms/demo
-        registration:
-          keycloak-client:
-            provider: keycloak
-            client-id: spring-security
-            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
-            authorization_grant_type: client_credentials
-          keycloak:
-            client-id: spring-security
-            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: https://idp.example.com/auth/realms/demo
+#      client:
+#        provider:
+#          keycloak:
+#            issuer-uri: https://idp.example.com/auth/realms/demo
+#        registration:
+#          keycloak-client:
+#            provider: keycloak
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+#            authorization_grant_type: client_credentials
+#          keycloak:
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
   datasource:
     hikari:
       connectionTimeout: 30000

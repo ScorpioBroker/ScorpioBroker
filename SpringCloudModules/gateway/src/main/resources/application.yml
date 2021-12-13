@@ -29,29 +29,26 @@ eureka:
     fetchRegistry: true
     serviceUrl:
       defaultZone: ${eurekaurl}/eureka/
-
-# Configure the Authorization Server and User Info Resource Server details
-security:
-  active: false
-  oauth2:
-    client:
-    # for keycloak configure
-      #accessTokenuri: no://op
-      #userAuthorizationuri: no://op
-      #clientId: authserver
-      #clientSecret: ae8c99a9-f98d-41e9-8fb2-d348acb987e0
-    # for ketrock configure  
-      accessTokenuri: no://op
-      userAuthorizationuri: no://op
-      clientId: a2034c11-d2a9-4cab-9fac-ff65425bd53f
-      clientSecret: 7364baec-6d6f-4307-8c71-d66e1e6c3afc
-    resource:
-    # for keycloak configure
-      #userInfouri: no://op
-    # for keycloak configure
-      userInfouri: no://op
-    
 spring:
+  security:
+    active: false
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: https://idp.example.com/auth/realms/demo
+#      client:
+#        provider:
+#          keycloak:
+#            issuer-uri: https://idp.example.com/auth/realms/demo
+#        registration:
+#          keycloak-client:
+#            provider: keycloak
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+#            authorization_grant_type: client_credentials
+#          keycloak:
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
   application:
     name: gateway
   main:
@@ -136,4 +133,4 @@ spring:
         - Path=/test/**
 logging:
   level:
-    root: ERROR
+    root: INFO
