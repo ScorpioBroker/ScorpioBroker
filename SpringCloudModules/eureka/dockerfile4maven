@@ -9,4 +9,4 @@ COPY target/${JAR_FILE_BUILD} ./${JAR_FILE_RUN}
 
 ENV spring_args ""
 
-CMD java -jar $JAR_FILE_RUN ${spring_args}
+CMD java -Dspring.profiles.active=$SPRING_PROFILE -jar $JAR_FILE_RUN ${spring_args}

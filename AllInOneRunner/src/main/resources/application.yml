@@ -13,8 +13,6 @@ mysettings:
   gateway:
     host: ${gateway.host:localhost}
     port: ${gateway.port:9090}
-    
-    
 append:
   overwrite: noOverwrite
 atcontext:
