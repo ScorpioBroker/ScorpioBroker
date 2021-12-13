@@ -4,10 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.nativex.hint.NativeHint;
 import org.springframework.nativex.hint.ResourceHint;
-import org.springframework.nativex.hint.TypeHint;
 
 import eu.neclab.ngsildbroker.entityhandler.EntityHandler;
-import eu.neclab.ngsildbroker.entityhandler.controller.EntityController;
 import eu.neclab.ngsildbroker.historymanager.HistoryHandler;
 import eu.neclab.ngsildbroker.queryhandler.QueryHandler;
 import eu.neclab.ngsildbroker.registryhandler.RegistryHandler;
@@ -15,9 +13,8 @@ import eu.neclab.ngsildbroker.subscriptionmanager.SubscriptionHandler;
 
 @SpringBootApplication
 @NativeHint(options = { "--enable-all-security-services" }, resources = {
-		@ResourceHint(patterns = "eu/neclab/ngsildbroker/*/controller/*.java"),
-		@ResourceHint(patterns = "org/flywaydb/core/internal/version.txt") }, types = {
-				@TypeHint(types = { EntityController.class }) })
+		@ResourceHint(patterns = "eu/neclab/ngsildbroker/", isBundle = true),
+		@ResourceHint(patterns = "org/flywaydb/core/internal/version.txt") })
 public class Runner {
 
 	public static void main(String[] args) throws Exception {
