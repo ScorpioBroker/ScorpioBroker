@@ -12,12 +12,13 @@ import eu.neclab.ngsildbroker.registryhandler.RegistryHandler;
 import eu.neclab.ngsildbroker.subscriptionmanager.SubscriptionHandler;
 
 @SpringBootApplication
-@NativeHint(options = { "--enable-all-security-services" }, resources = {
-		@ResourceHint(patterns = "eu/neclab/ngsildbroker/", isBundle = true),
+@NativeHint(options = { "--enable-all-security-services --spring.profiles.active docker-no-eureka" }, resources = {
+		@ResourceHint(patterns = "eu/neclab/ngsildbroker/entityhandler", isBundle = true),
 		@ResourceHint(patterns = "org/flywaydb/core/internal/version.txt") })
 public class Runner {
 
 	public static void main(String[] args) throws Exception {
+		System.out.println("LOOOK AT THIS");
 		SpringApplication.run(new Class[] { RegistryHandler.class, HistoryHandler.class, QueryHandler.class,
 				SubscriptionHandler.class, EntityHandler.class }, args);
 	}
