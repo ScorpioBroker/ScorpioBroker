@@ -23,8 +23,6 @@ import eu.neclab.ngsildbroker.subscriptionmanager.SubscriptionHandler;
 public class Runner {
 
 	public static void main(String[] args) throws Exception {
-//		SpringApplication.run(new Class[] { AtContextServer.class, HistoryHandler.class, QueryHandler.class,
-//				RegistryHandler.class, SubscriptionHandler.class, EntityHandler.class }, args);
 		SpringApplication.run(new Class[] { RegistryHandler.class, HistoryHandler.class, QueryHandler.class,
 				SubscriptionHandler.class, EntityHandler.class }, args);
 	}
