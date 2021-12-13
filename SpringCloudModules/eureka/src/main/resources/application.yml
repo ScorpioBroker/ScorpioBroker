@@ -1,5 +1,6 @@
 mysettings:
   eureka:
+    host: ${eurekahost:localhost}
     port: ${eurekaport:8761}
 spring:
   application:
@@ -12,6 +13,8 @@ eureka:
   client:
     register-with-eureka: false
     fetch-registry: false
+  instance:
+    hostname: ${mysettings.eureka.port}
 logging:
   level:
-    root: INFO
+    root: ERROR

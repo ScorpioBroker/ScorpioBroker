@@ -29,6 +29,8 @@ eureka:
     fetchRegistry: true
     serviceUrl:
       defaultZone: ${eurekaurl}/eureka/
+  instance:
+    preferIpAddress: true
 spring:
   security:
     active: false
@@ -54,83 +56,70 @@ spring:
   main:
     allow-bean-definition-overriding: true
   cloud:
+    discovery:
+      enabled: true
     gateway:
       routes:
-      - id: QUERY-MANAGER
-        uri: no://op
+      - uri: lb://QUERY-MANAGER
+        id: querymanager
         predicates:
         - Method=GET
         - Path=/ngsi-ld/v1/entities/**
-      - id: ENTITY-MANAGER
-        uri: no://op
+      - uri: lb://ENTITY-MANAGER
+        id: entitymanager
         predicates:
         - Method=POST,PATCH,DELETE
         - Path=/ngsi-ld/v1/entities/**
-      - id: QUERY-MANAGER
-        uri: no://op
+      - uri: lb://QUERY-MANAGER
+        id: querymanager1
         predicates:
         - Method=GET
         - Path=/ngsi-ld/v1/attributes/**
-      - id: QUERY-MANAGER
-        uri: no://op
+      - uri: lb://QUERY-MANAGER
+        id: querymanager2
         predicates:
         - Method=GET
         - Path=/ngsi-ld/v1/types/**
-      - id: QUERY-MANAGER
-        uri: no://op
+      - uri: lb://QUERY-MANAGER
+        id: querymanager3
         predicates:
         - Method=POST
         - Path=/ngsi-ld/v1/entityOperations/query/**
-      - id: ENTITY-MANAGER
-        uri: no://op
+      - uri: lb://ENTITY-MANAGER
+        id: entitymanager1
         predicates:
         - Method=POST
         - Path=/ngsi-ld/v1/entityOperations/**
-      - id: SUBSCRIPTION-MANAGER
-        uri: no://op
+      - uri: lb://SUBSCRIPTION-MANAGER
+        id: subscriptionsmanager1
         predicates:
         - Method=GET,POST,PATCH,DELETE
         - Path=/ngsi-ld/v1/subscriptions/**
-      - id: C-SOURCES
-        uri: no://op
+      - uri: lb://C-SOURCES
+        id: csourcereg
         predicates:
         - Method=GET,POST,PATCH,DELETE
         - Path=/ngsi-ld/v1/csourceRegistrations/**
-      - id: C-SOURCES
-        uri: no://op
+      - uri: lb://C-SOURCES
+        id: csourcesubs
         predicates:
         - Method=GET,POST,PATCH,DELETE
         - Path=/ngsi-ld/v1/csourceSubscriptions/**
-      - id: HISTORY-MANAGER
-        uri: no://op
+      - uri: lb://HISTORY-MANAGER
+        id: history
         predicates:
         - Method=GET,POST,PATCH,DELETE
         - Path=/ngsi-ld/v1/temporal/entities/**
-      - id: ATCONTEXT-SERVER
-        uri: no://op
+      - uri: lb://ATCONTEXT-SERVER
+        id: atcontext
         predicates:
         - Method=GET
         - Path=/ngsi-ld/contextes/**
-      - id: STORAGE-MANAGER
-        uri: no://op
+      - uri: lb://STORAGE-MANAGER
+        id: info
         predicates:
         - Method=GET
         - Path=/scorpio/v1/info/**
-      - id: INFO-SERVER
-        uri: no://op
-        predicates:
-        - Method=GET
-        - Path=/health/** 
-      - id: INFO-SERVER
-        uri: no://op
-        predicates:
-        - Method=GET
-        - Path=/version/**
-      - id: testmanager
-        uri: no://op
-        predicates:
-        - Method=GET,POST,PATCH,DELETE
-        - Path=/test/**
 logging:
   level:
     root: INFO
