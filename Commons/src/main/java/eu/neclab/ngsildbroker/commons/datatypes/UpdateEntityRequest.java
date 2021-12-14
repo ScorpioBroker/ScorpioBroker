@@ -143,6 +143,7 @@ public class UpdateEntityRequest extends EntityRequest {
 						// updateResult, i);
 					}
 				}
+				updateResult.setStatus(true);
 			}
 			if (resolved.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {

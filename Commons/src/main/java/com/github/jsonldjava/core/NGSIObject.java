@@ -246,7 +246,10 @@ public class NGSIObject {
 			}
 			break;
 		case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
-			validateAttribute(payloadType, expandedProperty, activeProperty, api);
+			if (activeProperty != null) {
+				//no top level validation here needed 
+				validateAttribute(payloadType, expandedProperty, activeProperty, api);
+			}
 			break;
 		case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
 			if (true) {

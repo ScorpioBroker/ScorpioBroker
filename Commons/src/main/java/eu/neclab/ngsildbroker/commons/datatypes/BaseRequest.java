@@ -48,7 +48,7 @@ public abstract class BaseRequest {
 		}
 		if (!modifiedAt.isEmpty()) {
 			objectNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
-			ArrayList<Object> tmp = getDateTime(createdAt);
+			ArrayList<Object> tmp = getDateTime(modifiedAt);
 			objectNode.put(NGSIConstants.NGSI_LD_MODIFIED_AT, tmp);
 		}
 		if (rootOnly) {

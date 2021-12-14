@@ -241,7 +241,9 @@ public class EntityController {// implements EntityHandlerInterface {
 			context = context.parse(atContext, true);
 			if (jsonPayload instanceof Map) {
 				Object payloadContext = ((Map<String, Object>) jsonPayload).get(JsonLdConsts.CONTEXT);
-				context = context.parse(payloadContext, true);
+				if (payloadContext != null) {
+					context = context.parse(payloadContext, true);
+				}
 			}
 			String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
 
