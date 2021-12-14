@@ -18,7 +18,6 @@ import eu.neclab.ngsildbroker.subscriptionmanager.SubscriptionHandler;
 public class Runner {
 
 	public static void main(String[] args) throws Exception {
-		System.out.println("LOOOK AT THIS");
 		SpringApplication.run(new Class[] { RegistryHandler.class, HistoryHandler.class, QueryHandler.class,
 				SubscriptionHandler.class, EntityHandler.class }, args);
 	}
