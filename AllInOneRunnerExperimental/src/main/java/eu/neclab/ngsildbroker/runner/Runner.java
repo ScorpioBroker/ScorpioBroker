@@ -14,7 +14,6 @@ import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfiguration;
-import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 
 @SpringBootApplication
 @NativeHint(options = { "--enable-all-security-services" }, resources = {
@@ -26,16 +25,6 @@ public class Runner {
 		SpringApplication.run(Runner.class, args);
 	}
 
-	@Bean("emdao")
-	StorageWriterDAO storageWriterDAO() {
-		return new StorageWriterDAO();
-	}
-
-
-	@Bean("hhdao")
-	StorageWriterDAO storagewriterDAO() {
-		return new StorageWriterDAO();
-	}
 
 	@Bean
 	RestTemplate restTemp() {
