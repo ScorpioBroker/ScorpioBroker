@@ -260,4 +260,5 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_TIME_AT = "https://uri.etsi.org/ngsi-ld/timeAt";
 	public static final String NGSI_LD_TIME_POPERTY = "https://uri.etsi.org/ngsi-ld/timeproperty";
 	public static final String NGSI_LD_TIME_REL = "https://uri.etsi.org/ngsi-ld/timerel";
+	public static final String NGSI_LD_OBSERVATIONINTERVAL = "https://uri.etsi.org/ngsi-ld/observationInterval";
 }

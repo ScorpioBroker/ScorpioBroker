@@ -12,6 +12,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 
 public class NGSIObject {
 
@@ -247,153 +248,179 @@ public class NGSIObject {
 			break;
 		case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
 			if (activeProperty != null) {
-				//no top level validation here needed 
+				// no top level validation here needed
 				validateAttribute(payloadType, expandedProperty, activeProperty, api);
 			}
 			break;
 		case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
-			if (true) {
-				if (activeProperty == null) {
-					if (!hasAtId) {
-						throw new ResponseException(ErrorType.BadRequestData, "A subscription id is mandatory");
+			if (activeProperty == null) {
+				if (!hasAtId) {
+					throw new ResponseException(ErrorType.BadRequestData, "A subscription id is mandatory");
+				}
+				if (!hasAtType || !types.contains(NGSIConstants.NGSI_LD_SUBSCRIPTION)) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"A subscription needs type which is Subscription");
+				}
+			} else {
+				if (isScalar) {
+					switch (expandedProperty) {
+					case NGSIConstants.NGSI_LD_ID_PATTERN:
+						if (!checkForEntities()) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						return;
+					case NGSIConstants.NGSI_LD_COORDINATES:
+						NGSIObject temp = parent;
+						while (temp.isArray && temp.parent != null) {
+							temp = temp.parent;
+						}
+						if (temp.parent == null || !temp.parent.isGeoQ) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						return;
+					case NGSIConstants.NGSI_LD_GEOMETRY:
+						if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						validateGeometry();
+						return;
+					case NGSIConstants.NGSI_LD_GEO_REL:
+						if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						validateGeoRel();
+						return;
+					case NGSIConstants.NGSI_LD_ACCEPT:
+						if (this.parent == null || this.parent.parent == null || !this.parent.parent.isEndpoint) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						validateAccept();
+						return;
+					case NGSIConstants.NGSI_LD_URI:
+						if (this.parent == null || this.parent.parent == null || !this.parent.parent.isEndpoint) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						validateEndpoint();
+						return;
+					case NGSIConstants.NGSI_LD_FORMAT:
+						if (this.parent == null || this.parent.parent == null
+								|| !this.parent.parent.isNotificationEntry) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						validateFormat();
+						return;
+					case NGSIConstants.NGSI_LD_ATTRIBUTES:
+						if (this.parent == null || this.parent.parent == null || this.parent.parent.parent == null
+								|| !this.parent.parent.parent.isNotificationEntry) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						validateFormat();
+						return;
+					case NGSIConstants.NGSI_LD_END_TIME_AT:
+					case NGSIConstants.NGSI_LD_TIME_AT:
+						if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						validateDateTime();
+						return;
+					case NGSIConstants.NGSI_LD_TIME_POPERTY:
+						if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						validateTimeProperty();
+						return;
+					case NGSIConstants.NGSI_LD_TIME_REL:
+						if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						validateTimeProperty();
+						return;
+					default:
+						if (parent != null && parent.parent != null && parent.parent.isArray
+								&& parent.parent.parent != null
+								&& (parent.parent.parent.isReceiverInfo || parent.parent.parent.isNotifierInfo)) {
+							// custom entries are allowed in receiver and notifier info
+							return;
+						}
+						if (!Constants.allowedScalars.get(payloadType).contains(expandedProperty)) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"The key " + activeProperty + " is an invalid entry.");
+						}
+						return;
 					}
-					if (!hasAtType || !types.contains(NGSIConstants.NGSI_LD_SUBSCRIPTION)) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								"A subscription needs type which is Subscription");
-					}
+
 				} else {
-					if (isScalar) {
-						switch (expandedProperty) {
-						case NGSIConstants.NGSI_LD_ID_PATTERN:
-							if (!checkForEntities()) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							return;
-						case NGSIConstants.NGSI_LD_COORDINATES:
-							NGSIObject temp = parent;
-							while (temp.isArray && temp.parent != null) {
-								temp = temp.parent;
-							}
-							if (temp.parent == null || !temp.parent.isGeoQ) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							return;
-						case NGSIConstants.NGSI_LD_GEOMETRY:
-							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							validateGeometry();
-							return;
-						case NGSIConstants.NGSI_LD_GEO_REL:
-							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							validateGeoRel();
-							return;
-						case NGSIConstants.NGSI_LD_ACCEPT:
-							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isEndpoint) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							validateAccept();
-							return;
-						case NGSIConstants.NGSI_LD_URI:
-							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isEndpoint) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							validateEndpoint();
-							return;
-						case NGSIConstants.NGSI_LD_FORMAT:
-							if (this.parent == null || this.parent.parent == null
-									|| !this.parent.parent.isNotificationEntry) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							validateFormat();
-							return;
-						case NGSIConstants.NGSI_LD_ATTRIBUTES:
-							if (this.parent == null || this.parent.parent == null || this.parent.parent.parent == null
-									|| !this.parent.parent.parent.isNotificationEntry) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							validateFormat();
-							return;
-						case NGSIConstants.NGSI_LD_END_TIME_AT:
-						case NGSIConstants.NGSI_LD_TIME_AT:
-							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							validateDateTime();
-							return;
-						case NGSIConstants.NGSI_LD_TIME_POPERTY:
-							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							validateTimeProperty();
-							return;
-						case NGSIConstants.NGSI_LD_TIME_REL:
-							if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							validateTimeProperty();
-							return;
-						default:
-							if (parent != null && parent.parent != null && parent.parent.isArray
-									&& parent.parent.parent != null
-									&& (parent.parent.parent.isReceiverInfo || parent.parent.parent.isNotifierInfo)) {
-								// custom entries are allowed in receiver and notifier info
-								return;
-							}
-							if (!Constants.allowedScalars.get(payloadType).contains(expandedProperty)) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"The key " + activeProperty + " is an invalid entry.");
-							}
-							return;
-						}
-
-					} else {
-						if (checkForEntities()) {
-							return;
-						}
-						if (this.parent != null) {
-							if (this.parent.isGeoQ && this.parent.parent == null) {
-								return;
-							}
-							if (this.parent.isEndpoint && this.parent.parent != null
-									&& this.parent.parent.isNotificationEntry && this.parent.parent.parent == null) {
-								return;
-							}
-							if (this.parent.isNotificationEntry && this.parent.parent == null) {
-								return;
-							}
-							if (this.parent.isTemporalQ && this.parent.parent == null) {
-								return;
-							}
-							if (this.parent.isArray && parent.parent != null
-									&& (parent.parent.isNotifierInfo || parent.parent.isReceiverInfo)
-									&& parent.parent.parent != null && parent.parent.parent.isEndpoint) {
-								return;
-							}
-
-						}
-						throw new ResponseException(ErrorType.BadRequestData,
-								"The key " + activeProperty + " is an invalid entry.");
+					if (checkForEntities()) {
+						return;
 					}
+					if (this.parent != null) {
+						if (this.parent.isGeoQ && this.parent.parent == null) {
+							return;
+						}
+						if (this.parent.isEndpoint && this.parent.parent != null
+								&& this.parent.parent.isNotificationEntry && this.parent.parent.parent == null) {
+							return;
+						}
+						if (this.parent.isNotificationEntry && this.parent.parent == null) {
+							return;
+						}
+						if (this.parent.isTemporalQ && this.parent.parent == null) {
+							return;
+						}
+						if (this.parent.isArray && parent.parent != null
+								&& (parent.parent.isNotifierInfo || parent.parent.isReceiverInfo)
+								&& parent.parent.parent != null && parent.parent.parent.isEndpoint) {
+							return;
+						}
+
+					}
+					throw new ResponseException(ErrorType.BadRequestData,
+							"The key " + activeProperty + " is an invalid entry.");
 				}
 			}
 			break;
 		case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
 			break;
 		case AppConstants.CSOURCE_REG_CREATE_PAYLOAD:
+			if (activeProperty == null) {
+				if (!hasAtId) {
+					throw new ResponseException(ErrorType.BadRequestData, "A registration id is mandatory");
+				}
+				if (!hasAtType || !types.contains(NGSIConstants.NGSI_LD_CSOURCE_REGISTRATION)) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"A registration needs type which is CSourceRegistration");
+				}
+			} else {
+				switch (expandedProperty) {
+				case NGSIConstants.NGSI_LD_INFORMATION:
+					// think of error scenario
+					break;
+				case NGSIConstants.NGSI_LD_MANAGEMENTINTERVAL:
+					// think of error scenario
+					break;
+				case NGSIConstants.NGSI_LD_OBSERVATIONINTERVAL:
+					// think of error scenario
+					break;
+				case NGSIConstants.NGSI_LD_LOCATION:
+					compactAndValidateGeoProperty(api);
+					break;
+				default:
+					validateAttribute(payloadType, expandedProperty, activeProperty, api);
+					break;
+				}
+
+			}
 			break;
 		case AppConstants.CSOURCE_REG_UPDATE_PAYLOAD:
 			break;
@@ -477,6 +504,10 @@ public class NGSIObject {
 				validateAndAddDatasetId();
 				return;
 			}
+			if (Constants.allowedUrls.get(payloadType).contains(expandedProperty)) {
+				validateUri();
+				return;
+			}
 			if (!Constants.allowedScalars.get(payloadType).contains(expandedProperty)) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
@@ -506,6 +537,11 @@ public class NGSIObject {
 				}
 			}
 		}
+
+	}
+
+	private void validateUri() {
+		// TODO Auto-generated method stub
 
 	}
 
@@ -544,9 +580,14 @@ public class NGSIObject {
 
 	private void compactAndValidateGeoProperty(JsonLdApi api) throws ResponseException {
 		Map<String, Object> geoPropMap = (Map<String, Object>) element;
-		Object geoJsonValue = geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE);
-		Object potentialStringValue = ((Map<String, Object>) ((List) geoJsonValue).get(0))
-				.get(NGSIConstants.JSON_LD_VALUE);
+		Object geoJsonValue;
+		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+			geoJsonValue = ((List) geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE)).get(0);
+		} else {
+			geoJsonValue = geoPropMap;
+		}
+
+		Object potentialStringValue = ((Map<String, Object>) geoJsonValue).get(NGSIConstants.JSON_LD_VALUE);
 		Map<String, Object> compacted;
 		if (potentialStringValue != null) {
 			if (!(potentialStringValue instanceof String)) {
@@ -596,7 +637,12 @@ public class NGSIObject {
 		}
 		ArrayList<Object> temp1 = new ArrayList<Object>();
 		temp1.add(temp);
-		geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, temp1);
+		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+			geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, temp1);
+		}else {
+			this.element = temp1;
+		}
+		
 
 	}
 

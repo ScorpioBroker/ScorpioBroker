@@ -168,7 +168,7 @@ public class JsonLdApi {
 
 				}
 			}
-			
+
 			if (AppConstants.FORCE_ARRAY_FIELDS.contains(activeProperty)) {
 				return result;
 			}
@@ -466,12 +466,16 @@ public class JsonLdApi {
 							compactedItem = tmp;
 						}
 						// 7.6.6.2)
-						if (!result.containsKey(itemActiveProperty)) {
+						if (!result.containsKey(itemActiveProperty)
+								&& !AppConstants.FORCE_ARRAY_FIELDS.contains(expandedProperty)) {
 							result.put(itemActiveProperty, compactedItem);
 						} else {
 							if (!(result.get(itemActiveProperty) instanceof List)) {
 								final List<Object> tmp = new ArrayList<Object>();
-								tmp.add(result.put(itemActiveProperty, tmp));
+								if (result.containsKey(itemActiveProperty)) {
+									tmp.add(result.get(itemActiveProperty));
+								}
+								result.put(itemActiveProperty, tmp);
 							}
 							if (compactedItem instanceof List) {
 								((List<Object>) result.get(itemActiveProperty)).addAll((List<Object>) compactedItem);
@@ -1500,8 +1504,6 @@ public class JsonLdApi {
 	}
 
 	private Map<String, Object> nodeMap;
-
-
 
 	/**
 	 * Performs JSON-LD

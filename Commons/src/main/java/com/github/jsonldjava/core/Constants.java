@@ -15,6 +15,17 @@ public class Constants {
 		allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
 		allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_CREATED_AT);
 		allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_MODIFIED_AT);
+		allowedDateTimes.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TIMESTAMP_START);
+		allowedDateTimes.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TIMESTAMP_END);
+		allowedDateTimes.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_EXPIRES);
+	}
+	public final static HashMultimap<Integer, String> allowedUrls = HashMultimap.create();
+	static {
+		allowedUrls.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedUrls.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedUrls.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedUrls.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedUrls.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_ENDPOINT);
 	}
 
 	public final static HashMultimap<Integer, String> allowedScalars = HashMultimap.create();
@@ -48,6 +59,12 @@ public class Constants {
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_PROPERTIES);
+		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_RELATIONSHIPS);
+		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_ID_PATTERN);
+		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
+		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TENANT);
+
 	}
 	public final static HashMultimap<Integer, String> allowedTopLevel = HashMultimap.create();
 	static {
