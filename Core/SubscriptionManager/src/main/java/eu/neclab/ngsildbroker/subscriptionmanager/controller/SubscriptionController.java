@@ -29,7 +29,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -82,7 +84,7 @@ public class SubscriptionController {
 	ResponseEntity<byte[]> badRequestResponse = ResponseEntity.status(badRequest.getHttpStatus())
 			.body(new RestResponse(badRequest).toJsonBytes());
 
-	private JsonLdOptions opts;
+	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private Pattern subscriptionParser;
 
 	public SubscriptionController() {
@@ -158,10 +160,10 @@ public class SubscriptionController {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Subscription expandSubscription(String body, ServerHttpRequest request) throws ResponseException {
+	public Subscription expandSubscription(String body, ServerHttpRequest request) throws ResponseException, JsonParseException, JsonLdError, IOException {
 		Subscription subscription = new Subscription();
 
-		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request), body,
+		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(body),
 				opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0);
 
 		boolean hasEntities = false;

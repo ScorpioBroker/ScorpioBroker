@@ -12,6 +12,7 @@ import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.impl.NQuadRDFParser;
 import com.github.jsonldjava.impl.NQuadTripleCallback;
 
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 /**
@@ -188,7 +189,15 @@ public class JsonLdProcessor {
 		// is set to a jsonld compatable format
 
 		// 6)
-		Object expanded = new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed);
+		Object expanded;
+		try {
+			 expanded = new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed);
+		} catch (JsonLdError e) {
+			if (e.getType().equals(Error.LOADING_REMOTE_CONTEXT_FAILED)) {
+				throw new ResponseException(ErrorType.LdContextNotAvailable, e.getMessage());
+			}
+			throw e;
+		}
 
 		// final step of Expansion Algorithm
 		if (expanded instanceof Map && ((Map) expanded).containsKey(JsonLdConsts.GRAPH)
