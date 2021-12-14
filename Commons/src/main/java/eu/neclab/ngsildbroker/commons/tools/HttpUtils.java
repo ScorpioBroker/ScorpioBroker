@@ -861,10 +861,10 @@ public final class HttpUtils {
 			}
 		}
 		switch (appGroup) {
-		case 2:
-		case 3:
 		case 5:
 			return 2; // application/ld+json
+		case 2:
+		case 3:
 		case 4:
 			return 1; // application/json
 		case 6:
