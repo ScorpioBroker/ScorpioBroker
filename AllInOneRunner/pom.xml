@@ -12,17 +12,7 @@
 	<packaging>jar</packaging>
 
 	<profiles>
-		<profile>
-			<id>buildForTest</id>
-			<activation>
-				<property>
-					<name>citest</name>
-				</property>
-			</activation>
-			<build>
-				<finalName>${project.artifactId}</finalName>
-			</build>
-		</profile>
+
 		<profile>
 			<id>native</id>
 			<activation>
@@ -48,7 +38,50 @@
 					<plugin>
 						<groupId>org.springframework.boot</groupId>
 						<artifactId>spring-boot-maven-plugin</artifactId>
+
 						<configuration>
+							<profiles>
+								<profile>docker</profile>
+							</profiles>
+							<requiresUnpack>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>InfoServer</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>AtContextServer</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>EntityManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>HistoryManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>QueryManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>RegistryManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<!-- <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>StorageManager</artifactId> 
+									<version>1.1.0-SNAPSHOT</version> </dependency> -->
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>SubscriptionManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+							</requiresUnpack>
 							<image>
 								<builder>paketobuildpacks/builder:tiny</builder>
 								<env>
