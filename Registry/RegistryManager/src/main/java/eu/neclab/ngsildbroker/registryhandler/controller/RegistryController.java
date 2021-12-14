@@ -125,6 +125,7 @@ public class RegistryController {
 				if (csourceList.size() > 0) {
 					return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 				} else {
+					//TODO this needs to be change to respect query results
 					throw new ResponseException(ErrorType.NotFound);
 				}
 			} else {

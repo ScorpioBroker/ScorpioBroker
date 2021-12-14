@@ -84,13 +84,13 @@ public class CSourceSubscriptionService {
 	HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
 	@Value("${bootstrap.servers}")
 	String BOOTSTRAP_SERVERS;
-	@Value("${csource.notification.topic:CONTEXT_SOURCE_NOTIFICATION")
+	@Value("${csource.notification.topic:CONTEXT_SOURCE_NOTIFICATION}")
 	String notificationChannel;
 
 	@Autowired
 	KafkaTemplate<String, String> kafkaTemplate;
 
-	@Value("${csource.subscriptionn.topic:CONTEXT_SUBSCRIPTIONS")
+	@Value("${csource.subscriptionn.topic:CONTEXT_SUBSCRIPTIONS}")
 	private String csourceSubscriptionChannel;
 
 	@PostConstruct

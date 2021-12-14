@@ -35,6 +35,7 @@ import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -160,11 +161,14 @@ public class SubscriptionController {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Subscription expandSubscription(String body, ServerHttpRequest request) throws ResponseException, JsonParseException, JsonLdError, IOException {
+	public Subscription expandSubscription(String body, ServerHttpRequest request)
+			throws ResponseException, JsonParseException, JsonLdError, IOException {
 		Subscription subscription = new Subscription();
 
-		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(body),
-				opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0);
+		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor
+				.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(body), opts,
+						AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+				.get(0);
 
 		boolean hasEntities = false;
 		boolean hasWatchedAttributes = false;
@@ -465,8 +469,9 @@ public class SubscriptionController {
 		try {
 			ValidateURI.validateUri(id);
 			logger.trace("call getSubscriptions() ::");
-			return HttpUtils.generateReply(request, DataSerializer
-					.toJson(manager.getSubscription(id, HttpUtils.getHeaders(request)).getSubscription()));
+			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+			return HttpUtils.generateReply(request,
+					DataSerializer.toJson(manager.getSubscription(id, headers).getSubscription()));
 
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);

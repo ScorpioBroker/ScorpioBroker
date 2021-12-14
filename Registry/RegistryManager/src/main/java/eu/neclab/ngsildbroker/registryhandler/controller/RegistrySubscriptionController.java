@@ -161,7 +161,7 @@ public class RegistrySubscriptionController {
 			@RequestBody String payload) {
 		logger.trace("call updateSubscription() ::");
 		try {
-			Validator.subscriptionValidation(payload);
+			//Validator.subscriptionValidation(payload);
 			List<Object> context = new ArrayList<Object>();
 			context.addAll(HttpUtils.getAtContext(request));
 			String resolved = JsonUtils
