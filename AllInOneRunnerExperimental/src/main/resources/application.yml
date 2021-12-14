@@ -1,0 +1,207 @@
+mysettings:
+  application-name: aio-runner
+  kafka:
+    bootstrap:
+      host: ${bushost:localhost}
+      port: ${busport:9092}
+  postgres:
+    host: ${dbhost:localhost}
+    port: ${dbport:5432}
+    username: ${dbuser:ngb}
+    password: ${dbpass:ngb}
+    database-name: ${dbname:ngb}
+  gateway:
+    host: ${gateway.host:localhost}
+    port: ${gateway.port:9090}
+append:
+  overwrite: noOverwrite
+atcontext:
+  url: http://${mysettings.gateway.host}:${mysettings.gateway.port}/ngsi-ld/contextes/
+bootstrap:
+  servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
+jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
+broker:
+  id: FedBroker1
+  parent:
+    location:
+      url: SELF
+query:
+  result:
+    topic: QUERY_RESULT
+  topic: QUERY
+batchoperations:
+  maxnumber:
+    create: 1000
+    update: 1000
+    upsert: 1000
+    delete: 1000
+
+csource:
+  stopListenerIfDbFails: false
+  topic: CONTEXT_SOURCE
+  registry:
+    topic: CONTEXT_REGISTRY
+  source:
+    topic: CONTEXT_SOURCE
+  notification:
+    topic: CONTEXT_SOURCE_NOTIFICATION
+  query:
+    topic: CONTEXT_REGISTRY_QUERY
+    result:
+      topic: CONTEXT_REGISTRY_QUERY_RESULT
+
+csources:
+  registration:
+    topic: CONTEXT_REGISTRY
+defaultLimit: 50
+directDbConnection: false 
+entity:
+  append:
+    topic: ENTITY_APPEND
+  create:
+    topic: ENTITY_CREATE
+  delete:
+    topic: ENTITY_DELETE
+  update:
+    topic: ENTITY_UPDATE
+  index:
+    topic: ENTITY_INDEX
+  keyValues:
+    topic: KVENTITY
+  stopListenerIfDbFails: false
+  temporal:
+    stopListenerIfDbFails: false
+    topic: TEMPORALENTITY
+  topic: ENTITY
+  withoutSysAttrs:
+    topic: ENTITY_WITHOUT_SYSATTRS
+
+submanager:
+  subscription:
+    topic: SUBSCRIPTIONS
+
+kafka:
+  replytimeout: 10000
+management:
+  endpoint:
+    restart:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+max:
+  request:
+    size: 104857600
+maxLimit: 500
+ngb:
+  debugmode: false
+reader:
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP_Reader
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
+  enabled: true
+
+spring:
+  application.name: ${mysettings.application-name}
+  kafka:
+    producer:
+      bootstrap-servers: ${bootstrap.servers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      bootstrap-servers: ${bootstrap.servers}
+      group-id: ${mysettings.application-name}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    admin:
+      properties:
+        cleanup:
+          policy: compact
+  security:
+    active: false
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: https://idp.example.com/auth/realms/demo
+#      client:
+#        provider:
+#          keycloak:
+#            issuer-uri: https://idp.example.com/auth/realms/demo
+#        registration:
+#          keycloak-client:
+#            provider: keycloak
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+#            authorization_grant_type: client_credentials
+#          keycloak:
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
+  flyway:
+    baselineOnMigrate: true
+  main:
+    lazy-initialization: false
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+writer:
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP_Writer
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
+  enabled: true
+
+# Increase the Hystrix timeout to 60s (globally)
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 60000
+
+
+#GET request configuration for QUERY-MANAGER 
+ribbon:
+  ReadTimeout: 60000
+  ConnectTimeout: 60000
+server:
+  port: 9090
+  tomcat:
+    max:
+      threads:200
+selfhostcorecontext: http://localhost:9090/corecontext
+logging:
+  level:
+    root: INFO
+    #org.apache.kafka: ERROR
+    #org.spring.kafka: ERROR
+    #org.springframework.kafka: ERROR
+    #com.zaxxer.hikari: ERROR
+ngsild:
+  corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
