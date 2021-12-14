@@ -155,7 +155,7 @@ public class RegistryController {
 			// TODO change this to remove deserialization
 			String resolved = JsonUtils
 					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
-							opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)));
+							opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0));
 
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
@@ -198,7 +198,7 @@ public class RegistryController {
 			logger.debug("update CSource() ::" + registrationId);
 			String resolved = JsonUtils
 					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
-							opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)));
+							opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0));
 			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request), registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();
