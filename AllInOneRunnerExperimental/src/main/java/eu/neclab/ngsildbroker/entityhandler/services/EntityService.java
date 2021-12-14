@@ -94,7 +94,6 @@ public class EntityService {
 	boolean directDB = true;
 	public static boolean checkEntity = false;
 	@Autowired
-	@Qualifier("emdao")
 	StorageWriterDAO storageWriterDao;
 
 	@Autowired

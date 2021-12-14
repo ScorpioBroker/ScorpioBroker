@@ -48,7 +48,6 @@ public class HistoryService {
 	HistoryDAO historyDAO;
 
 	@Autowired
-	@Qualifier("hhdao")
 	StorageWriterDAO writerDAO;
 
 	@Autowired
