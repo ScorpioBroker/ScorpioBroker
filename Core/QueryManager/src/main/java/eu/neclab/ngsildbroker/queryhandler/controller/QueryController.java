@@ -259,6 +259,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					if (qp == null) // invalid query
 						throw new ResponseException(ErrorType.InvalidRequest);
 					qp.setTenant(tenantid);
+					qp.setCheck(check);
 					qp.setKeyValues(
 							(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)));
 					qp.setIncludeSysAttrs(
