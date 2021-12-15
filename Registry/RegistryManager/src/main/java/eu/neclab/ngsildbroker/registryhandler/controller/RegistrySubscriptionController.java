@@ -114,12 +114,16 @@ public class RegistrySubscriptionController {
 
 	@GetMapping
 	public ResponseEntity<byte[]> getAllSubscriptions(ServerHttpRequest request,
-			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException {
+			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		logger.trace("getAllSubscriptions() :: started");
 		List<Subscription> result = null;
 		result = manager.getAllSubscriptions(HttpUtils.getHeaders(request), limit);
 		logger.trace("getAllSubscriptions() :: completed");
-		return HttpUtils.generateReply(request, DataSerializer.toJson(result));
+		try {
+			return HttpUtils.generateReply(request, DataSerializer.toJson(result));
+		} catch (ResponseException e) {
+			return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage().getBytes());
+		}
 	}
 
 	@GetMapping("{id}")
