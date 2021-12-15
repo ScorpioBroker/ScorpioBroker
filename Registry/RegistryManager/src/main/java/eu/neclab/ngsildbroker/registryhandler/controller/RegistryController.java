@@ -122,12 +122,12 @@ public class RegistryController {
 					additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
 				}
 				List<String> csourceList = queryResult.getActualDataString();
-				if (csourceList.size() > 0) {
-					return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
-				} else {
-					//TODO this needs to be change to respect query results
-					throw new ResponseException(ErrorType.NotFound);
-				}
+//				if (csourceList.size() > 0) {
+				return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
+//				} else {
+//					//TODO this needs to be change to respect query results
+//					throw new ResponseException(ErrorType.NotFound);
+//				}
 			} else {
 				// spec v0.9.0 section 5.10.2.4: if neither Entity types nor Attribute names are
 				// provided, an error of BadRequestData shall be raised
@@ -155,8 +155,10 @@ public class RegistryController {
 
 			// TODO change this to remove deserialization
 			String resolved = JsonUtils
-					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
-							opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0));
+					.toString(JsonLdProcessor
+							.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
+									AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+							.get(0));
 
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
@@ -198,8 +200,10 @@ public class RegistryController {
 		try {
 			logger.debug("update CSource() ::" + registrationId);
 			String resolved = JsonUtils
-					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
-							opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0));
+					.toString(JsonLdProcessor
+							.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
+									AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+							.get(0));
 			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request), registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();
