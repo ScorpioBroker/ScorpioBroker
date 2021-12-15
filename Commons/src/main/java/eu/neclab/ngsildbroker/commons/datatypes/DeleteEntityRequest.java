@@ -13,9 +13,9 @@ public class DeleteEntityRequest extends EntityRequest {
 	public DeleteEntityRequest(String entityid, ArrayListMultimap<String, String> headers) throws ResponseException {
 		super(AppConstants.OPERATION_DELETE_ENTITY, headers);
 		this.id = entityid;
-		this.keyValue = "";
-		this.entityWithoutSysAttrs = "";
-		this.withSysAttrs = "";
+		this.keyValue = "null";
+		this.entityWithoutSysAttrs = "null";
+		this.withSysAttrs = "null";
 
 	}
 
