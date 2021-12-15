@@ -108,7 +108,7 @@ public class HistoryController {
 
 		try {
 			logger.trace("retrieveTemporalEntity :: started");
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
 			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(request.getQueryParams(), context, true);
@@ -187,7 +187,7 @@ public class HistoryController {
 					request.getQueryParams());
 			params.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
 
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
 			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context, true);
@@ -218,7 +218,7 @@ public class HistoryController {
 			LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<String, String>(
 					request.getQueryParams());
 			params.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
 			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context, true);
@@ -277,7 +277,7 @@ public class HistoryController {
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
 			ValidateURI.validateUri(entityId);
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
 			logger.trace("deleteAttrib2TemporalEntity :: started");
@@ -302,7 +302,7 @@ public class HistoryController {
 		try {
 			logger.trace("modifyAttribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
 
@@ -334,7 +334,7 @@ public class HistoryController {
 		try {
 			logger.trace("deleteAtrribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
 

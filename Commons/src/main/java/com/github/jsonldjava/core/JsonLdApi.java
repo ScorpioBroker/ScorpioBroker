@@ -501,7 +501,7 @@ public class JsonLdApi {
 
 	private Object expandWithCoreContext(Object geoProp) {
 		try {
-			return expand(JsonLdProcessor.coreContext.clone(), geoProp, -2, false);
+			return expand(JsonLdProcessor.getCoreContextClone(), geoProp, -2, false);
 		} catch (JsonLdError | ResponseException e) {
 			// should never happen
 			e.printStackTrace();
@@ -2370,7 +2370,7 @@ public class JsonLdApi {
 	}
 
 	public Map<String, Object> compactWithCoreContext(Object geoJsonValue) {
-		return (Map<String, Object>) compact(JsonLdProcessor.coreContext.clone(), null, geoJsonValue);
+		return (Map<String, Object>) compact(JsonLdProcessor.getCoreContextClone(), null, geoJsonValue);
 	}
 
 }

@@ -211,7 +211,7 @@ public class SubscriptionService implements SubscriptionManager {
 				subscriptionRequest);
 		if (subscription.getLdQuery() != null && !subscription.getLdQuery().trim().equals("")) {
 			subscription.setQueryTerm(QueryParser.parseQuery(subscription.getLdQuery(),
-					JsonLdProcessor.coreContext.clone().parse(subscriptionRequest.getContext(), true)));
+					JsonLdProcessor.getCoreContextClone().parse(subscriptionRequest.getContext(), true)));
 		}
 		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 		if (subscription.getTimeInterval() > 0) {

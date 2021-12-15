@@ -250,7 +250,7 @@ public class QueryController {// implements QueryHandlerInterface {
 				System.err.println(header);
 			}
 			System.err.println("-------------------------------");
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 			System.out.println(context.hashCode());
 			context = context.parse(linkHeaders, true);
 			System.out.println(context.hashCode());

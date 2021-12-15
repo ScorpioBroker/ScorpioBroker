@@ -237,7 +237,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.trace("partial-update entity :: started");
 			Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor.expand(atContext, jsonPayload,
 					opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0);
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 			context = context.parse(atContext, true);
 			if (jsonPayload instanceof Map) {
 				Object payloadContext = ((Map<String, Object>) jsonPayload).get(JsonLdConsts.CONTEXT);
@@ -299,7 +299,7 @@ public class EntityController {// implements EntityHandlerInterface {
 				ValidateURI.validateUri(entityId);
 				logger.trace("delete attribute :: started");
 				Validator.validate(request.getQueryParams());
-				Context context = JsonLdProcessor.coreContext.clone();
+				Context context = JsonLdProcessor.getCoreContextClone();
 				context = context.parse(HttpUtils.getAtContext(request), true);
 				String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
 				entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,

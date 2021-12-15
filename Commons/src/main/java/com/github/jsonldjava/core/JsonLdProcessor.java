@@ -27,7 +27,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
  */
 public class JsonLdProcessor {
 	private static String coreContextUrl = null;
-	public static Context coreContext = null;
+	private static Context coreContext = null;
 
 	public synchronized static void init(String contextUrl) {
 		if (JsonLdProcessor.coreContextUrl != null) {
@@ -37,7 +37,9 @@ public class JsonLdProcessor {
 		JsonLdProcessor.coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl,
 				false);
 	}
-
+	public static Context getCoreContextClone() {
+		return coreContext.clone();
+	}
 	/**
 	 * Compacts the given input using the context according to the steps in the
 	 * <a href="http://www.w3.org/TR/json-ld-api/#compaction-algorithm"> Compaction

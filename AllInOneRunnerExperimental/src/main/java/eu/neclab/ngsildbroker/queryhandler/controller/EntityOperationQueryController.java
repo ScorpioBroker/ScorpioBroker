@@ -89,7 +89,7 @@ public class EntityOperationQueryController {
 			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				linkHeaders.add((String) rawPayload.get(NGSIConstants.JSON_LD_CONTEXT));
 			}
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 
 			context = context.parse(linkHeaders, true);
 

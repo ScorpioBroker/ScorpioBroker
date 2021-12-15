@@ -96,7 +96,7 @@ public class RegistryController {
 					|| request.getPath().toString().equals(MY_REQUEST_MAPPING_ALT)) && !params.isEmpty()) {
 
 				List<Object> linkHeaders = HttpUtils.getAtContext(request);
-				Context context = JsonLdProcessor.coreContext.clone();
+				Context context = JsonLdProcessor.getCoreContextClone();
 				context = context.parse(linkHeaders, true);
 				QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(request.getQueryParams(), context);
 				if (offset == null) {

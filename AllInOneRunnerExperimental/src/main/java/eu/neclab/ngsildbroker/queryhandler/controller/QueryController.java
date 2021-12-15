@@ -245,7 +245,7 @@ public class QueryController {// implements QueryHandlerInterface {
 			}
 			// long prelink = System.currentTimeMillis();
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
-			Context context = JsonLdProcessor.coreContext.clone();
+			Context context = JsonLdProcessor.getCoreContextClone();
 			context = context.parse(linkHeaders, true);
 			// long postlink = System.currentTimeMillis();
 			if (retrieve || request.getPath().toString().equals(MY_REQUEST_URL)

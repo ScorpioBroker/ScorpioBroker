@@ -888,7 +888,7 @@ public final class HttpUtils {
 		if (requestAtContext != null) {
 			additionalContext.addAll(requestAtContext);
 		}
-		Context context = JsonLdProcessor.coreContext.clone().parse(additionalContext, true);
+		Context context = JsonLdProcessor.getCoreContextClone().parse(additionalContext, true);
 		return generateReply(request, reply, additionalHeaders, context, additionalContext, forceArrayResult);
 	}
 
