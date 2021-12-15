@@ -37,6 +37,8 @@ public class NGSIObject {
 	private boolean isEndpoint = false;
 	private boolean isNotifierInfo = false;
 	private boolean isReceiverInfo = false;
+	private boolean hasAtContext = false;
+	private boolean atContextRequired = false;
 
 	private HashSet<String> datasetIds = new HashSet<String>();
 	private String id;
@@ -217,6 +219,9 @@ public class NGSIObject {
 
 	public void validate(int payloadType, String activeProperty, String expandedProperty, JsonLdApi api)
 			throws ResponseException {
+		if(activeProperty == null && (atContextRequired ^ hasAtContext)) {
+			throw new ResponseException(ErrorType.BadRequestData, "@Context entry is needed");
+		}
 		switch (payloadType) {
 		case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
 		case AppConstants.ENTITY_CREATE_PAYLOAD:
@@ -804,5 +809,22 @@ public class NGSIObject {
 	public void setEndpoint(boolean isEndpoint) {
 		this.isEndpoint = isEndpoint;
 	}
+
+	public boolean isHasAtContext() {
+		return hasAtContext;
+	}
+
+	public void setHasAtContext(boolean hasAtContext) {
+		this.hasAtContext = hasAtContext;
+	}
+
+	public boolean isAtContextRequired() {
+		return atContextRequired;
+	}
+
+	public void setAtContextRequired(boolean atContextRequired) {
+		this.atContextRequired = atContextRequired;
+	}
+	
 
 }

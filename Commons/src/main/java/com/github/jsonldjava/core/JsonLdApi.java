@@ -630,7 +630,12 @@ public class JsonLdApi {
 			// subject reference).
 			// GK: If we found a `propertyScopedContext` above, we can parse it to create a
 			// new activeCtx using the `override protected` option
+			ngsiElement.setAtContextRequired(atContextAllowed);
 			if (elem.containsKey(JsonLdConsts.CONTEXT)) {
+				ngsiElement.setHasAtContext(true);
+				if (!atContextAllowed) {
+					throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
+				}
 				activeCtx = activeCtx.parse(elem.get(JsonLdConsts.CONTEXT), true);
 			}
 			// GK: This would be the place to remember this version of activeCtx as
@@ -650,11 +655,7 @@ public class JsonLdApi {
 				final Object value = elem.get(key);
 				// 7.1)
 				if (key.equals(JsonLdConsts.CONTEXT)) {
-					if (atContextAllowed) {
-						continue;
-					} else {
-						throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
-					}
+					continue;
 				}
 				// 7.2)
 				final String expandedProperty = activeCtx.expandIri(key, false, true, null, null);

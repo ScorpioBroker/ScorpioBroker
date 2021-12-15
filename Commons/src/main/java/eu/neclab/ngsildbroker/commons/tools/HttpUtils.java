@@ -144,12 +144,17 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static boolean doPreflightCheck(ServerHttpRequest req) throws ResponseException {
+	public static boolean doPreflightCheck(ServerHttpRequest req, List<Object> atContextLinks)
+			throws ResponseException {
 		String contentType = req.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE);
 		if (contentType == null) {
 			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
 		}
 		if (contentType.toLowerCase().contains("application/ld+json")) {
+			if (!atContextLinks.isEmpty()) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"You can not have a Link to a context is content-type application/ld+json");
+			}
 			return true;
 		}
 		if (!contentType.toLowerCase().contains("application/json")
@@ -829,7 +834,6 @@ public final class HttpUtils {
 		return generateReply(request, reply, additionalHeaders, context, false);
 	}
 
-	
 	private static int parseAcceptHeader(List<String> acceptHeaders) {
 		float q = 1;
 		int appGroup = -1;

@@ -88,7 +88,7 @@ public class EntityBatchController {
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		boolean preFlight;
 		try {
-			preFlight = HttpUtils.doPreflightCheck(request);
+			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());
@@ -181,7 +181,7 @@ public class EntityBatchController {
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		boolean preFlight;
 		try {
-			preFlight = HttpUtils.doPreflightCheck(request);
+			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());
@@ -280,7 +280,7 @@ public class EntityBatchController {
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		boolean preFlight;
 		try {
-			preFlight = HttpUtils.doPreflightCheck(request);
+			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());

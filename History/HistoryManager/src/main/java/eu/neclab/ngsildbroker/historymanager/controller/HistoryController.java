@@ -79,10 +79,11 @@ public class HistoryController {
 		try {
 			logger.trace("createTemporalEntity :: started");
 
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
 			@SuppressWarnings("unchecked")
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
-							AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, atContextAllowed)
 					.get(0);
 			URI uri = historyService.createTemporalEntityFromBinding(HttpUtils.getHeaders(request), resolved);
 			logger.trace("createTemporalEntity :: completed");
@@ -254,10 +255,11 @@ public class HistoryController {
 		try {
 			logger.trace("addAttrib2TemopralEntity :: started");
 			logger.debug("entityId : " + entityId);
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
 			@SuppressWarnings("unchecked")
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
-							AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
 					.get(0);
 			historyService.addAttrib2TemporalEntity(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("addAttrib2TemopralEntity :: completed");
@@ -303,13 +305,14 @@ public class HistoryController {
 			logger.trace("modifyAttribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
 			Context context = JsonLdProcessor.coreContext.clone();
-			List<Object> links = HttpUtils.getAtContext(request);
-			context = context.parse(links, true);
+
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+			context = context.parse(linkHeaders, true);
 
 			@SuppressWarnings("unchecked")
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(links, JsonUtils.fromString(payload), opts, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD,
-							HttpUtils.doPreflightCheck(request))
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
 					.get(0);
 			// TODO : TBD- conflict between specs and implementation <mentioned no request
 			// body in specs>

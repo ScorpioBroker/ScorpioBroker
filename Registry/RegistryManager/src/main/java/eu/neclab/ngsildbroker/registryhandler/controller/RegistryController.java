@@ -152,13 +152,11 @@ public class RegistryController {
 			logger.debug("payload received :: " + payload);
 
 			this.validate(payload);
-
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
 			// TODO change this to remove deserialization
-			String resolved = JsonUtils
-					.toString(JsonLdProcessor
-							.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
-									AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
-							.get(0));
+			String resolved = JsonUtils.toString(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
+					opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, atContextAllowed).get(0));
 
 			logger.debug("Resolved payload::" + resolved);
 			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
@@ -199,11 +197,10 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
 		try {
 			logger.debug("update CSource() ::" + registrationId);
-			String resolved = JsonUtils
-					.toString(JsonLdProcessor
-							.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
-									AppConstants.CSOURCE_REG_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
-							.get(0));
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+			String resolved = JsonUtils.toString(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
+					opts, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, atContextAllowed).get(0));
 			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request), registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();

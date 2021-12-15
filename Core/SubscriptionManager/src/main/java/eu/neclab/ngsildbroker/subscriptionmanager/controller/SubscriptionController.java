@@ -164,11 +164,10 @@ public class SubscriptionController {
 	public Subscription expandSubscription(String body, ServerHttpRequest request)
 			throws ResponseException, JsonParseException, JsonLdError, IOException {
 		Subscription subscription = new Subscription();
-
-		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor
-				.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(body), opts,
-						AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
-				.get(0);
+		List<Object> linkHeaders = HttpUtils.getAtContext(request);
+		boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
+				JsonUtils.fromString(body), opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, atContextAllowed).get(0);
 
 		boolean hasEntities = false;
 		boolean hasWatchedAttributes = false;
@@ -510,16 +509,15 @@ public class SubscriptionController {
 
 			ValidateURI.validateUriInSubs(id);
 			Validator.subscriptionValidation(payload);
-			List<Object> context = new ArrayList<Object>();
-			context.addAll(HttpUtils.getAtContext(request));
-			String resolved = JsonUtils
-					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
-							opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request)));
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+			String resolved = JsonUtils.toString(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
+					opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed));
 			Subscription subscription = DataSerializer.getSubscription(resolved);
 			if (subscription.getId() == null) {
 				subscription.setId(id);
 			}
-			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context,
+			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, linkHeaders,
 					HttpUtils.getHeaders(request));
 
 			// expandSubscriptionAttributes(subscription, context);

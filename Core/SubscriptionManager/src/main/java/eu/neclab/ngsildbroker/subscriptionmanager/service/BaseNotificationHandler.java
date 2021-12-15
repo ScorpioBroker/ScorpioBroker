@@ -143,7 +143,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			@Override
 			public HttpHeaders getHeaders() {
 				// TODO Auto-generated method stub
-				return null;
+				return headers;
 			}
 
 			@Override

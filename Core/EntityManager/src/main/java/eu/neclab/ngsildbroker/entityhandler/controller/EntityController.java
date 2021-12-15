@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -88,23 +89,30 @@ public class EntityController {// implements EntityHandlerInterface {
 		String result = null;
 		try {
 			logger.trace("create entity :: started");
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
-							AppConstants.ENTITY_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
-					.get(0);
+			System.out.println("-------------------------");
+			System.out.println(payload);
+			System.out.println("-------------------------");
+			List<Object> contextHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_CREATE_PAYLOAD, atContextAllowed).get(0);
 			result = entityService.createMessage(HttpUtils.getHeaders(request), resolved);
 			logger.trace("create entity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
 					.build();
 		} catch (ResponseException exception) {
-			logger.error("Exception :: ", exception);
-			exception.printStackTrace();
+			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (DateTimeParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
 							.toJsonBytes());
 		} catch (JsonParseException exception) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+							.toJsonBytes());
+		} catch (JsonMappingException e) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
 							.toJsonBytes());
@@ -133,10 +141,10 @@ public class EntityController {// implements EntityHandlerInterface {
 			// "").split("/attrs");
 
 			logger.trace("update entity :: started");
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
-							AppConstants.ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
-					.get(0);
+			List<Object> contextHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, atContextAllowed).get(0);
 			UpdateResult update = entityService.updateMessage(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("update entity :: completed");
 			if (update.getUpdateResult()) {
@@ -182,10 +190,10 @@ public class EntityController {// implements EntityHandlerInterface {
 			entityId = HttpUtils.denormalize(entityId);
 
 			logger.trace("append entity :: started");
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload), opts,
-							AppConstants.ENTITY_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request))
-					.get(0);
+			List<Object> contextHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, atContextAllowed).get(0);
 			AppendResult append = entityService.appendMessage(HttpUtils.getHeaders(request), entityId, resolved,
 					options);
 			logger.trace("append entity :: completed");
@@ -234,9 +242,12 @@ public class EntityController {// implements EntityHandlerInterface {
 			// "").split("/attrs/");
 			Object jsonPayload = JsonUtils.fromString(payload);
 			List<Object> atContext = HttpUtils.getAtContext(request);
+
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
 			logger.trace("partial-update entity :: started");
-			Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor.expand(atContext, jsonPayload,
-					opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0);
+			Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor
+					.expand(atContext, jsonPayload, opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, atContextAllowed)
+					.get(0);
 			Context context = JsonLdProcessor.coreContext.clone();
 			context = context.parse(atContext, true);
 			if (jsonPayload instanceof Map) {

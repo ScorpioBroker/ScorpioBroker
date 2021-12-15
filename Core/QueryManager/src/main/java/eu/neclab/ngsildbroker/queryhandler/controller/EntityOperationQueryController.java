@@ -45,7 +45,6 @@ public class EntityOperationQueryController {
 	@Autowired
 	QueryService queryService;
 
-
 	@Value("${defaultLimit}")
 	int defaultLimit = 50;
 	@Value("${maxLimit}")
@@ -68,8 +67,6 @@ public class EntityOperationQueryController {
 
 	private JsonLdOptions defaultOptions = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-
-
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	// these are known structures in try catch. failed parsing would rightfully
 	// result in an error
@@ -81,11 +78,15 @@ public class EntityOperationQueryController {
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
 		try {
-			HttpUtils.doPreflightCheck(request);
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
 			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
-			//String expandedPayload = "";// HttpUtils.expandPayload(request, payload, AppConstants.BATCH_URL_ID);
-			Map<String, Object> queries = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request),rawPayload, defaultOptions, AppConstants.QUERY_PAYLOAD, HttpUtils.doPreflightCheck(request)).get(0);
-			List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
+			// String expandedPayload = "";// HttpUtils.expandPayload(request, payload,
+			// AppConstants.BATCH_URL_ID);
+			Map<String, Object> queries = (Map<String, Object>) JsonLdProcessor
+					.expand(linkHeaders, rawPayload, defaultOptions, AppConstants.QUERY_PAYLOAD, atContextAllowed)
+					.get(0);
+
 			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				linkHeaders.add((String) rawPayload.get(NGSIConstants.JSON_LD_CONTEXT));
 			}

@@ -83,17 +83,17 @@ public class RegistrySubscriptionController {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription = null;
 		try {
-			List<Object> context = HttpUtils.getAtContext(request);
-			String resolved = JsonUtils
-					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
-							opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, HttpUtils.doPreflightCheck(request)));
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+			String resolved = JsonUtils.toString(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
+					opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, atContextAllowed));
 
 			subscription = DataSerializer.getSubscription(resolved);
 			if (resolved == null || subscription == null) {
 				return badRequestResponse;
 			}
 
-			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, context,
+			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, linkHeaders,
 					HttpUtils.getHeaders(request));
 			URI subId = manager.subscribe(subscriptionRequest);
 			logger.trace("subscribeRest() :: completed");
@@ -165,12 +165,12 @@ public class RegistrySubscriptionController {
 			@RequestBody String payload) {
 		logger.trace("call updateSubscription() ::");
 		try {
-			//Validator.subscriptionValidation(payload);
-			List<Object> context = new ArrayList<Object>();
-			context.addAll(HttpUtils.getAtContext(request));
-			String resolved = JsonUtils
-					.toString(JsonLdProcessor.expand(HttpUtils.getAtContext(request), JsonUtils.fromString(payload),
-							opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, HttpUtils.doPreflightCheck(request)));
+			// Validator.subscriptionValidation(payload);
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+
+			String resolved = JsonUtils.toString(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
+					opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed));
 			Subscription subscription = DataSerializer.getSubscription(resolved);
 			if (subscription.getId() == null) {
 				subscription.setId(id);
@@ -180,7 +180,8 @@ public class RegistrySubscriptionController {
 			}
 
 			ValidateURI.validateUriInSubs(id);
-			manager.updateSubscription(new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request)));
+			manager.updateSubscription(
+					new SubscriptionRequest(subscription, linkHeaders, HttpUtils.getHeaders(request)));
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());

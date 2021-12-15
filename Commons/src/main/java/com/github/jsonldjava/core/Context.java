@@ -33,6 +33,8 @@ public class Context extends LinkedHashMap<String, Object> {
     private Map<String, Object> termDefinitions;
     public Map<String, Object> inverse = null;
 
+	private boolean dontAddCoreContext;
+
     public Context() {
         this(new JsonLdOptions());
     }
@@ -147,7 +149,7 @@ public class Context extends LinkedHashMap<String, Object> {
      */
     @SuppressWarnings("unchecked")
     public Context parse(Object localContext, List<String> remoteContexts, boolean checkToRemoveNGSILDContext) throws JsonLdError {
-        return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext);
+        return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext, true);
     }
 
     /**
@@ -169,7 +171,7 @@ public class Context extends LinkedHashMap<String, Object> {
      */
     // GK: Note that parsing may also depend on some options: `override protected and `propagate`
     private Context parse(Object localContext, List<String> remoteContexts,
-            boolean parsingARemoteContext, boolean checkToRemoveNGSILDContext) throws JsonLdError {
+            boolean parsingARemoteContext, boolean checkToRemoveNGSILDContext, boolean root) throws JsonLdError {
         if (remoteContexts == null) {
             remoteContexts = new ArrayList<String>();
         }
@@ -196,6 +198,9 @@ public class Context extends LinkedHashMap<String, Object> {
             // 3.2)
             else if (context instanceof String) {
             	if(checkToRemoveNGSILDContext && NGSIConstants.CORE_CONTEXT_URLS.contains(context)) {
+            		if(!root) {
+            			result.dontAddCoreContext = true;
+            		}
             		continue;
             	}
                 String uri = (String) result.get(JsonLdConsts.BASE);
@@ -220,7 +225,7 @@ public class Context extends LinkedHashMap<String, Object> {
                         .get(JsonLdConsts.CONTEXT);
 
                 // 3.2.4
-                result = result.parse(tempContext, remoteContexts, true, checkToRemoveNGSILDContext);
+                result = result.parse(tempContext, remoteContexts, true, checkToRemoveNGSILDContext, false);
                 // 3.2.5
                 continue;
             } else if (!(context instanceof Map)) {
@@ -321,7 +326,11 @@ public class Context extends LinkedHashMap<String, Object> {
         return result;
     }
 
-    private void checkEmptyKey(final Map<String, Object> map) {
+    public boolean dontAddCoreContext() {
+		return dontAddCoreContext;
+	}
+
+	private void checkEmptyKey(final Map<String, Object> map) {
         if (map.containsKey("")) {
             // the term MUST NOT be an empty string ("")
             // https://www.w3.org/TR/json-ld/#h3_terms
@@ -970,6 +979,7 @@ public class Context extends LinkedHashMap<String, Object> {
         // TODO: is this shallow copy enough? probably not, but it passes all
         // the tests!
         rval.termDefinitions = new LinkedHashMap<String, Object>(this.termDefinitions);
+        rval.dontAddCoreContext = this.dontAddCoreContext;
         return rval;
     }
 

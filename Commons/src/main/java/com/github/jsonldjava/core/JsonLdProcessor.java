@@ -82,7 +82,7 @@ public class JsonLdProcessor {
 
 		// 2-6) NOTE: these are all the same steps as in expand
 
-		final Object expanded = expand(null, input, opts, -1, true);// input;//
+		final Object expanded = expand(null, input, opts, -1, false);// input;//
 		// 7)
 		// NGSIComment: No need to do this expanded items do contain @context
 		/*
@@ -112,22 +112,28 @@ public class JsonLdProcessor {
 		if (compacted != null && context != null) {
 			// TODO: figure out if we can make "@context" appear at the start of
 			// the keySet
-			if (context instanceof List) {
-				((List) context).add(coreContextUrl);
-			} else {
-				ArrayList<Object> temp = new ArrayList<Object>();
-				temp.add(context);
-				temp.add(coreContextUrl);
+			if (!activeCtx.dontAddCoreContext()) {
+				if (context instanceof List) {
+					((List) context).add(coreContextUrl);
+				} else {
+					ArrayList<Object> temp = new ArrayList<Object>();
+					temp.add(context);
+					temp.add(coreContextUrl);
 
+				}
 			}
 			if ((context instanceof Map && !((Map<String, Object>) context).isEmpty())
 					|| (context instanceof List && !((List<Object>) context).isEmpty())) {
-
-				if (context instanceof List && ((List<Object>) context).size() == 1 && opts.getCompactArrays()) {
-					((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, ((List<Object>) context).get(0));
-				} else {
-					((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, context);
+				if (!(context instanceof List)) {
+					ArrayList<Object> temp = new ArrayList<Object>();
+					temp.add(context);
+					context = temp;
 				}
+//				if (context instanceof List && ((List<Object>) context).size() == 1 && opts.getCompactArrays()) {
+//					((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, ((List<Object>) context).get(0));
+//				} else {
+				((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, context);
+//				}
 			}
 		}
 
@@ -191,7 +197,7 @@ public class JsonLdProcessor {
 		// 6)
 		Object expanded;
 		try {
-			 expanded = new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed);
+			expanded = new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed);
 		} catch (JsonLdError e) {
 			if (e.getType().equals(Error.LOADING_REMOTE_CONTEXT_FAILED)) {
 				throw new ResponseException(ErrorType.LdContextNotAvailable, e.getMessage());
