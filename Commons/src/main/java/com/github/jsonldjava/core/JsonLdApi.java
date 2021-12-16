@@ -548,8 +548,8 @@ public class JsonLdApi {
 			boolean atContextAllowed) throws JsonLdError, ResponseException {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
 		// 1)
-		if (ngsiElement == null || ngsiElement.getElement() == null) {
-			return null;
+		if (ngsiElement.getElement() == null) {
+			return new NGSIObject(null, null);
 		}
 		Object element = ngsiElement.getElement();
 		// GK: This would be the point to set `propertyScopedContext` to the `@context`
@@ -1035,12 +1035,17 @@ public class JsonLdApi {
 				}
 				// 7.7)
 				else {
+					try {
 					NGSIObject ngsiExpandedValue = expand(activeCtx, key,
 							new NGSIObject(value, ngsiElement)
 									.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
 							payloadType, atContextAllowed);
 					ngsiElement.getDatasetIds().addAll(ngsiExpandedValue.getDatasetIds());
 					expandedValue = ngsiExpandedValue.getElement();
+					}catch (Exception e) {
+						System.out.println(e);
+						continue;
+					}
 				}
 				// 7.8)
 				if (expandedValue == null) {
@@ -1126,7 +1131,7 @@ public class JsonLdApi {
 				if (rval == null) {
 					// nothing else is possible with result if we set it to
 					// null, so simply return it
-					return null;
+					return new NGSIObject(null, ngsiElement);
 				} else if (result.getOrDefault(JsonLdConsts.TYPE, "").equals(JsonLdConsts.JSON)) {
 					// jsonld 1.1: 14.3 in https://w3c.github.io/json-ld-api/#algorithm-3
 				}
@@ -1191,7 +1196,7 @@ public class JsonLdApi {
 		else {
 			// 2.1)
 			if (activeProperty == null || JsonLdConsts.GRAPH.equals(activeProperty)) {
-				return null;
+				return new NGSIObject(null, ngsiElement);
 			}
 			String expandedProperty = activeCtx.expandIri(activeProperty, false, true, null, null);
 			Object result = activeCtx.expandValue(activeProperty, element);

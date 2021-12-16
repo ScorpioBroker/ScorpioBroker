@@ -240,7 +240,7 @@ public class RegistryController {
 				throw new ResponseException(ErrorType.UnprocessableEntity);
 			}
 
-		} catch (JsonParseException e) {
+		} catch (JsonProcessingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		} catch (IOException e) {
 			throw new ResponseException(ErrorType.BadRequestData);

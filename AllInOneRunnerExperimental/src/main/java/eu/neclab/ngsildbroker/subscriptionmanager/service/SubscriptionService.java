@@ -179,7 +179,7 @@ public class SubscriptionService implements SubscriptionManager {
 				try {
 					SubscriptionRequest subscription = DataSerializer.getSubscriptionRequest(entry.getValue());
 					subscribe(subscription);
-				} catch (JsonParseException e) {
+				} catch (JsonProcessingException e) {
 					logger.error("Exception ::", e);
 					e.printStackTrace();
 					continue;

@@ -107,7 +107,7 @@ public class CSourceSubscriptionService {
 		 * (byte[] sub : subs.values()) { try { if (Arrays.equals(sub, nullArray)) {
 		 * continue; } SubscriptionRequest subscriptionRequest =
 		 * DataSerializer.getSubscriptionRequest(new String(sub));
-		 * subscribe(subscriptionRequest, false); } catch (JsonParseException e) {
+		 * subscribe(subscriptionRequest, false); } catch (JsonProcessingException e) {
 		 * logger.error("Exception ::", e); e.printStackTrace(); continue; } catch
 		 * (ResponseException e) { logger.error("Exception ::", e); e.printStackTrace();
 		 * continue; } }

@@ -657,7 +657,7 @@ public class SerializationTools {
 			if (json.isNull()) {
 				throw new ResponseException(ErrorType.InvalidRequest);
 			}
-		} catch (JsonParseException e) {
+		} catch (JsonProcessingException e) {
 			throw new ResponseException(ErrorType.InvalidRequest);
 		} catch (IOException e) {
 			throw new ResponseException(ErrorType.BadRequestData);

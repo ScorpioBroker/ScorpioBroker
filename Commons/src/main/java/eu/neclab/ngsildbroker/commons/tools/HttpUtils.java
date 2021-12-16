@@ -926,6 +926,13 @@ public final class HttpUtils {
 				if (result instanceof Map) {
 					((Map) result).remove(JsonLdConsts.CONTEXT);
 				}
+				if (result instanceof List) {
+					@SuppressWarnings("unchecked")
+					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+					for (Map<String, Object> entry : list) {
+						entry.remove(JsonLdConsts.CONTEXT);
+					}
+				}
 				replyBody = JsonUtils.toPrettyString(result);
 				for (Object entry : contextLinks) {
 					if (entry instanceof String) {
@@ -954,7 +961,7 @@ public final class HttpUtils {
 				break;
 			case -1:
 			default:
-				throw new ResponseException(ErrorType.InvalidRequest, "Provided accept types are not supported");
+				throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
 			}
 
 			boolean compress = false;

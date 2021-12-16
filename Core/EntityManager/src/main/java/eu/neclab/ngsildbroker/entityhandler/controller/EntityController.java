@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
@@ -88,9 +89,6 @@ public class EntityController {// implements EntityHandlerInterface {
 		String result = null;
 		try {
 			logger.trace("create entity :: started");
-			System.out.println("-------------------------");
-			System.out.println(payload);
-			System.out.println("-------------------------");
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
 
@@ -105,15 +103,12 @@ public class EntityController {// implements EntityHandlerInterface {
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (DateTimeParseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
 							.toJsonBytes());
-		} catch (JsonParseException exception) {
+		} catch (JsonProcessingException exception) {
+			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
-							.toJsonBytes());
-		} catch (JsonMappingException e) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
@@ -159,12 +154,12 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (DateTimeParseException exception) {
 			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
 							.toJsonBytes());
-		} catch (JsonParseException exception) {
+		} catch (JsonProcessingException exception) {
 			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJsonBytes());
 		} catch (Exception e) {
 			logger.error("Exception :: ", e);
@@ -205,16 +200,18 @@ public class EntityController {// implements EntityHandlerInterface {
 						.body(objectMapper.writeValueAsBytes(append.getAppendedJsonFields()));
 			}
 		} catch (ResponseException responseException) {
-			logger.error("Exception :: ", responseException);
+			logger.debug("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());
 		} catch (DateTimeParseException exception) {
+			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
 							.toJsonBytes());
-		} catch (JsonParseException exception) {
+		} catch (JsonProcessingException exception) {
+			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
@@ -280,12 +277,12 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (DateTimeParseException exception) {
 			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
 							.toJsonBytes());
-		} catch (JsonParseException exception) {
+		} catch (JsonProcessingException exception) {
 			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
@@ -326,16 +323,18 @@ public class EntityController {// implements EntityHandlerInterface {
 				return deleteEntity(request);
 			}
 		} catch (ResponseException responseException) {
-			logger.error("Exception :: ", responseException);
+			logger.debug("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());
 		} catch (DateTimeParseException exception) {
+			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
 							.toJsonBytes());
-		} catch (JsonParseException exception) {
+		} catch (JsonProcessingException exception) {
+			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);
@@ -359,16 +358,18 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.trace("delete entity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException responseException) {
-			logger.error("Exception :: ", responseException);
+			logger.debug("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());
 		} catch (DateTimeParseException exception) {
+			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
 							.toJsonBytes());
-		} catch (JsonParseException exception) {
+		} catch (JsonProcessingException exception) {
+			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception :: ", exception);

@@ -245,15 +245,8 @@ public class QueryController {// implements QueryHandlerInterface {
 			}
 			// long prelink = System.currentTimeMillis();
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
-			System.err.println("-------------------------------");
-			for (Object header : linkHeaders) {
-				System.err.println(header);
-			}
-			System.err.println("-------------------------------");
 			Context context = JsonLdProcessor.getCoreContextClone();
-			System.out.println(context.hashCode());
 			context = context.parse(linkHeaders, true);
-			System.out.println(context.hashCode());
 			// long postlink = System.currentTimeMillis();
 			if (retrieve || request.getPath().toString().equals(MY_REQUEST_URL)
 					|| request.getPath().toString().equals(MY_REQUEST_URL_ALT)) {
@@ -296,11 +289,7 @@ public class QueryController {// implements QueryHandlerInterface {
 					}
 					ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve, countResult, context,
 							linkHeaders);
-					System.out.println("+++++++++++++++++++++++++++++");
-					System.out.println(new String(result.getBody()));
-					System.out.println("+++++++++++++++++++++++++++++");
 					return result;
-
 				} else {
 					throw new ResponseException(ErrorType.BadRequestData);
 				}

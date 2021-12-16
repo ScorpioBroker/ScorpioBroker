@@ -20,12 +20,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.JsonParseException;
+
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -82,10 +84,10 @@ public class EntityBatchController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
 							.toJsonBytes());
-		} catch (JsonParseException exception) {
+		} catch (JsonProcessingException exception) {
 			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJsonBytes());
 		} catch (Exception e) {
 			logger.error("Exception :: ", e);
@@ -143,7 +145,7 @@ public class EntityBatchController {
 		return generateBatchResultReply(result, HttpStatus.CREATED);
 	}
 
-	private List<Map<String, Object>> getJsonPayload(String payload) throws ResponseException, IOException {
+	private List<Map<String, Object>> getJsonPayload(String payload) throws ResponseException, JsonParseException, IOException {
 		Object jsonPayload = JsonUtils.fromString(payload);
 		if (!(jsonPayload instanceof List)) {
 			throw new ResponseException(ErrorType.InvalidRequest, "This interface only supports arrays of entities");
@@ -184,10 +186,10 @@ public class EntityBatchController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
 							.toJsonBytes());
-		} catch (JsonParseException exception) {
+		} catch (JsonProcessingException exception) {
 			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJsonBytes());
 		} catch (Exception e) {
 			logger.error("Exception :: ", e);
@@ -298,10 +300,10 @@ public class EntityBatchController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
 							.toJsonBytes());
-		} catch (JsonParseException exception) {
+		} catch (JsonProcessingException exception) {
 			logger.debug("Exception :: ", exception);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJsonBytes());
 		} catch (Exception e) {
 			logger.error("Exception :: ", e);
@@ -340,7 +342,7 @@ public class EntityBatchController {
 				}
 				result.addFail(new BatchFailure("FAILED TO PARSE BODY", response));
 				continue;
-			}
+			} 
 			if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
 				entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
 			} else {
@@ -348,23 +350,8 @@ public class EntityBatchController {
 						new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
 				continue;
 			}
-
-			Map<String, Object> resolved;
 			try {
-				resolved = (Map<String, Object>) JsonLdProcessor
-						.expand(linkHeaders, entry, opts, AppConstants.ENTITY_UPDATE_PAYLOAD, preFlight).get(0);
-			} catch (JsonLdError | ResponseException e) {
-				RestResponse response;
-				if (e instanceof ResponseException) {
-					response = new RestResponse((ResponseException) e);
-				} else {
-					response = new RestResponse(ErrorType.BadRequestData, e.getLocalizedMessage());
-				}
-				result.addFail(new BatchFailure("FAILED TO PARSE BODY", response));
-				continue;
-			}
-			try {
-				AppendResult updateResult = entityService.appendMessage(headers, entityId, resolved, options);
+				AppendResult updateResult = entityService.appendMessage(headers, entityId, entry, options);
 				if (updateResult.getStatus()) {
 					result.addSuccess(entityId);
 				} else {

@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
@@ -657,7 +658,7 @@ public class SerializationTools {
 			if (json.isNull()) {
 				throw new ResponseException(ErrorType.InvalidRequest);
 			}
-		} catch (JsonParseException e) {
+		} catch (JsonProcessingException e) {
 			throw new ResponseException(ErrorType.InvalidRequest);
 		} catch (IOException e) {
 			throw new ResponseException(ErrorType.BadRequestData);

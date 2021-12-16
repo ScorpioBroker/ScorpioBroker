@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
@@ -242,7 +243,7 @@ public class RegistryController {
 				throw new ResponseException(ErrorType.UnprocessableEntity);
 			}
 
-		} catch (JsonParseException e) {
+		} catch (JsonProcessingException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		} catch (IOException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
