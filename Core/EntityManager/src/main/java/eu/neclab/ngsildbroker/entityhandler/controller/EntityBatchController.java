@@ -1,11 +1,14 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.io.IOException;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -22,6 +25,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.gson.JsonParseException;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -38,6 +42,8 @@ import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 @RestController
 @RequestMapping("/ngsi-ld/v1/entityOperations")
 public class EntityBatchController {
+
+	private final static Logger logger = LoggerFactory.getLogger(EntityController.class);
 
 	@Autowired
 	EntityService entityService;
@@ -67,15 +73,24 @@ public class EntityBatchController {
 		List<Map<String, Object>> jsonPayload;
 		try {
 			jsonPayload = getJsonPayload(payload);
-		} catch (Exception e) {
-			ResponseException responseException;
-			if (e instanceof ResponseException) {
-				responseException = (ResponseException) e;
-			} else {
-				responseException = new ResponseException(ErrorType.BadRequestData, e.getMessage());
-			}
+		} catch (ResponseException responseException) {
+			logger.debug("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());
+		} catch (DateTimeParseException exception) {
+			logger.debug("Exception :: ", exception);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+							.toJsonBytes());
+		} catch (JsonParseException exception) {
+			logger.debug("Exception :: ", exception);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+							.toJsonBytes());
+		} catch (Exception e) {
+			logger.error("Exception :: ", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
 		BatchResult result = new BatchResult();
 		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
@@ -160,15 +175,24 @@ public class EntityBatchController {
 		List<Map<String, Object>> jsonPayload;
 		try {
 			jsonPayload = getJsonPayload(payload);
-		} catch (Exception e) {
-			ResponseException responseException;
-			if (e instanceof ResponseException) {
-				responseException = (ResponseException) e;
-			} else {
-				responseException = new ResponseException(ErrorType.BadRequestData, e.getMessage());
-			}
+		} catch (ResponseException responseException) {
+			logger.debug("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());
+		} catch (DateTimeParseException exception) {
+			logger.debug("Exception :: ", exception);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+							.toJsonBytes());
+		} catch (JsonParseException exception) {
+			logger.debug("Exception :: ", exception);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+							.toJsonBytes());
+		} catch (Exception e) {
+			logger.error("Exception :: ", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
 		BatchResult result = new BatchResult();
 		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
@@ -265,15 +289,24 @@ public class EntityBatchController {
 		List<Map<String, Object>> jsonPayload;
 		try {
 			jsonPayload = getJsonPayload(payload);
-		} catch (Exception e) {
-			ResponseException responseException;
-			if (e instanceof ResponseException) {
-				responseException = (ResponseException) e;
-			} else {
-				responseException = new ResponseException(ErrorType.BadRequestData, e.getMessage());
-			}
+		} catch (ResponseException responseException) {
+			logger.debug("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());
+		} catch (DateTimeParseException exception) {
+			logger.debug("Exception :: ", exception);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+							.toJsonBytes());
+		} catch (JsonParseException exception) {
+			logger.debug("Exception :: ", exception);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.BadRequestData, "There is an error in the provided json document")
+							.toJsonBytes());
+		} catch (Exception e) {
+			logger.error("Exception :: ", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
 		BatchResult result = new BatchResult();
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
