@@ -116,7 +116,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ENTITY_TYPE = "https://uri.etsi.org/ngsi-ld/EntityType";
 	public final static String NGSI_LD_TYPE_NAME = "https://uri.etsi.org/ngsi-ld/typeName";
 	public final static String NGSI_LD_ATTRIBUTE_NAMES = "https://uri.etsi.org/ngsi-ld/attributeNames";
-	public final static String NGSI_LD_ATTRIBUTE_NAME = "https://uri.etsi.org/ngsi-ld/attributeNames";
+	public final static String NGSI_LD_ATTRIBUTE_NAME = "https://uri.etsi.org/ngsi-ld/attributeName";
 	public final static String NGSI_LD_ENTITY_TYPE_INFO = "https://uri.etsi.org/ngsi-ld/EntityTypeInfo";
 	public final static String NGSI_LD_ENTITY_COUNT = "https://uri.etsi.org/ngsi-ld/entityCount";
 	public final static String NGSI_LD_ATTRIBUTE_DETAILS = "https://uri.etsi.org/ngsi-ld/default-context/attributeDetails";
