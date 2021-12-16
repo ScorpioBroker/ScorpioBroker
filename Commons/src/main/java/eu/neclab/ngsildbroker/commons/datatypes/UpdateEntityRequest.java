@@ -27,6 +27,10 @@ public class UpdateEntityRequest extends EntityRequest {
 			Map<String, Object> resolved, String attrName) throws ResponseException {
 		super(AppConstants.OPERATION_UPDATE_ENTITY, headers);
 		this.id = id;
+		Object bodyId = resolved.get(NGSIConstants.JSON_LD_ID);
+		if(bodyId != null) {
+			throw new ResponseException(ErrorType.BadRequestData, "The entity id in the url and in the payload must be the same.");
+		}
 		generateUpdate(resolved, entityBody, attrName);
 	}
 

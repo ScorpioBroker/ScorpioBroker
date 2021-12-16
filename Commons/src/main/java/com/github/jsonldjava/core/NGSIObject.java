@@ -241,12 +241,12 @@ public class NGSIObject {
 		case AppConstants.ENTITY_UPDATE_PAYLOAD:
 			if (activeProperty == null) {
 				// we are in root
-				if (hasAtId) {
-					throw new ResponseException(ErrorType.BadRequestData, "An entity id is allowed");
-				}
-				if (hasAtType) {
-					throw new ResponseException(ErrorType.BadRequestData, "An entity type is not allowed");
-				}
+//				if (hasAtId) {
+//					throw new ResponseException(ErrorType.BadRequestData, "An entity id is not allowed");
+//				}
+//				if (hasAtType) {
+//					throw new ResponseException(ErrorType.BadRequestData, "An entity type is not allowed");
+//				}
 			} else {
 				validateAttribute(payloadType, expandedProperty, activeProperty, api);
 			}
