@@ -136,7 +136,7 @@ public class RegistryController {
 						"You must provide at least type or attrs as parameter");
 			}
 		} catch (ResponseException exception) {
-			logger.error("Exception ::", exception);
+			logger.debug("Exception ::", exception);
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception exception) {
 			logger.error("Exception ::", exception);
@@ -166,9 +166,10 @@ public class RegistryController {
 
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri).build();
 		} catch (ResponseException exception) {
+			logger.debug("Csource::", exception);
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Csource::", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
@@ -186,8 +187,10 @@ public class RegistryController {
 			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
 			return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
 		} catch (ResponseException exception) {
+			logger.debug("Csource::", exception);
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
+			logger.error("Csource::", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
@@ -206,9 +209,10 @@ public class RegistryController {
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {
+			logger.debug("Csource::", exception);
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Csource::", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}
@@ -224,8 +228,10 @@ public class RegistryController {
 			logger.debug("delete CSource() completed::" + registrationId);
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException exception) {
+			logger.debug("Csource::", exception);
 			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception e) {
+			logger.error("Csource::", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
 		}

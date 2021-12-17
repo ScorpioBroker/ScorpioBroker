@@ -157,7 +157,9 @@ public class SubscriptionService implements SubscriptionManager {
 
 	@PreDestroy
 	private void deconstructor() {
-		subscriptionInfoDAO.storedSubscriptions(tenant2subscriptionId2Subscription);
+		synchronized (tenant2subscriptionId2Subscription) {
+			subscriptionInfoDAO.storedSubscriptions(tenant2subscriptionId2Subscription);
+		}
 	}
 
 	private void loadStoredSubscriptions() {
@@ -181,14 +183,18 @@ public class SubscriptionService implements SubscriptionManager {
 		if (subscription.getId() == null) {
 			subscription.setId(generateUniqueSubId(subscription));
 		} else {
-			if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
-					subscription.getId().toString())) {
-				throw new ResponseException(ErrorType.AlreadyExists);
+			synchronized (tenant2subscriptionId2Subscription) {
+				if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
+						subscription.getId().toString())) {
+					throw new ResponseException(ErrorType.AlreadyExists);
+
+				}
 			}
 		}
-
-		this.tenant2subscriptionId2Subscription.put(subscriptionRequest.getTenant(), subscription.getId().toString(),
-				subscriptionRequest);
+		synchronized (tenant2subscriptionId2Subscription) {
+			this.tenant2subscriptionId2Subscription.put(subscriptionRequest.getTenant(),
+					subscription.getId().toString(), subscriptionRequest);
+		}
 		if (subscription.getLdQuery() != null && !subscription.getLdQuery().trim().equals("")) {
 			subscription.setQueryTerm(QueryParser.parseQuery(subscription.getLdQuery(),
 					JsonLdProcessor.getCoreContextClone().parse(subscriptionRequest.getContext(), true)));
@@ -309,14 +315,16 @@ public class SubscriptionService implements SubscriptionManager {
 	@Override
 	public void unsubscribe(URI id, ArrayListMultimap<String, String> headers) throws ResponseException {
 		String tenant = HttpUtils.getInternalTenant(headers);
-		if (!this.tenant2subscriptionId2Subscription.contains(tenant, id.toString())) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		SubscriptionRequest removedSub = this.tenant2subscriptionId2Subscription.get(tenant, id.toString());
-		if (removedSub == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
+		SubscriptionRequest removedSub;
 		synchronized (tenant2subscriptionId2Subscription) {
+			if (!this.tenant2subscriptionId2Subscription.contains(tenant, id.toString())) {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+			removedSub = this.tenant2subscriptionId2Subscription.get(tenant, id.toString());
+			if (removedSub == null) {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+
 			removedSub = this.tenant2subscriptionId2Subscription.remove(tenant, id.toString());
 			kafkaTemplate.send(subscriptionTopic, id.toString(), "null");
 		}
@@ -349,64 +357,68 @@ public class SubscriptionService implements SubscriptionManager {
 	public SubscriptionRequest updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		String tenant = subscriptionRequest.getTenant();
-		SubscriptionRequest oldSubRequest = tenant2subscriptionId2Subscription.get(tenant,
-				subscription.getId().toString());
-		if (oldSubRequest == null) {
-			throw new ResponseException(ErrorType.NotFound);
-		}
-		Subscription oldSub = oldSubRequest.getSubscription();
+		SubscriptionRequest oldSubRequest;
+		synchronized (tenant2subscriptionId2Subscription) {
+			oldSubRequest = tenant2subscriptionId2Subscription.get(tenant, subscription.getId().toString());
+			if (oldSubRequest == null) {
+				throw new ResponseException(ErrorType.NotFound);
+			}
+			Subscription oldSub = oldSubRequest.getSubscription();
 
-		if (subscription.getAttributeNames() != null) {
-			oldSub.setAttributeNames(subscription.getAttributeNames());
-		}
-		if (subscription.getDescription() != null) {
-			oldSub.setDescription(subscription.getDescription());
-		}
-		if (subscription.getEntities() != null && !subscription.getEntities().isEmpty()) {
-			oldSub.setEntities(subscription.getEntities());
-		}
-		if (subscription.getExpiresAt() != null) {
-			oldSub.setExpiresAt(subscription.getExpiresAt());
-			synchronized (subId2TimerTask) {
-				TimerTask task = subId2TimerTask.get(subscriptionRequest.getTenant(), oldSub.getId().toString());
-				task.cancel();
-				watchDog.schedule(task, subscription.getExpiresAt() - System.currentTimeMillis());
+			if (subscription.getAttributeNames() != null) {
+				oldSub.setAttributeNames(subscription.getAttributeNames());
+			}
+			if (subscription.getDescription() != null) {
+				oldSub.setDescription(subscription.getDescription());
+			}
+			if (subscription.getEntities() != null && !subscription.getEntities().isEmpty()) {
+				oldSub.setEntities(subscription.getEntities());
+			}
+			if (subscription.getExpiresAt() != null) {
+				oldSub.setExpiresAt(subscription.getExpiresAt());
+				synchronized (subId2TimerTask) {
+					TimerTask task = subId2TimerTask.get(subscriptionRequest.getTenant(), oldSub.getId().toString());
+					task.cancel();
+					watchDog.schedule(task, subscription.getExpiresAt() - System.currentTimeMillis());
+				}
+
+			}
+			if (subscription.getLdGeoQuery() != null) {
+				oldSub.setLdGeoQuery(subscription.getLdGeoQuery());
+			}
+			if (subscription.getLdQuery() != null) {
+				oldSub.setLdQuery(subscription.getLdQuery());
+			}
+			if (subscription.getLdTempQuery() != null) {
+				oldSub.setLdTempQuery(subscription.getLdTempQuery());
+			}
+			if (subscription.getNotification() != null) {
+				oldSub.setNotification(subscription.getNotification());
+			}
+			if (subscription.getThrottling() != 0) {
+				oldSub.setThrottling(subscription.getThrottling());
+			}
+			if (subscription.getTimeInterval() != 0) {
+				oldSub.setTimeInterval(subscription.getTimeInterval());
 			}
 
-		}
-		if (subscription.getLdGeoQuery() != null) {
-			oldSub.setLdGeoQuery(subscription.getLdGeoQuery());
-		}
-		if (subscription.getLdQuery() != null) {
-			oldSub.setLdQuery(subscription.getLdQuery());
-		}
-		if (subscription.getLdTempQuery() != null) {
-			oldSub.setLdTempQuery(subscription.getLdTempQuery());
-		}
-		if (subscription.getNotification() != null) {
-			oldSub.setNotification(subscription.getNotification());
-		}
-		if (subscription.getThrottling() != 0) {
-			oldSub.setThrottling(subscription.getThrottling());
-		}
-		if (subscription.getTimeInterval() != 0) {
-			oldSub.setTimeInterval(subscription.getTimeInterval());
-		}
-		synchronized (this.tenantId2subscriptionId2Context) {
 			this.tenantId2subscriptionId2Context.put(tenant, oldSub.getId().toString(),
 					subscriptionRequest.getContext());
+			SubscriptionRequest result = new SubscriptionRequest(oldSub, subscriptionRequest.getContext(),
+					subscriptionRequest.getHeaders());
+			storeSubscription(result);
+			return result;
 		}
-		SubscriptionRequest result = new SubscriptionRequest(oldSub, subscriptionRequest.getContext(),
-				subscriptionRequest.getHeaders());
-		storeSubscription(result);
-		return result;
+
 	}
 
 	@Override
 	public List<SubscriptionRequest> getAllSubscriptions(int limit, ArrayListMultimap<String, String> headers) {
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		List<SubscriptionRequest> result = new ArrayList<SubscriptionRequest>(
-				tenant2subscriptionId2Subscription.row(tenantId).values());
+		List<SubscriptionRequest> result;
+		synchronized (tenant2subscriptionId2Subscription) {
+			result = new ArrayList<SubscriptionRequest>(tenant2subscriptionId2Subscription.row(tenantId).values());
+		}
 		if (limit > 0) {
 			if (limit < result.size()) {
 				result = result.subList(0, limit);
@@ -418,8 +430,10 @@ public class SubscriptionService implements SubscriptionManager {
 	@Override
 	public SubscriptionRequest getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers)
 			throws ResponseException {
-		SubscriptionRequest sub = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers),
-				subscriptionId);
+		SubscriptionRequest sub;
+		synchronized (tenant2subscriptionId2Subscription) {
+			sub = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers), subscriptionId);
+		}
 		if (sub == null) {
 			throw new ResponseException(ErrorType.NotFound);
 		}
@@ -875,7 +889,10 @@ public class SubscriptionService implements SubscriptionManager {
 		String payload = new String(message.getPayload());
 		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
 		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
-		Map<String, SubscriptionRequest> temp = tenant2subscriptionId2Subscription.row(key);
+		Map<String, SubscriptionRequest> temp;
+		synchronized (tenant2subscriptionId2Subscription) {
+			temp = tenant2subscriptionId2Subscription.row(key);
+		}
 		for (SubscriptionRequest sub : temp.values()) {
 			subscribeToRemote(sub, endPoints);
 		}
@@ -997,21 +1014,23 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	public void reportNotification(String tenant, String subId, Long now) {
+		SubscriptionRequest subscription;
 		synchronized (tenant2subscriptionId2Subscription) {
-			SubscriptionRequest subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
-			if (subscription != null) {
-				subscription.getSubscription().getNotification().setLastNotification(new Date(now));
-				subscription.getSubscription().getNotification().setLastSuccessfulNotification(new Date(now));
-			}
+			subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
+		}
+		if (subscription != null) {
+			subscription.getSubscription().getNotification().setLastNotification(new Date(now));
+			subscription.getSubscription().getNotification().setLastSuccessfulNotification(new Date(now));
 		}
 	}
 
 	public void reportFailedNotification(String tenant, String subId, Long now) {
+		SubscriptionRequest subscription;
 		synchronized (tenant2subscriptionId2Subscription) {
-			SubscriptionRequest subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
-			if (subscription != null) {
-				subscription.getSubscription().getNotification().setLastFailedNotification(new Date(now));
-			}
+			subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
+		}
+		if (subscription != null) {
+			subscription.getSubscription().getNotification().setLastFailedNotification(new Date(now));
 		}
 	}
 

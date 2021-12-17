@@ -132,10 +132,10 @@ public class SubscriptionController {
 			logger.trace("subscribeRest() :: completed");
 			return ResponseEntity.created(new URI(AppConstants.SUBSCRIPTIONS_URL + subId.toString())).build();
 		} catch (ResponseException e) {
-			logger.error("Exception ::", e);
+			logger.debug("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		} catch (URISyntaxException e) {
-			logger.error("Exception ::", e);
+			logger.debug("Exception ::", e);
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(subscription.getId().toString().getBytes());
 		} catch (IOException e) {
 			logger.error("Exception ::", e);
@@ -526,10 +526,10 @@ public class SubscriptionController {
 			}
 			manager.updateSubscription(subscriptionRequest);
 		} catch (ResponseException e) {
-			logger.error("Exception ::", e);
+			logger.debug("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
 		} catch (IOException e) {
-			logger.error("Exception ::", e);
+			logger.debug("Exception ::", e);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage().getBytes());
 		}
 		return ResponseEntity.noContent().build();
