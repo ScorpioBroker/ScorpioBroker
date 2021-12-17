@@ -212,6 +212,8 @@ public class EntityBatchController {
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJsonBytes());
 		}
+		boolean insertedOneEntity = false;
+		boolean appendedOneEntity = false;
 		for (Map<String, Object> entry : jsonPayload) {
 			Map<String, Object> resolved;
 			try {
@@ -229,11 +231,12 @@ public class EntityBatchController {
 			}
 			try {
 				result.addSuccess(entityService.createMessage(headers, resolved));
+				insertedOneEntity = true;
 			} catch (Exception e) {
 
 				RestResponse response;
 				String entityId;
-				if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
+				if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
 					entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
 				} else {
 					result.addFail(new BatchFailure("NO ID PROVIDED",
@@ -249,6 +252,7 @@ public class EntityBatchController {
 									options);
 							if (updateResult.getStatus()) {
 								result.addSuccess(entityId);
+								appendedOneEntity = true;
 							} else {
 								result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
 										JsonUtils.toPrettyString(updateResult.getJsonToAppend()) + " was not added")));
@@ -276,12 +280,24 @@ public class EntityBatchController {
 			}
 		}
 
-		if (result.getFails().size() == 0) {// && EntityService.checkEntity == true) {
-			return generateBatchResultReply(result, HttpStatus.CREATED);
-		} else {
-			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
+		boolean failedOnce = !result.getFails().isEmpty();
+		HttpStatus status;
+		if(failedOnce) {
+			if(insertedOneEntity || appendedOneEntity) {
+				status = HttpStatus.MULTI_STATUS;
+			}else {
+				status = HttpStatus.BAD_REQUEST;
+			}
+		}else {
+			if(insertedOneEntity && appendedOneEntity) {
+				status = HttpStatus.MULTI_STATUS;
+			}else if(insertedOneEntity) {
+				status = HttpStatus.CREATED;
+			}else {
+				status = HttpStatus.NO_CONTENT;
+			}
 		}
-
+		return generateBatchResultReply(result, status);
 	}
 
 	@PostMapping("/update")
