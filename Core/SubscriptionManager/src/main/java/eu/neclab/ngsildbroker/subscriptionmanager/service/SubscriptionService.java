@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -32,9 +31,6 @@ import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
-import org.mapdb.DBMaker;
-import org.mapdb.HTreeMap;
-import org.mapdb.Serializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -52,7 +48,6 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import com.google.gson.JsonParseException;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
@@ -134,10 +129,6 @@ public class SubscriptionService implements SubscriptionManager {
 	String BOOTSTRAP_SERVERS;
 
 	private Table<String, String, String> tenant2Ids2Type;
-
-	private HTreeMap<String, String> subscriptionStore;
-	@Value("${subscriptions.store:subscriptionstore.db}")
-	private String subscriptionStoreLocation;
 	@Value("${subscriptions.topic:SUBSCRIPTIONS}")
 	protected String subscriptionTopic;
 
@@ -160,36 +151,25 @@ public class SubscriptionService implements SubscriptionManager {
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, queryResultTopic,
 				requestTopic);
 		logger.trace("call loadStoredSubscriptions() ::");
-		this.subscriptionStore = DBMaker.fileDB(this.subscriptionStoreLocation).closeOnJvmShutdown()
-				.checksumHeaderBypass().transactionEnable().make()
-				.hashMap("subscriptions", Serializer.STRING, Serializer.STRING).createOrOpen();
 		loadStoredSubscriptions();
 
 	}
 
 	@PreDestroy
 	private void deconstructor() {
-		subscriptionStore.close();
+		subscriptionInfoDAO.storedSubscriptions(tenant2subscriptionId2Subscription);
 	}
 
 	private void loadStoredSubscriptions() {
-		// TODO Auto-generated method stub
-		synchronized (this.subscriptionStore) {
-			for (Entry<String, String> entry : subscriptionStore.entrySet()) {
+		synchronized (this.tenant2subscriptionId2Subscription) {
+			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions();
+			for (String subscriptionString : subscriptions) {
 				try {
-					SubscriptionRequest subscription = DataSerializer.getSubscriptionRequest(entry.getValue());
-					subscribe(subscription);
-				} catch (JsonParseException e) {
-					logger.error("Exception ::", e);
-					e.printStackTrace();
-					continue;
+					subscribe(DataSerializer.getSubscriptionRequest(subscriptionString));
 				} catch (ResponseException e) {
-					logger.error("Exception ::", e);
-					e.printStackTrace();
-					continue;
+					logger.error("Failed to load stored subscription", e);
 				}
 			}
-
 		}
 	}
 
@@ -299,18 +279,8 @@ public class SubscriptionService implements SubscriptionManager {
 	}
 
 	private void storeSubscription(SubscriptionRequest subscription) throws ResponseException {
-		new Thread() {
-			public void run() {
-				synchronized (subscriptionStore) {
-					subscriptionStore.put(subscription.getSubscription().getId().toString(),
-							DataSerializer.toJson(subscription));
-					kafkaTemplate.send(subscriptionTopic, subscription.getSubscription().getId().toString(),
-							DataSerializer.toJson(subscription));
-
-				}
-
-			};
-		}.start();
+		kafkaTemplate.send(subscriptionTopic, subscription.getSubscription().getId().toString(),
+				DataSerializer.toJson(subscription));
 
 	}
 
@@ -373,14 +343,6 @@ public class SubscriptionService implements SubscriptionManager {
 			task.cancel();
 		}
 		// TODO remove remote subscription
-		new Thread() {
-			public void run() {
-				synchronized (subscriptionStore) {
-					subscriptionStore.remove(id.toString());
-				}
-			};
-		}.start();
-
 	}
 
 	@Override

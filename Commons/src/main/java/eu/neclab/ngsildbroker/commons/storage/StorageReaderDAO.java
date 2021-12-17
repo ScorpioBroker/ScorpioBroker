@@ -11,6 +11,7 @@ import javax.sql.DataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -391,16 +392,18 @@ abstract public class StorageReaderDAO {
 		return this.translateNgsildGeoqueryToPostgisQuery(georel, geometry, coordinates, geoproperty, null);
 	}
 
-	protected List<String> getTenants() throws ResponseException {
+	protected List<String> getTenants() {
 		ArrayList<String> result = new ArrayList<String>();
+		List<Map<String, Object>> temp;
 		try {
-			List<Map<String, Object>> temp = getJDBCTemplate(null).queryForList("SELECT tenant_id FROM tenant");
-			for (Map<String, Object> entry : temp) {
-				result.add(entry.get("tenant_id").toString());
-			}
-		} catch (Exception e) {
-			System.out.println("tenant table not found");
+			temp = getJDBCTemplate(null).queryForList("SELECT tenant_id FROM tenant");
+		} catch (DataAccessException | ResponseException e) {
+			throw new AssertionError("Your database setup is corrupte", e);
 		}
+		for (Map<String, Object> entry : temp) {
+			result.add(entry.get("tenant_id").toString());
+		}
+
 		return result;
 	}
 

@@ -5,10 +5,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.google.common.collect.HashBasedTable;
@@ -17,7 +20,9 @@ import com.google.common.collect.Table;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 
 @Repository
@@ -51,7 +56,7 @@ public class SubscriptionInfoDAO extends StorageReaderDAO {
 		QueryParams qp = new QueryParams();
 		Map<String, String> entityInfo = new HashMap<String, String>();
 		entityInfo.put(NGSIConstants.JSON_LD_ID, entityId);
-		List<Map<String, String>> temp = new ArrayList<Map<String,String>>();
+		List<Map<String, String>> temp = new ArrayList<Map<String, String>>();
 		temp.add(entityInfo);
 		qp.setEntities(temp);
 		qp.setTenant(tenantId);
@@ -62,5 +67,42 @@ public class SubscriptionInfoDAO extends StorageReaderDAO {
 			logger.debug(e);
 			return null;
 		}
+	}
+
+	public List<String> getStoredSubscriptions() {
+		List<String> tenants;
+		tenants = getTenants();
+		ArrayList<String> result = new ArrayList<String>();
+		try {
+			result.addAll(
+					getJDBCTemplate(null).queryForList("SELECT subscription_request FROM subscriptions", String.class));
+			for (String tenantId : tenants) {
+				tenantId = getTenant(tenantId);
+				result.addAll(getJDBCTemplate(tenantId).queryForList("SELECT subscription_request FROM subscriptions",
+						String.class));
+			}
+		} catch (DataAccessException | ResponseException e) {
+			logger.error("Subscriptions could not be loaded", e);
+		}
+		return result;
+	}
+
+	public void storedSubscriptions(Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription) {
+		Set<String> tenants = tenant2subscriptionId2Subscription.rowKeySet();
+		try {
+			for (String tenant : tenants) {
+				Map<String, SubscriptionRequest> row = tenant2subscriptionId2Subscription.row(tenant);
+				tenant = getTenant(tenant);
+				JdbcTemplate template = getJDBCTemplate(tenant);
+				template.execute("DELETE FROM subscriptions");
+				for (Entry<String, SubscriptionRequest> entry : row.entrySet()) {
+					template.update("INSERT INTO subscriptions (subscription_id, subscription_request) VALUES (?, ?)",
+							entry.getKey(), DataSerializer.toJson(entry.getValue()));
+				}
+			}
+		} catch (DataAccessException | ResponseException e) {
+			logger.error("Subscriptions could not be loaded", e);
+		}
+
 	}
 }

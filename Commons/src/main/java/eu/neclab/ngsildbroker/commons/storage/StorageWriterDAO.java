@@ -39,7 +39,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tenant.DBUtil;
 
 @Repository
-@ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)
+//@ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)
 public class StorageWriterDAO {
 
 	private final static Logger logger = LogManager.getLogger(StorageWriterDAO.class);

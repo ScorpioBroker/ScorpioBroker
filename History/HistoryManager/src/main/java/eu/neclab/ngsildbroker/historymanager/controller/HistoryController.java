@@ -162,7 +162,7 @@ public class HistoryController {
 				return HttpUtils.generateReply(request, "[]", additionalHeaders);
 			}
 		} catch (ResponseException ex) {
-			logger.error("Exception", ex);
+			logger.debug("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
@@ -200,7 +200,7 @@ public class HistoryController {
 			}
 			return HttpUtils.generateReply(request, historyDAO.getListAsJsonArray(queryResult));
 		} catch (ResponseException ex) {
-			logger.error("Exception", ex);
+			logger.debug("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
@@ -234,7 +234,7 @@ public class HistoryController {
 			logger.trace("deleteTemporalEntityById :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
-			logger.error("Exception", ex);
+			logger.debug("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
@@ -265,7 +265,7 @@ public class HistoryController {
 			logger.trace("addAttrib2TemopralEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
-			logger.error("Exception", ex);
+			logger.debug("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
@@ -288,7 +288,7 @@ public class HistoryController {
 			logger.trace("deleteAttrib2TemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
-			logger.error("Exception", ex);
+			logger.debug("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
@@ -321,7 +321,7 @@ public class HistoryController {
 			logger.trace("modifyAttribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
-			logger.error("Exception", ex);
+			logger.debug("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
@@ -345,7 +345,7 @@ public class HistoryController {
 			logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (ResponseException ex) {
-			logger.error("Exception", ex);
+			logger.debug("Exception", ex);
 			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
 		} catch (Exception ex) {
 			logger.error("Exception", ex);
