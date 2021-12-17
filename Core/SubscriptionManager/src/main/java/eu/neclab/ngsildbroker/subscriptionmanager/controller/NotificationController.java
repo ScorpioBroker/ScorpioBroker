@@ -20,9 +20,9 @@ import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionManager;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 
 @RestController
 @RequestMapping("/remotenotify")
@@ -37,7 +37,7 @@ public class NotificationController {
 	}
 
 	@Autowired
-	SubscriptionManager subscriptionManager;
+	SubscriptionService subscriptionManager;
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@RequestMapping(method = RequestMethod.POST, value = "/{id}")

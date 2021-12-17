@@ -16,7 +16,7 @@ public class Subscription extends Query {
 	private URI id;
 	private String subscriptionName;
 	private NotificationParam notification;
-	private String status;
+	private String status = "active";
 	private Integer throttling = 0;
 	private Integer timeInterval = 0;
 	private String type;

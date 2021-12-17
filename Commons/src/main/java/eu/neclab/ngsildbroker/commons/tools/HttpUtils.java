@@ -1053,7 +1053,7 @@ public final class HttpUtils {
 				qResult.getqToken(), "next");
 	}
 
-	private static String generateFollowUpLinkHeader(ServerHttpRequest request, int offset, int limit, String token,
+	public static String generateFollowUpLinkHeader(ServerHttpRequest request, int offset, int limit, String token,
 			String rel) {
 
 		StringBuilder builder = new StringBuilder("</");

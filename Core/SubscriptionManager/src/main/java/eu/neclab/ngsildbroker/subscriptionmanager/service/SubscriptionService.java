@@ -66,7 +66,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
-import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionManager;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -74,7 +73,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 
 @Service
-public class SubscriptionService implements SubscriptionManager {
+public class SubscriptionService {
 //TODO Change notification data generation so that always the changed value from kafka is definatly present in the notification not the DB version(that one could have been already updated)
 
 	private final static Logger logger = LogManager.getLogger(SubscriptionService.class);
@@ -175,7 +174,6 @@ public class SubscriptionService implements SubscriptionManager {
 		}
 	}
 
-	@Override
 	public URI subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		logger.debug("Subscribe got called " + subscriptionRequest.getSubscription().toString());
 		Subscription subscription = subscriptionRequest.getSubscription();
@@ -312,7 +310,6 @@ public class SubscriptionService implements SubscriptionManager {
 	 * }
 	 */
 
-	@Override
 	public void unsubscribe(URI id, ArrayListMultimap<String, String> headers) throws ResponseException {
 		String tenant = HttpUtils.getInternalTenant(headers);
 		SubscriptionRequest removedSub;
@@ -353,7 +350,6 @@ public class SubscriptionService implements SubscriptionManager {
 		// TODO remove remote subscription
 	}
 
-	@Override
 	public SubscriptionRequest updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		String tenant = subscriptionRequest.getTenant();
@@ -412,22 +408,15 @@ public class SubscriptionService implements SubscriptionManager {
 
 	}
 
-	@Override
-	public List<SubscriptionRequest> getAllSubscriptions(int limit, ArrayListMultimap<String, String> headers) {
+	public List<SubscriptionRequest> getAllSubscriptions(ArrayListMultimap<String, String> headers) {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		List<SubscriptionRequest> result;
 		synchronized (tenant2subscriptionId2Subscription) {
 			result = new ArrayList<SubscriptionRequest>(tenant2subscriptionId2Subscription.row(tenantId).values());
 		}
-		if (limit > 0) {
-			if (limit < result.size()) {
-				result = result.subList(0, limit);
-			}
-		}
 		return result;
 	}
 
-	@Override
 	public SubscriptionRequest getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers)
 			throws ResponseException {
 		SubscriptionRequest sub;
@@ -1001,7 +990,6 @@ public class SubscriptionService implements SubscriptionManager {
 		 */
 	}
 
-	@Override
 	public void remoteNotify(String id, Notification notification) {
 		new Thread() {
 			@Override

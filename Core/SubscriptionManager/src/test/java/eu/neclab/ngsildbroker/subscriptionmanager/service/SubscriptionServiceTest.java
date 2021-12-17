@@ -113,7 +113,7 @@ public class SubscriptionServiceTest {
 	 */
 	@Test
 	public void getAllSubscriptionsTest() {
-		List<SubscriptionRequest> result=manager.getAllSubscriptions(0, ArrayListMultimap.create());
+		List<SubscriptionRequest> result=manager.getAllSubscriptions(ArrayListMultimap.create());
 		assertNotNull(result);
 	}
 	

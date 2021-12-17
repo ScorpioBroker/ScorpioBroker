@@ -18,6 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -51,12 +52,12 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionManager;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.commons.tools.Validator;
+import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 
 @RestController
 @RequestMapping("/ngsi-ld/v1/subscriptions")
@@ -67,7 +68,7 @@ public class SubscriptionController {
 	private final static String MY_REQUEST_MAPPING_ALT = "/ngsi-ld/v1/subscriptions/";
 
 	@Autowired
-	SubscriptionManager manager;
+	SubscriptionService manager;
 
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
@@ -438,14 +439,39 @@ public class SubscriptionController {
 
 	@RequestMapping(method = RequestMethod.GET)
 	public ResponseEntity<byte[]> getAllSubscriptions(ServerHttpRequest request,
-			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException {
+			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit, @RequestParam(required = false, name = "offset", defaultValue = "0") int offset, @RequestParam(required = false, name = "count", defaultValue = "false") boolean count) throws ResponseException {
 		logger.trace("getAllSubscriptions() :: started");
 		List<SubscriptionRequest> result = null;
 		if (request.getPath().toString().equals(MY_REQUEST_MAPPING)
 				|| request.getPath().toString().equals(MY_REQUEST_MAPPING_ALT)) {
-			result = manager.getAllSubscriptions(limit, HttpUtils.getHeaders(request));
+			result = manager.getAllSubscriptions(HttpUtils.getHeaders(request));
+			int toIndex = offset + limit;
+			ArrayList<Object> additionalLinks = new ArrayList<Object>();
+			if(limit == 0 || toIndex > result.size() -1) {
+				toIndex = result.size() -1;
+			}else {
+				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, toIndex, limit, null, "next"));
+			}
+			if(offset > 0) {
+				int newOffSet= offset - limit;
+				if (newOffSet< 0) {
+					newOffSet = 0;
+				}
+				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, newOffSet, limit, null, "prev"));
+			}
+			
+			ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
+			if (count == true) {
+				additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(result.size()));
+			}
+			if (!additionalLinks.isEmpty()) {
+				for (Object entry : additionalLinks) {
+					additionalHeaders.put(HttpHeaders.LINK, (String) entry);
+				}
+			}
+			List<SubscriptionRequest> realResult = result.subList(offset, toIndex);
 			logger.trace("getAllSubscriptions() :: completed");
-			return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(result)));
+			return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)), additionalHeaders);
 		} else {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
@@ -487,8 +513,12 @@ public class SubscriptionController {
 			ValidateURI.validateUriInSubs(id);
 			manager.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (ResponseException e) {
-			logger.error("Exception ::", e);
+			logger.debug("Exception ::", e);
 			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
+		} catch (Exception e) {
+			logger.error("Exception ::", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new RestResponse(ErrorType.InternalError, e.getMessage()).toJsonBytes());
 		}
 		return ResponseEntity.noContent().build();
 	}
