@@ -132,15 +132,8 @@ public class SubscriptionController {
 
 			logger.trace("subscribeRest() :: completed");
 			return ResponseEntity.created(new URI(AppConstants.SUBSCRIPTIONS_URL + subId.toString())).build();
-		} catch (ResponseException e) {
-			logger.debug("Exception ::", e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
-		} catch (URISyntaxException e) {
-			logger.debug("Exception ::", e);
-			return ResponseEntity.status(HttpStatus.CONFLICT).body(subscription.getId().toString().getBytes());
-		} catch (IOException e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage().getBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -439,7 +432,9 @@ public class SubscriptionController {
 
 	@RequestMapping(method = RequestMethod.GET)
 	public ResponseEntity<byte[]> getAllSubscriptions(ServerHttpRequest request,
-			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit, @RequestParam(required = false, name = "offset", defaultValue = "0") int offset, @RequestParam(required = false, name = "count", defaultValue = "false") boolean count) throws ResponseException {
+			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
+			@RequestParam(required = false, name = "offset", defaultValue = "0") int offset,
+			@RequestParam(required = false, name = "count", defaultValue = "false") boolean count) {
 		logger.trace("getAllSubscriptions() :: started");
 		List<SubscriptionRequest> result = null;
 		if (request.getPath().toString().equals(MY_REQUEST_MAPPING)
@@ -447,19 +442,19 @@ public class SubscriptionController {
 			result = manager.getAllSubscriptions(HttpUtils.getHeaders(request));
 			int toIndex = offset + limit;
 			ArrayList<Object> additionalLinks = new ArrayList<Object>();
-			if(limit == 0 || toIndex > result.size() -1) {
-				toIndex = result.size() -1;
-			}else {
+			if (limit == 0 || toIndex > result.size() - 1) {
+				toIndex = result.size() - 1;
+			} else {
 				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, toIndex, limit, null, "next"));
 			}
-			if(offset > 0) {
-				int newOffSet= offset - limit;
-				if (newOffSet< 0) {
+			if (offset > 0) {
+				int newOffSet = offset - limit;
+				if (newOffSet < 0) {
 					newOffSet = 0;
 				}
 				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, newOffSet, limit, null, "prev"));
 			}
-			
+
 			ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
 			if (count == true) {
 				additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(result.size()));
@@ -471,7 +466,12 @@ public class SubscriptionController {
 			}
 			List<SubscriptionRequest> realResult = result.subList(offset, toIndex);
 			logger.trace("getAllSubscriptions() :: completed");
-			return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)), additionalHeaders);
+			try {
+				return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
+						additionalHeaders);
+			} catch (Exception exception) {
+				return HttpUtils.handleControllerExceptions(exception);
+			}
 		} else {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
@@ -498,11 +498,9 @@ public class SubscriptionController {
 			return HttpUtils.generateReply(request,
 					DataSerializer.toJson(manager.getSubscription(id, headers).getSubscription()));
 
-		} catch (ResponseException e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
-
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
@@ -512,13 +510,8 @@ public class SubscriptionController {
 			logger.trace("call deleteSubscription() ::");
 			ValidateURI.validateUriInSubs(id);
 			manager.unsubscribe(id, HttpUtils.getHeaders(request));
-		} catch (ResponseException e) {
-			logger.debug("Exception ::", e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
-		} catch (Exception e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 		return ResponseEntity.noContent().build();
 	}
@@ -555,12 +548,8 @@ public class SubscriptionController {
 				return badRequestResponse;
 			}
 			manager.updateSubscription(subscriptionRequest);
-		} catch (ResponseException e) {
-			logger.debug("Exception ::", e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
-		} catch (IOException e) {
-			logger.debug("Exception ::", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage().getBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 		return ResponseEntity.noContent().build();
 	}

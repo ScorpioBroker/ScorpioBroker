@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -33,13 +29,9 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
@@ -83,6 +75,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload jsonld message
 	 * @return ResponseEntity object
 	 */
+	@SuppressWarnings("unchecked")
 	@PostMapping
 	public ResponseEntity<byte[]> createEntity(ServerHttpRequest request,
 			@RequestBody(required = false) String payload) {
@@ -98,22 +91,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			logger.trace("create entity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
 					.build();
-		} catch (ResponseException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (DateTimeParseException exception) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
-							.toJsonBytes());
-		} catch (JsonProcessingException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
-							.toJsonBytes());
 		} catch (Exception exception) {
-			logger.error("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -124,16 +103,11 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload  json ld message
 	 * @return ResponseEntity object
 	 */
+	@SuppressWarnings("unchecked")
 	@PatchMapping("/{entityId}/attrs")
 	public ResponseEntity<byte[]> updateEntity(ServerHttpRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload) {
-		// String resolved = contextResolver.resolveContext(payload);
 		try {
-
-			// String[] split =
-			// request.getPath().toString().replace("/ngsi-ld/v1/entities/",
-			// "").split("/attrs");
-
 			logger.trace("update entity :: started");
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
@@ -147,24 +121,8 @@ public class EntityController {// implements EntityHandlerInterface {
 				return ResponseEntity.status(HttpStatus.MULTI_STATUS)
 						.body(objectMapper.writeValueAsBytes(update.getAppendedJsonFields()));
 			}
-		} catch (ResponseException responseException) {
-			logger.debug("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
-		} catch (DateTimeParseException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
-							.toJsonBytes());
-		} catch (JsonProcessingException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
-							.toJsonBytes());
-		} catch (Exception e) {
-			logger.error("Exception :: ", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -175,6 +133,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload  jsonld message
 	 * @return ResponseEntity object
 	 */
+	@SuppressWarnings("unchecked")
 	@PostMapping("/{entityId}/attrs")
 	public ResponseEntity<byte[]> appendEntity(ServerHttpRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload, @RequestParam(required = false, name = "options") String options) {
@@ -199,25 +158,8 @@ public class EntityController {// implements EntityHandlerInterface {
 				return ResponseEntity.status(HttpStatus.MULTI_STATUS)
 						.body(objectMapper.writeValueAsBytes(append.getAppendedJsonFields()));
 			}
-		} catch (ResponseException responseException) {
-			logger.debug("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
-		} catch (DateTimeParseException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
-							.toJsonBytes());
-		} catch (JsonProcessingException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
-							.toJsonBytes());
 		} catch (Exception exception) {
-			logger.error("Exception :: ", exception);
-			exception.printStackTrace();
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -230,17 +172,14 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	@PatchMapping("/{entityId}/attrs/{attrId}")
 	public ResponseEntity<byte[]> partialUpdateEntity(ServerHttpRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@RequestBody String payload) {
 		try {
-			// String[] split =
-			// request.getPath().toString().replace("/ngsi-ld/v1/entities/",
-			// "").split("/attrs/");
 			Object jsonPayload = JsonUtils.fromString(payload);
 			List<Object> atContext = HttpUtils.getAtContext(request);
-
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
 			logger.trace("partial-update entity :: started");
 			Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor
@@ -270,24 +209,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			 * ResponseEntity.status(HttpStatus.MULTI_STATUS).body(update.
 			 * getAppendedJsonFields()); }
 			 */
-		} catch (ResponseException responseException) {
-			logger.debug("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
-		} catch (DateTimeParseException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
-							.toJsonBytes());
-		} catch (JsonProcessingException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
-							.toJsonBytes());
 		} catch (Exception exception) {
-			logger.error("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -322,24 +245,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			} else {
 				return deleteEntity(request);
 			}
-		} catch (ResponseException responseException) {
-			logger.debug("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
-		} catch (DateTimeParseException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
-							.toJsonBytes());
-		} catch (JsonProcessingException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
-							.toJsonBytes());
 		} catch (Exception exception) {
-			logger.error("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -357,24 +264,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			entityService.deleteEntity(HttpUtils.getHeaders(request), entityId);
 			logger.trace("delete entity :: completed");
 			return ResponseEntity.noContent().build();
-		} catch (ResponseException responseException) {
-			logger.debug("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
-		} catch (DateTimeParseException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
-							.toJsonBytes());
-		} catch (JsonProcessingException exception) {
-			logger.debug("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
-							.toJsonBytes());
 		} catch (Exception exception) {
-			logger.error("Exception :: ", exception);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 }

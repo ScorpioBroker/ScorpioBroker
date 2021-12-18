@@ -89,13 +89,8 @@ public class HistoryController {
 			logger.trace("createTemporalEntity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri.toString())
 					.body(uri.toString().getBytes());
-		} catch (ResponseException exception) {
-			logger.error("Exception", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception exception) {
-			logger.error("Exception", exception);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -161,13 +156,8 @@ public class HistoryController {
 			} else {
 				return HttpUtils.generateReply(request, "[]", additionalHeaders);
 			}
-		} catch (ResponseException ex) {
-			logger.debug("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
-		} catch (Exception ex) {
-			logger.error("Exception", ex);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -179,11 +169,6 @@ public class HistoryController {
 			logger.trace("retrieveTemporalEntityById :: started " + entityId);
 			logger.debug("entityId : " + entityId);
 			ValidateURI.validateUri(entityId);
-			// if (params != null && !Validator.validate(params))
-			// throw new ResponseException(ErrorType.BadRequestData);
-			// Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
-			// String[] entityArray = new String[] { entityId };
-			// queryParam.put(NGSIConstants.QUERY_PARAMETER_ID, entityArray);
 			LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<String, String>(
 					request.getQueryParams());
 			params.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
@@ -199,13 +184,8 @@ public class HistoryController {
 				throw new ResponseException(ErrorType.NotFound);
 			}
 			return HttpUtils.generateReply(request, historyDAO.getListAsJsonArray(queryResult));
-		} catch (ResponseException ex) {
-			logger.debug("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
-		} catch (Exception ex) {
-			logger.error("Exception", ex);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -233,13 +213,8 @@ public class HistoryController {
 			historyService.delete(HttpUtils.getHeaders(request), entityId, null, null, context);
 			logger.trace("deleteTemporalEntityById :: completed");
 			return ResponseEntity.noContent().build();
-		} catch (ResponseException ex) {
-			logger.debug("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
-		} catch (Exception ex) {
-			logger.error("Exception", ex);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -264,13 +239,8 @@ public class HistoryController {
 			historyService.addAttrib2TemporalEntity(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("addAttrib2TemopralEntity :: completed");
 			return ResponseEntity.noContent().build();
-		} catch (ResponseException ex) {
-			logger.debug("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
-		} catch (Exception ex) {
-			logger.error("Exception", ex);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -287,13 +257,8 @@ public class HistoryController {
 			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null, context);
 			logger.trace("deleteAttrib2TemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
-		} catch (ResponseException ex) {
-			logger.debug("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
-		} catch (Exception ex) {
-			logger.error("Exception", ex);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -320,13 +285,8 @@ public class HistoryController {
 					instanceId, context);
 			logger.trace("modifyAttribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
-		} catch (ResponseException ex) {
-			logger.debug("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
-		} catch (Exception ex) {
-			logger.error("Exception", ex);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -344,13 +304,8 @@ public class HistoryController {
 			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId, context);
 			logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
-		} catch (ResponseException ex) {
-			logger.debug("Exception", ex);
-			return ResponseEntity.status(ex.getHttpStatus()).body(new RestResponse(ex).toJsonBytes());
-		} catch (Exception ex) {
-			logger.error("Exception", ex);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, ex.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 }

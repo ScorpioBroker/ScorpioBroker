@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,7 +39,6 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
@@ -135,13 +132,8 @@ public class RegistryController {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"You must provide at least type or attrs as parameter");
 			}
-		} catch (ResponseException exception) {
-			logger.debug("Exception ::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception exception) {
-			logger.error("Exception ::", exception);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -165,13 +157,8 @@ public class RegistryController {
 			URI uri = csourceService.registerCSource(HttpUtils.getHeaders(request), csourceRegistration);
 
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri).build();
-		} catch (ResponseException exception) {
-			logger.debug("Csource::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception e) {
-			logger.error("Csource::", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -186,13 +173,8 @@ public class RegistryController {
 
 			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
 			return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
-		} catch (ResponseException exception) {
-			logger.debug("Csource::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception e) {
-			logger.error("Csource::", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -208,13 +190,8 @@ public class RegistryController {
 			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request), registrationId, resolved);
 			logger.debug("update CSource request completed::" + registrationId);
 			return ResponseEntity.noContent().build();
-		} catch (ResponseException exception) {
-			logger.debug("Csource::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception e) {
-			logger.error("Csource::", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -227,13 +204,8 @@ public class RegistryController {
 			csourceService.deleteCSourceRegistration(HttpUtils.getHeaders(request), registrationId);
 			logger.debug("delete CSource() completed::" + registrationId);
 			return ResponseEntity.noContent().build();
-		} catch (ResponseException exception) {
-			logger.debug("Csource::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception e) {
-			logger.error("Csource::", e);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -250,8 +222,6 @@ public class RegistryController {
 			}
 
 		} catch (JsonProcessingException e) {
-			throw new ResponseException(ErrorType.BadRequestData);
-		} catch (IOException e) {
 			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		logger.trace("validation :: completed");

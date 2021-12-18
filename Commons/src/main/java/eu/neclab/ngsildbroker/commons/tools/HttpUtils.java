@@ -14,6 +14,7 @@ import java.net.URLDecoder;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -67,6 +68,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
@@ -80,6 +83,7 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.HttpErrorResponseException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -93,6 +97,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 @SuppressWarnings("deprecation")
 public final class HttpUtils {
 
+	private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 	/** Timeout for all requests to respond. */
 	private static final Integer REQ_TIMEOUT_MS = 10000;
 
@@ -1096,33 +1101,27 @@ public final class HttpUtils {
 		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
 	}
 
-	// public static ResponseEntity<Object> generateReply(String acceptHeader,
-	// List<Object> contextLinks,
-	// String expandedJson, ContextResolverBasic contextResolver, String
-	// atContextServerUrl)
-	// throws ResponseException {
-	// CompactedJson simplified = contextResolver.compact(expandedJson,
-	// contextLinks);
-	// BodyBuilder builder = ResponseEntity.status(HttpStatus.OK);
-	// ResponseEntity<Object> result;
-	// if ("application/json".equalsIgnoreCase(acceptHeader)) {
-	// builder = builder.contentType(MediaType.APPLICATION_JSON);
-	//
-	// String[] links = new String[contextLinks.size()];
-	// Object[] contextLinksArray = contextLinks.toArray();
-	// for (int i = 0; i < contextLinksArray.length; i++) {
-	// links[i] = (String) contextLinksArray[i];
-	// }
-	//
-	// builder = builder.header("Link", links);
-	//
-	// result = builder.body(simplified.getCompacted());
-	// } else {
-	// builder = builder.header("Content-Type", "application/ld+json");
-	//
-	// result = builder.body(simplified.getCompactedWithContext());
-	// }
-	// return result;
-	// }
-
+	public static ResponseEntity<byte[]> handleControllerExceptions(Exception e) {
+		if (e instanceof ResponseException) {
+			ResponseException responseException = (ResponseException) e;
+			logger.debug("Exception :: ", responseException);
+			return ResponseEntity.status(responseException.getHttpStatus())
+					.body(new RestResponse(responseException).toJsonBytes());
+		}
+		if (e instanceof DateTimeParseException) {
+			logger.debug("Exception :: ", e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
+							.toJsonBytes());
+		}
+		if (e instanceof JsonProcessingException) {
+			logger.debug("Exception :: ", e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
+							.toJsonBytes());
+		}
+		logger.error("Exception :: ", e);
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
+	}
 }

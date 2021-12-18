@@ -1,9 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -12,7 +9,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -40,7 +36,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
-import eu.neclab.ngsildbroker.commons.tools.Validator;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceSubscriptionService;
 
 @RestController
@@ -66,17 +61,6 @@ public class RegistrySubscriptionController {
 			.body(new RestResponse(badRequest).toJsonBytes());
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
-	// @PostConstruct
-	// private void setupContextResolver() {
-	// this.contextResolver =
-	// ContextResolverService.getInstance(producerChannel.atContextWriteChannel(),
-	// kafkaOps);
-	// }
-	// public SubscriptionController(SubscriptionManagerProducerChannel prodChannel)
-	// {
-	// this.contextResolver = new
-	// ContextResolverService(prodChannel.atContextWriteChannel());
-	// }
 
 	@PostMapping
 	public ResponseEntity<byte[]> subscribeRest(ServerHttpRequest request, @RequestBody String payload) {
@@ -100,15 +84,8 @@ public class RegistrySubscriptionController {
 			// no absolute url only relative url
 			return ResponseEntity.created(new URI("/ngsi-ld/v1/csourceSubscriptions/" + subId.toString()))
 					.body(subId.toString().getBytes());
-		} catch (ResponseException e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
-		} catch (URISyntaxException e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(HttpStatus.CONFLICT).body(subscription.getId().toString().getBytes());
-		} catch (IOException e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage().getBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -121,8 +98,8 @@ public class RegistrySubscriptionController {
 		logger.trace("getAllSubscriptions() :: completed");
 		try {
 			return HttpUtils.generateReply(request, DataSerializer.toJson(result));
-		} catch (ResponseException e) {
-			return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage().getBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
@@ -137,9 +114,8 @@ public class RegistrySubscriptionController {
 			return HttpUtils.generateReply(request,
 					DataSerializer.toJson(manager.getSubscription(HttpUtils.getHeaders(request), id)));
 
-		} catch (ResponseException e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 
 	}
@@ -152,9 +128,8 @@ public class RegistrySubscriptionController {
 			ValidateURI.validateUriInSubs(id);
 			logger.trace("call deleteSubscription() ::");
 			manager.unsubscribe(id, HttpUtils.getHeaders(request));
-		} catch (ResponseException e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 		return ResponseEntity.noContent().build();
 	}
@@ -182,12 +157,8 @@ public class RegistrySubscriptionController {
 			ValidateURI.validateUriInSubs(id);
 			manager.updateSubscription(
 					new SubscriptionRequest(subscription, linkHeaders, HttpUtils.getHeaders(request)));
-		} catch (ResponseException e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
-		} catch (IOException e) {
-			logger.error("Exception ::", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage().getBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 		return ResponseEntity.noContent().build();
 	}

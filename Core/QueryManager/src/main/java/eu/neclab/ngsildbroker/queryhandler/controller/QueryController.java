@@ -283,7 +283,7 @@ public class QueryController {// implements QueryHandlerInterface {
 						qResult = queryService.getData(qp, originalQueryParams, linkHeaders, limit, offset, qToken,
 								showServices, countResult, headers, false);
 					} catch (Exception e) {
-						e.printStackTrace();
+						logger.debug("Tenant for the request not found", e);
 						return ResponseEntity.status(HttpStatus.NOT_FOUND)
 								.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
 					}
@@ -291,18 +291,17 @@ public class QueryController {// implements QueryHandlerInterface {
 							linkHeaders);
 					return result;
 				} else {
-					throw new ResponseException(ErrorType.BadRequestData);
+					ResponseException responseException = new ResponseException(ErrorType.BadRequestData);
+					return ResponseEntity.status(responseException.getHttpStatus())
+							.body(new RestResponse(responseException).toJsonBytes());
 				}
 			} else {
-				throw new ResponseException(ErrorType.BadRequestData);
+				ResponseException responseException = new ResponseException(ErrorType.BadRequestData);
+				return ResponseEntity.status(responseException.getHttpStatus())
+						.body(new RestResponse(responseException).toJsonBytes());
 			}
-		} catch (ResponseException exception) {
-			logger.debug("Exception ::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
 		} catch (Exception exception) {
-			logger.error("Exception ::", exception);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 

@@ -171,12 +171,8 @@ public class EntityOperationQueryController {
 					offset, qToken, false, count, HttpUtils.getHeaders(request), true), true, count, context,
 					linkHeaders);
 
-		} catch (IOException e) {
-			logger.error("Failed to parse request data", e);
-			return ResponseEntity.status(ErrorType.BadRequestData.getCode())
-					.body(new RestResponse(ErrorType.BadRequestData, e.getMessage()).toJsonBytes());
-		} catch (ResponseException e) {
-			return ResponseEntity.status(e.getHttpStatus()).body(new RestResponse(e).toJsonBytes());
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
