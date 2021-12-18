@@ -340,18 +340,57 @@ public class EntityBatchController {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	@PostMapping("/delete")
-	public ResponseEntity<byte[]> deleteMultiple(ServerHttpRequest request, @RequestBody String payload)
-			throws ResponseException {
+	public ResponseEntity<byte[]> deleteMultiple(ServerHttpRequest request, @RequestBody String payload) {
+		List<Object> jsonPayload;
+		boolean atContextAllowed;
+		List<Object> links = HttpUtils.getAtContext(request);
 		try {
-//			String resolved = httpUtils.expandPayload(request, payload);
-			// it's an array of uris which is not json-ld so no expanding here
-			BatchResult result = entityService.deleteMultipleMessage(HttpUtils.getHeaders(request), payload);
-			return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
-		} catch (ResponseException responseException) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-					new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json").toJsonBytes());
+
+			Object obj = JsonUtils.fromString(payload);
+			if (!(obj instanceof List)) {
+				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
+						"This interface only supports arrays of entities"));
+			}
+			jsonPayload = (List<Object>) obj;
+			atContextAllowed = HttpUtils.doPreflightCheck(request, links);
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
+
+		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+		BatchResult result = new BatchResult();
+		for (Object entry : jsonPayload) {
+			String entityId = "NO ENTITY ID FOUND";
+			try {
+				if (entry instanceof String) {
+					entityId = (String) entry;
+				} else {
+					List<Object> resolved = JsonLdProcessor.expand(links, entry, opts,
+							AppConstants.ENTITY_CREATE_PAYLOAD, atContextAllowed);
+					entityId = (String) ((Map<String, Object>) resolved.get(0)).get(NGSIConstants.JSON_LD_ID);
+				}
+				if (entityService.deleteEntity(headers, entityId)) {
+					result.addSuccess(entityId);
+				} else {
+					result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.InternalError, "")));
+				}
+			} catch (Exception e) {
+				RestResponse response;
+				if (e instanceof ResponseException) {
+					response = new RestResponse((ResponseException) e);
+				} else {
+					response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+				}
+				result.addFail(new BatchFailure(entityId, response));
+			}
+		}
+
+		// BatchResult result =
+		// entityService.deleteMultipleMessage(HttpUtils.getHeaders(request), resolved);
+		return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
+
 	}
 
 }
