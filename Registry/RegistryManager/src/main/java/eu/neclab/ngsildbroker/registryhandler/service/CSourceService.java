@@ -217,8 +217,16 @@ public class CSourceService {
 		}
 		csourceSubService.checkSubscriptions(new CreateCSourceRequest(prevCSourceRegistration, headers),
 				new CreateCSourceRequest(newCSourceRegistration, headers));
-		kafkaTemplate.send(CSOURCE_TOPIC, registrationId, DataSerializer.toJson(request));
-		handleFed();
+
+		// kafkaTemplate.send(CSOURCE_TOPIC, registrationId,
+		// DataSerializer.toJson(request));
+		// handleFed();
+		pushToDB(request);
+		new Thread() {
+			public void run() {
+				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
+			};
+		}.start();
 		return true;
 	}
 
@@ -277,13 +285,7 @@ public class CSourceService {
 		pushToDB(request);
 		new Thread() {
 			public void run() {
-				// try {
-				// registerContext(request);
 				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
-				// } catch (URISyntaxException | IOException | ResponseException e) {
-				// logger.error(e);
-				// throw new ResponseException(e);
-				// }
 			};
 		}.start();
 		return idUri;
