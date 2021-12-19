@@ -420,6 +420,9 @@ public class NGSIObject {
 				case NGSIConstants.NGSI_LD_LOCATION:
 					compactAndValidateGeoProperty(api);
 					break;
+				case NGSIConstants.NGSI_LD_TIME_STAMP:
+					//
+					break;
 				default:
 					validateAttribute(payloadType, expandedProperty, activeProperty, api);
 					break;

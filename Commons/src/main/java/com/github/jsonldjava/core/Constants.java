@@ -64,6 +64,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_ID_PATTERN);
 		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TENANT);
+		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TIME_STAMP);
 
 	}
 	public final static HashMultimap<Integer, String> allowedTopLevel = HashMultimap.create();

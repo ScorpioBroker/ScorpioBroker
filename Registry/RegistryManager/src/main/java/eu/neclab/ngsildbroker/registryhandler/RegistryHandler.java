@@ -17,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfiguration;
+import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
 
 @SpringBootApplication
@@ -47,6 +48,11 @@ public class RegistryHandler {
 	@Bean
 	CSourceRegistration getCsourceRegistration() {
 		return new CSourceRegistration();
+	}
+	
+	@Bean("csdao")
+	StorageWriterDAO storageWriterDAO() {
+		return new StorageWriterDAO();
 	}
 
 }
