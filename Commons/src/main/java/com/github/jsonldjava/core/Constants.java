@@ -78,6 +78,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_ID_PATTERN);
 		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TENANT);
+		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TIME_STAMP);
 
 		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);

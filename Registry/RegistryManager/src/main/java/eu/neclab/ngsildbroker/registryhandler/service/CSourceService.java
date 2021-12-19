@@ -4,10 +4,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.sql.SQLException;
+import java.sql.SQLTransientConnectionException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -20,6 +23,7 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -28,14 +32,19 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.nimbusds.jose.shaded.json.JSONObject;
 
+import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
@@ -48,6 +57,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
+import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registryhandler.config.StartupConfig;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
@@ -86,6 +96,10 @@ public class CSourceService {
 
 	@Value("${csource.directdb:true}")
 	boolean directDB = true;
+
+	@Autowired
+	@Qualifier("csdao")
+	StorageWriterDAO storageWriterDao;
 
 	private ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 
@@ -203,8 +217,16 @@ public class CSourceService {
 		}
 		csourceSubService.checkSubscriptions(new CreateCSourceRequest(prevCSourceRegistration, headers),
 				new CreateCSourceRequest(newCSourceRegistration, headers));
-		kafkaTemplate.send(CSOURCE_TOPIC, registrationId, DataSerializer.toJson(request));
-		handleFed();
+
+		// kafkaTemplate.send(CSOURCE_TOPIC, registrationId,
+		// DataSerializer.toJson(request));
+		// handleFed();
+		pushToDB(request);
+		new Thread() {
+			public void run() {
+				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
+			};
+		}.start();
 		return true;
 	}
 
@@ -254,13 +276,64 @@ public class CSourceService {
 		}
 
 		// TODO: [check for valid identifier (id)]
-		kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
-		this.csourceTimerTask(headers, csourceRegistration);
-		if (!csourceRegistration.isInternal()) {
-			csourceSubService.checkSubscriptions(request, TriggerReason.newlyMatching);
-		}
-		handleFed();
+//		kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
+//		this.csourceTimerTask(headers, csourceRegistration);
+//		if (!csourceRegistration.isInternal()) {
+//			csourceSubService.checkSubscriptions(request, TriggerReason.newlyMatching);
+//		}
+//		handleFed();
+		pushToDB(request);
+		new Thread() {
+			public void run() {
+				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
+			};
+		}.start();
 		return idUri;
+	}
+
+	private void pushToDB(CSourceRequest request) throws SQLException {
+		boolean success = false;
+
+		String datavalue;
+		JsonObject jsonObject = new JsonParser().parse(DataSerializer.toJson(request)).getAsJsonObject();
+		if (jsonObject.has("CSource")) {
+			datavalue = jsonObject.get("CSource").toString();
+		} else {
+			datavalue = "null";
+		}
+		String header = jsonObject.get("headers").toString();
+		JsonObject jsonObjectheader = new JsonParser().parse(header).getAsJsonObject();
+		String headervalue;
+		if (jsonObjectheader.has(NGSIConstants.TENANT_HEADER)) {
+			headervalue = jsonObjectheader.get(NGSIConstants.TENANT_HEADER).getAsString();
+			String databasename = "ngb" + headervalue;
+			if (datavalue != null) {
+				storageWriterDao.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,
+						headervalue, databasename);
+			}
+		} else {
+			headervalue = null;
+		}
+		while (!success) {
+			try {
+				// logger.debug("Received message: " + request.getWithSysAttrs());
+				logger.trace("Writing data...");
+				if (storageWriterDao != null && storageWriterDao.store(DBConstants.DBTABLE_CSOURCE,
+						DBConstants.DBCOLUMN_DATA, request.getId(), datavalue, headervalue)) {
+					logger.trace("Writing is complete");
+				}
+				success = true;
+			} catch (SQLTransientConnectionException e) {
+				logger.warn("SQL Exception attempting retry");
+				Random random = new Random();
+				int randomNumber = random.nextInt(4000) + 500;
+				try {
+					Thread.sleep(randomNumber);
+				} catch (InterruptedException e1) {
+
+				}
+			}
+		}
 	}
 
 	private URI generateUniqueRegId(CSourceRegistration csourceRegistration) {
@@ -318,8 +391,15 @@ public class CSourceService {
 		// DataSerializer.getCSourceRegistration(csourceBody);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		this.csourceSubService.checkSubscriptions(request, TriggerReason.noLongerMatching);
-		kafkaTemplate.send(CSOURCE_TOPIC, registrationId, DataSerializer.toJson(request));
-		handleFed();
+		
+		pushToDB(request);
+		new Thread() {
+			public void run() {
+				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
+			};
+		}.start();
+//		kafkaTemplate.send(CSOURCE_TOPIC, registrationId, DataSerializer.toJson(request));
+//		handleFed();
 		return true;
 		// TODO: [push to other DELETE TOPIC]
 	}
