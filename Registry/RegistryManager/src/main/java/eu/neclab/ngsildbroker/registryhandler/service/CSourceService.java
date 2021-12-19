@@ -391,8 +391,15 @@ public class CSourceService {
 		// DataSerializer.getCSourceRegistration(csourceBody);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		this.csourceSubService.checkSubscriptions(request, TriggerReason.noLongerMatching);
-		kafkaTemplate.send(CSOURCE_TOPIC, registrationId, DataSerializer.toJson(request));
-		handleFed();
+		
+		pushToDB(request);
+		new Thread() {
+			public void run() {
+				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
+			};
+		}.start();
+//		kafkaTemplate.send(CSOURCE_TOPIC, registrationId, DataSerializer.toJson(request));
+//		handleFed();
 		return true;
 		// TODO: [push to other DELETE TOPIC]
 	}
