@@ -129,7 +129,7 @@ public class RegistrySubscriptionController {
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
 			logger.trace("call getSubscriptions() ::");
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			return HttpUtils.generateReply(request,
 					DataSerializer.toJson(manager.getSubscription(HttpUtils.getHeaders(request), id)));
 
@@ -145,7 +145,7 @@ public class RegistrySubscriptionController {
 	public ResponseEntity<byte[]> deleteSubscription(ServerHttpRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			logger.trace("call deleteSubscription() ::");
 			manager.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (ResponseException e) {
@@ -175,7 +175,7 @@ public class RegistrySubscriptionController {
 				return badRequestResponse;
 			}
 
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			manager.updateSubscription(new SubscriptionRequest(subscription, context, HttpUtils.getHeaders(request)));
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);

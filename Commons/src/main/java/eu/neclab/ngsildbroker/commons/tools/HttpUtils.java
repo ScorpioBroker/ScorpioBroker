@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.security.KeyManagementException;
@@ -823,20 +824,21 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply)
+	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply, int endPoint)
 			throws ResponseException {
-		return generateReply(request, reply, null);
+		return generateReply(request, reply, null, endPoint);
 
 	}
 
 	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
-			ArrayListMultimap<String, String> additionalHeaders) throws ResponseException {
-		return generateReply(request, reply, additionalHeaders, null);
+			ArrayListMultimap<String, String> additionalHeaders, int endPoint) throws ResponseException {
+		return generateReply(request, reply, additionalHeaders, null, endPoint);
 	}
 
 	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
-			ArrayListMultimap<String, String> additionalHeaders, List<Object> context) throws ResponseException {
-		return generateReply(request, reply, additionalHeaders, context, false);
+			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint)
+			throws ResponseException {
+		return generateReply(request, reply, additionalHeaders, context, false, endPoint);
 	}
 
 	private static int parseAcceptHeader(List<String> acceptHeaders) {
@@ -885,7 +887,7 @@ public final class HttpUtils {
 
 	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
-			boolean forceArrayResult) throws ResponseException {
+			boolean forceArrayResult, int endPoint) throws ResponseException {
 		List<Object> requestAtContext = getAtContext(request);
 		if (additionalContext == null) {
 			additionalContext = new ArrayList<Object>();
@@ -894,12 +896,12 @@ public final class HttpUtils {
 			additionalContext.addAll(requestAtContext);
 		}
 		Context context = JsonLdProcessor.getCoreContextClone().parse(additionalContext, true);
-		return generateReply(request, reply, additionalHeaders, context, additionalContext, forceArrayResult);
+		return generateReply(request, reply, additionalHeaders, context, additionalContext, forceArrayResult, endPoint);
 	}
 
 	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult) throws ResponseException {
+			boolean forceArrayResult, int endPoint) throws ResponseException {
 
 		String replyBody;
 
@@ -907,7 +909,7 @@ public final class HttpUtils {
 		// requestAtContext);
 		Map<String, Object> compacted;
 		try {
-			compacted = JsonLdProcessor.compact(JsonUtils.fromString(reply), contextLinks, ldContext, opts);
+			compacted = JsonLdProcessor.compact(JsonUtils.fromString(reply), contextLinks, ldContext, opts, endPoint);
 			Object context = compacted.get(JsonLdConsts.CONTEXT);
 			Object result;
 			Object graph = compacted.get(JsonLdConsts.GRAPH);
@@ -1122,6 +1124,30 @@ public final class HttpUtils {
 		}
 		logger.error("Exception :: ", e);
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
+				.body(new RestResponse(ErrorType.InternalError, e.getMessage()).toJsonBytes());
+	}
+
+	public static String validateUri(String mapValue) throws ResponseException {
+		try {
+			if (!new URI(mapValue).isAbsolute()) {
+				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+			}
+			return mapValue;
+		} catch (URISyntaxException e) {
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+		}
+
+	}
+
+	public static URI validateUri(URI mapValue) throws ResponseException {
+		try {
+			if (!mapValue.isAbsolute()) {
+				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+			}
+			return mapValue;
+		} catch (ResponseException e) {
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+		}
+
 	}
 }

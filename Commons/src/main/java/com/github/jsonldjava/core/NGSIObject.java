@@ -12,7 +12,6 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 
 public class NGSIObject {
 
@@ -223,6 +222,8 @@ public class NGSIObject {
 			throw new ResponseException(ErrorType.BadRequestData, "@Context entry is needed");
 		}
 		switch (payloadType) {
+		case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
+		case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
 		case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
 		case AppConstants.ENTITY_CREATE_PAYLOAD:
 			if (activeProperty == null) {
@@ -238,6 +239,7 @@ public class NGSIObject {
 				validateAttribute(payloadType, expandedProperty, activeProperty, api);
 			}
 			break;
+		case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
 		case AppConstants.ENTITY_UPDATE_PAYLOAD:
 			if (activeProperty == null) {
 				// we are in root
@@ -428,12 +430,6 @@ public class NGSIObject {
 			}
 			break;
 		case AppConstants.CSOURCE_REG_UPDATE_PAYLOAD:
-			break;
-		case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
-			break;
-		case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
-			break;
-		case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
 			break;
 		default:
 			break;

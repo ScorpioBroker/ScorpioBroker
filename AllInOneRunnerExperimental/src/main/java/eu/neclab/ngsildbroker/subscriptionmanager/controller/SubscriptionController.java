@@ -461,7 +461,7 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) String id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
-			ValidateURI.validateUri(id);
+			HttpUtils.validateUri(id);
 			logger.trace("call getSubscriptions() ::");
 			return HttpUtils.generateReply(request, DataSerializer
 					.toJson(manager.getSubscription(id, HttpUtils.getHeaders(request)).getSubscription()));
@@ -478,7 +478,7 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			manager.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (ResponseException e) {
 			logger.error("Exception ::", e);
@@ -501,7 +501,7 @@ public class SubscriptionController {
 
 		try {
 
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			Validator.subscriptionValidation(payload);
 			List<Object> context = new ArrayList<Object>();
 			context.addAll(HttpUtils.getAtContext(request));

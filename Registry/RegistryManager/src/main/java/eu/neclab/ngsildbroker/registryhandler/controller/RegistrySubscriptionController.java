@@ -35,7 +35,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceSubscriptionService;
 
 @RestController
@@ -97,7 +96,7 @@ public class RegistrySubscriptionController {
 		result = manager.getAllSubscriptions(HttpUtils.getHeaders(request), limit);
 		logger.trace("getAllSubscriptions() :: completed");
 		try {
-			return HttpUtils.generateReply(request, DataSerializer.toJson(result));
+			return HttpUtils.generateReply(request, DataSerializer.toJson(result), AppConstants.SUBSCRIPTION_ENDPOINT);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
@@ -110,9 +109,10 @@ public class RegistrySubscriptionController {
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
 			logger.trace("call getSubscriptions() ::");
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			return HttpUtils.generateReply(request,
-					DataSerializer.toJson(manager.getSubscription(HttpUtils.getHeaders(request), id)));
+					DataSerializer.toJson(manager.getSubscription(HttpUtils.getHeaders(request), id)),
+					AppConstants.SUBSCRIPTION_ENDPOINT);
 
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
@@ -125,7 +125,7 @@ public class RegistrySubscriptionController {
 	public ResponseEntity<byte[]> deleteSubscription(ServerHttpRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			logger.trace("call deleteSubscription() ::");
 			manager.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (Exception exception) {
@@ -154,7 +154,7 @@ public class RegistrySubscriptionController {
 				return badRequestResponse;
 			}
 
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			manager.updateSubscription(
 					new SubscriptionRequest(subscription, linkHeaders, HttpUtils.getHeaders(request)));
 		} catch (Exception exception) {

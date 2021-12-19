@@ -145,7 +145,7 @@ public class JsonLdApi {
 	 * @return The compacted JSON-LD object.
 	 * @throws JsonLdError If there was an error during compaction.
 	 */
-	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays)
+	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays, int endPoint)
 			throws JsonLdError {
 		// 2)
 		if (element instanceof List) {
@@ -154,7 +154,7 @@ public class JsonLdApi {
 			// 2.2)
 			for (final Object item : (List<Object>) element) {
 				// 2.2.1)
-				final Object compactedItem = compact(activeCtx, activeProperty, item, compactArrays);
+				final Object compactedItem = compact(activeCtx, activeProperty, item, compactArrays, endPoint);
 				// 2.2.2)
 				if (compactedItem != null) {
 					final boolean isList = (compactedItem instanceof Map
@@ -168,7 +168,6 @@ public class JsonLdApi {
 
 				}
 			}
-
 			if (AppConstants.FORCE_ARRAY_FIELDS.contains(activeProperty)) {
 				return result;
 			}
@@ -262,7 +261,8 @@ public class JsonLdApi {
 							Object geoProp = JsonUtils.fromString((String) potentialString);
 							Object expandedGeoProp = expandWithCoreContext(geoProp);
 							final String alias = activeCtx.compactIri(expandedProperty, true);
-							result.put(alias, compact(activeCtx, activeProperty, expandedGeoProp, compactArrays));
+							result.put(alias,
+									compact(activeCtx, activeProperty, expandedGeoProp, compactArrays, endPoint));
 						} catch (IOException e) {
 							// Should never happen
 							e.printStackTrace();
@@ -274,7 +274,7 @@ public class JsonLdApi {
 				if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
 					// 7.2.1)
 					final Map<String, Object> compactedValue = (Map<String, Object>) compact(activeCtx,
-							JsonLdConsts.REVERSE, expandedValue, compactArrays);
+							JsonLdConsts.REVERSE, expandedValue, compactArrays, endPoint);
 
 					// 7.2.2)
 					// Note: Must create a new set to avoid modifying the set we
@@ -377,7 +377,7 @@ public class JsonLdApi {
 
 					// 7.6.3)
 					Object compactedItem = compact(activeCtx, itemActiveProperty, isList ? list : expandedItem,
-							compactArrays);
+							compactArrays, endPoint);
 
 					// 7.6.4)
 					if (isList) {
@@ -521,7 +521,7 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there was an error during compaction.
 	 */
 	public Object compact(Context activeCtx, String activeProperty, Object element) throws JsonLdError {
-		return compact(activeCtx, activeProperty, element, JsonLdOptions.DEFAULT_COMPACT_ARRAYS);
+		return compact(activeCtx, activeProperty, element, JsonLdOptions.DEFAULT_COMPACT_ARRAYS, -1);
 	}
 
 	/***
@@ -924,6 +924,9 @@ public class JsonLdApi {
 					case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
 					case AppConstants.ENTITY_UPDATE_PAYLOAD:
 					case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
+					case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
+					case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
+					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
 						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
 							ngsiElement.setHasAtValue(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
@@ -1036,13 +1039,13 @@ public class JsonLdApi {
 				// 7.7)
 				else {
 					try {
-					NGSIObject ngsiExpandedValue = expand(activeCtx, key,
-							new NGSIObject(value, ngsiElement)
-									.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
-							payloadType, atContextAllowed);
-					ngsiElement.getDatasetIds().addAll(ngsiExpandedValue.getDatasetIds());
-					expandedValue = ngsiExpandedValue.getElement();
-					}catch (Exception e) {
+						NGSIObject ngsiExpandedValue = expand(activeCtx, key,
+								new NGSIObject(value, ngsiElement)
+										.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
+								payloadType, atContextAllowed);
+						ngsiElement.getDatasetIds().addAll(ngsiExpandedValue.getDatasetIds());
+						expandedValue = ngsiExpandedValue.getElement();
+					} catch (Exception e) {
 						System.out.println(e);
 						continue;
 					}

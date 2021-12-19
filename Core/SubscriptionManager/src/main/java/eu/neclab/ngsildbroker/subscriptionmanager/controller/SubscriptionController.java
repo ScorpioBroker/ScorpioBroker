@@ -55,7 +55,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
-import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.commons.tools.Validator;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 
@@ -468,7 +467,7 @@ public class SubscriptionController {
 			logger.trace("getAllSubscriptions() :: completed");
 			try {
 				return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
-						additionalHeaders);
+						additionalHeaders, AppConstants.SUBSCRIPTION_ENDPOINT);
 			} catch (Exception exception) {
 				return HttpUtils.handleControllerExceptions(exception);
 			}
@@ -492,11 +491,12 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) String id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
-			ValidateURI.validateUri(id);
+			HttpUtils.validateUri(id);
 			logger.trace("call getSubscriptions() ::");
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return HttpUtils.generateReply(request,
-					DataSerializer.toJson(manager.getSubscription(id, headers).getSubscription()));
+					DataSerializer.toJson(manager.getSubscription(id, headers).getSubscription()),
+					AppConstants.SUBSCRIPTION_ENDPOINT);
 
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
@@ -508,7 +508,7 @@ public class SubscriptionController {
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			manager.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
@@ -530,7 +530,7 @@ public class SubscriptionController {
 
 		try {
 
-			ValidateURI.validateUriInSubs(id);
+			HttpUtils.validateUri(id);
 			Validator.subscriptionValidation(payload);
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);

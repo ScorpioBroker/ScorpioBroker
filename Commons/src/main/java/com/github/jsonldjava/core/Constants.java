@@ -15,6 +15,13 @@ public class Constants {
 		allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
 		allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_CREATED_AT);
 		allowedDateTimes.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_MODIFIED_AT);
+
+		allowedDateTimes.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
+		allowedDateTimes.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
+		allowedDateTimes.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
+		allowedDateTimes.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_CREATED_AT);
+		allowedDateTimes.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_MODIFIED_AT);
+
 		allowedDateTimes.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TIMESTAMP_START);
 		allowedDateTimes.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TIMESTAMP_END);
 		allowedDateTimes.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_EXPIRES);
@@ -25,6 +32,13 @@ public class Constants {
 		allowedUrls.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
 		allowedUrls.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
 		allowedUrls.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+
+		allowedUrls.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedUrls.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedUrls.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedUrls.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_INSTANCE_ID);
+		allowedUrls.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_INSTANCE_ID);
+		allowedUrls.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_INSTANCE_ID);
 		allowedUrls.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_ENDPOINT);
 	}
 
@@ -65,11 +79,21 @@ public class Constants {
 		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.CSOURCE_REG_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TENANT);
 
-	}
-	public final static HashMultimap<Integer, String> allowedTopLevel = HashMultimap.create();
-	static {
-		allowedTopLevel.putAll(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD,
-				allowedScalars.get(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD));
-	}
+		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
 
+	}
 }

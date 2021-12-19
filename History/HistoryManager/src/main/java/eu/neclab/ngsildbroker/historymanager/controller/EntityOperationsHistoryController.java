@@ -1,14 +1,11 @@
-package eu.neclab.ngsildbroker.entityhandler.controller;
+package eu.neclab.ngsildbroker.historymanager.controller;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,32 +14,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.github.jsonldjava.core.JsonLdError;
-import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
-import eu.neclab.ngsildbroker.commons.datatypes.BatchFailure;
-import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.ControllerFunctions;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
+import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
 
 @RestController
-@RequestMapping("/ngsi-ld/v1/entityOperations")
-public class EntityBatchController {
-
+@RequestMapping("/ngsi-ld/v1/temporal/entityOperations")
+public class EntityOperationsHistoryController {
+	
 	@Autowired
-	EntityService entityService;
+	HistoryService entityService;
 
 	@Value("${batchoperations.maxnumber.create:-1}")
 	int maxCreateBatch;
@@ -52,6 +34,8 @@ public class EntityBatchController {
 	int maxUpsertBatch;
 	@Value("${batchoperations.maxnumber.delete:-1}")
 	int maxDeleteBatch;
+	@Value("${defaultLimit}")
+	int defaultLimit = 50;
 
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	String coreContext;
@@ -82,5 +66,17 @@ public class EntityBatchController {
 	public ResponseEntity<byte[]> deleteMultiple(ServerHttpRequest request, @RequestBody String payload) {
 		return ControllerFunctions.deleteMultiple(entityService, request, payload);
 	}
+	
+//	@PostMapping("/query")
+//	public ResponseEntity<byte[]> postQuery(ServerHttpRequest request, @RequestBody String payload,
+//			@RequestParam(value = "limit", required = false) Integer limit,
+//			@RequestParam(value = "offset", required = false) Integer offset,
+//			@RequestParam(value = "qtoken", required = false) String qToken,
+//			@RequestParam(name = "options", required = false) List<String> options,
+//			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
+//		return ControllerFunctions.postQuery(entityService, request, payload, limit, offset, qToken, options, count,
+//				defaultLimit);
+//	}
+
 
 }

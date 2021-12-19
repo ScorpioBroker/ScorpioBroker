@@ -177,7 +177,7 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
-			ValidateURI.validateUri(registrationId);
+			HttpUtils.validateUri(registrationId);
 			String tenantid = request.getHeaders().getFirst(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
 
@@ -215,7 +215,7 @@ public class RegistryController {
 	public ResponseEntity<byte[]> deleteCSource(ServerHttpRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
-			ValidateURI.validateUri(registrationId);
+			HttpUtils.validateUri(registrationId);
 			logger.debug("delete CSource() ::" + registrationId);
 			csourceService.deleteCSourceRegistration(HttpUtils.getHeaders(request), registrationId);
 			logger.debug("delete CSource() completed::" + registrationId);

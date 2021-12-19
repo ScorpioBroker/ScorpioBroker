@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;

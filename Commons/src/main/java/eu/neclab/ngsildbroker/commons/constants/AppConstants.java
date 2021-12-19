@@ -82,5 +82,11 @@ public class AppConstants {
 	public static final int ATTRIBUTE_PAYLOAD = 11;
 	public static final int NOTIFICAITION_RECEIVED = 12;
 	public static final int QUERY_PAYLOAD = 13;
+	public static final int QUERY_ENDPOINT = 0;
+	public static final int HISTORY_ENDPOINT = 1;
+	public static final int REGISTRY_ENDPOINT = 2;
+	public static final int SUBSCRIPTION_ENDPOINT = 3;
+	public static final int NOTIFICATION_ENDPOINT = 4;
+	
 
 }

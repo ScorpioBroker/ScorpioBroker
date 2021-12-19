@@ -27,6 +27,7 @@ import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
@@ -35,7 +36,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.commons.tools.Validator;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 
@@ -86,7 +86,7 @@ public class QueryController {// implements QueryHandlerInterface {
 			@PathVariable("entityId") String entityId) throws ResponseException {
 
 		try {
-			ValidateURI.validateUri(entityId);
+			HttpUtils.validateUri(entityId);
 		} catch (ResponseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJsonBytes());
@@ -341,6 +341,6 @@ public class QueryController {// implements QueryHandlerInterface {
 			}
 		}
 		return HttpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
-				additionalHeaders, context, contextLinks, forceArray);
+				additionalHeaders, context, contextLinks, forceArray, AppConstants.QUERY_ENDPOINT);
 	}
 }

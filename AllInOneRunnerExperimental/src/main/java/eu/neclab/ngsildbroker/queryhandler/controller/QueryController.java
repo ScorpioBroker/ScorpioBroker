@@ -86,7 +86,7 @@ public class QueryController {// implements QueryHandlerInterface {
 			@PathVariable("entityId") String entityId) throws ResponseException {
 
 		try {
-			ValidateURI.validateUri(entityId);
+			HttpUtils.validateUri(entityId);
 		} catch (ResponseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJsonBytes());

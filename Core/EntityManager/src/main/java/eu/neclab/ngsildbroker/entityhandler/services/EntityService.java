@@ -53,6 +53,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.KafkaWriteException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.EntityCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -61,7 +62,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 @Service
 @EnableAutoConfiguration
 @EnableKafka
-public class EntityService {
+public class EntityService implements EntityCRUDService{
 
 	@Value("${entity.topic}")
 	String ENTITY_TOPIC;

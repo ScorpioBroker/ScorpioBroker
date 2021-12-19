@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
@@ -183,7 +184,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			}
 		};
 
-		ResponseEntity<byte[]> temp = HttpUtils.generateReply(request, body, null, context);
+		ResponseEntity<byte[]> temp = HttpUtils.generateReply(request, body, null, context, AppConstants.NOTIFICATION_ENDPOINT);
 		JsonNode jsonTree;
 		try {
 			jsonTree = objectMapper.readTree(temp.getBody());

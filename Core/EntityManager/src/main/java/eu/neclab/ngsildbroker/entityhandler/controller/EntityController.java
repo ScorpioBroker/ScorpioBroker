@@ -34,7 +34,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
 
@@ -232,7 +231,7 @@ public class EntityController {// implements EntityHandlerInterface {
 				String[] split = path.split("/attrs/");
 				String attrId = HttpUtils.denormalize(split[1]);
 				String entityId = HttpUtils.denormalize(split[0]);
-				ValidateURI.validateUri(entityId);
+				HttpUtils.validateUri(entityId);
 				logger.trace("delete attribute :: started");
 				Validator.validate(request.getQueryParams());
 				Context context = JsonLdProcessor.getCoreContextClone();
@@ -260,7 +259,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			String entityId = request.getPath().toString().replace("/ngsi-ld/v1/entities/", "");
 			logger.trace("delete entity :: started");
-			ValidateURI.validateUri(entityId);
+			HttpUtils.validateUri(entityId);
 			entityService.deleteEntity(HttpUtils.getHeaders(request), entityId);
 			logger.trace("delete entity :: completed");
 			return ResponseEntity.noContent().build();

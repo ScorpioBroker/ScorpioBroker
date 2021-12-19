@@ -37,9 +37,11 @@ public class JsonLdProcessor {
 		JsonLdProcessor.coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl,
 				false);
 	}
+
 	public static Context getCoreContextClone() {
 		return coreContext.clone();
 	}
+
 	/**
 	 * Compacts the given input using the context according to the steps in the
 	 * <a href="http://www.w3.org/TR/json-ld-api/#compaction-algorithm"> Compaction
@@ -61,7 +63,7 @@ public class JsonLdProcessor {
 		if (context != null) {
 			activeCtx = activeCtx.parse(context, true);
 		}
-		return compact(input, context, activeCtx, opts);
+		return compact(input, context, activeCtx, opts, -1);
 	}
 
 	/**
@@ -77,8 +79,8 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while compacting.
 	 * @throws ResponseException
 	 */
-	public static Map<String, Object> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts)
-			throws JsonLdError, ResponseException {
+	public static Map<String, Object> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
+			int endPoint) throws JsonLdError, ResponseException {
 		// 1)
 		// TODO: look into java futures/promises
 
@@ -94,7 +96,7 @@ public class JsonLdProcessor {
 		 */
 
 		// 8)
-		Object compacted = new JsonLdApi(opts).compact(activeCtx, null, expanded, opts.getCompactArrays());
+		Object compacted = new JsonLdApi(opts).compact(activeCtx, null, expanded, opts.getCompactArrays(), endPoint);
 
 		// final step of Compaction Algorithm
 		// TODO: SPEC: the result result is a NON EMPTY array,
@@ -301,7 +303,7 @@ public class JsonLdProcessor {
 			Context activeCtx = new Context(opts);
 			activeCtx = activeCtx.parse(context, false);
 			// TODO: only instantiate one jsonldapi
-			Object compacted = new JsonLdApi(opts).compact(activeCtx, null, flattened, opts.getCompactArrays());
+			Object compacted = new JsonLdApi(opts).compact(activeCtx, null, flattened, opts.getCompactArrays(), -1);
 			if (!(compacted instanceof List)) {
 				final List<Object> tmp = new ArrayList<Object>();
 				tmp.add(compacted);
@@ -375,7 +377,7 @@ public class JsonLdProcessor {
 		if (opts.getPruneBlankNodeIdentifiers()) {
 			JsonLdUtils.pruneBlankNodes(framed);
 		}
-		Object compacted = api.compact(activeCtx, null, framed, opts.getCompactArrays());
+		Object compacted = api.compact(activeCtx, null, framed, opts.getCompactArrays(), -1);
 		final Map<String, Object> rval = activeCtx.serialize();
 		final boolean addGraph = ((!(compacted instanceof List)) && !opts.getOmitGraph());
 		if (addGraph && !(compacted instanceof List)) {

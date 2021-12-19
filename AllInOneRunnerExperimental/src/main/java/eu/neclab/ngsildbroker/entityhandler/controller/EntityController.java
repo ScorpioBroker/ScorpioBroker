@@ -296,7 +296,7 @@ public class EntityController {// implements EntityHandlerInterface {
 				String[] split = path.split("/attrs/");
 				String attrId = HttpUtils.denormalize(split[1]);
 				String entityId = HttpUtils.denormalize(split[0]);
-				ValidateURI.validateUri(entityId);
+				HttpUtils.validateUri(entityId);
 				logger.trace("delete attribute :: started");
 				Validator.validate(request.getQueryParams());
 				Context context = JsonLdProcessor.getCoreContextClone();
@@ -338,7 +338,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			String entityId = request.getPath().toString().replace("/ngsi-ld/v1/entities/", "");
 			logger.trace("delete entity :: started");
-			ValidateURI.validateUri(entityId);
+			HttpUtils.validateUri(entityId);
 			entityService.deleteEntity(HttpUtils.getHeaders(request), entityId);
 			logger.trace("delete entity :: completed");
 			return ResponseEntity.noContent().build();

@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.security.NoSuchAlgorithmException;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.JsonParser;
 

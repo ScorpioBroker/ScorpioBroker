@@ -177,7 +177,7 @@ public class HistoryController {
 		try {
 			logger.trace("retrieveTemporalEntityById :: started " + entityId);
 			logger.debug("entityId : " + entityId);
-			ValidateURI.validateUri(entityId);
+			HttpUtils.validateUri(entityId);
 			// if (params != null && !Validator.validate(params))
 			// throw new ResponseException(ErrorType.BadRequestData);
 			// Map<String, String[]> queryParam = new HashMap<>(request.getParameterMap());
@@ -214,7 +214,7 @@ public class HistoryController {
 		try {
 			logger.trace("deleteTemporalEntityById :: started");
 			logger.debug("entityId : " + entityId);
-			ValidateURI.validateUri(entityId);
+			HttpUtils.validateUri(entityId);
 			LinkedMultiValueMap<String, String> params = new LinkedMultiValueMap<String, String>(
 					request.getQueryParams());
 			params.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
@@ -276,7 +276,7 @@ public class HistoryController {
 	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(ServerHttpRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
-			ValidateURI.validateUri(entityId);
+			HttpUtils.validateUri(entityId);
 			Context context = JsonLdProcessor.getCoreContextClone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);

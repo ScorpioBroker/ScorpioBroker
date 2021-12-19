@@ -44,7 +44,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.ValidateURI;
 import eu.neclab.ngsildbroker.commons.tools.Validator;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
@@ -121,7 +120,7 @@ public class RegistryController {
 				}
 				List<String> csourceList = queryResult.getActualDataString();
 //				if (csourceList.size() > 0) {
-				return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
+				return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList), AppConstants.REGISTRY_ENDPOINT);
 //				} else {
 //					//TODO this needs to be change to respect query results
 //					throw new ResponseException(ErrorType.NotFound);
@@ -167,12 +166,12 @@ public class RegistryController {
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
-			ValidateURI.validateUri(registrationId);
+			HttpUtils.validateUri(registrationId);
 			String tenantid = request.getHeaders().getFirst(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
 
 			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
-			return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
+			return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList), AppConstants.REGISTRY_ENDPOINT);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
@@ -199,7 +198,7 @@ public class RegistryController {
 	public ResponseEntity<byte[]> deleteCSource(ServerHttpRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
-			ValidateURI.validateUri(registrationId);
+			HttpUtils.validateUri(registrationId);
 			logger.debug("delete CSource() ::" + registrationId);
 			csourceService.deleteCSourceRegistration(HttpUtils.getHeaders(request), registrationId);
 			logger.debug("delete CSource() completed::" + registrationId);
