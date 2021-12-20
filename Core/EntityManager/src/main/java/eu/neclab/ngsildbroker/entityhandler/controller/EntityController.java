@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -76,7 +76,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@SuppressWarnings("unchecked")
 	@PostMapping
-	public ResponseEntity<byte[]> createEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> createEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		String result = null;
 		try {
@@ -104,7 +104,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@SuppressWarnings("unchecked")
 	@PatchMapping("/{entityId}/attrs")
-	public ResponseEntity<byte[]> updateEntity(ServerHttpRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<byte[]> updateEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload) {
 		try {
 			logger.trace("update entity :: started");
@@ -134,14 +134,14 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@SuppressWarnings("unchecked")
 	@PostMapping("/{entityId}/attrs")
-	public ResponseEntity<byte[]> appendEntity(ServerHttpRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<byte[]> appendEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload, @RequestParam(required = false, name = "options") String options) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
 			// String[] split =
 			// request.getPath().toString().replace("/ngsi-ld/v1/entities/",
 			// "").split("/attrs");
-			entityId = HttpUtils.denormalize(entityId);
+			
 
 			logger.trace("append entity :: started");
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
@@ -173,7 +173,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@SuppressWarnings("unchecked")
 	@PatchMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<byte[]> partialUpdateEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> partialUpdateEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@RequestBody String payload) {
 		try {
@@ -222,18 +222,23 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 	@DeleteMapping("/**")
-	public ResponseEntity<byte[]> deleteAttribute(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteAttribute(HttpServletRequest request,
 			@RequestParam(value = "datasetId", required = false) String datasetId,
 			@RequestParam(value = "deleteAll", required = false) String deleteAll) {
 		try {
-			String path = request.getPath().toString().replace("/ngsi-ld/v1/entities/", "");
+			String path = request.getServletPath().replace("/ngsi-ld/v1/entities/", "");
 			if (path.contains("/attrs/")) {
 				String[] split = path.split("/attrs/");
-				String attrId = HttpUtils.denormalize(split[1]);
-				String entityId = HttpUtils.denormalize(split[0]);
+				String attrId = null;
+				if(split.length > 1) {
+					attrId = split[1];	
+				}
+				
+				String entityId = split[0];
 				HttpUtils.validateUri(entityId);
 				logger.trace("delete attribute :: started");
-				Validator.validate(request.getQueryParams());
+				
+				Validator.validate(HttpUtils.getQueryParamMap(request));
 				Context context = JsonLdProcessor.getCoreContextClone();
 				context = context.parse(HttpUtils.getAtContext(request), true);
 				String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
@@ -255,9 +260,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param entityId
 	 * @return
 	 */
-	public ResponseEntity<byte[]> deleteEntity(ServerHttpRequest request) {
+	public ResponseEntity<byte[]> deleteEntity(HttpServletRequest request) {
 		try {
-			String entityId = request.getPath().toString().replace("/ngsi-ld/v1/entities/", "");
+			String entityId = request.getServletPath().replace("/ngsi-ld/v1/entities/", "");
 			logger.trace("delete entity :: started");
 			HttpUtils.validateUri(entityId);
 			entityService.deleteEntity(HttpUtils.getHeaders(request), entityId);

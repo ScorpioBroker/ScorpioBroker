@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -81,7 +81,7 @@ public class RegistryController {
 	}
 
 	@GetMapping
-	public ResponseEntity<byte[]> discoverCSource(ServerHttpRequest request,
+	public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
 			@RequestParam HashMap<String, String> queryMap,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
@@ -144,7 +144,7 @@ public class RegistryController {
 	}
 
 	@PostMapping
-	public ResponseEntity<byte[]> registerCSource(ServerHttpRequest request,
+	public ResponseEntity<byte[]> registerCSource(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
 
@@ -173,7 +173,7 @@ public class RegistryController {
 	}
 
 	@GetMapping("{registrationId}")
-	public ResponseEntity<byte[]> getCSourceById(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getCSourceById(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
@@ -192,7 +192,7 @@ public class RegistryController {
 	}
 
 	@PatchMapping("{registrationId}")
-	public ResponseEntity<byte[]> updateCSource(ServerHttpRequest request,
+	public ResponseEntity<byte[]> updateCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
 		try {
 			logger.debug("update CSource() ::" + registrationId);
@@ -212,7 +212,7 @@ public class RegistryController {
 	}
 
 	@DeleteMapping("{registrationId}")
-	public ResponseEntity<byte[]> deleteCSource(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			HttpUtils.validateUri(registrationId);

@@ -8,7 +8,8 @@ import com.github.jsonldjava.core.Context;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryTerm;
-import eu.neclab.ngsildbroker.commons.exceptions.BadRequestException;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 
 public class QueryParser {
@@ -65,7 +66,7 @@ public class QueryParser {
 	// TODO validate queries still not working ... rework regex ???
 	private static Pattern p = Pattern.compile(query);
 
-	public static QueryTerm parseQuery(String input, Context context) throws BadRequestException {
+	public static QueryTerm parseQuery(String input, Context context) throws ResponseException {
 //		Matcher matcher = p.matcher(input);
 //		if (!matcher.matches()) {
 //			throw new BadRequestException();
@@ -140,13 +141,13 @@ public class QueryParser {
 		return root;
 	}
 
-	public static GeoqueryRel parseGeoRel(String georel) throws BadRequestException {
+	public static GeoqueryRel parseGeoRel(String georel) throws ResponseException {
 		String[] temp = georel.split(";");
 		GeoqueryRel result = new GeoqueryRel();
 		result.setGeorelOp(temp[0]);
 		if (temp[0].equals(NGSIConstants.GEO_REL_NEAR)) {
 			if (temp.length < 2) {
-				throw new BadRequestException();
+				throw new ResponseException(ErrorType.BadRequestData, "Georelation is not valid");
 			}
 			String[] maxMin = temp[1].split("==");
 			result.setDistanceType(maxMin[0]);

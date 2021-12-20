@@ -72,7 +72,6 @@ public class SubscriptionServiceTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		System.out.println("method called");
 		MockitoAnnotations.initMocks(this);
 	}
 	

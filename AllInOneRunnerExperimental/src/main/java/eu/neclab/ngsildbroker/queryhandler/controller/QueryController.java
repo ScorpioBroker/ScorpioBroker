@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -80,7 +80,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @throws ResponseException
 	 */
 	@GetMapping(path = "/entities/{entityId}")
-	public ResponseEntity<byte[]> getEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getEntity(HttpServletRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
 			@RequestParam(value = "options", required = false) List<String> options,
 			@PathVariable("entityId") String entityId) throws ResponseException {
@@ -148,7 +148,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@GetMapping("/entities")
-	public ResponseEntity<byte[]> getAllEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getAllEntity(HttpServletRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
@@ -162,7 +162,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	}
 
 	@GetMapping(path = "/types")
-	public ResponseEntity<byte[]> getAllTypes(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getAllTypes(HttpServletRequest request,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 		String check = "NonDeatilsType";
 		if (details == true) {
@@ -178,7 +178,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	}
 
 	@GetMapping(path = "/types/{entityType}")
-	public ResponseEntity<byte[]> getType(ServerHttpRequest request, @PathVariable("entityType") String type,
+	public ResponseEntity<byte[]> getType(HttpServletRequest request, @PathVariable("entityType") String type,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 		String check = "type";
 		ArrayList<String> types = new ArrayList<String>();
@@ -193,7 +193,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	}
 
 	@GetMapping(path = "/attributes")
-	public ResponseEntity<byte[]> getAllAttribute(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getAllAttribute(HttpServletRequest request,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 
 		String check = "NonDeatilsAttributes";
@@ -210,7 +210,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	}
 
 	@GetMapping(path = "/attributes/{attributes}")
-	public ResponseEntity<byte[]> getAttributes(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getAttributes(HttpServletRequest request,
 			@PathVariable("attributes") String attributes,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 		String check = "Attribute";
@@ -225,7 +225,7 @@ public class QueryController {// implements QueryHandlerInterface {
 		return result;
 	}
 
-	private ResponseEntity<byte[]> getQueryData(ServerHttpRequest request, String originalQueryParams,
+	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
 			MultiValueMap<String, String> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
 			List<String> options, Boolean showServices, boolean retrieve, Boolean countResult, String check) {
 		// long start = System.currentTimeMillis();
@@ -320,7 +320,7 @@ public class QueryController {// implements QueryHandlerInterface {
 
 	}
 
-	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, QueryResult qResult,
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult,
 			boolean forceArray, boolean count, Context context, List<Object> contextLinks) throws ResponseException {
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);

@@ -11,7 +11,7 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
 @EnableWebFluxSecurity
-public class SecurityConfiguration {
+public class WebFluxSecurityConfiguration {
 
 	@Value("${spring.security.active:false}")
 	boolean securityActive;

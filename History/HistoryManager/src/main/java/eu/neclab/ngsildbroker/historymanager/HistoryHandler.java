@@ -6,12 +6,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfiguration;
+import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.historymanager.config.HistoryJdbcConfig;
 
 @SpringBootApplication
-@Import(SecurityConfiguration.class)
+@Import(WebSecurityConfiguration.class)
 public class HistoryHandler {
 	public static void main(String[] args) {
 		SpringApplication.run(HistoryHandler.class, args);

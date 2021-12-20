@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
@@ -40,7 +40,7 @@ public class ControllerFunctions {
 	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<byte[]> updateMultiple(EntityCRUDService entityService, ServerHttpRequest request,
+	public static ResponseEntity<byte[]> updateMultiple(EntityCRUDService entityService, HttpServletRequest request,
 			String payload, int maxUpdateBatch, String options) {
 		List<Map<String, Object>> jsonPayload;
 
@@ -113,7 +113,7 @@ public class ControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<byte[]> createMultiple(EntityCRUDService entityService, ServerHttpRequest request,
+	public static ResponseEntity<byte[]> createMultiple(EntityCRUDService entityService, HttpServletRequest request,
 			String payload, int maxCreateBatch) {
 
 		List<Map<String, Object>> jsonPayload;
@@ -201,7 +201,7 @@ public class ControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<byte[]> deleteMultiple(EntityCRUDService entityService, ServerHttpRequest request,
+	public static ResponseEntity<byte[]> deleteMultiple(EntityCRUDService entityService, HttpServletRequest request,
 			String payload) {
 		List<Object> jsonPayload;
 		boolean atContextAllowed;
@@ -218,7 +218,9 @@ public class ControllerFunctions {
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
-
+		if (jsonPayload.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		}
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		BatchResult result = new BatchResult();
 		for (Object entry : jsonPayload) {
@@ -250,7 +252,7 @@ public class ControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<byte[]> upsertMultiple(EntityCRUDService entityService, ServerHttpRequest request,
+	public static ResponseEntity<byte[]> upsertMultiple(EntityCRUDService entityService, HttpServletRequest request,
 			String payload, String options, int maxCreateBatch) {
 
 		List<Map<String, Object>> jsonPayload;
@@ -366,7 +368,7 @@ public class ControllerFunctions {
 	// these are known structures in try catch. failed parsing would rightfully
 	// result in an error
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static ResponseEntity<byte[]> postQuery(EntityQueryService queryService, ServerHttpRequest request,
+	public static ResponseEntity<byte[]> postQuery(EntityQueryService queryService, HttpServletRequest request,
 			String payload, Integer limit, Integer offset, String qToken, List<String> options, boolean count,
 			int defaultLimit) {
 		try {
@@ -466,7 +468,7 @@ public class ControllerFunctions {
 		}
 	}
 
-	private static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, QueryResult qResult,
+	private static ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult,
 			boolean forceArray, boolean count, Context context, List<Object> contextLinks) throws ResponseException {
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
@@ -595,7 +597,7 @@ public class ControllerFunctions {
 		try {
 			protectedValue = JsonUtils.toString(compactedFull);
 		} catch (IOException e) {
-			throw new ResponseException("Failed to handle provided coordinates");
+			throw new ResponseException(ErrorType.BadRequestData, "Failed to handle provided coordinates");
 		}
 		return protectedValue;
 	}

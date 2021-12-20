@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -74,7 +74,7 @@ public class HistoryController {
 	}
 
 	@PostMapping
-	public ResponseEntity<byte[]> createTemporalEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> createTemporalEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
 			logger.trace("createTemporalEntity :: started");
@@ -99,7 +99,7 @@ public class HistoryController {
 	}
 
 	@GetMapping
-	public ResponseEntity<byte[]> retrieveTemporalEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request,
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
@@ -171,7 +171,7 @@ public class HistoryController {
 	}
 
 	@GetMapping("/{entityId}")
-	public ResponseEntity<byte[]> retrieveTemporalEntityById(ServerHttpRequest request,
+	public ResponseEntity<byte[]> retrieveTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		// String params = request.getQueryString();
 		try {
@@ -209,7 +209,7 @@ public class HistoryController {
 	}
 
 	@DeleteMapping("/{entityId}")
-	public ResponseEntity<byte[]> deleteTemporalEntityById(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		try {
 			logger.trace("deleteTemporalEntityById :: started");
@@ -243,13 +243,13 @@ public class HistoryController {
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE)
-	public ResponseEntity<byte[]> deleteTemporalEntityIdIsEmpty(ServerHttpRequest request) {
+	public ResponseEntity<byte[]> deleteTemporalEntityIdIsEmpty(HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}
 
 	@PostMapping("/{entityId}/attrs")
-	public ResponseEntity<byte[]> addAttrib2TemopralEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> addAttrib2TemopralEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload) {
 		try {
 			logger.trace("addAttrib2TemopralEntity :: started");
@@ -273,7 +273,7 @@ public class HistoryController {
 	}
 
 	@DeleteMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
 			HttpUtils.validateUri(entityId);
@@ -296,7 +296,7 @@ public class HistoryController {
 	}
 
 	@PatchMapping("/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<byte[]> modifyAttribInstanceTemporalEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> modifyAttribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId, @RequestBody(required = false) String payload) {
 		try {
@@ -328,7 +328,7 @@ public class HistoryController {
 	}
 
 	@DeleteMapping("/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<byte[]> deleteAtrribInstanceTemporalEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteAtrribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId) {
 		try {

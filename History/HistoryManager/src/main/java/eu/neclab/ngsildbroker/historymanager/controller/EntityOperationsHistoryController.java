@@ -1,13 +1,11 @@
 package eu.neclab.ngsildbroker.historymanager.controller;
 
-import java.util.List;
-
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,29 +44,29 @@ public class EntityOperationsHistoryController {
 	}
 
 	@PostMapping("/create")
-	public ResponseEntity<byte[]> createMultiple(ServerHttpRequest request, @RequestBody String payload) {
+	public ResponseEntity<byte[]> createMultiple(HttpServletRequest request, @RequestBody String payload) {
 		return ControllerFunctions.createMultiple(entityService, request, payload, maxCreateBatch);
 	}
 
 	@PostMapping("/upsert")
-	public ResponseEntity<byte[]> upsertMultiple(ServerHttpRequest request, @RequestBody String payload,
+	public ResponseEntity<byte[]> upsertMultiple(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
 		return ControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch);
 	}
 
 	@PostMapping("/update")
-	public ResponseEntity<byte[]> updateMultiple(ServerHttpRequest request, @RequestBody String payload,
+	public ResponseEntity<byte[]> updateMultiple(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
 		return ControllerFunctions.updateMultiple(entityService, request, payload, maxUpdateBatch, options);
 	}
 
 	@PostMapping("/delete")
-	public ResponseEntity<byte[]> deleteMultiple(ServerHttpRequest request, @RequestBody String payload) {
+	public ResponseEntity<byte[]> deleteMultiple(HttpServletRequest request, @RequestBody String payload) {
 		return ControllerFunctions.deleteMultiple(entityService, request, payload);
 	}
 	
 //	@PostMapping("/query")
-//	public ResponseEntity<byte[]> postQuery(ServerHttpRequest request, @RequestBody String payload,
+//	public ResponseEntity<byte[]> postQuery(HttpServletRequest request, @RequestBody String payload,
 //			@RequestParam(value = "limit", required = false) Integer limit,
 //			@RequestParam(value = "offset", required = false) Integer offset,
 //			@RequestParam(value = "qtoken", required = false) String qToken,

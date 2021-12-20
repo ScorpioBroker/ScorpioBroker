@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -78,29 +78,28 @@ public class RegistryController {
 	}
 
 	@GetMapping
-	public ResponseEntity<byte[]> discoverCSource(ServerHttpRequest request,
+	public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
 			@RequestParam HashMap<String, String> queryMap,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken) {
 		try {
 			logger.trace("getCSources() ::");
-			MultiValueMap<String, String> params = request.getQueryParams();
+			MultiValueMap<String, String> params = HttpUtils.getQueryParamMap(request);
 			Validator.validateCsourceGetParameter(params);
 
-			String tenantid = request.getHeaders().getFirst(NGSIConstants.TENANT_HEADER);
-			if ((request.getPath().toString().equals(MY_REQUEST_MAPPING)
-					|| request.getPath().toString().equals(MY_REQUEST_MAPPING_ALT)) && !params.isEmpty()) {
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
+			if (!params.isEmpty()) {
 
 				List<Object> linkHeaders = HttpUtils.getAtContext(request);
 				Context context = JsonLdProcessor.getCoreContextClone();
 				context = context.parse(linkHeaders, true);
-				QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(request.getQueryParams(), context);
+				QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context);
 				if (offset == null) {
 					offset = 0;
 				}
 				if (qp == null) // invalid query
-					throw new ResponseException(ErrorType.InvalidRequest);
+					throw new ResponseException(ErrorType.InvalidRequest, "Empty query params");
 				qp.setTenant(tenantid);
 				qp.setLimit(limit);
 				qp.setOffSet(offset);
@@ -120,7 +119,8 @@ public class RegistryController {
 				}
 				List<String> csourceList = queryResult.getActualDataString();
 //				if (csourceList.size() > 0) {
-				return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList), AppConstants.REGISTRY_ENDPOINT);
+				return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList),
+						AppConstants.REGISTRY_ENDPOINT);
 //				} else {
 //					//TODO this needs to be change to respect query results
 //					throw new ResponseException(ErrorType.NotFound);
@@ -137,7 +137,7 @@ public class RegistryController {
 	}
 
 	@PostMapping
-	public ResponseEntity<byte[]> registerCSource(ServerHttpRequest request,
+	public ResponseEntity<byte[]> registerCSource(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		try {
 
@@ -162,23 +162,24 @@ public class RegistryController {
 	}
 
 	@GetMapping("{registrationId}")
-	public ResponseEntity<byte[]> getCSourceById(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getCSourceById(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
 			HttpUtils.validateUri(registrationId);
-			String tenantid = request.getHeaders().getFirst(NGSIConstants.TENANT_HEADER);
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			List<String> csourceList = new ArrayList<String>();
 
 			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
-			return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList), AppConstants.REGISTRY_ENDPOINT);
+			return HttpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList),
+					AppConstants.REGISTRY_ENDPOINT);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
 	@PatchMapping("{registrationId}")
-	public ResponseEntity<byte[]> updateCSource(ServerHttpRequest request,
+	public ResponseEntity<byte[]> updateCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
 		try {
 			logger.debug("update CSource() ::" + registrationId);
@@ -195,7 +196,7 @@ public class RegistryController {
 	}
 
 	@DeleteMapping("{registrationId}")
-	public ResponseEntity<byte[]> deleteCSource(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			HttpUtils.validateUri(registrationId);
@@ -211,17 +212,17 @@ public class RegistryController {
 	private void validate(String payload) throws ResponseException {
 		logger.trace("validation :: started");
 		if (payload == null) {
-			throw new ResponseException(ErrorType.UnprocessableEntity);
+			throw new ResponseException(ErrorType.UnprocessableEntity, "Empty body");
 		}
 		JsonNode json = null;
 		try {
 			json = objectMapper.readTree(payload);
 			if (json.isNull()) {
-				throw new ResponseException(ErrorType.UnprocessableEntity);
+				throw new ResponseException(ErrorType.UnprocessableEntity, "Empty body");
 			}
 
 		} catch (JsonProcessingException e) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Failed to read body");
 		}
 		logger.trace("validation :: completed");
 	}

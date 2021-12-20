@@ -20,7 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -103,7 +103,7 @@ public class SubscriptionController {
 	@SuppressWarnings("unchecked")
 	@RequestMapping(method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<byte[]> subscribeRest(ServerHttpRequest request, @RequestBody String payload) {
+	public ResponseEntity<byte[]> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription = null;
 
@@ -158,7 +158,7 @@ public class SubscriptionController {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Subscription expandSubscription(String body, ServerHttpRequest request) throws ResponseException {
+	public Subscription expandSubscription(String body, HttpServletRequest request) throws ResponseException {
 		Subscription subscription = new Subscription();
 
 		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(request), body,
@@ -432,7 +432,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.GET)
-	public ResponseEntity<byte[]> getAllSubscriptions(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getAllSubscriptions(HttpServletRequest request,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) throws ResponseException {
 		logger.trace("getAllSubscriptions() :: started");
 		List<SubscriptionRequest> result = null;
@@ -457,7 +457,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/{id}")
-	public ResponseEntity<byte[]> getSubscriptions(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getSubscriptions(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) String id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
@@ -474,7 +474,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
-	public ResponseEntity<byte[]> deleteSubscription(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteSubscription(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
@@ -488,13 +488,13 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE)
-	public ResponseEntity<byte[]> deleteSubscriptionEmptyId(ServerHttpRequest request) {
+	public ResponseEntity<byte[]> deleteSubscriptionEmptyId(HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}
 
 	@RequestMapping(method = RequestMethod.PATCH, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
-	public ResponseEntity<byte[]> updateSubscription(ServerHttpRequest request,
+	public ResponseEntity<byte[]> updateSubscription(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestBody String payload) {
 		logger.trace("call updateSubscription() ::");
@@ -543,7 +543,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.PATCH)
-	public ResponseEntity<byte[]> patchubscriptionEmptyId(ServerHttpRequest request) {
+	public ResponseEntity<byte[]> patchubscriptionEmptyId(HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}

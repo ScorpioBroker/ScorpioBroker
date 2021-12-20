@@ -65,7 +65,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -813,18 +813,18 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply)
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply)
 			throws ResponseException {
 		return generateReply(request, reply, null);
 
 	}
 
-	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, null);
 	}
 
-	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> context) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, context, false);
 	}
@@ -874,7 +874,7 @@ public final class HttpUtils {
 		}
 	}
 
-	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
 			boolean forceArrayResult) throws ResponseException {
 		List<Object> requestAtContext = getAtContext(request);
@@ -888,7 +888,7 @@ public final class HttpUtils {
 		return generateReply(request, reply, additionalHeaders, context, additionalContext, forceArrayResult);
 	}
 
-	public static ResponseEntity<byte[]> generateReply(ServerHttpRequest request, String reply,
+	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult) throws ResponseException {
 
@@ -1011,7 +1011,7 @@ public final class HttpUtils {
 		return baos.toByteArray();
 	}
 
-	public static ArrayListMultimap<String, String> getHeaders(ServerHttpRequest request) {
+	public static ArrayListMultimap<String, String> getHeaders(HttpServletRequest request) {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		for (Entry<String, List<String>> entry : request.getHeaders().entrySet()) {
 			result.putAll(entry.getKey(), entry.getValue());
@@ -1034,7 +1034,7 @@ public final class HttpUtils {
 		return tenantId;
 	}
 
-	public static String generateNextLink(ServerHttpRequest request, QueryResult qResult) {
+	public static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
 			return null;
 		}
@@ -1042,7 +1042,7 @@ public final class HttpUtils {
 				qResult.getqToken(), "next");
 	}
 
-	private static String generateFollowUpLinkHeader(ServerHttpRequest request, int offset, int limit, String token,
+	private static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
 			String rel) {
 
 		StringBuilder builder = new StringBuilder("</");
@@ -1072,7 +1072,7 @@ public final class HttpUtils {
 		return builder.toString();
 	}
 
-	public static String generatePrevLink(ServerHttpRequest request, QueryResult qResult) {
+	public static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
 			return null;
 		}

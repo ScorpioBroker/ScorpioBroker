@@ -92,36 +92,12 @@ public class HistoryService implements EntityCRUDService {
 		try {
 			writerDAO.storeTemporalEntity(request);
 		} catch (SQLException e) {
-			e.printStackTrace();
-			throw new ResponseException(e.getLocalizedMessage());
+			throw new ResponseException(ErrorType.InternalError, e.getLocalizedMessage());
 		}
 
 	}
 
-	/*
-	 * private void pushAttributeToKafka(String entityId, String entityType, String
-	 * entityCreatedAt, String entityModifiedAt, String attributeId, String
-	 * elementValue, Boolean createTemporalEntityIfNotExists, Boolean overwriteOp)
-	 * throws ResponseException { String messageKey; TemporalEntityStorageKey tesk =
-	 * new TemporalEntityStorageKey(entityId); if (createTemporalEntityIfNotExists
-	 * != null && createTemporalEntityIfNotExists) { tesk.setEntityType(entityType);
-	 * tesk.setEntityCreatedAt(entityCreatedAt);
-	 * tesk.setEntityModifiedAt(entityModifiedAt); tesk.setAttributeId(attributeId);
-	 * messageKey = DataSerializer.toJson(tesk); } else {
-	 * tesk.setEntityModifiedAt(entityModifiedAt); tesk.setAttributeId(attributeId);
-	 * tesk.setOverwriteOp(overwriteOp); messageKey = DataSerializer.toJson(tesk); }
-	 * logger.debug(" message key " + messageKey + " payload element " +
-	 * elementValue);
-	 * kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(),
-	 * messageKey.getBytes(), elementValue.getBytes()); }
-	 */
 
-	/*
-	 * private void pushAttributeToKafka(String id, String entityModifiedAt, String
-	 * attributeId, String elementValue) throws ResponseException {
-	 * pushAttributeToKafka(id, null, null, entityModifiedAt, attributeId,
-	 * elementValue, null, null); }
-	 */
 	public boolean deleteEntity(ArrayListMultimap<String, String> headers, String entityId)
 			throws ResponseException, Exception {
 		return delete(headers, entityId, null, null, null);
@@ -184,7 +160,7 @@ public class HistoryService implements EntityCRUDService {
 		QueryResult queryResult = historyDAO.query(qp);
 		List<String> entityList = queryResult.getActualDataString();
 		if (entityList.size() == 0) {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.NotFound, "Entity not found");
 		}
 		String oldEntry = historyDAO.getListAsJsonArray(entityList);
 		UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, resolved, entityId, resolvedAttrId,

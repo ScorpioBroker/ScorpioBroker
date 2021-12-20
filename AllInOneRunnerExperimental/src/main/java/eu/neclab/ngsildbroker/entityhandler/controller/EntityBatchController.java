@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,7 +62,7 @@ public class EntityBatchController {
 	}
 
 	@PostMapping("/create")
-	public ResponseEntity<byte[]> createMultiple(ServerHttpRequest request, @RequestBody String payload) {
+	public ResponseEntity<byte[]> createMultiple(HttpServletRequest request, @RequestBody String payload) {
 
 		List<Map<String, Object>> jsonPayload;
 		try {
@@ -154,7 +154,7 @@ public class EntityBatchController {
 	}
 
 	@PostMapping("/upsert")
-	public ResponseEntity<byte[]> upsertMultiple(ServerHttpRequest request, @RequestBody String payload,
+	public ResponseEntity<byte[]> upsertMultiple(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
 
 		List<Map<String, Object>> jsonPayload;
@@ -259,7 +259,7 @@ public class EntityBatchController {
 	}
 
 	@PostMapping("/update")
-	public ResponseEntity<byte[]> updateMultiple(ServerHttpRequest request, @RequestBody String payload,
+	public ResponseEntity<byte[]> updateMultiple(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
 
 		List<Map<String, Object>> jsonPayload;
@@ -341,7 +341,7 @@ public class EntityBatchController {
 	}
 
 	@PostMapping("/delete")
-	public ResponseEntity<byte[]> deleteMultiple(ServerHttpRequest request, @RequestBody String payload)
+	public ResponseEntity<byte[]> deleteMultiple(HttpServletRequest request, @RequestBody String payload)
 			throws ResponseException {
 		try {
 //			String resolved = httpUtils.expandPayload(request, payload);

@@ -590,8 +590,6 @@ public class JsonLdApi {
 						result.add(expandedValue);
 						// }
 					} else if (v instanceof Map) {
-						// //System.out.println("adding map");
-						// //System.out.println(v);
 						result.add(v);
 					}
 

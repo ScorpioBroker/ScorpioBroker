@@ -32,18 +32,13 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nimbusds.jose.shaded.json.JSONObject;
-
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
@@ -173,7 +168,7 @@ public class CSourceService {
 	public CSourceRegistration getCSourceRegistrationById(String tenantheaders, String registrationId)
 			throws ResponseException, Exception {
 		if (registrationId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid query for registration. No ID provided.");
 		}
 
 		String entityBody = validateIdAndGetBody(registrationId, tenantheaders);
@@ -187,7 +182,7 @@ public class CSourceService {
 	public boolean updateCSourceRegistration(ArrayListMultimap<String, String> headers, String registrationId,
 			String payload) throws ResponseException, Exception {
 		if (registrationId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid update for registration. No ID provided.");
 		}
 		String tenantid;
 		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
@@ -241,36 +236,35 @@ public class CSourceService {
 	public URI registerCSource(ArrayListMultimap<String, String> headers, CSourceRegistration csourceRegistration)
 			throws ResponseException, Exception {
 		CSourceRequest request = new CreateCSourceRequest(csourceRegistration, headers);
-		String id;
 		URI idUri = csourceRegistration.getId();
 		if (idUri == null) {
 			idUri = generateUniqueRegId(csourceRegistration);
 			csourceRegistration.setId(idUri);
 
 		}
-		id = idUri.toString();
+
 
 		if (csourceRegistration.getType() == null) {
 			logger.error("Invalid type!");
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid type");
 		}
 		if (!isValidURL(csourceRegistration.getEndpoint().toString())) {
 			logger.error("Invalid endpoint URL!");
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid endpoint URL!");
 		}
 		if (csourceRegistration.getInformation() == null) {
 			logger.error("Information is empty!");
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Information is empty!");
 		}
 		if (csourceRegistration.getExpiresAt() != null && !isValidFutureDate(csourceRegistration.getExpiresAt())) {
 			logger.error("Invalid expire date!");
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 		}
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		synchronized (this.csourceIds) {
 			if (this.csourceIds.containsEntry(tenantId, request.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists);
+				throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
 			}
 			this.csourceIds.put(tenantId, request.getId());
 		}
@@ -371,13 +365,13 @@ public class CSourceService {
 	public boolean deleteCSourceRegistration(ArrayListMultimap<String, String> headers, String registrationId)
 			throws ResponseException, Exception {
 		if (registrationId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid delete for registration. No ID provided.");
 		}
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		synchronized (this.csourceIds) {
 			if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
-				throw new ResponseException(ErrorType.NotFound);
+				throw new ResponseException(ErrorType.NotFound, registrationId + " not found.");
 			} else {
 				this.csourceIds.remove(tenantId, registrationId);
 
@@ -495,20 +489,20 @@ public class CSourceService {
 	private String validateIdAndGetBody(String registrationid, String tenantId) throws ResponseException {
 		// null id check
 		if (registrationid == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid query for registration. No ID provided.");
 		}
 
 		synchronized (this.csourceIds) {
 			if (tenantId != null) {
 				if (!this.csourceIds.containsKey(tenantId)) {
-					throw new ResponseException(ErrorType.TenantNotFound);
+					throw new ResponseException(ErrorType.TenantNotFound, "Tenant not found");
 				}
 				if (!this.csourceIds.containsValue(registrationid)) {
-					throw new ResponseException(ErrorType.NotFound);
+					throw new ResponseException(ErrorType.NotFound, registrationid + " not found");
 				}
 			} else {
 				if (!this.csourceIds.containsValue(registrationid)) {
-					throw new ResponseException(ErrorType.NotFound);
+					throw new ResponseException(ErrorType.NotFound, registrationid + " not found");
 				}
 			}
 		}

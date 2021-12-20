@@ -291,7 +291,7 @@
  * "<<http://localhost:9090/ngsi-ld/contextes/urn:ngsi-ld:Vehicle:A100>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\">"
  * ) .body(response);
  * 
- * ServerHttpRequest request = Mockito.mock(HttpServletRequest.class); String
+ * HttpServletRequest request = Mockito.mock(HttpServletRequest.class); String
  * res = "/"; // when(HttpUtils.parseLinkHeader(any(HttpServletRequest.class),
  * // NGSIConstants.HEADER_REL_LDCONTEXT)).thenReturn(linkHeaders); //
  * when(contextResolver.getContext(any())).thenReturn(entityContext); //

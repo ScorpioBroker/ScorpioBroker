@@ -12,7 +12,6 @@ import com.github.jsonldjava.core.Context;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.BadRequestException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
@@ -524,8 +523,6 @@ public class QueryTerm {
 	public String toSql() throws ResponseException {
 		StringBuilder builder = new StringBuilder();
 		toSql(builder, false);
-		// builder.append(";");
-		System.out.println(builder.toString());
 		return builder.toString();
 	}
 
@@ -742,7 +739,7 @@ public class QueryTerm {
 		return attribPath;
 	}
 
-	private boolean applyOperator(StringBuilder attributeFilterProperty) throws BadRequestException {
+	private boolean applyOperator(StringBuilder attributeFilterProperty) throws ResponseException {
 		boolean useRelClause = false;
 
 		String typecast = "jsonb";
@@ -787,61 +784,43 @@ public class QueryTerm {
 		 * operant.matches(DATETIME)); break;
 		 */
 		case NGSIConstants.QUERY_GREATEREQ:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater equal");
 			}
 			attributeFilterProperty.append(" >= '" + operant + "'::" + typecast);
 			break;
 		case NGSIConstants.QUERY_LESSEQ:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less equal");
 			}
 			attributeFilterProperty.append(" <= '" + operant + "'::" + typecast);
 			break;
 		case NGSIConstants.QUERY_GREATER:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater");
 			}
 			attributeFilterProperty.append(" > '" + operant + "'::" + typecast);
 			break;
 		case NGSIConstants.QUERY_LESS:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
 			}
 			attributeFilterProperty.append(" < '" + operant + "'::" + typecast);
 			break;
 		case NGSIConstants.QUERY_PATTERNOP:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
 			}
 			attributeFilterProperty.append(" ~ '" + operant + "'");
 			break;
 		case NGSIConstants.QUERY_NOTPATTERNOP:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
 			}
 			attributeFilterProperty.append(" !~ '" + operant + "'");
 			break;
 		default:
-			throw new BadRequestException("Bad operator in query");
+			throw new ResponseException(ErrorType.BadRequestData, "Bad operator in query");
 		}
 		return useRelClause;
 	}

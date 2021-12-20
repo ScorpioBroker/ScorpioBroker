@@ -42,19 +42,19 @@ public class CreateCSourceRequest extends CSourceRequest {
 
 		if (csourceRegistration.getType() == null) {
 			logger.error("Invalid type!");
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid type!");
 		}
 		if (!isValidURL(csourceRegistration.getEndpoint().toString())) {
 			logger.error("Invalid endpoint URL!");
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid endpoint URL!");
 		}
 		if (csourceRegistration.getInformation() == null) {
 			logger.error("Information is empty!");
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Information is empty!");
 		}
 		if (csourceRegistration.getExpiresAt() != null && !isValidFutureDate(csourceRegistration.getExpiresAt())) {
 			logger.error("Invalid expire date!");
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 		}
 	}
 

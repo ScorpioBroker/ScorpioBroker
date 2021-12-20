@@ -10,10 +10,10 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.web.client.RestTemplate;
 
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfiguration;
+import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
 
 @SpringBootApplication
-@Import(SecurityConfiguration.class)
+@Import(WebSecurityConfiguration.class)
 public class QueryHandler {
 
 	public static void main(String[] args) {

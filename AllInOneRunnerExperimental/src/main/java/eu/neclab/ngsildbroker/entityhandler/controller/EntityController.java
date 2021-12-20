@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,7 +83,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@PostMapping
-	public ResponseEntity<byte[]> createEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> createEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		String result = null;
 		try {
@@ -123,7 +123,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@PatchMapping("/{entityId}/attrs")
-	public ResponseEntity<byte[]> updateEntity(ServerHttpRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<byte[]> updateEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
@@ -172,7 +172,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@PostMapping("/{entityId}/attrs")
-	public ResponseEntity<byte[]> appendEntity(ServerHttpRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<byte[]> appendEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload, @RequestParam(required = false, name = "options") String options) {
 		// String resolved = contextResolver.resolveContext(payload);
 		try {
@@ -225,7 +225,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 	@PatchMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<byte[]> partialUpdateEntity(ServerHttpRequest request,
+	public ResponseEntity<byte[]> partialUpdateEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@RequestBody String payload) {
 		try {
@@ -287,7 +287,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 	@DeleteMapping("/**")
-	public ResponseEntity<byte[]> deleteAttribute(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteAttribute(HttpServletRequest request,
 			@RequestParam(value = "datasetId", required = false) String datasetId,
 			@RequestParam(value = "deleteAll", required = false) String deleteAll) {
 		try {
@@ -334,7 +334,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param entityId
 	 * @return
 	 */
-	public ResponseEntity<byte[]> deleteEntity(ServerHttpRequest request) {
+	public ResponseEntity<byte[]> deleteEntity(HttpServletRequest request) {
 		try {
 			String entityId = request.getPath().toString().replace("/ngsi-ld/v1/entities/", "");
 			logger.trace("delete entity :: started");

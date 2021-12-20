@@ -1,4 +1,0 @@
-mysettings:
-  kafka:
-    bootstrap:
-      host: ${bushost:kafka}

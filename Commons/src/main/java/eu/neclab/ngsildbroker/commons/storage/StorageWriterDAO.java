@@ -384,7 +384,7 @@ public class StorageWriterDAO {
 	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException {
 		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
 		if (tenantDatabaseName == null)
-			throw new ResponseException(ErrorType.TenantNotFound);
+			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
 		// throw new IllegalArgumentException("Given tenant id is not valid : " +
 		// tenantidvalue);
 		HikariConfig tenantHikariConfig = new HikariConfig();

@@ -253,7 +253,8 @@ public class JsonLdApi {
 					// isArray(compactedValue)
 					// && ((List<Object>) expandedValue).size() == 0);
 				}
-				if(endPoint == AppConstants.REGISTRY_ENDPOINT && NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
+				if (endPoint == AppConstants.REGISTRY_ENDPOINT
+						&& NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
 					isGeoProperty = true;
 				}
 				if (isGeoProperty && NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
@@ -595,10 +596,7 @@ public class JsonLdApi {
 						Object expandedValue = newMap();
 						((Map<String, Object>) expandedValue).put(JsonLdConsts.LIST, v);
 						result.add(expandedValue);
-						// }
 					} else if (v instanceof Map) {
-						// //System.out.println("adding map");
-						// //System.out.println(v);
 						result.add(v);
 					}
 
@@ -1041,17 +1039,14 @@ public class JsonLdApi {
 				}
 				// 7.7)
 				else {
-					try {
-						NGSIObject ngsiExpandedValue = expand(activeCtx, key,
-								new NGSIObject(value, ngsiElement)
-										.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
-								payloadType, atContextAllowed);
-						ngsiElement.getDatasetIds().addAll(ngsiExpandedValue.getDatasetIds());
-						expandedValue = ngsiExpandedValue.getElement();
-					} catch (Exception e) {
-						System.out.println(e);
-						continue;
-					}
+
+					NGSIObject ngsiExpandedValue = expand(activeCtx, key,
+							new NGSIObject(value, ngsiElement)
+									.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
+							payloadType, atContextAllowed);
+					ngsiElement.getDatasetIds().addAll(ngsiExpandedValue.getDatasetIds());
+					expandedValue = ngsiExpandedValue.getElement();
+
 				}
 				// 7.8)
 				if (expandedValue == null) {

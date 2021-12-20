@@ -31,8 +31,6 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
-import eu.neclab.ngsildbroker.commons.datatypes.BatchFailure;
-import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
@@ -46,12 +44,10 @@ import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.Information;
 import eu.neclab.ngsildbroker.commons.datatypes.Property;
 import eu.neclab.ngsildbroker.commons.datatypes.Relationship;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.TimeInterval;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.KafkaWriteException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntityCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
@@ -62,7 +58,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 @Service
 @EnableAutoConfiguration
 @EnableKafka
-public class EntityService implements EntityCRUDService{
+public class EntityService implements EntityCRUDService {
 
 	@Value("${entity.topic}")
 	String ENTITY_TOPIC;
@@ -144,7 +140,7 @@ public class EntityService implements EntityCRUDService{
 
 		synchronized (this.entityIds) {
 			if (this.entityIds.containsEntry(tenantId, request.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists);
+				throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
 			}
 			this.entityIds.put(tenantId, request.getId());
 		}
@@ -243,7 +239,7 @@ public class EntityService implements EntityCRUDService{
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
 		if (entityId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "empty entity id is not allowed");
 		}
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
@@ -271,14 +267,14 @@ public class EntityService implements EntityCRUDService{
 	private Map<String, Object> validateIdAndGetBody(String entityId, String tenantId) throws ResponseException {
 		// null id check
 		if (entityId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
 		}
 		synchronized (this.entityIds) {
 			if (!this.entityIds.containsKey(tenantId)) {
-				throw new ResponseException(ErrorType.TenantNotFound);
+				throw new ResponseException(ErrorType.TenantNotFound, "tenant " + tenantId + " not found");
 			}
 			if (!this.entityIds.containsValue(entityId)) {
-				throw new ResponseException(ErrorType.NotFound);
+				throw new ResponseException(ErrorType.NotFound, "Entity Id " + entityId + " not found");
 			}
 		}
 		String entityBody = null;
@@ -300,13 +296,13 @@ public class EntityService implements EntityCRUDService{
 		logger.trace("deleteEntity() :: started");
 		// get message channel for ENTITY_DELETE topic
 		if (entityId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
 		}
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		synchronized (this.entityIds) {
 
 			if (!this.entityIds.containsEntry(tenantId, entityId)) {
-				throw new ResponseException(ErrorType.NotFound);
+				throw new ResponseException(ErrorType.NotFound, entityId + " not found");
 			}
 			this.entityIds.remove(tenantId, entityId);
 
@@ -329,7 +325,7 @@ public class EntityService implements EntityCRUDService{
 		logger.trace("partialUpdateEntity() :: started");
 		// get message channel for ENTITY_APPEND topic
 		if (entityId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
 		}
 
 		String tenantid = HttpUtils.getInternalTenant(headers);
@@ -363,7 +359,7 @@ public class EntityService implements EntityCRUDService{
 		// get message channel for ENTITY_APPEND topic
 
 		if (entityId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
 		}
 		String tenantid = HttpUtils.getInternalTenant(headers);
 		// get entity details
@@ -459,58 +455,4 @@ public class EntityService implements EntityCRUDService{
 		return new URI(uri.toString() + "/" + resource);
 	}
 
-	/*
-	 * @KafkaListener(topics = "${entity.topic}", groupId = "entitymanager") public
-	 * void updateTopicDetails(Message<byte[]> message) throws IOException {
-	 * logger.trace("updateTopicDetails() :: started"); String key =
-	 * operations.getMessageKey(message); int partitionId = (int)
-	 * message.getHeaders().get(KafkaHeaders.RECEIVED_PARTITION_ID); long offset =
-	 * (long) message.getHeaders().get(KafkaHeaders.OFFSET); JsonNode entityJsonBody
-	 * = objectMapper.readTree(message.getPayload()); boolean isDeletedMsg =
-	 * entityJsonBody.isNull(); if (isDeletedMsg) { entityTopicMap.remove(key); }
-	 * else { entityTopicMap.put(key, new EntityDetails(key, partitionId, offset));
-	 * } logger.trace("updateTopicDetails() :: completed"); }
-	 */
-
-	public BatchResult deleteMultipleMessage(ArrayListMultimap<String, String> headers, String payload)
-			throws ResponseException {
-		try {
-			BatchResult result = new BatchResult();
-			Object obj = JsonUtils.fromString(payload);
-
-			if (!(obj instanceof List)) {
-				throw new ResponseException(ErrorType.InvalidRequest,
-						"This interface only supports arrays of entities");
-			}
-			List<String> list = (List<String>) obj;
-
-			if (list.isEmpty()) {
-				throw new ResponseException(ErrorType.BadRequestData);
-			}
-			if (maxDeleteBatch != -1 && list.size() > maxDeleteBatch) {
-				throw new ResponseException(ErrorType.RequestEntityTooLarge,
-						"Maximum allowed number of entities for this operation is " + maxDeleteBatch);
-			}
-
-			for (String entityId : list) {
-				try {
-					if (deleteEntity(headers, entityId)) {
-						result.addSuccess(entityId);
-					}
-				} catch (Exception e) {
-					RestResponse response;
-					if (e instanceof ResponseException) {
-						response = new RestResponse((ResponseException) e);
-					} else {
-						response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-					}
-					result.addFail(new BatchFailure(entityId, response));
-				}
-			}
-			return result;
-		} catch (IOException e) {
-			throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
-		}
-
-	}
 }

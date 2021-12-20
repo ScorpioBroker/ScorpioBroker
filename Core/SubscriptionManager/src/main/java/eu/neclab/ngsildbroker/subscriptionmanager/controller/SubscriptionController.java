@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,7 +22,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -80,11 +80,6 @@ public class SubscriptionController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	ResponseException badRequest = new ResponseException(ErrorType.BadRequestData);
-
-	ResponseEntity<byte[]> badRequestResponse = ResponseEntity.status(badRequest.getHttpStatus())
-			.body(new RestResponse(badRequest).toJsonBytes());
-
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private Pattern subscriptionParser;
 
@@ -106,17 +101,14 @@ public class SubscriptionController {
 	@SuppressWarnings("unchecked")
 	@RequestMapping(method = RequestMethod.POST)
 	@ResponseBody
-	public ResponseEntity<byte[]> subscribeRest(ServerHttpRequest request, @RequestBody String payload) {
+	public ResponseEntity<byte[]> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription = null;
 
 		try {
-			// HttpUtils.doPreflightCheck(request, payload);
 			List<Object> context = new ArrayList<Object>();
 			context.addAll(HttpUtils.getAtContext(request));
 
-			// System.out.println("RECEIVING SUBSCRIPTION: " + payload + " at " +
-			// System.currentTimeMillis());
 			subscription = expandSubscription(payload, request);
 			Object bodyContext = ((Map<String, Object>) JsonUtils.fromString(payload)).get(JsonLdConsts.CONTEXT);
 			if (bodyContext instanceof List) {
@@ -154,7 +146,7 @@ public class SubscriptionController {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Subscription expandSubscription(String body, ServerHttpRequest request)
+	public Subscription expandSubscription(String body, HttpServletRequest request)
 			throws ResponseException, JsonParseException, JsonLdError, IOException {
 		Subscription subscription = new Subscription();
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
@@ -430,50 +422,50 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.GET)
-	public ResponseEntity<byte[]> getAllSubscriptions(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getAllSubscriptions(HttpServletRequest request,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
 			@RequestParam(required = false, name = "offset", defaultValue = "0") int offset,
 			@RequestParam(required = false, name = "count", defaultValue = "false") boolean count) {
 		logger.trace("getAllSubscriptions() :: started");
 		List<SubscriptionRequest> result = null;
-		if (request.getPath().toString().equals(MY_REQUEST_MAPPING)
-				|| request.getPath().toString().equals(MY_REQUEST_MAPPING_ALT)) {
-			result = manager.getAllSubscriptions(HttpUtils.getHeaders(request));
-			int toIndex = offset + limit;
-			ArrayList<Object> additionalLinks = new ArrayList<Object>();
-			if (limit == 0 || toIndex > result.size() - 1) {
-				toIndex = result.size() - 1;
-			} else {
-				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, toIndex, limit, null, "next"));
-			}
-			if (offset > 0) {
-				int newOffSet = offset - limit;
-				if (newOffSet < 0) {
-					newOffSet = 0;
-				}
-				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, newOffSet, limit, null, "prev"));
+
+		result = manager.getAllSubscriptions(HttpUtils.getHeaders(request));
+		int toIndex = offset + limit;
+		ArrayList<Object> additionalLinks = new ArrayList<Object>();
+		if (limit == 0 || toIndex > result.size() - 1) {
+			toIndex = result.size() - 1;
+			if (toIndex < 0) {
+				toIndex = 0;
 			}
 
-			ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
-			if (count == true) {
-				additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(result.size()));
-			}
-			if (!additionalLinks.isEmpty()) {
-				for (Object entry : additionalLinks) {
-					additionalHeaders.put(HttpHeaders.LINK, (String) entry);
-				}
-			}
-			List<SubscriptionRequest> realResult = result.subList(offset, toIndex);
-			logger.trace("getAllSubscriptions() :: completed");
-			try {
-				return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
-						additionalHeaders, AppConstants.SUBSCRIPTION_ENDPOINT);
-			} catch (Exception exception) {
-				return HttpUtils.handleControllerExceptions(exception);
-			}
 		} else {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
+			additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, toIndex, limit, null, "next"));
+		}
+
+		if (offset > 0) {
+			int newOffSet = offset - limit;
+			if (newOffSet < 0) {
+				newOffSet = 0;
+			}
+			additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, newOffSet, limit, null, "prev"));
+		}
+
+		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
+		if (count == true) {
+			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(result.size()));
+		}
+		if (!additionalLinks.isEmpty()) {
+			for (Object entry : additionalLinks) {
+				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
+			}
+		}
+		List<SubscriptionRequest> realResult = result.subList(offset, toIndex);
+		logger.trace("getAllSubscriptions() :: completed");
+		try {
+			return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
+					additionalHeaders, AppConstants.SUBSCRIPTION_ENDPOINT);
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 
 	}
@@ -487,7 +479,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/{id}")
-	public ResponseEntity<byte[]> getSubscriptions(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getSubscriptions(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) String id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
@@ -504,7 +496,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
-	public ResponseEntity<byte[]> deleteSubscription(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteSubscription(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			logger.trace("call deleteSubscription() ::");
@@ -517,13 +509,13 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE)
-	public ResponseEntity<byte[]> deleteSubscriptionEmptyId(ServerHttpRequest request) {
+	public ResponseEntity<byte[]> deleteSubscriptionEmptyId(HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}
 
 	@RequestMapping(method = RequestMethod.PATCH, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
-	public ResponseEntity<byte[]> updateSubscription(ServerHttpRequest request,
+	public ResponseEntity<byte[]> updateSubscription(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestBody String payload) {
 		logger.trace("call updateSubscription() ::");
@@ -545,7 +537,8 @@ public class SubscriptionController {
 
 			// expandSubscriptionAttributes(subscription, context);
 			if (resolved == null || subscription == null || !id.equals(subscription.getId())) {
-				return badRequestResponse;
+				return HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.BadRequestData, "empty subscription body"));
 			}
 			manager.updateSubscription(subscriptionRequest);
 		} catch (Exception exception) {
@@ -567,7 +560,7 @@ public class SubscriptionController {
 	}
 
 	@RequestMapping(method = RequestMethod.PATCH)
-	public ResponseEntity<byte[]> patchubscriptionEmptyId(ServerHttpRequest request) {
+	public ResponseEntity<byte[]> patchubscriptionEmptyId(HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
 	}

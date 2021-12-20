@@ -4,11 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,7 +50,7 @@ public class AtContextServerController {
 	 * @return
 	 */
 	@GetMapping(path = "/{contextId}")
-	public ResponseEntity<Object> getContextForEntity(ServerHttpRequest request,
+	public ResponseEntity<Object> getContextForEntity(HttpServletRequest request,
 			@PathVariable("contextId") String contextId) {
 		logger.trace("getAtContext() for " + contextId);
 		/*

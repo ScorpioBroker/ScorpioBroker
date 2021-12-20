@@ -14,20 +14,6 @@ public class MicroServiceUtils {
 
 	@Value("${gatewayurl:}")
 	private static String gatewayUrl;
-	/*
-	 * public static String getResourceURL(String resource) {
-	 * 
-	 * logger.trace("getSubscriptionResourceURL() :: started"); Application
-	 * application = eurekaClient.getApplication("gateway"); InstanceInfo
-	 * instanceInfo = application.getInstances().get(0); // TODO : search for a
-	 * better way to resolve http or https String hostIP =
-	 * "";//instanceInfo.getIPAddr(); int port = 1234;//instanceInfo.getPort();
-	 * StringBuilder url = new
-	 * StringBuilder("http://").append(hostIP).append(":").append(port)
-	 * .append(resource); // System.out.println("URL : "+url.toString());
-	 * logger.trace("getSubscriptionResourceURL() :: completed"); return
-	 * url.toString(); }
-	 */
 
 	public static URI getGatewayURL() {
 		logger.trace("getGatewayURL() :: started");

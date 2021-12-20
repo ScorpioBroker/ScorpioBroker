@@ -43,9 +43,9 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 public class SerializationTools {
 //	public static SimpleDateFormat formatter = new SimpleDateFormat(NGSIConstants.DEFAULT_DATE_FORMAT);
 	private static DateTimeFormatter informatter = DateTimeFormatter
-			.ofPattern(NGSIConstants.ALLOWED_IN_DEFAULT_DATE_FORMAT).withZone(ZoneId.of("Z"));//.withZone(ZoneId.systemDefault());
+			.ofPattern(NGSIConstants.ALLOWED_IN_DEFAULT_DATE_FORMAT).withZone(ZoneId.of("Z"));// .withZone(ZoneId.systemDefault());
 	public static DateTimeFormatter formatter = DateTimeFormatter
-			.ofPattern(NGSIConstants.ALLOWED_OUT_DEFAULT_DATE_FORMAT).withZone(ZoneId.of("Z"));//systemDefault());
+			.ofPattern(NGSIConstants.ALLOWED_OUT_DEFAULT_DATE_FORMAT).withZone(ZoneId.of("Z"));// systemDefault());
 //	public static SimpleDateFormat forgivingFormatter = new SimpleDateFormat(
 //			NGSIConstants.DEFAULT_FORGIVING_DATE_FORMAT);
 
@@ -656,12 +656,12 @@ public class SerializationTools {
 		try {
 			json = objectMapper.readTree(payload);
 			if (json.isNull()) {
-				throw new ResponseException(ErrorType.InvalidRequest);
+				throw new ResponseException(ErrorType.InvalidRequest, "Empty body");
 			}
 		} catch (JsonProcessingException e) {
-			throw new ResponseException(ErrorType.InvalidRequest);
+			throw new ResponseException(ErrorType.InvalidRequest, "Failed to process json");
 		} catch (IOException e) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, e.getLocalizedMessage());
 		}
 		return json;
 	}

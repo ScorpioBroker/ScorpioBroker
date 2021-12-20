@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.web.client.RestTemplate;
 
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfiguration;
+import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
 
 
 @SpringBootApplication
-@Import(SecurityConfiguration.class)
+@Import(WebSecurityConfiguration.class)
 public class AtContextServer {
 
 	public static void main(String[] args) {

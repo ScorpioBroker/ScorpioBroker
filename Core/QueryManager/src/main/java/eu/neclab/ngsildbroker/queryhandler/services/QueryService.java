@@ -217,7 +217,7 @@ public class QueryService implements EntityQueryService{
 						try {
 							return queryDAO.query(qp);
 						} catch (Exception e) {
-							throw new ResponseException(ErrorType.TenantNotFound);
+							throw new ResponseException(ErrorType.TenantNotFound, "Tenant not found");
 						}
 					} else {
 						return getFromStorageManager(DataSerializer.toJson(qp));

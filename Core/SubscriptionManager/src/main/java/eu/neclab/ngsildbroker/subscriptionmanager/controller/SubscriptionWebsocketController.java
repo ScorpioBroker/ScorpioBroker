@@ -18,7 +18,7 @@ public class SubscriptionWebsocketController {
 	@MessageMapping("/incoming")
 	@SendTo("/topic/outgoing")
 	public String incoming(Message message) {
-		System.out.println(message.getPayload());
+		
 		return "blaaaaa";
 	}
 

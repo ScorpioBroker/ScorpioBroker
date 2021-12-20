@@ -4,13 +4,13 @@ import java.net.URI;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,7 +28,6 @@ import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -54,15 +53,10 @@ public class RegistrySubscriptionController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	ResponseException badRequest = new ResponseException(ErrorType.BadRequestData);
-
-	ResponseEntity<byte[]> badRequestResponse = ResponseEntity.status(badRequest.getHttpStatus())
-			.body(new RestResponse(badRequest).toJsonBytes());
-
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@PostMapping
-	public ResponseEntity<byte[]> subscribeRest(ServerHttpRequest request, @RequestBody String payload) {
+	public ResponseEntity<byte[]> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription = null;
 		try {
@@ -73,7 +67,8 @@ public class RegistrySubscriptionController {
 
 			subscription = DataSerializer.getSubscription(resolved);
 			if (resolved == null || subscription == null) {
-				return badRequestResponse;
+				return HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.BadRequestData, "empty subscription body"));
 			}
 
 			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, linkHeaders,
@@ -89,7 +84,7 @@ public class RegistrySubscriptionController {
 	}
 
 	@GetMapping
-	public ResponseEntity<byte[]> getAllSubscriptions(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getAllSubscriptions(HttpServletRequest request,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		logger.trace("getAllSubscriptions() :: started");
 		List<Subscription> result = null;
@@ -104,7 +99,7 @@ public class RegistrySubscriptionController {
 
 	@GetMapping("{id}")
 	// (method = RequestMethod.GET, value = "/{id}")
-	public ResponseEntity<byte[]> getSubscriptions(ServerHttpRequest request,
+	public ResponseEntity<byte[]> getSubscriptions(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
 		try {
@@ -122,7 +117,7 @@ public class RegistrySubscriptionController {
 
 	@DeleteMapping("{id}")
 	@RequestMapping(method = RequestMethod.DELETE, value = "/{id}")
-	public ResponseEntity<byte[]> deleteSubscription(ServerHttpRequest request,
+	public ResponseEntity<byte[]> deleteSubscription(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
 		try {
 			HttpUtils.validateUri(id);
@@ -135,7 +130,7 @@ public class RegistrySubscriptionController {
 	}
 
 	@PatchMapping("{id}")
-	public ResponseEntity<byte[]> updateSubscription(ServerHttpRequest request,
+	public ResponseEntity<byte[]> updateSubscription(HttpServletRequest request,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
 			@RequestBody String payload) {
 		logger.trace("call updateSubscription() ::");
@@ -151,7 +146,8 @@ public class RegistrySubscriptionController {
 				subscription.setId(id);
 			}
 			if (resolved == null || subscription == null || !id.equals(subscription.getId())) {
-				return badRequestResponse;
+				return HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.BadRequestData, "empty subscription body"));
 			}
 
 			HttpUtils.validateUri(id);

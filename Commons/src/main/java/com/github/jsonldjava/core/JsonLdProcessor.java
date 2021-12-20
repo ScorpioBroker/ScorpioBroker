@@ -402,6 +402,11 @@ public class JsonLdProcessor {
 	 * TODO: this would fit better in the document loader class
 	 */
 	private static Map<String, RDFParser> rdfParsers = new LinkedHashMap<String, RDFParser>() {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 2642325778310758215L;
+
 		{
 			// automatically register nquad serializer
 			put(JsonLdConsts.APPLICATION_NQUADS, new NQuadRDFParser());

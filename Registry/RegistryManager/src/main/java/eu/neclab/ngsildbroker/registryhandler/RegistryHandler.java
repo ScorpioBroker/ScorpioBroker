@@ -8,14 +8,15 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
-import eu.neclab.ngsildbroker.commons.securityConfig.SecurityConfiguration;
+import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
 
 @SpringBootApplication
-@Import(SecurityConfiguration.class)
+@Import(WebSecurityConfiguration.class)
 public class RegistryHandler {
 
 	public static void main(String[] args) {
@@ -47,6 +48,10 @@ public class RegistryHandler {
 	@Bean("csdao")
 	StorageWriterDAO storageWriterDAO() {
 		return new StorageWriterDAO();
+	}
+	@Bean("cswebclient")
+	WebClient webClient() {
+		return WebClient.builder().build();
 	}
 
 }

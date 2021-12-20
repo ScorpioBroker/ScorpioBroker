@@ -77,7 +77,7 @@ public class DeleteAttributeRequest extends EntityRequest {
 			} else if (deleteAll != null && !deleteAll.isEmpty()) {
 				if (deleteAll.equals("true")) {
 					if (entityBody.remove(attrId) == null) {
-						throw new ResponseException(ErrorType.NotFound);
+						throw new ResponseException(ErrorType.NotFound, attrId + " not found");
 					}
 				} else {
 					throw new ResponseException(ErrorType.InvalidRequest, "request is not valid");

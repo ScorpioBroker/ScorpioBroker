@@ -29,6 +29,7 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -36,6 +37,7 @@ import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -72,6 +74,10 @@ public class CSourceSubscriptionService {
 	@Autowired
 	CSourceService cSourceService;
 
+	@Autowired
+	@Qualifier("cswebclient")
+	WebClient webClient;
+
 	CSourceNotificationHandler notificationHandler;
 	CSourceNotificationHandler internalNotificationHandler;
 
@@ -95,7 +101,7 @@ public class CSourceSubscriptionService {
 
 	@PostConstruct
 	private void loadStoredSubscriptions() {
-		this.notificationHandler = new CSourceNotificationHandlerREST();
+		this.notificationHandler = new CSourceNotificationHandlerREST(webClient);
 		this.internalNotificationHandler = new CSourceNotificationHandlerInternalKafka(kafkaTemplate,
 				notificationChannel);
 		logger.trace("call loadStoredSubscriptions() ::");
@@ -118,7 +124,7 @@ public class CSourceSubscriptionService {
 		if (subscriptionId2Subscription.containsKey(id)) {
 			return subscriptionId2Subscription.get(id).getSubscription();
 		} else {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.NotFound, id.toString() + " not found");
 		}
 
 	}
@@ -133,7 +139,11 @@ public class CSourceSubscriptionService {
 			subscription.setId(generateUniqueSubId(subscription));
 		} else {
 			if (this.subscriptionId2Subscription.containsKey(subscription.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists);
+				if (subscription.isInternal()) {
+					return null;
+				} else {
+					throw new ResponseException(ErrorType.AlreadyExists, "Subscription with this id already exists");
+				}
 			}
 		}
 		this.subscriptionId2Subscription.put(subscription.getId(), subscriptionRequest);
@@ -212,7 +222,7 @@ public class CSourceSubscriptionService {
 	public boolean unsubscribe(URI id, ArrayListMultimap<String, String> headers) throws ResponseException {
 		SubscriptionRequest req = this.subscriptionId2Subscription.get(id);
 		if (req == null) {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.NotFound, id.toString() + " not found.");
 		}
 		checkTenant(headers, req.getHeaders());
 		return unsubscribe(id);
@@ -221,7 +231,7 @@ public class CSourceSubscriptionService {
 	private boolean unsubscribe(URI id) throws ResponseException {
 		SubscriptionRequest removedSub = this.subscriptionId2Subscription.remove(id);
 		if (removedSub == null) {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.NotFound, id.toString() + " not found.");
 		}
 		for (EntityInfo info : removedSub.getSubscription().getEntities()) {
 			if (info.getId() != null) {
@@ -243,10 +253,10 @@ public class CSourceSubscriptionService {
 		List<String> tenant1 = headers.get(NGSIConstants.TENANT_HEADER);
 		List<String> tenant2 = headers2.get(NGSIConstants.TENANT_HEADER);
 		if (tenant1.size() != tenant2.size()) {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.TenantNotFound, "tenat not found.");
 		}
 		if (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2.get(0))) {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.TenantNotFound, "tenat not found.");
 		}
 
 	}
@@ -255,12 +265,12 @@ public class CSourceSubscriptionService {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		SubscriptionRequest oldSubRequest = subscriptionId2Subscription.get(subscription.getId());
 		if (oldSubRequest == null) {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.NotFound, subscription.getId() + " not found");
 		}
 		checkTenant(subscriptionRequest.getHeaders(), oldSubRequest.getHeaders());
 		Subscription oldSub = oldSubRequest.getSubscription();
 		if (oldSub == null) {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.NotFound, subscription.getId() + " not found");
 		}
 		if (subscription.getAttributeNames() != null) {
 			oldSub.setAttributeNames(subscription.getAttributeNames());
@@ -324,7 +334,7 @@ public class CSourceSubscriptionService {
 			checkTenant(headers, subRequest.getHeaders());
 			return subRequest.getSubscription();
 		} else {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.NotFound, subscriptionId.toString() + " not found");
 		}
 
 	}

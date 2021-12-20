@@ -18,7 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
 import org.springframework.http.server.RequestPath;
-import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -128,7 +128,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 	private ResponseEntity<byte[]> generateNotificationResponse(String acceptHeader, String body, List<Object> context)
 			throws ResponseException {
-		ServerHttpRequest request = new ServerHttpRequest() {
+		HttpServletRequest request = new ServerHttpRequest() {
 			HttpHeaders headers = new HttpHeaders();
 			{
 				headers.add(HttpHeaders.ACCEPT, acceptHeader);

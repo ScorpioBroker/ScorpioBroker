@@ -8,7 +8,6 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEA
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -32,13 +31,16 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.filosganga.geogson.model.Point;
@@ -71,6 +73,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import reactor.core.publisher.Mono;
 
 @Service
 public class SubscriptionService {
@@ -103,6 +106,10 @@ public class SubscriptionService {
 
 	@Autowired
 	ReplyingKafkaTemplate<String, String, String> kafkaTemplate;
+
+	@Autowired
+	@Qualifier("subwebclient")
+	WebClient webClient;
 
 	@Autowired
 	SubscriptionInfoDAO subscriptionInfoDAO;
@@ -143,7 +150,7 @@ public class SubscriptionService {
 			e.printStackTrace();
 		}
 
-		notificationHandlerREST = new NotificationHandlerREST(this, objectMapper);
+		notificationHandlerREST = new NotificationHandlerREST(this, objectMapper, webClient);
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, queryResultTopic,
 				requestTopic);
 		notificationHandlerMQTT = new NotificationHandlerMQTT(this, objectMapper);
@@ -184,7 +191,8 @@ public class SubscriptionService {
 			synchronized (tenant2subscriptionId2Subscription) {
 				if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
 						subscription.getId().toString())) {
-					throw new ResponseException(ErrorType.AlreadyExists);
+					throw new ResponseException(ErrorType.AlreadyExists,
+							subscription.getId().toString() + " already exists");
 
 				}
 			}
@@ -277,7 +285,7 @@ public class SubscriptionService {
 		}
 		if (subscription.getExpiresAt() != null && !isValidFutureDate(subscription.getExpiresAt())) {
 			logger.error("Invalid expire date!");
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 		}
 
 	}
@@ -315,11 +323,11 @@ public class SubscriptionService {
 		SubscriptionRequest removedSub;
 		synchronized (tenant2subscriptionId2Subscription) {
 			if (!this.tenant2subscriptionId2Subscription.contains(tenant, id.toString())) {
-				throw new ResponseException(ErrorType.NotFound);
+				throw new ResponseException(ErrorType.NotFound, id.toString() + " not found");
 			}
 			removedSub = this.tenant2subscriptionId2Subscription.get(tenant, id.toString());
 			if (removedSub == null) {
-				throw new ResponseException(ErrorType.NotFound);
+				throw new ResponseException(ErrorType.NotFound, id.toString() + " not found");
 			}
 
 			removedSub = this.tenant2subscriptionId2Subscription.remove(tenant, id.toString());
@@ -357,7 +365,7 @@ public class SubscriptionService {
 		synchronized (tenant2subscriptionId2Subscription) {
 			oldSubRequest = tenant2subscriptionId2Subscription.get(tenant, subscription.getId().toString());
 			if (oldSubRequest == null) {
-				throw new ResponseException(ErrorType.NotFound);
+				throw new ResponseException(ErrorType.NotFound, subscription.getId().toString() + " not found");
 			}
 			Subscription oldSub = oldSubRequest.getSubscription();
 
@@ -424,7 +432,7 @@ public class SubscriptionService {
 			sub = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers), subscriptionId);
 		}
 		if (sub == null) {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.NotFound, subscriptionId + " not found");
 		}
 		return sub;
 	}
@@ -923,23 +931,29 @@ public class SubscriptionService {
 				remoteNotification.setEndPoint(endPoint);
 				remoteSub.setAttributeNames(subscription.getAttributeNames());
 				String body = DataSerializer.toJson(remoteSub);
-				HashMap<String, String> additionalHeaders = new HashMap<String, String>();
-				additionalHeaders.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD);
+				HttpHeaders additionalHeaders = new HttpHeaders();
+				additionalHeaders.add(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD);
 				for (String remoteEndPoint : remoteEndPoints) {
-					try {
+					
 						StringBuilder temp = new StringBuilder(remoteEndPoint);
 						if (remoteEndPoint.endsWith("/")) {
 							temp.deleteCharAt(remoteEndPoint.length() - 1);
 						}
 						temp.append(AppConstants.SUBSCRIPTIONS_URL);
-						HttpUtils.doPost(new URI(temp.toString()), body, additionalHeaders);
-					} catch (IOException e) {
-						// TODO what to do when a remote sub times out ? at the moment we just fail here
-						e.printStackTrace();
-					} catch (URISyntaxException e) {
+						webClient.post().uri(temp.toString()).headers( httpHeadersOnWebClientBeingBuilt -> { 
+					         httpHeadersOnWebClientBeingBuilt.addAll( additionalHeaders );
+					    }).bodyValue(body)
+					    .exchangeToMono(response -> {
+					         if (response.statusCode().equals(HttpStatus.OK)) {
+					             return Mono.just(Void.class);
+					         }
+					         else {
+					             return response.createException().flatMap(Mono::error);
+					         }
+					     }).subscribe();
+					
+						
 
-						e.printStackTrace();
-					}
 				}
 
 			}
@@ -953,7 +967,6 @@ public class SubscriptionService {
 		remoteNotifyCallbackId2InternalSub.put(uuid, subToCheck);
 		StringBuilder url = new StringBuilder(MicroServiceUtils.getGatewayURL().toString()).append("/remotenotify/")
 				.append(uuid);
-		// System.out.println("URL : "+url.toString());
 		try {
 			return new URI(url.toString());
 		} catch (URISyntaxException e) {
