@@ -229,9 +229,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 
 			}
 		}
-		if (result.getNotification() == null) {
-			throw new JsonParseException("no notification parameter provided");
-		}
+		
 		// if (result.getId() == null) {
 		//
 		// }

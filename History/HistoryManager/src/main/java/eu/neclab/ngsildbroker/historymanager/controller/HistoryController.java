@@ -182,6 +182,9 @@ public class HistoryController {
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
+			if (queryResult == null) {
+				System.err.println();
+			}
 			if (queryResult.isEmpty()) {
 				throw new ResponseException(ErrorType.NotFound);
 			}

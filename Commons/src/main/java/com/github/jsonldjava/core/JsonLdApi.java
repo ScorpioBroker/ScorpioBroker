@@ -253,6 +253,9 @@ public class JsonLdApi {
 					// isArray(compactedValue)
 					// && ((List<Object>) expandedValue).size() == 0);
 				}
+				if(endPoint == AppConstants.REGISTRY_ENDPOINT && NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
+					isGeoProperty = true;
+				}
 				if (isGeoProperty && NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
 					Object potentialString = ((Map<String, Object>) ((List) expandedValue).get(0))
 							.get(JsonLdConsts.VALUE);

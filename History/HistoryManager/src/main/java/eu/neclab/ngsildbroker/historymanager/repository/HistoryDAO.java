@@ -223,18 +223,26 @@ public class HistoryDAO extends StorageReaderDAO {
 		}
 		sqlQuery += "  as tedata, " + "jsonb_object_agg(attributeid,";
 		if (qp.getTemporalValues()) {
-			if (qp.getTimeproperty().equalsIgnoreCase(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-				sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE + "'->0->'"
-						+ NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_MODIFIED_AT + "'->0->'"
-						+ NGSIConstants.JSON_LD_VALUE + "')) from jsonb_array_elements(attributedata) as x(t))";
-			} else if (qp.getTimeproperty().equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)) {
-				sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE + "'->0->'"
-						+ NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_CREATED_AT + "'->0->'"
-						+ NGSIConstants.JSON_LD_VALUE + "')) from jsonb_array_elements(attributedata) as x(t))";
-			} else if (qp.getTimeproperty().equalsIgnoreCase(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
+			String timeProperty = qp.getTimeproperty();
+			if (timeProperty == null || timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
 				sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE + "'->0->'"
 						+ NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_OBSERVED_AT + "'->0->'"
 						+ NGSIConstants.JSON_LD_VALUE + "')) from jsonb_array_elements(attributedata) as x(t))";
+			} else {
+				if (timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+					sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE
+							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_MODIFIED_AT
+							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE
+							+ "')) from jsonb_array_elements(attributedata) as x(t))";
+				} else if (timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)) {
+					sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE
+							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_CREATED_AT
+							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE
+							+ "')) from jsonb_array_elements(attributedata) as x(t))";
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData, "Invalid timeproperty");
+
+				}
 			}
 		} else {
 			sqlQuery += "attributedata";

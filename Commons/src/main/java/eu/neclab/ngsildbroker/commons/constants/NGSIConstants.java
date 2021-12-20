@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.constants;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -261,4 +262,5 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_TIME_POPERTY = "https://uri.etsi.org/ngsi-ld/timeproperty";
 	public static final String NGSI_LD_TIME_REL = "https://uri.etsi.org/ngsi-ld/timerel";
 	public static final String NGSI_LD_OBSERVATIONINTERVAL = "https://uri.etsi.org/ngsi-ld/observationInterval";
+	public static final Set<String> LOCATIONS_IN_REGISTRATION = Set.of(NGSI_LD_LOCATION, NGSI_LD_OBSERVATION_SPACE, NGSI_LD_OPERATION_SPACE);
 }
