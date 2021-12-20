@@ -378,6 +378,9 @@ public class CSourceService {
 		synchronized (this.csourceIds) {
 			if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
 				throw new ResponseException(ErrorType.NotFound);
+			} else {
+				this.csourceIds.remove(tenantId, registrationId);
+
 			}
 		}
 
@@ -391,7 +394,7 @@ public class CSourceService {
 		// DataSerializer.getCSourceRegistration(csourceBody);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		this.csourceSubService.checkSubscriptions(request, TriggerReason.noLongerMatching);
-		
+
 		pushToDB(request);
 		new Thread() {
 			public void run() {
