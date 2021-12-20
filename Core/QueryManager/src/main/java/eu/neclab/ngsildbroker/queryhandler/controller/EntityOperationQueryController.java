@@ -164,6 +164,8 @@ public class EntityOperationQueryController {
 					throw new ResponseException(ErrorType.BadRequestData, entry.getKey() + " is an unknown entry");
 				}
 			}
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
+			params.setTenant(tenantid);
 			if (!typeProvided) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"No type provided. Type has to be Query for this operation");

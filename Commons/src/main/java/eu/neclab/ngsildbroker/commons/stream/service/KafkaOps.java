@@ -73,45 +73,6 @@ public class KafkaOps {
 		}
 	}
 
-	public void createTopic(String topicName) {
-
-		KafkaProperties kafkaProperties = new KafkaProperties();
-		kafkaProperties.setBootstrapServers(Collections.singletonList("localhost:9092"));
-		KafkaBinderConfigurationProperties kafkaBinderConfigurationProperties = new KafkaBinderConfigurationProperties(
-				kafkaProperties);
-		KafkaTopicProvisioner kafkaTopicProvisioner = new KafkaTopicProvisioner(kafkaBinderConfigurationProperties,
-				kafkaProperties);
-		RetryOperations metadataRetryOperations = new RetryTemplate();
-		kafkaTopicProvisioner.setMetadataRetryOperations(metadataRetryOperations);
-		KafkaProducerProperties kafkaProducerProperties = new KafkaProducerProperties();
-		ExtendedProducerProperties<KafkaProducerProperties> extendedProducerProperties = new ExtendedProducerProperties<KafkaProducerProperties>(
-				kafkaProducerProperties);
-		kafkaTopicProvisioner.provisionProducerDestination(topicName, extendedProducerProperties);
-	}
-
-	public Set<String> getTopics() throws Exception {
-		KafkaProperties kafkaProperties = new KafkaProperties();
-		kafkaProperties.setBootstrapServers(Collections.singletonList("localhost:9092"));
-		Map<String, Object> adminClientProperties = kafkaProperties.buildAdminProperties();
-		try (AdminClient adminClient = AdminClient.create(adminClientProperties)) {
-			ListTopicsResult listTopicsResult = adminClient.listTopics();
-			KafkaFuture<Set<String>> namesFutures = listTopicsResult.names();
-			Set<String> names = namesFutures.get(30, TimeUnit.SECONDS);
-			return names;
-		}
-	}
-
-	public void deleteTopic(Collection<String> topicName) throws Exception {
-		KafkaProperties kafkaProperties = new KafkaProperties();
-		kafkaProperties.setBootstrapServers(Collections.singletonList("localhost:9092"));
-		Map<String, Object> adminClientProperties = kafkaProperties.buildAdminProperties();
-		try (AdminClient adminClient = AdminClient.create(adminClientProperties)) {
-			// TODO what's up with this result??
-			@SuppressWarnings("unused")
-			DeleteTopicsResult deleteTopicResult = adminClient.deleteTopics(topicName);
-		}
-	}
-
 	public boolean isMessageExists(String key, String topicname) {
 		Map<String, byte[]> entityMap = pullFromKafka(topicname);
 		return entityMap.containsKey(key);

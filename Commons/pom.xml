@@ -5,12 +5,106 @@
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>OverallParent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.1.0-SNAPSHOT</version>
 		<relativePath>../OverallParent</relativePath>
 	</parent>
 	<artifactId>Commons</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
+	<profiles>
+		<profile>
+			<id>docker-aaio</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-oauth2</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-config</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>docker-dist</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-oauth2</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-config</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>dist</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-oauth2</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-config</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>aaio</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-oauth2</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.cloud</groupId>
+					<artifactId>spring-cloud-starter-config</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>docker-aaio-no-eureka</id>
+			<dependencies>
+				<dependency>
+					<groupId>commons-lang</groupId>
+					<artifactId>commons-lang</artifactId>
+					<version>2.6</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>docker-dist-no-eureka</id>
+			<dependencies>
+				<dependency>
+					<groupId>commons-lang</groupId>
+					<artifactId>commons-lang</artifactId>
+					<version>2.6</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>aaio-no-eureka</id>
+			<dependencies>
+				<dependency>
+					<groupId>commons-lang</groupId>
+					<artifactId>commons-lang</artifactId>
+					<version>2.6</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>dist-no-eureka</id>
+			<dependencies>
+				<dependency>
+					<groupId>commons-lang</groupId>
+					<artifactId>commons-lang</artifactId>
+					<version>2.6</version>
+				</dependency>
+			</dependencies>
+		</profile>
+	</profiles>
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
@@ -21,15 +115,6 @@
 			<artifactId>httpcore</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-		</dependency>
-		<!-- <dependency> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-web</artifactId> 
-			<exclusions> <exclusion> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-starter-logging</artifactId> 
-			</exclusion> </exclusions> </dependency> <dependency> <groupId>org.springframework.boot</groupId> 
-			<artifactId>spring-boot-starter-log4j2</artifactId> </dependency> -->
-
-		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 		</dependency>
@@ -38,27 +123,23 @@
 			<artifactId>jsonld-java</artifactId>
 			<version>0.13.0</version>
 		</dependency>
-
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>29.0-jre</version>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-oauth2</artifactId>
-		</dependency>
-		<!-- <dependency> <groupId>org.springframework.security</groupId> <artifactId>spring-security-jwt</artifactId> 
-			<version>1.0.9.RELEASE</version> </dependency> -->
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-config</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-jdbc</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>com.github.filosganga</groupId>
 			<artifactId>geogson-core</artifactId>
@@ -72,6 +153,15 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-config</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security.oauth</groupId>
+			<artifactId>spring-security-oauth2</artifactId>
+			<version>2.5.1.RELEASE</version>
 		</dependency>
 		<dependency>
 			<groupId>org.flywaydb</groupId>

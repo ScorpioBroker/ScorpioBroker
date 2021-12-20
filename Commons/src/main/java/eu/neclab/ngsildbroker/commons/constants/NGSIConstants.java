@@ -124,6 +124,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ATTRIBUTE_LIST_2 = "https://uri.etsi.org/ngsi-ld/attributeList";
 	public final static String NGSI_LD_TYPE_NAMES = "https://uri.etsi.org/ngsi-ld/typeNames";
 	public final static String NGSI_LD_ATTRIBUTE_COUNT = "https://uri.etsi.org/ngsi-ld/default-context/attributeCount";
+	public final static String NGSI_LD_MANAGEMENTINTERVAL = "https://uri.etsi.org/ngsi-ld/managementInterval";
 
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
@@ -135,7 +136,7 @@ public interface NGSIConstants {
 			NGSI_LD_NAME, NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL, NGSI_LD_EXPIRES, NGSI_LD_STATUS,
 			NGSI_LD_DESCRIPTION, NGSI_LD_GEO_REL, NGSI_LD_TIME_STAMP, NGSI_LD_TIMESTAMP_START, NGSI_LD_TIMESTAMP_END,
 			NGSI_LD_SUBSCRIPTION_ID, NGSI_LD_NOTIFIED_AT, NGSI_LD_DATA, NGSI_LD_INTERNAL, NGSI_LD_LAST_NOTIFICATION,
-			NGSI_LD_LAST_FAILURE, NGSI_LD_LAST_SUCCESS, NGSI_LD_TIMES_SEND, NGSI_LD_UNIT_CODE, NGSI_LD_DATA_SET_ID };
+			NGSI_LD_LAST_FAILURE, NGSI_LD_LAST_SUCCESS, NGSI_LD_TIMES_SEND, NGSI_LD_UNIT_CODE, NGSI_LD_DATA_SET_ID,NGSI_LD_MANAGEMENTINTERVAL };
 
 	public final static String[] NGSI_LD_SUBSCRIPTON_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_ENTITIES, NGSI_LD_ID_PATTERN, NGSI_LD_GEO_QUERY, NGSI_LD_NOTIFICATION, NGSI_LD_ATTRIBUTES,
@@ -238,7 +239,8 @@ public interface NGSIConstants {
 	public static final String COUNT_HEADER_RESULT = "count";
 	public static final String REGEX_NGSI_LD_ATTR_TYPES = new String(
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
-	public static final String TENANT_HEADER = "NGSILD-tenant";
+	//DO NOT CHANGE THIS HEADERS ARE MADE TO LOWER CASE BY SPRING
+	public static final String TENANT_HEADER = "ngsild-tenant";
 	public static final String LINK_HEADER = "Link";
 	public static final String QUERY_TYPE = "Query";
 }

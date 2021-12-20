@@ -3,16 +3,16 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>AtContextServer</artifactId>
 	<packaging>jar</packaging>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>BrokerParent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.1.0-SNAPSHOT</version>
 		<relativePath>../../BrokerParent</relativePath>
 	</parent>
 	<profiles>
 		<profile>
-			<id>docker</id>
+			<id>docker-dist</id>
 			<build>
 				<plugins>
 					<plugin>
@@ -40,7 +40,36 @@
 					</plugin>
 				</plugins>
 			</build>
-
+		</profile>
+		<profile>
+			<id>docker-dist-no-eureka</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.12</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+									<goal>push</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<dockerfile>dockerfile4maven_no_eureka</dockerfile>
+							<repository>scorpiobroker/scorpio</repository>
+							<tag>${project.artifactId}-no-eureka_${project.version}</tag>
+							<buildArgs>
+								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>
+								<JAR_FILE_RUN>${project.artifactId}.jar</JAR_FILE_RUN>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 	</profiles>
 	<dependencies>
@@ -54,6 +83,5 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		
 	</dependencies>
 </project>

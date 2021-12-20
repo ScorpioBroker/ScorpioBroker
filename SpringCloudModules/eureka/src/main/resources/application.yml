@@ -1,8 +1,11 @@
+mysettings:
+  eureka:
+    port: ${eureka.port:8761}
 spring:
   application:
     name: eureka-server
 server:
-  port: 8761
+  port: ${mysettings.eureka.port}
 eureka:
   client:
     register-with-eureka: false
