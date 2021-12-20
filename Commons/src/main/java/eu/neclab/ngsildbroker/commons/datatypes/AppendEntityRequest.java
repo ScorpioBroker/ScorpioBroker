@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Iterator;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 
@@ -19,17 +20,17 @@ public class AppendEntityRequest extends EntityRequest {
 	private AppendResult appendResult;
 	private String appendOverwriteFlag;
 
-	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, String old,
-			String update, String overwriteOption, String appendOverwriteFlag) throws ResponseException {
+	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, String old, String update,
+			String overwriteOption, String appendOverwriteFlag) throws ResponseException {
 		super(AppConstants.OPERATION_APPEND_ENTITY, headers);
 		this.appendOverwriteFlag = appendOverwriteFlag;
-		this.id=id;
+		this.id = id;
 		generateAppend(update, old, overwriteOption);
 	}
 
 	private void generateAppend(String update, String old, String overwriteOption) throws ResponseException {
 		JsonNode updateNode;
-		
+
 		try {
 			updateNode = objectMapper.readTree(update);
 			this.appendResult = appendFields(old, updateNode, overwriteOption);
@@ -43,7 +44,6 @@ public class AppendEntityRequest extends EntityRequest {
 
 	}
 
-	
 	/**
 	 * Method to merge/append fileds in original Entity
 	 * 
@@ -79,18 +79,58 @@ public class AppendEntityRequest extends EntityRequest {
 			 * appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
 			 * appendResult.setStatus(true); continue; }
 			 */
+					
+			if (objectNode.has(key) && ((ArrayNode) objectNode.get(key)).size() > 1) {
+				JsonNode innerNode = ((ArrayNode) objectNode.get(key));
+				ArrayNode myArray = (ArrayNode) innerNode;
+				boolean appendpayload = true;
+				for (int i = 0; i < myArray.size(); i++) {
+					if (myArray.get(i).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
 
-			if ((objectNode.has(key) && !appendOverwriteFlag.equalsIgnoreCase(overwriteOption))
-					|| !objectNode.has(key)) {
-				if (jsonToAppend.get(key).isArray() && jsonToAppend.get(key).has(0)) {
-					// TODO: should we keep the createdAt value if attribute already exists?
-					// (overwrite operation) => if (objectNode.has(key)) ...
-					JsonNode attrNode = jsonToAppend.get(key).get(0);
-					setTemporalProperties(attrNode, now, now, false);
+						String payloadDatasetId = myArray.get(i).get(NGSIConstants.NGSI_LD_DATA_SET_ID).get(0)
+								.get(NGSIConstants.JSON_LD_ID).asText();
+						if (jsonToAppend.get(key).get(0).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+							String datasetId = jsonToAppend.get(key).get(0).get(NGSIConstants.NGSI_LD_DATA_SET_ID)
+									.get(0).get(NGSIConstants.JSON_LD_ID).asText();
+							if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
+								appendpayload = false;
+								throw new ResponseException(ErrorType.AlreadyExists);
+
+							}
+						} else {
+							appendpayload = true;
+						}
+
+					} else {
+						if (jsonToAppend.get(key).get(0).has(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+							appendpayload = true;
+						} else {
+							appendpayload = false;
+							throw new ResponseException(ErrorType.AlreadyExists);
+						}
+
+					}
 				}
-				objectNode.replace(key, jsonToAppend.get(key));
-				((ObjectNode) appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
-				appendResult.setStatus(true);
+				if (appendpayload == true) {
+					myArray.insert(myArray.size(), jsonToAppend.get(key).get(0));
+					appendResult.setStatus(true);
+				}
+			}
+
+			else {
+
+				if ((objectNode.has(key) && !appendOverwriteFlag.equalsIgnoreCase(overwriteOption))
+						|| !objectNode.has(key)) {
+					if (jsonToAppend.get(key).isArray() && jsonToAppend.get(key).has(0)) {
+						// TODO: should we keep the createdAt value if attribute already exists?
+						// (overwrite operation) => if (objectNode.has(key)) ...
+						JsonNode attrNode = jsonToAppend.get(key).get(0);
+						setTemporalProperties(attrNode, now, now, false);
+					}
+					objectNode.replace(key, jsonToAppend.get(key));
+					((ObjectNode) appendResult.getAppendedJsonFields()).set(key, jsonToAppend.get(key));
+					appendResult.setStatus(true);
+				}
 			}
 		}
 		setTemporalProperties(node, "", now, true); // root only, modifiedAt only
@@ -103,7 +143,6 @@ public class AppendEntityRequest extends EntityRequest {
 		return appendResult;
 	}
 
-	
 	public boolean getStatus() {
 		return appendResult.getStatus();
 	}
