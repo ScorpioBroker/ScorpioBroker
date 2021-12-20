@@ -183,16 +183,9 @@ public class ParamsResolver {
 				case NGSIConstants.QUERY_PARAMETER_TIMEREL:
 					String timerel = queryValue;
 					String time = "";
-					String timeproperty = "";
 					String endTime = "";
 					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME) != null)
 						time = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME)[0];
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY) != null) {
-						timeproperty = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY)[0];
-						timeproperty = expandAttribute(timeproperty, linkHeaders);
-					} else {
-						timeproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY;
-					}
 					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_ENDTIME) != null)
 						endTime = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_ENDTIME)[0];
 
@@ -206,8 +199,17 @@ public class ParamsResolver {
 
 					qp.setTimerel(timerel);
 					qp.setTime(time);
-					qp.setTimeproperty(timeproperty);
 					qp.setEndTime(endTime);
+					break;
+				case NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY:
+					String timeproperty = "";
+					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY) != null) {
+						timeproperty = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY)[0];
+						timeproperty = expandAttribute(timeproperty, linkHeaders);
+					} else {
+						timeproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY;
+					}
+					qp.setTimeproperty(timeproperty);
 					break;
 				case NGSIConstants.QUERY_PARAMETER_QUERY:
 					qp.setQ(queryParser.parseQuery(queryValue, linkHeaders).toSql(temporalEntityFormat));
@@ -219,6 +221,9 @@ public class ParamsResolver {
 					qp.setTemporalValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES));
 					break;
 				}
+			}
+			if (qp.getTimeproperty() == null) {
+				qp.setTimeproperty(NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY);
 			}
 			List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
 			HashMap<String, String> temp = new HashMap<String, String>();
