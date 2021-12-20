@@ -27,6 +27,8 @@ public class CSourceRegistration {
 	private TimeInterval timestamp;
 	private boolean isInternal = false;
 	private TimeManagement timeManagement;
+	private TimeInterval observationInterval;
+	
 
 	/**
 	 * a
@@ -169,6 +171,14 @@ public class CSourceRegistration {
 
 	public void setTimeManagement(TimeManagement timeManagement) {
 		this.timeManagement = timeManagement;
+	}
+
+	public TimeInterval getObservationInterval() {
+		return observationInterval;
+	}
+
+	public void setObservationInterval(TimeInterval observationInterval) {
+		this.observationInterval = observationInterval;
 	}
 
 	@Override
