@@ -305,7 +305,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		JsonArray tempArray;
 		if (src.getNotification() != null) {
 			NotificationParam notification = src.getNotification();
-			if (notification.getAttributeNames() != null) {
+			if (notification.getAttributeNames() != null && !notification.getAttributeNames().isEmpty()) {
 				for (String attrib : notification.getAttributeNames()) {
 					tempObj = new JsonObject();
 					tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(attrib));
