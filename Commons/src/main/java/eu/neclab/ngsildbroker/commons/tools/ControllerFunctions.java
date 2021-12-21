@@ -219,7 +219,8 @@ public class ControllerFunctions {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 		if (jsonPayload.isEmpty()) {
-			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+			return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
+					"An empty array is not allowed"));
 		}
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		BatchResult result = new BatchResult();
@@ -302,7 +303,7 @@ public class ControllerFunctions {
 				RestResponse response;
 				String entityId;
 				if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
-					entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
+					entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
 				} else {
 					result.addFail(new BatchFailure("NO ID PROVIDED",
 							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
