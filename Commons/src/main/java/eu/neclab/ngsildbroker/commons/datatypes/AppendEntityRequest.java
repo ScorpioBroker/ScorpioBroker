@@ -61,16 +61,17 @@ public class AppendEntityRequest extends EntityRequest {
 		String now = SerializationTools.formatter.format(Instant.now());
 		Map<String, Object> resultJson = new HashMap<String, Object>();
 		AppendResult appendResult = new AppendResult(resolved, resultJson);
+		appendResult.setStatus(true);
 		for (Entry<String, Object> entry : resolved.entrySet()) {
 			String key = entry.getKey();
-			if (key.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT) || key.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)) {
+			if (key.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT) || key.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
+					|| key.equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)) {
 				continue;
 			}
 			Object value = entry.getValue();
 			if (value == null) {
 				entityBody.remove(key);
 				appendResult.getAppendedJsonFields().put(key, value);
-				appendResult.setStatus(true);
 				continue;
 			}
 			if ((entityBody.containsKey(key) && !appendOverwriteFlag.equalsIgnoreCase(overwriteOption))
@@ -82,8 +83,9 @@ public class AppendEntityRequest extends EntityRequest {
 				}
 				entityBody.put(key, value);
 				appendResult.getAppendedJsonFields().put(key, value);
-				appendResult.setStatus(true);
+				continue;
 			}
+			appendResult.setStatus(false);
 		}
 		setTemporalProperties(entityBody, "", now, true); // root only, modifiedAt only
 		appendResult.setJson(JsonUtils.toPrettyString(entityBody));

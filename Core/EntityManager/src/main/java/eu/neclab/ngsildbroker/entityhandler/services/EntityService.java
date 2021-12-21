@@ -250,16 +250,16 @@ public class EntityService implements EntityCRUDService {
 		// get entity from ENTITY topic.
 		// pubilsh merged message
 		// check if anything is changed
-		if (request.getStatus()) {
-			if (directDB) {
-				pushToDB(request);
-			}
-			new Thread() {
-				public void run() {
-					kafkaTemplate.send(ENTITY_APPEND_TOPIC, entityId, DataSerializer.toJson(request));
-				};
-			}.start();
+
+		if (directDB) {
+			pushToDB(request);
 		}
+		new Thread() {
+			public void run() {
+				kafkaTemplate.send(ENTITY_APPEND_TOPIC, entityId, DataSerializer.toJson(request));
+			};
+		}.start();
+
 		logger.trace("appendMessage() :: completed");
 		return request.getAppendResult();
 	}
