@@ -29,6 +29,7 @@ import com.github.filosganga.geogson.model.Geometry;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
@@ -148,7 +149,7 @@ public class EntityService implements EntityCRUDService {
 		new Thread() {
 			public void run() {
 				try {
-					registerContext(request);
+					registerEntity(request);
 					kafkaTemplate.send(ENTITY_CREATE_TOPIC, request.getId(), DataSerializer.toJson(request));
 				} catch (URISyntaxException | IOException | ResponseException e) {
 					logger.error(e);
@@ -216,7 +217,6 @@ public class EntityService implements EntityCRUDService {
 			new Thread() {
 				public void run() {
 					kafkaTemplate.send(ENTITY_UPDATE_TOPIC, entityId, DataSerializer.toJson(request));
-					updateContext(request);
 				};
 			}.start();
 		}
@@ -314,6 +314,7 @@ public class EntityService implements EntityCRUDService {
 		new Thread() {
 			public void run() {
 				kafkaTemplate.send(ENTITY_DELETE_TOPIC, entityId, DataSerializer.toJson(request));
+				deleteRegistryContext(request);
 			};
 		}.start();
 		logger.trace("deleteEntity() :: completed");
@@ -344,7 +345,6 @@ public class EntityService implements EntityCRUDService {
 			new Thread() {
 				public void run() {
 					kafkaTemplate.send(ENTITY_UPDATE_TOPIC, entityId, DataSerializer.toJson(request));
-					updateContext(request);
 				}
 			}.start();
 
@@ -374,7 +374,6 @@ public class EntityService implements EntityCRUDService {
 		new Thread() {
 			public void run() {
 				kafkaTemplate.send(ENTITY_DELETE_TOPIC, entityId, DataSerializer.toJson(request));
-				updateContext(request);
 			};
 		}.start();
 
@@ -382,7 +381,7 @@ public class EntityService implements EntityCRUDService {
 		return true;
 	}
 
-	public boolean registerContext(EntityRequest request) throws URISyntaxException, IOException, ResponseException {
+	public boolean registerEntity(EntityRequest request) throws URISyntaxException, IOException, ResponseException {
 		// TODO needs rework as well
 		logger.trace("registerContext() :: started");
 		String entityBody = this.entityInfoDAO.getEntity(request.getId(),
@@ -394,10 +393,10 @@ public class EntityService implements EntityCRUDService {
 		return true;
 	}
 
-	private void updateContext(EntityRequest request) {
+	private void deleteRegistryContext(EntityRequest request) {
 		// TODO needs rework as well
 		logger.trace("updateContext() :: started");
-		kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), request.getWithSysAttrs());
+		kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), "null");
 		logger.trace("updateContext() :: completed");
 	}
 

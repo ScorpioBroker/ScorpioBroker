@@ -243,7 +243,6 @@ public class CSourceService {
 
 		}
 
-
 		if (csourceRegistration.getType() == null) {
 			logger.error("Invalid type!");
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid type");
@@ -418,33 +417,33 @@ public class CSourceService {
 			@Override
 			public void run() {
 
-				String datavalue;
-				JsonObject jsonObject = new JsonParser().parse(message).getAsJsonObject();
-				if (jsonObject.has("CSource")) {
-					datavalue = jsonObject.get("CSource").toString();
+				if (message.equals("null")) {
+					// TODO Delete registration
 				} else {
-					datavalue = "null";
-				}
-				CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(datavalue);
-				JsonObject jsonObjectpayload = new JsonParser().parse(message).getAsJsonObject();
-				ArrayListMultimap<String, String> requestheaders = ArrayListMultimap.create();
-				if (jsonObjectpayload.has("headers")) {
-					String headers = jsonObjectpayload.get("headers").toString();
-					JsonObject jsonObjectheaders = new JsonParser().parse(headers).getAsJsonObject();
-					for (Entry<String, JsonElement> entry : jsonObjectheaders.entrySet()) {
-						JsonArray array = entry.getValue().getAsJsonArray();
-						for (JsonElement item : array) {
-							requestheaders.put(entry.getKey(), item.getAsString());
+					String datavalue;
+					JsonObject jsonObject = new JsonParser().parse(message).getAsJsonObject();
+					datavalue = jsonObject.get("CSource").toString();
+					CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(datavalue);
+					JsonObject jsonObjectpayload = new JsonParser().parse(message).getAsJsonObject();
+					ArrayListMultimap<String, String> requestheaders = ArrayListMultimap.create();
+					if (jsonObjectpayload.has("headers")) {
+						String headers = jsonObjectpayload.get("headers").toString();
+						JsonObject jsonObjectheaders = new JsonParser().parse(headers).getAsJsonObject();
+						for (Entry<String, JsonElement> entry : jsonObjectheaders.entrySet()) {
+							JsonArray array = entry.getValue().getAsJsonArray();
+							for (JsonElement item : array) {
+								requestheaders.put(entry.getKey(), item.getAsString());
+							}
 						}
 					}
-				}
-				// objectMapper.readValue((byte[]) message.getPayload(),
-				// CSourceRegistration.class);
-				csourceRegistration.setInternal(true);
-				try {
-					registerCSource(requestheaders, csourceRegistration);
-				} catch (Exception e) {
-					logger.trace("Failed to register csource " + csourceRegistration.getId().toString(), e);
+					// objectMapper.readValue((byte[]) message.getPayload(),
+					// CSourceRegistration.class);
+					csourceRegistration.setInternal(true);
+					try {
+						registerCSource(requestheaders, csourceRegistration);
+					} catch (Exception e) {
+						logger.trace("Failed to register csource " + csourceRegistration.getId().toString(), e);
+					}
 				}
 			}
 		});
