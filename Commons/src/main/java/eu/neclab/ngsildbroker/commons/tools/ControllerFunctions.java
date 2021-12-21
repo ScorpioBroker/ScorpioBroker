@@ -219,8 +219,8 @@ public class ControllerFunctions {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 		if (jsonPayload.isEmpty()) {
-			return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
-					"An empty array is not allowed"));
+			return HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.InvalidRequest, "An empty array is not allowed"));
 		}
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		BatchResult result = new BatchResult();
@@ -292,7 +292,13 @@ public class ControllerFunctions {
 				} else {
 					response = new RestResponse(ErrorType.BadRequestData, e.getLocalizedMessage());
 				}
-				result.addFail(new BatchFailure("FAILED TO PARSE BODY", response));
+				String entityId = "No entity ID found";
+				if (entry.containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
+					entityId = (String) entry.get(NGSIConstants.QUERY_PARAMETER_ID);
+				} else if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
+					entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
+				}
+				result.addFail(new BatchFailure(entityId, response));
 				continue;
 			}
 			try {
@@ -357,10 +363,12 @@ public class ControllerFunctions {
 		} else {
 			if (insertedOneEntity && appendedOneEntity) {
 				status = HttpStatus.MULTI_STATUS;
-			} else if (insertedOneEntity) {
-				status = HttpStatus.CREATED;
 			} else {
-				status = HttpStatus.NO_CONTENT;
+				if (insertedOneEntity) {
+					status = HttpStatus.CREATED;
+				} else {
+					status = HttpStatus.NO_CONTENT;
+				}
 			}
 		}
 		return generateBatchResultReply(result, status);
