@@ -368,6 +368,7 @@ public class CSourceService {
 		}
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
+		
 		synchronized (this.csourceIds) {
 			if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
 				throw new ResponseException(ErrorType.NotFound, registrationId + " not found.");
@@ -385,19 +386,13 @@ public class CSourceService {
 		 */
 		// CSourceRegistration csourceRegistration =
 		// DataSerializer.getCSourceRegistration(csourceBody);
+		
+		CSourceRegistration registration = this.getCSourceRegistrationById(tenantId, registrationId);
+		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId);
+		this.csourceSubService.checkSubscriptions(requestForSub, TriggerReason.noLongerMatching);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
-		this.csourceSubService.checkSubscriptions(request, TriggerReason.noLongerMatching);
-
 		pushToDB(request);
-		new Thread() {
-			public void run() {
-				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(request));
-			};
-		}.start();
-//		kafkaTemplate.send(CSOURCE_TOPIC, registrationId, DataSerializer.toJson(request));
-//		handleFed();
 		return true;
-		// TODO: [push to other DELETE TOPIC]
 	}
 
 	// for testing

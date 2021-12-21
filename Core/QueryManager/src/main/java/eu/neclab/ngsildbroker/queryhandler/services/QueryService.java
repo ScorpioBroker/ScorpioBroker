@@ -247,8 +247,11 @@ public class QueryService implements EntityQueryService{
 						}
 						for (String brokerInfo : brokerList.getActualDataString()) {
 							m = p.matcher(brokerInfo);
-							m.find();
+							if(!m.find()) {
+							System.err.println();	
+							}
 							final String uri_tenant;
+							
 							String uri = m.group(1);
 							mtenant = ptenant.matcher(brokerInfo);
 							if (mtenant != null && mtenant.matches()) {
