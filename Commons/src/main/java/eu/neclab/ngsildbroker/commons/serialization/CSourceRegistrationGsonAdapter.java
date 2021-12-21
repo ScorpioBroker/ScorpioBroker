@@ -54,10 +54,11 @@ public class CSourceRegistrationGsonAdapter
 
 		jsonArray = new JsonArray();
 		jsonObject = new JsonObject();
+		if(src.isInternal() == true) {
 		jsonObject.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.isInternal()));
 		jsonArray.add(jsonObject);
 		top.add(NGSIConstants.NGSI_LD_INTERNAL, jsonArray);
-
+		}
 		jsonArray = new JsonArray();
 		if (src.getInformation() != null) {
 			for (Information info : src.getInformation()) {
