@@ -227,6 +227,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				result.setSubscriptionName(
 						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
 
+			} else if (key.equals(NGSIConstants.NGSI_LD_IS_ACTIVE)) {
+				if (value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsBoolean() == false) {
+					result.setStatus(NGSIConstants.ISACTIVE_FALSE);
+				}
 			}
 		}
 		
