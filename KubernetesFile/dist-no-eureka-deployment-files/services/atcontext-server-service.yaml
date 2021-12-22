@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: atcontext-server
+  name: atcontext-server
+  namespace: scorpio-broker
+spec:
+  ports:
+  - name: "27015"
+    port: 27015
+    targetPort: 27015
+  selector:
+    service: atcontext-server
+status: {}
+

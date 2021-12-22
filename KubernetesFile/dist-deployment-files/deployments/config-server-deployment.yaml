@@ -17,7 +17,7 @@ spec:
         service: config-server
     spec:
       containers:
-      - image: scorpiobroker/scorpio:config-server_eureka_free
+      - image: scorpiobroker/scorpio:config-server_latest
         imagePullPolicy: Always
         name: config-server
         ports:
@@ -39,18 +39,6 @@ spec:
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5
-
-        livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:8888/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          initialDelaySeconds: 20
-          periodSeconds: 5
-
-
         resources:
           limits:
             cpu: 575m

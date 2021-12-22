@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: query-manager
+  name: query-manager
+  namespace: scorpio-broker
+spec:
+  ports:
+  - name: "1026"
+    port: 1026
+    targetPort: 1026
+  selector:
+    service: query-manager
+status: {}

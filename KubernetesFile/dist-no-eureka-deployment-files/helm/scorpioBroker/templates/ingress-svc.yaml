@@ -1,96 +1,102 @@
+{{- if ne .Values.profile "dist" }}
+{{- if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: gateway-ingress
   namespace: scorpio-broker
   annotations:
-    nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS, DELETE, PATCH"
-    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Accept, Link"
     nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Accept-Type, Content-Type, Link"
 spec:
-  ingressClassName: nginx
   rules:
-  - host: localhost
-    http:
+  - http:
       paths:
-      - path: /ngsi-ld/contextes/
+      - path: /ngsi-ld/contextes/*
         pathType: Prefix
         backend:
           service:
-            name: atcontext-server
+            name: {{ .Values.AtContextServer.name }}
             port:
               number: 27015
-      - path: /ngsi-ld/v1/entities/
+      - path: /ngsi-ld/v1/entities/*
         pathType: Prefix
         backend:
           service:
-            name: entity-manager
+            name: {{ .Values.EntityManager.name }}
             port:
               number: 1025
-      - path: /ngsi-ld/v1/entityOperations/
+      - path: /ngsi-ld/v1/entityOperations/*
         pathType: Prefix
         backend:
           service:
-            name: entity-manager
+            name: {{ .Values.EntityManager.name }}
             port:
               number: 1025
 
-      - path: /ngsi-ld/v1/temporal/entities/
+      - path: /ngsi-ld/v1/temporal/entities/*
         pathType: Prefix
         backend:
           service:
-            name: history-manager
+            name: {{ .Values.HistoryManager.name }}
             port:
               number: 1040
-      - path: /ngsi-ld/v1/entityOperations
+      - path: /ngsi-ld/v1/entityOperations/*
         pathType: Prefix
         backend:
           service:
-            name: query-manager
+            name: {{ .Values.QueryManager.name }}
             port:
               number: 1026
-      - path: /ngsi-ld/v1/
+
+      - path: /ngsi-ld/v1/entities/*
         pathType: Prefix
         backend:
           service:
-            name: query-manager
+            name: {{ .Values.QueryManager.name }}
             port:
               number: 1026
-      - path: /ngsi-ld/v1/csourceRegistrations/
+      - path: /ngsi-ld/v1/csourceRegistrations/*
         pathType: Prefix
         backend:
           service:
-            name: registry-manager
+            name: {{ .Values.RegistryManager.name }}
             port:
               number: 1030
-      - path: /ngsi-ld/v1/csourceSubscriptions/
+      - path: /ngsi-ld/v1/csourceSubscriptions/*
         pathType: Prefix
         backend:
           service:
-            name: registry-manager
+            name: {{ .Values.RegistryManager.name }}
             port:
               number: 1030
+
       - path: /scorpio/v1/info/
         pathType: Prefix
         backend:
           service:
-            name: storage-manager
+            name: {{ .Values.StorageManager.name }}
             port:
               number: 1029
       - path: /remotenotify/
         pathType: Prefix
         backend:
           service:
-            name: subscription-manager
+            name: {{ .Values.SubscriptionManager.name }}
             port:
               number: 2025
-
       - path: /ngsi-ld/v1/subscriptions/
         pathType: Prefix
         backend:
           service:
-            name: subscription-manager
+            name: {{ .Values.SubscriptionManager.name }}
             port:
               number: 2025
-
+  {{- if .Values.ingress.tls }}
+  tls:
+{{ toYaml .Values.ingress.tls | indent 4 }}
+  {{- end -}}            
+  {{- end }}
+  {{- end }}
