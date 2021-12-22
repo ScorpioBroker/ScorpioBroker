@@ -9,9 +9,11 @@ import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
@@ -28,10 +30,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
+import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.EntityCRUDService;
 import eu.neclab.ngsildbroker.commons.interfaces.EntityQueryService;
+import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
@@ -40,8 +43,9 @@ public class ControllerFunctions {
 	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<byte[]> updateMultiple(EntityCRUDService entityService, HttpServletRequest request,
+	public static ResponseEntity<String> updateMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, int maxUpdateBatch, String options) {
+		String[] optionsArray = getOptionsArray(options);
 		List<Map<String, Object>> jsonPayload;
 
 		try {
@@ -57,13 +61,13 @@ public class ControllerFunctions {
 			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
 			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
+					.body(new RestResponse(responseException).toJson());
 		}
 		if (maxUpdateBatch != -1 && jsonPayload.size() > maxUpdateBatch) {
 			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
 					"Maximum allowed number of entities for this operation is " + maxUpdateBatch);
 			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
+					.body(new RestResponse(responseException).toJson());
 		}
 		for (Map<String, Object> compactedEntry : jsonPayload) {
 			String entityId = "NOT AVAILABLE";
@@ -90,7 +94,7 @@ public class ControllerFunctions {
 				continue;
 			}
 			try {
-				AppendResult updateResult = entityService.appendMessage(headers, entityId, entry, options);
+				AppendResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray);
 				if (updateResult.getStatus()) {
 					result.addSuccess(entityId);
 				} else {
@@ -113,7 +117,7 @@ public class ControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<byte[]> createMultiple(EntityCRUDService entityService, HttpServletRequest request,
+	public static ResponseEntity<String> createMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, int maxCreateBatch) {
 
 		List<Map<String, Object>> jsonPayload;
@@ -127,7 +131,7 @@ public class ControllerFunctions {
 			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
 					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
 			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
+					.body(new RestResponse(responseException).toJson());
 		}
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
@@ -136,7 +140,7 @@ public class ControllerFunctions {
 			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
 			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
+					.body(new RestResponse(responseException).toJson());
 		}
 		for (Map<String, Object> entry : jsonPayload) {
 			Map<String, Object> resolved;
@@ -154,7 +158,7 @@ public class ControllerFunctions {
 				continue;
 			}
 			try {
-				result.addSuccess(entityService.createMessage(headers, resolved));
+				result.addSuccess(entityService.createEntry(headers, resolved));
 			} catch (Exception e) {
 				RestResponse response;
 				if (e instanceof ResponseException) {
@@ -183,7 +187,7 @@ public class ControllerFunctions {
 		return (List<Map<String, Object>>) jsonPayload;
 	}
 
-	private static ResponseEntity<byte[]> generateBatchResultReply(BatchResult result, HttpStatus okStatus) {
+	private static ResponseEntity<String> generateBatchResultReply(BatchResult result, HttpStatus okStatus) {
 		HttpStatus status = HttpStatus.MULTI_STATUS;
 		String body = DataSerializer.toJson(result);
 		if (result.getFails().isEmpty()) {
@@ -197,11 +201,11 @@ public class ControllerFunctions {
 		if (body == null) {
 			return ResponseEntity.status(status).build();
 		}
-		return ResponseEntity.status(status).body(body.getBytes());
+		return ResponseEntity.status(status).body(body);
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<byte[]> deleteMultiple(EntityCRUDService entityService, HttpServletRequest request,
+	public static ResponseEntity<String> deleteMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload) {
 		List<Object> jsonPayload;
 		boolean atContextAllowed;
@@ -234,7 +238,7 @@ public class ControllerFunctions {
 							AppConstants.ENTITY_CREATE_PAYLOAD, atContextAllowed);
 					entityId = (String) ((Map<String, Object>) resolved.get(0)).get(NGSIConstants.JSON_LD_ID);
 				}
-				if (entityService.deleteEntity(headers, entityId)) {
+				if (entityService.deleteEntry(headers, entityId)) {
 					result.addSuccess(entityId);
 				} else {
 					result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.InternalError, "")));
@@ -253,9 +257,9 @@ public class ControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<byte[]> upsertMultiple(EntityCRUDService entityService, HttpServletRequest request,
+	public static ResponseEntity<String> upsertMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, String options, int maxCreateBatch) {
-
+		String[] optionsArray = getOptionsArray(options);
 		List<Map<String, Object>> jsonPayload;
 		try {
 			jsonPayload = getJsonPayload(payload);
@@ -267,7 +271,7 @@ public class ControllerFunctions {
 			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
 					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
 			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
+					.body(new RestResponse(responseException).toJson());
 		}
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
@@ -276,7 +280,7 @@ public class ControllerFunctions {
 			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
 			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
+					.body(new RestResponse(responseException).toJson());
 		}
 		boolean insertedOneEntity = false;
 		boolean appendedOneEntity = false;
@@ -302,7 +306,7 @@ public class ControllerFunctions {
 				continue;
 			}
 			try {
-				result.addSuccess(entityService.createMessage(headers, resolved));
+				result.addSuccess(entityService.createEntry(headers, resolved));
 				insertedOneEntity = true;
 			} catch (Exception e) {
 
@@ -320,8 +324,8 @@ public class ControllerFunctions {
 					ResponseException responseException = ((ResponseException) e);
 					if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
 						try {
-							AppendResult updateResult = entityService.appendMessage(headers, entityId, resolved,
-									options);
+							AppendResult updateResult = entityService.appendToEntry(headers, entityId, resolved,
+									optionsArray);
 							if (updateResult.getStatus()) {
 								result.addSuccess(entityId);
 								appendedOneEntity = true;
@@ -374,10 +378,97 @@ public class ControllerFunctions {
 		return generateBatchResultReply(result, status);
 	}
 
+	public static ResponseEntity<String> updateEntry(EntryCRUDService entityService, HttpServletRequest request,
+			String entityId, String payload, Logger logger) {
+		try {
+			logger.trace("update entry :: started");
+			List<Object> contextHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+			@SuppressWarnings("unchecked")
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, atContextAllowed).get(0);
+			UpdateResult update = entityService.updateEntry(HttpUtils.getHeaders(request), entityId, resolved);
+			logger.trace("update entry :: completed");
+			if (update.getUpdateResult()) {
+				return ResponseEntity.noContent().build();
+			} else {
+				return ResponseEntity.status(HttpStatus.MULTI_STATUS)
+						.body(JsonUtils.toPrettyString(update.getAppendedJsonFields()));
+			}
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
+		}
+	}
+
+	public static ResponseEntity<String> createEntry(EntryCRUDService entityService, HttpServletRequest request,
+			String payload, Logger logger) {
+		String result = null;
+		try {
+			logger.trace("create entity :: started");
+			List<Object> contextHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+
+			@SuppressWarnings("unchecked")
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_CREATE_PAYLOAD, atContextAllowed).get(0);
+			result = entityService.createEntry(HttpUtils.getHeaders(request), resolved);
+			logger.trace("create entity :: completed");
+			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
+					.build();
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
+		}
+	}
+
+	public static ResponseEntity<String> appendToEntry(EntryCRUDService entityService, HttpServletRequest request,
+			String entityId, String payload, String options, Logger logger) {
+		try {
+			logger.trace("append entity :: started");
+			String[] optionsArray = getOptionsArray(options);
+			List<Object> contextHeaders = HttpUtils.getAtContext(request);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+			@SuppressWarnings("unchecked")
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, atContextAllowed).get(0);
+			AppendResult append = entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved,
+					optionsArray);
+			logger.trace("append entity :: completed");
+			if (append.getAppendResult()) {
+				return ResponseEntity.noContent().build();
+			} else {
+				return ResponseEntity.status(HttpStatus.MULTI_STATUS)
+						.body(JsonUtils.toPrettyString(append.getAppendedJsonFields()));
+			}
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
+		}
+	}
+
+	private static String[] getOptionsArray(String options) {
+		if(options == null) {
+			return new String[0];
+		}else {
+			return options.split(",");
+		}
+	}
+
+	public ResponseEntity<String> deleteEntry(EntryCRUDService entityService, HttpServletRequest request,
+			String entityId, Logger logger) {
+		try {
+			logger.trace("delete entity :: started");
+			HttpUtils.validateUri(entityId);
+			entityService.deleteEntry(HttpUtils.getHeaders(request), entityId);
+			logger.trace("delete entity :: completed");
+			return ResponseEntity.noContent().build();
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
+		}
+	}
+
 	// these are known structures in try catch. failed parsing would rightfully
 	// result in an error
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static ResponseEntity<byte[]> postQuery(EntityQueryService queryService, HttpServletRequest request,
+	public static ResponseEntity<String> postQuery(EntityQueryService queryService, HttpServletRequest request,
 			String payload, Integer limit, Integer offset, String qToken, List<String> options, boolean count,
 			int defaultLimit) {
 		try {
@@ -477,7 +568,7 @@ public class ControllerFunctions {
 		}
 	}
 
-	private static ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult,
+	private static ResponseEntity<String> generateReply(HttpServletRequest request, QueryResult qResult,
 			boolean forceArray, boolean count, Context context, List<Object> contextLinks) throws ResponseException {
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
@@ -619,5 +710,16 @@ public class ControllerFunctions {
 		}
 		return ((Map<String, Object>) original).get(NGSIConstants.JSON_LD_VALUE);
 
+	}
+	public static ResponseEntity<String> deleteEntity(EntryCRUDService entityService, HttpServletRequest request, String entityId, Logger logger) {
+		try {
+			logger.trace("delete entity :: started");
+			HttpUtils.validateUri(entityId);
+			entityService.deleteEntry(HttpUtils.getHeaders(request), entityId);
+			logger.trace("delete entity :: completed");
+			return ResponseEntity.noContent().build();
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
+		}
 	}
 }

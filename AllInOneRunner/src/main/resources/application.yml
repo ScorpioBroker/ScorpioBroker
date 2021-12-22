@@ -13,8 +13,6 @@ mysettings:
   gateway:
     host: ${gateway.host:localhost}
     port: ${gateway.port:9090}
-append:
-  overwrite: noOverwrite
 atcontext:
   url: http://${mysettings.gateway.host}:${mysettings.gateway.port}/ngsi-ld/contextes/
 bootstrap:
@@ -25,34 +23,13 @@ broker:
   parent:
     location:
       url: SELF
-query:
-  result:
-    topic: QUERY_RESULT
-  topic: QUERY
+
 batchoperations:
   maxnumber:
     create: 1000
     update: 1000
     upsert: 1000
     delete: 1000
-
-csource:
-  stopListenerIfDbFails: false
-  topic: CONTEXT_SOURCE
-  registry:
-    topic: CONTEXT_REGISTRY
-  source:
-    topic: CONTEXT_SOURCE
-  notification:
-    topic: CONTEXT_SOURCE_NOTIFICATION
-  query:
-    topic: CONTEXT_REGISTRY_QUERY
-    result:
-      topic: CONTEXT_REGISTRY_QUERY_RESULT
-
-csources:
-  registration:
-    topic: CONTEXT_REGISTRY
 defaultLimit: 50
 directDbConnection: false 
 entity:
@@ -75,7 +52,15 @@ entity:
   topic: ENTITY
   withoutSysAttrs:
     topic: ENTITY_WITHOUT_SYSATTRS
-
+csource:
+  create:
+    topic: REGISTRY_CREATE
+  update:
+    topic: REGISTRY_UPDATE
+  append:
+    topic: REGISTRY_APPEND
+  delete:
+    topic: REGISTRY_DELETE
 submanager:
   subscription:
     topic: SUBSCRIPTIONS

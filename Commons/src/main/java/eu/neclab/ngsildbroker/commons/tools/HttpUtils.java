@@ -124,18 +124,18 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply, int endPoint)
+	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply, int endPoint)
 			throws ResponseException {
 		return generateReply(request, reply, null, endPoint);
 
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, int endPoint) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, null, endPoint);
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint)
 			throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, context, false, endPoint);
@@ -185,7 +185,7 @@ public final class HttpUtils {
 		}
 	}
 
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
 			boolean forceArrayResult, int endPoint) throws ResponseException {
 		List<Object> requestAtContext = getAtContext(request);
@@ -200,7 +200,7 @@ public final class HttpUtils {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, String reply,
+	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult, int endPoint) throws ResponseException {
 
@@ -278,7 +278,7 @@ public final class HttpUtils {
 			}
 			return generateReply(replyBody, additionalHeaders, compress);
 		} catch (JsonLdError | IOException e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage().getBytes());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 
 	}
@@ -288,12 +288,37 @@ public final class HttpUtils {
 		return "http change this";
 	}
 
-	public static ResponseEntity<byte[]> generateReply(String replyBody,
+	public static ResponseEntity<String> generateReply(String replyBody,
 			ArrayListMultimap<String, String> additionalHeaders, boolean compress) {
 		return generateReply(replyBody, additionalHeaders, HttpStatus.OK, compress);
 	}
 
-	public static ResponseEntity<byte[]> generateReply(String replyBody,
+	public static ResponseEntity<String> generateReply(HttpServletRequest request, QueryResult qResult,
+			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint) throws ResponseException {
+		String nextLink = HttpUtils.generateNextLink(request, qResult);
+		String prevLink = HttpUtils.generatePrevLink(request, qResult);
+		ArrayList<Object> additionalLinks = new ArrayList<Object>();
+		if (nextLink != null) {
+			additionalLinks.add(nextLink);
+		}
+		if (prevLink != null) {
+			additionalLinks.add(prevLink);
+		}
+		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
+		if (count == true) {
+			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
+		}
+
+		if (!additionalLinks.isEmpty()) {
+			for (Object entry : additionalLinks) {
+				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
+			}
+		}
+		return HttpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
+				additionalHeaders, context, contextLinks, forceArray, endPoint);
+	}
+
+	public static ResponseEntity<String> generateReply(String replyBody,
 			ArrayListMultimap<String, String> additionalHeaders, HttpStatus status, boolean compress) {
 		BodyBuilder builder = ResponseEntity.status(status);
 		if (additionalHeaders != null) {
@@ -301,12 +326,14 @@ public final class HttpUtils {
 				builder.header(entry.getKey(), entry.getValue());
 			}
 		}
-		byte[] body;
+		String body;
 		if (compress) {
-			body = zipResult(replyBody);
+			// TODO reenable zip some how
+			// body = zipResult(replyBody);
+			body = replyBody;
 			builder.header(HttpHeaders.CONTENT_TYPE, "application/zip");
 		} else {
-			body = replyBody.getBytes();
+			body = replyBody;
 		}
 		return builder.body(body);
 	}
@@ -403,28 +430,27 @@ public final class HttpUtils {
 		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
 	}
 
-	public static ResponseEntity<byte[]> handleControllerExceptions(Exception e) {
+	public static ResponseEntity<String> handleControllerExceptions(Exception e) {
 		if (e instanceof ResponseException) {
 			ResponseException responseException = (ResponseException) e;
 			logger.debug("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus())
-					.body(new RestResponse(responseException).toJsonBytes());
+					.body(new RestResponse(responseException).toJson());
 		}
 		if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.")
-							.toJsonBytes());
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+					new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.").toJson());
 		}
 		if (e instanceof JsonProcessingException) {
 			logger.debug("Exception :: ", e);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
-							.toJsonBytes());
+							.toJson());
 		}
 		logger.error("Exception :: ", e);
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(new RestResponse(ErrorType.InternalError, e.getMessage()).toJsonBytes());
+				.body(new RestResponse(ErrorType.InternalError, e.getMessage()).toJson());
 	}
 
 	public static String validateUri(String mapValue) throws ResponseException {

@@ -41,24 +41,24 @@ public class EntityBatchController {
 	}
 
 	@PostMapping("/create")
-	public ResponseEntity<byte[]> createMultiple(HttpServletRequest request, @RequestBody String payload) {
+	public ResponseEntity<String> createMultiple(HttpServletRequest request, @RequestBody String payload) {
 		return ControllerFunctions.createMultiple(entityService, request, payload, maxCreateBatch);
 	}
 
 	@PostMapping("/upsert")
-	public ResponseEntity<byte[]> upsertMultiple(HttpServletRequest request, @RequestBody String payload,
+	public ResponseEntity<String> upsertMultiple(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
 		return ControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch);
 	}
 
 	@PostMapping("/update")
-	public ResponseEntity<byte[]> updateMultiple(HttpServletRequest request, @RequestBody String payload,
+	public ResponseEntity<String> updateMultiple(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
 		return ControllerFunctions.updateMultiple(entityService, request, payload, maxUpdateBatch, options);
 	}
 
 	@PostMapping("/delete")
-	public ResponseEntity<byte[]> deleteMultiple(HttpServletRequest request, @RequestBody String payload) {
+	public ResponseEntity<String> deleteMultiple(HttpServletRequest request, @RequestBody String payload) {
 		return ControllerFunctions.deleteMultiple(entityService, request, payload);
 	}
 

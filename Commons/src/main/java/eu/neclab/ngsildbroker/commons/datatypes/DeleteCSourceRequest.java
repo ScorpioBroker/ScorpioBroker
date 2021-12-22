@@ -1,27 +1,25 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.Map;
+
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class DeleteCSourceRequest extends CSourceRequest {
 
-	
-
 	/**
 	 * constructor for serialization
 	 */
 	public DeleteCSourceRequest() {
-		super(null, null);
+		super(null);
 	}
 
-	public DeleteCSourceRequest(CSourceRegistration csourceRegistration, ArrayListMultimap<String, String> headers,
+	public DeleteCSourceRequest(Map<String, Object> registration, ArrayListMultimap<String, String> headers,
 			String registrationId) throws ResponseException {
-
-		super(null, headers);
-		this.csourceRegistration = csourceRegistration;
+		super(headers);
+		this.csourceRegistration = registration;
 		this.id = registrationId;
-
 	}
 
 }

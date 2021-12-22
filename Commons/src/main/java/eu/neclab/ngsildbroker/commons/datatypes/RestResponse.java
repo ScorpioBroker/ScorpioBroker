@@ -56,10 +56,10 @@ public class RestResponse {
 		return details;
 	}
 
-	public byte[] toJsonBytes() {
+	public String toJson() {
 		String result = "{\n\t\"type\":\"" + type + "\",\n\t\"title\":\"" + title + "\",\n\t\"details\":\"" + details
 				+ "\"\n}";
-		return result.getBytes();
+		return result;
 	}
 
 }

@@ -1,18 +1,51 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class AppendCSourceRequest extends CSourceRequest {
 
 	public AppendCSourceRequest(ArrayListMultimap<String, String> headers, String registrationId,
-			JsonNode entityJsonBody, CSourceRegistration csourceRegistration) throws ResponseException {
-		super(null, headers);
-		this.csourceRegistration = csourceRegistration;
-		this.id=registrationId;
+			Map<String, Object> originalRegistration, Map<String, Object> update, String[] options)
+			throws ResponseException {
+		super(headers);
+		this.csourceRegistration = appendRequest(originalRegistration, update, options);
+	}
 
+	private Map<String, Object> appendRequest(Map<String, Object> originalRegistration, Map<String, Object> update,
+			String[] options) throws ResponseException {
+		boolean overwrite = true;
+		if (options != null) {
+			for (String option : options) {
+				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)) {
+					overwrite = false;
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData, options + " is an invalid option");
+				}
+			}
+		}
+		for (Entry<String, Object> entry : update.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+			if (key.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT) || key.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
+					|| key.equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)) {
+				continue;
+			}
+			if (overwrite) {
+				originalRegistration.put(key, value);
+			} else {
+				if (!originalRegistration.containsKey(key)) {
+					originalRegistration.put(key, value);
+				}
+			}
+		}
+		return originalRegistration;
 	}
 
 }

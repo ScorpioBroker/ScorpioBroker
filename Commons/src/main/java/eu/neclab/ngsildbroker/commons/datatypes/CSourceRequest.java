@@ -1,24 +1,22 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 public class CSourceRequest extends BaseRequest {
 
 	protected String id;
-	protected ObjectMapper objectMapper = new ObjectMapper();
-
-	protected CSourceRegistration csourceRegistration;
-
-	public CSourceRequest() {
-
+	protected Map<String, Object> csourceRegistration;
+	public CSourceRequest(ArrayListMultimap<String, String> headers) {
+		super(headers);
 	}
 
-	public CSourceRequest(List<Object> context, ArrayListMultimap<String, String> headers) {
-		super(headers);
-		// TODO Auto-generated constructor stub
+	public CSourceRequest() {
 	}
 
 	public String getId() {
@@ -29,20 +27,29 @@ public class CSourceRequest extends BaseRequest {
 		this.id = id;
 	}
 
-	public ObjectMapper getObjectMapper() {
-		return objectMapper;
-	}
-
-	public void setObjectMapper(ObjectMapper objectMapper) {
-		this.objectMapper = objectMapper;
-	}
-
-	public CSourceRegistration getCsourceRegistration() {
+	public Map<String, Object> getCsourceRegistration() {
 		return csourceRegistration;
 	}
 
-	public void setCsourceRegistration(CSourceRegistration csourceRegistration) {
+	public void setCsourceRegistration(Map<String, Object> csourceRegistration) {
 		this.csourceRegistration = csourceRegistration;
 	}
+	protected String generateUniqueRegId() {
+		String key = "urn:ngsi-ld:csourceregistration:"
+				+ UUID.fromString("" + csourceRegistration.hashCode()).toString();
+		return key;
+	}
 
+	public String getCsourceRegistrationString() {
+		if(csourceRegistration == null) {
+			return null;
+		}
+		try {
+			return JsonUtils.toString(csourceRegistration);
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+			//should never happen
+			return null;
+		}
+	}
 }

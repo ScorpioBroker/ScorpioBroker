@@ -20,23 +20,20 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 public class AppendEntityRequest extends EntityRequest {
 
 	private AppendResult appendResult;
-	private String appendOverwriteFlag;
+	
 
 	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
-			Map<String, Object> resolved, String overwriteOption, String appendOverwriteFlag) throws ResponseException {
+			Map<String, Object> resolved, String[] options) throws ResponseException {
 		super(AppConstants.OPERATION_APPEND_ENTITY, headers);
-		this.appendOverwriteFlag = appendOverwriteFlag;
 		this.id = id;
-		generateAppend(resolved, entityBody, overwriteOption);
+		
+		generateAppend(resolved, entityBody, options);
 	}
 
-	private void generateAppend(Map<String, Object> resolved, Map<String, Object> entityBody, String overwriteOption)
+	private void generateAppend(Map<String, Object> resolved, Map<String, Object> entityBody, String[] options)
 			throws ResponseException {
-		JsonNode updateNode;
-
 		try {
-
-			this.appendResult = appendFields(entityBody, resolved, overwriteOption);
+			this.appendResult = appendFields(entityBody, resolved, options);
 			this.entityWithoutSysAttrs = appendResult.getJsonWithoutSysAttrs();
 			this.withSysAttrs = appendResult.getJson();
 			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(appendResult.getFinalNode()));
@@ -56,8 +53,18 @@ public class AppendEntityRequest extends EntityRequest {
 	 * @throws IOException
 	 */
 	private AppendResult appendFields(Map<String, Object> entityBody, Map<String, Object> resolved,
-			String overwriteOption) throws Exception {
+			String[] options) throws Exception {
 		logger.trace("appendFields() :: started");
+		boolean overwrite = true;
+		if(options != null) {
+			for(String option: options) {
+				if(option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)) {
+					overwrite = false;
+				}else {
+					throw new ResponseException(ErrorType.BadRequestData, options + " is an invalid option");
+				}
+			}
+		}
 		String now = SerializationTools.formatter.format(Instant.now());
 		Map<String, Object> resultJson = new HashMap<String, Object>();
 		AppendResult appendResult = new AppendResult(resolved, resultJson);
@@ -74,7 +81,7 @@ public class AppendEntityRequest extends EntityRequest {
 				appendResult.getAppendedJsonFields().put(key, value);
 				continue;
 			}
-			if ((entityBody.containsKey(key) && !appendOverwriteFlag.equalsIgnoreCase(overwriteOption))
+			if ((entityBody.containsKey(key) && overwrite)
 					|| !entityBody.containsKey(key)) {
 				if (value instanceof List && !((List) value).isEmpty()) {
 					// TODO: should we keep the createdAt value if attribute already exists?

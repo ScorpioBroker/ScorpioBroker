@@ -41,6 +41,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.tools.ControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
@@ -73,30 +74,13 @@ public class HistoryController {
 	}
 
 	@PostMapping
-	public ResponseEntity<byte[]> createTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<String> createTemporalEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
-		try {
-			logger.trace("createTemporalEntity :: started");
-			if (payload == null) {
-				return HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData, "Empty Body is not allowed here"));
-			}
-			List<Object> linkHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
-			@SuppressWarnings("unchecked")
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, atContextAllowed)
-					.get(0);
-			String uri = historyService.createMessage(HttpUtils.getHeaders(request), resolved);
-			logger.trace("createTemporalEntity :: completed");
-			return ResponseEntity.status(HttpStatus.CREATED).header("Location", uri).body(uri.getBytes());
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+		return ControllerFunctions.createEntry(historyService, request, payload, logger);
 	}
 
 	@GetMapping
-	public ResponseEntity<byte[]> retrieveTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<String> retrieveTemporalEntity(HttpServletRequest request,
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
@@ -166,7 +150,7 @@ public class HistoryController {
 	}
 
 	@GetMapping("/{entityId}")
-	public ResponseEntity<byte[]> retrieveTemporalEntityById(HttpServletRequest request,
+	public ResponseEntity<String> retrieveTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		// String params = request.getQueryString();
 		try {
@@ -179,8 +163,7 @@ public class HistoryController {
 			Context context = JsonLdProcessor.getCoreContextClone();
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
-			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context,
-					true);
+			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
 			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
 			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
@@ -198,7 +181,7 @@ public class HistoryController {
 	}
 
 	@DeleteMapping("/{entityId}")
-	public ResponseEntity<byte[]> deleteTemporalEntityById(HttpServletRequest request,
+	public ResponseEntity<String> deleteTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
 		try {
 			logger.trace("deleteTemporalEntityById :: started");
@@ -225,38 +208,15 @@ public class HistoryController {
 		}
 	}
 
-	@RequestMapping(method = RequestMethod.DELETE)
-	public ResponseEntity<byte[]> deleteTemporalEntityIdIsEmpty(HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJsonBytes());
-	}
-
 	@PostMapping("/{entityId}/attrs")
-	public ResponseEntity<byte[]> addAttrib2TemopralEntity(HttpServletRequest request,
-			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload) {
-		try {
-			logger.trace("addAttrib2TemopralEntity :: started");
-			logger.debug("entityId : " + entityId);
-			if (payload == null) {
-				return HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData, "Empty Body is not allowed here"));
-			}
-			List<Object> linkHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
-			@SuppressWarnings("unchecked")
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
-					.get(0);
-			historyService.appendMessage(HttpUtils.getHeaders(request), entityId, resolved, null);
-			logger.trace("addAttrib2TemopralEntity :: completed");
-			return ResponseEntity.noContent().build();
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+	public ResponseEntity<String> addAttrib2TemopralEntity(HttpServletRequest request,
+			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload,
+			@RequestParam(required = false, name = "options") String options) {
+		return ControllerFunctions.appendToEntry(historyService, request, entityId, payload, options, logger);
 	}
 
 	@DeleteMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<byte[]> deleteAttrib2TemporalEntity(HttpServletRequest request,
+	public ResponseEntity<String> deleteAttrib2TemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
 		try {
 			HttpUtils.validateUri(entityId);
@@ -274,7 +234,7 @@ public class HistoryController {
 	}
 
 	@PatchMapping("/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<byte[]> modifyAttribInstanceTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<String> modifyAttribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId, @RequestBody(required = false) String payload) {
 		try {
@@ -302,7 +262,7 @@ public class HistoryController {
 	}
 
 	@DeleteMapping("/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<byte[]> deleteAtrribInstanceTemporalEntity(HttpServletRequest request,
+	public ResponseEntity<String> deleteAtrribInstanceTemporalEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId) {
 		try {

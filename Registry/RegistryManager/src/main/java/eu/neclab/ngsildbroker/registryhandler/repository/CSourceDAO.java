@@ -11,6 +11,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Repository;
 
+import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
@@ -273,10 +276,6 @@ public class CSourceDAO extends StorageReaderDAO {
 		return sqlWhere;
 	}
 
-	// TODO: SQL input sanitization
-	// TODO: property of property
-	// TODO: [SPEC] spec is not clear on how to define a "property of property" in
-	// the geoproperty field. (probably using dots, but...)
 	@Override
 	protected String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
 			String geoproperty) throws ResponseException {
@@ -338,6 +337,31 @@ public class CSourceDAO extends StorageReaderDAO {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
 		}
 		return sqlWhere.toString();
+	}
+
+	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
+		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+		result.putAll(AppConstants.INTERNAL_NULL_KEY,
+				getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM csource", String.class));
+		List<String> tenants = getTenants();
+		for (String tenant : tenants) {
+			result.putAll(tenant,
+					getJDBCTemplate(tenant).queryForList("SELECT DISTINCT id FROM csource", String.class));
+		}
+
+		return result;
+	}
+
+	public String getEntity(String tenantId, String entityId) throws ResponseException {
+
+		List<String> tempList = getJDBCTemplate(getTenant(tenantId))
+				.queryForList("SELECT data FROM csource WHERE id='" + entityId + "'", String.class);
+		return tempList.get(0);
+	}
+
+	public List<String> getAllRegistrations(String tenant) throws ResponseException {
+		tenant = getTenant(tenant);
+		return getJDBCTemplate(tenant).queryForList("SELECT data FROM csource", String.class);
 	}
 
 }

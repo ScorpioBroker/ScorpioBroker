@@ -1,0 +1,132 @@
+mysettings:
+  application-name: subscription-manager
+  kafka:
+    bootstrap:
+      host: ${bushost:localhost}
+      port: ${busport:9092}
+  postgres:
+    host: ${dbhost:localhost}
+    port: ${dbport:5432}
+    username: ${dbuser:ngb}
+    password: ${dbpass:ngb}
+    database-name: ${dbname:ngb}
+  gateway:
+    host: ${gateway.host:localhost}
+    port: ${gateway.port:9090}
+jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
+atcontext:
+  url: http://${mysettings.gateway.host}:${mysettings.gateway.port}/ngsi-ld/contextes/
+bootstrap:
+  servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
+server:
+  port: 2025
+entity:
+  topic: ENTITY
+  create:
+    topic: ENTITY_CREATE
+  append:
+    topic: ENTITY_APPEND
+  update:
+    topic: ENTITY_UPDATE
+  delete:
+    topic: ENTITY_DELETE    
+subscriptions: 
+  topic: SUBSCRIPTIONS
+csource:
+  registry:
+    topic: CSOURCE_REGISTRATION
+  notification:
+    topic: CONTEXT_SOURCE_NOTIFICATION
+query:
+  topic: QUERY
+  result:
+    topic: QUERY_RESULT
+key:
+  deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#Entity Append ovewrite options
+append:
+  overwrite: noOverwrite
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    restart:
+      enabled: true
+spring:
+  kafka:
+    producer:
+      bootstrap-servers: ${bootstrap.servers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      bootstrap-servers: ${bootstrap.servers}
+      group-id: ${mysettings.application-name}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    admin:
+      properties:
+        cleanup:
+          policy: compact  
+  security:
+    active: false
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: https://idp.example.com/auth/realms/demo
+#      client:
+#        provider:
+#          keycloak:
+#            issuer-uri: https://idp.example.com/auth/realms/demo
+#        registration:
+#          keycloak-client:
+#            provider: keycloak
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+#            authorization_grant_type: client_credentials
+#          keycloak:
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+  main:
+    lazy-initialization: true
+  application.name: ${mysettings.application-name}
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
+writer:
+  datasource:
+    hikari:
+      connectionTimeout: 30000
+      idleTimeout: 30000
+      maxLifetime: 2000000
+      maximumPoolSize: 20
+      minimumIdle: 5
+      poolName: SpringBootHikariCP_Writer
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
+  enabled: true
+reader:
+  enabled: true
+  datasource:
+    password: ${mysettings.postgres.password}
+    url: ${jdbcurl}
+    username: ${mysettings.postgres.username}
+    hikari:
+      minimumIdle: 5
+      maximumPoolSize: 20
+      idleTimeout: 30000
+      poolName: SpringBootHikariCP_Reader
+      maxLifetime: 2000000
+      connectionTimeout: 30000
+ngsild:
+  corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld

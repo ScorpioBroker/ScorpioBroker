@@ -1,17 +1,10 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.sql.SQLTransientConnectionException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 
@@ -25,41 +18,28 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import com.github.filosganga.geogson.model.Geometry;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.Entity;
-import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
-import eu.neclab.ngsildbroker.commons.datatypes.Information;
-import eu.neclab.ngsildbroker.commons.datatypes.Property;
-import eu.neclab.ngsildbroker.commons.datatypes.Relationship;
-import eu.neclab.ngsildbroker.commons.datatypes.TimeInterval;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.EntityCRUDService;
+import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 
 @Service
 @EnableAutoConfiguration
 @EnableKafka
-public class EntityService implements EntityCRUDService {
+public class EntityService implements EntryCRUDService {
 
 	@Value("${entity.topic}")
 	String ENTITY_TOPIC;
@@ -71,23 +51,8 @@ public class EntityService implements EntityCRUDService {
 	String ENTITY_UPDATE_TOPIC;
 	@Value("${entity.delete.topic}")
 	String ENTITY_DELETE_TOPIC;
-	@Value("${csources.registration.topic:CONTEXT_REGISTRY}")
-	String CSOURCE_TOPIC;
-	@Value("${bootstrap.servers}")
-	String bootstrapServers;
-	@Value("${append.overwrite}")
-	String appendOverwriteFlag;
-	@Value("${entity.index.topic}")
-	String ENTITY_INDEX;
 
-	@Value("${batchoperations.maxnumber.create:-1}")
-	int maxCreateBatch;
-	@Value("${batchoperations.maxnumber.update:-1}")
-	int maxUpdateBatch;
-	@Value("${batchoperations.maxnumber.upsert:-1}")
-	int maxUpsertBatch;
-	@Value("${batchoperations.maxnumber.delete:-1}")
-	int maxDeleteBatch;
+
 
 	boolean directDB = true;
 	public static boolean checkEntity = false;
@@ -130,7 +95,7 @@ public class EntityService implements EntityCRUDService {
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public String createMessage(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		// get message channel for ENTITY_CREATE topic.
 		logger.debug("createMessage() :: started");
@@ -148,12 +113,7 @@ public class EntityService implements EntityCRUDService {
 		pushToDB(request);
 		new Thread() {
 			public void run() {
-				try {
-					registerEntity(request);
-					kafkaTemplate.send(ENTITY_CREATE_TOPIC, request.getId(), DataSerializer.toJson(request));
-				} catch (URISyntaxException | IOException | ResponseException e) {
-					logger.error(e);
-				}
+				kafkaTemplate.send(ENTITY_CREATE_TOPIC, request.getId(), DataSerializer.toJson(request));
 			};
 		}.start();
 
@@ -195,7 +155,7 @@ public class EntityService implements EntityCRUDService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public UpdateResult updateMessage(ArrayListMultimap<String, String> headers, String entityId,
+	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved) throws ResponseException, Exception {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
@@ -233,8 +193,8 @@ public class EntityService implements EntityCRUDService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public AppendResult appendMessage(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String overwriteOption) throws ResponseException, Exception {
+	public AppendResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
@@ -245,8 +205,7 @@ public class EntityService implements EntityCRUDService {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		// get entity details
 		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantId);
-		AppendEntityRequest request = new AppendEntityRequest(headers, entityId, entityBody, resolved, overwriteOption,
-				this.appendOverwriteFlag);
+		AppendEntityRequest request = new AppendEntityRequest(headers, entityId, entityBody, resolved, options);
 		// get entity from ENTITY topic.
 		// pubilsh merged message
 		// check if anything is changed
@@ -264,6 +223,7 @@ public class EntityService implements EntityCRUDService {
 		return request.getAppendResult();
 	}
 
+	@SuppressWarnings("unchecked")
 	private Map<String, Object> validateIdAndGetBody(String entityId, String tenantId) throws ResponseException {
 		// null id check
 		if (entityId == null) {
@@ -291,7 +251,7 @@ public class EntityService implements EntityCRUDService {
 		}
 	}
 
-	public boolean deleteEntity(ArrayListMultimap<String, String> headers, String entityId)
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId)
 			throws ResponseException, Exception {
 		logger.trace("deleteEntity() :: started");
 		// get message channel for ENTITY_DELETE topic
@@ -314,7 +274,6 @@ public class EntityService implements EntityCRUDService {
 		new Thread() {
 			public void run() {
 				kafkaTemplate.send(ENTITY_DELETE_TOPIC, entityId, DataSerializer.toJson(request));
-				deleteRegistryContext(request);
 			};
 		}.start();
 		logger.trace("deleteEntity() :: completed");
@@ -379,79 +338,6 @@ public class EntityService implements EntityCRUDService {
 
 		logger.trace("deleteAttribute() :: completed");
 		return true;
-	}
-
-	public boolean registerEntity(EntityRequest request) throws URISyntaxException, IOException, ResponseException {
-		// TODO needs rework as well
-		logger.trace("registerContext() :: started");
-		String entityBody = this.entityInfoDAO.getEntity(request.getId(),
-				HttpUtils.getTenantFromHeaders(request.getHeaders()));
-		CSourceRegistration contextRegistryPayload = this.getCSourceRegistrationFromJson(entityBody);
-		CSourceRequest Csrequest = new CreateCSourceRequest(contextRegistryPayload, request.getHeaders());
-		kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), DataSerializer.toJson(Csrequest));
-		logger.trace("registerContext() :: completed");
-		return true;
-	}
-
-	private void deleteRegistryContext(EntityRequest request) {
-		// TODO needs rework as well
-		logger.trace("updateContext() :: started");
-		kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), "null");
-		logger.trace("updateContext() :: completed");
-	}
-
-	private CSourceRegistration getCSourceRegistrationFromJson(String payload) throws URISyntaxException, IOException {
-		logger.trace("getCSourceRegistrationFromJson() :: started");
-		CSourceRegistration csourceRegistration = new CSourceRegistration();
-		// csourceJsonBody = objectMapper.createObjectNode();
-		// csourceJsonBody = objectMapper.readTree(entityBody);
-		List<Information> information = new ArrayList<Information>();
-		Information info = new Information();
-		List<EntityInfo> entities = info.getEntities();
-		Entity entity = DataSerializer.getEntity(payload);
-
-		// Entity to CSourceRegistration conversion.
-		csourceRegistration.setId(entity.getId());
-		csourceRegistration.setEndpoint(MicroServiceUtils.getGatewayURL());
-		// location node
-		GeoProperty geoLocationProperty = entity.getLocation();
-		if (geoLocationProperty != null) {
-			csourceRegistration.setLocation(getCoveringGeoValue(geoLocationProperty));
-		}
-
-		// Information node
-		Set<String> propertiesList = entity.getProperties().stream().map(Property::getIdString)
-				.collect(Collectors.toSet());
-
-		Set<String> relationshipsList = entity.getRelationships().stream().map(Relationship::getIdString)
-				.collect(Collectors.toSet());
-
-		entities.add(new EntityInfo(entity.getId(), null, entity.getType()));
-
-		info.setPropertyNames(propertiesList);
-		info.setRelationshipNames(relationshipsList);
-		information.add(info);
-		csourceRegistration.setInformation(information);
-
-		// location node.
-
-		TimeInterval timestamp = new TimeInterval();
-		timestamp.setStartAt(new Date().getTime());
-		csourceRegistration.setTimestamp(timestamp);
-		logger.trace("getCSourceRegistrationFromJson() :: completed");
-		return csourceRegistration;
-	}
-
-	private Geometry<?> getCoveringGeoValue(GeoProperty geoLocationProperty) {
-		// TODO should be done better to cover the actual area
-		return geoLocationProperty.getEntries().values().iterator().next().getGeoValue();
-	}
-
-	public URI getResourceURL(String resource) throws URISyntaxException {
-		logger.trace("getResourceURL() :: started");
-		URI uri = MicroServiceUtils.getGatewayURL();
-		logger.trace("getResourceURL() :: completed");
-		return new URI(uri.toString() + "/" + resource);
 	}
 
 }

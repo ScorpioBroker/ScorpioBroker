@@ -59,8 +59,8 @@ public class QueryController {// implements QueryHandlerInterface {
 	@Value("${ngb.debugmode}")
 	boolean debug = false;
 
-	private final byte[] emptyResult1 = { '[', ' ', ']' };
-	private final byte[] emptyResult2 = { '[', ']' };
+	private final String emptyResult1 = "[ ]";
+	private final String emptyResult2 = "[]";
 
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	String coreContext;
@@ -80,7 +80,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @throws ResponseException
 	 */
 	@GetMapping(path = "/entities/{entityId}")
-	public ResponseEntity<byte[]> getEntity(HttpServletRequest request,
+	public ResponseEntity<String> getEntity(HttpServletRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
 			@RequestParam(value = "options", required = false) List<String> options,
 			@PathVariable("entityId") String entityId) throws ResponseException {
@@ -89,16 +89,16 @@ public class QueryController {// implements QueryHandlerInterface {
 			HttpUtils.validateUri(entityId);
 		} catch (ResponseException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJsonBytes());
+					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJson());
 		}
 		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
 		LinkedMultiValueMap<String, String> paramMap = new LinkedMultiValueMap<String, String>();
 		paramMap.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
-		ResponseEntity<byte[]> result = getQueryData(request, originalQuery, paramMap, attrs, null, null, null, options,
+		ResponseEntity<String> result = getQueryData(request, originalQuery, paramMap, attrs, null, null, null, options,
 				false, true, false, null);
-		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
+		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
+					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
 		}
 		return result;
 		/*
@@ -129,14 +129,14 @@ public class QueryController {// implements QueryHandlerInterface {
 		 * includeSysAttrs); if (result != "null" && !result.isEmpty()) { return
 		 * httpUtils.generateReply(request, result); } else { return
 		 * ResponseEntity.status(HttpStatus.NOT_FOUND) .body(new
-		 * RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes()); }
+		 * RestResponse(ErrorType.NotFound, "Resource not found.").toJson()); }
 		 * 
 		 * } catch (ResponseException exception) { logger.error("Exception ::",
 		 * exception); return ResponseEntity.status(exception.getHttpStatus()).body(new
-		 * RestResponse(exception).toJsonBytes()); } catch (Exception exception) {
+		 * RestResponse(exception).toJson()); } catch (Exception exception) {
 		 * logger.error("Exception ::", exception); return
 		 * ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR) .body(new
-		 * RestResponse(ErrorType.InternalError, "Internal error").toJsonBytes()); }
+		 * RestResponse(ErrorType.InternalError, "Internal error").toJson()); }
 		 */ }
 
 	/**
@@ -148,7 +148,7 @@ public class QueryController {// implements QueryHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	@GetMapping("/entities")
-	public ResponseEntity<byte[]> getAllEntity(HttpServletRequest request,
+	public ResponseEntity<String> getAllEntity(HttpServletRequest request,
 			@RequestParam(value = "attrs", required = false) List<String> attrs,
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
@@ -162,70 +162,70 @@ public class QueryController {// implements QueryHandlerInterface {
 	}
 
 	@GetMapping(path = "/types")
-	public ResponseEntity<byte[]> getAllTypes(HttpServletRequest request,
+	public ResponseEntity<String> getAllTypes(HttpServletRequest request,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 		String check = "NonDeatilsType";
 		if (details == true) {
 			check = "deatilsType";
 		}
-		ResponseEntity<byte[]> result = getQueryData(request, null, HttpUtils.getQueryParamMap(request), null, null,
+		ResponseEntity<String> result = getQueryData(request, null, HttpUtils.getQueryParamMap(request), null, null,
 				null, null, null, false, true, false, check);
-		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
+		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
+					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
 		}
 		return result;
 	}
 
 	@GetMapping(path = "/types/{entityType}")
-	public ResponseEntity<byte[]> getType(HttpServletRequest request, @PathVariable("entityType") String type,
+	public ResponseEntity<String> getType(HttpServletRequest request, @PathVariable("entityType") String type,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 		String check = "type";
 		ArrayList<String> types = new ArrayList<String>();
 		types.add(type);
-		ResponseEntity<byte[]> result = getQueryData(request, null, HttpUtils.getQueryParamMap(request), types, null,
+		ResponseEntity<String> result = getQueryData(request, null, HttpUtils.getQueryParamMap(request), types, null,
 				null, null, null, false, true, false, check);
-		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
+		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
+					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
 		}
 		return result;
 	}
 
 	@GetMapping(path = "/attributes")
-	public ResponseEntity<byte[]> getAllAttribute(HttpServletRequest request,
+	public ResponseEntity<String> getAllAttribute(HttpServletRequest request,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 
 		String check = "NonDeatilsAttributes";
 		if (details == true) {
 			check = "deatilsAttributes";
 		}
-		ResponseEntity<byte[]> result = getQueryData(request, null, HttpUtils.getQueryParamMap(request), null, null,
+		ResponseEntity<String> result = getQueryData(request, null, HttpUtils.getQueryParamMap(request), null, null,
 				null, null, null, false, true, false, check);
-		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
+		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
+					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
 		}
 		return result;
 	}
 
 	@GetMapping(path = "/attributes/{attributes}")
-	public ResponseEntity<byte[]> getAttributes(HttpServletRequest request,
+	public ResponseEntity<String> getAttributes(HttpServletRequest request,
 			@PathVariable("attributes") String attributes,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 		String check = "Attribute";
 		ArrayList<String> types = new ArrayList<String>();
 		types.add(attributes);
-		ResponseEntity<byte[]> result = getQueryData(request, null, HttpUtils.getQueryParamMap(request), types, null,
+		ResponseEntity<String> result = getQueryData(request, null, HttpUtils.getQueryParamMap(request), types, null,
 				null, null, null, false, true, false, check);
-		if (Arrays.equals(emptyResult1, result.getBody()) || Arrays.equals(emptyResult2, result.getBody())) {
+		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJsonBytes());
+					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
 		}
 		return result;
 	}
 
-	private ResponseEntity<byte[]> getQueryData(HttpServletRequest request, String originalQueryParams,
+	private ResponseEntity<String> getQueryData(HttpServletRequest request, String originalQueryParams,
 			MultiValueMap<String, String> paramMap, List<String> attrs, Integer limit, Integer offset, String qToken,
 			List<String> options, Boolean showServices, boolean retrieve, Boolean countResult, String check) {
 		// long start = System.currentTimeMillis();
@@ -283,15 +283,15 @@ public class QueryController {// implements QueryHandlerInterface {
 				} catch (Exception e) {
 					logger.debug("Tenant for the request not found", e);
 					return ResponseEntity.status(HttpStatus.NOT_FOUND)
-							.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJsonBytes());
+							.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJson());
 				}
-				ResponseEntity<byte[]> result = generateReply(request, qResult, !retrieve, countResult, context,
-						linkHeaders);
+				ResponseEntity<String> result = HttpUtils.generateReply(request, qResult, !retrieve, countResult, context,
+						linkHeaders, AppConstants.QUERY_ENDPOINT);
 				return result;
 			} else {
 				ResponseException responseException = new ResponseException(ErrorType.BadRequestData, "invalid query");
 				return ResponseEntity.status(responseException.getHttpStatus())
-						.body(new RestResponse(responseException).toJsonBytes());
+						.body(new RestResponse(responseException).toJson());
 			}
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
@@ -310,30 +310,5 @@ public class QueryController {// implements QueryHandlerInterface {
 			}
 		}
 
-	}
-
-	public static ResponseEntity<byte[]> generateReply(HttpServletRequest request, QueryResult qResult,
-			boolean forceArray, boolean count, Context context, List<Object> contextLinks) throws ResponseException {
-		String nextLink = HttpUtils.generateNextLink(request, qResult);
-		String prevLink = HttpUtils.generatePrevLink(request, qResult);
-		ArrayList<Object> additionalLinks = new ArrayList<Object>();
-		if (nextLink != null) {
-			additionalLinks.add(nextLink);
-		}
-		if (prevLink != null) {
-			additionalLinks.add(prevLink);
-		}
-		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
-		if (count == true) {
-			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
-		}
-
-		if (!additionalLinks.isEmpty()) {
-			for (Object entry : additionalLinks) {
-				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
-			}
-		}
-		return HttpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
-				additionalHeaders, context, contextLinks, forceArray, AppConstants.QUERY_ENDPOINT);
 	}
 }

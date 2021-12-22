@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.el.MethodNotFoundException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +34,10 @@ import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.EntityCRUDService;
+import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
@@ -42,7 +45,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
 @Service
-public class HistoryService implements EntityCRUDService {
+public class HistoryService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryService.class);
 
@@ -66,7 +69,7 @@ public class HistoryService implements EntityCRUDService {
 		return createTemporalEntity(headers, payload, true);
 	}
 
-	public String createMessage(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		return createTemporalEntity(headers, resolved, false).toString();
 	}
@@ -98,7 +101,7 @@ public class HistoryService implements EntityCRUDService {
 	}
 
 
-	public boolean deleteEntity(ArrayListMultimap<String, String> headers, String entityId)
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId)
 			throws ResponseException, Exception {
 		return delete(headers, entityId, null, null, null);
 	}
@@ -122,8 +125,8 @@ public class HistoryService implements EntityCRUDService {
 	}
 
 	// endpoint "/entities/{entityId}/attrs"
-	public AppendResult appendMessage(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String options) throws ResponseException, Exception {
+	public AppendResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
 		if (!historyDAO.entityExists(entityId, HttpUtils.getTenantFromHeaders(headers))) {
 			throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
 		}
@@ -220,5 +223,12 @@ public class HistoryService implements EntityCRUDService {
 
 		logger.debug("Received key: " + key);
 		logger.debug("Received message: " + message);
+	}
+
+	@Override
+	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry) throws ResponseException, Exception {
+		// History can't do this 
+		throw new MethodNotFoundException();
 	}
 }

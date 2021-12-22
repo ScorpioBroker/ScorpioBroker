@@ -263,4 +263,5 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_TIME_REL = "https://uri.etsi.org/ngsi-ld/timerel";
 	public static final String NGSI_LD_OBSERVATIONINTERVAL = "https://uri.etsi.org/ngsi-ld/observationInterval";
 	public static final Set<String> LOCATIONS_IN_REGISTRATION = Set.of(NGSI_LD_LOCATION, NGSI_LD_OBSERVATION_SPACE, NGSI_LD_OPERATION_SPACE);
+	public static final String NO_OVERWRITE_OPTION = "noOverwrite";
 }

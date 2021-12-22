@@ -28,6 +28,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DBWriteTemplates;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
@@ -152,6 +153,23 @@ public class StorageWriterDAO {
 		return result;
 	}
 
+	public boolean storeRegistryEntry(CSourceRequest request) throws SQLException {
+		DBWriteTemplates templates = getJDBCTemplates(request);
+		String value = request.getCsourceRegistrationString();
+		String sql;
+		int n;
+		if (value != null && !value.equals("null")) {
+			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
+					+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
+					+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+			n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value);
+		} else {
+			sql = "DELETE CASCADE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = ?";
+			n = templates.getWriterJdbcTemplate().update(sql, request.getId());
+		}
+		return n > 0;
+	}
+
 	private boolean doTemporalSqlAttrInsert(DBWriteTemplates templates, String value, String entityId,
 			String entityType, String attributeId, String entityCreatedAt, String entityModifiedAt, String instanceId,
 			Boolean overwriteOp) {
@@ -202,6 +220,7 @@ public class StorageWriterDAO {
 					logger.info("Attempting recovery");
 					try {
 						n = templates.getWriterTransactionTemplate().execute(new TransactionCallback<Integer>() {
+
 							@Override
 							public Integer doInTransaction(TransactionStatus status) {
 								String sql;

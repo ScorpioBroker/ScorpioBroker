@@ -25,8 +25,8 @@ public class QueryHandler {
 		return new RestTemplate();
 	}
 
-	@Value("${query.result.topic}")
-	String queryResultTopic;
+	
+	String queryResultTopic = "TOBEREMOVED";
 
 	@Bean // register and configure replying kafka template
 	public ReplyingKafkaTemplate<String, String, String> replyingTemplate(ProducerFactory<String, String> pf,

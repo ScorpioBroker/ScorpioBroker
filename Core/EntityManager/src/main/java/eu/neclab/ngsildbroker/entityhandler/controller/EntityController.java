@@ -33,6 +33,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.tools.ControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import eu.neclab.ngsildbroker.entityhandler.validationutil.Validator;
@@ -76,23 +77,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@SuppressWarnings("unchecked")
 	@PostMapping
-	public ResponseEntity<byte[]> createEntity(HttpServletRequest request,
+	public ResponseEntity<String> createEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
-		String result = null;
-		try {
-			logger.trace("create entity :: started");
-			List<Object> contextHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_CREATE_PAYLOAD, atContextAllowed).get(0);
-			result = entityService.createMessage(HttpUtils.getHeaders(request), resolved);
-			logger.trace("create entity :: completed");
-			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
-					.build();
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+		return ControllerFunctions.createEntry(entityService, request, payload, logger);
 	}
 
 	/**
@@ -104,25 +91,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@SuppressWarnings("unchecked")
 	@PatchMapping("/{entityId}/attrs")
-	public ResponseEntity<byte[]> updateEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<String> updateEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload) {
-		try {
-			logger.trace("update entity :: started");
-			List<Object> contextHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, atContextAllowed).get(0);
-			UpdateResult update = entityService.updateMessage(HttpUtils.getHeaders(request), entityId, resolved);
-			logger.trace("update entity :: completed");
-			if (update.getUpdateResult()) {
-				return ResponseEntity.noContent().build();
-			} else {
-				return ResponseEntity.status(HttpStatus.MULTI_STATUS)
-						.body(objectMapper.writeValueAsBytes(update.getAppendedJsonFields()));
-			}
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+		return ControllerFunctions.updateEntry(entityService, request, entityId, payload, logger);
 	}
 
 	/**
@@ -134,32 +105,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@SuppressWarnings("unchecked")
 	@PostMapping("/{entityId}/attrs")
-	public ResponseEntity<byte[]> appendEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
+	public ResponseEntity<String> appendEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload, @RequestParam(required = false, name = "options") String options) {
-		// String resolved = contextResolver.resolveContext(payload);
-		try {
-			// String[] split =
-			// request.getPath().toString().replace("/ngsi-ld/v1/entities/",
-			// "").split("/attrs");
-			
-
-			logger.trace("append entity :: started");
-			List<Object> contextHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, atContextAllowed).get(0);
-			AppendResult append = entityService.appendMessage(HttpUtils.getHeaders(request), entityId, resolved,
-					options);
-			logger.trace("append entity :: completed");
-			if (append.getAppendResult()) {
-				return ResponseEntity.noContent().build();
-			} else {
-				return ResponseEntity.status(HttpStatus.MULTI_STATUS)
-						.body(objectMapper.writeValueAsBytes(append.getAppendedJsonFields()));
-			}
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+		return ControllerFunctions.appendToEntry(entityService, request, entityId, payload, options, logger);
 	}
 
 	/**
@@ -173,7 +121,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@SuppressWarnings("unchecked")
 	@PatchMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<byte[]> partialUpdateEntity(HttpServletRequest request,
+	public ResponseEntity<String> partialUpdateEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@RequestBody String payload) {
 		try {
@@ -221,34 +169,24 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param attrId
 	 * @return
 	 */
-	@DeleteMapping("/**")
-	public ResponseEntity<byte[]> deleteAttribute(HttpServletRequest request,
+
+	@DeleteMapping("/{entityId}/attrs/{attrId}")
+	public ResponseEntity<String> deleteAttribute(HttpServletRequest request, @PathVariable("entityId") String entityId,
+			@PathVariable("attrId") String attrId,
 			@RequestParam(value = "datasetId", required = false) String datasetId,
 			@RequestParam(value = "deleteAll", required = false) String deleteAll) {
 		try {
-			String path = request.getServletPath().replace("/ngsi-ld/v1/entities/", "");
-			if (path.contains("/attrs/")) {
-				String[] split = path.split("/attrs/");
-				String attrId = null;
-				if(split.length > 1) {
-					attrId = split[1];	
-				}
-				
-				String entityId = split[0];
-				HttpUtils.validateUri(entityId);
-				logger.trace("delete attribute :: started");
-				
-				Validator.validate(HttpUtils.getQueryParamMap(request));
-				Context context = JsonLdProcessor.getCoreContextClone();
-				context = context.parse(HttpUtils.getAtContext(request), true);
-				String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
-				entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,
-						deleteAll);
-				logger.trace("delete attribute :: completed");
-				return ResponseEntity.noContent().build();
-			} else {
-				return deleteEntity(request);
-			}
+			HttpUtils.validateUri(entityId);
+			logger.trace("delete attribute :: started");
+			// TODO check if this is needed hopefully jetty errors out before
+			// Validator.validate(HttpUtils.getQueryParamMap(request));
+			Context context = JsonLdProcessor.getCoreContextClone();
+			context = context.parse(HttpUtils.getAtContext(request), true);
+			String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
+			entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,
+					deleteAll);
+			logger.trace("delete attribute :: completed");
+			return ResponseEntity.noContent().build();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
@@ -260,16 +198,8 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param entityId
 	 * @return
 	 */
-	public ResponseEntity<byte[]> deleteEntity(HttpServletRequest request) {
-		try {
-			String entityId = request.getServletPath().replace("/ngsi-ld/v1/entities/", "");
-			logger.trace("delete entity :: started");
-			HttpUtils.validateUri(entityId);
-			entityService.deleteEntity(HttpUtils.getHeaders(request), entityId);
-			logger.trace("delete entity :: completed");
-			return ResponseEntity.noContent().build();
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+	@DeleteMapping("/{entityId}")
+	public ResponseEntity<String> deleteEntity(HttpServletRequest request, @PathVariable("entityId") String entityId) {
+		return ControllerFunctions.deleteEntity(entityService, request, entityId, logger);
 	}
 }

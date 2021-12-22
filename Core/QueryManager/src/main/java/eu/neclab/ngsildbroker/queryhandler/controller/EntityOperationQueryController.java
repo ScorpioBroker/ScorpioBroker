@@ -26,6 +26,7 @@ public class EntityOperationQueryController {
 
 	@Value("${defaultLimit}")
 	int defaultLimit = 50;
+	
 	@Value("${maxLimit}")
 	int maxLimit = 1000;
 
@@ -38,7 +39,7 @@ public class EntityOperationQueryController {
 	}
 
 	@PostMapping("/query")
-	public ResponseEntity<byte[]> postQuery(HttpServletRequest request, @RequestBody String payload,
+	public ResponseEntity<String> postQuery(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(value = "limit", required = false) Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,

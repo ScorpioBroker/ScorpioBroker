@@ -114,11 +114,7 @@ public class SubscriptionService {
 	@Autowired
 	SubscriptionInfoDAO subscriptionInfoDAO;
 
-	@Value("${query.topic}")
-	String requestTopic;
 
-	@Value("${query.result.topic}")
-	String queryResultTopic;
 
 	@Value("${subscription.directdb:true}")
 	boolean directDB;
@@ -151,11 +147,11 @@ public class SubscriptionService {
 		}
 
 		notificationHandlerREST = new NotificationHandlerREST(this, objectMapper, webClient);
-		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, queryResultTopic,
-				requestTopic);
+		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, null,
+				null);
 		notificationHandlerMQTT = new NotificationHandlerMQTT(this, objectMapper);
-		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, queryResultTopic,
-				requestTopic);
+		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, null,
+				null);
 		logger.trace("call loadStoredSubscriptions() ::");
 		loadStoredSubscriptions();
 
@@ -881,27 +877,6 @@ public class SubscriptionService {
 		this.tenant2Ids2Type.remove(req.getTenant(), req.getId());
 	}
 
-	@KafkaListener(topics = "${csource.notification.topic}")
-	public void handleCSourceNotification(Message<String> message) {
-		String payload = new String(message.getPayload());
-		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
-		ArrayList<String> endPoints = DataSerializer.getStringList(payload);
-		Map<String, SubscriptionRequest> temp;
-		synchronized (tenant2subscriptionId2Subscription) {
-			temp = tenant2subscriptionId2Subscription.row(key);
-		}
-		for (SubscriptionRequest sub : temp.values()) {
-			subscribeToRemote(sub, endPoints);
-		}
-	}
-
-	// @KafkaListener(topics = "${csource.registry.topic}", groupId = "submanager")
-	// public void handleCSourceRegistry(Message<String> message) throws Exception {
-	// CSourceRegistration csourceRegistration = objectMapper.readValue((String)
-	// message.getPayload(),
-	// CSourceRegistration.class);
-	// checkSubscriptionsWithCSource(csourceRegistration);
-	// }
 
 	private void subscribeToRemote(SubscriptionRequest subscriptionRequest, ArrayList<String> remoteEndPoints) {
 		new Thread() {
@@ -1046,7 +1021,6 @@ public class SubscriptionService {
 
 	// return true for future date validation
 	private boolean isValidFutureDate(Long date) {
-
 		return System.currentTimeMillis() < date;
 	}
 }

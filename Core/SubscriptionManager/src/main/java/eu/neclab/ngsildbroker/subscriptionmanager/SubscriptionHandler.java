@@ -24,8 +24,7 @@ public class SubscriptionHandler {
 
 	}
 
-	@Value("${query.result.topic}")
-	String queryResultTopic;
+	String queryResultTopic = "TOBEREMOVED";
 	
 	@Bean("subwebclient")
 	WebClient webClient() {

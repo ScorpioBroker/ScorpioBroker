@@ -73,14 +73,6 @@ public class QueryService implements EntityQueryService{
 	@Autowired
 	ObjectMapper objectMapper;
 
-	@Value("${query.topic}")
-	String requestTopic;
-
-	@Value("${query.result.topic}")
-	String queryResultTopic;
-
-	@Value("${csource.query.topic}")
-	String csourceQueryTopic;
 
 	@Value("${kafka.replytimeout}")
 	long replyTimeout = 5000;
@@ -131,21 +123,21 @@ public class QueryService implements EntityQueryService{
 	public QueryResult getFromStorageManager(String storageManagerQuery) throws Exception {
 		// create producer record
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-		logger.trace("getFromStorageManager() :: started");
-		ProducerRecord<String, String> record = new ProducerRecord<String, String>(requestTopic,
-				storageManagerQuery);
-		// set reply topic in header
-		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()));
-		RequestReplyFuture<String, String, String> sendAndReceive = kafkaTemplate.sendAndReceive(record);
-		// get consumer record
-		ConsumerRecord<String, String> consumerRecord = sendAndReceive.get();
-		// read from byte array
-		List<String> entityList = new ArrayList<String>();
-		
-		entityList.add(consumerRecord.value());
-		// return consumer value
-		logger.trace("getFromStorageManager() :: completed");
-		queryResult.setActualDataString(entityList);
+//		logger.trace("getFromStorageManager() :: started");
+//		ProducerRecord<String, String> record = new ProducerRecord<String, String>(requestTopic,
+//				storageManagerQuery);
+//		// set reply topic in header
+//		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()));
+//		RequestReplyFuture<String, String, String> sendAndReceive = kafkaTemplate.sendAndReceive(record);
+//		// get consumer record
+//		ConsumerRecord<String, String> consumerRecord = sendAndReceive.get();
+//		// read from byte array
+//		List<String> entityList = new ArrayList<String>();
+//		
+//		entityList.add(consumerRecord.value());
+//		// return consumer value
+//		logger.trace("getFromStorageManager() :: completed");
+//		queryResult.setActualDataString(entityList);
 		return queryResult;
 	}
 
@@ -161,20 +153,20 @@ public class QueryService implements EntityQueryService{
 		// create producer record
 		String contextRegistryData = null;
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-		logger.trace("getFromContextRegistry() :: started");
-		ProducerRecord<String, String> record = new ProducerRecord<String, String>(csourceQueryTopic,
-				contextRegistryQuery);
-		// set reply topic in header
-		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()))
-				.add(KafkaHeaders.MESSAGE_KEY, "dummy".getBytes());// change with some useful key
-		RequestReplyFuture<String, String, String> sendAndReceive = kafkaTemplate.sendAndReceive(record);
-		// get consumer record
-		ConsumerRecord<String, String> consumerRecord = sendAndReceive.get();
-		// return consumer value
-		logger.debug("getFromContextRegistry() :: completed");
-		contextRegistryData = new String((String) consumerRecord.value());
-		logger.debug("getFromContextRegistry() data broker list::" + contextRegistryData);
-		queryResult.setActualDataString(DataSerializer.getStringList(contextRegistryData));
+//		logger.trace("getFromContextRegistry() :: started");
+//		ProducerRecord<String, String> record = new ProducerRecord<String, String>(csourceQueryTopic,
+//				contextRegistryQuery);
+//		// set reply topic in header
+//		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()))
+//				.add(KafkaHeaders.MESSAGE_KEY, "dummy".getBytes());// change with some useful key
+//		RequestReplyFuture<String, String, String> sendAndReceive = kafkaTemplate.sendAndReceive(record);
+//		// get consumer record
+//		ConsumerRecord<String, String> consumerRecord = sendAndReceive.get();
+//		// return consumer value
+//		logger.debug("getFromContextRegistry() :: completed");
+//		contextRegistryData = new String((String) consumerRecord.value());
+//		logger.debug("getFromContextRegistry() data broker list::" + contextRegistryData);
+//		queryResult.setActualDataString(DataSerializer.getStringList(contextRegistryData));
 		return queryResult;
 	}
 
