@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -24,8 +24,7 @@ public class SubscriptionHandler {
 
 	}
 
-	@Value("${query.result.topic}")
-	String queryResultTopic;
+	String queryResultTopic = "TOBEREMOVED";
 	
 	@Bean("subwebclient")
 	WebClient webClient() {

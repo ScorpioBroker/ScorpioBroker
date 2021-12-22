@@ -20,13 +20,10 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 public class AppendEntityRequest extends EntityRequest {
 
 	private AppendResult appendResult;
-	
 
 	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String[] options) throws ResponseException {
-		super(AppConstants.OPERATION_APPEND_ENTITY, headers);
-		this.id = id;
-		
+		super(headers, id, resolved);
 		generateAppend(resolved, entityBody, options);
 	}
 
@@ -52,15 +49,15 @@ public class AppendEntityRequest extends EntityRequest {
 	 * @return AppendResult
 	 * @throws IOException
 	 */
-	private AppendResult appendFields(Map<String, Object> entityBody, Map<String, Object> resolved,
-			String[] options) throws Exception {
+	private AppendResult appendFields(Map<String, Object> entityBody, Map<String, Object> resolved, String[] options)
+			throws Exception {
 		logger.trace("appendFields() :: started");
 		boolean overwrite = true;
-		if(options != null) {
-			for(String option: options) {
-				if(option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)) {
+		if (options != null) {
+			for (String option : options) {
+				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)) {
 					overwrite = false;
-				}else {
+				} else {
 					throw new ResponseException(ErrorType.BadRequestData, options + " is an invalid option");
 				}
 			}
@@ -81,8 +78,7 @@ public class AppendEntityRequest extends EntityRequest {
 				appendResult.getAppendedJsonFields().put(key, value);
 				continue;
 			}
-			if ((entityBody.containsKey(key) && overwrite)
-					|| !entityBody.containsKey(key)) {
+			if ((entityBody.containsKey(key) && overwrite) || !entityBody.containsKey(key)) {
 				if (value instanceof List && !((List) value).isEmpty()) {
 					// TODO: should we keep the createdAt value if attribute already exists?
 					// (overwrite operation) => if (objectNode.has(key)) ...
@@ -95,6 +91,7 @@ public class AppendEntityRequest extends EntityRequest {
 			appendResult.setStatus(false);
 		}
 		setTemporalProperties(entityBody, "", now, true); // root only, modifiedAt only
+		setFinalPayload(entityBody);
 		appendResult.setJson(JsonUtils.toPrettyString(entityBody));
 		removeTemporalProperties(entityBody);
 		appendResult.setJsonWithoutSysAttrs(JsonUtils.toPrettyString(entityBody));

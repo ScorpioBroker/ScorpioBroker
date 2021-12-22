@@ -61,7 +61,7 @@ public class AtContextServerController {
 		List<Object> contextes = null;//atContext.getContextes(contextId);
 		StringBuilder body = new StringBuilder("{\"@context\": ");
 
-		body.append(DataSerializer.toJson(contextes));
+		//body.append(DataSerializer.toJson(contextes));
 		body.append("}");
 		return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(body.toString());
 	}

@@ -29,6 +29,7 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
+import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteCSourceRequest;
@@ -40,6 +41,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
@@ -50,12 +52,11 @@ public class CSourceService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 
-
 	@Autowired
 	CSourceDAO csourceInfoDAO;
 
 	@Autowired
-	KafkaTemplate<String, String> kafkaTemplate;
+	KafkaTemplate<String, BaseRequest> kafkaTemplate;
 
 	@Value("${csource.update.topic}")
 	String CSOURCE_UPDATE_TOPIC;
@@ -107,7 +108,6 @@ public class CSourceService implements EntryCRUDService {
 		return validateIdAndGetBody(registrationId, tenantId);
 	}
 
-	
 	private void pushToDB(CSourceRequest request) throws SQLException {
 		this.storageWriterDao.storeRegistryEntry(request);
 	}
@@ -178,12 +178,11 @@ public class CSourceService implements EntryCRUDService {
 			if (task != null) {
 				task.cancel();
 			}
-			this.csourceTimerTask(headers, request.getCsourceRegistration());
+			this.csourceTimerTask(headers, request.getFinalPayload());
 		}
-		// handleFed();
 		pushToDB(request);
 		sendToKafka(CSOURCE_APPEND_TOPIC, request);
-		return new AppendResult(entry, request.getCsourceRegistration());
+		return new AppendResult(entry, request.getFinalPayload());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -194,7 +193,15 @@ public class CSourceService implements EntryCRUDService {
 	@Override
 	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
-		CSourceRequest request = new CreateCSourceRequest(resolved, headers);
+		String id;
+		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
+		if (idObj == null) {
+			id = EntityTools.generateUniqueRegId(resolved);
+			resolved.put(NGSIConstants.JSON_LD_ID, id);
+		} else {
+			id = (String) idObj;
+		}
+		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		synchronized (this.csourceIds) {
 			if (this.csourceIds.containsEntry(tenantId, request.getId())) {
@@ -211,7 +218,7 @@ public class CSourceService implements EntryCRUDService {
 	private void sendToKafka(String topic, CSourceRequest request) {
 		new Thread() {
 			public void run() {
-				kafkaTemplate.send(topic, request.getId(), DataSerializer.toJson(request));
+				kafkaTemplate.send(topic, request.getId(), request);
 			};
 		}.start();
 	}

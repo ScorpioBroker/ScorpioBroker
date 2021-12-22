@@ -155,7 +155,7 @@ public class StorageWriterDAO {
 
 	public boolean storeRegistryEntry(CSourceRequest request) throws SQLException {
 		DBWriteTemplates templates = getJDBCTemplates(request);
-		String value = request.getCsourceRegistrationString();
+		String value = request.getResultCSourceRegistrationString();
 		String sql;
 		int n;
 		if (value != null && !value.equals("null")) {

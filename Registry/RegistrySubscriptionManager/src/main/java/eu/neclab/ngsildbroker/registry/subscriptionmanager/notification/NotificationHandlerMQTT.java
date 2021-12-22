@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager.notification;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -15,6 +15,7 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.SubscriptionService;
 
 public class NotificationHandlerMQTT extends BaseNotificationHandler {
 

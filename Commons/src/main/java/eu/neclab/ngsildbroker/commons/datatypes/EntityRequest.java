@@ -15,10 +15,6 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class EntityRequest extends BaseRequest {
-
-	protected int operationType;
-	protected String id;
-	protected ObjectMapper objectMapper = new ObjectMapper();
 	protected String withSysAttrs;
 	protected String entityWithoutSysAttrs;
 	protected String keyValue;
@@ -28,17 +24,8 @@ public class EntityRequest extends BaseRequest {
 
 	}
 
-	public EntityRequest(int operationType, ArrayListMultimap<String, String> headers) {
-		super(headers);
-		this.operationType = operationType;
-	}
-
-	public String getOperationValue() {
-		return operationValue;
-	}
-
-	public void setOperationValue(String operationValue) {
-		this.operationValue = operationValue;
+	public EntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload) {
+		super(headers, id, requestPayload);
 	}
 
 	public String getWithSysAttrs() {
@@ -63,30 +50,6 @@ public class EntityRequest extends BaseRequest {
 
 	public void setKeyValue(String keyValue) {
 		this.keyValue = keyValue;
-	}
-
-	public int getOperationType() {
-		return operationType;
-	}
-
-	public void setOperationType(int operationType) {
-		this.operationType = operationType;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public ObjectMapper getObjectMapper() {
-		return objectMapper;
-	}
-
-	public void setObjectMapper(ObjectMapper objectMapper) {
-		this.objectMapper = objectMapper;
 	}
 
 	protected Map<String, Object> getKeyValueEntity(Map<String, Object> map) {

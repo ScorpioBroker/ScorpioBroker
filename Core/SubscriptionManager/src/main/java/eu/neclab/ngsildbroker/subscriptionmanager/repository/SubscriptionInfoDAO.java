@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.subscriptionmanager.repository;
 
 import java.util.ArrayList;
 import java.util.HashMap;

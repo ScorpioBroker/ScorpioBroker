@@ -17,13 +17,16 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 public abstract class BaseRequest {
 
 	ArrayListMultimap<String, String> headers;
+	private String id;
+	protected Map<String, Object> requestPayload;
+	protected Map<String, Object> finalPayload;
 	protected final static Logger logger = LogManager.getLogger(BaseRequest.class);
 
 	protected BaseRequest() {
 
 	}
 
-	public BaseRequest(ArrayListMultimap<String, String> headers) {
+	public BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload) {
 		super();
 		this.headers = headers;
 	}
@@ -36,6 +39,7 @@ public abstract class BaseRequest {
 		this.headers = headers;
 	}
 
+	@SuppressWarnings("rawtypes")
 	protected void setTemporalProperties(Object jsonNode, String createdAt, String modifiedAt, boolean rootOnly) {
 		if (!(jsonNode instanceof Map)) {
 			return;
@@ -93,5 +97,26 @@ public abstract class BaseRequest {
 		}
 		return AppConstants.INTERNAL_NULL_KEY;
 	}
+
+	public String getId() {
+		return this.id;
+	}
+
+	public Map<String, Object> getRequestPayload() {
+		return requestPayload;
+	}
+
+	public void setRequestPayload(Map<String, Object> requestPayload) {
+		this.requestPayload = new HashMap<String, Object>(requestPayload);
+	}
+
+	public Map<String, Object> getFinalPayload() {
+		return finalPayload;
+	}
+
+	public void setFinalPayload(Map<String, Object> finalPayload) {
+		this.finalPayload = new HashMap<String, Object>(finalPayload);
+	}
+	
 
 }

@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.controller;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager.controller;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -21,10 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionControllerFunctions;
-import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.SubscriptionService;
 
 @RestController
-@RequestMapping("/ngsi-ld/v1/subscriptions")
+@RequestMapping("/ngsi-ld/v1/csourceSubscriptions/")
 public class SubscriptionController {
 
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionController.class);

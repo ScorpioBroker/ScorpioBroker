@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager.notification;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -50,6 +51,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.SubscriptionService;
 
 public abstract class BaseNotificationHandler implements NotificationHandler {
 
@@ -98,7 +100,12 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 						synchronized (subId2Notifications) {
 							Notification sendOutNotification = EntityTools
 									.squashNotifications(subId2Notifications.removeAll(subId));
-							String jsonStr = DataSerializer.toJson(sendOutNotification);
+							String jsonStr;
+							try {
+								jsonStr = JsonUtils.toPrettyString(notification.getData());
+							} catch (IOException e1) {
+								return;
+							}
 							Long now = System.currentTimeMillis();
 							subId2LastReport.put(subId, now / 1000);
 							subscriptionManagerService.reportNotification(tenantId, subId, now);
@@ -123,7 +130,12 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			}
 
 		} else {
-			String jsonStr = DataSerializer.toJson(notification);
+			String jsonStr;
+			try {
+				jsonStr = JsonUtils.toPrettyString(notification.getData());
+			} catch (IOException e1) {
+				return;
+			}
 			logger.debug("Sending notification");
 			ResponseEntity<String> reply;
 			long now = System.currentTimeMillis();

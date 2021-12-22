@@ -10,7 +10,7 @@ import java.util.HashMap;
  */
 public abstract class BaseProperty {
 
-	protected URI id;
+	protected String id;
 	protected String type;
 
 	public BaseProperty(){
@@ -20,14 +20,14 @@ public abstract class BaseProperty {
 
 	abstract public boolean isMultiValue();
 
-	public URI getId() {
+	public String getId() {
 		return id;
 	}
 	public String getIdString() {
-		return id.toString();
+		return id;
 	}
 
-	public void setId(URI id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 

@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.controller;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager.controller;
 
 import java.io.IOException;
 
@@ -22,7 +22,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.SubscriptionService;
 
 @RestController
 @RequestMapping("/remotenotify")
@@ -44,13 +44,10 @@ public class NotificationController {
 	public void notify(HttpServletRequest req, @RequestBody String payload,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = false) String id) {
 		try {
-			subscriptionManager.remoteNotify(id, DataSerializer.getNotification(JsonUtils.toString(JsonLdProcessor
-					.expand(HttpUtils.getAtContext(req), payload, opts, AppConstants.NOTIFICAITION_RECEIVED, true))));
+			subscriptionManager.remoteNotify(id, JsonLdProcessor.expand(HttpUtils.getAtContext(req), payload, opts,
+					AppConstants.NOTIFICAITION_RECEIVED, true));
 		} catch (ResponseException e) {
 			// TODO Error Handling
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

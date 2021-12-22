@@ -13,7 +13,7 @@ public class Subscription extends Query {
 
 	private String description;
 	private Long expiresAt;
-	private URI id;
+	private String id;
 	private String subscriptionName;
 	private NotificationParam notification;
 	private String status = "active";
@@ -30,7 +30,7 @@ public class Subscription extends Query {
 
 	public Subscription(Map<String, String> customFlags, List<String> attributeNames, List<EntityInfo> entities,
 			String ldContext, LDGeoQuery ldGeoQuery, String ldQuery, LDTemporalQuery ldTempQuery,
-			List<URI> requestorList, String description, Long expires, URI id, String subscriptionName,
+			List<URI> requestorList, String description, Long expires, String id, String subscriptionName,
 			NotificationParam notification, String status, Integer throttling, Integer timeInterval, String type) {
 		super(customFlags, attributeNames, entities, ldContext, ldGeoQuery, ldQuery, ldTempQuery, requestorList);
 		this.description = description;
@@ -68,11 +68,11 @@ public class Subscription extends Query {
 		this.expiresAt = expiresAt;
 	}
 
-	public URI getId() {
+	public String getId() {
 		return id;
 	}
 
-	public void setId(URI id) {
+	public void setId(String id) {
 		this.id = id;
 	}
 
@@ -146,12 +146,13 @@ public class Subscription extends Query {
 
 	@Override
 	public String toString() {
-		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id + ", subscriptionName=" + subscriptionName
-				+ ", notification=" + notification + ", status=" + status + ", throttling=" + throttling
-				+ ", timeInterval=" + timeInterval + ", type=" + type + ", internal=" + internal + ", queryTerm="
-				+ queryTerm + ", attributeNames=" + attributeNames + ", entities=" + entities + ", ldContext="
-				+ ldContext + ", ldGeoQuery=" + ldGeoQuery + ", ldQuery=" + ldQuery + ", ldTempQuery=" + ldTempQuery
-				+ ", requestorList=" + requestorList + ", customFlags=" + customFlags + "]";
+		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id
+				+ ", subscriptionName=" + subscriptionName + ", notification=" + notification + ", status=" + status
+				+ ", throttling=" + throttling + ", timeInterval=" + timeInterval + ", type=" + type + ", internal="
+				+ internal + ", queryTerm=" + queryTerm + ", attributeNames=" + attributeNames + ", entities="
+				+ entities + ", ldContext=" + ldContext + ", ldGeoQuery=" + ldGeoQuery + ", ldQuery=" + ldQuery
+				+ ", ldTempQuery=" + ldTempQuery + ", requestorList=" + requestorList + ", customFlags=" + customFlags
+				+ "]";
 	}
 
 }

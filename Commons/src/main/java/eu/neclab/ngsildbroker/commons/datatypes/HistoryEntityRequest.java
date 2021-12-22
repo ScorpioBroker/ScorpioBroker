@@ -16,30 +16,14 @@ public class HistoryEntityRequest extends BaseRequest {
 
 	protected ArrayList<HistoryAttribInstance> attribs = new ArrayList<HistoryAttribInstance>();
 
-	protected Map<String, Object> payload;
 
-	protected String id;
 	protected String type;
 	protected String createdAt;
 	protected String modifiedAt;
 	protected String now;
 	protected String instanceId;
 
-	public Map<String, Object> getPayload() {
-		return payload;
-	}
 
-	public void setPayload(Map<String, Object> payload) {
-		this.payload = payload;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
 
 	public String getType() {
 		return type;
@@ -79,10 +63,9 @@ public class HistoryEntityRequest extends BaseRequest {
 	public HistoryEntityRequest() {
 	}
 
-	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved, String entityId)
 			throws ResponseException {
-		super(headers);
-		this.payload = resolved;
+		super(headers, entityId, resolved);
 		this.now = SerializationTools.formatter.format(Instant.now());
 
 	}

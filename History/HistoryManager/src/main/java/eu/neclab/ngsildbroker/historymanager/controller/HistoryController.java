@@ -34,7 +34,6 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryHistoryEntitiesRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -117,8 +116,8 @@ public class HistoryController {
 			qp.setLimit(limit);
 			qp.setOffSet(offset);
 			qp.setCountResult(countResult);
-			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
-			QueryResult qResult = historyDAO.query(req.getQp());
+			
+			QueryResult qResult = historyDAO.query(qp);
 			String nextLink = HttpUtils.generateNextLink(request, qResult);
 			String prevLink = HttpUtils.generatePrevLink(request, qResult);
 			ArrayList<String> additionalLinks = new ArrayList<String>();
@@ -165,8 +164,7 @@ public class HistoryController {
 			context = context.parse(links, true);
 			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
-			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
-			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
+			List<String> queryResult = historyDAO.query(qp).getActualDataString();
 			if (queryResult == null) {
 				System.err.println();
 			}
@@ -194,8 +192,8 @@ public class HistoryController {
 			context = context.parse(links, true);
 			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
-			QueryHistoryEntitiesRequest req = new QueryHistoryEntitiesRequest(HttpUtils.getHeaders(request), qp);
-			List<String> queryResult = historyDAO.query(req.getQp()).getActualDataString();
+
+			List<String> queryResult = historyDAO.query(qp).getActualDataString();
 			if (queryResult.isEmpty()) {
 				throw new ResponseException(ErrorType.NotFound, "Entity not found");
 			}

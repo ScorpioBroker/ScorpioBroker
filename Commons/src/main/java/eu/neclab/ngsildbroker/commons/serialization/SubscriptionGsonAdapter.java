@@ -48,11 +48,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			String key = entry.getKey();
 			JsonElement value = entry.getValue();
 			if (key.equals(NGSIConstants.JSON_LD_ID)) {
-				try {
-					result.setId(new URI(value.getAsString()));
-				} catch (URISyntaxException e) {
-					throw new JsonParseException("Invalid Id " + value.getAsString());
-				}
+					result.setId(value.getAsString());
 			} else if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
 				result.setType(value.getAsString());
 			} else if (key.equals(NGSIConstants.NGSI_LD_ENTITIES)) {

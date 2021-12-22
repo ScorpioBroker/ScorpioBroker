@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -14,14 +15,12 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class DeleteAttributeRequest extends EntityRequest {
 
-	private AppendResult appendResult;
-	private String appendOverwriteFlag;
+
 
 	public DeleteAttributeRequest(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entityBody, String attrId, String datasetId, String deleteAll)
 			throws ResponseException {
-		super(AppConstants.OPERATION_DELETE_ATTRIBUTE_ENTITY, headers);
-		this.id = entityId;
+		super(headers, entityId, entityBody);
 		generateDeleteAttrib(entityId, entityBody, attrId, datasetId, deleteAll);
 	}
 
@@ -29,10 +28,11 @@ public class DeleteAttributeRequest extends EntityRequest {
 			String deleteAll) throws ResponseException {
 		try {
 			Map<String, Object> finalJson = deleteFields(entityBody, attrId, datasetId, deleteAll);
-			this.withSysAttrs = objectMapper.writeValueAsString(finalJson);
+			setFinalPayload(finalJson);
+			this.withSysAttrs = JsonUtils.toPrettyString(finalJson);
 			removeTemporalProperties(finalJson);
-			this.entityWithoutSysAttrs = objectMapper.writeValueAsString(finalJson);
-			this.keyValue = objectMapper.writeValueAsString(getKeyValueEntity(finalJson));
+			this.entityWithoutSysAttrs = JsonUtils.toPrettyString(finalJson);
+			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(finalJson));
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.NotFound, e.getMessage());
 		}

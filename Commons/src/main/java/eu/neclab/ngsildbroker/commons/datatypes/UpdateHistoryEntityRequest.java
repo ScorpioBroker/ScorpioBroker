@@ -19,22 +19,20 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 
 	public UpdateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			String entityId, String resolvedAttrId, String instanceId, String oldEntry) throws ResponseException {
-		super(headers, resolved);
-		this.id = entityId;
+		super(headers, resolved, entityId);
 		this.oldEntry = oldEntry;
 		this.resolvedAttrId = resolvedAttrId;
 		this.instanceId = instanceId;
 		createUpdate();
 	}
 
-	public UpdateHistoryEntityRequest(EntityRequest entityRequest) throws IOException {
+	public UpdateHistoryEntityRequest(BaseRequest entityRequest) throws IOException {
 
 		logger.trace("Listener handleEntityUpdate...");
 		// logger.debug("Received key: " + key);
 		// String payload = new String(message);
 		setHeaders(entityRequest.getHeaders());
-		Map<String, Object> jsonObject = (Map<String, Object>) JsonUtils.fromString(entityRequest.getWithSysAttrs());
-
+		Map<String, Object> jsonObject = entityRequest.getRequestPayload();//(Map<String, Object>) JsonUtils.fromString(entityRequest.getWithSysAttrs());
 		for (Entry<String, Object> entry : jsonObject.entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
@@ -71,11 +69,11 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 		}
 
 		logger.debug(
-				"modify attribute instance in temporal entity " + this.id + " - " + resolvedAttrId + " - " + createdAt);
+				"modify attribute instance in temporal entity " + getId() + " - " + resolvedAttrId + " - " + createdAt);
 
 
 
-		for (Entry<String, Object> entry : payload.entrySet()) {
+		for (Entry<String, Object> entry : getRequestPayload().entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
@@ -109,7 +107,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, now);
 					try {
-						storeEntry(id, null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement), false);
+						storeEntry(getId(), null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement), false);
 					} catch (IOException e) {
 						logger.error(e);
 						//Should never happen
@@ -117,7 +115,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 				}
 			}
 		}
-		logger.trace("instance modified in temporalentity " + this.id);
+		logger.trace("instance modified in temporalentity " + getId());
 	}
 
 }

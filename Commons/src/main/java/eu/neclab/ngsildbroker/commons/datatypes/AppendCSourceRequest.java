@@ -14,8 +14,8 @@ public class AppendCSourceRequest extends CSourceRequest {
 	public AppendCSourceRequest(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> originalRegistration, Map<String, Object> update, String[] options)
 			throws ResponseException {
-		super(headers);
-		this.csourceRegistration = appendRequest(originalRegistration, update, options);
+		super(headers, registrationId, update);
+		setFinalPayload(appendRequest(originalRegistration, update, options));
 	}
 
 	private Map<String, Object> appendRequest(Map<String, Object> originalRegistration, Map<String, Object> update,

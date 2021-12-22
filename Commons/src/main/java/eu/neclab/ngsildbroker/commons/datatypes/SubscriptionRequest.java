@@ -4,13 +4,14 @@ import java.util.List;
 
 import com.google.common.collect.ArrayListMultimap;
 
-public class SubscriptionRequest extends BaseRequest {
+public class SubscriptionRequest extends BaseRequest{
 	Subscription subscription;
 	List<Object> context;
+	private ArrayListMultimap<String, String> headers;
 
 	public SubscriptionRequest(Subscription subscription, List<Object> context2,
 			ArrayListMultimap<String, String> headers) {
-		super(headers);
+		this.headers = headers;
 		this.context = context2;
 		this.subscription = subscription;
 	}
@@ -31,6 +32,12 @@ public class SubscriptionRequest extends BaseRequest {
 		this.subscription = subscription;
 	}
 
+	public ArrayListMultimap<String, String> getHeaders() {
+		return headers;
+	}
 
+	public void setHeaders(ArrayListMultimap<String, String> headers) {
+		this.headers = headers;
+	}
 
 }

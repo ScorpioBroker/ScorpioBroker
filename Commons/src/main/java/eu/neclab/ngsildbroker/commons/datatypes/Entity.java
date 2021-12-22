@@ -31,7 +31,7 @@ public class Entity {
 	private Property createdAtProp = new Property();
 	private Property modifiedAtProp = new Property();
 	private Property observedAtProp = new Property();
-	
+
 	public Entity(URI id, String type, List<BaseProperty> baseProps, Object refToAccessControl) {
 		this.id = id;
 		this.type = type;
@@ -92,19 +92,15 @@ public class Entity {
 		this.relationships = relationships;
 		this.geoProperties = geoProperties;
 		this.type = type;
-		try {
-			createdAtProp.setId(new URI(NGSIConstants.NGSI_LD_CREATED_AT));
-			modifiedAtProp.setId(new URI(NGSIConstants.NGSI_LD_MODIFIED_AT));
-			observedAtProp.setId(new URI(NGSIConstants.NGSI_LD_OBSERVED_AT));
-			createdAtProp.setEntries(null);
-			modifiedAtProp.setEntries(null);
-			observedAtProp.setEntries(null);
-			allBaseProperties.add(createdAtProp);
-			allBaseProperties.add(modifiedAtProp);
-			allBaseProperties.add(observedAtProp);
-		} catch (URISyntaxException e) {
-			e.printStackTrace();
-		}
+		createdAtProp.setId(NGSIConstants.NGSI_LD_CREATED_AT);
+		modifiedAtProp.setId(NGSIConstants.NGSI_LD_MODIFIED_AT);
+		observedAtProp.setId(NGSIConstants.NGSI_LD_OBSERVED_AT);
+		createdAtProp.setEntries(null);
+		modifiedAtProp.setEntries(null);
+		observedAtProp.setEntries(null);
+		allBaseProperties.add(createdAtProp);
+		allBaseProperties.add(modifiedAtProp);
+		allBaseProperties.add(observedAtProp);
 		if (properties != null) {
 			allBaseProperties.addAll(properties);
 		}
@@ -134,8 +130,6 @@ public class Entity {
 		this.observedAt = observedAt;
 		observedAtProp.setSingleEntry(new PropertyEntry("observedAt", observedAt));
 	}
-	
-	
 
 	public String getName() {
 		return name;
@@ -271,7 +265,7 @@ public class Entity {
 		}
 		this.geoProperties = geoProperties;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Entity [id=" + id + ", location=" + location + ", observationSpace=" + observationSpace

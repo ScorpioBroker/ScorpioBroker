@@ -9,47 +9,39 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 public class CSourceRequest extends BaseRequest {
-
-	protected String id;
-	protected Map<String, Object> csourceRegistration;
-	public CSourceRequest(ArrayListMultimap<String, String> headers) {
-		super(headers);
+	public CSourceRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload) {
+		super(headers, id, requestPayload);
 	}
 
 	public CSourceRequest() {
 	}
 
-	public String getId() {
-		return id;
-	}
+	
 
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public Map<String, Object> getCsourceRegistration() {
-		return csourceRegistration;
-	}
-
-	public void setCsourceRegistration(Map<String, Object> csourceRegistration) {
-		this.csourceRegistration = csourceRegistration;
-	}
-	protected String generateUniqueRegId() {
-		String key = "urn:ngsi-ld:csourceregistration:"
-				+ UUID.fromString("" + csourceRegistration.hashCode()).toString();
-		return key;
-	}
-
-	public String getCsourceRegistrationString() {
-		if(csourceRegistration == null) {
+	public String getResultCSourceRegistrationString() {
+		if (finalPayload == null) {
 			return null;
 		}
 		try {
-			return JsonUtils.toString(csourceRegistration);
+			return JsonUtils.toString(finalPayload);
 		} catch (IOException e) {
 			logger.error(e.getMessage());
-			//should never happen
+			// should never happen
 			return null;
 		}
 	}
+
+	public String getOperationCSourceRegistrationString() {
+		if (requestPayload == null) {
+			return null;
+		}
+		try {
+			return JsonUtils.toString(requestPayload);
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+			// should never happen
+			return null;
+		}
+	}
+
 }

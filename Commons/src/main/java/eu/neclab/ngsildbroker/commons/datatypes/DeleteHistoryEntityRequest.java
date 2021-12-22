@@ -11,19 +11,17 @@ public class DeleteHistoryEntityRequest extends HistoryEntityRequest {
 	private String resolvedAttrId;
 	private String instanceId;
 
-
 	public DeleteHistoryEntityRequest() {
 	}
 
 	public DeleteHistoryEntityRequest(ArrayListMultimap<String, String> headers, String resolvedAttrId,
 			String instanceId, String entityId) throws ResponseException {
-		super(headers, null);
+		super(headers, null, entityId);
 		this.resolvedAttrId = resolvedAttrId;
 		this.instanceId = instanceId;
-		this.id = entityId;
-	}
-	
 
+	}
+//TODO Fill up logic
 	/*
 	 * private void deleteTemporalEntity(String payload, boolean fromEntity) throws
 	 * ResponseException, Exception { TemporalEntityStorageKey tesk = new

@@ -25,10 +25,9 @@ public class UpdateEntityRequest extends EntityRequest {
 
 	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String attrName) throws ResponseException {
-		super(AppConstants.OPERATION_UPDATE_ENTITY, headers);
-		this.id = id;
+		super(headers, id, resolved);
 		Object bodyId = resolved.get(NGSIConstants.JSON_LD_ID);
-		if(bodyId != null) {
+		if(bodyId != null && !getId().equals(bodyId)) {
 			throw new ResponseException(ErrorType.BadRequestData, "The entity id in the url and in the payload must be the same.");
 		}
 		generateUpdate(resolved, entityBody, attrName);
@@ -38,24 +37,16 @@ public class UpdateEntityRequest extends EntityRequest {
 			throws ResponseException {
 
 		try {
-
 			this.updateResult = updateFields(entityBody, resolved, attrName);
 			this.entityWithoutSysAttrs = updateResult.getJsonWithoutSysAttrs();
-
 			if (attrName != null) {
-				JsonElement jsonElement = new JsonParser().parse(entityWithoutSysAttrs);
-				JsonObject top = jsonElement.getAsJsonObject();
-				JsonElement jsonElement1 = top.get(attrName);
-				JsonObject jsonObject = new JsonObject();
-				jsonObject.add(attrName, jsonElement1);
-				this.operationValue = jsonObject.toString();
+				Map<String, Object> tmp = new HashMap<String, Object>();
+				tmp.put(attrName, getRequestPayload());
+				setRequestPayload(tmp);
 
-			} else if (attrName == null) {
-				this.operationValue = objectMapper.writeValueAsString(updateResult.getJsonToAppend());
 			}
-
 			this.withSysAttrs = updateResult.getJson();
-			this.keyValue = objectMapper.writeValueAsString(getKeyValueEntity(updateResult.getFinalNode()));
+			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(updateResult.getFinalNode()));
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.NotFound, e.getMessage());
 		}
@@ -187,6 +178,7 @@ public class UpdateEntityRequest extends EntityRequest {
 			}
 		}
 		setTemporalProperties(entityBody, "", now, true); // root only, modifiedAt only
+		setFinalPayload(entityBody);
 		updateResult.setJson(JsonUtils.toString(entityBody));
 		updateResult.setFinalNode(entityBody);
 		removeTemporalProperties(entityBody);

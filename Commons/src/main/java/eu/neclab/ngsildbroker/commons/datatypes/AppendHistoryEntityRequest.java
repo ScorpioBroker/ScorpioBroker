@@ -14,13 +14,13 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 
 	public AppendHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			String entityId) throws ResponseException {
-		super(headers, resolved);
-		this.id = entityId;
+		super(headers, resolved, entityId);
+		setFinalPayload(resolved);
 		createAppend();
 	}
 
-	public AppendHistoryEntityRequest(EntityRequest entityRequest) throws ResponseException, IOException {
-		this(entityRequest.getHeaders(), (Map<String, Object>) JsonUtils.fromString(entityRequest.getWithSysAttrs()),
+	public AppendHistoryEntityRequest(BaseRequest entityRequest) throws ResponseException, IOException {
+		this(entityRequest.getHeaders(), entityRequest.getRequestPayload(),
 				entityRequest.getId());
 
 	}
@@ -28,7 +28,7 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 	protected void createAppend() {
 		logger.trace("replace attribute in temporal entity");
 
-		for (Entry<String, Object> entry : payload.entrySet()) {
+		for (Entry<String, Object> entry : getRequestPayload().entrySet()) {
 			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
@@ -47,7 +47,7 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 					Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send the overwrite op to
 																// delete current values
 					try {
-						storeEntry(id, null, null, now, attribId, JsonUtils.toPrettyString(jsonElement), overwriteOp);
+						storeEntry(getId(), null, null, now, attribId, JsonUtils.toPrettyString(jsonElement), overwriteOp);
 					} catch (IOException e) {
 						logger.error(e);
 						//should never happen
@@ -58,7 +58,7 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 			}
 			this.createdAt = now;
 		}
-		logger.trace("attribute replaced in temporalentity " + this.id);
+		logger.trace("attribute replaced in temporalentity " + getId());
 
 	}
 

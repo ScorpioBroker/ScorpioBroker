@@ -54,17 +54,15 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 	 * @throws IOException
 	 * @throws JsonParseException
 	 */
-	public CreateHistoryEntityRequest(EntityRequest entityRequest) throws Exception {
-		this(entityRequest.getHeaders(), (Map<String, Object>) JsonUtils.fromString(entityRequest.getWithSysAttrs()),
-				true);
+	public CreateHistoryEntityRequest(BaseRequest entityRequest) throws Exception {
+		this(entityRequest.getHeaders(), entityRequest.getFinalPayload(), true);
 	}
 
 	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			boolean fromEntity) throws Exception {
-		super(headers, resolved);
+		super(headers, resolved, (String) resolved.get(NGSIConstants.JSON_LD_ID));
 		this.fromEntity = fromEntity;
 		createTemporalEntity(resolved, fromEntity);
-		// super(AppConstants.OPERATION_CREATE_HISTORY_ENTITY, headers);
 	}
 
 	private void createTemporalEntity(Map<String, Object> resolved, boolean fromEntity) throws Exception {
@@ -84,7 +82,6 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 			}
 		}
 
-		this.id = (String) resolved.get(NGSIConstants.JSON_LD_ID);
 		this.type = (String) ((List) resolved.get(NGSIConstants.JSON_LD_TYPE)).get(0);
 		this.createdAt = (String) ((List<Map<String, Object>>) resolved.get(NGSIConstants.NGSI_LD_CREATED_AT)).get(0)
 				.get(NGSIConstants.JSON_LD_VALUE);
@@ -114,26 +111,15 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 				// TODO check if changes in the array are reflect in the object
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity);
-					storeEntry(id, type, createdAt, modifiedAt, attribId, JsonUtils.toPrettyString(jsonElement), false);
+					storeEntry(getId(), type, createdAt, modifiedAt, attribId, JsonUtils.toPrettyString(jsonElement),
+							false);
 					// pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId,
 					// jsonElement.toString(), createTemporalEntityIfNotExists, false);
 				}
 			}
 			attributeCount++;
 		}
-		this.payload = resolved;
-		// attributeCount++; //move out }if(attributeCount==0)
-
-		// { // create empty temporalentity (no attributes) TemporalEntityStorageKey
-		// tesk = new TemporalEntityStorageKey(id); tesk.setEntityType(type);
-		// tesk.setEntityCreatedAt(createdAt); tesk.setEntityModifiedAt(modifiedAt);
-		// String messageKey = DataSerializer.toJson(tesk); logger.debug(" message key "
-		// + messageKey + " payload element: empty"); /*
-		// kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(),
-		// messageKey.getBytes(), "".getBytes());
-
-		// }logger.trace("temporal entity created "+id);
-		this.uriId = new URI(AppConstants.HISTORY_URL + id);
+		this.uriId = new URI(AppConstants.HISTORY_URL + getId());
 	}
 
 }

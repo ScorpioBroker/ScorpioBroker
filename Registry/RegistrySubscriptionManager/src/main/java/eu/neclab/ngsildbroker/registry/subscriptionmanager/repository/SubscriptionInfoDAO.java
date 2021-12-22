@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager.repository;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,17 +34,17 @@ public class SubscriptionInfoDAO extends StorageReaderDAO {
 		return new HashSet<String>(tempList);
 	}
 
-	public Table<String, String, String> getIds2Type() throws ResponseException {
-		Table<String, String, String> result = HashBasedTable.create();
+	public Table<String, String, List<String>> getIds2Type() throws ResponseException {
+		Table<String, String, List<String>> result = HashBasedTable.create();
 		for (Map<String, Object> entry : getJDBCTemplate(null).queryForList("SELECT id, type FROM entity")) {
-			result.put(AppConstants.INTERNAL_NULL_KEY, entry.get("id").toString(), entry.get("type").toString());
+			//result.put(AppConstants.INTERNAL_NULL_KEY, entry.get("id").toString(), entry.get("type").toString());
 		}
 		List<String> tenants = getTenants();
 		for (String tenantId : tenants) {
 			tenantId = getTenant(tenantId);
 			List<Map<String, Object>> temp = getJDBCTemplate(tenantId).queryForList("SELECT id, type FROM entity");
 			for (Map<String, Object> entry : temp) {
-				result.put(tenantId, entry.get("id").toString(), entry.get("type").toString());
+				//TODO result.put(tenantId, entry.get("id").toString(), entry.get("type").toString());
 			}
 
 		}

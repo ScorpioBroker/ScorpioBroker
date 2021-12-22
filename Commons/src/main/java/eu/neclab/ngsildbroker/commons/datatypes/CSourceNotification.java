@@ -14,16 +14,14 @@ import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
  */
 public class CSourceNotification extends CSourceQueryResult {
 
-	
-	private URI id;
+	private String id;
 	private Date notifiedAt;
 	private TriggerReason triggerReason;
 	private String type = "ContextSource Notfication";
 	private URI subscriptionId;
-	
-	
-	public CSourceNotification(URI id, URI subscriptionId, Date notifiedAt, TriggerReason triggerReason, List<CSourceRegistration> data, String errorMsg, ErrorType errorType, int shortErrorMsg,
-			boolean success) {
+
+	public CSourceNotification(String id, URI subscriptionId, Date notifiedAt, TriggerReason triggerReason,
+			List<CSourceRegistration> data, String errorMsg, ErrorType errorType, int shortErrorMsg, boolean success) {
 		super(data, errorMsg, errorType, shortErrorMsg, success);
 		this.id = id;
 		this.notifiedAt = notifiedAt;
@@ -31,111 +29,45 @@ public class CSourceNotification extends CSourceQueryResult {
 		this.subscriptionId = subscriptionId;
 	}
 
-
-	
-	
-
-	
-
 	public URI getSubscriptionId() {
 		return subscriptionId;
 	}
-
-
-
-
-
-
 
 	public void setSubscriptionId(URI subscriptionId) {
 		this.subscriptionId = subscriptionId;
 	}
 
-
-
-
-
-
-
-	public URI getId() {
+	public String getId() {
 		return id;
 	}
 
-
-
-
-
-
-
-	public void setId(URI id) {
+	public void setId(String id) {
 		this.id = id;
 	}
-
-
-
-
-
-
 
 	public Date getNotifiedAt() {
 		return notifiedAt;
 	}
 
-
-
-
-
-
-
 	public void setNotifiedAt(Date notifiedAt) {
 		this.notifiedAt = notifiedAt;
 	}
-
-
-
-
-
-
 
 	public TriggerReason getTriggerReason() {
 		return triggerReason;
 	}
 
-
-
-
-
-
-
 	public void setTriggerReason(TriggerReason triggerReason) {
 		this.triggerReason = triggerReason;
 	}
-
-
-
-
-
-
 
 	public String getType() {
 		return type;
 	}
 
-
-
-
-
-
-
 	public void setType(String type) {
 		this.type = type;
 	}
-
-
-
-
-
-
 
 	public void finalize() throws Throwable {
 

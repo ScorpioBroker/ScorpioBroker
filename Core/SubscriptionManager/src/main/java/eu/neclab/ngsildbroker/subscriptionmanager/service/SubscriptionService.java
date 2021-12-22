@@ -15,7 +15,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -35,10 +34,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -68,18 +63,23 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
+import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+
+import eu.neclab.ngsildbroker.subscriptionmanager.notification.NotificationHandlerMQTT;
+import eu.neclab.ngsildbroker.subscriptionmanager.notification.NotificationHandlerREST;
+import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import reactor.core.publisher.Mono;
 
 @Service
-public class SubscriptionService {
+public class SubscriptionService implements SubscriptionCRUDService {
 //TODO Change notification data generation so that always the changed value from kafka is definatly present in the notification not the DB version(that one could have been already updated)
 
-	private final static Logger logger = LogManager.getLogger(SubscriptionService.class);
+	private final static Logger logger = LogManager.getLogger(SubscriptionInfoDAO.class);
 
 	private final int CREATE = 0;
 	private final int APPEND = 1;
@@ -92,10 +92,10 @@ public class SubscriptionService {
 	String atContextServerUrl;
 
 	NotificationHandlerREST notificationHandlerREST;
-	IntervalNotificationHandler intervalHandlerREST;
+	//IntervalNotificationHandler intervalHandlerREST;
 
 	NotificationHandlerMQTT notificationHandlerMQTT;
-	IntervalNotificationHandler intervalHandlerMQTT;
+	//IntervalNotificationHandler intervalHandlerMQTT;
 
 	Timer watchDog = new Timer(true);
 
@@ -104,8 +104,6 @@ public class SubscriptionService {
 	@Autowired
 	ObjectMapper objectMapper;
 
-	@Autowired
-	ReplyingKafkaTemplate<String, String, String> kafkaTemplate;
 
 	@Autowired
 	@Qualifier("subwebclient")
@@ -113,8 +111,6 @@ public class SubscriptionService {
 
 	@Autowired
 	SubscriptionInfoDAO subscriptionInfoDAO;
-
-
 
 	@Value("${subscription.directdb:true}")
 	boolean directDB;
@@ -147,11 +143,9 @@ public class SubscriptionService {
 		}
 
 		notificationHandlerREST = new NotificationHandlerREST(this, objectMapper, webClient);
-		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, kafkaTemplate, null,
-				null);
+		//intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, null, null, null);
 		notificationHandlerMQTT = new NotificationHandlerMQTT(this, objectMapper);
-		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, kafkaTemplate, null,
-				null);
+		//intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, null, null, null);
 		logger.trace("call loadStoredSubscriptions() ::");
 		loadStoredSubscriptions();
 
@@ -177,7 +171,7 @@ public class SubscriptionService {
 		}
 	}
 
-	public URI subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
+	public String subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		logger.debug("Subscribe got called " + subscriptionRequest.getSubscription().toString());
 		Subscription subscription = subscriptionRequest.getSubscription();
 		validateSub(subscription);
@@ -224,8 +218,6 @@ public class SubscriptionService {
 				}
 
 			}
-			storeSubscription(subscriptionRequest);
-
 			if (subscription.getExpiresAt() != null) {
 				TimerTask cancel = new TimerTask() {
 
@@ -286,55 +278,30 @@ public class SubscriptionService {
 
 	}
 
-	private void storeSubscription(SubscriptionRequest subscription) throws ResponseException {
-		kafkaTemplate.send(subscriptionTopic, subscription.getSubscription().getId().toString(),
-				DataSerializer.toJson(subscription));
-
+	private String generateUniqueSubId(Subscription subscription) {
+		return "urn:ngsi-ld:Subscription:" + subscription.hashCode();
 	}
 
-	private URI generateUniqueSubId(Subscription subscription) {
-
-		try {
-			return new URI("urn:ngsi-ld:Subscription:" + subscription.hashCode());
-		} catch (URISyntaxException e) {
-			// Left empty intentionally should never happen
-			throw new AssertionError();
-		}
-	}
-
-	/*
-	 * private void checkTenant(ArrayListMultimap<String, String> headers,
-	 * ArrayListMultimap<String, String> headers2) throws ResponseException {
-	 * List<String> tenant1 = headers.get(NGSIConstants.TENANT_HEADER); List<String>
-	 * tenant2 = headers2.get(NGSIConstants.TENANT_HEADER); if (tenant1.size() !=
-	 * tenant2.size()) { throw new ResponseException(ErrorType.NotFound); } if
-	 * (tenant1.size() > 0 && !tenant1.get(0).equals(tenant2.get(0))) { throw new
-	 * ResponseException(ErrorType.NotFound); }
-	 * 
-	 * }
-	 */
-
-	public void unsubscribe(URI id, ArrayListMultimap<String, String> headers) throws ResponseException {
+	public void unsubscribe(String id, ArrayListMultimap<String, String> headers) throws ResponseException {
 		String tenant = HttpUtils.getInternalTenant(headers);
 		SubscriptionRequest removedSub;
 		synchronized (tenant2subscriptionId2Subscription) {
-			if (!this.tenant2subscriptionId2Subscription.contains(tenant, id.toString())) {
-				throw new ResponseException(ErrorType.NotFound, id.toString() + " not found");
+			if (!this.tenant2subscriptionId2Subscription.contains(tenant, id)) {
+				throw new ResponseException(ErrorType.NotFound, id + " not found");
 			}
-			removedSub = this.tenant2subscriptionId2Subscription.get(tenant, id.toString());
+			removedSub = this.tenant2subscriptionId2Subscription.get(tenant, id);
 			if (removedSub == null) {
-				throw new ResponseException(ErrorType.NotFound, id.toString() + " not found");
+				throw new ResponseException(ErrorType.NotFound, id + " not found");
 			}
 
-			removedSub = this.tenant2subscriptionId2Subscription.remove(tenant, id.toString());
-			kafkaTemplate.send(subscriptionTopic, id.toString(), "null");
+			removedSub = this.tenant2subscriptionId2Subscription.remove(tenant, id);
 		}
 
 		synchronized (tenantId2subscriptionId2Context) {
-			this.tenantId2subscriptionId2Context.remove(tenant, id.toString());
+			this.tenantId2subscriptionId2Context.remove(tenant, id);
 		}
-		intervalHandlerREST.removeSub(id.toString());
-		intervalHandlerMQTT.removeSub(id.toString());
+		intervalHandlerREST.removeSub(id);
+		intervalHandlerMQTT.removeSub(id);
 		List<EntityInfo> entities = removedSub.getSubscription().getEntities();
 		if (entities == null || entities.isEmpty()) {
 			synchronized (type2EntitiesSubscriptions) {
@@ -347,14 +314,14 @@ public class SubscriptionService {
 				}
 			}
 		}
-		TimerTask task = subId2TimerTask.get(tenant, id.toString());
+		TimerTask task = subId2TimerTask.get(tenant, id);
 		if (task != null) {
 			task.cancel();
 		}
 		// TODO remove remote subscription
 	}
 
-	public SubscriptionRequest updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
+	public void updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		String tenant = subscriptionRequest.getTenant();
 		SubscriptionRequest oldSubRequest;
@@ -404,10 +371,6 @@ public class SubscriptionService {
 
 			this.tenantId2subscriptionId2Context.put(tenant, oldSub.getId().toString(),
 					subscriptionRequest.getContext());
-			SubscriptionRequest result = new SubscriptionRequest(oldSub, subscriptionRequest.getContext(),
-					subscriptionRequest.getHeaders());
-			storeSubscription(result);
-			return result;
 		}
 
 	}
@@ -433,15 +396,7 @@ public class SubscriptionService {
 		return sub;
 	}
 
-	@KafkaListener(topics = "${entity.create.topic}")
-	public void handleCreate(Message<String> message) {
-		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
-		logger.debug("Create got called: " + key);
-		checkSubscriptionsWithCreate(DataSerializer.getEntityRequest(new String(message.getPayload())),
-				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
-	}
-
-	private void checkSubscriptionsWithCreate(EntityRequest createRequest, long messageTime) {
+	public void checkSubscriptionsWithCreate(EntityRequest createRequest, long messageTime) {
 		Entity create = DataSerializer.getEntity(createRequest.getWithSysAttrs());
 		String id = createRequest.getId();
 		synchronized (this.tenant2Ids2Type) {
@@ -765,26 +720,7 @@ public class SubscriptionService {
 		return false;
 	}
 
-	// private Property getPropertyByName(String name, List<Property> properties) {
-	// for (Property property : properties) {
-	// if (property.getName().equals(name)) {
-	// return property;
-	// }
-	// }
-	// return null;
-	// }
-
-	@KafkaListener(topics = "${entity.update.topic}")
-	public void handleUpdate(Message<String> message) {
-		String payload = new String(message.getPayload());
-		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
-		logger.debug("update got called: " + payload);
-		logger.debug(key);
-		EntityRequest updateRequest = DataSerializer.getEntityRequest(payload);
-		checkSubscriptionsWithUpdate(updateRequest, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
-	}
-
-	private void checkSubscriptionsWithUpdate(EntityRequest updateRequest, long messageTime) {
+	public void checkSubscriptionsWithUpdate(EntityRequest updateRequest, long messageTime) {
 		Entity update = DataSerializer.getPartialEntity(updateRequest.getOperationValue());
 		String id = updateRequest.getId();
 		String type = getTypeForId(updateRequest.getTenant(), id);
@@ -821,17 +757,7 @@ public class SubscriptionService {
 
 	}
 
-	@KafkaListener(topics = "${entity.append.topic}")
-	public void handleAppend(Message<String> message) {
-		String payload = new String(message.getPayload());
-		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
-		logger.debug("Append got called: " + payload);
-		logger.debug(key);
-		checkSubscriptionsWithAppend(DataSerializer.getEntityRequest(new String(message.getPayload())),
-				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
-	}
-
-	private void checkSubscriptionsWithAppend(EntityRequest appendRequest, long messageTime) {
+	public void checkSubscriptionsWithAppend(EntityRequest appendRequest, long messageTime) {
 		Entity append = DataSerializer.getPartialEntity(appendRequest.getOperationValue());
 		String id = appendRequest.getId();
 		String type = getTypeForId(appendRequest.getTenant(), id);
@@ -871,14 +797,8 @@ public class SubscriptionService {
 	}
 
 	// @StreamListener(SubscriptionManagerConsumerChannel.deleteReadChannel)
-	@KafkaListener(topics = "${entity.delete.topic}")
-	public void handleDelete(Message<String> message) throws Exception {
-		EntityRequest req = DataSerializer.getEntityRequest(new String(message.getPayload()));
-		this.tenant2Ids2Type.remove(req.getTenant(), req.getId());
-	}
 
-
-	private void subscribeToRemote(SubscriptionRequest subscriptionRequest, ArrayList<String> remoteEndPoints) {
+	public void subscribeToRemote(SubscriptionRequest subscriptionRequest, ArrayList<String> remoteEndPoints) {
 		new Thread() {
 			@Override
 			public void run() {
@@ -909,25 +829,21 @@ public class SubscriptionService {
 				HttpHeaders additionalHeaders = new HttpHeaders();
 				additionalHeaders.add(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD);
 				for (String remoteEndPoint : remoteEndPoints) {
-					
-						StringBuilder temp = new StringBuilder(remoteEndPoint);
-						if (remoteEndPoint.endsWith("/")) {
-							temp.deleteCharAt(remoteEndPoint.length() - 1);
+
+					StringBuilder temp = new StringBuilder(remoteEndPoint);
+					if (remoteEndPoint.endsWith("/")) {
+						temp.deleteCharAt(remoteEndPoint.length() - 1);
+					}
+					temp.append(AppConstants.SUBSCRIPTIONS_URL);
+					webClient.post().uri(temp.toString()).headers(httpHeadersOnWebClientBeingBuilt -> {
+						httpHeadersOnWebClientBeingBuilt.addAll(additionalHeaders);
+					}).bodyValue(body).exchangeToMono(response -> {
+						if (response.statusCode().equals(HttpStatus.OK)) {
+							return Mono.just(Void.class);
+						} else {
+							return response.createException().flatMap(Mono::error);
 						}
-						temp.append(AppConstants.SUBSCRIPTIONS_URL);
-						webClient.post().uri(temp.toString()).headers( httpHeadersOnWebClientBeingBuilt -> { 
-					         httpHeadersOnWebClientBeingBuilt.addAll( additionalHeaders );
-					    }).bodyValue(body)
-					    .exchangeToMono(response -> {
-					         if (response.statusCode().equals(HttpStatus.OK)) {
-					             return Mono.just(Void.class);
-					         }
-					         else {
-					             return response.createException().flatMap(Mono::error);
-					         }
-					     }).subscribe();
-					
-						
+					}).subscribe();
 
 				}
 

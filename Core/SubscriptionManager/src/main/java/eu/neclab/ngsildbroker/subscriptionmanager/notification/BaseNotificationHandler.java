@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.subscriptionmanager.notification;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -50,6 +50,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 
 public abstract class BaseNotificationHandler implements NotificationHandler {
 

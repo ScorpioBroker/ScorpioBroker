@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager.notification;
 
 import java.net.URI;
 import java.util.Map;
@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.SubscriptionService;
 import reactor.core.publisher.Mono;
 
 public class NotificationHandlerREST extends BaseNotificationHandler {

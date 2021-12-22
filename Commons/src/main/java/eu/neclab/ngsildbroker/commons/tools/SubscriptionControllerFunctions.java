@@ -1,6 +1,5 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.controller;
+package eu.neclab.ngsildbroker.commons.tools;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -9,30 +8,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.JsonLdConsts;
-import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -45,159 +28,65 @@ import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoRelation;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
-import eu.neclab.ngsildbroker.commons.tools.Validator;
-import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 
-@RestController
-@RequestMapping("/ngsi-ld/v1/subscriptions")
-public class SubscriptionController {
-
-	private final static Logger logger = LogManager.getLogger(SubscriptionController.class);
-	private final static String MY_REQUEST_MAPPING = "/ngsi-ld/v1/subscriptions";
-	private final static String MY_REQUEST_MAPPING_ALT = "/ngsi-ld/v1/subscriptions/";
-
-	@Autowired
-	SubscriptionService manager;
-
-	@Value("${atcontext.url}")
-	String atContextServerUrl;
-
-	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
-	String coreContext;
-
-	@PostConstruct
-	public void init() {
-		JsonLdProcessor.init(coreContext);
-	}
-
-	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
-	private Pattern subscriptionParser;
-
-	public SubscriptionController() {
-		StringBuilder regex = new StringBuilder();
-		regex.append(NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX);
-		for (String payloadItem : NGSIConstants.NGSI_LD_PAYLOAD_KEYS) {
-			regex.append("|(" + payloadItem.replace("/", "\\/").replace(".", "\\.") + ")");
-		}
-
-		regex = new StringBuilder();
-		regex.append(NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS_REGEX);
-		for (String payloadItem : NGSIConstants.NGSI_LD_SUBSCRIPTON_PAYLOAD_KEYS) {
-			regex.append("|(" + payloadItem.replace("/", "\\/").replace(".", "\\.") + ")");
-		}
-		subscriptionParser = Pattern.compile(regex.toString());
-	}
+public class SubscriptionControllerFunctions {
+	private static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@SuppressWarnings("unchecked")
-	@RequestMapping(method = RequestMethod.POST)
-	@ResponseBody
-	public ResponseEntity<String> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
+	public static ResponseEntity<String> subscribeRest(SubscriptionCRUDService subscriptionService,
+			HttpServletRequest request, String payload, Logger logger) {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription = null;
 
 		try {
 			List<Object> context = new ArrayList<Object>();
 			context.addAll(HttpUtils.getAtContext(request));
-
-			subscription = expandSubscription(payload, request);
-			Object bodyContext = ((Map<String, Object>) JsonUtils.fromString(payload)).get(JsonLdConsts.CONTEXT);
+			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
+			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
+			subscription = expandSubscription(body, request);
 			if (bodyContext instanceof List) {
 				context.addAll((List<Object>) bodyContext);
 			} else {
 				context.add(bodyContext);
 			}
-
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
 					HttpUtils.getHeaders(request));
-			URI subId = manager.subscribe(subRequest);
+			String subId = subscriptionService.subscribe(subRequest);
 
 			logger.trace("subscribeRest() :: completed");
-			return ResponseEntity.created(new URI(AppConstants.SUBSCRIPTIONS_URL + subId.toString())).build();
+			return ResponseEntity.created(new URI(AppConstants.SUBSCRIPTIONS_URL + subId)).build();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
-	private int checkKey(String key, Pattern p) {
-		Matcher m = p.matcher(key);
-		int result = 10000;
-		while (m.find()) {
-			for (int i = 1; i <= m.groupCount(); i++) {
-				if (m.group(i) == null) {
-					continue;
-				}
-				if (result > i) {
-					result = i;
-					break;
-				}
-			}
-		}
-		return result;
-	}
-
 	@SuppressWarnings("unchecked")
-	public Subscription expandSubscription(String body, HttpServletRequest request)
-			throws ResponseException, JsonParseException, JsonLdError, IOException {
+	private static Subscription expandSubscription(Map<String, Object> body, HttpServletRequest request)
+			throws ResponseException {
 		Subscription subscription = new Subscription();
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
 		boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
-		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
-				JsonUtils.fromString(body), opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, atContextAllowed).get(0);
-
-		boolean hasEntities = false;
-		boolean hasWatchedAttributes = false;
-		boolean hasNotificaition = false;
-
-		int keyType;
+		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor
+				.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, atContextAllowed).get(0);
 		for (Entry<String, Object> mapEntry : rawSub.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
-			keyType = checkKey(key, subscriptionParser);
-			/*
-			 * // { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT, NGSI_LD_ENTITIES,
-			 * NGSI_LD_ID_PATTERN, NGSI_LD_GEO_QUERY, NGSI_LD_NOTIFICATION,
-			 * NGSI_LD_ATTRIBUTES, NGSI_LD_ENDPOINT, NGSI_LD_ACCEPT, NGSI_LD_URI,
-			 * NGSI_LD_FORMAT, NGSI_LD_QUERY, NGSI_LD_WATCHED_ATTRIBUTES,
-			 * NGSI_LD_TIMES_SEND, NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL,
-			 * NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START }
-			 */
-			if (keyType == 1) {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"Forbidden characters in JSON key. Forbidden Characters are "
-								+ NGSIConstants.NGSI_LD_FORBIDDEN_KEY_CHARS);
-			} else if (keyType == -1) {
-				throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for subscription");
-			} else if (keyType == 2) {
-				// ID
-				try {
-					subscription.setId(new URI(validateUri((String) mapValue)));
-				} catch (URISyntaxException e) {
-					// Left empty intentionally is already checked
-				}
-			} else if (keyType == 3) {
-				// TYPE
-				String type = null;
-				if (mapValue instanceof List) {
-					type = validateUri(((List<String>) mapValue).get(0));
-				} else if (mapValue instanceof String) {
-					type = validateUri((String) mapValue);
-				}
-				if (type == null || !type.equals(NGSIConstants.NGSI_LD_SUBSCRIPTION)) {
-					throw new ResponseException(ErrorType.BadRequestData, "No type or type is not Subscription");
-				}
-				subscription.setType(type);
-			} else if (keyType == 5) {
-				// Entities
+
+			switch (key) {
+			case NGSIConstants.JSON_LD_ID:
+				subscription.setId((String) mapValue);
+				break;
+			case NGSIConstants.JSON_LD_TYPE:
+				subscription.setType(((List<String>) mapValue).get(0));
+			case NGSIConstants.NGSI_LD_ENTITIES:
 				List<EntityInfo> entities = new ArrayList<EntityInfo>();
 				List<Map<String, Object>> list = (List<Map<String, Object>>) mapValue;
 				boolean hasType;
@@ -208,14 +97,14 @@ public class SubscriptionController {
 						switch (entitiesEntry.getKey()) {
 						case NGSIConstants.JSON_LD_ID:
 							try {
-								entityInfo.setId(new URI(validateUri((String) entitiesEntry.getValue())));
+								entityInfo.setId(new URI((String) entitiesEntry.getValue()));
 							} catch (URISyntaxException e) {
 								// Left empty intentionally is already checked
 							}
 							break;
 						case NGSIConstants.JSON_LD_TYPE:
 							hasType = true;
-							entityInfo.setType(validateUri(((List<String>) entitiesEntry.getValue()).get(0)));
+							entityInfo.setType(((List<String>) entitiesEntry.getValue()).get(0));
 							break;
 						case NGSIConstants.NGSI_LD_ID_PATTERN:
 							entityInfo.setIdPattern((String) ((List<Map<String, Object>>) entitiesEntry.getValue())
@@ -228,120 +117,109 @@ public class SubscriptionController {
 					if (!hasType) {
 						throw new ResponseException(ErrorType.BadRequestData, "Entities entry needs type");
 					}
-					hasEntities = true;
 					entities.add(entityInfo);
 				}
 				subscription.setEntities(entities);
-			} else if (keyType == 7) {
+				break;
+			case NGSIConstants.NGSI_LD_GEO_QUERY:
 				try {
 					LDGeoQuery ldGeoQuery = getGeoQuery(((List<Map<String, Object>>) mapValue).get(0));
 					subscription.setLdGeoQuery(ldGeoQuery);
 				} catch (Exception e) {
-					logger.error(e);
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}
-				// geoQ
-
-			} else if (keyType == 8) {
-				// NGSI_LD_NOTIFICATION
+				break;
+			case NGSIConstants.NGSI_LD_NOTIFICATION:
 				try {
 					NotificationParam notification = getNotificationParam(
 							((List<Map<String, Object>>) mapValue).get(0));
 					subscription.setNotification(notification);
-					hasNotificaition = true;
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"Failed to parse notification parameter.\n" + e.getMessage());
 				}
-			} else if (keyType == 14) {
-				// NGSI_LD_QUERY
-
+				break;
+			case NGSIConstants.NGSI_LD_QUERY:
 				try {
 					subscription.setLdQuery(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}
-			} else if (keyType == 15) {
-				// NGSI_LD_WATCHED_ATTRIBUTES
+				break;
+			case NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES:
 				try {
 					subscription.setAttributeNames(getAttribs((List<Map<String, Object>>) mapValue));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"Failed to parse watched attributes " + mapValue);
 				}
-			} else if (keyType == 17) {
-				// THROTTELING
+				break;
+			case NGSIConstants.NGSI_LD_THROTTLING:
 				try {
 					subscription.setThrottling(
 							(Integer) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse throtteling");
 				}
-			} else if (keyType == 18) {
-				// TIMEINTERVALL
+				break;
+			case NGSIConstants.NGSI_LD_TIME_INTERVAL:
 				try {
 					subscription.setTimeInterval(
 							(Integer) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse timeinterval");
 				}
-			} else if (keyType == 19) {
-				// EXPIRES
+				break;
+			case NGSIConstants.NGSI_LD_EXPIRES:
 				try {
 					subscription.setExpiresAt(SerializationTools.date2Long(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE)));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse expiresAt");
 				}
-			} else if (keyType == 20) {
-				// STATUS
+				break;
+			case NGSIConstants.NGSI_LD_STATUS:
 				try {
 					subscription.setStatus(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
 				}
-			} else if (keyType == 21) {
-				// DESCRIPTION
+				break;
+			case NGSIConstants.NGSI_LD_DESCRIPTION:
 				try {
 					subscription.setDescription(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
 				}
-			} else if (keyType == 22) {
-				// isActive
+				break;
+			case NGSIConstants.NGSI_LD_IS_ACTIVE:
 				try {
 					subscription.setActive(
 							(Boolean) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
 				}
-			} else if (keyType == 25) {
-				// Name
+				break;
+			case NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME:
 				try {
 					subscription.setSubscriptionName(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
 				}
+				break;
+			default:
+				break;
 			}
-
 		}
-
-		if (!hasEntities && !hasWatchedAttributes) {
-			throw new ResponseException(ErrorType.BadRequestData, "You have to specify watched attributes or entities");
-		}
-		if (!hasNotificaition) {
-			throw new ResponseException(ErrorType.BadRequestData, "You have to specify notification");
-		}
-
 		return subscription;
 	}
 
 	@SuppressWarnings("unchecked")
-	private NotificationParam getNotificationParam(Map<String, Object> map) throws Exception {
+	private static NotificationParam getNotificationParam(Map<String, Object> map) throws Exception {
 		// Default accept
 		String accept = AppConstants.NGB_APPLICATION_JSONLD;
 		Format format = Format.normalized;
@@ -421,15 +299,12 @@ public class SubscriptionController {
 		return notifyParam;
 	}
 
-	@RequestMapping(method = RequestMethod.GET)
-	public ResponseEntity<String> getAllSubscriptions(HttpServletRequest request,
-			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
-			@RequestParam(required = false, name = "offset", defaultValue = "0") int offset,
-			@RequestParam(required = false, name = "count", defaultValue = "false") boolean count) {
+	public static ResponseEntity<String> getAllSubscriptions(SubscriptionCRUDService subscriptionService,
+			HttpServletRequest request, int limit, int offset, boolean count, Logger logger) {
 		logger.trace("getAllSubscriptions() :: started");
 		List<SubscriptionRequest> result = null;
 
-		result = manager.getAllSubscriptions(HttpUtils.getHeaders(request));
+		result = subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request));
 		int toIndex = offset + limit;
 		ArrayList<Object> additionalLinks = new ArrayList<Object>();
 		if (limit == 0 || toIndex > result.size() - 1) {
@@ -470,7 +345,7 @@ public class SubscriptionController {
 
 	}
 
-	private List<Subscription> getSubscriptions(List<SubscriptionRequest> subRequests) {
+	private static List<Subscription> getSubscriptions(List<SubscriptionRequest> subRequests) {
 		ArrayList<Subscription> result = new ArrayList<Subscription>();
 		for (SubscriptionRequest subRequest : subRequests) {
 			result.add(subRequest.getSubscription());
@@ -478,16 +353,14 @@ public class SubscriptionController {
 		return result;
 	}
 
-	@RequestMapping(method = RequestMethod.GET, value = "/{id}")
-	public ResponseEntity<String> getSubscriptions(HttpServletRequest request,
-			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) String id,
-			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
+	public static ResponseEntity<String> getSubscriptionById(SubscriptionCRUDService subscriptionService,
+			HttpServletRequest request, String id, int limit, Logger logger) {
 		try {
 			HttpUtils.validateUri(id);
 			logger.trace("call getSubscriptions() ::");
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return HttpUtils.generateReply(request,
-					DataSerializer.toJson(manager.getSubscription(id, headers).getSubscription()),
+					DataSerializer.toJson(subscriptionService.getSubscription(id, headers).getSubscription()),
 					AppConstants.SUBSCRIPTION_ENDPOINT);
 
 		} catch (Exception exception) {
@@ -495,29 +368,20 @@ public class SubscriptionController {
 		}
 	}
 
-	@RequestMapping(method = RequestMethod.DELETE, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
-	public ResponseEntity<String> deleteSubscription(HttpServletRequest request,
-			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id) {
+	public static ResponseEntity<String> deleteSubscription(SubscriptionCRUDService subscriptionService,
+			HttpServletRequest request, String id, Logger logger) {
 		try {
 			logger.trace("call deleteSubscription() ::");
 			HttpUtils.validateUri(id);
-			manager.unsubscribe(id, HttpUtils.getHeaders(request));
+			subscriptionService.unsubscribe(id, HttpUtils.getHeaders(request));
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 		return ResponseEntity.noContent().build();
 	}
 
-	@RequestMapping(method = RequestMethod.DELETE)
-	public ResponseEntity<String> deleteSubscriptionEmptyId(HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJson());
-	}
-
-	@RequestMapping(method = RequestMethod.PATCH, value = "/{" + NGSIConstants.QUERY_PARAMETER_ID + "}")
-	public ResponseEntity<String> updateSubscription(HttpServletRequest request,
-			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = true) URI id,
-			@RequestBody String payload) {
+	public static ResponseEntity<String> updateSubscription(SubscriptionCRUDService subscriptionService,
+			HttpServletRequest request, String id, String payload, Logger logger) {
 		logger.trace("call updateSubscription() ::");
 
 		try {
@@ -526,9 +390,9 @@ public class SubscriptionController {
 			Validator.subscriptionValidation(payload);
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
-			String resolved = JsonUtils.toString(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
-					opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed));
-			Subscription subscription = DataSerializer.getSubscription(resolved);
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
+					opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed);
+			Subscription subscription = expandSubscription(resolved, request);
 			if (subscription.getId() == null) {
 				subscription.setId(id);
 			}
@@ -540,33 +404,15 @@ public class SubscriptionController {
 				return HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.BadRequestData, "empty subscription body"));
 			}
-			manager.updateSubscription(subscriptionRequest);
+			subscriptionService.updateSubscription(subscriptionRequest);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 		return ResponseEntity.noContent().build();
 	}
 
-	private String validateUri(String mapValue) throws ResponseException {
-		try {
-			if (!new URI(mapValue).isAbsolute()) {
-				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
-			}
-			return mapValue;
-		} catch (URISyntaxException e) {
-			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
-		}
-
-	}
-
-	@RequestMapping(method = RequestMethod.PATCH)
-	public ResponseEntity<String> patchubscriptionEmptyId(HttpServletRequest request) {
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(new RestResponse(ErrorType.BadRequestData, "Bad Request").toJson());
-	}
-
 	@SuppressWarnings("unchecked")
-	private LDGeoQuery getGeoQuery(Map<String, Object> map) throws Exception {
+	private static LDGeoQuery getGeoQuery(Map<String, Object> map) throws Exception {
 		LDGeoQuery geoQuery = new LDGeoQuery();
 		List<Map<String, Object>> jsonCoordinates = (List<Map<String, Object>>) map
 				.get(NGSIConstants.NGSI_LD_COORDINATES);
@@ -617,7 +463,7 @@ public class SubscriptionController {
 		return geoQuery;
 	}
 
-	private List<String> getAttribs(List<Map<String, Object>> entry) throws ResponseException {
+	private static List<String> getAttribs(List<Map<String, Object>> entry) throws ResponseException {
 		ArrayList<String> watchedAttribs = new ArrayList<String>();
 		for (Map<String, Object> attribEntry : entry) {
 			String temp = (String) attribEntry.get(NGSIConstants.JSON_LD_ID);
@@ -632,7 +478,7 @@ public class SubscriptionController {
 		return watchedAttribs;
 	}
 
-	private String validateSubNotifierInfoMqttVersion(String string) throws ResponseException {
+	private static String validateSubNotifierInfoMqttVersion(String string) throws ResponseException {
 		try {
 			if (!Arrays.asList(NGSIConstants.VALID_MQTT_VERSION).contains(string)) {
 				throw new ResponseException(ErrorType.BadRequestData, "Unsupport Mqtt version");
@@ -643,7 +489,7 @@ public class SubscriptionController {
 		return string;
 	}
 
-	private int validateSubNotifierInfoQos(Integer qos) throws ResponseException {
+	private static int validateSubNotifierInfoQos(Integer qos) throws ResponseException {
 		try {
 			if (!Arrays.asList(NGSIConstants.VALID_QOS).contains(qos)) {
 				throw new ResponseException(ErrorType.BadRequestData, "Unsupport Qos");
@@ -654,7 +500,7 @@ public class SubscriptionController {
 		return qos;
 	}
 
-	private URI validateSubEndpoint(String string) throws ResponseException {
+	private static URI validateSubEndpoint(String string) throws ResponseException {
 		URI uri;
 		try {
 			uri = new URI(string);
@@ -666,30 +512,5 @@ public class SubscriptionController {
 		}
 		return uri;
 	}
-	// private void expandSubscriptionAttributes(Subscription subscription,
-	// List<Object> context)
-	// throws ResponseException {
-	// for (EntityInfo info : subscription.getEntities()) {
-	// if (info.getType() != null && !info.getType().trim().equals("")) {
-	// info.setType(ldTools.expandAttribute(info.getType(), context));
-	// }
-	// }
-	// if (subscription.getAttributeNames() != null) {
-	// ArrayList<String> newAttribNames = new ArrayList<String>();
-	// for (String attrib : subscription.getAttributeNames()) {
-	// newAttribNames.add(ldTools.expandAttribute(attrib, context));
-	// }
-	// subscription.setAttributeNames(newAttribNames);
-	// }
-	// if (subscription.getNotification().getAttributeNames() != null) {
-	// ArrayList<String> newAttribNames = new ArrayList<String>();
-	// for (String attrib : subscription.getNotification().getAttributeNames()) {
-	// newAttribNames.add(ldTools.expandAttribute(attrib, context));
-	// }
-	// subscription.getNotification().setAttributeNames(newAttribNames);
-	//
-	// }
-	//
-	// }
 
 }

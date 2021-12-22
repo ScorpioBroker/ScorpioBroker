@@ -12,14 +12,12 @@ public class DeleteCSourceRequest extends CSourceRequest {
 	 * constructor for serialization
 	 */
 	public DeleteCSourceRequest() {
-		super(null);
 	}
 
 	public DeleteCSourceRequest(Map<String, Object> registration, ArrayListMultimap<String, String> headers,
 			String registrationId) throws ResponseException {
-		super(headers);
-		this.csourceRegistration = registration;
-		this.id = registrationId;
+		super(headers, registrationId, registration);
+		setFinalPayload(registration);
 	}
 
 }

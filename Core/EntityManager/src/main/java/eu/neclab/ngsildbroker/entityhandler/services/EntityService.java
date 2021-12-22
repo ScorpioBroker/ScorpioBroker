@@ -23,6 +23,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
+import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DeleteEntityRequest;
@@ -32,7 +33,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
@@ -52,8 +52,6 @@ public class EntityService implements EntryCRUDService {
 	@Value("${entity.delete.topic}")
 	String ENTITY_DELETE_TOPIC;
 
-
-
 	boolean directDB = true;
 	public static boolean checkEntity = false;
 	@Autowired
@@ -64,13 +62,7 @@ public class EntityService implements EntryCRUDService {
 	EntityInfoDAO entityInfoDAO;
 
 	@Autowired
-	KafkaTemplate<String, String> kafkaTemplate;
-
-	/*
-	 * @Autowired
-	 * 
-	 * @Qualifier("emtopicmap") EntityTopicMap entityTopicMap;
-	 */
+	KafkaTemplate<String, BaseRequest> kafkaTemplate;
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
@@ -111,14 +103,18 @@ public class EntityService implements EntryCRUDService {
 			this.entityIds.put(tenantId, request.getId());
 		}
 		pushToDB(request);
-		new Thread() {
-			public void run() {
-				kafkaTemplate.send(ENTITY_CREATE_TOPIC, request.getId(), DataSerializer.toJson(request));
-			};
-		}.start();
+		sendToKafka(ENTITY_CREATE_TOPIC, request);
 
 		logger.debug("createMessage() :: completed");
 		return request.getId();
+	}
+
+	private void sendToKafka(String topic, BaseRequest request) {
+		new Thread() {
+			public void run() {
+				kafkaTemplate.send(topic, request.getId(), request);
+			};
+		}.start();
 	}
 
 	private void pushToDB(EntityRequest request) {
@@ -174,11 +170,7 @@ public class EntityService implements EntryCRUDService {
 			if (directDB) {
 				pushToDB(request);
 			}
-			new Thread() {
-				public void run() {
-					kafkaTemplate.send(ENTITY_UPDATE_TOPIC, entityId, DataSerializer.toJson(request));
-				};
-			}.start();
+			sendToKafka(ENTITY_UPDATE_TOPIC, request);
 		}
 		logger.trace("updateMessage() :: completed");
 		return request.getUpdateResult();
@@ -215,7 +207,7 @@ public class EntityService implements EntryCRUDService {
 		}
 		new Thread() {
 			public void run() {
-				kafkaTemplate.send(ENTITY_APPEND_TOPIC, entityId, DataSerializer.toJson(request));
+				kafkaTemplate.send(ENTITY_APPEND_TOPIC, entityId, request);
 			};
 		}.start();
 
@@ -271,11 +263,7 @@ public class EntityService implements EntryCRUDService {
 		if (directDB) {
 			pushToDB(request);
 		}
-		new Thread() {
-			public void run() {
-				kafkaTemplate.send(ENTITY_DELETE_TOPIC, entityId, DataSerializer.toJson(request));
-			};
-		}.start();
+		sendToKafka(ENTITY_DELETE_TOPIC, request);
 		logger.trace("deleteEntity() :: completed");
 		return true;
 	}
@@ -301,12 +289,7 @@ public class EntityService implements EntryCRUDService {
 			if (directDB) {
 				pushToDB(request);
 			}
-			new Thread() {
-				public void run() {
-					kafkaTemplate.send(ENTITY_UPDATE_TOPIC, entityId, DataSerializer.toJson(request));
-				}
-			}.start();
-
+			sendToKafka(ENTITY_UPDATE_TOPIC, request);
 		}
 		logger.trace("partialUpdateEntity() :: completed");
 		return request.getUpdateResult();
@@ -330,12 +313,7 @@ public class EntityService implements EntryCRUDService {
 		if (directDB) {
 			pushToDB(request);
 		}
-		new Thread() {
-			public void run() {
-				kafkaTemplate.send(ENTITY_DELETE_TOPIC, entityId, DataSerializer.toJson(request));
-			};
-		}.start();
-
+		sendToKafka(ENTITY_DELETE_TOPIC, request);
 		logger.trace("deleteAttribute() :: completed");
 		return true;
 	}
