@@ -28,8 +28,6 @@ public class CreateEntityRequest extends EntityRequest {
 	}
 
 	private void generatePayloadVersions(Map<String, Object> payload) throws ResponseException {
-
-		logger.debug("entity id " + getId());
 		String now = SerializationTools.formatter.format(Instant.now());
 		setTemporalProperties(payload, now, now, false);
 		setFinalPayload(payload);
@@ -37,7 +35,6 @@ public class CreateEntityRequest extends EntityRequest {
 			this.withSysAttrs = JsonUtils.toString(payload);
 		} catch (IOException e) {
 			// should never happen error checks are done before hand
-			logger.error(e);
 			throw new ResponseException(ErrorType.UnprocessableEntity, "Failed to parse entity");
 		}
 		removeTemporalProperties(payload); // remove createdAt/modifiedAt fields informed by the user
@@ -45,7 +42,6 @@ public class CreateEntityRequest extends EntityRequest {
 			this.entityWithoutSysAttrs = JsonUtils.toString(payload);
 		} catch (IOException e) {
 			// should never happen error checks are done before hand
-			logger.error(e);
 			throw new ResponseException(ErrorType.UnprocessableEntity, "Failed to parse entity");
 		}
 
@@ -53,7 +49,6 @@ public class CreateEntityRequest extends EntityRequest {
 			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(payload));
 		} catch (IOException e) {
 			// should never happen error checks are done before hand
-			logger.error(e);
 			throw new ResponseException(ErrorType.UnprocessableEntity, "Failed to parse entity");
 		}
 

@@ -1,33 +1,24 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import com.fasterxml.jackson.databind.annotation.JsonAppend.Prop;
+import java.util.Set;
 
 import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
-import eu.neclab.ngsildbroker.commons.datatypes.Entity;
-import eu.neclab.ngsildbroker.commons.datatypes.GenericBaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
-import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
-import eu.neclab.ngsildbroker.commons.datatypes.GeoValue;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Property;
 import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
-import eu.neclab.ngsildbroker.commons.datatypes.Relationship;
-import eu.neclab.ngsildbroker.commons.datatypes.RelationshipEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
 
@@ -103,19 +94,39 @@ public abstract class EntityTools {
 				data.get(0).isSuccess());
 	}
 
-	public static GeoProperty getLocation(Map<String, Object> fullEntry) {
-		// TODO Auto-generated method stub
-		return null;
+	public static GeoProperty getLocation(Map<String, Object> fullEntry, String geoPropertyName) {
+		Object obj = fullEntry.get(geoPropertyName);
+		if (obj == null) {
+			return null;
+		}
+		return SerializationTools.parseGeoProperty((List<Map<String, Object>>) obj, geoPropertyName);
 	}
 
 	public static Map<String, Object> clearBaseProps(Map<String, Object> fullEntry, SubscriptionRequest subscription) {
-		// TODO Auto-generated method stub
-		return null;
+		List<String> attrNames = subscription.getSubscription().getAttributeNames();
+		if (attrNames == null || attrNames.isEmpty()) {
+			return fullEntry;
+		}
+		Set<String> allNames = fullEntry.keySet();
+		allNames.remove(NGSIConstants.JSON_LD_ID);
+		allNames.remove(NGSIConstants.JSON_LD_TYPE);
+		allNames.removeAll(attrNames);
+		for (String name : allNames) {
+			fullEntry.remove(name);
+		}
+		return fullEntry;
 	}
 
-	public static List<String> getRegisteredTypes(Map<String, Object> resultCSourceRegistration) {
-		// TODO Auto-generated method stub
-		return null;
+	public static Set<String> getRegisteredTypes(Map<String, Object> cSourceRegistration) {
+		List<Map<String, Object>> entities = (List<Map<String, Object>>) ((List<Map<String, Object>>) cSourceRegistration
+				.get(NGSIConstants.NGSI_LD_INFORMATION)).get(0).get(NGSIConstants.NGSI_LD_ENTITIES);
+		HashSet<String> result = new HashSet<String>();
+		if (entities != null) {
+			for (Map<String, Object> entry : entities) {
+				result.addAll((List<String>) entry.get(NGSIConstants.JSON_LD_TYPE));
+			}
+		}
+		return result;
 	}
 
 	public static String generateUniqueRegId(Map<String, Object> resolved) {
@@ -145,14 +156,14 @@ public abstract class EntityTools {
 				String typeString = ((List<String>) type).get(0);
 				switch (typeString) {
 				case NGSIConstants.NGSI_LD_GEOPROPERTY:
-					// Don't care about geoproperties here this is for query terms
+					prop = SerializationTools.parseGeoProperty((List<Map<String, Object>>) value, key);
 					continue;
 				case NGSIConstants.NGSI_LD_RELATIONSHIP:
-					prop = parseRelationship(entry.getKey(), entry.getValue());
+					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
 					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
 				default:
-					prop = parseProperty(entry.getKey(), entry.getValue());
+					prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
 					break;
 				}
 
@@ -161,14 +172,6 @@ public abstract class EntityTools {
 			result.add(prop);
 		}
 		return result;
-	}
-
-	private static BaseProperty parseProperty(String key, Object value) {
-		return SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
-	}
-
-	private static BaseProperty parseRelationship(String key, Object value) {
-		return SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
 	}
 
 	private static BaseProperty generateFakeProperty(String key, Map<String, Object> tmp) {

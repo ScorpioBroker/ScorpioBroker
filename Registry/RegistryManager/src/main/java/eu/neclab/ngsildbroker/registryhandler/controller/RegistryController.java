@@ -103,7 +103,8 @@ public class RegistryController {
 	@PostMapping
 	public ResponseEntity<String> registerCSource(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
-		return ControllerFunctions.createEntry(csourceService, request, payload, logger);
+		return ControllerFunctions.createEntry(csourceService, request, payload,
+				AppConstants.CSOURCE_REG_CREATE_PAYLOAD, logger);
 	}
 
 	@GetMapping("/{registrationId}")
@@ -123,13 +124,14 @@ public class RegistryController {
 	@PatchMapping("/{registrationId}")
 	public ResponseEntity<String> updateCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
-		return ControllerFunctions.appendToEntry(csourceService, request, registrationId, payload, "", logger);
+		return ControllerFunctions.appendToEntry(csourceService, request, registrationId, payload, "",
+				AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, logger);
 	}
 
 	@DeleteMapping("/{registrationId}")
 	public ResponseEntity<String> deleteCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId) {
-		return ControllerFunctions.deleteEntity(csourceService, request, registrationId, logger);
+		return ControllerFunctions.deleteEntry(csourceService, request, registrationId, logger);
 	}
 
 }

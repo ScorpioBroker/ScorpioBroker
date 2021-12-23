@@ -91,7 +91,6 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 		Integer attributeCount = 0;
 
 		for (Entry<String, Object> entry : resolved.entrySet()) {
-			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)

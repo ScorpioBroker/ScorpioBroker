@@ -391,7 +391,7 @@ public class SubscriptionControllerFunctions {
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
-					opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed);
+					opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed).get(0);
 			Subscription subscription = expandSubscription(resolved, request);
 			if (subscription.getId() == null) {
 				subscription.setId(id);

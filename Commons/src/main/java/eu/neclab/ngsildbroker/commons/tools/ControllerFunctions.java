@@ -44,7 +44,7 @@ public class ControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> updateMultiple(EntryCRUDService entityService, HttpServletRequest request,
-			String payload, int maxUpdateBatch, String options) {
+			String payload, int maxUpdateBatch, String options, int payloadType) {
 		String[] optionsArray = getOptionsArray(options);
 		List<Map<String, Object>> jsonPayload;
 
@@ -74,7 +74,7 @@ public class ControllerFunctions {
 			Map<String, Object> entry;
 			try {
 				entry = (Map<String, Object>) JsonLdProcessor
-						.expand(linkHeaders, compactedEntry, opts, AppConstants.ENTITY_UPDATE_PAYLOAD, preFlight)
+						.expand(linkHeaders, compactedEntry, opts, payloadType, preFlight)
 						.get(0);
 			} catch (JsonLdError | ResponseException e) {
 				RestResponse response;
@@ -118,7 +118,7 @@ public class ControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> createMultiple(EntryCRUDService entityService, HttpServletRequest request,
-			String payload, int maxCreateBatch) {
+			String payload, int maxCreateBatch, int payloadType) {
 
 		List<Map<String, Object>> jsonPayload;
 		try {
@@ -146,7 +146,7 @@ public class ControllerFunctions {
 			Map<String, Object> resolved;
 			try {
 				resolved = (Map<String, Object>) JsonLdProcessor
-						.expand(linkHeaders, entry, opts, AppConstants.ENTITY_CREATE_PAYLOAD, preFlight).get(0);
+						.expand(linkHeaders, entry, opts, payloadType, preFlight).get(0);
 			} catch (JsonLdError | ResponseException e) {
 				RestResponse response;
 				if (e instanceof ResponseException) {
@@ -206,7 +206,7 @@ public class ControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> deleteMultiple(EntryCRUDService entityService, HttpServletRequest request,
-			String payload) {
+			String payload, int payloadType) {
 		List<Object> jsonPayload;
 		boolean atContextAllowed;
 		List<Object> links = HttpUtils.getAtContext(request);
@@ -235,7 +235,7 @@ public class ControllerFunctions {
 					entityId = (String) entry;
 				} else {
 					List<Object> resolved = JsonLdProcessor.expand(links, entry, opts,
-							AppConstants.ENTITY_CREATE_PAYLOAD, atContextAllowed);
+							payloadType, atContextAllowed);
 					entityId = (String) ((Map<String, Object>) resolved.get(0)).get(NGSIConstants.JSON_LD_ID);
 				}
 				if (entityService.deleteEntry(headers, entityId)) {
@@ -258,7 +258,7 @@ public class ControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> upsertMultiple(EntryCRUDService entityService, HttpServletRequest request,
-			String payload, String options, int maxCreateBatch) {
+			String payload, String options, int maxCreateBatch, int payloadType) {
 		String[] optionsArray = getOptionsArray(options);
 		List<Map<String, Object>> jsonPayload;
 		try {
@@ -288,7 +288,7 @@ public class ControllerFunctions {
 			Map<String, Object> resolved;
 			try {
 				resolved = (Map<String, Object>) JsonLdProcessor
-						.expand(linkHeaders, entry, opts, AppConstants.ENTITY_CREATE_PAYLOAD, preFlight).get(0);
+						.expand(linkHeaders, entry, opts, payloadType, preFlight).get(0);
 			} catch (JsonLdError | ResponseException e) {
 				RestResponse response;
 				if (e instanceof ResponseException) {
@@ -379,14 +379,14 @@ public class ControllerFunctions {
 	}
 
 	public static ResponseEntity<String> updateEntry(EntryCRUDService entityService, HttpServletRequest request,
-			String entityId, String payload, Logger logger) {
+			String entityId, String payload, int payloadType, Logger logger) {
 		try {
 			logger.trace("update entry :: started");
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
 			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, atContextAllowed).get(0);
+					JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
 			UpdateResult update = entityService.updateEntry(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("update entry :: completed");
 			if (update.getUpdateResult()) {
@@ -401,7 +401,7 @@ public class ControllerFunctions {
 	}
 
 	public static ResponseEntity<String> createEntry(EntryCRUDService entityService, HttpServletRequest request,
-			String payload, Logger logger) {
+			String payload, int payloadType, Logger logger) {
 		String result = null;
 		try {
 			logger.trace("create entity :: started");
@@ -410,7 +410,7 @@ public class ControllerFunctions {
 
 			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_CREATE_PAYLOAD, atContextAllowed).get(0);
+					JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
 			result = entityService.createEntry(HttpUtils.getHeaders(request), resolved);
 			logger.trace("create entity :: completed");
 			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
@@ -421,7 +421,7 @@ public class ControllerFunctions {
 	}
 
 	public static ResponseEntity<String> appendToEntry(EntryCRUDService entityService, HttpServletRequest request,
-			String entityId, String payload, String options, Logger logger) {
+			String entityId, String payload, String options, int payloadType, Logger logger) {
 		try {
 			logger.trace("append entity :: started");
 			String[] optionsArray = getOptionsArray(options);
@@ -429,7 +429,7 @@ public class ControllerFunctions {
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
 			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.ENTITY_UPDATE_PAYLOAD, atContextAllowed).get(0);
+					JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
 			AppendResult append = entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved,
 					optionsArray);
 			logger.trace("append entity :: completed");
@@ -452,7 +452,7 @@ public class ControllerFunctions {
 		}
 	}
 
-	public ResponseEntity<String> deleteEntry(EntryCRUDService entityService, HttpServletRequest request,
+	public static ResponseEntity<String> deleteEntry(EntryCRUDService entityService, HttpServletRequest request,
 			String entityId, Logger logger) {
 		try {
 			logger.trace("delete entity :: started");
@@ -470,7 +470,7 @@ public class ControllerFunctions {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static ResponseEntity<String> postQuery(EntityQueryService queryService, HttpServletRequest request,
 			String payload, Integer limit, Integer offset, String qToken, List<String> options, boolean count,
-			int defaultLimit) {
+			int defaultLimit, int payloadType) {
 		try {
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
@@ -478,7 +478,7 @@ public class ControllerFunctions {
 			// String expandedPayload = "";// HttpUtils.expandPayload(request, payload,
 			// AppConstants.BATCH_URL_ID);
 			Map<String, Object> queries = (Map<String, Object>) JsonLdProcessor
-					.expand(linkHeaders, rawPayload, opts, AppConstants.QUERY_PAYLOAD, atContextAllowed).get(0);
+					.expand(linkHeaders, rawPayload, opts, payloadType, atContextAllowed).get(0);
 
 			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				linkHeaders.add((String) rawPayload.get(NGSIConstants.JSON_LD_CONTEXT));
@@ -711,15 +711,5 @@ public class ControllerFunctions {
 		return ((Map<String, Object>) original).get(NGSIConstants.JSON_LD_VALUE);
 
 	}
-	public static ResponseEntity<String> deleteEntity(EntryCRUDService entityService, HttpServletRequest request, String entityId, Logger logger) {
-		try {
-			logger.trace("delete entity :: started");
-			HttpUtils.validateUri(entityId);
-			entityService.deleteEntry(HttpUtils.getHeaders(request), entityId);
-			logger.trace("delete entity :: completed");
-			return ResponseEntity.noContent().build();
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
-	}
+	
 }

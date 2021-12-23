@@ -26,10 +26,7 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 	}
 
 	protected void createAppend() {
-		logger.trace("replace attribute in temporal entity");
-
 		for (Entry<String, Object> entry : getRequestPayload().entrySet()) {
-			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)
@@ -49,7 +46,6 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 					try {
 						storeEntry(getId(), null, null, now, attribId, JsonUtils.toPrettyString(jsonElement), overwriteOp);
 					} catch (IOException e) {
-						logger.error(e);
 						//should never happen
 					}
 
@@ -58,8 +54,6 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 			}
 			this.createdAt = now;
 		}
-		logger.trace("attribute replaced in temporalentity " + getId());
-
 	}
 
 }

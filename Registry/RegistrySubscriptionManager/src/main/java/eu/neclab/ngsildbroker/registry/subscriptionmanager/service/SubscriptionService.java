@@ -24,7 +24,7 @@ import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
@@ -70,7 +70,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.notification.IntervalNotificationHandler;
+//import eu.neclab.ngsildbroker.registry.subscriptionmanager.notification.IntervalNotificationHandler;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.notification.NotificationHandlerMQTT;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.notification.NotificationHandlerREST;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.SubscriptionInfoDAO;
@@ -81,22 +81,18 @@ public class SubscriptionService implements SubscriptionCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionInfoDAO.class);
 
-	
-
 	private final String ALL_TYPES_TYPE = "()";
 
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
 
 	NotificationHandlerREST notificationHandlerREST;
-	IntervalNotificationHandler intervalHandlerREST;
+	// IntervalNotificationHandler intervalHandlerREST;
 
 	NotificationHandlerMQTT notificationHandlerMQTT;
-	IntervalNotificationHandler intervalHandlerMQTT;
+	// IntervalNotificationHandler intervalHandlerMQTT;
 
 	Timer watchDog = new Timer(true);
-
-	// KafkaOps kafkaOps = new KafkaOps();
 
 	@Autowired
 	ObjectMapper objectMapper;
@@ -122,7 +118,7 @@ public class SubscriptionService implements SubscriptionCRUDService {
 	@Value("${bootstrap.servers}")
 	String BOOTSTRAP_SERVERS;
 
-	private Table<String, String, List<String>> tenant2Ids2Type;
+	private Table<String, String, Set<String>> tenant2Ids2Type;
 	@Value("${subscriptions.topic:SUBSCRIPTIONS}")
 	protected String subscriptionTopic;
 
@@ -139,9 +135,11 @@ public class SubscriptionService implements SubscriptionCRUDService {
 		}
 
 		notificationHandlerREST = new NotificationHandlerREST(this, objectMapper, webClient);
-		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, null, null, null);
+		// intervalHandlerREST = new
+		// IntervalNotificationHandler(notificationHandlerREST, null, null, null);
 		notificationHandlerMQTT = new NotificationHandlerMQTT(this, objectMapper);
-		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, null, null, null);
+		// intervalHandlerMQTT = new
+		// IntervalNotificationHandler(notificationHandlerMQTT, null, null, null);
 		logger.trace("call loadStoredSubscriptions() ::");
 		loadStoredSubscriptions();
 
@@ -194,9 +192,9 @@ public class SubscriptionService implements SubscriptionCRUDService {
 		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 		if (subscription.getTimeInterval() > 0) {
 			if (endpointProtocol.equals("mqtt")) {
-				intervalHandlerMQTT.addSub(subscriptionRequest);
+				// intervalHandlerMQTT.addSub(subscriptionRequest);
 			} else {
-				intervalHandlerREST.addSub(subscriptionRequest);
+				// intervalHandlerREST.addSub(subscriptionRequest);
 			}
 		} else {
 			this.tenantId2subscriptionId2Context.put(subscriptionRequest.getTenant(), subscription.getId().toString(),
@@ -296,8 +294,8 @@ public class SubscriptionService implements SubscriptionCRUDService {
 		synchronized (tenantId2subscriptionId2Context) {
 			this.tenantId2subscriptionId2Context.remove(tenant, id);
 		}
-		//intervalHandlerREST.removeSub(id);
-		//intervalHandlerMQTT.removeSub(id);
+		// intervalHandlerREST.removeSub(id);
+		// intervalHandlerMQTT.removeSub(id);
 		List<EntityInfo> entities = removedSub.getSubscription().getEntities();
 		if (entities == null || entities.isEmpty()) {
 			synchronized (type2EntitiesSubscriptions) {
@@ -402,7 +400,7 @@ public class SubscriptionService implements SubscriptionCRUDService {
 		String tenantId = createRequest.getId();
 		Map<String, Object> create = createRequest.getFinalPayload();
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
-		List<String> types = EntityTools.getRegisteredTypes(create);
+		Set<String> types = EntityTools.getRegisteredTypes(create);
 		List<SubscriptionRequest> subs = getAllTypeBaseRequests(tenantId, types);
 		if (subs != null) {
 			for (SubscriptionRequest sub : subs) {
@@ -516,7 +514,8 @@ public class SubscriptionService implements SubscriptionCRUDService {
 			return null;
 		}
 		Map<String, Object> fullEntry = request.getFinalPayload();
-		if (!evaluateGeoQuery(subscription.getSubscription().getLdGeoQuery(), EntityTools.getLocation(fullEntry))) {
+		if (!evaluateGeoQuery(subscription.getSubscription().getLdGeoQuery(),
+				EntityTools.getLocation(fullEntry, subscription.getSubscription().getLdGeoQuery().getGeoProperty()))) {
 			return null;
 		}
 		if (subscription.getSubscription().getQueryTerm() != null) {
@@ -527,7 +526,6 @@ public class SubscriptionService implements SubscriptionCRUDService {
 		return EntityTools.clearBaseProps(fullEntry, subscription);
 	}
 
-	
 	private boolean evaluateGeoQuery(LDGeoQuery geoQuery, GeoProperty location) {
 		return evaluateGeoQuery(geoQuery, location, -1);
 	}
@@ -637,7 +635,7 @@ public class SubscriptionService implements SubscriptionCRUDService {
 	public void checkSubscriptionsWithDelta(BaseRequest appendRequest, long messageTime, int messageType) {
 		String id = appendRequest.getId();
 		String tenantId = appendRequest.getTenant();
-		List<String> types = getTypesForId(tenantId, id);
+		Set<String> types = getTypesForId(tenantId, id);
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
 		List<SubscriptionRequest> subs = getAllTypeBaseRequests(tenantId, types);
 		if (subs != null) {
@@ -665,10 +663,13 @@ public class SubscriptionService implements SubscriptionCRUDService {
 
 	// @StreamListener(SubscriptionManagerConsumerChannel.deleteReadChannel)
 
-	private List<SubscriptionRequest> getAllTypeBaseRequests(String tenant, List<String> types) {
+	private List<SubscriptionRequest> getAllTypeBaseRequests(String tenant, Set<String> types) {
 		ArrayList<SubscriptionRequest> subs = new ArrayList<SubscriptionRequest>();
 		for (String type : types) {
-			subs.addAll(this.type2EntitiesSubscriptions.get(tenant, type));
+			List<SubscriptionRequest> tmp = this.type2EntitiesSubscriptions.get(tenant, type);
+			if (tmp != null) {
+				subs.addAll(tmp);
+			}
 		}
 		return subs;
 	}
@@ -743,19 +744,19 @@ public class SubscriptionService implements SubscriptionCRUDService {
 
 	}
 
-	private List<String> getTypesForId(String tenantId, String entityId) {
+	private Set<String> getTypesForId(String tenantId, String entityId) {
 		synchronized (this.tenant2Ids2Type) {
 			return this.tenant2Ids2Type.get(tenantId, entityId);
 		}
 	}
 
 	public void remoteNotify(String id, List<Object> list) {
-		//TODO maybe remove
+		// TODO maybe remove
 		new Thread() {
 			@Override
 			public void run() {
 				SubscriptionRequest subscription = remoteNotifyCallbackId2InternalSub.get(id);
-				//sendNotification(list, subscription);
+				// sendNotification(list, subscription);
 			}
 		}.start();
 

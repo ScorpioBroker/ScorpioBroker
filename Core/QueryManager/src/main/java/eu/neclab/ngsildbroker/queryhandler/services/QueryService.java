@@ -17,9 +17,6 @@ import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.header.internals.RecordHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +26,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
-import org.springframework.kafka.requestreply.RequestReplyFuture;
-import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -50,7 +45,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.RemoteQueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntityQueryService;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 
@@ -89,8 +83,6 @@ public class QueryService implements EntityQueryService{
 	@Value("${directDbConnection}")
 	boolean directDbConnection;
 
-	@Autowired
-	ReplyingKafkaTemplate<String, String, String> kafkaTemplate;
 
 	@Autowired
 	RestTemplate restTemplate;
@@ -212,7 +204,8 @@ public class QueryService implements EntityQueryService{
 							throw new ResponseException(ErrorType.TenantNotFound, "Tenant not found");
 						}
 					} else {
-						return getFromStorageManager(DataSerializer.toJson(qp));
+						return null;
+						//return getFromStorageManager(DataSerializer.toJson(qp));
 					}
 				}
 			});
@@ -222,11 +215,11 @@ public class QueryService implements EntityQueryService{
 					try {
 
 						logger.trace("Asynchronous 1 context registry");
-						QueryResult brokerList;
+						QueryResult brokerList = null;
 						if (cSourceDAO != null) {
 							brokerList = cSourceDAO.queryExternalCsources(qp);
 						} else {
-							brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
+							//brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
 						}
 						Pattern p = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_REGEX);
 						Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);

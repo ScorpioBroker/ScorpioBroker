@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -36,7 +34,6 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
@@ -75,7 +72,8 @@ public class HistoryController {
 	@PostMapping
 	public ResponseEntity<String> createTemporalEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
-		return ControllerFunctions.createEntry(historyService, request, payload, logger);
+		return ControllerFunctions.createEntry(historyService, request, payload,
+				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, logger);
 	}
 
 	@GetMapping
@@ -116,7 +114,7 @@ public class HistoryController {
 			qp.setLimit(limit);
 			qp.setOffSet(offset);
 			qp.setCountResult(countResult);
-			
+
 			QueryResult qResult = historyDAO.query(qp);
 			String nextLink = HttpUtils.generateNextLink(request, qResult);
 			String prevLink = HttpUtils.generatePrevLink(request, qResult);
@@ -210,7 +208,8 @@ public class HistoryController {
 	public ResponseEntity<String> addAttrib2TemopralEntity(HttpServletRequest request,
 			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload,
 			@RequestParam(required = false, name = "options") String options) {
-		return ControllerFunctions.appendToEntry(historyService, request, entityId, payload, options, logger);
+		return ControllerFunctions.appendToEntry(historyService, request, entityId, payload, options,
+				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, logger);
 	}
 
 	@DeleteMapping("/{entityId}/attrs/{attrId}")

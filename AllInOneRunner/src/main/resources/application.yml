@@ -107,6 +107,11 @@ spring:
       group-id: ${mysettings.application-name}
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: eu.neclab.ngsildbroker.commons.datatypes
     admin:
       properties:
         cleanup:
@@ -169,12 +174,6 @@ hystrix:
         isolation:
           thread:
             timeoutInMilliseconds: 60000
-
-
-#GET request configuration for QUERY-MANAGER 
-ribbon:
-  ReadTimeout: 60000
-  ConnectTimeout: 60000
 server:
   port: 9090
   tomcat:
@@ -184,9 +183,13 @@ selfhostcorecontext: http://localhost:9090/corecontext
 logging:
   level:
     root: INFO
+    eu.neclab.ngsildbroker: INFO
     org.apache.kafka: ERROR
     org.spring.kafka: ERROR
     org.springframework.kafka: ERROR
     #com.zaxxer.hikari: ERROR
 ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
+scorpio:
+  history:
+    autorecording: false

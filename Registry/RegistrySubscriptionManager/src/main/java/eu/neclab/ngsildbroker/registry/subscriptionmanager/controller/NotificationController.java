@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.controller;
 
-import java.io.IOException;
-
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
@@ -15,12 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.SubscriptionService;
 

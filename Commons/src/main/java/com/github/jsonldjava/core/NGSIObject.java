@@ -290,7 +290,11 @@ public class NGSIObject {
 							"A registration needs type which is CSourceRegistration");
 				}
 				if (!((Map<String, Object>) element).containsKey(NGSIConstants.NGSI_LD_INFORMATION)) {
-					throw new ResponseException(ErrorType.BadRequestData, "A CSource registration needs a information entry");
+					throw new ResponseException(ErrorType.BadRequestData,
+							"A CSource registration needs a information entry");
+				}
+				if (((List) ((Map<String, Object>) element).get(NGSIConstants.NGSI_LD_INFORMATION)).isEmpty()) {
+					throw new ResponseException(ErrorType.BadRequestData, "Information is empty!");
 				}
 			} else {
 				validateRegistration(payloadType, expandedProperty, activeProperty, api);

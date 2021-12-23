@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class DeleteEntityRequest extends EntityRequest {

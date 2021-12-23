@@ -7,11 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -51,7 +49,6 @@ public class AppendEntityRequest extends EntityRequest {
 	 */
 	private AppendResult appendFields(Map<String, Object> entityBody, Map<String, Object> resolved, String[] options)
 			throws Exception {
-		logger.trace("appendFields() :: started");
 		boolean overwrite = true;
 		if (options != null) {
 			for (String option : options) {

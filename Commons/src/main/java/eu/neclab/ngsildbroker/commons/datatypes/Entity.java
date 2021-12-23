@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 

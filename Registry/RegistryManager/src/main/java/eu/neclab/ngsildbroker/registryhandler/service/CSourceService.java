@@ -39,7 +39,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -56,7 +55,7 @@ public class CSourceService implements EntryCRUDService {
 	CSourceDAO csourceInfoDAO;
 
 	@Autowired
-	KafkaTemplate<String, BaseRequest> kafkaTemplate;
+	KafkaTemplate<String, Object> kafkaTemplate;
 
 	@Value("${csource.update.topic}")
 	String CSOURCE_UPDATE_TOPIC;
@@ -215,10 +214,10 @@ public class CSourceService implements EntryCRUDService {
 
 	}
 
-	private void sendToKafka(String topic, CSourceRequest request) {
+	private void sendToKafka(String topic, BaseRequest request) {
 		new Thread() {
 			public void run() {
-				kafkaTemplate.send(topic, request.getId(), request);
+				kafkaTemplate.send(topic, request.getId(), new BaseRequest(request));
 			};
 		}.start();
 	}

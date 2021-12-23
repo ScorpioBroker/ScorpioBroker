@@ -14,13 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.tools.ControllerFunctions;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
 
 @RestController
 @RequestMapping("/ngsi-ld/v1/temporal/entityOperations")
 public class EntityOperationsHistoryController {
-	
+
 	@Autowired
 	HistoryService entityService;
 
@@ -45,26 +46,30 @@ public class EntityOperationsHistoryController {
 
 	@PostMapping("/create")
 	public ResponseEntity<String> createMultiple(HttpServletRequest request, @RequestBody String payload) {
-		return ControllerFunctions.createMultiple(entityService, request, payload, maxCreateBatch);
+		return ControllerFunctions.createMultiple(entityService, request, payload, maxCreateBatch,
+				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
 	}
 
 	@PostMapping("/upsert")
 	public ResponseEntity<String> upsertMultiple(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
-		return ControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch);
+		return ControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch,
+				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
 	}
 
 	@PostMapping("/update")
 	public ResponseEntity<String> updateMultiple(HttpServletRequest request, @RequestBody String payload,
 			@RequestParam(required = false, name = "options") String options) {
-		return ControllerFunctions.updateMultiple(entityService, request, payload, maxUpdateBatch, options);
+		return ControllerFunctions.updateMultiple(entityService, request, payload, maxUpdateBatch, options,
+				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD);
 	}
 
 	@PostMapping("/delete")
 	public ResponseEntity<String> deleteMultiple(HttpServletRequest request, @RequestBody String payload) {
-		return ControllerFunctions.deleteMultiple(entityService, request, payload);
+		return ControllerFunctions.deleteMultiple(entityService, request, payload,
+				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
 	}
-	
+
 //	@PostMapping("/query")
 //	public ResponseEntity<String> postQuery(HttpServletRequest request, @RequestBody String payload,
 //			@RequestParam(value = "limit", required = false) Integer limit,
@@ -75,6 +80,5 @@ public class EntityOperationsHistoryController {
 //		return ControllerFunctions.postQuery(entityService, request, payload, limit, offset, qToken, options, count,
 //				defaultLimit);
 //	}
-
 
 }

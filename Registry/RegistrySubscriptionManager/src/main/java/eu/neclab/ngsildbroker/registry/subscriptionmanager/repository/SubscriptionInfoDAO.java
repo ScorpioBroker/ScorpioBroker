@@ -34,21 +34,34 @@ public class SubscriptionInfoDAO extends StorageReaderDAO {
 		return new HashSet<String>(tempList);
 	}
 
-	public Table<String, String, List<String>> getIds2Type() throws ResponseException {
-		Table<String, String, List<String>> result = HashBasedTable.create();
-		for (Map<String, Object> entry : getJDBCTemplate(null).queryForList("SELECT id, type FROM entity")) {
-			//result.put(AppConstants.INTERNAL_NULL_KEY, entry.get("id").toString(), entry.get("type").toString());
+	public Table<String, String, Set<String>> getIds2Type() throws ResponseException {
+		Table<String, String, Set<String>> result = HashBasedTable.create();
+		String sql = "SELECT csource_id, entity_type FROM csourceinformation";
+
+		for (Map<String, Object> entry : getJDBCTemplate(null).queryForList(sql)) {
+			addToResult(result, AppConstants.INTERNAL_NULL_KEY, entry.get("csource_id").toString(),
+					entry.get("entity_type").toString());
 		}
 		List<String> tenants = getTenants();
 		for (String tenantId : tenants) {
 			tenantId = getTenant(tenantId);
-			List<Map<String, Object>> temp = getJDBCTemplate(tenantId).queryForList("SELECT id, type FROM entity");
+			List<Map<String, Object>> temp = getJDBCTemplate(tenantId).queryForList(sql);
 			for (Map<String, Object> entry : temp) {
-				//TODO result.put(tenantId, entry.get("id").toString(), entry.get("type").toString());
+				addToResult(result, tenantId, entry.get("csource_id").toString(), entry.get("entity_type").toString());
 			}
 
 		}
 		return result;
+	}
+
+	private void addToResult(Table<String, String, Set<String>> result, String key, String id, String type) {
+		Set<String> value = result.get(key, id);
+
+		if (value == null) {
+			value = new HashSet<String>();
+			result.put(key, id, value);
+		}
+		value.add(type);
 	}
 
 	public String getEntity(String entityId, String tenantId) {

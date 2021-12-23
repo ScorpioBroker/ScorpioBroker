@@ -52,7 +52,7 @@ public class HistoryService implements EntryCRUDService {
 	StorageWriterDAO writerDAO;
 
 	@Autowired
-	KafkaTemplate<String, BaseRequest> kafkaTemplate;
+	KafkaTemplate<String, Object> kafkaTemplate;
 
 	@Value("${scorpio.directdb:true}")
 	boolean directDB;

@@ -8,7 +8,6 @@ import java.util.Map;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -49,7 +48,6 @@ public class DeleteAttributeRequest extends EntityRequest {
 	 */
 	private Map<String, Object> deleteFields(Map<String, Object> entityBody, String attrId, String datasetId,
 			String deleteAll) throws Exception, ResponseException {
-		logger.trace("deleteFields() :: started");
 		// ArrayNode myArray = (ArrayNode) innerNode;
 
 		String availableDatasetId = null;
@@ -106,7 +104,6 @@ public class DeleteAttributeRequest extends EntityRequest {
 		} else {
 			throw new ResponseException(ErrorType.NotFound, "Attribute is not present");
 		}
-		logger.trace("deleteFields() :: completed");
 		return entityBody;
 	}
 

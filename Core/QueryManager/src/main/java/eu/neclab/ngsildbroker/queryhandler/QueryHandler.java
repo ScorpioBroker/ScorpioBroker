@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.queryhandler;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -26,12 +25,6 @@ public class QueryHandler {
 	}
 
 	
-	String queryResultTopic = "TOBEREMOVED";
-
-	@Bean // register and configure replying kafka template
-	public ReplyingKafkaTemplate<String, String, String> replyingTemplate(ProducerFactory<String, String> pf,
-			ConcurrentKafkaListenerContainerFactory<String, String> containerFactory) {
-		return new ReplyingKafkaTemplate<>(pf, containerFactory.createContainer(queryResultTopic));
-	}
+	
 
 }

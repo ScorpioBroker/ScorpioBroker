@@ -62,7 +62,7 @@ public class EntityService implements EntryCRUDService {
 	EntityInfoDAO entityInfoDAO;
 
 	@Autowired
-	KafkaTemplate<String, BaseRequest> kafkaTemplate;
+	KafkaTemplate<String, Object> kafkaTemplate;
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
@@ -112,7 +112,7 @@ public class EntityService implements EntryCRUDService {
 	private void sendToKafka(String topic, BaseRequest request) {
 		new Thread() {
 			public void run() {
-				kafkaTemplate.send(topic, request.getId(), request);
+				kafkaTemplate.send(topic, request.getId(), new BaseRequest(request));
 			};
 		}.start();
 	}
@@ -205,11 +205,8 @@ public class EntityService implements EntryCRUDService {
 		if (directDB) {
 			pushToDB(request);
 		}
-		new Thread() {
-			public void run() {
-				kafkaTemplate.send(ENTITY_APPEND_TOPIC, entityId, request);
-			};
-		}.start();
+		sendToKafka(ENTITY_APPEND_TOPIC, request);
+
 
 		logger.trace("appendMessage() :: completed");
 		return request.getAppendResult();

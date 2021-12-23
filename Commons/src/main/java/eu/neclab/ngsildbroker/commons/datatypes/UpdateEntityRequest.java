@@ -9,11 +9,6 @@ import java.util.Map.Entry;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -27,8 +22,9 @@ public class UpdateEntityRequest extends EntityRequest {
 			Map<String, Object> resolved, String attrName) throws ResponseException {
 		super(headers, id, resolved);
 		Object bodyId = resolved.get(NGSIConstants.JSON_LD_ID);
-		if(bodyId != null && !getId().equals(bodyId)) {
-			throw new ResponseException(ErrorType.BadRequestData, "The entity id in the url and in the payload must be the same.");
+		if (bodyId != null && !getId().equals(bodyId)) {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"The entity id in the url and in the payload must be the same.");
 		}
 		generateUpdate(resolved, entityBody, attrName);
 	}
@@ -65,7 +61,6 @@ public class UpdateEntityRequest extends EntityRequest {
 	 */
 	private UpdateResult updateFields(Map<String, Object> entityBody, Map<String, Object> resolved, String attrId)
 			throws Exception, ResponseException {
-		logger.trace("updateFields() :: started");
 		String now = SerializationTools.formatter.format(Instant.now());
 		Map<String, Object> resultJson = new HashMap<String, Object>();
 		UpdateResult updateResult = new UpdateResult(resolved, resultJson);
@@ -154,7 +149,6 @@ public class UpdateEntityRequest extends EntityRequest {
 						|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)) {
 					continue;
 				}
-				logger.trace("field: " + field);
 				if (entityBody.containsKey(field)) {
 					Map<String, Object> originalNode = ((List<Map<String, Object>>) entityBody.get(field)).get(0);
 					Map<String, Object> attrNode = ((List<Map<String, Object>>) resolved.get(field)).get(0);
@@ -172,7 +166,6 @@ public class UpdateEntityRequest extends EntityRequest {
 					// present ...
 					entityBody.replace(field, resolved.get(field));
 					updateResult.getAppendedJsonFields().put(field, resolved.get(field));
-					logger.trace("appended json fields: " + updateResult.getAppendedJsonFields().toString());
 					updateResult.setStatus(true);
 				}
 			}
@@ -183,7 +176,6 @@ public class UpdateEntityRequest extends EntityRequest {
 		updateResult.setFinalNode(entityBody);
 		removeTemporalProperties(entityBody);
 		updateResult.setJsonWithoutSysAttrs(JsonUtils.toString(entityBody));
-		logger.trace("updateFields() :: completed");
 		return updateResult;
 	}
 

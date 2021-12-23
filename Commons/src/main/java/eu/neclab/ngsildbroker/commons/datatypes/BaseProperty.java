@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.net.URI;
 import java.util.HashMap;
 
 /**

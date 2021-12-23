@@ -14,21 +14,29 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
-public abstract class BaseRequest {
+public class BaseRequest {
 
 	ArrayListMultimap<String, String> headers;
 	private String id;
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
-	protected final static Logger logger = LogManager.getLogger(BaseRequest.class);
 
-	protected BaseRequest() {
+	public BaseRequest() {
 
 	}
 
 	public BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload) {
 		super();
 		this.headers = headers;
+		this.id = id;
+		this.requestPayload = requestPayload;
+	}
+
+	public BaseRequest(BaseRequest request) {
+		this.id = request.id;
+		this.headers = request.headers;
+		this.requestPayload = request.requestPayload;
+		this.finalPayload = request.finalPayload;
 	}
 
 	public ArrayListMultimap<String, String> getHeaders() {
@@ -107,7 +115,11 @@ public abstract class BaseRequest {
 	}
 
 	public void setRequestPayload(Map<String, Object> requestPayload) {
-		this.requestPayload = new HashMap<String, Object>(requestPayload);
+		if (requestPayload == null) {
+			this.requestPayload = null;
+		} else {
+			this.requestPayload = new HashMap<String, Object>(requestPayload);
+		}
 	}
 
 	public Map<String, Object> getFinalPayload() {
@@ -115,8 +127,11 @@ public abstract class BaseRequest {
 	}
 
 	public void setFinalPayload(Map<String, Object> finalPayload) {
-		this.finalPayload = new HashMap<String, Object>(finalPayload);
+		if (finalPayload == null) {
+			this.finalPayload = null;
+		} else {
+			this.finalPayload = new HashMap<String, Object>(finalPayload);
+		}
 	}
-	
 
 }

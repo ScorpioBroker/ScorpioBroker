@@ -8,8 +8,8 @@ import org.springframework.nativex.hint.ResourceHint;
 import eu.neclab.ngsildbroker.entityhandler.EntityHandler;
 import eu.neclab.ngsildbroker.historymanager.HistoryHandler;
 import eu.neclab.ngsildbroker.queryhandler.QueryHandler;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.RegistrySubscriptionHandler;
 import eu.neclab.ngsildbroker.registryhandler.RegistryHandler;
-import eu.neclab.ngsildbroker.subscriptionmanager.SubscriptionHandler;
 
 @SpringBootApplication
 @NativeHint(options = { "--enable-all-security-services" }, resources = {
@@ -19,7 +19,7 @@ public class Runner {
 
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(new Class[] { RegistryHandler.class, HistoryHandler.class, QueryHandler.class,
-				SubscriptionHandler.class, EntityHandler.class }, args);
+				RegistrySubscriptionHandler.class, EntityHandler.class }, args);
 	}
 
 }

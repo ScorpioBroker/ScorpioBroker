@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.interfaces;
 
-import java.net.URI;
 import java.util.List;
 
 import com.google.common.collect.ArrayListMultimap;

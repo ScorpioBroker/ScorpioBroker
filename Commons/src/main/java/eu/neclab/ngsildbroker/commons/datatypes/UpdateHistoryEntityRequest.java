@@ -27,14 +27,9 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	}
 
 	public UpdateHistoryEntityRequest(BaseRequest entityRequest) throws IOException {
-
-		logger.trace("Listener handleEntityUpdate...");
-		// logger.debug("Received key: " + key);
-		// String payload = new String(message);
 		setHeaders(entityRequest.getHeaders());
 		Map<String, Object> jsonObject = entityRequest.getRequestPayload();//(Map<String, Object>) JsonUtils.fromString(entityRequest.getWithSysAttrs());
 		for (Entry<String, Object> entry : jsonObject.entrySet()) {
-			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)
@@ -65,16 +60,8 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 							.get(NGSIConstants.JSON_LD_VALUE);
 		} catch (Exception e) {
 			e.printStackTrace();
-			logger.warn("original createdAt element not found, using current timestamp");
 		}
-
-		logger.debug(
-				"modify attribute instance in temporal entity " + getId() + " - " + resolvedAttrId + " - " + createdAt);
-
-
-
 		for (Entry<String, Object> entry : getRequestPayload().entrySet()) {
-			logger.debug("Key = " + entry.getKey() + " Value = " + entry.getValue());
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)
@@ -109,13 +96,11 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 					try {
 						storeEntry(getId(), null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement), false);
 					} catch (IOException e) {
-						logger.error(e);
 						//Should never happen
 					}
 				}
 			}
 		}
-		logger.trace("instance modified in temporalentity " + getId());
 	}
 
 }

@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.tools.ControllerFunctions;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 
@@ -26,7 +28,7 @@ public class EntityOperationQueryController {
 
 	@Value("${defaultLimit}")
 	int defaultLimit = 50;
-	
+
 	@Value("${maxLimit}")
 	int maxLimit = 1000;
 
@@ -46,6 +48,6 @@ public class EntityOperationQueryController {
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
 		return ControllerFunctions.postQuery(queryService, request, payload, limit, offset, qToken, options, count,
-				defaultLimit);
+				defaultLimit, AppConstants.QUERY_PAYLOAD);
 	}
 }

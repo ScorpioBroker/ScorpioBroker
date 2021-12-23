@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -14,9 +13,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
 import com.github.filosganga.geogson.model.Geometry;
 import com.google.gson.Gson;
@@ -36,8 +32,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.Relationship;
 import eu.neclab.ngsildbroker.commons.datatypes.RelationshipEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.TypedValue;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
 public class SerializationTools {
@@ -501,24 +495,98 @@ public class SerializationTools {
 		return result;
 	}
 
-	/*
-	 * public static JsonElement getJsonForCSource(GeoProperty geoProperty,
-	 * JsonSerializationContext context) { Gson gson = new Gson(); return
-	 * gson.fromJson(geoProperty.getValue(), JsonElement.class); }
-	 */
-	public static JsonNode parseJson(ObjectMapper objectMapper, String payload) throws ResponseException {
-		JsonNode json = null;
-		try {
-			json = objectMapper.readTree(payload);
-			if (json.isNull()) {
-				throw new ResponseException(ErrorType.InvalidRequest, "Empty body");
+	public static GeoProperty parseGeoProperty(List<Map<String, Object>> topLevelArray, String key) {
+		GeoProperty prop = new GeoProperty();
+		prop.setId(key);
+		prop.setType(NGSIConstants.NGSI_LD_GEOPROPERTY);
+		Iterator<Map<String, Object>> it = topLevelArray.iterator();
+		HashMap<String, GeoPropertyEntry> entries = new HashMap<String, GeoPropertyEntry>();
+		while (it.hasNext()) {
+			Map<String, Object> next = it.next();
+			ArrayList<Property> properties = new ArrayList<Property>();
+			ArrayList<Relationship> relationships = new ArrayList<Relationship>();
+			Long createdAt = null, observedAt = null, modifiedAt = null;
+			String geoValueStr = null;
+			Geometry<?> geoValue = null;
+			String dataSetId = null;
+			String unitCode = null;
+			String name = null;
+			for (Entry<String, Object> entry : next.entrySet()) {
+				String propKey = entry.getKey();
+				Object value = entry.getValue();
+				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+					Object propValue = ((List) value).get(0);
+					if (propValue instanceof String) {
+						geoValue = DataSerializer.getGeojsonGeometry((String) propValue);
+					} else {
+						Object atValue = ((Map<String, Object>) propValue).get(NGSIConstants.JSON_LD_VALUE);
+						if (atValue != null) {
+							if (atValue instanceof String) {
+								geoValueStr = (String) atValue;
+								geoValue = DataSerializer.getGeojsonGeometry((String) atValue);
+							}
+						} else {
+							geoValueStr = (String) propValue;
+							geoValue = DataSerializer.getGeojsonGeometry((String) propValue);
+						}
+
+					}
+				} else if (propKey.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
+					try {
+						observedAt = date2Long(
+								(String) ((List<Map<String, Object>>) value).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new JsonParseException(e);
+					}
+				} else if (propKey.equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
+					try {
+						createdAt = date2Long(
+								(String) ((List<Map<String, Object>>) value).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new JsonParseException(e);
+					}
+				} else if (propKey.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+					try {
+						modifiedAt = date2Long(
+								(String) ((List<Map<String, Object>>) value).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new JsonParseException(e);
+					}
+
+				} else if (propKey.equals(NGSIConstants.JSON_LD_TYPE)) {
+					continue;
+				} else if (propKey.equals(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+					dataSetId = getDataSetId((List<Map<String, Object>>) value);
+				} else if (propKey.equals(NGSIConstants.NGSI_LD_NAME)) {
+					name = getValue((List<Map<String, Object>>) value);
+				} else {
+					List<Map<String, Object>> subLevelArray = (List<Map<String, Object>>) value;
+					Map<String, Object> objValue = subLevelArray.get(0);
+					if (objValue.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+						String valueType = ((List<String>) objValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+						if (valueType.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
+							properties.add(parseProperty(subLevelArray, propKey));
+						} else if (valueType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+							relationships.add(parseRelationship(subLevelArray, propKey));
+						}
+					} else {
+						throw new JsonParseException(
+								"cannot determine type of sub attribute. please provide a valid type");
+					}
+				}
+
 			}
-		} catch (JsonProcessingException e) {
-			throw new ResponseException(ErrorType.InvalidRequest, "Failed to process json");
-		} catch (IOException e) {
-			throw new ResponseException(ErrorType.BadRequestData, e.getLocalizedMessage());
+			GeoPropertyEntry geoPropEntry = new GeoPropertyEntry(dataSetId, geoValueStr, geoValue);
+			geoPropEntry.setProperties(properties);
+			geoPropEntry.setRelationships(relationships);
+			geoPropEntry.setCreatedAt(createdAt);
+			geoPropEntry.setObservedAt(observedAt);
+			geoPropEntry.setModifiedAt(modifiedAt);
+			geoPropEntry.setName(name);
+			entries.put(geoPropEntry.getDataSetId(), geoPropEntry);
 		}
-		return json;
+		prop.setEntries(entries);
+		return prop;
 	}
 
 }
