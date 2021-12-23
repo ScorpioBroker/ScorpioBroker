@@ -1,7 +1,6 @@
-package eu.neclab.ngsildbroker.registry.subscriptionmanager.repository;
+package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,47 +11,43 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
 
-@Repository
-public class SubscriptionInfoDAO extends StorageReaderDAO {
-	private final static Logger logger = LogManager.getLogger(SubscriptionInfoDAO.class);
 
-	public Set<String> getAllIds(String tenantId) throws ResponseException {
-		List<String> tempList = getJDBCTemplate(tenantId).queryForList("SELECT id FROM entity", String.class);
-		return new HashSet<String>(tempList);
-	}
+public abstract class BaseSubscriptionInfoDAO extends StorageReaderDAO implements SubscriptionInfoDAOInterface {
+	private final static Logger logger = LogManager.getLogger(BaseSubscriptionInfoDAO.class);
+
+	
 
 	public Table<String, String, Set<String>> getIds2Type() throws ResponseException {
 		Table<String, String, Set<String>> result = HashBasedTable.create();
-		String sql = "SELECT csource_id, entity_type FROM csourceinformation";
+		String sql = getSQLForTypes();
 
 		for (Map<String, Object> entry : getJDBCTemplate(null).queryForList(sql)) {
-			addToResult(result, AppConstants.INTERNAL_NULL_KEY, entry.get("csource_id").toString(),
-					entry.get("entity_type").toString());
+			addToResult(result, AppConstants.INTERNAL_NULL_KEY, entry.get("id").toString(),
+					entry.get("type").toString());
 		}
 		List<String> tenants = getTenants();
 		for (String tenantId : tenants) {
 			tenantId = getTenant(tenantId);
 			List<Map<String, Object>> temp = getJDBCTemplate(tenantId).queryForList(sql);
 			for (Map<String, Object> entry : temp) {
-				addToResult(result, tenantId, entry.get("csource_id").toString(), entry.get("entity_type").toString());
+				addToResult(result, tenantId, entry.get("id").toString(), entry.get("type").toString());
 			}
 
 		}
 		return result;
 	}
+
+	protected abstract String getSQLForTypes();
 
 	private void addToResult(Table<String, String, Set<String>> result, String key, String id, String type) {
 		Set<String> value = result.get(key, id);
@@ -64,23 +59,6 @@ public class SubscriptionInfoDAO extends StorageReaderDAO {
 		value.add(type);
 	}
 
-	public String getEntity(String entityId, String tenantId) {
-		tenantId = getTenant(tenantId);
-		QueryParams qp = new QueryParams();
-		Map<String, String> entityInfo = new HashMap<String, String>();
-		entityInfo.put(NGSIConstants.JSON_LD_ID, entityId);
-		List<Map<String, String>> temp = new ArrayList<Map<String, String>>();
-		temp.add(entityInfo);
-		qp.setEntities(temp);
-		qp.setTenant(tenantId);
-		try {
-			return super.query(qp).getActualDataString().get(0);
-		} catch (ResponseException e) {
-			logger.info("Failed to get info for entity with id " + entityId);
-			logger.debug(e);
-			return null;
-		}
-	}
 
 	public List<String> getStoredSubscriptions() {
 		List<String> tenants;

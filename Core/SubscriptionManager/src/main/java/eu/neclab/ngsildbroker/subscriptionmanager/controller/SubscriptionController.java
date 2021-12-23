@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionControllerFunctions;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 
@@ -40,12 +41,12 @@ public class SubscriptionController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	@PostMapping("/")
+	@PostMapping
 	public ResponseEntity<String> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
-		return SubscriptionControllerFunctions.subscribeRest(manager, request, payload, logger);
+		return SubscriptionControllerFunctions.subscribeRest(manager, request, payload, AppConstants.SUBSCRIPTIONS_URL, logger);
 	}
 
-	@GetMapping("/")
+	@GetMapping
 	public ResponseEntity<String> getAllSubscriptions(HttpServletRequest request,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
 			@RequestParam(required = false, name = "offset", defaultValue = "0") int offset,

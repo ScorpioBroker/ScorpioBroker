@@ -16,7 +16,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
 
 @Service
-@ConditionalOnProperty(name = "${scorpio.history.autorecording}", matchIfMissing = true, havingValue = "true")
+@ConditionalOnProperty(name = "scorpio.history.autorecording", matchIfMissing = true, havingValue = "active")
 public class KafkaService {
 
 	private static Logger logger = LoggerFactory.getLogger(KafkaService.class);

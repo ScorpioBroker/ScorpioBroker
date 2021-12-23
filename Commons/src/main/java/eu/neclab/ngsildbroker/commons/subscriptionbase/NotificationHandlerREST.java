@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registry.subscriptionmanager.notification;
+package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.net.URI;
 import java.util.Map;
@@ -11,7 +11,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.SubscriptionService;
 import reactor.core.publisher.Mono;
 
 public class NotificationHandlerREST extends BaseNotificationHandler {
@@ -20,7 +19,7 @@ public class NotificationHandlerREST extends BaseNotificationHandler {
 	
 	private WebClient webClient;
 
-	public NotificationHandlerREST(SubscriptionService subscriptionManagerService,
+	public NotificationHandlerREST(BaseSubscriptionService subscriptionManagerService,
 			ObjectMapper objectMapper, WebClient webClient) {
 		super(subscriptionManagerService, objectMapper);
 		this.webClient = webClient;

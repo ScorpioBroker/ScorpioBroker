@@ -55,12 +55,6 @@ public class QueryService implements EntityQueryService{
 
 //	public static final Gson GSON = DataSerializer.GSON;
 
-	@Value("${entity.topic}")
-	String ENTITY_TOPIC;
-	@Value("${entity.keyValues.topic}")
-	String KVENTITY_TOPIC;
-	@Value("${entity.withoutSysAttrs.topic}")
-	String ENTITY_WITHOUT_SYSATTRS_TOPIC;
 	@Value("${atcontext.url}")
 	String atContextServerUrl;
 

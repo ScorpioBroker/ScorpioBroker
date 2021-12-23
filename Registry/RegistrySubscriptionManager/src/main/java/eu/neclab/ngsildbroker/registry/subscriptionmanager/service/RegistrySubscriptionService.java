@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
 import java.util.Set;
 
@@ -12,9 +12,10 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterf
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
 @Service
-public class SubscriptionService extends BaseSubscriptionService {
+public class RegistrySubscriptionService extends BaseSubscriptionService {
+
 	@Autowired
-	@Qualifier("subdao")
+	@Qualifier("regsubdao")
 	SubscriptionInfoDAOInterface subService;
 	
 	@Override
@@ -24,6 +25,8 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	protected Set<String> getTypesFromEntry(BaseRequest createRequest) {
-		return EntityTools.getTypesFromEntity(createRequest);
+		return EntityTools.getRegisteredTypes(createRequest.getFinalPayload());
 	}
+
+
 }

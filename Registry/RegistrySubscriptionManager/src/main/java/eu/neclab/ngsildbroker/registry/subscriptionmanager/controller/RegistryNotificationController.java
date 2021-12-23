@@ -17,11 +17,11 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.SubscriptionService;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 
 @RestController
-@RequestMapping("/remotenotify")
-public class NotificationController {
+@RequestMapping("/csourceremotenotify")
+public class RegistryNotificationController {
 
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	String coreContext;
@@ -32,7 +32,7 @@ public class NotificationController {
 	}
 
 	@Autowired
-	SubscriptionService subscriptionManager;
+	RegistrySubscriptionService subscriptionManager;
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@RequestMapping(method = RequestMethod.POST, value = "/{id}")

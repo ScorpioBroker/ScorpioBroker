@@ -87,6 +87,7 @@ public class AppConstants {
 	public static final int REGISTRY_ENDPOINT = 2;
 	public static final int SUBSCRIPTION_ENDPOINT = 3;
 	public static final int NOTIFICATION_ENDPOINT = 4;
+	public static final String CSOURCE_SUBSCRIPTIONS_URL = "/ngsi-ld/v1/csourceSubscriptions/";
 	
 
 }

@@ -20,17 +20,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionControllerFunctions;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.SubscriptionService;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 
 @RestController
-@RequestMapping("/ngsi-ld/v1/csourceSubscriptions/")
-public class SubscriptionController {
+@RequestMapping("/ngsi-ld/v1/csourceSubscriptions")
+public class RegistrySubscriptionController {
 
-	private final static Logger logger = LoggerFactory.getLogger(SubscriptionController.class);
+	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionController.class);
 
 	@Autowired
-	SubscriptionService manager;
+	RegistrySubscriptionService manager;
 
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	String coreContext;
@@ -40,12 +41,12 @@ public class SubscriptionController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	@PostMapping("/")
+	@PostMapping
 	public ResponseEntity<String> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
-		return SubscriptionControllerFunctions.subscribeRest(manager, request, payload, logger);
+		return SubscriptionControllerFunctions.subscribeRest(manager, request, payload, AppConstants.CSOURCE_SUBSCRIPTIONS_URL, logger);
 	}
 
-	@GetMapping("/")
+	@GetMapping
 	public ResponseEntity<String> getAllSubscriptions(HttpServletRequest request,
 			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
 			@RequestParam(required = false, name = "offset", defaultValue = "0") int offset,

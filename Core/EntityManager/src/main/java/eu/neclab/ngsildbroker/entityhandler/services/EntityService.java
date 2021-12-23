@@ -41,8 +41,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 @EnableKafka
 public class EntityService implements EntryCRUDService {
 
-	@Value("${entity.topic}")
-	String ENTITY_TOPIC;
+
 	@Value("${entity.create.topic}")
 	String ENTITY_CREATE_TOPIC;
 	@Value("${entity.append.topic}")
@@ -207,7 +206,6 @@ public class EntityService implements EntryCRUDService {
 		}
 		sendToKafka(ENTITY_APPEND_TOPIC, request);
 
-
 		logger.trace("appendMessage() :: completed");
 		return request.getAppendResult();
 	}
@@ -256,10 +254,14 @@ public class EntityService implements EntryCRUDService {
 			this.entityIds.remove(tenantId, entityId);
 
 		}
+		Map<String, Object> oldEntity = (Map<String, Object>)JsonUtils.fromString(entityInfoDAO.getEntity(entityId, tenantId));
+
 		EntityRequest request = new DeleteEntityRequest(entityId, headers);
 		if (directDB) {
 			pushToDB(request);
 		}
+		request.setRequestPayload(oldEntity);
+		request.setFinalPayload(oldEntity);
 		sendToKafka(ENTITY_DELETE_TOPIC, request);
 		logger.trace("deleteEntity() :: completed");
 		return true;

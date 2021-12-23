@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
+import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
@@ -180,6 +181,11 @@ public abstract class EntityTools {
 		Object value = tmp.get(NGSIConstants.JSON_LD_VALUE);
 		result.setSingleEntry(new PropertyEntry(null, value));
 		return result;
+	}
+
+	public static Set<String> getTypesFromEntity(BaseRequest createRequest) {
+		List<String> temp = (List<String>) createRequest.getFinalPayload().get(NGSIConstants.JSON_LD_TYPE);
+		return new HashSet<String>(temp);
 	}
 
 }

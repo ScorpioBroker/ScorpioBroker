@@ -13,11 +13,11 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
 
 @Service
-public class SubscriptionKafkaService {
+public class RegistrySubscriptionKafkaService {
 
-	private final static Logger logger = LoggerFactory.getLogger(SubscriptionService.class);
+	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionService.class);
 	@Autowired
-	SubscriptionService subscriptionService;
+	RegistrySubscriptionService subscriptionService;
 
 	@KafkaListener(topics = "${csource.append.topic}")
 	public void handleAppend(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,

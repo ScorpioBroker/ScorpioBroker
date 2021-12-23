@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_CONTAINS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_DISJOINT;
@@ -70,16 +70,12 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-//import eu.neclab.ngsildbroker.registry.subscriptionmanager.notification.IntervalNotificationHandler;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.notification.NotificationHandlerMQTT;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.notification.NotificationHandlerREST;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.SubscriptionInfoDAO;
 import reactor.core.publisher.Mono;
 
-@Service
-public class SubscriptionService implements SubscriptionCRUDService {
 
-	private final static Logger logger = LoggerFactory.getLogger(SubscriptionInfoDAO.class);
+public abstract class BaseSubscriptionService implements SubscriptionCRUDService {
+
+	private final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionService.class);
 
 	private final String ALL_TYPES_TYPE = "()";
 
@@ -101,8 +97,10 @@ public class SubscriptionService implements SubscriptionCRUDService {
 	@Qualifier("subwebclient")
 	WebClient webClient;
 
-	@Autowired
-	SubscriptionInfoDAO subscriptionInfoDAO;
+	
+	SubscriptionInfoDAOInterface subscriptionInfoDAO;
+	
+	
 
 	@Value("${subscription.directdb:true}")
 	boolean directDB;
@@ -122,18 +120,16 @@ public class SubscriptionService implements SubscriptionCRUDService {
 	@Value("${subscriptions.topic:SUBSCRIPTIONS}")
 	protected String subscriptionTopic;
 
-	// @Value("${notification.port}")
-	// String REMOTE_NOTIFICATION_PORT;
 
 	@PostConstruct
 	private void setup() {
+		subscriptionInfoDAO = getSubscriptionInfoDao();
 		try {
 			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
 		} catch (ResponseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 		notificationHandlerREST = new NotificationHandlerREST(this, objectMapper, webClient);
 		// intervalHandlerREST = new
 		// IntervalNotificationHandler(notificationHandlerREST, null, null, null);
@@ -144,6 +140,8 @@ public class SubscriptionService implements SubscriptionCRUDService {
 		loadStoredSubscriptions();
 
 	}
+
+	protected abstract SubscriptionInfoDAOInterface getSubscriptionInfoDao();
 
 	@PreDestroy
 	private void deconstructor() {
@@ -393,14 +391,15 @@ public class SubscriptionService implements SubscriptionCRUDService {
 	public void checkSubscriptionsWithAbsolute(BaseRequest createRequest, long messageTime, int messageType) {
 
 		String id = createRequest.getId();
+		Set<String> types = getTypesFromEntry(createRequest); 
 		synchronized (this.tenant2Ids2Type) {
 			this.tenant2Ids2Type.put(createRequest.getTenant(), id,
-					EntityTools.getRegisteredTypes(createRequest.getFinalPayload()));
+					types);
 		}
 		String tenantId = createRequest.getId();
 		Map<String, Object> create = createRequest.getFinalPayload();
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
-		Set<String> types = EntityTools.getRegisteredTypes(create);
+		
 		List<SubscriptionRequest> subs = getAllTypeBaseRequests(tenantId, types);
 		if (subs != null) {
 			for (SubscriptionRequest sub : subs) {
@@ -425,6 +424,8 @@ public class SubscriptionService implements SubscriptionCRUDService {
 		checkSubscriptions(subsToCheck, createRequest, messageType, messageTime);
 
 	}
+
+	protected abstract Set<String> getTypesFromEntry(BaseRequest createRequest);
 
 	private void addAllTypeSubscriptions(ArrayListMultimap<String, String> entityOpHeaders,
 			List<SubscriptionRequest> subsToCheck) {
@@ -746,7 +747,12 @@ public class SubscriptionService implements SubscriptionCRUDService {
 
 	private Set<String> getTypesForId(String tenantId, String entityId) {
 		synchronized (this.tenant2Ids2Type) {
-			return this.tenant2Ids2Type.get(tenantId, entityId);
+			
+			Set<String> result = this.tenant2Ids2Type.get(tenantId, entityId);
+			if(result == null) {
+				System.err.println();
+			}
+			return result;
 		}
 	}
 

@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.notification;
+package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -15,14 +15,14 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
+
 
 public class NotificationHandlerMQTT extends BaseNotificationHandler {
 
 	private final String CLIENT_ID = "ScorpioMqttNotifier";
 	private HashMap<URI, MqttClient> uri2client = new HashMap<URI, MqttClient>();
 
-	public NotificationHandlerMQTT(SubscriptionService subscriptionManagerService, ObjectMapper objectMapper) {
+	public NotificationHandlerMQTT(BaseSubscriptionService subscriptionManagerService, ObjectMapper objectMapper) {
 		super(subscriptionManagerService, objectMapper);
 
 	}

@@ -1,16 +1,16 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.Message;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
-import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
 
 @Service
 public class SubscriptionKafkaService {
@@ -18,56 +18,58 @@ public class SubscriptionKafkaService {
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionService.class);
 	@Autowired
 	SubscriptionService subscriptionService;
-	
+
 	@KafkaListener(topics = "${entity.append.topic}")
-	public void handleAppend(Message<String> message) {
-		String payload = new String(message.getPayload());
-		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
-		logger.debug("Append got called: " + payload);
-		logger.debug(key);
-		subscriptionService.checkSubscriptionsWithAppend(DataSerializer.getEntityRequest(new String(message.getPayload())),
-				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
+	public void handleAppend(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+		logger.debug("Append got called: " + key);
+		subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
 	}
 
 	@KafkaListener(topics = "${entity.update.topic}")
-	public void handleUpdate(Message<String> message) {
-		String payload = new String(message.getPayload());
-		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
-		logger.debug("update got called: " + payload);
-		logger.debug(key);
-		EntityRequest updateRequest = DataSerializer.getEntityRequest(payload);
-		subscriptionService.checkSubscriptionsWithUpdate(updateRequest, (long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
+	public void handleUpdate(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+		logger.debug("Update got called: " + key);
+		subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
 	}
-	
+
 	@KafkaListener(topics = "${entity.delete.topic}")
-	public void handleDelete(Message<String> message) throws Exception {
-		//EntityRequest req = DataSerializer.getEntityRequest(new String(message.getPayload()));
-		//this.tenant2Ids2Type.remove(req.getTenant(), req.getId());
-		//nothing to do here 
-	}
-	@KafkaListener(topics = "${entity.create.topic}")
-	public void handleCreate(Message<String> message) {
-		String key = (String) message.getHeaders().get(KafkaHeaders.RECEIVED_MESSAGE_KEY);
+	public void handleDelete(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp, @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
 		logger.debug("Create got called: " + key);
-		subscriptionService.checkSubscriptionsWithCreate(DataSerializer.getEntityRequest(new String(message.getPayload())),
-				(long) message.getHeaders().get(KafkaHeaders.RECEIVED_TIMESTAMP));
+		System.err.println(key + " : " + topic + " : ");
+		subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp, AppConstants.OPERATION_DELETE_ENTITY);
 	}
-	
-	@KafkaListener(topics = "${csource.create.topic}")
-	public void handleCSourceCreate(Message<String> message) {
-		
+
+	@KafkaListener(topics = "${entity.create.topic}")
+	public void handleCreate(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+		logger.debug("Create got called: " + key);
+		subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp, AppConstants.OPERATION_CREATE_ENTITY);
 	}
-	@KafkaListener(topics = "${csource.append.topic}")
-	public void handleCSourceAppend(Message<String> message) {
-		
-	}
-	@KafkaListener(topics = "${csource.update.topic}")
-	public void handleCSourceUpdate(Message<String> message) {
-		
-	}
-	@KafkaListener(topics = "${csource.delete.topic}")
-	public void handleCSourceDelete(Message<String> message) {
-		
-	}
+
+//	@KafkaListener(topics = "${csource.create.topic}")
+//	public void handleCSourceCreate(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+//			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+//
+//	}
+//
+//	@KafkaListener(topics = "${csource.append.topic}")
+//	public void handleCSourceAppend(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+//			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+//
+//	}
+//
+//	@KafkaListener(topics = "${csource.update.topic}")
+//	public void handleCSourceUpdate(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+//			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+//
+//	}
+//
+//	@KafkaListener(topics = "${csource.delete.topic}")
+//	public void handleCSourceDelete(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+//			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+//
+//	}
 
 }

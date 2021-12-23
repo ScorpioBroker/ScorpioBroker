@@ -42,15 +42,19 @@ public class SubscriptionControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> subscribeRest(SubscriptionCRUDService subscriptionService,
-			HttpServletRequest request, String payload, Logger logger) {
+			HttpServletRequest request, String payload, String baseUrl, Logger logger) {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription = null;
 
 		try {
+			List<Object> linkHeaders = HttpUtils.getAtContext(request);
 			List<Object> context = new ArrayList<Object>();
-			context.addAll(HttpUtils.getAtContext(request));
+			context.addAll(linkHeaders);
+			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
 			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
 			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
+			body = (Map<String, Object>) JsonLdProcessor
+					.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, atContextAllowed).get(0);
 			subscription = expandSubscription(body, request);
 			if (bodyContext instanceof List) {
 				context.addAll((List<Object>) bodyContext);
@@ -62,7 +66,7 @@ public class SubscriptionControllerFunctions {
 			String subId = subscriptionService.subscribe(subRequest);
 
 			logger.trace("subscribeRest() :: completed");
-			return ResponseEntity.created(new URI(AppConstants.SUBSCRIPTIONS_URL + subId)).build();
+			return ResponseEntity.created(new URI(baseUrl + subId)).build();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
@@ -72,11 +76,8 @@ public class SubscriptionControllerFunctions {
 	private static Subscription expandSubscription(Map<String, Object> body, HttpServletRequest request)
 			throws ResponseException {
 		Subscription subscription = new Subscription();
-		List<Object> linkHeaders = HttpUtils.getAtContext(request);
-		boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
-		Map<String, Object> rawSub = (Map<String, Object>) JsonLdProcessor
-				.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, atContextAllowed).get(0);
-		for (Entry<String, Object> mapEntry : rawSub.entrySet()) {
+
+		for (Entry<String, Object> mapEntry : body.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
 
@@ -86,6 +87,7 @@ public class SubscriptionControllerFunctions {
 				break;
 			case NGSIConstants.JSON_LD_TYPE:
 				subscription.setType(((List<String>) mapValue).get(0));
+				break;
 			case NGSIConstants.NGSI_LD_ENTITIES:
 				List<EntityInfo> entities = new ArrayList<EntityInfo>();
 				List<Map<String, Object>> list = (List<Map<String, Object>>) mapValue;
@@ -302,8 +304,10 @@ public class SubscriptionControllerFunctions {
 	public static ResponseEntity<String> getAllSubscriptions(SubscriptionCRUDService subscriptionService,
 			HttpServletRequest request, int limit, int offset, boolean count, Logger logger) {
 		logger.trace("getAllSubscriptions() :: started");
+		if(limit < 0 || offset < 0) {
+			return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "offset and limit can not smaller than 0"));
+		}
 		List<SubscriptionRequest> result = null;
-
 		result = subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request));
 		int toIndex = offset + limit;
 		ArrayList<Object> additionalLinks = new ArrayList<Object>();
@@ -390,8 +394,9 @@ public class SubscriptionControllerFunctions {
 			Validator.subscriptionValidation(payload);
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
-					opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed).get(0);
+			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
+					JsonUtils.fromString(payload), opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed)
+					.get(0);
 			Subscription subscription = expandSubscription(resolved, request);
 			if (subscription.getId() == null) {
 				subscription.setId(id);

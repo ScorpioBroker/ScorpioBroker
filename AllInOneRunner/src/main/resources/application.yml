@@ -38,20 +38,9 @@ entity:
   create:
     topic: ENTITY_CREATE
   delete:
-    topic: ENTITY_DELETE
+    topic: ENTITY_DELETE11111
   update:
     topic: ENTITY_UPDATE
-  index:
-    topic: ENTITY_INDEX
-  keyValues:
-    topic: KVENTITY
-  stopListenerIfDbFails: false
-  temporal:
-    stopListenerIfDbFails: false
-    topic: TEMPORALENTITY
-  topic: ENTITY
-  withoutSysAttrs:
-    topic: ENTITY_WITHOUT_SYSATTRS
 csource:
   create:
     topic: REGISTRY_CREATE
@@ -192,4 +181,4 @@ ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
 scorpio:
   history:
-    autorecording: false
+    autorecording: notactive
