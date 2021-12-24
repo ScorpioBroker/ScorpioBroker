@@ -480,6 +480,9 @@ public final class HttpUtils {
 
 	public static MultiValueMap<String, String> getQueryParamMap(HttpServletRequest request) {
 		Map<String, String[]> paramMap = request.getParameterMap();
+		if (paramMap == null) {
+			return new LinkedMultiValueMap<String, String>();
+		}
 		LinkedMultiValueMap<String, String> result = new LinkedMultiValueMap<String, String>(paramMap.size());
 		for (Entry<String, String[]> entry : paramMap.entrySet()) {
 			result.addAll(entry.getKey(), Arrays.asList(entry.getValue()));

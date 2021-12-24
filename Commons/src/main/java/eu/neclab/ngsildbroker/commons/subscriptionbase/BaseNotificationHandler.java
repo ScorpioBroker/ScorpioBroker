@@ -51,7 +51,6 @@ import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
-
 abstract class BaseNotificationHandler implements NotificationHandler {
 
 	protected abstract void sendReply(ResponseEntity<String> reply, URI callback, Map<String, String> clientSettings)
@@ -407,13 +406,15 @@ abstract class BaseNotificationHandler implements NotificationHandler {
 			{
 				acceptHeaderList.add(acceptHeader);
 			}
+			ArrayList<String> emptyList = new ArrayList<String>();
 
 			@Override
 			public Enumeration<String> getHeaders(String name) {
 				if (HttpHeaders.ACCEPT.equals(name)) {
 					return Collections.enumeration(acceptHeaderList);
 				}
-				return null;
+
+				return Collections.enumeration(emptyList);
 			}
 
 			@Override

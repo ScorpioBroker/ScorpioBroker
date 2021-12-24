@@ -41,8 +41,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 @SuppressWarnings("unchecked")
 public class JsonLdApi {
 
-
-
 	JsonLdOptions opts;
 	Object value = null;
 	Context context = null;
@@ -237,11 +235,18 @@ public class JsonLdApi {
 							compactedValue = types;
 						}
 					}
-					if (JsonLdConsts.TYPE.equals(expandedProperty)
-							&& ((List) expandedValue).contains(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
+					if (JsonLdConsts.TYPE.equals(expandedProperty)) {
+						if (expandedValue instanceof String
+								&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(expandedValue)) {
+							isGeoProperty = true;
+						}
+						if (expandedValue instanceof List
+								&& ((List) expandedValue).contains(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
+							isGeoProperty = true;
+						}
 						// NGSI Comment: This is very much relying on the fact that @type comes before
 						// hasValue
-						isGeoProperty = true;
+
 					}
 					// 7.1.4)
 					result.put(alias, compactedValue);
@@ -546,7 +551,6 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there was an error during expansion.
 	 */
 
-	
 	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType,
 			boolean atContextAllowed) throws JsonLdError, ResponseException {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
