@@ -41,6 +41,7 @@ import com.github.jsonldjava.utils.JsonUtils;
  * @author Tristan
  *
  */
+@SuppressWarnings("unchecked")
 public class RDFDataset extends LinkedHashMap<String, Object> {
     private static final long serialVersionUID = 2796344994239879165L;
 

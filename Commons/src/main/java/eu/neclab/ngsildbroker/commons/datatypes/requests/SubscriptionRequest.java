@@ -13,7 +13,7 @@ public class SubscriptionRequest extends BaseRequest{
 
 	public SubscriptionRequest(Subscription subscription, List<Object> context2,
 			ArrayListMultimap<String, String> headers) {
-		super(headers, subscription.getId(), null);
+		super(headers, subscription.getId(), null, -1);
 		this.context = context2;
 		this.subscription = subscription;
 	}

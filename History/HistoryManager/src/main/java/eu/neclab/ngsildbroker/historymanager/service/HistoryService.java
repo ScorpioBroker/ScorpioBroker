@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.el.MethodNotFoundException;
 
@@ -56,11 +59,14 @@ public class HistoryService implements EntryCRUDService {
 	@Value("${scorpio.directdb:true}")
 	boolean directDB;
 
-	@Value("${entity.temporal.topic:TEMPORALENTITY}")
-	private String TEMP_ENTITY_TOPIC;
+	@Value("${scorpio.topics.temporal}")
+	private String TEMP_TOPIC;
 
 	@Value("${scorpio.history.tokafka:false}")
 	private boolean historyToKafkaEnabled;
+
+	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
+			new LinkedBlockingQueue<Runnable>());
 
 	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
@@ -77,7 +83,13 @@ public class HistoryService implements EntryCRUDService {
 
 	void pushToKafka(BaseRequest request) throws ResponseException {
 		if (historyToKafkaEnabled) {
-			kafkaTemplate.send(TEMP_ENTITY_TOPIC, request.getId(), request);
+			kafkaExecutor.execute(new Runnable() {
+				@Override
+				public void run() {
+					kafkaTemplate.send(TEMP_TOPIC, request.getId(), new BaseRequest(request));
+
+				}
+			});
 		}
 	}
 

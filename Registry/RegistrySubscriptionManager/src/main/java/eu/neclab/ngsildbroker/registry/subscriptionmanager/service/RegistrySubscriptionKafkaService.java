@@ -19,25 +19,26 @@ public class RegistrySubscriptionKafkaService {
 	@Autowired
 	RegistrySubscriptionService subscriptionService;
 
-	@KafkaListener(topics = "${csource.append.topic}")
-	public void handleAppend(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+	@KafkaListener(topics = "${scorpio.topics.registry}")
+	public void handleCsource(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-		logger.debug("Append got called: " + key);
-		subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
+		switch (message.getRequestType()) {
+		case AppConstants.APPEND_REQUEST:
+			logger.debug("Append got called: " + key);
+			subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
+			break;
+		case AppConstants.CREATE_REQUEST:
+			logger.debug("Create got called: " + key);
+			subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
+					AppConstants.OPERATION_CREATE_ENTITY);
+			break;
+		case AppConstants.DELETE_REQUEST:
+			logger.debug("Delete got called: " + key);
+			subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
+					AppConstants.OPERATION_DELETE_ENTITY);
+			break;
+		default:
+			break;
+		}
 	}
-
-	@KafkaListener(topics = "${csource.delete.topic}")
-	public void handleDelete(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
-			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-		logger.debug("Create got called: " + key);
-		subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp, AppConstants.OPERATION_DELETE_ENTITY);
-	}
-
-	@KafkaListener(topics = "${csource.create.topic}")
-	public void handleCreate(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
-			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-		logger.debug("Create got called: " + key);
-		subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp, AppConstants.OPERATION_CREATE_ENTITY);
-	}
-
 }

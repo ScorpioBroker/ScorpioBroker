@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.github.jsonldjava.utils.Obj;
 
+@SuppressWarnings("unchecked")
 public class JsonLdUtils {
 
     private static final int MAX_CONTEXT_URLS = 10;

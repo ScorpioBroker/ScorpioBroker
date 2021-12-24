@@ -7,6 +7,8 @@ import java.util.Map.Entry;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -19,7 +21,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 
 	public UpdateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			String entityId, String resolvedAttrId, String instanceId, String oldEntry) throws ResponseException {
-		super(headers, resolved, entityId);
+		super(headers, resolved, entityId, AppConstants.UPDATE_REQUEST);
 		this.oldEntry = oldEntry;
 		this.resolvedAttrId = resolvedAttrId;
 		this.instanceId = instanceId;
@@ -29,7 +31,8 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	@SuppressWarnings("unchecked")
 	public UpdateHistoryEntityRequest(BaseRequest entityRequest) throws IOException {
 		setHeaders(entityRequest.getHeaders());
-		Map<String, Object> jsonObject = entityRequest.getRequestPayload();//(Map<String, Object>) JsonUtils.fromString(entityRequest.getWithSysAttrs());
+		Map<String, Object> jsonObject = entityRequest.getRequestPayload();// (Map<String, Object>)
+																			// JsonUtils.fromString(entityRequest.getWithSysAttrs());
 		for (Entry<String, Object> entry : jsonObject.entrySet()) {
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
@@ -43,7 +46,8 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, true);
-					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement), false);
+					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload,
+							JsonUtils.toPrettyString(jsonElement), false);
 				}
 			}
 		}
@@ -81,8 +85,8 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
 				for (Map<String, Object> jsonElement : valueArray) {
 					if (jsonElement.get(NGSIConstants.NGSI_LD_INSTANCE_ID) != null) {
-						if (!((List<Map<String, Object>>)jsonElement.get(NGSIConstants.NGSI_LD_INSTANCE_ID)).get(0).get(NGSIConstants.JSON_LD_ID)
-								.equals(instanceId)) {
+						if (!((List<Map<String, Object>>) jsonElement.get(NGSIConstants.NGSI_LD_INSTANCE_ID)).get(0)
+								.get(NGSIConstants.JSON_LD_ID).equals(instanceId)) {
 							throw new ResponseException(ErrorType.InvalidRequest,
 									"instanceId in payload and in URL must be the same");
 						}
@@ -96,9 +100,10 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, now);
 					try {
-						storeEntry(getId(), null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement), false);
+						storeEntry(getId(), null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement),
+								false);
 					} catch (IOException e) {
-						//Should never happen
+						// Should never happen
 					}
 				}
 			}

@@ -16,6 +16,7 @@ import java.util.Map;
 
 import com.github.jsonldjava.utils.Obj;
 
+@SuppressWarnings("unchecked")
 class NormalizeUtils {
 
     private final UniqueNamer namer;

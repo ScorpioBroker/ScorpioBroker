@@ -3,6 +3,7 @@ package com.github.jsonldjava.utils;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@SuppressWarnings("unchecked")
 public class Obj {
 
     /**

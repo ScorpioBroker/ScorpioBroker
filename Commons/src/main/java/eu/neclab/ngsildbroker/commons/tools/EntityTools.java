@@ -62,7 +62,7 @@ public abstract class EntityTools {
 		if (attrNames == null || attrNames.isEmpty()) {
 			return fullEntry;
 		}
-		Set<String> allNames = fullEntry.keySet();
+		Set<String> allNames = new HashSet<String>(fullEntry.keySet());
 		allNames.remove(NGSIConstants.JSON_LD_ID);
 		allNames.remove(NGSIConstants.JSON_LD_TYPE);
 		allNames.removeAll(attrNames);
@@ -86,7 +86,7 @@ public abstract class EntityTools {
 	}
 
 	public static String generateUniqueRegId(Map<String, Object> resolved) {
-		String key = "urn:ngsi-ld:csourceregistration:" +resolved.hashCode();
+		String key = "urn:ngsi-ld:csourceregistration:" + resolved.hashCode();
 		return key;
 	}
 
@@ -138,6 +138,7 @@ public abstract class EntityTools {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static Set<String> getTypesFromEntity(BaseRequest createRequest) {
 		List<String> temp = (List<String>) createRequest.getFinalPayload().get(NGSIConstants.JSON_LD_TYPE);
 		return new HashSet<String>(temp);

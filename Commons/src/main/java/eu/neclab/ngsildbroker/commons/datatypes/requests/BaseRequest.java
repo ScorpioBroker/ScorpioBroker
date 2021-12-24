@@ -17,16 +17,18 @@ public class BaseRequest {
 	private String id;
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
+	private int requestType;
 
 	public BaseRequest() {
 
 	}
 
-	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload) {
+	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload, int requestType) {
 		super();
 		this.headers = headers;
 		this.id = id;
 		this.requestPayload = requestPayload;
+		this.requestType = requestType;
 	}
 
 	public BaseRequest(BaseRequest request) {
@@ -34,6 +36,15 @@ public class BaseRequest {
 		this.headers = request.headers;
 		this.requestPayload = request.requestPayload;
 		this.finalPayload = request.finalPayload;
+		this.requestType = request.requestType;
+	}
+
+	public int getRequestType() {
+		return requestType;
+	}
+
+	public void setRequestType(int requestType) {
+		this.requestType = requestType;
 	}
 
 	public ArrayListMultimap<String, String> getHeaders() {

@@ -18,58 +18,64 @@ public class SubscriptionKafkaService {
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionService.class);
 	@Autowired
 	SubscriptionService subscriptionService;
-
-	@KafkaListener(topics = "${entity.append.topic}")
-	public void handleAppend(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+	
+	@KafkaListener(topics = "${scorpio.topics.entity}")
+	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-		logger.debug("Append got called: " + key);
-		subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
+		switch (message.getRequestType()) {
+		case AppConstants.APPEND_REQUEST:
+			logger.debug("Append got called: " + key);
+			subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
+			break;
+		case AppConstants.CREATE_REQUEST:
+			logger.debug("Create got called: " + key);
+			subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
+					AppConstants.OPERATION_CREATE_ENTITY);
+			break;
+		case AppConstants.UPDATE_REQUEST:
+			logger.debug("Update got called: " + key);
+			subscriptionService.checkSubscriptionsWithDelta(message, timeStamp,
+					AppConstants.OPERATION_UPDATE_ENTITY);
+			break;
+		case AppConstants.DELETE_REQUEST:
+			logger.debug("Delete got called: " + key);
+			subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
+					AppConstants.OPERATION_DELETE_ENTITY);
+			break;
+		default:
+			break;
+		}
 	}
 
-	@KafkaListener(topics = "${entity.update.topic}")
-	public void handleUpdate(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+	@KafkaListener(topics = "${scorpio.topics.registry}")
+	public void handleCSource(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-		logger.debug("Update got called: " + key);
-		subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
+		switch (message.getRequestType()) {
+		case AppConstants.APPEND_REQUEST:
+			logger.debug("Append registry got called: " + key);
+			//subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
+			break;
+		case AppConstants.CREATE_REQUEST:
+			logger.debug("Create registry got called: " + key);
+			//subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
+			//		AppConstants.OPERATION_CREATE_ENTITY);
+			break;
+		case AppConstants.UPDATE_REQUEST:
+			logger.debug("Update registry got called: " + key);
+			//subscriptionService.checkSubscriptionsWithDelta(message, timeStamp,
+			//		AppConstants.OPERATION_UPDATE_ENTITY);
+			break;
+		case AppConstants.DELETE_REQUEST:
+			logger.debug("Delete registry got called: " + key);
+			//subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
+			//		AppConstants.OPERATION_DELETE_ENTITY);
+			break;
+		default:
+			break;
+		}
 	}
 
-	@KafkaListener(topics = "${entity.delete.topic}")
-	public void handleDelete(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
-			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp, @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
-		logger.debug("Create got called: " + key);
-		System.err.println(key + " : " + topic + " : ");
-		subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp, AppConstants.OPERATION_DELETE_ENTITY);
-	}
 
-	@KafkaListener(topics = "${entity.create.topic}")
-	public void handleCreate(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
-			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-		logger.debug("Create got called: " + key);
-		subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp, AppConstants.OPERATION_CREATE_ENTITY);
-	}
 
-//	@KafkaListener(topics = "${csource.create.topic}")
-//	public void handleCSourceCreate(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
-//			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-//
-//	}
-//
-//	@KafkaListener(topics = "${csource.append.topic}")
-//	public void handleCSourceAppend(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
-//			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-//
-//	}
-//
-//	@KafkaListener(topics = "${csource.update.topic}")
-//	public void handleCSourceUpdate(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
-//			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-//
-//	}
-//
-//	@KafkaListener(topics = "${csource.delete.topic}")
-//	public void handleCSourceDelete(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
-//			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-//
-//	}
 
 }

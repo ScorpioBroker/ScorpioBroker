@@ -5,6 +5,9 @@ import java.sql.SQLTransientConnectionException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 
@@ -42,16 +45,10 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 public class EntityService implements EntryCRUDService {
 
 
-	@Value("${entity.create.topic}")
-	String ENTITY_CREATE_TOPIC;
-	@Value("${entity.append.topic}")
-	String ENTITY_APPEND_TOPIC;
-	@Value("${entity.update.topic}")
-	String ENTITY_UPDATE_TOPIC;
-	@Value("${entity.delete.topic}")
-	String ENTITY_DELETE_TOPIC;
-
-	boolean directDB = true;
+	@Value("${scorpio.topics.entity}")
+	private String ENTITY_TOPIC;
+	@Value("${scorpio.directDB}")
+	boolean directDB;
 	public static boolean checkEntity = false;
 	@Autowired
 	@Qualifier("emdao")
@@ -62,12 +59,16 @@ public class EntityService implements EntryCRUDService {
 
 	@Autowired
 	KafkaTemplate<String, Object> kafkaTemplate;
+	
+	
+	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1,1,1,TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
 	private ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
-
+	
+	
 	// construct in-memory
 	@PostConstruct
 	private void loadStoredEntitiesDetails() throws ResponseException {
@@ -102,18 +103,20 @@ public class EntityService implements EntryCRUDService {
 			this.entityIds.put(tenantId, request.getId());
 		}
 		pushToDB(request);
-		sendToKafka(ENTITY_CREATE_TOPIC, request);
+		sendToKafka(request);
 
 		logger.debug("createMessage() :: completed");
 		return request.getId();
 	}
 
-	private void sendToKafka(String topic, BaseRequest request) {
-		new Thread() {
+	private void sendToKafka(BaseRequest request) {
+		kafkaExecutor.execute(new Runnable() {
+			@Override
 			public void run() {
-				kafkaTemplate.send(topic, request.getId(), new BaseRequest(request));
-			};
-		}.start();
+				kafkaTemplate.send(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
+				
+			}
+		});
 	}
 
 	private void pushToDB(EntityRequest request) {
@@ -166,10 +169,7 @@ public class EntityService implements EntryCRUDService {
 		// pubilsh merged message
 		// & check if anything is changed.
 		if (request.getStatus()) {
-			if (directDB) {
-				pushToDB(request);
-			}
-			sendToKafka(ENTITY_UPDATE_TOPIC, request);
+			handleRequest(request);
 		}
 		logger.trace("updateMessage() :: completed");
 		return request.getUpdateResult();
@@ -197,14 +197,7 @@ public class EntityService implements EntryCRUDService {
 		// get entity details
 		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantId);
 		AppendEntityRequest request = new AppendEntityRequest(headers, entityId, entityBody, resolved, options);
-		// get entity from ENTITY topic.
-		// pubilsh merged message
-		// check if anything is changed
-
-		if (directDB) {
-			pushToDB(request);
-		}
-		sendToKafka(ENTITY_APPEND_TOPIC, request);
+		handleRequest(request);
 
 		logger.trace("appendMessage() :: completed");
 		return request.getAppendResult();
@@ -238,10 +231,10 @@ public class EntityService implements EntryCRUDService {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId)
 			throws ResponseException, Exception {
 		logger.trace("deleteEntity() :: started");
-		// get message channel for ENTITY_DELETE topic
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
 		}
@@ -262,7 +255,7 @@ public class EntityService implements EntryCRUDService {
 		}
 		request.setRequestPayload(oldEntity);
 		request.setFinalPayload(oldEntity);
-		sendToKafka(ENTITY_DELETE_TOPIC, request);
+		sendToKafka(request);
 		logger.trace("deleteEntity() :: completed");
 		return true;
 	}
@@ -285,10 +278,7 @@ public class EntityService implements EntryCRUDService {
 		// pubilsh merged message
 		// check if anything is changed.
 		if (request.getStatus()) {
-			if (directDB) {
-				pushToDB(request);
-			}
-			sendToKafka(ENTITY_UPDATE_TOPIC, request);
+			handleRequest(request);
 		}
 		logger.trace("partialUpdateEntity() :: completed");
 		return request.getUpdateResult();
@@ -309,12 +299,15 @@ public class EntityService implements EntryCRUDService {
 
 		DeleteAttributeRequest request = new DeleteAttributeRequest(headers, entityId, entityBody, attrId, datasetId,
 				deleteAll);
+		handleRequest(request);
+		logger.trace("deleteAttribute() :: completed");
+		return true;
+	}
+	private void handleRequest(EntityRequest request) {
 		if (directDB) {
 			pushToDB(request);
 		}
-		sendToKafka(ENTITY_DELETE_TOPIC, request);
-		logger.trace("deleteAttribute() :: completed");
-		return true;
+		sendToKafka(request);
 	}
 
 }

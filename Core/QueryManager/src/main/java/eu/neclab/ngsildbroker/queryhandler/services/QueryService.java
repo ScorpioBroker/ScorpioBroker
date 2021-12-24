@@ -73,7 +73,7 @@ public class QueryService implements EntityQueryService{
 	@Autowired
 	CSourceDAO cSourceDAO;
 
-	@Value("${directDbConnection}")
+	@Value("${scorpio.directDB}")
 	boolean directDbConnection;
 
 

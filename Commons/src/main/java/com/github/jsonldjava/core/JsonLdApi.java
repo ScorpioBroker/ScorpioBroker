@@ -2020,6 +2020,10 @@ public class JsonLdApi {
 	}
 
 	private class NodeMapNode extends LinkedHashMap<String, Object> {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1601961618277557081L;
 		public List<UsagesNode> usages = new ArrayList(4);
 
 		public NodeMapNode(String id) {

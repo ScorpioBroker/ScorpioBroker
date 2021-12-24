@@ -9,6 +9,7 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 
 @Service
@@ -18,41 +19,25 @@ public class CSourceKafkaService {
 	@Autowired
 	CSourceService cSourceService;
 	
-	@KafkaListener(topics = "${entity.create.topic}")
-	public void handleEntityCreate(@Payload BaseRequest message,
-			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
-		new Thread() {
-			@Override
-			public void run() {
-			}
-		};
-	}
-	@KafkaListener(topics = "${entity.update.topic}")
-	public void handleEntityUpdate(@Payload BaseRequest message,
-			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
-		new Thread() {
-			@Override
-			public void run() {
-			}
-		};
-	}
-	@KafkaListener(topics = "${entity.append.topic}")
-	public void handleEntityAppend(@Payload BaseRequest message,
-			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
-		new Thread() {
-			@Override
-			public void run() {
-			}
-		};
-	}
-	@KafkaListener(topics = "${entity.delete.topic}")
-	public void handleEntityDelete(@Payload BaseRequest message,
-			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
-		new Thread() {
-			@Override
-			public void run() {
-			}
-		};
+	@KafkaListener(topics = "${scorpio.topics.entity}")
+	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+		switch (message.getRequestType()) {
+		case AppConstants.APPEND_REQUEST:
+			logger.debug("Append got called: " + key);
+			break;
+		case AppConstants.CREATE_REQUEST:
+			logger.debug("Create got called: " + key);
+			break;
+		case AppConstants.UPDATE_REQUEST:
+			logger.debug("Update got called: " + key);
+			break;
+		case AppConstants.DELETE_REQUEST:
+			logger.debug("Delete got called: " + key);
+			break;
+		default:
+			break;
+		}
 	}
 
 //	private CSourceRegistration getCSourceRegistrationFromJson(String payload) throws URISyntaxException, IOException {

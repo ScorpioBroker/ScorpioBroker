@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -57,19 +58,12 @@ public class CSourceService implements EntryCRUDService {
 	@Autowired
 	KafkaTemplate<String, Object> kafkaTemplate;
 
-	@Value("${csource.update.topic}")
-	String CSOURCE_UPDATE_TOPIC;
 
-	@Value("${csource.append.topic}")
-	String CSOURCE_APPEND_TOPIC;
 
-	@Value("${csource.create.topic}")
-	String CSOURCE_CREATE_TOPIC;
-
-	@Value("${csource.delete.topic}")
-	String CSOURCE_DELETE_TOPIC;
-
-	@Value("${csource.directdb:true}")
+	@Value("${scorpio.topics.registry}")
+	String CSOURCE_TOPIC;
+	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1,1,1,TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+	@Value("${scorpio.directDB}")
 	boolean directDB = true;
 
 	@Autowired
@@ -180,7 +174,7 @@ public class CSourceService implements EntryCRUDService {
 			this.csourceTimerTask(headers, request.getFinalPayload());
 		}
 		pushToDB(request);
-		sendToKafka(CSOURCE_APPEND_TOPIC, request);
+		sendToKafka(request);
 		return new AppendResult(entry, request.getFinalPayload());
 	}
 
@@ -209,17 +203,19 @@ public class CSourceService implements EntryCRUDService {
 			this.csourceIds.put(tenantId, request.getId());
 		}
 		pushToDB(request);
-		sendToKafka(CSOURCE_CREATE_TOPIC, request);
+		sendToKafka(request);
 		return request.getId();
 
 	}
 
-	private void sendToKafka(String topic, BaseRequest request) {
-		new Thread() {
+	private void sendToKafka(BaseRequest request) {
+		kafkaExecutor.execute(new Runnable() {
+			@Override
 			public void run() {
-				kafkaTemplate.send(topic, request.getId(), new BaseRequest(request));
-			};
-		}.start();
+				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), new BaseRequest(request));
+				
+			}
+		});
 	}
 
 	@Override
@@ -242,7 +238,7 @@ public class CSourceService implements EntryCRUDService {
 
 		Map<String, Object> registration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId);
-		sendToKafka(CSOURCE_DELETE_TOPIC, requestForSub);
+		sendToKafka(requestForSub);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		pushToDB(request);
 		return true;

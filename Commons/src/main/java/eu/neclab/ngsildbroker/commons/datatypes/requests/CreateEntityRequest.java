@@ -7,6 +7,7 @@ import java.util.Map;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -23,7 +24,7 @@ public class CreateEntityRequest extends EntityRequest {
 
 	public CreateEntityRequest(Map<String, Object> resolved, ArrayListMultimap<String, String> headers)
 			throws ResponseException {
-		super(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved);
+		super(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, AppConstants.CREATE_REQUEST);
 		generatePayloadVersions(resolved);
 	}
 

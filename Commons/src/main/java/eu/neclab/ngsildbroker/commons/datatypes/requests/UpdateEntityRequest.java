@@ -9,6 +9,8 @@ import java.util.Map.Entry;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -19,10 +21,9 @@ public class UpdateEntityRequest extends EntityRequest {
 
 	private UpdateResult updateResult;
 
-
 	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String attrName) throws ResponseException {
-		super(headers, id, resolved);
+		super(headers, id, resolved, AppConstants.UPDATE_REQUEST);
 		Object bodyId = resolved.get(NGSIConstants.JSON_LD_ID);
 		if (bodyId != null && !getId().equals(bodyId)) {
 			throw new ResponseException(ErrorType.BadRequestData,
@@ -276,10 +277,9 @@ public class UpdateEntityRequest extends EntityRequest {
 						// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
 						// present ...
 						entityBody.replace(field, resolved.get(field));
-						updateResult.getAppendedJsonFields().put(field, resolved.get(field));						
+						updateResult.getAppendedJsonFields().put(field, resolved.get(field));
 						updateResult.setStatus(true);
 					}
-
 
 				}
 			}

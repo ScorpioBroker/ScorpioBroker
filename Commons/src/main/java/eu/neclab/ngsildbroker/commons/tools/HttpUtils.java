@@ -294,7 +294,8 @@ public final class HttpUtils {
 	}
 
 	public static ResponseEntity<String> generateReply(HttpServletRequest request, QueryResult qResult,
-			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint) throws ResponseException {
+			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint)
+			throws ResponseException {
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
 		ArrayList<Object> additionalLinks = new ArrayList<Object>();
@@ -442,7 +443,7 @@ public final class HttpUtils {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
 					new RestResponse(ErrorType.InvalidRequest, "Failed to parse provided datetime field.").toJson());
 		}
-		if (e instanceof JsonProcessingException) {
+		if (e instanceof JsonProcessingException || e instanceof JsonLdError) {
 			logger.debug("Exception :: ", e);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")

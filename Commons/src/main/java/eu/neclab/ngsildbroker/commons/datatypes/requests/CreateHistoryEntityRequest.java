@@ -60,7 +60,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 
 	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			boolean fromEntity) throws Exception {
-		super(headers, resolved, (String) resolved.get(NGSIConstants.JSON_LD_ID));
+		super(headers, resolved, (String) resolved.get(NGSIConstants.JSON_LD_ID), AppConstants.CREATE_REQUEST);
 		this.fromEntity = fromEntity;
 		createTemporalEntity(resolved, fromEntity);
 	}

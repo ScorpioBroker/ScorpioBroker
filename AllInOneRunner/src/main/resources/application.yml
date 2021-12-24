@@ -30,30 +30,7 @@ batchoperations:
     update: 1000
     upsert: 1000
     delete: 1000
-defaultLimit: 50
-directDbConnection: false 
-entity:
-  append:
-    topic: ENTITY_APPEND
-  create:
-    topic: ENTITY_CREATE
-  delete:
-    topic: ENTITY_DELETE11111
-  update:
-    topic: ENTITY_UPDATE
-csource:
-  create:
-    topic: REGISTRY_CREATE
-  update:
-    topic: REGISTRY_UPDATE
-  append:
-    topic: REGISTRY_APPEND
-  delete:
-    topic: REGISTRY_DELETE
-submanager:
-  subscription:
-    topic: SUBSCRIPTIONS
-
+defaultLimit: 50 
 kafka:
   replytimeout: 10000
 management:
@@ -180,5 +157,10 @@ logging:
 ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
 scorpio:
+  directDB: true
   history:
     autorecording: notactive
+  topics:
+    entity: ENTITY
+    registry: REGISTRY
+    temporal: TEMPORAL

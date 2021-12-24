@@ -8,6 +8,7 @@ import java.util.Map;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -19,7 +20,7 @@ public class DeleteAttributeRequest extends EntityRequest {
 	public DeleteAttributeRequest(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entityBody, String attrId, String datasetId, String deleteAll)
 			throws ResponseException {
-		super(headers, entityId, entityBody);
+		super(headers, entityId, entityBody, AppConstants.DELETE_REQUEST);
 		generateDeleteAttrib(entityId, entityBody, attrId, datasetId, deleteAll);
 	}
 

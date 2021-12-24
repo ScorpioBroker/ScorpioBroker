@@ -25,6 +25,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
  * @author tristan
  *
  */
+@SuppressWarnings("unchecked")
 public class JsonLdProcessor {
 	private static String coreContextUrl = null;
 	private static Context coreContext = null;

@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -14,7 +15,7 @@ public class AppendCSourceRequest extends CSourceRequest {
 	public AppendCSourceRequest(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> originalRegistration, Map<String, Object> update, String[] options)
 			throws ResponseException {
-		super(headers, registrationId, update);
+		super(headers, registrationId, update, AppConstants.APPEND_REQUEST);
 		setFinalPayload(appendRequest(originalRegistration, update, options));
 	}
 
@@ -23,6 +24,9 @@ public class AppendCSourceRequest extends CSourceRequest {
 		boolean overwrite = true;
 		if (options != null) {
 			for (String option : options) {
+				if (option.isBlank()) {
+					continue;
+				}
 				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)) {
 					overwrite = false;
 				} else {

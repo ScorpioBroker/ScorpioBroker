@@ -25,6 +25,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
  * @author tristan
  *
  */
+@SuppressWarnings("unchecked")
 public class Context extends LinkedHashMap<String, Object> {
 
     private static final long serialVersionUID = 2894534897574805571L;
@@ -147,7 +148,7 @@ public class Context extends LinkedHashMap<String, Object> {
      * @throws JsonLdError
      *             If there is an error parsing the contexts.
      */
-    @SuppressWarnings("unchecked")
+
     public Context parse(Object localContext, List<String> remoteContexts, boolean checkToRemoveNGSILDContext) throws JsonLdError {
         return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext, true);
     }

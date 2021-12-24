@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.AppendResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -20,7 +22,7 @@ public class AppendEntityRequest extends EntityRequest {
 
 	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String[] options) throws ResponseException {
-		super(headers, id, resolved);
+		super(headers, id, resolved, AppConstants.APPEND_REQUEST);
 		generateAppend(resolved, entityBody, options);
 	}
 
@@ -46,12 +48,16 @@ public class AppendEntityRequest extends EntityRequest {
 	 * @return AppendResult
 	 * @throws IOException
 	 */
-	@SuppressWarnings("rawtypes")
+
+	@SuppressWarnings("unchecked")
 	private AppendResult appendFields(Map<String, Object> entityBody, Map<String, Object> resolved, String[] options)
 			throws Exception {
 		boolean overwrite = true;
 		if (options != null && options.length > 0) {
 			for (String option : options) {
+				if (option.isBlank()) {
+					continue;
+				}
 				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)) {
 					overwrite = false;
 				} else {
@@ -116,10 +122,10 @@ public class AppendEntityRequest extends EntityRequest {
 			else {
 
 				if ((entityBody.containsKey(key) && overwrite) || !entityBody.containsKey(key)) {
-					if (value instanceof List && !((List) value).isEmpty()) {
+					if (value instanceof List && !((List<Object>) value).isEmpty()) {
 						// TODO: should we keep the createdAt value if attribute already exists?
 						// (overwrite operation) => if (objectNode.has(key)) ...
-						setTemporalProperties(((List) value).get(0), now, now, false);
+						setTemporalProperties(((List<Object>) value).get(0), now, now, false);
 					}
 					entityBody.put(key, value);
 					appendResult.getAppendedJsonFields().put(key, value);
