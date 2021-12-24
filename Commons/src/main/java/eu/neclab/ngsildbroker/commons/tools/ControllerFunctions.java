@@ -401,7 +401,7 @@ public class ControllerFunctions {
 	}
 
 	public static ResponseEntity<String> createEntry(EntryCRUDService entityService, HttpServletRequest request,
-			String payload, int payloadType, Logger logger) {
+			String payload, int payloadType, String baseUrl, Logger logger) {
 		String result = null;
 		try {
 			logger.trace("create entity :: started");
@@ -413,7 +413,7 @@ public class ControllerFunctions {
 					JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
 			result = entityService.createEntry(HttpUtils.getHeaders(request), resolved);
 			logger.trace("create entity :: completed");
-			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.ENTITES_URL + result)
+			return ResponseEntity.status(HttpStatus.CREATED).header("location", baseUrl + result)
 					.build();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);

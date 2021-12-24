@@ -73,7 +73,7 @@ public class HistoryController {
 	public ResponseEntity<String> createTemporalEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		return ControllerFunctions.createEntry(historyService, request, payload,
-				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, logger);
+				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, AppConstants.HISTORY_URL, logger);
 	}
 
 	@GetMapping

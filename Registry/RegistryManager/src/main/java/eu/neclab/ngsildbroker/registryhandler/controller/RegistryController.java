@@ -104,7 +104,7 @@ public class RegistryController {
 	public ResponseEntity<String> registerCSource(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		return ControllerFunctions.createEntry(csourceService, request, payload,
-				AppConstants.CSOURCE_REG_CREATE_PAYLOAD, logger);
+				AppConstants.CSOURCE_REG_CREATE_PAYLOAD, AppConstants.CSOURCE_URL, logger);
 	}
 
 	@GetMapping("/{registrationId}")

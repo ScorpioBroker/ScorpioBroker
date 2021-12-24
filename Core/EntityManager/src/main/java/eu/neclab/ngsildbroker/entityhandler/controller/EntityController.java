@@ -77,7 +77,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	public ResponseEntity<String> createEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
 		return ControllerFunctions.createEntry(entityService, request, payload, AppConstants.ENTITY_CREATE_PAYLOAD,
-				logger);
+				AppConstants.ENTITES_URL, logger);
 	}
 
 	/**
