@@ -6,10 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -27,6 +25,7 @@ public class AppendEntityRequest extends EntityRequest {
 
 	private void generateAppend(Map<String, Object> resolved, Map<String, Object> entityBody, String[] options)
 			throws ResponseException {
+
 		try {
 			this.appendResult = appendFields(entityBody, resolved, options);
 			this.entityWithoutSysAttrs = appendResult.getJsonWithoutSysAttrs();
@@ -75,15 +74,57 @@ public class AppendEntityRequest extends EntityRequest {
 				appendResult.getAppendedJsonFields().put(key, value);
 				continue;
 			}
-			if ((entityBody.containsKey(key) && overwrite) || !entityBody.containsKey(key)) {
-				if (value instanceof List && !((List) value).isEmpty()) {
-					// TODO: should we keep the createdAt value if attribute already exists?
-					// (overwrite operation) => if (objectNode.has(key)) ...
-					setTemporalProperties(((List) value).get(0), now, now, false);
+
+			List<Map<String, Object>> list = ((List<Map<String, Object>>) entityBody.get(key));
+			Map<String, Object> attrNode = ((List<Map<String, Object>>) resolved.get(key)).get(0);
+			boolean appendpayload = true;
+			if (entityBody.containsKey(key) && list.size() > 1) {
+				for (Map<String, Object> originalNode : list) {
+					if (originalNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						String payloadDatasetId = (String) ((List<Map<String, Object>>) originalNode
+								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID);
+						if (entry.getValue().toString().contains(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+							String datasetId = (String) ((List<Map<String, Object>>) attrNode
+									.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID);
+							if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
+								appendpayload = false;
+								throw new ResponseException(ErrorType.AlreadyExists, datasetId);
+							}
+
+						} else {
+							appendpayload = true;
+						}
+					} else {
+						if (attrNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+							appendpayload = true;
+						} else {
+							appendpayload = false;
+							throw new ResponseException(ErrorType.AlreadyExists, key);
+						}
+
+					}
+
 				}
-				entityBody.put(key, value);
-				appendResult.getAppendedJsonFields().put(key, value);
-				continue;
+				if (appendpayload == true) {
+					list.add(attrNode);
+
+					appendResult.setStatus(true);
+				}
+			}
+
+			else {
+
+				if ((entityBody.containsKey(key) && overwrite) || !entityBody.containsKey(key)) {
+					if (value instanceof List && !((List) value).isEmpty()) {
+						// TODO: should we keep the createdAt value if attribute already exists?
+						// (overwrite operation) => if (objectNode.has(key)) ...
+						setTemporalProperties(((List) value).get(0), now, now, false);
+					}
+					entityBody.put(key, value);
+					appendResult.getAppendedJsonFields().put(key, value);
+					continue;
+
+				}
 			}
 			appendResult.setStatus(false);
 		}
