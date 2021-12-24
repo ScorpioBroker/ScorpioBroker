@@ -100,7 +100,7 @@ spring:
         spring:
           json:
             trusted:
-              packages: eu.neclab.ngsildbroker.commons.datatypes
+              packages: eu.neclab.ngsildbroker.commons.datatypes.requests
     admin:
       properties:
         cleanup:
