@@ -213,9 +213,9 @@ class NGSIObject {
 			break;
 		case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
 			if (activeProperty == null) {
-				if (!hasAtId) {
+				/*if (!hasAtId) {
 					throw new ResponseException(ErrorType.BadRequestData, "A subscription id is mandatory");
-				}
+				}*/
 				if (!hasAtType || !types.contains(NGSIConstants.NGSI_LD_SUBSCRIPTION)) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"A subscription needs type which is Subscription");
@@ -234,9 +234,9 @@ class NGSIObject {
 			break;
 		case AppConstants.CSOURCE_REG_CREATE_PAYLOAD:
 			if (activeProperty == null) {
-				if (!hasAtId) {
+				/*if (!hasAtId) {
 					throw new ResponseException(ErrorType.BadRequestData, "A registration id is mandatory");
-				}
+				}*/
 				if (!hasAtType || !types.contains(NGSIConstants.NGSI_LD_CSOURCE_REGISTRATION)) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"A registration needs type which is CSourceRegistration");

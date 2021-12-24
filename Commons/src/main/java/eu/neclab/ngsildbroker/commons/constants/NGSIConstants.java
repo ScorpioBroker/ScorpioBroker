@@ -247,8 +247,10 @@ public interface NGSIConstants {
 	public static final String COUNT_HEADER_RESULT = "count";
 	public static final String REGEX_NGSI_LD_ATTR_TYPES = new String(
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
+
 	public final static String NOTIFICATION = "notification";
-	public static final String TENANT_HEADER = "NGSILD-tenant";
+	//DO NOT CHANGE THIS HEADERS ARE MADE TO LOWER CASE BY SPRING
+	public static final String TENANT_HEADER = "ngsild-tenant";
 	public static final String LINK_HEADER = "Link";
 	public static final String QUERY_TYPE = "Query";
 	public static final String ISACTIVE_FALSE = "paused";

@@ -86,7 +86,7 @@ public abstract class EntityTools {
 	}
 
 	public static String generateUniqueRegId(Map<String, Object> resolved) {
-		String key = "urn:ngsi-ld:csourceregistration:" + UUID.fromString("" + resolved.hashCode()).toString();
+		String key = "urn:ngsi-ld:csourceregistration:" +resolved.hashCode();
 		return key;
 	}
 
