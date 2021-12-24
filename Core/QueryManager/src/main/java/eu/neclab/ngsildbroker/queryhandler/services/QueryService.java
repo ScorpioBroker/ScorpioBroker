@@ -25,7 +25,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -40,8 +39,8 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.RemoteQueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.RemoteQueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntityQueryService;
@@ -327,26 +326,8 @@ public class QueryService implements EntityQueryService{
 				}
 			}
 			result = fromStorage;
-			// logger.trace("response from storage :: ");
-			// fromStorage.forEach(e -> logger.debug(e));
-			// logger.trace("aggregated");
-			// aggregatedResult.forEach(e -> logger.debug(e));
-			/*
-			 * if (aggregatedResult.size() > limit) { qToken = generateToken(); String
-			 * writeToken = qToken; int end = offset + limit; if (end >
-			 * aggregatedResult.size()) { end = aggregatedResult.size(); } realResult =
-			 * aggregatedResult.subList(offset, end); dataLeft = aggregatedResult.size() -
-			 * end; new Thread() { public void run() { try {
-			 * writeFullResultToKafka(writeToken, aggregatedResult); } catch (IOException e)
-			 * {
-			 * 
-			 * } catch (ResponseException e) {
-			 * 
-			 * } }; }.start(); } else {
-			 */
-			// }
 		} else {
-			// read from byte array
+
 			//TODO redo with views in sql and add proper storagemanager solution
 			String data = null; //operations.getMessage(qToken, KafkaConstants.PAGINATION_TOPIC);
 			if (data == null) {
@@ -354,21 +335,6 @@ public class QueryService implements EntityQueryService{
 						"The provided qtoken is not valid. Provide a valid qtoken or remove the parameter to start a new query");
 			}
 			
-			
-			/*
-			 * try { DataInputStream in = new DataInputStream(new
-			 * ByteArrayInputStream(data)); while (in.available() > 0) {
-			 * aggregatedResult.add(in.readUTF()); } } catch (IOException e) {
-			 * logger.error("failed reading in utf of data", e); throw new
-			 * ResponseException(ErrorType.BadRequestData, "failed reading in utf of data");
-			 * }
-			 */			int end = offset + limit;
-			if (end > aggregatedResult.size()) {
-				end = aggregatedResult.size();
-			}
-			aggregatedResult.subList(offset, end);
-			dataLeft = aggregatedResult.size() - end;
-			result.setDataString(aggregatedResult);
 		}
 
 		result.setqToken(qToken);

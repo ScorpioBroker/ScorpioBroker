@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -9,7 +10,7 @@ import java.util.Map;
  * @version 1.0
  * @created 11-Jun-2018 11:13:23
  */
-public class Subscription extends Query {
+public class Subscription {
 
 	private String description;
 	private Long expiresAt;
@@ -23,6 +24,14 @@ public class Subscription extends Query {
 	private Boolean internal = false;
 	private QueryTerm queryTerm;
 	private boolean isActive = true;
+	protected List<String> attributeNames;
+	protected List<EntityInfo> entities = new ArrayList<EntityInfo>();
+	protected String ldContext;
+	protected LDGeoQuery ldGeoQuery;
+	protected String ldQuery;
+	protected LDTemporalQuery ldTempQuery;
+	protected List<URI> requestorList;
+
 
 	public Subscription() {
 		super();
@@ -32,7 +41,6 @@ public class Subscription extends Query {
 			String ldContext, LDGeoQuery ldGeoQuery, String ldQuery, LDTemporalQuery ldTempQuery,
 			List<URI> requestorList, String description, Long expires, String id, String subscriptionName,
 			NotificationParam notification, String status, Integer throttling, Integer timeInterval, String type) {
-		super(customFlags, attributeNames, entities, ldContext, ldGeoQuery, ldQuery, ldTempQuery, requestorList);
 		this.description = description;
 		this.expiresAt = expiresAt;
 		this.id = id;
@@ -42,6 +50,82 @@ public class Subscription extends Query {
 		this.throttling = throttling;
 		this.timeInterval = timeInterval;
 		this.type = type;
+		this.attributeNames = attributeNames;
+		if (this.attributeNames == null) {
+			this.attributeNames = new ArrayList<String>();
+		}
+
+		this.entities = entities;
+		this.ldContext = ldContext;
+		this.ldGeoQuery = ldGeoQuery;
+		this.ldQuery = ldQuery;
+		this.ldTempQuery = ldTempQuery;
+		this.requestorList = requestorList;
+	}
+
+
+	public List<String> getAttributeNames() {
+		return attributeNames;
+	}
+
+	public void setAttributeNames(List<String> attributeNames) {
+		this.attributeNames = attributeNames;
+	}
+
+	public List<EntityInfo> getEntities() {
+		return entities;
+	}
+
+	public void setEntities(List<EntityInfo> entities) {
+		this.entities = entities;
+	}
+
+	public String getLdContext() {
+		return ldContext;
+	}
+
+	public void setLdContext(String ldContext) {
+		this.ldContext = ldContext;
+	}
+
+	public LDGeoQuery getLdGeoQuery() {
+		return ldGeoQuery;
+	}
+
+	public void setLdGeoQuery(LDGeoQuery ldGeoQuery) {
+		this.ldGeoQuery = ldGeoQuery;
+	}
+
+	public String getLdQuery() {
+		return ldQuery;
+	}
+
+	public void setLdQuery(String ldQuery) {
+		this.ldQuery = ldQuery;
+	}
+
+	public LDTemporalQuery getLdTempQuery() {
+		return ldTempQuery;
+	}
+
+	public void setLdTempQuery(LDTemporalQuery ldTempQuery) {
+		this.ldTempQuery = ldTempQuery;
+	}
+
+	public List<URI> getRequestorList() {
+		return requestorList;
+	}
+
+	public void setRequestorList(List<URI> requestorList) {
+		this.requestorList = requestorList;
+	}
+
+	public void addEntityInfo(EntityInfo entity) {
+		this.entities.add(entity);
+	}
+
+	public void removeEntityInfo(EntityInfo entity) {
+		this.entities.remove(entity);
 	}
 
 	public Boolean isInternal() {
@@ -151,8 +235,7 @@ public class Subscription extends Query {
 				+ ", throttling=" + throttling + ", timeInterval=" + timeInterval + ", type=" + type + ", internal="
 				+ internal + ", queryTerm=" + queryTerm + ", attributeNames=" + attributeNames + ", entities="
 				+ entities + ", ldContext=" + ldContext + ", ldGeoQuery=" + ldGeoQuery + ", ldQuery=" + ldQuery
-				+ ", ldTempQuery=" + ldTempQuery + ", requestorList=" + requestorList + ", customFlags=" + customFlags
-				+ "]";
+				+ ", ldTempQuery=" + ldTempQuery + ", requestorList=" + requestorList + "]";
 	}
 
 }

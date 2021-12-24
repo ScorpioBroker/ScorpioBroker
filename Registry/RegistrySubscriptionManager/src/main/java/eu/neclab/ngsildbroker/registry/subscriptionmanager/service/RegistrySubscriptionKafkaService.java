@@ -10,7 +10,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 
 @Service
 public class RegistrySubscriptionKafkaService {

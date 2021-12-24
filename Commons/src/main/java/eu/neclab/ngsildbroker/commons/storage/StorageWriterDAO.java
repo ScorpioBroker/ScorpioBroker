@@ -27,13 +27,13 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.DBWriteTemplates;
-import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
-import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tenant.DBUtil;

@@ -5,7 +5,7 @@ import java.util.List;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public interface EntityQueryService {

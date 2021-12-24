@@ -21,9 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.jsonldjava.core.JsonLdConsts.Embed;
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -41,9 +38,10 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
  *
  * @author tristan
  */
+@SuppressWarnings("unchecked")
 public class JsonLdApi {
 
-	private final Logger log = LoggerFactory.getLogger(this.getClass());
+
 
 	JsonLdOptions opts;
 	Object value = null;
@@ -548,6 +546,7 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there was an error during expansion.
 	 */
 
+	
 	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType,
 			boolean atContextAllowed) throws JsonLdError, ResponseException {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
@@ -582,17 +581,6 @@ public class JsonLdApi {
 					// throw new JsonLdError(Error.LIST_OF_LISTS, "lists of lists are not
 					// permitted.");
 					if (v instanceof List) {
-						List list = (List) v;
-						/*
-						 * for (Object i : list) { NGSIObject ngsiExpandedValue = expand(activeCtx,
-						 * activeCtx.getContainer(activeProperty), new NGSIObject(i), payloadType);
-						 * Object expandedValue = ngsiExpandedValue.getElement(); Object tmp =
-						 * expandedValue;
-						 * 
-						 * if (!(tmp instanceof List)) { tmp = new ArrayList<Object>(); ((List<Object>)
-						 * tmp).add(expandedValue); }
-						 * 
-						 */
 						Object expandedValue = newMap();
 						((Map<String, Object>) expandedValue).put(JsonLdConsts.LIST, v);
 						result.add(expandedValue);

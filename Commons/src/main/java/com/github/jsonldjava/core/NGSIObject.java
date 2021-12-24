@@ -13,7 +13,9 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
-public class NGSIObject {
+//known structures
+@SuppressWarnings("unchecked")
+class NGSIObject {
 
 	private Object element;
 	// entity stuff
@@ -47,22 +49,12 @@ public class NGSIObject {
 	private HashSet<String> types = new HashSet<String>();
 	private boolean fromHasValue;
 
-	public NGSIObject(Object element, NGSIObject parent) {
+	NGSIObject(Object element, NGSIObject parent) {
 		super();
 		this.element = element;
 		this.parent = parent;
 
 	}
-
-	/*
-	 * public NGSIObject duplicateSettings(Object newElement) { NGSIObject result =
-	 * new NGSIObject(newElement); result.isProperty = isProperty;
-	 * result.isGeoProperty = isGeoProperty; result.isRelationship = isRelationship;
-	 * result.isDateTime = isDateTime; result.hasValue = hasValue; result.hasAtId =
-	 * hasAtId; result.hasObject = hasObject; result.hasAtType = hasAtType;
-	 * result.isArray = isArray; result.datasetIds = datasetIds; result.id = id;
-	 * result.types = types; return result; }
-	 */
 
 	public Object getElement() {
 		return element;
@@ -85,11 +77,6 @@ public class NGSIObject {
 		return isProperty;
 	}
 
-	public NGSIObject setProperty(boolean isProperty) {
-		this.isProperty = isProperty;
-		return this;
-	}
-
 	public boolean isGeoProperty() {
 		return isGeoProperty;
 	}
@@ -103,18 +90,8 @@ public class NGSIObject {
 		return this;
 	}
 
-	public NGSIObject setGeoProperty(boolean isGeoProperty) {
-		this.isGeoProperty = isGeoProperty;
-		return this;
-	}
-
 	public boolean isRelationship() {
 		return isRelationship;
-	}
-
-	public NGSIObject setRelationship(boolean isRelationship) {
-		this.isRelationship = isRelationship;
-		return this;
 	}
 
 	public boolean isHasAtValue() {
@@ -139,7 +116,7 @@ public class NGSIObject {
 		return isDateTime;
 	}
 
-	public NGSIObject setDateTime(boolean isDateTime) {
+	NGSIObject setDateTime(boolean isDateTime) {
 		this.isDateTime = isDateTime;
 		return this;
 	}
@@ -148,61 +125,36 @@ public class NGSIObject {
 		return hasAtType;
 	}
 
-	public NGSIObject setHasAtType(boolean hasAtType) {
+	NGSIObject setHasAtType(boolean hasAtType) {
 		this.hasAtType = hasAtType;
 		return this;
 	}
 
-	public boolean isArray() {
-		return isArray;
-	}
-
-	public NGSIObject setArray(boolean isArray) {
+	NGSIObject setArray(boolean isArray) {
 		this.isArray = isArray;
 		return this;
 	}
 
-	public boolean isLdKeyWord() {
-		return isLdKeyWord;
-	}
-
-	public NGSIObject setLdKeyWord(boolean isLdKeyWord) {
+	NGSIObject setLdKeyWord(boolean isLdKeyWord) {
 		this.isLdKeyWord = isLdKeyWord;
 		return this;
 	}
 
-	public HashSet<String> getDatasetIds() {
+	HashSet<String> getDatasetIds() {
 		return datasetIds;
 	}
 
-	public NGSIObject addDatasetId(String datasetId) {
-		this.datasetIds.add(datasetId);
-		return this;
-	}
-
-	public String getId() {
-		return id;
-	}
-
-	public NGSIObject setId(String id) {
+	NGSIObject setId(String id) {
 		this.id = id;
 		return this;
 	}
 
-	public HashSet<String> getTypes() {
-		return types;
-	}
-
-	public boolean isHasAtObject() {
-		return hasObject;
-	}
-
-	public NGSIObject setHasAtObject(boolean hasAtObject) {
+	NGSIObject setHasAtObject(boolean hasAtObject) {
 		this.hasObject = hasAtObject;
 		return this;
 	}
 
-	public NGSIObject addType(String type) {
+	NGSIObject addType(String type) {
 		this.types.add(type);
 		if (NGSIConstants.NGSI_LD_PROPERTY.equals(type)) {
 			this.isProperty = true;
@@ -216,7 +168,7 @@ public class NGSIObject {
 		return this;
 	}
 
-	public void validate(int payloadType, String activeProperty, String expandedProperty, JsonLdApi api)
+	void validate(int payloadType, String activeProperty, String expandedProperty, JsonLdApi api)
 			throws ResponseException {
 		if (activeProperty == null && (atContextRequired ^ hasAtContext)) {
 			throw new ResponseException(ErrorType.BadRequestData, "@Context entry is needed");
@@ -293,7 +245,7 @@ public class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"A CSource registration needs a information entry");
 				}
-				if (((List) ((Map<String, Object>) element).get(NGSIConstants.NGSI_LD_INFORMATION)).isEmpty()) {
+				if (((List<Object>) ((Map<String, Object>) element).get(NGSIConstants.NGSI_LD_INFORMATION)).isEmpty()) {
 					throw new ResponseException(ErrorType.BadRequestData, "Information is empty!");
 				}
 			} else {
@@ -338,6 +290,13 @@ public class NGSIObject {
 			throws ResponseException {
 		if (isScalar) {
 			switch (expandedProperty) {
+			case NGSIConstants.NGSI_LD_TIME_INTERVAL:
+				if (!(this.element instanceof Map) || !(((Map<String, Object>) this.element)
+						.get(NGSIConstants.JSON_LD_VALUE) instanceof Integer)) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"invalid entry for timeInterval. Please provide an integer");
+				}
+				return;
 			case NGSIConstants.NGSI_LD_ID_PATTERN:
 				if (!checkForEntities()) {
 					throw new ResponseException(ErrorType.BadRequestData,
@@ -610,7 +569,7 @@ public class NGSIObject {
 		Map<String, Object> geoPropMap = (Map<String, Object>) element;
 		Object geoJsonValue;
 		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-			geoJsonValue = ((List) geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE)).get(0);
+			geoJsonValue = ((List<Object>) geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE)).get(0);
 		} else {
 			geoJsonValue = geoPropMap;
 		}
@@ -677,7 +636,7 @@ public class NGSIObject {
 		if (!(geoValue instanceof List)) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid multi polygon definition");
 		}
-		List tempList = (List) geoValue;
+		List<Object> tempList = (List<Object>) geoValue;
 		for (Object entry : tempList) {
 			validatePolygon(entry);
 		}
@@ -687,11 +646,11 @@ public class NGSIObject {
 		if (!(geoValue instanceof List)) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid polygon definition");
 		}
-		List tempList = (List) geoValue;
+		List<Object> tempList = (List<Object>) geoValue;
 		if (tempList.size() != 1) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid polygon definition");
 		}
-		tempList = (List) tempList.get(0);
+		tempList = (List<Object>) tempList.get(0);
 		Object first = null, last = null;
 		for (Object entry : tempList) {
 			if (first == null) {
@@ -710,7 +669,7 @@ public class NGSIObject {
 		if (!(geoValue instanceof List)) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");
 		}
-		List tempList = (List) geoValue;
+		List<Object> tempList = (List<Object>) geoValue;
 		for (Object entry : tempList) {
 			validatePoint(entry);
 		}
@@ -721,7 +680,7 @@ public class NGSIObject {
 		if (!(geoValue instanceof List)) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid longitude latitude pair definition");
 		}
-		List tempList = (List) geoValue;
+		List<Object> tempList = (List<Object>) geoValue;
 		if (tempList.size() != 2 || !(tempList.get(0) instanceof Double) || !(tempList.get(1) instanceof Double)) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid longitude latitude pair definition");
 		}

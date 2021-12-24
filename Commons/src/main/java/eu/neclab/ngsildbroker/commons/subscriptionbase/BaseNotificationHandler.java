@@ -52,7 +52,7 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 
-public abstract class BaseNotificationHandler implements NotificationHandler {
+abstract class BaseNotificationHandler implements NotificationHandler {
 
 	protected abstract void sendReply(ResponseEntity<String> reply, URI callback, Map<String, String> clientSettings)
 			throws Exception;
@@ -62,15 +62,15 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 	private ObjectMapper objectMapper;
 
-	public BaseNotificationHandler(BaseSubscriptionService subscriptionManagerService, ObjectMapper objectMapper) {
+	BaseNotificationHandler(BaseSubscriptionService subscriptionManagerService, ObjectMapper objectMapper) {
 		this.subscriptionManagerService = subscriptionManagerService;
 		this.objectMapper = objectMapper;
 
 	}
 
-	HashMap<String, Long> subId2LastReport = new HashMap<String, Long>();
-	ArrayListMultimap<String, Notification> subId2Notifications = ArrayListMultimap.create();
-	Timer executor = new Timer(true);
+	private HashMap<String, Long> subId2LastReport = new HashMap<String, Long>();
+	private ArrayListMultimap<String, Notification> subId2Notifications = ArrayListMultimap.create();
+	private Timer executor = new Timer(true);
 
 	@Override
 	public void notify(Notification notification, URI callback, String acceptHeader, String subId, List<Object> context,
@@ -101,7 +101,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 									.squashNotifications(subId2Notifications.removeAll(subId));
 							String jsonStr;
 							try {
-								jsonStr = JsonUtils.toPrettyString(notification.getData());
+								jsonStr = JsonUtils.toPrettyString(sendOutNotification.getData());
 							} catch (IOException e1) {
 								return;
 							}

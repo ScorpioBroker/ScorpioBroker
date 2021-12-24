@@ -10,10 +10,10 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
-import eu.neclab.ngsildbroker.commons.datatypes.AppendHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
 
 @Service
 @ConditionalOnProperty(name = "scorpio.history.autorecording", matchIfMissing = true, havingValue = "active")

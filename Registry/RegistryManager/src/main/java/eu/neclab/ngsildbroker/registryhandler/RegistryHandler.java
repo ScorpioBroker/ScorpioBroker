@@ -10,7 +10,6 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
 import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
@@ -40,10 +39,6 @@ public class RegistryHandler {
 		return factory;
 	}
 
-	@Bean
-	CSourceRegistration getCsourceRegistration() {
-		return new CSourceRegistration();
-	}
 	
 	@Bean("csdao")
 	StorageWriterDAO storageWriterDAO() {

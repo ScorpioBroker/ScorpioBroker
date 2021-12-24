@@ -2,26 +2,22 @@ package eu.neclab.ngsildbroker.commons.tools;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
-import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceNotification;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
+import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Property;
 import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
-import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
 public abstract class EntityTools {
 
@@ -38,53 +34,6 @@ public abstract class EntityTools {
 
 	}
 
-	public static List<CSourceNotification> squashCSourceNotifications(List<CSourceNotification> data) {
-		List<CSourceRegistration> newData = new ArrayList<CSourceRegistration>();
-		List<CSourceRegistration> updatedData = new ArrayList<CSourceRegistration>();
-		List<CSourceRegistration> deletedData = new ArrayList<CSourceRegistration>();
-		List<CSourceNotification> result = new ArrayList<CSourceNotification>();
-		for (CSourceNotification notification : data) {
-			switch (notification.getTriggerReason()) {
-			case newlyMatching:
-				newData.addAll(notification.getData());
-				break;
-			case updated:
-				updatedData.addAll(notification.getData());
-				break;
-			case noLongerMatching:
-				deletedData.addAll(notification.getData());
-				break;
-			default:
-				break;
-
-			}
-
-		}
-		long now = System.currentTimeMillis();
-		try {
-			if (!newData.isEmpty()) {
-				result.add(new CSourceNotification(getRandomID("csource"), data.get(0).getSubscriptionId(),
-						new Date(now), TriggerReason.newlyMatching, newData, data.get(0).getErrorMsg(),
-						data.get(0).getErrorType(), data.get(0).getShortErrorMsg(), data.get(0).isSuccess()));
-			}
-			if (!updatedData.isEmpty()) {
-				result.add(new CSourceNotification(getRandomID("csource"), data.get(0).getSubscriptionId(),
-						new Date(now), TriggerReason.updated, updatedData, data.get(0).getErrorMsg(),
-						data.get(0).getErrorType(), data.get(0).getShortErrorMsg(), data.get(0).isSuccess()));
-			}
-			if (!deletedData.isEmpty()) {
-				result.add(new CSourceNotification(getRandomID("csource"), data.get(0).getSubscriptionId(),
-						new Date(now), TriggerReason.noLongerMatching, deletedData, data.get(0).getErrorMsg(),
-						data.get(0).getErrorType(), data.get(0).getShortErrorMsg(), data.get(0).isSuccess()));
-			}
-		} catch (URISyntaxException e) {
-			// left empty intentionally should never happen
-			throw new AssertionError();
-		}
-
-		return result;
-	}
-
 	public static Notification squashNotifications(List<Notification> data) {
 		List<Map<String, Object>> newData = new ArrayList<Map<String, Object>>();
 		for (Notification notification : data) {
@@ -95,12 +44,17 @@ public abstract class EntityTools {
 				data.get(0).isSuccess());
 	}
 
-	public static GeoProperty getLocation(Map<String, Object> fullEntry, String geoPropertyName) {
-		Object obj = fullEntry.get(geoPropertyName);
+	@SuppressWarnings("unchecked")
+	public static GeoProperty getLocation(Map<String, Object> fullEntry, LDGeoQuery ldGeoQuery) {
+		String locationName = NGSIConstants.NGSI_LD_LOCATION;
+		if (ldGeoQuery != null) {
+			locationName = ldGeoQuery.getGeoProperty();
+		}
+		Object obj = fullEntry.get(locationName);
 		if (obj == null) {
 			return null;
 		}
-		return SerializationTools.parseGeoProperty((List<Map<String, Object>>) obj, geoPropertyName);
+		return SerializationTools.parseGeoProperty((List<Map<String, Object>>) obj, locationName);
 	}
 
 	public static Map<String, Object> clearBaseProps(Map<String, Object> fullEntry, SubscriptionRequest subscription) {
@@ -118,6 +72,7 @@ public abstract class EntityTools {
 		return fullEntry;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static Set<String> getRegisteredTypes(Map<String, Object> cSourceRegistration) {
 		List<Map<String, Object>> entities = (List<Map<String, Object>>) ((List<Map<String, Object>>) cSourceRegistration
 				.get(NGSIConstants.NGSI_LD_INFORMATION)).get(0).get(NGSIConstants.NGSI_LD_ENTITIES);

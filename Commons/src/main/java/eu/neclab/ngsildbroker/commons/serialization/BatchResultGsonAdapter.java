@@ -7,7 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
-import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 
 public class BatchResultGsonAdapter implements JsonSerializer<BatchResult> {
 

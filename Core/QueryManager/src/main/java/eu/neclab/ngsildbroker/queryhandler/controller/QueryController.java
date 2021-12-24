@@ -28,8 +28,8 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
@@ -41,8 +41,7 @@ import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 @RequestMapping("/ngsi-ld/v1")
 public class QueryController {// implements QueryHandlerInterface {
 	private final static Logger logger = LogManager.getLogger(QueryController.class);
-	private final static String MY_REQUEST_URL = "/ngsi-ld/v1/entities";
-	private final static String MY_REQUEST_URL_ALT = "/ngsi-ld/v1/entities/";
+
 	@Autowired
 	QueryService queryService;
 

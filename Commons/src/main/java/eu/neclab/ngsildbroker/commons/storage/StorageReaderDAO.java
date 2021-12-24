@@ -22,7 +22,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tenant.DBUtil;
@@ -30,7 +30,7 @@ import eu.neclab.ngsildbroker.commons.tenant.DBUtil;
 abstract public class StorageReaderDAO {
 
 	private final static Logger logger = LogManager.getLogger(StorageReaderDAO.class);
-	protected Map<Object, DataSource> resolvedDataSources = new HashMap<>();
+	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 
 	private HashMap<String, JdbcTemplate> tenant2Template = new HashMap<String, JdbcTemplate>();
 
@@ -42,14 +42,14 @@ abstract public class StorageReaderDAO {
 	@Autowired
 	private HikariConfig hikariConfig;
 
-	public Random random = new Random();
+	private Random random = new Random();
 
 	@PostConstruct
 	public void init() {
 		readerJdbcTemplate.execute("SELECT 1"); // create connection pool and connect to database
 	}
 
-	public String findDataBaseNameByTenantId(String tenantidvalue) {
+	private String findDataBaseNameByTenantId(String tenantidvalue) {
 		if (tenantidvalue == null)
 			return null;
 		try {
@@ -67,7 +67,7 @@ abstract public class StorageReaderDAO {
 		}
 	}
 
-	public DataSource determineTargetDataSource(String tenantidvalue) throws ResponseException {
+	private DataSource determineTargetDataSource(String tenantidvalue) throws ResponseException {
 		// String tenantidvalue = (String) determineCurrentLookupKey();
 		if (tenantidvalue == null) {
 			return masterDataSource;
@@ -208,7 +208,7 @@ abstract public class StorageReaderDAO {
 	 * TODO: optimize sql queries for types and Attributes by using prepared
 	 * statements (if possible)
 	 */
-	protected String typesAndAttributeQuery(QueryParams qp) throws ResponseException {
+	private String typesAndAttributeQuery(QueryParams qp) throws ResponseException {
 		String query = "";
 		if (qp.getCheck() == "NonDeatilsType" && qp.getAttrs() == null) {
 			int number = random.nextInt(999999);

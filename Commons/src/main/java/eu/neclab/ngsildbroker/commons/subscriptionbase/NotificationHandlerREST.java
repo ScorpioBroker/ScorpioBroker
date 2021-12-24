@@ -13,13 +13,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import reactor.core.publisher.Mono;
 
-public class NotificationHandlerREST extends BaseNotificationHandler {
+class NotificationHandlerREST extends BaseNotificationHandler {
 
-	Logger logger = LoggerFactory.getLogger(NotificationHandlerREST.class);
+	private static final Logger logger = LoggerFactory.getLogger(NotificationHandlerREST.class);
 	
 	private WebClient webClient;
 
-	public NotificationHandlerREST(BaseSubscriptionService subscriptionManagerService,
+	NotificationHandlerREST(BaseSubscriptionService subscriptionManagerService,
 			ObjectMapper objectMapper, WebClient webClient) {
 		super(subscriptionManagerService, objectMapper);
 		this.webClient = webClient;

@@ -6,10 +6,10 @@ import com.github.filosganga.geogson.model.Geometry;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import eu.neclab.ngsildbroker.commons.datatypes.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoValue;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 
 public class DataSerializer {
 

@@ -29,7 +29,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.GeoRelation;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
@@ -384,6 +384,7 @@ public class SubscriptionControllerFunctions {
 		return ResponseEntity.noContent().build();
 	}
 
+	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> updateSubscription(SubscriptionCRUDService subscriptionService,
 			HttpServletRequest request, String id, String payload, Logger logger) {
 		logger.trace("call updateSubscription() ::");
@@ -391,7 +392,6 @@ public class SubscriptionControllerFunctions {
 		try {
 
 			HttpUtils.validateUri(id);
-			Validator.subscriptionValidation(payload);
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,

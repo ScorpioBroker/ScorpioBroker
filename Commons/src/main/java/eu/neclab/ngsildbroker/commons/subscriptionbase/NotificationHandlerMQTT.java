@@ -17,12 +17,12 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 
-public class NotificationHandlerMQTT extends BaseNotificationHandler {
+class NotificationHandlerMQTT extends BaseNotificationHandler {
 
 	private final String CLIENT_ID = "ScorpioMqttNotifier";
 	private HashMap<URI, MqttClient> uri2client = new HashMap<URI, MqttClient>();
 
-	public NotificationHandlerMQTT(BaseSubscriptionService subscriptionManagerService, ObjectMapper objectMapper) {
+	NotificationHandlerMQTT(BaseSubscriptionService subscriptionManagerService, ObjectMapper objectMapper) {
 		super(subscriptionManagerService, objectMapper);
 
 	}

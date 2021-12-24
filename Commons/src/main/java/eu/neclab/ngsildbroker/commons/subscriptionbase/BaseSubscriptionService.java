@@ -24,7 +24,6 @@ import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
@@ -34,10 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,7 +47,6 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
@@ -59,7 +55,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -72,54 +69,38 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import reactor.core.publisher.Mono;
 
-
 public abstract class BaseSubscriptionService implements SubscriptionCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionService.class);
 
 	private final String ALL_TYPES_TYPE = "()";
 
-	@Value("${atcontext.url}")
-	String atContextServerUrl;
-
-	NotificationHandlerREST notificationHandlerREST;
+	private NotificationHandlerREST notificationHandlerREST;
 	// IntervalNotificationHandler intervalHandlerREST;
 
-	NotificationHandlerMQTT notificationHandlerMQTT;
+	private NotificationHandlerMQTT notificationHandlerMQTT;
 	// IntervalNotificationHandler intervalHandlerMQTT;
 
-	Timer watchDog = new Timer(true);
+	private Timer watchDog = new Timer(true);
 
 	@Autowired
-	ObjectMapper objectMapper;
+	private ObjectMapper objectMapper;
 
 	@Autowired
 	@Qualifier("subwebclient")
-	WebClient webClient;
+	private WebClient webClient;
 
-	
-	SubscriptionInfoDAOInterface subscriptionInfoDAO;
-	
-	
+	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
-	@Value("${subscription.directdb:true}")
-	boolean directDB;
+	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
-	JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
-
-	Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
-	Table<String, String, TimerTask> subId2TimerTask = HashBasedTable.create();
-	Table<String, String, List<SubscriptionRequest>> type2EntitiesSubscriptions = HashBasedTable.create();
-	HashMap<SubscriptionRequest, Long> sub2CreationTime = new HashMap<SubscriptionRequest, Long>();
-	Table<String, String, List<Object>> tenantId2subscriptionId2Context = HashBasedTable.create();
-	HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
-	@Value("${bootstrap.servers}")
-	String BOOTSTRAP_SERVERS;
-
+	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
+	private Table<String, String, TimerTask> subId2TimerTask = HashBasedTable.create();
+	private Table<String, String, List<SubscriptionRequest>> type2EntitiesSubscriptions = HashBasedTable.create();
+	private HashMap<SubscriptionRequest, Long> sub2CreationTime = new HashMap<SubscriptionRequest, Long>();
+	private Table<String, String, List<Object>> tenantId2subscriptionId2Context = HashBasedTable.create();
+	private HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
 	private Table<String, String, Set<String>> tenant2Ids2Type;
-	@Value("${subscriptions.topic:SUBSCRIPTIONS}")
-	protected String subscriptionTopic;
-
 
 	@PostConstruct
 	private void setup() {
@@ -391,15 +372,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	public void checkSubscriptionsWithAbsolute(BaseRequest createRequest, long messageTime, int messageType) {
 
 		String id = createRequest.getId();
-		Set<String> types = getTypesFromEntry(createRequest); 
+		Set<String> types = getTypesFromEntry(createRequest);
 		synchronized (this.tenant2Ids2Type) {
-			this.tenant2Ids2Type.put(createRequest.getTenant(), id,
-					types);
+			this.tenant2Ids2Type.put(createRequest.getTenant(), id, types);
 		}
 		String tenantId = createRequest.getId();
-		Map<String, Object> create = createRequest.getFinalPayload();
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
-		
+
 		List<SubscriptionRequest> subs = getAllTypeBaseRequests(tenantId, types);
 		if (subs != null) {
 			for (SubscriptionRequest sub : subs) {
@@ -516,7 +495,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 		Map<String, Object> fullEntry = request.getFinalPayload();
 		if (!evaluateGeoQuery(subscription.getSubscription().getLdGeoQuery(),
-				EntityTools.getLocation(fullEntry, subscription.getSubscription().getLdGeoQuery().getGeoProperty()))) {
+				EntityTools.getLocation(fullEntry, subscription.getSubscription().getLdGeoQuery()))) {
 			return null;
 		}
 		if (subscription.getSubscription().getQueryTerm() != null) {
@@ -682,7 +661,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 				Subscription remoteSub = new Subscription();
 				Subscription subscription = subscriptionRequest.getSubscription();
-				remoteSub.setCustomFlags(subscription.getCustomFlags());
+
 				remoteSub.setDescription(subscription.getDescription());
 				remoteSub.setEntities(subscription.getEntities());
 				remoteSub.setExpiresAt(subscription.getExpiresAt());
@@ -747,9 +726,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private Set<String> getTypesForId(String tenantId, String entityId) {
 		synchronized (this.tenant2Ids2Type) {
-			
+
 			Set<String> result = this.tenant2Ids2Type.get(tenantId, entityId);
-			if(result == null) {
+			if (result == null) {
 				System.err.println();
 			}
 			return result;
@@ -768,7 +747,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	}
 
-	public void reportNotification(String tenant, String subId, Long now) {
+	void reportNotification(String tenant, String subId, Long now) {
 		SubscriptionRequest subscription;
 		synchronized (tenant2subscriptionId2Subscription) {
 			subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
@@ -779,7 +758,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 	}
 
-	public void reportFailedNotification(String tenant, String subId, Long now) {
+	void reportFailedNotification(String tenant, String subId, Long now) {
 		SubscriptionRequest subscription;
 		synchronized (tenant2subscriptionId2Subscription) {
 			subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
@@ -789,7 +768,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 	}
 
-	public void reportSuccessfulNotification(String tenant, String subId, Long now) {
+	void reportSuccessfulNotification(String tenant, String subId, Long now) {
 		synchronized (tenant2subscriptionId2Subscription) {
 			SubscriptionRequest subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
 			if (subscription != null) {

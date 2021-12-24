@@ -4,8 +4,8 @@ import java.util.Map;
 
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
-import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.AppendResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public interface EntryCRUDService {

@@ -46,6 +46,7 @@ public class SerializationTools {
 	public static Gson geojsonGson = new GsonBuilder().registerTypeAdapterFactory(new GeometryAdapterFactory())
 			.create();
 
+	@SuppressWarnings("unchecked")
 	public static Property parseProperty(List<Map<String, Object>> topLevelArray, String key) {
 		Property prop = new Property();
 		prop.setId(key);
@@ -226,6 +227,7 @@ public class SerializationTools {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	public static Relationship parseRelationship(List<Map<String, Object>> topLevelArray, String key) {
 		Relationship relationship = new Relationship();
 		relationship.setType(NGSIConstants.NGSI_LD_RELATIONSHIP);
@@ -317,19 +319,7 @@ public class SerializationTools {
 		return (String) value.get(0).get(NGSIConstants.JSON_LD_ID);
 	}
 
-	public static JsonElement getJson(Long timestamp, JsonSerializationContext context) {
-		JsonArray observedArray = new JsonArray();
-		JsonObject observedObj = new JsonObject();
-		observedObj.add(NGSIConstants.JSON_LD_VALUE,
-				context.serialize(formatter.format(Instant.ofEpochMilli(timestamp))));
-		observedObj.add(NGSIConstants.JSON_LD_TYPE, context.serialize(NGSIConstants.NGSI_LD_DATE_TIME));
-		observedArray.add(observedObj);
-		return observedArray;
-	}
-
-	public static JsonElement getJson(Geometry<?> geojsonGeometry) {
-		return new JsonPrimitive(geojsonGson.toJson(geojsonGeometry));
-	}
+	
 
 	/**
 	 * 
@@ -462,39 +452,8 @@ public class SerializationTools {
 		return result;
 	}
 
-	public static JsonElement getJson(GeoProperty property, JsonSerializationContext context) {
-		JsonArray result = new JsonArray();
-		for (GeoPropertyEntry entry : property.getEntries().values()) {
-			JsonObject top = new JsonObject();
-			JsonArray type = new JsonArray();
-			type.add(new JsonPrimitive(entry.getType()));
-			top.add(NGSIConstants.JSON_LD_TYPE, type);
-			JsonArray value = new JsonArray();
-			JsonObject objValue = new JsonObject();
-			objValue.add(NGSIConstants.JSON_LD_VALUE, context.serialize(entry.getValue()));
-			value.add(objValue);
-			top.add(NGSIConstants.NGSI_LD_HAS_VALUE, value);
-			if (entry.getObservedAt() > 0) {
-				top.add(NGSIConstants.NGSI_LD_OBSERVED_AT, getJson(entry.getObservedAt(), context));
-			}
-			if (entry.getCreatedAt() > 0) {
-				top.add(NGSIConstants.NGSI_LD_CREATED_AT, getJson(entry.getCreatedAt(), context));
-			}
-			if (entry.getModifiedAt() > 0) {
-				top.add(NGSIConstants.NGSI_LD_MODIFIED_AT, getJson(entry.getModifiedAt(), context));
-			}
-			for (Property propOfProp : entry.getProperties()) {
-				top.add(propOfProp.getId().toString(), getJson(propOfProp, context));
-			}
-			for (Relationship relaOfProp : entry.getRelationships()) {
-				top.add(relaOfProp.getId().toString(), getJson(relaOfProp, context));
-			}
-			result.add(top);
-
-		}
-		return result;
-	}
-
+	
+	@SuppressWarnings("unchecked")
 	public static GeoProperty parseGeoProperty(List<Map<String, Object>> topLevelArray, String key) {
 		GeoProperty prop = new GeoProperty();
 		prop.setId(key);
@@ -509,7 +468,6 @@ public class SerializationTools {
 			String geoValueStr = null;
 			Geometry<?> geoValue = null;
 			String dataSetId = null;
-			String unitCode = null;
 			String name = null;
 			for (Entry<String, Object> entry : next.entrySet()) {
 				String propKey = entry.getKey();

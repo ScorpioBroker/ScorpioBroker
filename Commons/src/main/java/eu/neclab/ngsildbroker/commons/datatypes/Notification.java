@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.util.List;
 import java.util.Map;
 
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 
 /**

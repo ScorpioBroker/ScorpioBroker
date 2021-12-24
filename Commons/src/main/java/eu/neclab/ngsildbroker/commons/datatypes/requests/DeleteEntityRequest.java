@@ -1,0 +1,20 @@
+package eu.neclab.ngsildbroker.commons.datatypes.requests;
+
+import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+
+public class DeleteEntityRequest extends EntityRequest {
+	public DeleteEntityRequest() {
+	}
+
+	public DeleteEntityRequest(String entityId, ArrayListMultimap<String, String> headers) throws ResponseException {
+		super(headers, entityId, null);
+		setFinalPayload(null);
+		this.keyValue = "null";
+		this.entityWithoutSysAttrs = "null";
+		this.withSysAttrs = "null";
+
+	}
+
+}

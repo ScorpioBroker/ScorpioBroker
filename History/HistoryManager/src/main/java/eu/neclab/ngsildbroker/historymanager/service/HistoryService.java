@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
-import java.net.URI;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,16 +20,16 @@ import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.AppendHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.AppendResult;
-import eu.neclab.ngsildbroker.commons.datatypes.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.UpdateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.AppendResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
@@ -65,15 +64,15 @@ public class HistoryService implements EntryCRUDService {
 
 	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
-		return createTemporalEntity(headers, resolved, false).toString();
+		return createTemporalEntity(headers, resolved, false);
 	}
 
-	private URI createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	private String createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			boolean fromEntity) throws ResponseException, Exception {
 		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
 		logger.trace("creating temporal entity");
 		handleRequest(request);
-		return request.getUriId();
+		return request.getId();
 	}
 
 	void pushToKafka(BaseRequest request) throws ResponseException {
