@@ -29,7 +29,7 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 						return Mono.just(Void.class);
 					} else {
 
-						logger.error("Failed to send notification" + response.bodyToMono(String.class).block());
+						logger.error("Failed to send notification");
 						request.getSubscription().getNotification()
 								.setLastFailedNotification(new Date(System.currentTimeMillis()));
 						return Mono.just(Void.class);
