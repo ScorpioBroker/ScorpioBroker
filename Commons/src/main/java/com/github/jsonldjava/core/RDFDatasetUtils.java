@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@SuppressWarnings({"unchecked"})
 public class RDFDatasetUtils {
 
     public static String toNQuads(RDFDataset dataset) {

@@ -11,7 +11,6 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WIT
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -37,7 +36,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
@@ -84,9 +82,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private Timer watchDog = new Timer(true);
 
 	@Autowired
-	private ObjectMapper objectMapper;
-
-	@Autowired
 	@Qualifier("subwebclient")
 	private WebClient webClient;
 
@@ -111,10 +106,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		notificationHandlerREST = new NotificationHandlerREST(this, objectMapper, webClient);
+		notificationHandlerREST = new NotificationHandlerREST(webClient);
 		// intervalHandlerREST = new
 		// IntervalNotificationHandler(notificationHandlerREST, null, null, null);
-		notificationHandlerMQTT = new NotificationHandlerMQTT(this, objectMapper);
+		notificationHandlerMQTT = new NotificationHandlerMQTT();
 		// intervalHandlerMQTT = new
 		// IntervalNotificationHandler(notificationHandlerMQTT, null, null, null);
 		logger.trace("call loadStoredSubscriptions() ::");
@@ -429,7 +424,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 							if (data != null) {
 								ArrayList<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
 								dataList.add(data);
-								sendNotification(dataList, subscription);
+								sendNotification(dataList, subscription, methodType);
 							}
 						} catch (ResponseException e) {
 							logger.error("Failed to handle new data for the subscriptions, cause: " + e.getMessage());
@@ -443,34 +438,22 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	}
 
-	private void sendNotification(List<Map<String, Object>> dataList, SubscriptionRequest subscription) {
-		try {
-			String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri()
-					.getScheme();
+	private void sendNotification(List<Map<String, Object>> dataList, SubscriptionRequest subscription,
+			int triggerReason) {
 
-			NotificationHandler handler;
-			if (endpointProtocol.equals("mqtt")) {
-				handler = notificationHandlerMQTT;
-			} else {
-				handler = notificationHandlerREST;
-			}
-			handler.notify(
-					new Notification(EntityTools.getRandomID("notification:"), System.currentTimeMillis(),
-							subscription.getSubscription().getId(), dataList, null, null, 0, true),
-					subscription.getSubscription().getNotification().getEndPoint().getUri(),
-					subscription.getSubscription().getNotification().getEndPoint().getAccept(),
-					subscription.getSubscription().getId().toString(),
-					tenantId2subscriptionId2Context.get(subscription.getTenant(),
-							subscription.getSubscription().getId().toString()),
-					subscription.getSubscription().getThrottling(),
-					subscription.getSubscription().getNotification().getEndPoint().getNotifierInfo(),
-					subscription.getTenant());
-		} catch (URISyntaxException e) {
-			logger.error("Exception ::", e);
-			// Left empty intentionally
-			throw new AssertionError();
+		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
+
+		NotificationHandler handler;
+		if (endpointProtocol.equals("mqtt")) {
+			handler = notificationHandlerMQTT;
+		} else {
+			handler = notificationHandlerREST;
 		}
+		handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+
 	}
+
+	protected abstract Notification getNotification(SubscriptionRequest request, List<Map<String,Object>> dataList, int triggerReason);
 
 	private boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {
 
@@ -745,36 +728,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			}
 		}.start();
 
-	}
-
-	void reportNotification(String tenant, String subId, Long now) {
-		SubscriptionRequest subscription;
-		synchronized (tenant2subscriptionId2Subscription) {
-			subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
-		}
-		if (subscription != null) {
-			subscription.getSubscription().getNotification().setLastNotification(new Date(now));
-			subscription.getSubscription().getNotification().setLastSuccessfulNotification(new Date(now));
-		}
-	}
-
-	void reportFailedNotification(String tenant, String subId, Long now) {
-		SubscriptionRequest subscription;
-		synchronized (tenant2subscriptionId2Subscription) {
-			subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
-		}
-		if (subscription != null) {
-			subscription.getSubscription().getNotification().setLastFailedNotification(new Date(now));
-		}
-	}
-
-	void reportSuccessfulNotification(String tenant, String subId, Long now) {
-		synchronized (tenant2subscriptionId2Subscription) {
-			SubscriptionRequest subscription = tenant2subscriptionId2Subscription.get(tenant, subId);
-			if (subscription != null) {
-				subscription.getSubscription().getNotification().setLastSuccessfulNotification(new Date(now));
-			}
-		}
 	}
 
 	// return true for future date validation

@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
 
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdOptions;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -29,7 +28,7 @@ public class ParamsResolver {
 
 	private final static Logger logger = LogManager.getLogger(ParamsResolver.class);
 
-	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	
 
 	public static QueryParams getQueryParamsFromUriQuery(MultiValueMap<String,String> ngsildQueryParams, Context context)
 			throws ResponseException {

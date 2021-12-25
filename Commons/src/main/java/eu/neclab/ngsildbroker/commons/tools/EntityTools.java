@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -23,7 +22,7 @@ public abstract class EntityTools {
 
 	private static final String BROKER_PREFIX = "ngsildbroker:";
 
-	public static String getRandomID(String prefix) throws URISyntaxException {
+	public static String getRandomID(String prefix) {
 		if (prefix == null) {
 			prefix = ":";
 		}
@@ -36,12 +35,14 @@ public abstract class EntityTools {
 
 	public static Notification squashNotifications(List<Notification> data) {
 		List<Map<String, Object>> newData = new ArrayList<Map<String, Object>>();
+		Set<Object> context = new HashSet<Object>();
 		for (Notification notification : data) {
 			newData.addAll(notification.getData());
+			context.addAll(notification.getContext());
 		}
-		return new Notification(data.get(0).getId(), System.currentTimeMillis(), data.get(0).getSubscriptionId(),
-				newData, data.get(0).getErrorMsg(), data.get(0).getErrorType(), data.get(0).getShortErrorMsg(),
-				data.get(0).isSuccess());
+		return new Notification(data.get(0).getId(), data.get(0).getType(), System.currentTimeMillis(),
+				data.get(0).getSubscriptionId(), newData, data.get(0).getTriggerReason(),
+				new ArrayList<Object>(context));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -99,10 +100,6 @@ public abstract class EntityTools {
 				continue;
 			}
 			List<Map<String, Object>> value = (List<Map<String, Object>>) entry.getValue();
-			boolean multiValue = true;
-			if (value.size() == 1) {
-				multiValue = false;
-			}
 			Map<String, Object> tmp = value.get(0);
 			Object type = tmp.get(NGSIConstants.JSON_LD_TYPE);
 			BaseProperty prop;

@@ -247,7 +247,7 @@ public class SerializationTools {
 				Object value = entry;
 
 				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
-					if (((List) value).size() != 1) {
+					if (((List<Object>) value).size() != 1) {
 						throw new JsonParseException("Relationships have to have exactly one object");
 					}
 					try {
@@ -473,7 +473,7 @@ public class SerializationTools {
 				String propKey = entry.getKey();
 				Object value = entry.getValue();
 				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-					Object propValue = ((List) value).get(0);
+					Object propValue = ((List<Object>) value).get(0);
 					if (propValue instanceof String) {
 						geoValue = DataSerializer.getGeojsonGeometry((String) propValue);
 					} else {

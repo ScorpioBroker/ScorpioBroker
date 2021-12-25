@@ -248,7 +248,7 @@ public interface NGSIConstants {
 	public static final String REGEX_NGSI_LD_ATTR_TYPES = new String(
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
 
-	public final static String NOTIFICATION = "notification";
+	public final static String NOTIFICATION = "Notification";
 	//DO NOT CHANGE THIS HEADERS ARE MADE TO LOWER CASE BY SPRING
 	public static final String TENANT_HEADER = "ngsild-tenant";
 	public static final String LINK_HEADER = "Link";
@@ -266,4 +266,5 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_OBSERVATIONINTERVAL = "https://uri.etsi.org/ngsi-ld/observationInterval";
 	public static final Set<String> LOCATIONS_IN_REGISTRATION = Set.of(NGSI_LD_LOCATION, NGSI_LD_OBSERVATION_SPACE, NGSI_LD_OPERATION_SPACE);
 	public static final String NO_OVERWRITE_OPTION = "noOverwrite";
+	public static final String CSOURCE_NOTIFICATION = "ContextSource Notification";
 }

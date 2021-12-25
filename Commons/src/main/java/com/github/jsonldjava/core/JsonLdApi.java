@@ -38,7 +38,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
  *
  * @author tristan
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class JsonLdApi {
 
 	JsonLdOptions opts;
@@ -1579,12 +1579,14 @@ public class JsonLdApi {
 		// Set link the the value of link in state associated with graph name in
 		// state,
 		// creating a new empty dictionary, if necessary.
+		@SuppressWarnings("unused")
 		final Map<String, EmbedNode> link = state.uniqueEmbeds;
 
 		// 5.
 		// For each id and associated node object node from the set of matched
 		// subjects, ordered by id:
 		for (final String id : ids) {
+			@SuppressWarnings("unused")
 			final Map<String, Object> subject = (Map<String, Object>) matches.get(id);
 
 			// 5.1
@@ -2028,7 +2030,7 @@ public class JsonLdApi {
 		 * 
 		 */
 		private static final long serialVersionUID = 1601961618277557081L;
-		public List<UsagesNode> usages = new ArrayList(4);
+		public List<UsagesNode> usages = new ArrayList<>(4);
 
 		public NodeMapNode(String id) {
 			super();

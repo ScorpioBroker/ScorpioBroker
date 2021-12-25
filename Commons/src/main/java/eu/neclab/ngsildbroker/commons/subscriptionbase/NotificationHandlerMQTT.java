@@ -1,35 +1,36 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.google.common.collect.ArrayListMultimap;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.Notification;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
 class NotificationHandlerMQTT extends BaseNotificationHandler {
 
 	private final String CLIENT_ID = "ScorpioMqttNotifier";
 	private HashMap<URI, MqttClient> uri2client = new HashMap<URI, MqttClient>();
 
-	NotificationHandlerMQTT(BaseSubscriptionService subscriptionManagerService, ObjectMapper objectMapper) {
-		super(subscriptionManagerService, objectMapper);
-
-	}
-
 	@Override
-	protected void sendReply(ResponseEntity<String> reply, URI callback, Map<String, String> clientSettings)
-			throws Exception {
+	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
+		URI callback = request.getSubscription().getNotification().getEndPoint().getUri();
+		Map<String, String> clientSettings = request.getSubscription().getNotification().getEndPoint().getNotifierInfo();
+		ArrayListMultimap<String, String> headers = request.getHeaders();
 		MqttClient client = getClient(callback, clientSettings);
 		String qosString = null;
 		if (clientSettings != null) {
@@ -42,7 +43,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		if (qosString != null) {
 			qos = Integer.parseInt(qosString);
 		}
-		String payload = getPayload(reply);
+		String payload = getPayload(notification, headers);
 		if (client instanceof Mqtt3BlockingClient) {
 			Mqtt3BlockingClient client3 = (Mqtt3BlockingClient) client;
 			client3.publishWith().topic(callback.getPath().substring(1)).qos(MqttQos.fromCode(qos))
@@ -50,16 +51,18 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		} else {
 			Mqtt5BlockingClient client5 = (Mqtt5BlockingClient) client;
 			client5.publishWith().topic(callback.getPath().substring(1))
-					.contentType(reply.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)).qos(MqttQos.fromCode(qos))
+					.contentType(headers.get(HttpHeaders.CONTENT_TYPE).get(0)).qos(MqttQos.fromCode(qos))
 					.payload(payload.getBytes()).send();
 		}
+
 	}
 
-	private String getPayload(ResponseEntity<String> reply) {
-		HttpHeaders headers = reply.getHeaders();
+	private String getPayload(Notification notification, ArrayListMultimap<String, String> headers) throws Exception {
+		
 		// Map<String, String> metaData = new HashMap<String, String>();
 		StringBuilder result = new StringBuilder("{\"" + NGSIConstants.METADATA + "\":{");
-		for (Entry<String, List<String>> entry : headers.entrySet()) {
+		for (Entry<String, Collection<String>> entry : headers.asMap().entrySet()) {
+			ArrayList<String> value = new ArrayList<String>(entry.getValue());
 			result.append("\"");
 			result.append(entry.getKey());
 			result.append("\":");
@@ -71,7 +74,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 				result.setCharAt(result.length() - 1, ']');
 			} else {
 				result.append("\"");
-				result.append(entry.getValue().get(0));
+				result.append(value.get(0));
 				result.append("\"");
 			}
 			result.append(",");
@@ -81,7 +84,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		result.append("\"");
 		result.append(NGSIConstants.BODY);
 		result.append("\":{");
-		result.append(reply.getBody());
+		result.append(notification.toJson());
 		result.append("}");
 		result.append("}");
 		return result.toString();

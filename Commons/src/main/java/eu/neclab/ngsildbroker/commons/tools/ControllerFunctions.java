@@ -33,7 +33,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.EntityQueryService;
+import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
@@ -468,7 +468,7 @@ public class ControllerFunctions {
 	// these are known structures in try catch. failed parsing would rightfully
 	// result in an error
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static ResponseEntity<String> postQuery(EntityQueryService queryService, HttpServletRequest request,
+	public static ResponseEntity<String> postQuery(EntryQueryService queryService, HttpServletRequest request,
 			String payload, Integer limit, Integer offset, String qToken, List<String> options, boolean count,
 			int defaultLimit, int payloadType) {
 		try {

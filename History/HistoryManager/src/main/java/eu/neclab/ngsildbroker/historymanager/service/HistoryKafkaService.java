@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +16,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 @Service
 @ConditionalOnProperty(name = "scorpio.history.autorecording", matchIfMissing = true, havingValue = "active")

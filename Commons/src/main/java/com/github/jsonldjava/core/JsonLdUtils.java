@@ -8,10 +8,11 @@ import java.util.Map;
 
 import com.github.jsonldjava.utils.Obj;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class JsonLdUtils {
 
-    private static final int MAX_CONTEXT_URLS = 10;
+    @SuppressWarnings("unused")
+	private static final int MAX_CONTEXT_URLS = 10;
 
     /**
      * Returns whether or not the given value is a keyword (or a keyword alias).

@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.queryhandler.services;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -43,12 +42,12 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.RemoteQueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.EntityQueryService;
+import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 
 @Service
-public class QueryService implements EntityQueryService{
+public class QueryService implements EntryQueryService{
 
 	private final static Logger logger = LoggerFactory.getLogger(QueryService.class);
 
@@ -136,7 +135,7 @@ public class QueryService implements EntityQueryService{
 	 */
 	public QueryResult getFromContextRegistry(String contextRegistryQuery) throws Exception {
 		// create producer record
-		String contextRegistryData = null;
+		// String contextRegistryData = null;
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 //		logger.trace("getFromContextRegistry() :: started");
 //		ProducerRecord<String, String> record = new ProducerRecord<String, String>(csourceQueryTopic,
@@ -177,7 +176,7 @@ public class QueryService implements EntityQueryService{
 			Integer offset, String qToken, Boolean showServices, Boolean countResult,
 			ArrayListMultimap<String, String> headers, Boolean postQuery) throws ResponseException {
 
-		List<String> aggregatedResult = new ArrayList<String>();
+		
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
 		qp.setLimit(limit);
 		qp.setOffSet(offset);
@@ -252,7 +251,7 @@ public class QueryService implements EntityQueryService{
 								if (uri_tenant != null) {
 									callHeaders.add(NGSIConstants.TENANT_HEADER, uri_tenant);
 								}
-								HttpEntity entity;
+								HttpEntity<String> entity;
 
 								String resultBody;
 								ResponseEntity<String> response;

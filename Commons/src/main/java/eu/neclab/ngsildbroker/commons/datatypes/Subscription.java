@@ -3,7 +3,6 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author hebgen
@@ -31,38 +30,6 @@ public class Subscription {
 	protected String ldQuery;
 	protected LDTemporalQuery ldTempQuery;
 	protected List<URI> requestorList;
-
-
-	public Subscription() {
-		super();
-	}
-
-	public Subscription(Map<String, String> customFlags, List<String> attributeNames, List<EntityInfo> entities,
-			String ldContext, LDGeoQuery ldGeoQuery, String ldQuery, LDTemporalQuery ldTempQuery,
-			List<URI> requestorList, String description, Long expires, String id, String subscriptionName,
-			NotificationParam notification, String status, Integer throttling, Integer timeInterval, String type) {
-		this.description = description;
-		this.expiresAt = expiresAt;
-		this.id = id;
-		this.subscriptionName = subscriptionName;
-		this.notification = notification;
-		this.status = status;
-		this.throttling = throttling;
-		this.timeInterval = timeInterval;
-		this.type = type;
-		this.attributeNames = attributeNames;
-		if (this.attributeNames == null) {
-			this.attributeNames = new ArrayList<String>();
-		}
-
-		this.entities = entities;
-		this.ldContext = ldContext;
-		this.ldGeoQuery = ldGeoQuery;
-		this.ldQuery = ldQuery;
-		this.ldTempQuery = ldTempQuery;
-		this.requestorList = requestorList;
-	}
-
 
 	public List<String> getAttributeNames() {
 		return attributeNames;
