@@ -16,16 +16,17 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.storage.StorageReaderDAO;
+import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 
-
-public abstract class BaseSubscriptionInfoDAO extends StorageReaderDAO implements SubscriptionInfoDAOInterface {
+public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements SubscriptionInfoDAOInterface {
 	private final static Logger logger = LogManager.getLogger(BaseSubscriptionInfoDAO.class);
-
-	
 
 	public Table<String, String, Set<String>> getIds2Type() throws ResponseException {
 		Table<String, String, Set<String>> result = HashBasedTable.create();
@@ -59,7 +60,6 @@ public abstract class BaseSubscriptionInfoDAO extends StorageReaderDAO implement
 		value.add(type);
 	}
 
-
 	public List<String> getStoredSubscriptions() {
 		List<String> tenants;
 		tenants = getTenants();
@@ -72,7 +72,7 @@ public abstract class BaseSubscriptionInfoDAO extends StorageReaderDAO implement
 				result.addAll(getJDBCTemplate(tenantId).queryForList("SELECT subscription_request FROM subscriptions",
 						String.class));
 			}
-		} catch (DataAccessException | ResponseException e) {
+		} catch (DataAccessException e) {
 			logger.error("Subscriptions could not be loaded", e);
 		}
 		return result;
@@ -91,9 +91,30 @@ public abstract class BaseSubscriptionInfoDAO extends StorageReaderDAO implement
 							entry.getKey(), DataSerializer.toJson(entry.getValue()));
 				}
 			}
-		} catch (DataAccessException | ResponseException e) {
+		} catch (DataAccessException e) {
 			logger.error("Subscriptions could not be loaded", e);
 		}
 
+	}
+
+	@Override
+	public List<String> getEntriesFromSub(SubscriptionRequest subscriptionRequest) throws ResponseException {
+		String tenant = subscriptionRequest.getTenant();
+		if(AppConstants.INTERNAL_NULL_KEY.equals(tenant)) {
+			tenant = null;
+		}
+		Subscription subscription = subscriptionRequest.getSubscription();
+		List<QueryParams> qps = ParamsResolver.getQueryParamsFromSubscription(subscription);
+		return query(qps, tenant);
+	}
+
+	private List<String> query(List<QueryParams> qps, String tenant) throws ResponseException {
+		ArrayList<String> result = new ArrayList<String>();
+		for (QueryParams qp : qps) {
+			qp.setTenant(tenant);
+			QueryResult qr = query(qp);
+			result.addAll(qr.getActualDataString());
+		}
+		return result;
 	}
 }

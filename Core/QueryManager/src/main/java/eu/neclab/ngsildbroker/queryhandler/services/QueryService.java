@@ -209,10 +209,11 @@ public class QueryService implements EntryQueryService{
 						logger.trace("Asynchronous 1 context registry");
 						QueryResult brokerList = null;
 						if (cSourceDAO != null) {
-							brokerList = cSourceDAO.queryExternalCsources(qp);
+							brokerList = cSourceDAO.query(qp);
 						} else {
 							//brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
 						}
+						//TODO REWORK THIS!!!
 						Pattern p = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_REGEX);
 						Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);
 						Matcher m;

@@ -217,7 +217,7 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData, "A subscription id is mandatory");
 				}*/
 				if (!hasAtType || !types.contains(NGSIConstants.NGSI_LD_SUBSCRIPTION)) {
-					throw new ResponseException(ErrorType.BadRequestData,
+					throw new ResponseException(ErrorType.InvalidRequest,
 							"A subscription needs type which is Subscription");
 				}
 				if (!((Map<String, Object>) element).containsKey(NGSIConstants.NGSI_LD_NOTIFICATION)) {

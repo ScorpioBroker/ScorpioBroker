@@ -136,8 +136,8 @@ public class HistoryController {
 				additionalHeaders.putAll(HttpHeaders.LINK, additionalLinks);
 			}
 			if (qResult.getActualDataString() != null) {
-				return HttpUtils.generateReply(request, historyDAO.getListAsJsonArray(qResult.getActualDataString()),
-						additionalHeaders, AppConstants.HISTORY_ENDPOINT);
+				return HttpUtils.generateReply(request, qResult, true, countResult, context, links,
+						AppConstants.HISTORY_ENDPOINT);
 			} else {
 				return HttpUtils.generateReply(request, "[]", additionalHeaders, AppConstants.HISTORY_ENDPOINT);
 			}
@@ -162,14 +162,14 @@ public class HistoryController {
 			context = context.parse(links, true);
 			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, context, true);
 			logger.trace("retrieveTemporalEntityById :: completed");
-			List<String> queryResult = historyDAO.query(qp).getActualDataString();
+			QueryResult queryResult = historyDAO.query(qp);
 			if (queryResult == null) {
 				System.err.println();
 			}
-			if (queryResult.isEmpty()) {
+			if (queryResult.getActualDataString().isEmpty()) {
 				throw new ResponseException(ErrorType.NotFound, "Entity not found");
 			}
-			return HttpUtils.generateReply(request, historyDAO.getListAsJsonArray(queryResult),
+			return HttpUtils.generateReply(request, queryResult, false, false, context, links,
 					AppConstants.HISTORY_ENDPOINT);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);

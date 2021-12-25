@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.storage;
 
 import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,15 +10,15 @@ import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.Flyway;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Repository;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -25,25 +26,25 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.DBWriteTemplates;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.tenant.DBUtil;
 
-@Repository
-//@ConditionalOnProperty(value = "writer.enabled", havingValue = "true", matchIfMissing = false)
-public class StorageWriterDAO {
-
-	private final static Logger logger = LogManager.getLogger(StorageWriterDAO.class);
-//	public static final Gson GSON = DataSerializer.GSON;
+public abstract class StorageDAO {
+	private final static Logger logger = LoggerFactory.getLogger(StorageDAO.class);
 
 	@Autowired
 	private JdbcTemplate writerJdbcTemplate;
@@ -53,30 +54,29 @@ public class StorageWriterDAO {
 
 	@Autowired
 	private HikariConfig hikariConfig;
-
 	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
-
 	private TransactionTemplate writerTransactionTemplate;
 	private JdbcTemplate writerJdbcTemplateWithTransaction;
-
 	private DBWriteTemplates defaultTemplates;
 	private HashMap<String, DBWriteTemplates> tenant2Templates = new HashMap<String, DBWriteTemplates>();
+
+	protected abstract StorageFunctionsInterface getStorageFunctions();
+
+	StorageFunctionsInterface storageFunctions;
 
 	@PostConstruct
 	public void init() {
 		writerJdbcTemplate.execute("SELECT 1"); // create connection pool and connect to database
-
-		// https://gist.github.com/mdellabitta/1444003
 		DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(writerDataSource);
 		writerJdbcTemplateWithTransaction = new JdbcTemplate(transactionManager.getDataSource());
 		writerTransactionTemplate = new TransactionTemplate(transactionManager);
 		this.defaultTemplates = new DBWriteTemplates(writerJdbcTemplateWithTransaction, writerTransactionTemplate,
 				writerJdbcTemplate);
+		storageFunctions = getStorageFunctions();
 	}
 
 	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
 			throws SQLException {
-
 		try {
 			String sql;
 			int n = 0;
@@ -101,44 +101,166 @@ public class StorageWriterDAO {
 		return false;
 	}
 
-	public boolean store(String tableName, String columnName, String key, String value, String tenantvalue)
-			throws SQLException {
-		try {
-			String sql;
-			int n = 0;
-			DBWriteTemplates templates = getJDBCTemplates(tenantvalue);
+	protected DBWriteTemplates getJDBCTemplates(BaseRequest request) {
+		return getJDBCTemplates(getTenant(request));
+	}
 
-			if (!value.equals("null")) {
-				sql = "INSERT INTO " + tableName + " (id, " + columnName
-						+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO UPDATE SET " + columnName + " = EXCLUDED."
-						+ columnName;
-				n = templates.getWriterJdbcTemplate().update(sql, key, value);
+	protected DBWriteTemplates getJDBCTemplates(String tenant) {
+		DBWriteTemplates result;
+		if (tenant == null) {
+			result = defaultTemplates;
+		} else {
+			if (tenant2Templates.containsKey(tenant)) {
+				result = tenant2Templates.get(tenant);
 			} else {
-				sql = "DELETE FROM " + tableName + " WHERE id = ?";
-				n = templates.getWriterJdbcTemplate().update(sql, key);
+				DataSource finalDataSource = determineTargetDataSource(tenant);
+				DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(finalDataSource);
+				result = new DBWriteTemplates(new JdbcTemplate(transactionManager.getDataSource()),
+						new TransactionTemplate(transactionManager), new JdbcTemplate(finalDataSource));
+				tenant2Templates.put(tenant, result);
 			}
 
-			logger.trace("Rows affected: " + Integer.toString(n));
-			return true; // (n>0);
-		} catch (Exception e) {
-			logger.error("Exception ::", e);
-			e.printStackTrace();
+		}
+		return result;
+	}
+
+	private String getTenant(BaseRequest request) {
+		String tenant;
+		if (request.getHeaders().containsKey(NGSIConstants.TENANT_HEADER)) {
+			tenant = request.getHeaders().get(NGSIConstants.TENANT_HEADER).get(0);
+			String databasename = "ngb" + tenant;
+			try {
+				storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT, tenant,
+						databasename);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} else {
+			tenant = null;
+		}
+		return tenant;
+
+	}
+
+	public String findDataBaseNameByTenantId(String tenantidvalue) {
+		if (tenantidvalue == null)
+			return null;
+		try {
+			String databasename = "ngb" + tenantidvalue;
+			List<String> data;
+			data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
+			if (data.contains(databasename)) {
+				return databasename;
+			} else {
+				String modifydatabasename = " \"" + databasename + "\"";
+				String sql = "create database " + modifydatabasename + "";
+				writerJdbcTemplate.execute(sql);
+				return databasename;
+			}
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
+
+	public DataSource determineTargetDataSource(String tenantidvalue) {
+
+		if (tenantidvalue == null)
+			return writerDataSource;
+
+		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
+		if (tenantDataSource == null) {
+			try {
+				tenantDataSource = createDataSourceForTenantId(tenantidvalue);
+			} catch (ResponseException e) {
+				logger.error(e.getLocalizedMessage());
+			}
+			flywayMigrate(tenantDataSource);
+			resolvedDataSources.put(tenantidvalue, tenantDataSource);
 		}
 
-		return false;
+		return tenantDataSource;
+	}
+
+	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException {
+		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
+		if (tenantDatabaseName == null) {
+			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
+		}
+		HikariConfig tenantHikariConfig = new HikariConfig();
+		hikariConfig.copyStateTo(tenantHikariConfig);
+		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(hikariConfig.getJdbcUrl(), tenantDatabaseName);
+		tenantHikariConfig.setJdbcUrl(tenantJdbcURL);
+		tenantHikariConfig.setPoolName(tenantDatabaseName + "-db-pool");
+		return new HikariDataSource(tenantHikariConfig);
+	}
+
+	public Boolean flywayMigrate(DataSource tenantDataSource) {
+		try {
+			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
+					.baselineOnMigrate(true).outOfOrder(true).load();
+			flyway.repair();
+			flyway.migrate();
+		} catch (Exception e) {
+			return false;
+		}
+
+		return true;
+	}
+
+	public QueryResult query(QueryParams qp) throws ResponseException {
+		JdbcTemplate template;
+		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+		try {
+
+			String tenantId = qp.getTenant();
+			template = getJDBCTemplates(tenantId).getWriterJdbcTemplate();
+		} catch (Exception e) {
+			throw new ResponseException(ErrorType.TenantNotFound, "tenant was not found");
+		}
+		try {
+			if (qp.getCheck() != null) {
+				String sqlQuery = storageFunctions.typesAndAttributeQuery(qp);
+				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setDataString(list);
+				queryResult.setActualDataString(list);
+				return queryResult;
+			}
+			if (qp.getCountResult() != null && qp.getCountResult() == true) {
+				if (qp.getLimit() == 0) {
+					String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
+					Integer count = template.queryForObject(sqlQueryCount, Integer.class);
+					queryResult.setCount(count);
+					return queryResult;
+				}
+				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
+				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setDataString(list);
+				queryResult.setActualDataString(list);
+				String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
+				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
+				queryResult.setCount(count);
+				return queryResult;
+			} else {
+				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
+				List<String> list = template.queryForList(sqlQuery, String.class);
+				queryResult.setDataString(list);
+				queryResult.setActualDataString(list);
+				return queryResult;
+			}
+		} catch (DataIntegrityViolationException e) {
+			// Empty result don't worry
+			logger.debug("SQL Result Exception::", e);
+			return queryResult;
+		} catch (Exception e) {
+			logger.error("Exception ::", e);
+		}
+		return queryResult;
 	}
 
 	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
 		boolean result = true;
 		DBWriteTemplates templates = getJDBCTemplates(request);
-		// TemporalEntityStorageKey tesk =
-		// DataSerializer.getTemporalEntityStorageKey(key);
-
-		/*
-		 * String entityId = request.getId(); String entityType = request.getType();
-		 * String entityCreatedAt = request.getCreatedAt(); String entityModifiedAt =
-		 * request.getModifiedAt();
-		 */
 		String instanceId = request.getInstanceId();
 		if (request instanceof DeleteHistoryEntityRequest) {
 			result = doTemporalSqlAttrInsert(templates, "null", request.getId(), request.getType(), null,
@@ -306,125 +428,33 @@ public class StorageWriterDAO {
 
 	}
 
-	/*
-	 * private void setJDBCTemplate(BaseRequest request) { synchronized
-	 * (writerJdbcTemplate) { String tenant = getTenant(request); DataSource
-	 * finalDataSource; if (tenant != null) { finalDataSource =
-	 * tenantAwareDataSource.determineTargetDataSource(); } else { finalDataSource =
-	 * writerDataSource; } DataSourceTransactionManager transactionManager = new
-	 * DataSourceTransactionManager(finalDataSource);
-	 * writerJdbcTemplateWithTransaction = new
-	 * JdbcTemplate(transactionManager.getDataSource()); writerTransactionTemplate =
-	 * new TransactionTemplate(transactionManager); writerJdbcTemplate = new
-	 * JdbcTemplate(finalDataSource); } }
-	 */
-	private DBWriteTemplates getJDBCTemplates(BaseRequest request) {
-		return getJDBCTemplates(getTenant(request));
+	protected JdbcTemplate getJDBCTemplate(String tenantId) {
+		return getJDBCTemplates(tenantId).getWriterJdbcTemplate();
 	}
 
-	private DBWriteTemplates getJDBCTemplates(String tenant) {
-		DBWriteTemplates result;
-		if (tenant == null) {
-			result = defaultTemplates;
-		} else {
-			if (tenant2Templates.containsKey(tenant)) {
-				result = tenant2Templates.get(tenant);
-			} else {
-				DataSource finalDataSource = determineTargetDataSource(tenant);
-				DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(finalDataSource);
-				result = new DBWriteTemplates(new JdbcTemplate(transactionManager.getDataSource()),
-						new TransactionTemplate(transactionManager), new JdbcTemplate(finalDataSource));
-				tenant2Templates.put(tenant, result);
-			}
-
+	protected List<String> getTenants() {
+		ArrayList<String> result = new ArrayList<String>();
+		List<Map<String, Object>> temp;
+		try {
+			temp = getJDBCTemplate(null).queryForList("SELECT tenant_id FROM tenant");
+		} catch (DataAccessException e) {
+			throw new AssertionError("Your database setup is corrupte", e);
 		}
+		for (Map<String, Object> entry : temp) {
+			result.add(entry.get("tenant_id").toString());
+		}
+
 		return result;
 	}
 
-	private String getTenant(BaseRequest request) {
-		String tenant;
-		if (request.getHeaders().containsKey(NGSIConstants.TENANT_HEADER)) {
-			tenant = request.getHeaders().get(NGSIConstants.TENANT_HEADER).get(0);
-			String databasename = "ngb" + tenant;
-			try {
-				storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT, tenant,
-						databasename);
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		} else {
-			tenant = null;
-		}
-		return tenant;
-
-	}
-
-	public String findDataBaseNameByTenantId(String tenantidvalue) {
-		if (tenantidvalue == null)
-			return null;
-		try {
-			String databasename = "ngb" + tenantidvalue;
-			List<String> data;
-			data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
-			if (data.contains(databasename)) {
-				return databasename;
-			} else {
-				String modifydatabasename = " \"" + databasename + "\"";
-				String sql = "create database " + modifydatabasename + "";
-				writerJdbcTemplate.execute(sql);
-				return databasename;
-			}
-		} catch (EmptyResultDataAccessException e) {
+	protected String getTenant(String tenantId) {
+		if (tenantId == null) {
 			return null;
 		}
-	}
-
-	public DataSource determineTargetDataSource(String tenantidvalue) {
-
-		if (tenantidvalue == null)
-			return writerDataSource;
-
-		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
-		if (tenantDataSource == null) {
-			try {
-				tenantDataSource = createDataSourceForTenantId(tenantidvalue);
-			} catch (ResponseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			flywayMigrate(tenantDataSource);
-			resolvedDataSources.put(tenantidvalue, tenantDataSource);
+		if (AppConstants.INTERNAL_NULL_KEY.equals(tenantId)) {
+			return null;
 		}
-
-		return tenantDataSource;
-	}
-
-	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException {
-		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
-		if (tenantDatabaseName == null)
-			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
-		// throw new IllegalArgumentException("Given tenant id is not valid : " +
-		// tenantidvalue);
-		HikariConfig tenantHikariConfig = new HikariConfig();
-		hikariConfig.copyStateTo(tenantHikariConfig);
-		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(hikariConfig.getJdbcUrl(), tenantDatabaseName);
-		tenantHikariConfig.setJdbcUrl(tenantJdbcURL);
-		tenantHikariConfig.setPoolName(tenantDatabaseName + "-db-pool");
-		return new HikariDataSource(tenantHikariConfig);
-	}
-
-	public Boolean flywayMigrate(DataSource tenantDataSource) {
-		try {
-			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
-					.baselineOnMigrate(true).outOfOrder(true).load();
-			flyway.repair();
-			flyway.migrate();
-		} catch (Exception e) {
-			return false;
-		}
-
-		return true;
+		return tenantId;
 	}
 
 }

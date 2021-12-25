@@ -74,10 +74,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private final String ALL_TYPES_TYPE = "()";
 
 	private NotificationHandlerREST notificationHandlerREST;
-	// IntervalNotificationHandler intervalHandlerREST;
+	private IntervalNotificationHandler intervalHandlerREST;
 
 	private NotificationHandlerMQTT notificationHandlerMQTT;
-	// IntervalNotificationHandler intervalHandlerMQTT;
+	private IntervalNotificationHandler intervalHandlerMQTT;
 
 	private Timer watchDog = new Timer(true);
 
@@ -103,15 +103,17 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		try {
 			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
 		} catch (ResponseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e.getLocalizedMessage());
 		}
 		notificationHandlerREST = new NotificationHandlerREST(webClient);
-		// intervalHandlerREST = new
-		// IntervalNotificationHandler(notificationHandlerREST, null, null, null);
+		Subscription temp = new Subscription();
+		temp.setId("invalid:base");
+		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,
+				getNotification(new SubscriptionRequest(temp, null, null), null, AppConstants.UPDATE_REQUEST));
+
 		notificationHandlerMQTT = new NotificationHandlerMQTT();
-		// intervalHandlerMQTT = new
-		// IntervalNotificationHandler(notificationHandlerMQTT, null, null, null);
+		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, subscriptionInfoDAO,
+				getNotification(new SubscriptionRequest(temp, null, null), null, AppConstants.UPDATE_REQUEST));
 		logger.trace("call loadStoredSubscriptions() ::");
 		loadStoredSubscriptions();
 
@@ -166,9 +168,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 		if (subscription.getTimeInterval() > 0) {
 			if (endpointProtocol.equals("mqtt")) {
-				// intervalHandlerMQTT.addSub(subscriptionRequest);
+				intervalHandlerMQTT.addSub(subscriptionRequest);
 			} else {
-				// intervalHandlerREST.addSub(subscriptionRequest);
+				intervalHandlerREST.addSub(subscriptionRequest);
 			}
 		} else {
 			this.tenantId2subscriptionId2Context.put(subscriptionRequest.getTenant(), subscription.getId().toString(),
@@ -453,7 +455,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	}
 
-	protected abstract Notification getNotification(SubscriptionRequest request, List<Map<String,Object>> dataList, int triggerReason);
+	protected abstract Notification getNotification(SubscriptionRequest request, List<Map<String, Object>> dataList,
+			int triggerReason);
 
 	private boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {
 

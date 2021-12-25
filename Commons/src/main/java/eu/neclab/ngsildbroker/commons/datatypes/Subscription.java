@@ -193,6 +193,11 @@ public class Subscription {
 
 	public void setActive(boolean isActive) {
 		this.isActive = isActive;
+		if(isActive) {
+			this.status = "active";
+		}else {
+			this.status = "paused";
+		}
 	}
 
 	@Override

@@ -14,7 +14,6 @@ import javax.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -36,7 +35,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 @Service
@@ -50,9 +48,7 @@ public class EntityService implements EntryCRUDService {
 	@Value("${scorpio.directDB}")
 	boolean directDB;
 	public static boolean checkEntity = false;
-	@Autowired
-	@Qualifier("emdao")
-	StorageWriterDAO storageWriterDao;
+
 
 	@Autowired
 	EntityInfoDAO entityInfoDAO;
@@ -125,7 +121,7 @@ public class EntityService implements EntryCRUDService {
 			try {
 				logger.debug("Received message: " + request.getWithSysAttrs());
 				logger.trace("Writing data...");
-				if (storageWriterDao != null && storageWriterDao.storeEntity(request)) {
+				if (entityInfoDAO != null && entityInfoDAO.storeEntity(request)) {
 
 					logger.trace("Writing is complete");
 				}

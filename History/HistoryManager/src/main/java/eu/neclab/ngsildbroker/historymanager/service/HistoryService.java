@@ -14,7 +14,6 @@ import javax.el.MethodNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -37,7 +36,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
@@ -48,10 +46,6 @@ public class HistoryService implements EntryCRUDService {
 
 	@Autowired
 	HistoryDAO historyDAO;
-
-	@Autowired
-	@Qualifier("hhdao")
-	StorageWriterDAO writerDAO;
 
 	@Autowired
 	KafkaTemplate<String, Object> kafkaTemplate;
@@ -95,7 +89,7 @@ public class HistoryService implements EntryCRUDService {
 
 	void pushToDB(HistoryEntityRequest request) throws ResponseException {
 		try {
-			writerDAO.storeTemporalEntity(request);
+			historyDAO.storeTemporalEntity(request);
 		} catch (SQLException e) {
 			throw new ResponseException(ErrorType.InternalError, e.getLocalizedMessage());
 		}
@@ -158,7 +152,7 @@ public class HistoryService implements EntryCRUDService {
 		if (entityList.size() == 0) {
 			throw new ResponseException(ErrorType.NotFound, "Entity not found");
 		}
-		String oldEntry = historyDAO.getListAsJsonArray(entityList);
+		String oldEntry = "[" + String.join(",", entityList) + "]";
 		UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, resolved, entityId, resolvedAttrId,
 				instanceId, oldEntry);
 		handleRequest(request);

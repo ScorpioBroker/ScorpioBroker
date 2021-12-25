@@ -11,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
-import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.registryhandler.config.RegistryJdbcConfig;
 
 @SpringBootApplication
@@ -40,10 +39,6 @@ public class RegistryHandler {
 	}
 
 	
-	@Bean("csdao")
-	StorageWriterDAO storageWriterDAO() {
-		return new StorageWriterDAO();
-	}
 	@Bean("cswebclient")
 	WebClient webClient() {
 		return WebClient.builder().build();

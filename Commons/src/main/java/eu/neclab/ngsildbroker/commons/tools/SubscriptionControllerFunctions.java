@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -35,6 +36,7 @@ import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
+import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
 public class SubscriptionControllerFunctions {
@@ -55,12 +57,14 @@ public class SubscriptionControllerFunctions {
 			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 			body = (Map<String, Object>) JsonLdProcessor
 					.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, atContextAllowed).get(0);
-			subscription = expandSubscription(body, request);
+
 			if (bodyContext instanceof List) {
 				context.addAll((List<Object>) bodyContext);
 			} else {
 				context.add(bodyContext);
 			}
+			subscription = expandSubscription(body, request,
+					JsonLdProcessor.getCoreContextClone().parse(context, true));
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
 					HttpUtils.getHeaders(request));
 			String subId = subscriptionService.subscribe(subRequest);
@@ -73,8 +77,8 @@ public class SubscriptionControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Subscription expandSubscription(Map<String, Object> body, HttpServletRequest request)
-			throws ResponseException {
+	private static Subscription expandSubscription(Map<String, Object> body, HttpServletRequest request,
+			Context context) throws ResponseException {
 		Subscription subscription = new Subscription();
 
 		for (Entry<String, Object> mapEntry : body.entrySet()) {
@@ -143,8 +147,10 @@ public class SubscriptionControllerFunctions {
 				break;
 			case NGSIConstants.NGSI_LD_QUERY:
 				try {
+
 					subscription.setLdQuery(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					QueryParser.parseQuery(subscription.getLdQuery(), context);
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}
@@ -304,8 +310,9 @@ public class SubscriptionControllerFunctions {
 	public static ResponseEntity<String> getAllSubscriptions(SubscriptionCRUDService subscriptionService,
 			HttpServletRequest request, int limit, int offset, boolean count, Logger logger) {
 		logger.trace("getAllSubscriptions() :: started");
-		if(limit < 0 || offset < 0) {
-			return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "offset and limit can not smaller than 0"));
+		if (limit < 0 || offset < 0) {
+			return HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData, "offset and limit can not smaller than 0"));
 		}
 		List<SubscriptionRequest> result = null;
 		result = subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request));
@@ -394,10 +401,20 @@ public class SubscriptionControllerFunctions {
 			HttpUtils.validateUri(id);
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed)
-					.get(0);
-			Subscription subscription = expandSubscription(resolved, request);
+			List<Object> context = new ArrayList<Object>();
+			context.addAll(linkHeaders);
+			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
+			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
+			body = (Map<String, Object>) JsonLdProcessor
+					.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed).get(0);
+
+			if (bodyContext instanceof List) {
+				context.addAll((List<Object>) bodyContext);
+			} else {
+				context.add(bodyContext);
+			}
+			Subscription subscription = expandSubscription(body, request,
+					JsonLdProcessor.getCoreContextClone().parse(context, true));
 			if (subscription.getId() == null) {
 				subscription.setId(id);
 			}
@@ -405,7 +422,7 @@ public class SubscriptionControllerFunctions {
 					HttpUtils.getHeaders(request));
 
 			// expandSubscriptionAttributes(subscription, context);
-			if (resolved == null || subscription == null || !id.equals(subscription.getId())) {
+			if (body == null || subscription == null || !id.equals(subscription.getId())) {
 				return HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.BadRequestData, "empty subscription body"));
 			}

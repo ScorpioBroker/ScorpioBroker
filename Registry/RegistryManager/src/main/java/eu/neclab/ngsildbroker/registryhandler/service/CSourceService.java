@@ -19,7 +19,6 @@ import javax.el.MethodNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -40,7 +39,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
@@ -65,10 +63,6 @@ public class CSourceService implements EntryCRUDService {
 	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1,1,1,TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
 	@Value("${scorpio.directDB}")
 	boolean directDB = true;
-
-	@Autowired
-	@Qualifier("csdao")
-	StorageWriterDAO storageWriterDao;
 
 	private ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 
@@ -102,7 +96,7 @@ public class CSourceService implements EntryCRUDService {
 	}
 
 	private void pushToDB(CSourceRequest request) throws SQLException {
-		this.storageWriterDao.storeRegistryEntry(request);
+		this.csourceInfoDAO.storeRegistryEntry(request);
 	}
 
 	public void csourceTimerTask(ArrayListMultimap<String, String> headers, Map<String, Object> registration) {

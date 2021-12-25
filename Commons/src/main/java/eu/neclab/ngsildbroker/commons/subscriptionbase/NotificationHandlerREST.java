@@ -28,18 +28,20 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 					if (response.statusCode().equals(HttpStatus.OK)) {
 						return Mono.just(Void.class);
 					} else {
-						logger.error("Failed to send notification");
-						logger.error("Failed to send notification");
+
+						logger.error("Failed to send notification" + response.bodyToMono(String.class).block());
 						request.getSubscription().getNotification()
 								.setLastFailedNotification(new Date(System.currentTimeMillis()));
 						return Mono.just(Void.class);
 					}
 				}).doOnError(onError -> {
-					logger.error("Failed to send notification");
+					logger.error("Failed to send notification " + onError.getLocalizedMessage());
 					request.getSubscription().getNotification()
 							.setLastFailedNotification(new Date(System.currentTimeMillis()));
 
-				}).retry(5).block();
+				}).doOnSuccess(response -> {
+					System.err.println("SUCCESSFULL SEND");
+				}).retry(5).subscribe();
 
 	}
 
