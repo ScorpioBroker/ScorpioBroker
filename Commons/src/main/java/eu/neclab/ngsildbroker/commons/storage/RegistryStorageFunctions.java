@@ -15,8 +15,9 @@ import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 
-public class RegistryStorageFunctions extends EntityStorageFunctions {
+public class RegistryStorageFunctions implements StorageFunctionsInterface {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryStorageFunctions.class);
 	private final static String DBCOLUMN_CSOURCE_INFO_ENTITY_ID = "entity_id";
@@ -47,12 +48,9 @@ public class RegistryStorageFunctions extends EntityStorageFunctions {
 		return Collections.unmodifiableMap(map);
 	}
 
-	@Override
-	public String translateNgsildQueryToSql(QueryParams qp) {
+	private String commonTranslateSql(QueryParams qp) {
 		StringBuilder fullSqlWhere = new StringBuilder(70);
 		String sqlWhere = "";
-		boolean csourceInformationIsNeeded = false;
-		boolean sqlOk = false;
 
 		// if (externalCsourcesOnly) {
 		// fullSqlWhere.append("(c.internal = false) AND ");
@@ -90,8 +88,6 @@ public class RegistryStorageFunctions extends EntityStorageFunctions {
 
 				}
 				fullSqlWhere.append(sqlWhere + ") AND ");
-				csourceInformationIsNeeded = true;
-				sqlOk = true;
 
 				sqlWhere += ") OR ";
 			}
@@ -109,8 +105,7 @@ public class RegistryStorageFunctions extends EntityStorageFunctions {
 						+ attrsValue.replace(",", "','") + "')";
 			}
 			fullSqlWhere.append("(" + sqlWhere + ") AND ");
-			csourceInformationIsNeeded = true;
-			sqlOk = true;
+
 		}
 
 		// advanced query "q"
@@ -131,30 +126,31 @@ public class RegistryStorageFunctions extends EntityStorageFunctions {
 				e.printStackTrace();
 			}
 			fullSqlWhere.append(sqlWhere + " AND ");
-			sqlOk = true;
 		}
+		return fullSqlWhere.toString();
+	}
 
-		if (sqlOk) {
-			String sqlQuery = "SELECT DISTINCT c.data " + "FROM " + DBConstants.DBTABLE_CSOURCE + " c ";
-			if (csourceInformationIsNeeded)
-				sqlQuery += "INNER JOIN " + DBConstants.DBTABLE_CSOURCE_INFO + " ci ON (ci.csource_id = c.id) ";
+	@Override
+	public String translateNgsildQueryToSql(QueryParams qp) {
 
-			if (fullSqlWhere.length() > 0) {
-				sqlQuery += "WHERE " + fullSqlWhere.toString() + " 1=1 ";
-			}
-			int limit = qp.getLimit();
-			int offSet = qp.getOffSet();
-			if (limit > 0) {
-				sqlQuery += "LIMIT " + limit + " ";
-			}
-			if (offSet > 0) {
-				sqlQuery += "OFFSET " + offSet + " ";
-			}
-			// order by ?
-			return sqlQuery;
-		} else {
-			return "";
+		String fullSqlWhere = commonTranslateSql(qp);
+		String sqlQuery = "SELECT DISTINCT c.data " + "FROM " + DBConstants.DBTABLE_CSOURCE + " c ";
+
+		sqlQuery += "INNER JOIN " + DBConstants.DBTABLE_CSOURCE_INFO + " ci ON (ci.csource_id = c.id) ";
+
+		if (fullSqlWhere.length() > 0) {
+			sqlQuery += "WHERE " + fullSqlWhere + " 1=1 ";
 		}
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+		if (limit > 0) {
+			sqlQuery += "LIMIT " + limit + " ";
+		}
+		if (offSet > 0) {
+			sqlQuery += "OFFSET " + offSet + " ";
+		}
+		// order by ?
+		return sqlQuery;
 	}
 
 	private String getCommonSqlWhereForTypeIdIdPattern(String typeValue, String idValue, String idPatternValue) {
@@ -163,14 +159,18 @@ public class RegistryStorageFunctions extends EntityStorageFunctions {
 			sqlWhere += getSqlWhereByType(typeValue, false);
 		} else if (!idValue.isEmpty() && idPatternValue.isEmpty()) { // case 2: type+id
 			sqlWhere += "(";
-			sqlWhere += getSqlWhereByType(typeValue, true);
-			sqlWhere += " OR ";
+			if (typeValue != null) {
+				sqlWhere += getSqlWhereByType(typeValue, true);
+				sqlWhere += " OR ";
+			}
 			sqlWhere += getSqlWhereById(typeValue, idValue);
 			sqlWhere += ")";
 		} else if (idValue.isEmpty() && !idPatternValue.isEmpty()) { // case 3: type+idPattern
 			sqlWhere += "(";
-			sqlWhere += getSqlWhereByType(typeValue, true);
-			sqlWhere += " OR ";
+			if (typeValue != null) {
+				sqlWhere += getSqlWhereByType(typeValue, true);
+				sqlWhere += " OR ";
+			}
 			sqlWhere += getSqlWhereByIdPattern(typeValue, idPatternValue);
 			sqlWhere += ")";
 		}
@@ -193,14 +193,14 @@ public class RegistryStorageFunctions extends EntityStorageFunctions {
 
 	private String getSqlWhereById(String typeValue, String idValue) {
 		String sqlWhere = "( ";
-
-		if (typeValue.indexOf(",") == -1) {
-			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = '" + typeValue + "' AND ";
-		} else {
-			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN ('" + typeValue.replace(",", "','")
-					+ "') AND ";
+		if (typeValue != null) {
+			if (typeValue.indexOf(",") == -1) {
+				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = '" + typeValue + "' AND ";
+			} else {
+				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN ('" + typeValue.replace(",", "','")
+						+ "') AND ";
+			}
 		}
-
 		if (idValue.indexOf(",") == -1) {
 			sqlWhere += "(" + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_ID + " = '" + idValue + "' OR " + "'" + idValue
 					+ "' ~ " + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + ")";
@@ -315,6 +315,33 @@ public class RegistryStorageFunctions extends EntityStorageFunctions {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
 		}
 		return sqlWhere.toString();
+	}
+
+	@Override
+	public String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+		String fullSqlWhereProperty = commonTranslateSql(qp);
+		String tableName = DBConstants.DBTABLE_CSOURCE + " c ";
+		String sqlQuery = "SELECT Count(*) FROM " + tableName + " ";
+		if (fullSqlWhereProperty.length() > 0) {
+			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
+		}
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+
+		if (limit > 0) {
+			sqlQuery += "LIMIT " + limit + " ";
+		}
+		if (offSet > 0) {
+			sqlQuery += "OFFSET " + offSet + " ";
+		}
+		// order by ?
+		return sqlQuery;
+	}
+
+	@Override
+	public String typesAndAttributeQuery(QueryParams qp) {
+		// TODO Auto-generated method stub
+		return "";
 	}
 
 }

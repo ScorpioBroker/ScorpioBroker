@@ -148,9 +148,9 @@ public class SubscriptionControllerFunctions {
 			case NGSIConstants.NGSI_LD_QUERY:
 				try {
 
-					subscription.setLdQuery(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-					QueryParser.parseQuery(subscription.getLdQuery(), context);
+					subscription.setLdQuery(QueryParser.parseQuery(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
+							context).toSql());
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}

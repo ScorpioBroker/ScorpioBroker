@@ -296,6 +296,13 @@ public final class HttpUtils {
 	public static ResponseEntity<String> generateReply(HttpServletRequest request, QueryResult qResult,
 			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint)
 			throws ResponseException {
+		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
+		if (count == true) {
+			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
+		}
+		if (qResult == null || qResult.getActualDataString() == null || qResult.getActualDataString().size() == 0) {
+			return HttpUtils.generateReply(request, "[]", additionalHeaders, AppConstants.HISTORY_ENDPOINT);
+		}
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
 		ArrayList<Object> additionalLinks = new ArrayList<Object>();
@@ -304,10 +311,6 @@ public final class HttpUtils {
 		}
 		if (prevLink != null) {
 			additionalLinks.add(prevLink);
-		}
-		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
-		if (count == true) {
-			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 		}
 
 		if (!additionalLinks.isEmpty()) {

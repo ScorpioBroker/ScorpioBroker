@@ -22,7 +22,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 	private Random random = new Random();
 
 	public String translateNgsildQueryToSql(QueryParams qp) throws ResponseException {
-		StringBuilder fullSqlWhereProperty = commonTranslateSql(qp);
+		String fullSqlWhereProperty = commonTranslateSql(qp);
 		String tableDataColumn;
 		if (qp.getKeyValues()) {
 			if (qp.getIncludeSysAttrs()) {
@@ -52,7 +52,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		}
 		String sqlQuery = "SELECT DISTINCT " + dataColumn + " as data FROM " + DBConstants.DBTABLE_ENTITY + " ";
 		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
+			sqlQuery += "WHERE " + fullSqlWhereProperty + " ";
 		}
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();
@@ -114,7 +114,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		return sqlWhere.toString();
 	}
 
-	private StringBuilder commonTranslateSql(QueryParams qp) {
+	private String commonTranslateSql(QueryParams qp) {
 		StringBuilder fullSqlWhereProperty = new StringBuilder(70);
 		String dbColumn, sqlOperator;
 		String sqlWhereProperty = null;
@@ -207,11 +207,11 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			fullSqlWhereProperty.append(" AND ");
 			fullSqlWhereProperty.append(sqlWhereProperty);
 		}
-		return fullSqlWhereProperty;
+		return fullSqlWhereProperty.toString();
 	}
 
 	public String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
-		StringBuilder fullSqlWhereProperty = commonTranslateSql(qp);
+		String fullSqlWhereProperty = commonTranslateSql(qp);
 		String tableName = DBConstants.DBTABLE_ENTITY;
 		String sqlQuery = "SELECT Count(*) FROM " + tableName + " ";
 		if (fullSqlWhereProperty.length() > 0) {

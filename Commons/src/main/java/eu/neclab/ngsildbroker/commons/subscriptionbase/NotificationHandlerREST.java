@@ -35,13 +35,16 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 						return Mono.just(Void.class);
 					}
 				}).doOnError(onError -> {
-					logger.error("Failed to send notification " + onError.getLocalizedMessage());
-					request.getSubscription().getNotification()
-							.setLastFailedNotification(new Date(System.currentTimeMillis()));
-
+					logger.error("Failed to send notification retrying");
 				}).doOnSuccess(response -> {
 					System.err.println("SUCCESSFULL SEND");
-				}).retry(5).subscribe();
+				}).retry(5).doOnError(onError -> {
+					logger.error("Finally failed to send notification");
+					logger.debug(onError.getMessage());
+					request.getSubscription().getNotification()
+							.setLastFailedNotification(new Date(System.currentTimeMillis()));
+					return;
+				}).subscribe();
 
 	}
 

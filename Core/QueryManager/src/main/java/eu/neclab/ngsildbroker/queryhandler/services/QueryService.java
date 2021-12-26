@@ -25,6 +25,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,7 +48,7 @@ import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 
 @Service
-public class QueryService implements EntryQueryService{
+public class QueryService implements EntryQueryService {
 
 	private final static Logger logger = LoggerFactory.getLogger(QueryService.class);
 
@@ -58,7 +59,6 @@ public class QueryService implements EntryQueryService{
 
 	@Autowired
 	ObjectMapper objectMapper;
-
 
 	@Value("${kafka.replytimeout}")
 	long replyTimeout = 5000;
@@ -74,7 +74,6 @@ public class QueryService implements EntryQueryService{
 
 	@Value("${scorpio.directDB}")
 	boolean directDbConnection;
-
 
 	@Autowired
 	RestTemplate restTemplate;
@@ -94,8 +93,6 @@ public class QueryService implements EntryQueryService{
 		// kafkaTemplate.setReplyTimeout(replyTimeout);
 	}
 
-	
-	
 	/**
 	 * Method is used for query request and query response is being implemented as
 	 * synchronized flow
@@ -176,7 +173,6 @@ public class QueryService implements EntryQueryService{
 			Integer offset, String qToken, Boolean showServices, Boolean countResult,
 			ArrayListMultimap<String, String> headers, Boolean postQuery) throws ResponseException {
 
-		
 		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
 		qp.setLimit(limit);
 		qp.setOffSet(offset);
@@ -197,7 +193,7 @@ public class QueryService implements EntryQueryService{
 						}
 					} else {
 						return null;
-						//return getFromStorageManager(DataSerializer.toJson(qp));
+						// return getFromStorageManager(DataSerializer.toJson(qp));
 					}
 				}
 			});
@@ -211,9 +207,9 @@ public class QueryService implements EntryQueryService{
 						if (cSourceDAO != null) {
 							brokerList = cSourceDAO.query(qp);
 						} else {
-							//brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
+							// brokerList = getFromContextRegistry(DataSerializer.toJson(qp));
 						}
-						//TODO REWORK THIS!!!
+						// TODO REWORK THIS!!!
 						Pattern p = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_REGEX);
 						Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);
 						Matcher m;
@@ -225,11 +221,11 @@ public class QueryService implements EntryQueryService{
 						}
 						for (String brokerInfo : brokerList.getActualDataString()) {
 							m = p.matcher(brokerInfo);
-							if(!m.find()) {
-							System.err.println();	
+							if (!m.find()) {
+								System.err.println();
 							}
 							final String uri_tenant;
-							
+
 							String uri = m.group(1);
 							mtenant = ptenant.matcher(brokerInfo);
 							if (mtenant != null && mtenant.matches()) {
@@ -287,13 +283,15 @@ public class QueryService implements EntryQueryService{
 						logger.debug("csource call response :: ");
 						// fromCsources.forEach(e -> logger.debug(e));
 						return getDataFromCsources(callablesCollection);
+					} catch (ResourceAccessException e) {
+						logger.error("Failed to reach an endpoint in the registry");
+						logger.error(e.getMessage());
 					} catch (Exception e) {
-						e.printStackTrace();
 						logger.error(
 								"No reply from registry. Looks like you are running without a context source registry.");
 						logger.error(e.getMessage());
-						return null;
 					}
+					return null;
 				}
 			});
 
@@ -328,13 +326,13 @@ public class QueryService implements EntryQueryService{
 			result = fromStorage;
 		} else {
 
-			//TODO redo with views in sql and add proper storagemanager solution
-			String data = null; //operations.getMessage(qToken, KafkaConstants.PAGINATION_TOPIC);
+			// TODO redo with views in sql and add proper storagemanager solution
+			String data = null; // operations.getMessage(qToken, KafkaConstants.PAGINATION_TOPIC);
 			if (data == null) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The provided qtoken is not valid. Provide a valid qtoken or remove the parameter to start a new query");
 			}
-			
+
 		}
 
 		result.setqToken(qToken);

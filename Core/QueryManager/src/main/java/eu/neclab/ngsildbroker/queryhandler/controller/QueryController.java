@@ -282,9 +282,9 @@ public class QueryController {// implements QueryHandlerInterface {
 					return ResponseEntity.status(HttpStatus.NOT_FOUND)
 							.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJson());
 				}
-				ResponseEntity<String> result = HttpUtils.generateReply(request, qResult, !retrieve, countResult, context,
+				return  HttpUtils.generateReply(request, qResult, !retrieve, countResult, context,
 						linkHeaders, AppConstants.QUERY_ENDPOINT);
-				return result;
+				
 			} else {
 				ResponseException responseException = new ResponseException(ErrorType.BadRequestData, "invalid query");
 				return ResponseEntity.status(responseException.getHttpStatus())

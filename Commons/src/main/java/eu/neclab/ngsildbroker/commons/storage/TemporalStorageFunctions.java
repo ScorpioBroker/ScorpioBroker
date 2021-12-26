@@ -15,8 +15,9 @@ import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 
-public class TemporalStorageFunctions extends EntityStorageFunctions {
+public class TemporalStorageFunctions implements StorageFunctionsInterface {
 	protected final static Logger logger = LoggerFactory.getLogger(TemporalStorageFunctions.class);
 
 	protected final static String DBCOLUMN_HISTORY_ENTITY_ID = "id";
@@ -105,7 +106,7 @@ public class TemporalStorageFunctions extends EntityStorageFunctions {
 		return sqlQuery;
 	}
 
-	private String commonTranslateSql(QueryParams qp) throws ResponseException {
+	protected String commonTranslateSql(QueryParams qp) throws ResponseException {
 		StringBuilder fullSqlWhere = new StringBuilder(70);
 		String sqlWhereGeoquery = "";
 		String sqlWhere = "";
@@ -250,5 +251,51 @@ public class TemporalStorageFunctions extends EntityStorageFunctions {
 		}
 		return sqlQuery;
 
+	}
+
+	
+
+	@Override
+	public String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
+			String geoproperty) throws ResponseException {
+		StringBuilder sqlWhere = new StringBuilder(50);
+
+		String georelOp = georel.getGeorelOp();
+		logger.trace("  Geoquery term georelOp: " + georelOp);
+		String dbColumn = "geovalue";
+		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
+				+ coordinates + " }'), 4326)";
+		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georelOp);
+
+		switch (georelOp) {
+		case NGSIConstants.GEO_REL_NEAR:
+			if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
+				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
+					sqlWhere.append("NOT ");
+				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
+						+ "::geography, " + georel.getDistanceValue() + ") ");
+			} else {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"GeoQuery: Type and distance are required for near relation");
+			}
+			break;
+		case NGSIConstants.GEO_REL_WITHIN:
+		case NGSIConstants.GEO_REL_CONTAINS:
+		case NGSIConstants.GEO_REL_OVERLAPS:
+		case NGSIConstants.GEO_REL_INTERSECTS:
+		case NGSIConstants.GEO_REL_EQUALS:
+		case NGSIConstants.GEO_REL_DISJOINT:
+			sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + ", " + referenceValue + ") ");
+			break;
+		default:
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
+		}
+		return sqlWhere.toString();
+	}
+
+	@Override
+	public String typesAndAttributeQuery(QueryParams qp) {
+		// TODO Auto-generated method stub
+		return "";
 	}
 }

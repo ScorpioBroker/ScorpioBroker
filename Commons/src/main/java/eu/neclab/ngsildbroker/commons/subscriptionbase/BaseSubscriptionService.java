@@ -270,8 +270,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		synchronized (tenantId2subscriptionId2Context) {
 			this.tenantId2subscriptionId2Context.remove(tenant, id);
 		}
-		// intervalHandlerREST.removeSub(id);
-		// intervalHandlerMQTT.removeSub(id);
+		intervalHandlerREST.removeSub(id);
+		intervalHandlerMQTT.removeSub(id);
 		List<EntityInfo> entities = removedSub.getSubscription().getEntities();
 		if (entities == null || entities.isEmpty()) {
 			synchronized (type2EntitiesSubscriptions) {

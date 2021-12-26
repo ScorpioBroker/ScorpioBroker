@@ -82,7 +82,7 @@ public class HistoryController {
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(name = "options", required = false) List<String> options,
-			@RequestParam(value = "count", required = false) Boolean countResult) {
+			@RequestParam(value = "count", required = false, defaultValue = "false") Boolean countResult) {
 
 		try {
 			logger.trace("retrieveTemporalEntity :: started");
@@ -116,15 +116,6 @@ public class HistoryController {
 			qp.setCountResult(countResult);
 
 			QueryResult qResult = historyDAO.query(qp);
-			String nextLink = HttpUtils.generateNextLink(request, qResult);
-			String prevLink = HttpUtils.generatePrevLink(request, qResult);
-			ArrayList<String> additionalLinks = new ArrayList<String>();
-			if (nextLink != null) {
-				additionalLinks.add(nextLink);
-			}
-			if (prevLink != null) {
-				additionalLinks.add(prevLink);
-			}
 			ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
 
 			if (countResult != null) {
@@ -132,15 +123,8 @@ public class HistoryController {
 					additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 				}
 			}
-			if (!additionalLinks.isEmpty()) {
-				additionalHeaders.putAll(HttpHeaders.LINK, additionalLinks);
-			}
-			if (qResult.getActualDataString() != null) {
-				return HttpUtils.generateReply(request, qResult, true, countResult, context, links,
-						AppConstants.HISTORY_ENDPOINT);
-			} else {
-				return HttpUtils.generateReply(request, "[]", additionalHeaders, AppConstants.HISTORY_ENDPOINT);
-			}
+			return HttpUtils.generateReply(request, qResult, true, countResult, context, links,
+					AppConstants.HISTORY_ENDPOINT);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
