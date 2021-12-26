@@ -106,7 +106,12 @@ public abstract class EntityTools {
 			if (type == null) {
 				prop = generateFakeProperty(key, tmp);
 			} else {
-				String typeString = ((List<String>) type).get(0);
+				String typeString;
+				if(type instanceof List) {
+				typeString = ((List<String>) type).get(0);
+				}else{
+					typeString = (String) type;
+				}
 				switch (typeString) {
 				case NGSIConstants.NGSI_LD_GEOPROPERTY:
 					prop = SerializationTools.parseGeoProperty((List<Map<String, Object>>) value, key);

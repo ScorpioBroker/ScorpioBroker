@@ -44,6 +44,8 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 					request.getSubscription().getNotification()
 							.setLastFailedNotification(new Date(System.currentTimeMillis()));
 					return;
+				}).onErrorResume(fallback -> {
+					return Mono.empty();
 				}).subscribe();
 
 	}
