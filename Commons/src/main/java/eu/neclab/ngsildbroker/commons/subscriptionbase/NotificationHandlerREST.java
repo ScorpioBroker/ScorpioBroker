@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
+import java.time.Duration;
 import java.util.Date;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -7,6 +8,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 class NotificationHandlerREST extends BaseNotificationHandler {
 
@@ -25,21 +27,26 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 						httpHeadersOnWebClientBeingBuilt.add(entry.getKey(), entry.getValue());
 					});
 				}).bodyValue(notification.toJson()).exchangeToMono(response -> {
-					if (response.statusCode().equals(HttpStatus.OK)) {
-						return Mono.just(Void.class);
-					} else {
-
-						logger.error("Failed to send notification");
+					if (response.statusCode().is4xxClientError() || response.statusCode().is5xxServerError()) {
+						logger.error("Failed to send notification with return code " + response.statusCode()
+								+ " subscription id: " + request.getSubscription().getId() + " notification id: "
+								+ notification.getId());
 						request.getSubscription().getNotification()
 								.setLastFailedNotification(new Date(System.currentTimeMillis()));
 						return Mono.just(Void.class);
+					} else {
+						return Mono.just(Void.class);
+
 					}
 				}).doOnError(onError -> {
-					logger.error("Failed to send notification retrying");
+					logger.error("Failed to send notification retrying subscription id: "
+							+ request.getSubscription().getId() + " notification id: " + notification.getId());
 				}).doOnSuccess(response -> {
-					System.err.println("SUCCESSFULL SEND");
-				}).retry(5).doOnError(onError -> {
-					logger.error("Finally failed to send notification");
+					logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
+							+ notification.getId());
+				}).retryWhen(Retry.backoff(5, Duration.ofSeconds(2))).doOnError(onError -> {
+					logger.error("Finally failed to send notification subscription id: "
+							+ request.getSubscription().getId() + " notification id: " + notification.getId());
 					logger.debug(onError.getMessage());
 					request.getSubscription().getNotification()
 							.setLastFailedNotification(new Date(System.currentTimeMillis()));

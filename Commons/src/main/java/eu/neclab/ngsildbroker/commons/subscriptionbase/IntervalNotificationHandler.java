@@ -65,6 +65,7 @@ public class IntervalNotificationHandler {
 				for (String entry : entries) {
 					dataList.add((Map<String, Object>) JsonUtils.fromString(entry));
 				}
+				baseNotification.setSubscriptionId(subscriptionRequest.getSubscription().getId());
 				baseNotification.setNotifiedAt(System.currentTimeMillis());
 				baseNotification.setData(dataList);
 				notificationHandler.notify(baseNotification, subscriptionRequest);

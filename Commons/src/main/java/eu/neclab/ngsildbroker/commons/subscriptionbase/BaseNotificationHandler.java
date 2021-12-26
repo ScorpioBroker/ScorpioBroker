@@ -27,6 +27,9 @@ abstract class BaseNotificationHandler implements NotificationHandler {
 
 	@Override
 	public void notify(Notification notification, SubscriptionRequest subscriptionRequest) {
+		if(!subscriptionRequest.getSubscription().isActive()) {
+			return;
+		}
 		Subscription subscription = subscriptionRequest.getSubscription();
 		Long now = System.currentTimeMillis() / 1000;
 		if (subscription.getThrottling() > 0) {

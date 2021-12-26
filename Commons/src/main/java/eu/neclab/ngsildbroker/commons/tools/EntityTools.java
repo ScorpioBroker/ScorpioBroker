@@ -107,9 +107,9 @@ public abstract class EntityTools {
 				prop = generateFakeProperty(key, tmp);
 			} else {
 				String typeString;
-				if(type instanceof List) {
-				typeString = ((List<String>) type).get(0);
-				}else{
+				if (type instanceof List) {
+					typeString = ((List<String>) type).get(0);
+				} else {
 					typeString = (String) type;
 				}
 				switch (typeString) {
@@ -118,6 +118,9 @@ public abstract class EntityTools {
 					continue;
 				case NGSIConstants.NGSI_LD_RELATIONSHIP:
 					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
+					break;
+				case NGSIConstants.NGSI_LD_DATE_TIME:
+					prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
 					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
 				default:
@@ -144,6 +147,15 @@ public abstract class EntityTools {
 	public static Set<String> getTypesFromEntity(BaseRequest createRequest) {
 		List<String> temp = (List<String>) createRequest.getFinalPayload().get(NGSIConstants.JSON_LD_TYPE);
 		return new HashSet<String>(temp);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static String getInstanceId(Map<String, Object> jsonElement) {
+		Object instanceId = jsonElement.get(NGSIConstants.NGSI_LD_INSTANCE_ID);
+		if (instanceId == null) {
+			return null;
+		}
+		return ((List<Map<String, String>>) instanceId).get(0).get(NGSIConstants.JSON_LD_ID);
 	}
 
 }

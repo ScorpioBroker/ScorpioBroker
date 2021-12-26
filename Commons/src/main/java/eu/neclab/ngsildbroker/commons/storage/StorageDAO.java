@@ -261,15 +261,15 @@ public abstract class StorageDAO {
 	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
 		boolean result = true;
 		DBWriteTemplates templates = getJDBCTemplates(request);
-		String instanceId = request.getInstanceId();
+		
 		if (request instanceof DeleteHistoryEntityRequest) {
-			result = doTemporalSqlAttrInsert(templates, "null", request.getId(), request.getType(), null,
-					request.getCreatedAt(), request.getModifiedAt(), instanceId, null);
+			result = doTemporalSqlAttrInsert(templates, "null", request.getId(), request.getType(), ((DeleteHistoryEntityRequest)request).getResolvedAttrId(),
+					request.getCreatedAt(), request.getModifiedAt(), ((DeleteHistoryEntityRequest)request).getInstanceId(), null);
 		} else {
 			for (HistoryAttribInstance entry : request.getAttribs()) {
 				result = result && doTemporalSqlAttrInsert(templates, entry.getElementValue(), entry.getEntityId(),
 						entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
-						entry.getEntityModifiedAt(), instanceId, entry.getOverwriteOp());
+						entry.getEntityModifiedAt(), entry.getInstanceId(), entry.getOverwriteOp());
 			}
 		}
 		return result;

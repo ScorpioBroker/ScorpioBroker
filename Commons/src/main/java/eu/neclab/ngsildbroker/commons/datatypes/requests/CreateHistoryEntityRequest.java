@@ -14,6 +14,7 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
 public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 
@@ -101,18 +102,13 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 			}
 
 			String attribId = entry.getKey();
-			// Boolean createTemporalEntityIfNotExists = (attributeCount == 0); // if it's
-			// the first attribute, create the
-			// //
-			// temporalentity record
-
 			if (entry.getValue() instanceof List) {
 				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
 				// TODO check if changes in the array are reflect in the object
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity);
 					storeEntry(getId(), type, createdAt, modifiedAt, attribId, JsonUtils.toPrettyString(jsonElement),
-							false);
+							EntityTools.getInstanceId(jsonElement), false);
 					// pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId,
 					// jsonElement.toString(), createTemporalEntityIfNotExists, false);
 				}

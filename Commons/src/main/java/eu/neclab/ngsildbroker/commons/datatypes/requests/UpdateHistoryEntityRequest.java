@@ -12,6 +12,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
 public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 
@@ -47,7 +48,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now, true);
 					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload,
-							JsonUtils.toPrettyString(jsonElement), false);
+							JsonUtils.toPrettyString(jsonElement), EntityTools.getInstanceId(jsonElement), false);
 				}
 			}
 		}
@@ -101,7 +102,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, now);
 					try {
 						storeEntry(getId(), null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement),
-								false);
+								EntityTools.getInstanceId(jsonElement), false);
 					} catch (IOException e) {
 						// Should never happen
 					}

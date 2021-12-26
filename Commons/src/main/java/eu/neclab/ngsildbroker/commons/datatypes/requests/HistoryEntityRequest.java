@@ -20,7 +20,7 @@ public class HistoryEntityRequest extends BaseRequest {
 	protected String createdAt;
 	protected String modifiedAt;
 	protected String now;
-	private String instanceId;
+	
 
 
 
@@ -70,9 +70,9 @@ public class HistoryEntityRequest extends BaseRequest {
 	}
 
 	protected void storeEntry(String entityId, String entityType, String entityCreatedAt, String entityModifiedAt,
-			String attributeId, String elementValue, Boolean overwriteOp) {
+			String attributeId, String elementValue, String instanceId, Boolean overwriteOp) {
 		attribs.add(new HistoryAttribInstance(entityId, entityType, entityCreatedAt, entityModifiedAt, attributeId,
-				elementValue, overwriteOp));
+				elementValue, instanceId, overwriteOp));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -130,13 +130,4 @@ public class HistoryEntityRequest extends BaseRequest {
 		jsonElement.put(propertyName, arr);
 		return jsonElement;
 	}
-
-	public String getInstanceId() {
-		return this.instanceId;
-	}
-
-	public void setInstanceId(String instanceId) {
-		this.instanceId = instanceId;
-	}
-
 }

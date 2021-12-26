@@ -67,7 +67,7 @@ public class HistoryService implements EntryCRUDService {
 		return createTemporalEntity(headers, resolved, false);
 	}
 
-	private String createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	String createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			boolean fromEntity) throws ResponseException, Exception {
 		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
 		logger.trace("creating temporal entity");
@@ -75,7 +75,7 @@ public class HistoryService implements EntryCRUDService {
 		return request.getId();
 	}
 
-	void pushToKafka(BaseRequest request) throws ResponseException {
+	private void pushToKafka(BaseRequest request) throws ResponseException {
 		if (historyToKafkaEnabled) {
 			kafkaExecutor.execute(new Runnable() {
 				@Override
@@ -87,7 +87,7 @@ public class HistoryService implements EntryCRUDService {
 		}
 	}
 
-	void pushToDB(HistoryEntityRequest request) throws ResponseException {
+	private void pushToDB(HistoryEntityRequest request) throws ResponseException {
 		try {
 			historyDAO.storeTemporalEntity(request);
 		} catch (SQLException e) {

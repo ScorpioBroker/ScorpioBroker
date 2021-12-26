@@ -362,7 +362,7 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"The key " + activeProperty + " is an invalid entry.");
 				}
-				validateDateTime();
+				validateDateTime(activeProperty);
 				return;
 			case NGSIConstants.NGSI_LD_TIME_POPERTY:
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isTemporalQ) {
@@ -484,7 +484,7 @@ class NGSIObject {
 		}
 		if (isScalar) {
 			if (Constants.allowedDateTimes.get(payloadType).contains(expandedProperty)) {
-				validateDateTime();
+				validateDateTime(activeProperty);
 				return;
 			}
 			if (NGSIConstants.NGSI_LD_DATA_SET_ID.equals(expandedProperty)) {
@@ -557,10 +557,10 @@ class NGSIObject {
 
 	}
 
-	private void validateDateTime() throws ResponseException {
+	private void validateDateTime(String propertyName) throws ResponseException {
 		String dateString = (String) ((Map<String, Object>) this.element).get(JsonLdConsts.VALUE);
 		if (!AppConstants.DATE_TIME_MATCHER.matcher(dateString).matches()) {
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid date time found");
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid date time format found on " + propertyName);
 		}
 
 	}

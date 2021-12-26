@@ -7,9 +7,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class DeleteHistoryEntityRequest extends HistoryEntityRequest {
 
-	@SuppressWarnings("unused")
 	private String resolvedAttrId;
-	@SuppressWarnings("unused")
 	private String instanceId;
 
 	public DeleteHistoryEntityRequest() {
@@ -20,19 +18,14 @@ public class DeleteHistoryEntityRequest extends HistoryEntityRequest {
 		super(headers, null, entityId, AppConstants.DELETE_REQUEST);
 		this.resolvedAttrId = resolvedAttrId;
 		this.instanceId = instanceId;
-
 	}
-//TODO Fill up logic
-	/*
-	 * private void deleteTemporalEntity(String payload, boolean fromEntity) throws
-	 * ResponseException, Exception { TemporalEntityStorageKey tesk = new
-	 * TemporalEntityStorageKey(this.id); tesk.setAttributeId(resolvedAttrId);
-	 * tesk.setInstanceId(instanceId); String messageKey =
-	 * DataSerializer.toJson(tesk); logger.trace("message key created : " +
-	 * messageKey); //
-	 * kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(),
-	 * messageKey.getBytes(), // "null".getBytes()); //
-	 * logger.trace("temporal entity (" + entityId + ") deleted"); }
-	 */
+
+	public String getResolvedAttrId() {
+		return resolvedAttrId;
+	}
+
+	public String getInstanceId() {
+		return instanceId;
+	}
 
 }
