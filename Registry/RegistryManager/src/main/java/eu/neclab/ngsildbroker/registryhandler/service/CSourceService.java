@@ -224,9 +224,6 @@ public class CSourceService implements EntryCRUDService {
 		synchronized (this.csourceIds) {
 			if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
 				throw new ResponseException(ErrorType.NotFound, registrationId + " not found.");
-			} else {
-				this.csourceIds.remove(tenantId, registrationId);
-
 			}
 		}
 
@@ -235,6 +232,7 @@ public class CSourceService implements EntryCRUDService {
 		sendToKafka(requestForSub);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		pushToDB(request);
+		this.csourceIds.remove(tenantId, registrationId);
 		return true;
 
 	}

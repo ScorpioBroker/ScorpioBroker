@@ -286,7 +286,7 @@ public abstract class StorageDAO {
 					+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
 			n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value);
 		} else {
-			sql = "DELETE CASCADE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = ?";
+			sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = ?";
 			n = templates.getWriterJdbcTemplate().update(sql, request.getId());
 		}
 		return n > 0;
