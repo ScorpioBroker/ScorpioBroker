@@ -31,7 +31,7 @@ abstract class BaseNotificationHandler implements NotificationHandler {
 			return;
 		}
 		Subscription subscription = subscriptionRequest.getSubscription();
-		Long now = System.currentTimeMillis() / 1000;
+		Long now = System.currentTimeMillis();
 		if (subscription.getThrottling() > 0) {
 			synchronized (subId2Notifications) {
 				subId2Notifications.put(subscription.getId(), notification);
@@ -53,7 +53,7 @@ abstract class BaseNotificationHandler implements NotificationHandler {
 									.squashNotifications(subId2Notifications.removeAll(subscription.getId()));
 
 							Long now = System.currentTimeMillis();
-							subId2LastReport.put(subscription.getId(), now / 1000);
+							subId2LastReport.put(subscription.getId(), now);
 							reportNotification(subscription, now);
 							try {
 								logger.trace("Sending notification");
@@ -61,8 +61,6 @@ abstract class BaseNotificationHandler implements NotificationHandler {
 								reportSuccessfulNotification(subscription, now);
 							} catch (Exception e) {
 								logger.error("Exception ::", e);
-								reportFailedNotification(subscription, now);
-								e.printStackTrace();
 							}
 						}
 					}
@@ -82,7 +80,6 @@ abstract class BaseNotificationHandler implements NotificationHandler {
 
 	void reportNotification(Subscription subscription, Long now) {
 		subscription.getNotification().setLastNotification(new Date(now));
-		subscription.getNotification().setLastSuccessfulNotification(new Date(now));
 	}
 
 	void reportFailedNotification(Subscription subscription, Long now) {

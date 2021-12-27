@@ -75,9 +75,6 @@ public class NotificationParam {
 	public void setLastFailedNotification(Date lastFailedNotification) {
 		this.lastFailedNotification = lastFailedNotification;
 	}
-
-
-
 	public void finalize() throws Throwable {
 
 	}
