@@ -229,12 +229,12 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification entry");
 				}
 			} else {
-				validateSubscription(expandedProperty, activeProperty, payloadType);
+				validateSubscription(expandedProperty, activeProperty, api, payloadType);
 			}
 			break;
 		case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
 			if (activeProperty != null) {
-				validateSubscription(expandedProperty, activeProperty, payloadType);
+				validateSubscription(expandedProperty, activeProperty, api, payloadType);
 			}
 			break;
 		case AppConstants.CSOURCE_REG_CREATE_PAYLOAD:
@@ -296,7 +296,7 @@ class NGSIObject {
 		}
 	}
 
-	private void validateSubscription(String expandedProperty, String activeProperty, int payloadType)
+	private void validateSubscription(String expandedProperty, String activeProperty, JsonLdApi api, int payloadType)
 			throws ResponseException {
 		if (isScalar) {
 			switch (expandedProperty) {
@@ -328,7 +328,7 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"The key " + activeProperty + " is an invalid entry.");
 				}
-				validateGeometry();
+				compactAndValidateGeoProperty(api);
 				return;
 			case NGSIConstants.NGSI_LD_GEO_REL:
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {

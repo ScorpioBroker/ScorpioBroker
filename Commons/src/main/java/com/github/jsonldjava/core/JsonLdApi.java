@@ -256,26 +256,43 @@ public class JsonLdApi {
 					// isArray(compactedValue)
 					// && ((List<Object>) expandedValue).size() == 0);
 				}
-				if (endPoint == AppConstants.REGISTRY_ENDPOINT
-						&& NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
-					isGeoProperty = true;
-				}
-				if (isGeoProperty && NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
-					Object potentialString = ((Map<String, Object>) ((List) expandedValue).get(0))
-							.get(JsonLdConsts.VALUE);
-					if (potentialString instanceof String) {
-						try {
-							Object geoProp = JsonUtils.fromString((String) potentialString);
-							Object expandedGeoProp = expandWithCoreContext(geoProp);
-							final String alias = activeCtx.compactIri(expandedProperty, true);
-							result.put(alias,
-									compact(activeCtx, activeProperty, expandedGeoProp, compactArrays, endPoint));
-						} catch (IOException e) {
-							// Should never happen
-							e.printStackTrace();
-						}
-						continue;
+				Object potentialString = null;
+				switch (endPoint) {
+				case AppConstants.REGISTRY_ENDPOINT:
+					if (NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
+						isGeoProperty = true;
+						potentialString = ((Map<String, Object>) ((List) expandedValue).get(0)).get(JsonLdConsts.VALUE);
 					}
+					break;
+				case AppConstants.SUBSCRIPTION_ENDPOINT:
+					if (NGSIConstants.NGSI_LD_LOCATION.equals(expandedProperty)) {
+						isGeoProperty = true;
+						potentialString = ((Map<String, Object>) ((List) expandedValue).get(0)).get(JsonLdConsts.VALUE);
+					}
+					break;
+				case AppConstants.NOTIFICATION_ENDPOINT:
+				case AppConstants.QUERY_ENDPOINT:
+				case AppConstants.HISTORY_ENDPOINT:
+					if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
+						potentialString = ((Map<String, Object>) ((List) expandedValue).get(0)).get(JsonLdConsts.VALUE);
+					}
+					break;
+				default:
+					break;
+				}
+
+				if (isGeoProperty && potentialString != null && potentialString instanceof String) {
+					try {
+						Object geoProp = JsonUtils.fromString((String) potentialString);
+						Object expandedGeoProp = expandWithCoreContext(geoProp);
+						final String alias = activeCtx.compactIri(expandedProperty, true);
+						result.put(alias, compact(activeCtx, activeProperty, expandedGeoProp, compactArrays, endPoint));
+					} catch (IOException e) {
+						// Should never happen
+						e.printStackTrace();
+					}
+					continue;
+
 				}
 				// 7.2)
 				if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
@@ -504,6 +521,7 @@ public class JsonLdApi {
 
 		// 2)
 		return element;
+
 	}
 
 	private Object expandWithCoreContext(Object geoProp) {
