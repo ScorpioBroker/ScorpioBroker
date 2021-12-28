@@ -426,6 +426,11 @@ class NGSIObject {
 				}
 
 			}
+			if(expandedProperty.equals(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES)) {
+				if(!(this.element instanceof List) || ((List)this.element).isEmpty()) {
+					throw new ResponseException(ErrorType.InvalidRequest, "watchedAttributes has to be either a String or an array of Strings.");
+				}
+			}
 			throw new ResponseException(ErrorType.BadRequestData,
 					"The key " + activeProperty + " is an invalid entry.");
 		}
@@ -457,10 +462,7 @@ class NGSIObject {
 
 	}
 
-	private void validateGeometry() {
-		// TODO Auto-generated method stub
 
-	}
 
 	private boolean checkForEntities() throws ResponseException {
 		if (this.parent != null) {
