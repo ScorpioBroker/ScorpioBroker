@@ -62,6 +62,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
+import eu.neclab.ngsildbroker.commons.tools.BeanTools;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
@@ -81,9 +82,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private Timer watchDog = new Timer(true);
 
-	@Autowired
-	@Qualifier("subwebclient")
-	private WebClient webClient;
+	private WebClient webClient = BeanTools.getWebClient();
 
 	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
