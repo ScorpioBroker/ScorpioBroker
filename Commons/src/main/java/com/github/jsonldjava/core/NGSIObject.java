@@ -222,7 +222,7 @@ class NGSIObject {
 							"A subscription needs type which is Subscription");
 				}
 				if (!types.contains(NGSIConstants.NGSI_LD_SUBSCRIPTION)) {
-					throw new ResponseException(ErrorType.InvalidRequest,
+					throw new ResponseException(ErrorType.BadRequestData,
 							"A subscription needs type which is Subscription");
 				}
 				if (!((Map<String, Object>) element).containsKey(NGSIConstants.NGSI_LD_NOTIFICATION)) {
