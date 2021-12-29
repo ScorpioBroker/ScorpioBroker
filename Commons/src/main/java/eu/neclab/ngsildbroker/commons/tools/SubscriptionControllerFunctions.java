@@ -426,6 +426,9 @@ public class SubscriptionControllerFunctions {
 				return HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.BadRequestData, "empty subscription body"));
 			}
+			if (subscription.getNotification().getEndPoint() == null ) {
+				throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
+			}
 			subscriptionService.updateSubscription(subscriptionRequest);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);

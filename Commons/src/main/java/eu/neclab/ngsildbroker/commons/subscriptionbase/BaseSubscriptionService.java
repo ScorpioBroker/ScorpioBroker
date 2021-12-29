@@ -244,6 +244,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			logger.error("Invalid expire date!");
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 		}
+		if (subscription.getNotification().getEndPoint() == null ) {
+			throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
+		}
 
 	}
 
