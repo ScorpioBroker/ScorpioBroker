@@ -39,6 +39,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
+import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import eu.neclab.ngsildbroker.commons.subscriptionbase.querybase.BaseQueryService;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
@@ -46,7 +48,7 @@ import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 
 @Service
-public class CSourceService implements EntryCRUDService {
+public class CSourceService extends BaseQueryService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 
@@ -249,6 +251,16 @@ public class CSourceService implements EntryCRUDService {
 
 	public QueryResult query(QueryParams qp) throws ResponseException {
 		return csourceInfoDAO.query(qp);
+	}
+
+	@Override
+	protected StorageDAO getQueryDAO() {
+		return csourceInfoDAO;
+	}
+
+	@Override
+	protected StorageDAO getCsourceDAO() {
+		return null;
 	}
 
 }

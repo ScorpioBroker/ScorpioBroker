@@ -350,7 +350,7 @@ public abstract class StorageDAO {
 								sql = "SELECT type, createdat, modifiedat FROM " + DBConstants.DBTABLE_ENTITY
 										+ " WHERE id = ?";
 								List<Map<String, Object>> tempResult = templates.getWriterJdbcTemplateWithTransaction()
-										.queryForList(sql, entityId);
+									.queryForList(sql, entityId);
 								if (tempResult.isEmpty()) {
 									logger.error("Recovery failed");
 									return tn;

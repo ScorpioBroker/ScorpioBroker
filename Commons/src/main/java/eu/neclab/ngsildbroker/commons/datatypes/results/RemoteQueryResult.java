@@ -1,16 +1,17 @@
 package eu.neclab.ngsildbroker.commons.datatypes.results;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -22,8 +23,9 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
  */
 public class RemoteQueryResult extends QueryResult {
 
-	private HashMap<String, ObjectNode> id2Data = new HashMap<String, ObjectNode>();
-	private ObjectMapper objectMapper = new ObjectMapper();
+	private static final Logger logger = LoggerFactory.getLogger(RemoteQueryResult.class);
+	private HashMap<String, Map<String, Object>> id2Data = new HashMap<String, Map<String, Object>>();
+
 	private ArrayList<String> DO_NOT_MERGE = new ArrayList<String>();
 
 	public RemoteQueryResult(String errorMsg, ErrorType errorType, int shortErrorMsg, boolean success) {
@@ -35,15 +37,16 @@ public class RemoteQueryResult extends QueryResult {
 		DO_NOT_MERGE.add(NGSIConstants.NGSI_LD_MODIFIED_AT);
 	}
 
-	public void addData(JsonNode node) {
-		if (node.isArray()) {
-			Iterator<JsonNode> it = node.elements();
-			while (it.hasNext()) {
-				addData(it.next());
+	@SuppressWarnings("unchecked")
+	public void addData(Object node) {
+		if (node instanceof List) {
+			List<Object> list = (List<Object>) node;
+			for (Object obj : list) {
+				addData(obj);
 			}
 		} else {
-			ObjectNode objNode = (ObjectNode) node;
-			String id = objNode.get(NGSIConstants.JSON_LD_ID).asText();
+			Map<String, Object> objNode = (Map<String, Object>) node;
+			String id = (String) objNode.get(NGSIConstants.JSON_LD_ID);
 			if (id2Data.containsKey(id)) {
 				if (!mergeEntity(id2Data.get(id), objNode)) {
 					id2Data.put(id, objNode);
@@ -54,64 +57,67 @@ public class RemoteQueryResult extends QueryResult {
 		}
 	}
 
-	private boolean mergeEntity(ObjectNode oldNode, ObjectNode newNode) {
-		if (!oldNode.get(NGSIConstants.JSON_LD_TYPE).get(0).asText()
-				.equals(newNode.get(NGSIConstants.JSON_LD_TYPE).get(0).asText())) {
+	@SuppressWarnings("unchecked")
+	private boolean mergeEntity(Map<String, Object> oldNode, Map<String, Object> newNode) {
+		if (!((List<String>) oldNode.get(NGSIConstants.JSON_LD_TYPE)).get(0)
+				.equals(((List<String>) newNode.get(NGSIConstants.JSON_LD_TYPE)).get(0))) {
 			return false;
 		}
-		Iterator<Entry<String, JsonNode>> it = newNode.fields();
+		Iterator<Entry<String, Object>> it = newNode.entrySet().iterator();
 		while (it.hasNext()) {
-			Entry<String, JsonNode> next = it.next();
+			Entry<String, Object> next = it.next();
 			String attrName = next.getKey();
-			JsonNode attrValue = next.getValue();
-			if (oldNode.has(attrName)) {
-				JsonNode oldAttrValue = oldNode.get(attrName);
+			Object attrValue = next.getValue();
+			if (oldNode.containsKey(attrName)) {
+				Object oldAttrValue = oldNode.get(attrName);
 				mergeAttributeValue(oldAttrValue, attrValue, oldNode, attrName);
 			} else {
-				oldNode.set(attrName, attrValue);
+				oldNode.put(attrName, attrValue);
 			}
 		}
 		return true;
 	}
 
-	private void mergeAttributeValue(JsonNode oldAttrValue, JsonNode attrValue, ObjectNode oldNode, String fieldName) {
+	@SuppressWarnings("unchecked")
+	private void mergeAttributeValue(Object oldAttrValue, Object attrValue, Map<String, Object> oldNode,
+			String fieldName) {
 		// make everything into arrays for equal treatment
 
 		if (DO_NOT_MERGE.contains(fieldName)) {
 			return;
 		}
-		if (!oldAttrValue.isArray()) {
-			ArrayNode temp = objectMapper.createArrayNode();
+		if (!(oldAttrValue instanceof List)) {
+			ArrayList<Object> temp = new ArrayList<Object>();
 			temp.add(oldAttrValue);
 			oldAttrValue = temp;
 		}
-		if (!attrValue.isArray()) {
-			ArrayNode temp = objectMapper.createArrayNode();
+		if (!(attrValue instanceof List)) {
+			ArrayList<Object> temp = new ArrayList<Object>();
 			temp.add(attrValue);
 			attrValue = temp;
 		}
-		Iterator<JsonNode> it = attrValue.iterator();
+		Iterator<Map<String, Object>> it = ((List<Map<String, Object>>) attrValue).iterator();
 		while (it.hasNext()) {
-			JsonNode next = it.next();
-			Iterator<JsonNode> it2 = oldAttrValue.iterator();
+			Map<String, Object> next = it.next();
+			Iterator<Map<String, Object>> it2 = ((List<Map<String, Object>>) oldAttrValue).iterator();
 			boolean addToOld = true;
 			while (it2.hasNext()) {
-				JsonNode oldNext = it2.next();
-				String oldAttrType = oldNext.get(NGSIConstants.JSON_LD_TYPE).get(0).asText();
+				Map<String, Object> oldNext = it2.next();
+				String oldAttrType = ((List<String>) oldNext.get(NGSIConstants.JSON_LD_TYPE)).get(0);
 				// if types don't match we don't care about other details it's a different value
 				// to be added
-				if (oldAttrType.equals(next.get(NGSIConstants.JSON_LD_TYPE).get(0).asText())) {
-					JsonNode dataset = next.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
-					JsonNode oldDataset = oldNext.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
-					if ((dataset == null && oldDataset == null)
-							|| (dataset != null && oldDataset != null && dataset.get(0).get(NGSIConstants.JSON_LD_ID)
-									.asText().equals(oldDataset.get(0).get(NGSIConstants.JSON_LD_ID).asText()))) {
-						JsonNode observedAtNew = next.get(NGSIConstants.NGSI_LD_OBSERVED_AT);
-						JsonNode observedAtOld = oldNext.get(NGSIConstants.NGSI_LD_OBSERVED_AT);
-						JsonNode modifiedAtNew = next.get(NGSIConstants.NGSI_LD_MODIFIED_AT);
-						JsonNode modifiedAtOld = oldNext.get(NGSIConstants.NGSI_LD_MODIFIED_AT);
-						JsonNode createdAtNew = next.get(NGSIConstants.NGSI_LD_CREATED_AT);
-						JsonNode createdAtOld = oldNext.get(NGSIConstants.NGSI_LD_CREATED_AT);
+				if (oldAttrType.equals(((List<String>) next.get(NGSIConstants.JSON_LD_TYPE)).get(0))) {
+					Object dataset = next.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+					Object oldDataset = oldNext.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+					if ((dataset == null && oldDataset == null) || (dataset != null && oldDataset != null
+							&& ((List<Map<String, Object>>) dataset).get(0).get(NGSIConstants.JSON_LD_ID).equals(
+									((List<Map<String, Object>>) oldDataset).get(0).get(NGSIConstants.JSON_LD_ID)))) {
+						Object observedAtNew = next.get(NGSIConstants.NGSI_LD_OBSERVED_AT);
+						Object observedAtOld = oldNext.get(NGSIConstants.NGSI_LD_OBSERVED_AT);
+						Object modifiedAtNew = next.get(NGSIConstants.NGSI_LD_MODIFIED_AT);
+						Object modifiedAtOld = oldNext.get(NGSIConstants.NGSI_LD_MODIFIED_AT);
+						Object createdAtNew = next.get(NGSIConstants.NGSI_LD_CREATED_AT);
+						Object createdAtOld = oldNext.get(NGSIConstants.NGSI_LD_CREATED_AT);
 						if (observedAtNew != null || observedAtOld != null) {
 							if (compareDates(observedAtOld, observedAtNew)) {
 								it2.remove();
@@ -142,22 +148,23 @@ public class RemoteQueryResult extends QueryResult {
 				}
 			}
 			if (addToOld) {
-				((ArrayNode) oldAttrValue).add(next);
+				((List<Object>) oldAttrValue).add(next);
 			}
 		}
 	}
 
-	private boolean compareDates(JsonNode oldDate, JsonNode newDate) {
+	@SuppressWarnings("unchecked")
+	private boolean compareDates(Object oldDate, Object newDate) {
 		String oldToComp, newToComp;
 		if (oldDate == null) {
 			oldToComp = "";
 		} else {
-			oldToComp = oldDate.get(0).get(NGSIConstants.JSON_LD_VALUE).asText();
+			oldToComp = (String) ((List<Map<String, Object>>) oldDate).get(0).get(NGSIConstants.JSON_LD_VALUE);
 		}
 		if (newDate == null) {
 			newToComp = "";
 		} else {
-			newToComp = newDate.get(0).get(NGSIConstants.JSON_LD_VALUE).asText();
+			newToComp = (String) ((List<Map<String, Object>>) newDate).get(0).get(NGSIConstants.JSON_LD_VALUE);
 		}
 		if (newToComp.compareTo(oldToComp) > 0) {
 			return true;
@@ -165,26 +172,24 @@ public class RemoteQueryResult extends QueryResult {
 		return false;
 	}
 
-	public HashMap<String, ObjectNode> getId2Data() {
+	public HashMap<String, Map<String, Object>> getId2Data() {
 		return id2Data;
 	}
 
-	public void setId2Data(HashMap<String, ObjectNode> id2Data) {
+	public void setId2Data(HashMap<String, Map<String, Object>> id2Data) {
 		this.id2Data = id2Data;
 	}
 
 	@Override
 	public List<String> getActualDataString() {
 		ArrayList<String> result = new ArrayList<String>();
-		for (ObjectNode entry : id2Data.values()) {
+		for (Map<String, Object> entry : id2Data.values()) {
 			try {
-				result.add(objectMapper.writeValueAsString(entry));
-			} catch (JsonProcessingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				result.add(JsonUtils.toPrettyString(entry));
+			} catch (IOException e) {
+				logger.error("Failed to generate data output");
 			}
 		}
-		// TODO Auto-generated method stub
 		return result;
 	}
 

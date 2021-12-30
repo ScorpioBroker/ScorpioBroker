@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
 import java.util.List;
+
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
@@ -16,7 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.tools.ControllerFunctions;
+import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
+import eu.neclab.ngsildbroker.commons.tools.QueryControllerFunctions;
+import eu.neclab.ngsildbroker.queryhandler.services.EntityPostQueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 
 @RestController
@@ -24,16 +27,18 @@ import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 public class EntityOperationQueryController {
 
 	@Autowired
-	QueryService queryService;
+	private QueryService queryService;
 
-	@Value("${defaultLimit}")
-	int defaultLimit = 50;
+	@Value("${scorpio.entity.default-limit:50}")
+	private int defaultLimit;
 
-	@Value("${maxLimit}")
-	int maxLimit = 1000;
+	@Value("${scorpio.entity.batch-operations.query.max-limit:1000}")
+	private int maxLimit;
 
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
-	String coreContext;
+	private String coreContext;
+
+	private PayloadQueryParamParser paramParser = new EntityPostQueryParser();
 
 	@PostConstruct
 	public void init() {
@@ -47,7 +52,8 @@ public class EntityOperationQueryController {
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
-		return ControllerFunctions.postQuery(queryService, request, payload, limit, offset, qToken, options, count,
-				defaultLimit, AppConstants.QUERY_PAYLOAD);
+
+		return QueryControllerFunctions.postQuery(queryService, request, payload, limit, offset, qToken, options, count,
+				defaultLimit, maxLimit, AppConstants.QUERY_PAYLOAD, paramParser );
 	}
 }

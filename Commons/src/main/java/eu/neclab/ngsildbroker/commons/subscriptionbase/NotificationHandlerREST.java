@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.time.Duration;
 import java.util.Date;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;

@@ -36,11 +36,13 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import eu.neclab.ngsildbroker.commons.subscriptionbase.querybase.BaseQueryService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
 @Service
-public class HistoryService implements EntryCRUDService {
+public class HistoryService extends BaseQueryService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryService.class);
 
@@ -170,5 +172,15 @@ public class HistoryService implements EntryCRUDService {
 			pushToDB(request);
 		}
 		pushToKafka(request);
+	}
+
+	@Override
+	protected StorageDAO getQueryDAO() {
+		return historyDAO;
+	}
+
+	@Override
+	protected StorageDAO getCsourceDAO() {
+		return null;
 	}
 }

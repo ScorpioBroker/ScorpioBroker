@@ -24,7 +24,7 @@ public class QueryResult extends BaseResult {
 	private Integer resultsLeftBefore;
 	private List<String> dataString;
 	private List<String> actualDataString;
-	private Integer count;
+	private Integer count = 0;
 	
 	public Integer getResultsLeftBefore() {
 		return resultsLeftBefore;

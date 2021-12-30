@@ -63,7 +63,6 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ATTRIBUTES = "https://uri.etsi.org/ngsi-ld/attributes";
 	public final static String NGSI_LD_DATE_TIME = "https://uri.etsi.org/ngsi-ld/DateTime";
 	public final static String NGSI_LD_DATE = "https://uri.etsi.org/ngsi-ld/Date";
-	public final static String NGSI_LD_TIME = "https://uri.etsi.org/ngsi-ld/TimeAt";
 	public final static String NGSI_LD_INFORMATION = "https://uri.etsi.org/ngsi-ld/information";
 	public final static String NGSI_LD_RELATIONSHIPS = "https://uri.etsi.org/ngsi-ld/relationshipNames";
 	public final static String NGSI_LD_PROPERTIES = "https://uri.etsi.org/ngsi-ld/propertyNames";
@@ -130,7 +129,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ATTRIBUTE_COUNT = "https://uri.etsi.org/ngsi-ld/default-context/attributeCount";
 	public final static String NGSI_LD_TEMPORAL_QUERY = "https://uri.etsi.org/ngsi-ld/temporalQ";
 	public final static String NGSI_LD_MANAGEMENTINTERVAL = "https://uri.etsi.org/ngsi-ld/managementInterval";
-
+	public static final String NGSI_LD_GEOREL = "https://uri.etsi.org/ngsi-ld/georel";
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_DEFAULT_PREFIX, NGSI_LD_HAS_VALUE, NGSI_LD_HAS_OBJECT, JSON_LD_VALUE, NGSI_LD_LOCATION,
@@ -267,4 +266,5 @@ public interface NGSIConstants {
 	public static final Set<String> LOCATIONS_IN_REGISTRATION = Set.of(NGSI_LD_LOCATION, NGSI_LD_OBSERVATION_SPACE, NGSI_LD_OPERATION_SPACE);
 	public static final String NO_OVERWRITE_OPTION = "noOverwrite";
 	public static final String CSOURCE_NOTIFICATION = "ContextSource Notification";
+	
 }

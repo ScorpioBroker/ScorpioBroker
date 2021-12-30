@@ -32,7 +32,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.tools.ControllerFunctions;
+import eu.neclab.ngsildbroker.commons.tools.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 
@@ -76,7 +76,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PostMapping
 	public ResponseEntity<String> createEntity(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
-		return ControllerFunctions.createEntry(entityService, request, payload, AppConstants.ENTITY_CREATE_PAYLOAD,
+		return EntryControllerFunctions.createEntry(entityService, request, payload, AppConstants.ENTITY_CREATE_PAYLOAD,
 				AppConstants.ENTITES_URL, logger);
 	}
 
@@ -91,7 +91,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PatchMapping("/{entityId}/attrs")
 	public ResponseEntity<String> updateEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload) {
-		return ControllerFunctions.updateEntry(entityService, request, entityId, payload,
+		return EntryControllerFunctions.updateEntry(entityService, request, entityId, payload,
 				AppConstants.ENTITY_UPDATE_PAYLOAD, logger);
 	}
 
@@ -106,7 +106,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PostMapping("/{entityId}/attrs")
 	public ResponseEntity<String> appendEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
 			@RequestBody String payload, @RequestParam(required = false, name = "options") String options) {
-		return ControllerFunctions.appendToEntry(entityService, request, entityId, payload, options,
+		return EntryControllerFunctions.appendToEntry(entityService, request, entityId, payload, options,
 				AppConstants.ENTITY_UPDATE_PAYLOAD, logger);
 	}
 
@@ -200,6 +200,6 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@DeleteMapping("/{entityId}")
 	public ResponseEntity<String> deleteEntity(HttpServletRequest request, @PathVariable("entityId") String entityId) {
-		return ControllerFunctions.deleteEntry(entityService, request, entityId, logger);
+		return EntryControllerFunctions.deleteEntry(entityService, request, entityId, logger);
 	}
 }
