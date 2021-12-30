@@ -43,6 +43,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
@@ -242,6 +243,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			logger.error("Invalid expire date!");
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 		}
+		if (subscription.getNotification().getEndPoint() == null ) {
+			throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
+		}
 
 	}
 
@@ -307,6 +311,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			}
 			if (subscription.getEntities() != null && !subscription.getEntities().isEmpty()) {
 				oldSub.setEntities(subscription.getEntities());
+			}
+			if (subscription.isActive() == false) {
+				oldSub.setStatus(NGSIConstants.ISACTIVE_FALSE);
+			} else {
+				oldSub.setStatus(NGSIConstants.ISACTIVE_TRUE);
+			}
+			if (subscription.getExpiresAt() != null && !isValidFutureDate(subscription.getExpiresAt())) {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 			}
 			if (subscription.getExpiresAt() != null) {
 				oldSub.setExpiresAt(subscription.getExpiresAt());

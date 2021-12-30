@@ -319,7 +319,7 @@ public class SubscriptionControllerFunctions {
 		int toIndex = offset + limit;
 		ArrayList<Object> additionalLinks = new ArrayList<Object>();
 		if (limit == 0 || toIndex > result.size() - 1) {
-			toIndex = result.size() - 1;
+			toIndex = result.size();
 			if (toIndex < 0) {
 				toIndex = 0;
 			}
@@ -425,6 +425,9 @@ public class SubscriptionControllerFunctions {
 			if (body == null || subscription == null || !id.equals(subscription.getId())) {
 				return HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.BadRequestData, "empty subscription body"));
+			}
+			if (subscription.getNotification().getEndPoint() == null ) {
+				throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
 			}
 			subscriptionService.updateSubscription(subscriptionRequest);
 		} catch (Exception exception) {
