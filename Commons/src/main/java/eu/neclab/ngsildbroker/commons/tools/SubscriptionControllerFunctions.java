@@ -319,7 +319,7 @@ public class SubscriptionControllerFunctions {
 		int toIndex = offset + limit;
 		ArrayList<Object> additionalLinks = new ArrayList<Object>();
 		if (limit == 0 || toIndex > result.size() - 1) {
-			toIndex = result.size() - 1;
+			toIndex = result.size();
 			if (toIndex < 0) {
 				toIndex = 0;
 			}
