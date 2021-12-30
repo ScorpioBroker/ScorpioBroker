@@ -254,6 +254,7 @@ public interface NGSIConstants {
 	public static final String LINK_HEADER = "Link";
 	public static final String QUERY_TYPE = "Query";
 	public static final String ISACTIVE_FALSE = "paused";
+	public static final String ISACTIVE_TRUE = "active";
 	
 	public static final Set<String> CORE_CONTEXT_URLS = Sets.newHashSet(
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld",
