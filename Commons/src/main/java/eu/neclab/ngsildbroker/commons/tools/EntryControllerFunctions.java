@@ -392,7 +392,10 @@ public class EntryControllerFunctions {
 			logger.trace("create entity :: started");
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-
+			if (payload == null) {
+				return HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload"));
+			}
 			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
