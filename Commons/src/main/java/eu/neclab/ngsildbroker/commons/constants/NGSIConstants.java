@@ -267,5 +267,6 @@ public interface NGSIConstants {
 	public static final Set<String> LOCATIONS_IN_REGISTRATION = Set.of(NGSI_LD_LOCATION, NGSI_LD_OBSERVATION_SPACE, NGSI_LD_OPERATION_SPACE);
 	public static final String NO_OVERWRITE_OPTION = "noOverwrite";
 	public static final String CSOURCE_NOTIFICATION = "ContextSource Notification";
+	public static final String QUERY_PARAMETER_LAST_N = "lastN";
 	
 }
