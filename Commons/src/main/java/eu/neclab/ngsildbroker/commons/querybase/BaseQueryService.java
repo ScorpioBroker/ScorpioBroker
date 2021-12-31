@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.commons.subscriptionbase.querybase;
+package eu.neclab.ngsildbroker.commons.querybase;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -75,28 +75,12 @@ public abstract class BaseQueryService implements EntryQueryService {
 	 * Method is used for query request and query response is being implemented as
 	 * synchronized flow
 	 * 
-	 * @param storageManagerQuery
+	 * @param qp
 	 * @return String
 	 * @throws Exception
 	 */
-	public QueryResult getFromStorageManager(String storageManagerQuery) throws Exception {
-		// create producer record
+	public QueryResult getFromStorageManager(QueryParams qp) throws Exception {
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-//		logger.trace("getFromStorageManager() :: started");
-//		ProducerRecord<String, String> record = new ProducerRecord<String, String>(requestTopic,
-//				storageManagerQuery);
-//		// set reply topic in header
-//		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()));
-//		RequestReplyFuture<String, String, String> sendAndReceive = kafkaTemplate.sendAndReceive(record);
-//		// get consumer record
-//		ConsumerRecord<String, String> consumerRecord = sendAndReceive.get();
-//		// read from byte array
-//		List<String> entityList = new ArrayList<String>();
-//		
-//		entityList.add(consumerRecord.value());
-//		// return consumer value
-//		logger.trace("getFromStorageManager() :: completed");
-//		queryResult.setActualDataString(entityList);
 		return queryResult;
 	}
 
@@ -108,28 +92,12 @@ public abstract class BaseQueryService implements EntryQueryService {
 	 * Method is used for query request and query response is being implemented as
 	 * synchronized flow
 	 * 
-	 * @param contextRegistryQuery
+	 * @param qp
 	 * @return String
 	 * @throws Exception
 	 */
-	public QueryResult getFromContextRegistry(String contextRegistryQuery) throws Exception {
-		// create producer record
-		// String contextRegistryData = null;
+	public QueryResult getFromContextRegistry(QueryParams qp) throws Exception {
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-//		logger.trace("getFromContextRegistry() :: started");
-//		ProducerRecord<String, String> record = new ProducerRecord<String, String>(csourceQueryTopic,
-//				contextRegistryQuery);
-//		// set reply topic in header
-//		record.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, queryResultTopic.getBytes()))
-//				.add(KafkaHeaders.MESSAGE_KEY, "dummy".getBytes());// change with some useful key
-//		RequestReplyFuture<String, String, String> sendAndReceive = kafkaTemplate.sendAndReceive(record);
-//		// get consumer record
-//		ConsumerRecord<String, String> consumerRecord = sendAndReceive.get();
-//		// return consumer value
-//		logger.debug("getFromContextRegistry() :: completed");
-//		contextRegistryData = new String((String) consumerRecord.value());
-//		logger.debug("getFromContextRegistry() data broker list::" + contextRegistryData);
-//		queryResult.setActualDataString(DataSerializer.getStringList(contextRegistryData));
 		return queryResult;
 	}
 
@@ -161,8 +129,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 		Future<QueryResult> futureStorageManager = executorService.submit(new Callable<QueryResult>() {
 			public QueryResult call() throws Exception {
 				logger.trace("Asynchronous Callable storage manager");
-				// TAKE CARE OF PAGINATION HERE
-				if (entryDAO != null) {
+				if (directDbConnection) {
 					try {
 						return entryDAO.query(qp);
 					} catch (Exception e) {
@@ -170,22 +137,32 @@ public abstract class BaseQueryService implements EntryQueryService {
 						throw new ResponseException(ErrorType.TenantNotFound, "Tenant not found");
 					}
 				} else {
-					return null;
-					// return getFromStorageManager(DataSerializer.toJson(qp));
+					return getFromStorageManager(qp);
 				}
 			}
 		});
 
 		Future<RemoteQueryResult> futureContextRegistry = executorService.submit(new Callable<RemoteQueryResult>() {
 			public RemoteQueryResult call() throws Exception {
+				/*
+				 * for now we just check if the registryDAO is null to see if we call the
+				 * registry at all this is a bit dangerous because it's implicit logic which
+				 * might be overseen when thinking about the get results through kafka scenario
+				 */
+				if (registryDAO == null) {
+					return new RemoteQueryResult(null, ErrorType.None, -1, true);
+				}
+				QueryResult brokerList = null;
+				if (directDbConnection) {
+					brokerList = registryDAO.query(qp);
+				} else {
+					brokerList = getFromContextRegistry(qp);
+				}
 				try {
-
 					logger.trace("Asynchronous 1 context registry");
-					QueryResult brokerList = null;
 					if (registryDAO == null) {
 						return new RemoteQueryResult(null, ErrorType.None, -1, true);
 					}
-					brokerList = registryDAO.query(qp);
 					// TODO REWORK THIS!!!
 					Pattern p = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_REGEX);
 					Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);
@@ -226,7 +203,6 @@ public abstract class BaseQueryService implements EntryQueryService {
 								callHeaders.add(NGSIConstants.TENANT_HEADER, uri_tenant);
 							}
 							HttpEntity<String> entity;
-
 							String resultBody;
 							ResponseEntity<String> response;
 							int count = 0;
@@ -320,21 +296,6 @@ public abstract class BaseQueryService implements EntryQueryService {
 		}
 		return fromCsources;
 	}
-
-	// TODO decide on removal
-	/*
-	 * private void writeFullResultToKafka(String qToken, List<String>
-	 * aggregatedResult) throws IOException, ResponseException { // write to byte
-	 * array ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	 * DataOutputStream out = new DataOutputStream(baos); for (String element :
-	 * aggregatedResult) { out.writeUTF(element); }
-	 * operations.pushToKafka(producerChannels.paginationWriteChannel(),
-	 * qToken.getBytes(), baos.toByteArray()); }
-	 */
-
-	/*
-	 * private String generateToken() { return UUID.randomUUID().toString(); }
-	 */
 
 	/**
 	 * making http call to all discovered csources async.

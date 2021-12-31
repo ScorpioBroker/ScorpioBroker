@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.commons.tools;
+package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,9 +26,10 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
-public class EntryControllerFunctions {
-	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+public interface EntryControllerFunctions {
+	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> updateMultiple(EntryCRUDService entityService, HttpServletRequest request,

@@ -27,9 +27,9 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.tools.EntryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
 
@@ -75,7 +75,7 @@ public class HistoryController {
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(value = "count", required = false, defaultValue = "false") Boolean countResult) {
 		return QueryControllerFunctions.queryForEntries(historyService, request, null, limit, offset, qToken, options,
-				false, countResult, true, defaultLimit, maxLimit);
+				false, countResult, true, defaultLimit, maxLimit, false);
 	}
 
 	@GetMapping("/{entityId}")

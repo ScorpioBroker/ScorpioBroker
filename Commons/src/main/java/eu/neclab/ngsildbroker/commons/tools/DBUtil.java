@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.commons.tenant;
+package eu.neclab.ngsildbroker.commons.tools;
 
 
 import java.net.URI;

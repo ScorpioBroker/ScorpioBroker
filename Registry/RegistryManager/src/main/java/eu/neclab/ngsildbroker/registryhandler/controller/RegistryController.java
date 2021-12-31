@@ -24,9 +24,9 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.tools.EntryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 
 /**
@@ -62,7 +62,8 @@ public class RegistryController {
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(value = "count", required = false) boolean count) {
-		return QueryControllerFunctions.queryForEntries(csourceService, request, null, limit, offset, qToken, null, false, count, false, defaultLimit, maxLimit);
+		return QueryControllerFunctions.queryForEntries(csourceService, request, null, limit, offset, qToken, null,
+				false, count, false, defaultLimit, maxLimit, true);
 	}
 
 	@PostMapping

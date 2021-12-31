@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.commons.tools;
+package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,9 +38,11 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
-public class SubscriptionControllerFunctions {
-	private static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+public interface SubscriptionControllerFunctions {
+	static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> subscribeRest(SubscriptionCRUDService subscriptionService,
@@ -425,9 +427,6 @@ public class SubscriptionControllerFunctions {
 			if (body == null || subscription == null || !id.equals(subscription.getId())) {
 				return HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.BadRequestData, "empty subscription body"));
-			}
-			if (subscription.getNotification().getEndPoint() == null ) {
-				throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
 			}
 			subscriptionService.updateSubscription(subscriptionRequest);
 		} catch (Exception exception) {

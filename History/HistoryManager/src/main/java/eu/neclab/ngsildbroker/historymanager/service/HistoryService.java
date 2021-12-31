@@ -36,8 +36,8 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
-import eu.neclab.ngsildbroker.commons.subscriptionbase.querybase.BaseQueryService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 

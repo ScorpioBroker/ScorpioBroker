@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
 
+import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 
 @RestController
@@ -76,7 +76,7 @@ public class QueryController {
 			@RequestParam(name = "services", required = false) Boolean showServices,
 			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
 		return QueryControllerFunctions.queryForEntries(queryService, request, attrs, limit, offset, qToken, options,
-				showServices, count, false, defaultLimit, maxLimit);
+				showServices, count, false, defaultLimit, maxLimit, false);
 	}
 
 	@GetMapping(path = "/types")

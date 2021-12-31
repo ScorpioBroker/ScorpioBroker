@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.commons.tools;
+package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -30,6 +30,8 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.Validator;
 
 public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	final static Logger logger = LogManager.getLogger(QueryControllerFunctions.class);
@@ -79,10 +81,10 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 */
 	public static ResponseEntity<String> queryForEntries(EntryQueryService queryService, HttpServletRequest request,
 			List<String> attrs, Integer limit, Integer offset, String qToken, List<String> options,
-			Boolean showServices, boolean count, boolean temporal, int defaultLimit, int maxLimit) {
+			Boolean showServices, boolean count, boolean temporal, int defaultLimit, int maxLimit, boolean dontCheckForType) {
 
 		return getQueryData(queryService, request, request.getQueryString(), HttpUtils.getQueryParamMap(request), attrs,
-				limit, offset, qToken, options, showServices, false, count, null, temporal, defaultLimit, maxLimit);
+				limit, offset, qToken, options, showServices, dontCheckForType, count, null, temporal, defaultLimit, maxLimit);
 	}
 
 	public static ResponseEntity<String> getAllTypes(EntryQueryService queryService, HttpServletRequest request,

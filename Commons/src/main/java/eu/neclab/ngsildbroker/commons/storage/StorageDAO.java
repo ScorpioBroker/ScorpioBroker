@@ -41,7 +41,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
-import eu.neclab.ngsildbroker.commons.tenant.DBUtil;
+import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 
 public abstract class StorageDAO {
 	private final static Logger logger = LoggerFactory.getLogger(StorageDAO.class);

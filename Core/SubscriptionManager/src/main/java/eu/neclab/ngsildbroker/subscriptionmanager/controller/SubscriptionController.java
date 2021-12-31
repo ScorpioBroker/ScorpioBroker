@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.tools.SubscriptionControllerFunctions;
+import eu.neclab.ngsildbroker.commons.controllers.SubscriptionControllerFunctions;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 
 @RestController

@@ -243,7 +243,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			logger.error("Invalid expire date!");
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 		}
-		if (subscription.getNotification().getEndPoint() == null ) {
+		if (subscription.getNotification().getEndPoint() == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
 		}
 
@@ -320,7 +320,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			if (subscription.getExpiresAt() != null && !isValidFutureDate(subscription.getExpiresAt())) {
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 			}
-			if (subscription.getExpiresAt() != null) {
+			if (subscription.getExpiresAt() != null && subscription.getExpiresAt() > 0) {
 				oldSub.setExpiresAt(subscription.getExpiresAt());
 				synchronized (subId2TimerTask) {
 					TimerTask task = subId2TimerTask.get(subscriptionRequest.getTenant(), oldSub.getId().toString());

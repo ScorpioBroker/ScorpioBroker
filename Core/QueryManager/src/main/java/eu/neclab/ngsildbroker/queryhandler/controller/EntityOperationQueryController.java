@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
-import eu.neclab.ngsildbroker.commons.tools.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.queryhandler.services.EntityPostQueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 
