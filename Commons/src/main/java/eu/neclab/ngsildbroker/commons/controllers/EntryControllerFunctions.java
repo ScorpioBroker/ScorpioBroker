@@ -415,6 +415,9 @@ public interface EntryControllerFunctions {
 			String[] optionsArray = getOptionsArray(options);
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+			if(payload == null || payload.isEmpty()) {
+				throw new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed");
+			}
 			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);

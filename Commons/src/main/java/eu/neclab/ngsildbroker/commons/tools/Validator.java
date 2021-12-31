@@ -32,6 +32,7 @@ public class Validator {
 		validParams.add(NGSIConstants.COUNT_HEADER_RESULT);
 		validParams.add(NGSIConstants.QUERY_PARAMETER_TIMEREL);
 		validParams.add(NGSIConstants.QUERY_PARAMETER_TIME);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_LAST_N);
 	}
 
 	public static void validate(MultiValueMap<String, String> parameterMap, int maxLimit, boolean ignoreType)

@@ -225,9 +225,11 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"A subscription needs type which is Subscription");
 				}
-				if (!((Map<String, Object>) element).containsKey(NGSIConstants.NGSI_LD_NOTIFICATION)) {
+				Object notification = ((Map<String, Object>) element).get(NGSIConstants.NGSI_LD_NOTIFICATION);
+				if (notification == null) {
 					throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification entry");
 				}
+				validateNotificationEntry(((List<Map<String, Object>>) notification).get(0));
 			} else {
 				validateSubscription(expandedProperty, activeProperty, api, payloadType);
 			}
@@ -235,6 +237,11 @@ class NGSIObject {
 		case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
 			if (activeProperty != null) {
 				validateSubscription(expandedProperty, activeProperty, api, payloadType);
+			} else {
+				Object notification = ((Map<String, Object>) element).get(NGSIConstants.NGSI_LD_NOTIFICATION);
+				if (notification != null) {
+					validateNotificationEntry(((List<Map<String, Object>>) notification).get(0));
+				}
 			}
 			break;
 		case AppConstants.CSOURCE_REG_CREATE_PAYLOAD:
@@ -270,6 +277,17 @@ class NGSIObject {
 		default:
 			break;
 		}
+	}
+
+	private void validateNotificationEntry(Map<String, Object> notificationEntry) throws ResponseException {
+		Object endPoint = notificationEntry.get(NGSIConstants.NGSI_LD_ENDPOINT);
+		if (endPoint == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "endpoint entry is mandatory");
+		}
+		if (!(((List<Map<String, Object>>) endPoint).get(0).containsKey(NGSIConstants.NGSI_LD_URI))) {
+			throw new ResponseException(ErrorType.BadRequestData, "endpoint requires a valid uri entry");
+		}
+
 	}
 
 	private void validateRegistration(int payloadType, String expandedProperty, String activeProperty, JsonLdApi api)
@@ -426,9 +444,10 @@ class NGSIObject {
 				}
 
 			}
-			if(expandedProperty.equals(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES)) {
-				if(!(this.element instanceof List) || ((List)this.element).isEmpty()) {
-					throw new ResponseException(ErrorType.BadRequestData, "watchedAttributes has to be either a String or an array of Strings.");
+			if (expandedProperty.equals(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES)) {
+				if (!(this.element instanceof List) || ((List) this.element).isEmpty()) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"watchedAttributes has to be either a String or an array of Strings.");
 				}
 			}
 			throw new ResponseException(ErrorType.BadRequestData,
@@ -461,8 +480,6 @@ class NGSIObject {
 		// TODO Auto-generated method stub
 
 	}
-
-
 
 	private boolean checkForEntities() throws ResponseException {
 		if (this.parent != null) {
