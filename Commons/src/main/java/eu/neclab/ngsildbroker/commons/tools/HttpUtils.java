@@ -28,6 +28,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseEntity.BodyBuilder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -291,7 +293,8 @@ public final class HttpUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Object generateGeoJson(Object result, String geometry, Object context) {
+	private static Object generateGeoJson(Object result, String geometry, Object context)
+			throws JsonParseException, IOException {
 		Map<String, Object> resultMap = new HashMap<String, Object>();
 		if (result instanceof List) {
 			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE_COLLECTION);
@@ -306,7 +309,12 @@ public final class HttpUtils {
 			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE);
 			Object geometryEntry = entryMap.get(geometry);
 			if (geometryEntry != null) {
-				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
+				if (geometryEntry instanceof String) {
+					resultMap.put(NGSIConstants.GEOMETRY, JsonUtils.fromString((String) geometryEntry));
+				} else {
+					resultMap.put(NGSIConstants.GEOMETRY,
+							((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
+				}
 			}
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
 			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
