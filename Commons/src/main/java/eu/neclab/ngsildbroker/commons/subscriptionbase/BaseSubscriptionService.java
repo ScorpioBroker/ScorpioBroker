@@ -8,6 +8,7 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEA
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
@@ -56,6 +58,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
+import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
@@ -85,6 +88,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
+	private boolean sendInitialNotification = false;
+
 	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
@@ -103,6 +108,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		} catch (ResponseException e) {
 			logger.error(e.getLocalizedMessage());
 		}
+		sendInitialNotification = sendInitialNotification();
 		notificationHandlerREST = new NotificationHandlerREST(webClient);
 		Subscription temp = new Subscription();
 		temp.setId("invalid:base");
@@ -116,6 +122,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		loadStoredSubscriptions();
 
 	}
+
+	protected abstract boolean sendInitialNotification();
 
 	protected abstract SubscriptionInfoDAOInterface getSubscriptionInfoDao();
 
@@ -186,22 +194,29 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 
 			}
-			if (subscription.getExpiresAt() != null) {
-				TimerTask cancel = new TimerTask() {
-
-					@Override
-					public void run() {
-						try {
-							unsubscribe(subscription.getId(), subscriptionRequest.getHeaders());
-						} catch (ResponseException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-				};
+			if (subscription.getExpiresAt() != null && subscription.getExpiresAt() > 0) {
+				TimerTask cancel = new CancelTask(subscriptionRequest);
 				subId2TimerTask.put(subscriptionRequest.getTenant(), subscription.getId().toString(), cancel);
 				watchDog.schedule(cancel, subscription.getExpiresAt() - System.currentTimeMillis());
 			}
+			new Thread() {
+				@SuppressWarnings("unchecked")
+				public void run() {
+					if (sendInitialNotification) {
+						try {
+							List<String> temp = subscriptionInfoDAO.getEntriesFromSub(subscriptionRequest);
+
+							List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
+							for (String entry : temp) {
+								notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
+							}
+							sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
+						} catch (ResponseException | IOException e) {
+							logger.error("Failed to send initial notifcation", e);
+						}
+					}
+				};
+			}.start();
 		}
 		return subscription.getId();
 	}
@@ -324,7 +339,11 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				oldSub.setExpiresAt(subscription.getExpiresAt());
 				synchronized (subId2TimerTask) {
 					TimerTask task = subId2TimerTask.get(subscriptionRequest.getTenant(), oldSub.getId().toString());
-					task.cancel();
+					if (task != null) {
+						task.cancel();
+					} else {
+						task = new CancelTask(subscriptionRequest);
+					}
 					watchDog.schedule(task, subscription.getExpiresAt() - System.currentTimeMillis());
 				}
 
@@ -745,5 +764,23 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	// return true for future date validation
 	private boolean isValidFutureDate(Long date) {
 		return System.currentTimeMillis() < date;
+	}
+
+	class CancelTask extends TimerTask {
+
+		private SubscriptionRequest request;
+
+		public CancelTask(SubscriptionRequest request) {
+			this.request = request;
+		}
+
+		@Override
+		public void run() {
+			try {
+				unsubscribe(request.getSubscription().getId(), request.getHeaders());
+			} catch (ResponseException e) {
+				logger.error("Failed to unsubscribed timed subscription", e);
+			}
+		}
 	}
 }

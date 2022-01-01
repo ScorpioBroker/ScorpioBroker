@@ -21,7 +21,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Autowired
 	@Qualifier("subdao")
 	SubscriptionInfoDAOInterface subService;
-	
+
 	@Override
 	protected SubscriptionInfoDAOInterface getSubscriptionInfoDao() {
 		return subService;
@@ -31,13 +31,17 @@ public class SubscriptionService extends BaseSubscriptionService {
 	protected Set<String> getTypesFromEntry(BaseRequest createRequest) {
 		return EntityTools.getTypesFromEntity(createRequest);
 	}
-	
+
 	@Override
 	protected Notification getNotification(SubscriptionRequest request, List<Map<String, Object>> dataList,
 			int triggerReason) {
 		return new Notification(EntityTools.getRandomID("notification:"), NGSIConstants.NOTIFICATION,
-				System.currentTimeMillis(), request.getSubscription().getId(), dataList, -1,
-				request.getContext());
+				System.currentTimeMillis(), request.getSubscription().getId(), dataList, -1, request.getContext());
+	}
+
+	@Override
+	protected boolean sendInitialNotification() {
+		return false;
 	}
 
 }

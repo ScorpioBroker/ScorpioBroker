@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 /**
  * @version 1.0
  * @date 12-Jul-2018
@@ -92,6 +94,7 @@ public class AppConstants {
 	public static final int APPEND_REQUEST = 1;
 	public static final int UPDATE_REQUEST = 2;
 	public static final int DELETE_REQUEST = 3;
+	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	
 
 }

@@ -81,10 +81,12 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 */
 	public static ResponseEntity<String> queryForEntries(EntryQueryService queryService, HttpServletRequest request,
 			List<String> attrs, Integer limit, Integer offset, String qToken, List<String> options,
-			Boolean showServices, boolean count, boolean temporal, int defaultLimit, int maxLimit, boolean dontCheckForType) {
+			Boolean showServices, boolean count, boolean temporal, int defaultLimit, int maxLimit,
+			boolean dontCheckForType) {
 
 		return getQueryData(queryService, request, request.getQueryString(), HttpUtils.getQueryParamMap(request), attrs,
-				limit, offset, qToken, options, showServices, dontCheckForType, count, null, temporal, defaultLimit, maxLimit);
+				limit, offset, qToken, options, showServices, dontCheckForType, count, null, temporal, defaultLimit,
+				maxLimit);
 	}
 
 	public static ResponseEntity<String> getAllTypes(EntryQueryService queryService, HttpServletRequest request,
@@ -150,7 +152,6 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			String originalQueryParams, MultiValueMap<String, String> paramMap, List<String> attrs, Integer limit,
 			Integer offset, String qToken, List<String> options, Boolean showServices, boolean retrieve,
 			Boolean countResult, String check, boolean temporal, int defaultLimit, int maxLimit) {
-		// long start = System.currentTimeMillis();
 		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 
 		if (limit == null) {
@@ -205,7 +206,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 				try {
 					qResult = queryService.getData(qp, originalQueryParams, linkHeaders, headers, false);
 				} catch (Exception e) {
-					//logger.error(e.getMessage());
+					// logger.error(e.getMessage());
 					logger.error("Tenant for the request not found", e);
 					return ResponseEntity.status(HttpStatus.NOT_FOUND)
 							.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJson());

@@ -393,7 +393,7 @@ public interface EntryControllerFunctions {
 			logger.trace("create entity :: started");
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-			if (payload == null) {
+			if (payload == null || payload.isEmpty()) {
 				return HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload"));
 			}
@@ -415,7 +415,7 @@ public interface EntryControllerFunctions {
 			String[] optionsArray = getOptionsArray(options);
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-			if(payload == null || payload.isEmpty()) {
+			if (payload == null || payload.isEmpty()) {
 				throw new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed");
 			}
 			@SuppressWarnings("unchecked")

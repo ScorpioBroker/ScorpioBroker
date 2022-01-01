@@ -41,4 +41,9 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 				request.getContext());
 	}
 
+	@Override
+	protected boolean sendInitialNotification() {
+		return true;
+	}
+
 }

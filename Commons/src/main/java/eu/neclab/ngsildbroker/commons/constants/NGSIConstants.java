@@ -268,5 +268,11 @@ public interface NGSIConstants {
 	public static final String NO_OVERWRITE_OPTION = "noOverwrite";
 	public static final String CSOURCE_NOTIFICATION = "ContextSource Notification";
 	public static final String QUERY_PARAMETER_LAST_N = "lastN";
+	public static final String FEATURE_COLLECTION = "FeatureCollection";
+	public static final String FEATURES = "features";
+	public static final String FEATURE = "Feature";
+	public static final String GEOMETRY = "geometry";
+	public static final String PROPERTIES = "properties";
+	public static final String GEOMETRY_PROPERTY = "geometryProperty";
 	
 }

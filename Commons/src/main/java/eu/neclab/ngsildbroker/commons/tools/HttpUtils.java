@@ -8,6 +8,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +58,7 @@ public final class HttpUtils {
 	/** Timeout for all requests to respond. */
 
 	private static Pattern headerPattern = Pattern.compile(
-			"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
+			"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads)|(application\\/geo\\+json))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
 
 	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
@@ -150,7 +151,7 @@ public final class HttpUtils {
 
 			Matcher m = headerPattern.matcher(header.toLowerCase());
 			while (m.find()) {
-				String floatString = m.group(8);
+				String floatString = m.group(9);
 				float newQ = 1;
 				int newAppGroup = -2;
 				if (floatString != null) {
@@ -159,7 +160,7 @@ public final class HttpUtils {
 				if (appGroup != -1 && (newQ < q)) {
 					continue;
 				}
-				for (int i = 2; i <= 6; i++) {
+				for (int i = 2; i <= 7; i++) {
 					if (m.group(i) == null) {
 						continue;
 					}
@@ -180,6 +181,8 @@ public final class HttpUtils {
 			return 1; // application/json
 		case 6:
 			return 3;// application/n-quads
+		case 7:
+			return 4;// application/geo+json
 		default:
 			return -1;// error
 		}
@@ -264,7 +267,11 @@ public final class HttpUtils {
 				break;
 			case 3:
 				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(JsonUtils.fromString(reply)));
+				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
+				break;
+			case 4:// geo+json
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
+				replyBody = JsonUtils.toPrettyString(generateGeoJson(result, getGeometry(request), context));
 				break;
 			case -1:
 			default:
@@ -281,6 +288,38 @@ public final class HttpUtils {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
 		}
 
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Object generateGeoJson(Object result, String geometry, Object context) {
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		if (result instanceof List) {
+			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE_COLLECTION);
+			ArrayList<Object> value = new ArrayList<Object>();
+			for (Object entry : (List<Object>) result) {
+				value.add(generateGeoJson(entry, geometry, context));
+			}
+			resultMap.put(NGSIConstants.FEATURES, value);
+		} else {
+			Map<String, Object> entryMap = (Map<String, Object>) result;
+			resultMap.put(NGSIConstants.QUERY_PARAMETER_ID, entryMap.remove(NGSIConstants.QUERY_PARAMETER_ID));
+			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE);
+			Object geometryEntry = entryMap.get(geometry);
+			if (geometryEntry != null) {
+				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
+			}
+			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
+			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
+		}
+		return resultMap;
+	}
+
+	private static String getGeometry(HttpServletRequest request) {
+		String result = request.getParameter(NGSIConstants.GEOMETRY_PROPERTY);
+		if (result == null) {
+			return NGSIConstants.NGSI_LD_LOCATION_SHORT;
+		}
+		return result;
 	}
 
 	private static String getAtContextServing(Object entry) {
