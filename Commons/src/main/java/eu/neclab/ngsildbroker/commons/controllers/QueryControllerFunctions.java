@@ -59,7 +59,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJson());
 		}
 		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
-		LinkedMultiValueMap<String, String> paramMap = new LinkedMultiValueMap<String, String>();
+		MultiValueMap<String, String> paramMap = HttpUtils.getQueryParamMap(request);
 		paramMap.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
 		ResponseEntity<String> result = getQueryData(queryService, request, originalQuery, paramMap, false, false,
 				temporal, defaultLimit, maxLimit, null);
