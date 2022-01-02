@@ -116,13 +116,20 @@ public class ParamsResolver {
 		String id = null, type = null, idPattern = null;
 		String geometryProperty = null;
 		HashSet<String> attrs = null;
+		String timerel = null;
+		String geometry = null;
+		String coordinates = null;
+		String geoproperty = null;
+		String timeAt = null;
+		String timeproperty = null;
+		String endTimeAt = null;
+		String georel = null;
 		int limit = defaultLimit;
 		int offset = 0;
 		while (it.hasNext()) {
 			String queryParameter = it.next();
 			String queryValue = multiValueMap.getFirst(queryParameter);
 			logger.debug("Query parameter:" + queryParameter + ", value=" + queryValue);
-			GeoqueryRel geoqueryTokens;
 			switch (queryParameter) {
 			case NGSIConstants.QUERY_PARAMETER_ID:
 				id = queryValue;
@@ -140,70 +147,28 @@ public class ParamsResolver {
 				geometryProperty = expandQueryValues(context, queryValue).iterator().next();
 				break;
 			case NGSIConstants.QUERY_PARAMETER_GEOREL:
-				String georel = queryValue;
-				String geometry = "";
-				String coordinates = "";
-				String geoproperty = "";
-				if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY) != null)
-					geometry = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
-				if (multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_COORDINATES) != null)
-					coordinates = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_COORDINATES);
-				if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY) != null) {
-					geoproperty = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
-					geoproperty = expandAttribute(geoproperty, context);
-				} else {
-					geoproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_GEOPROPERTY;
-				}
-
-				geoqueryTokens = QueryParser.parseGeoRel(georel);
-				logger.debug("  Geoquery term georelOp: " + geoqueryTokens.getGeorelOp());
-
-				if (geoqueryTokens.getGeorelOp().isEmpty() || geometry.isEmpty() || coordinates.isEmpty()) {
-					throw new ResponseException(ErrorType.BadRequestData,
-							"Georel detected but georel, geometry or coordinates are empty!");
-				}
-				if (!AppConstants.NGB_ALLOWED_GEOM_LIST.contains(geometry.toUpperCase())) {
-					throw new ResponseException(ErrorType.BadRequestData,
-							" geometry detected, Bad geometry!" + geometry);
-				}
-				validateCoordinates(coordinates);
-				GeoqueryRel gr = new GeoqueryRel();
-				gr.setGeorelOp(geoqueryTokens.getGeorelOp());
-				gr.setDistanceType(geoqueryTokens.getDistanceType());
-				gr.setDistanceValue(geoqueryTokens.getDistanceValue());
-
-				qp.setGeorel(gr);
-				qp.setGeometry(geometry);
-				qp.setCoordinates(coordinates);
-				qp.setGeoproperty(geoproperty);
+				georel = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_GEOMETRY:
+				geometry = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_COORDINATES:
+				coordinates = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_GEOPROPERTY:
+				geoproperty = expandAttribute(queryValue, context);
 				break;
 			case NGSIConstants.QUERY_PARAMETER_TIMEREL:
-				String timerel = queryValue;
-				String timeAt = "";
-				String timeproperty = "";
-				String endTimeAt = "";
-				if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_TIME) != null)
-					timeAt = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_TIME);
-				if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY) != null) {
-					timeproperty = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY);
-					timeproperty = expandAttribute(timeproperty, context);
-				} else {
-					timeproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY;
-				}
-				if (multiValueMap.get(NGSIConstants.QUERY_PARAMETER_ENDTIME) != null)
-					endTimeAt = multiValueMap.getFirst(NGSIConstants.QUERY_PARAMETER_ENDTIME);
-
-				if (timeAt.isEmpty()) {
-					throw new ResponseException(ErrorType.BadRequestData, "Time is empty");
-				}
-				if (timerel.equals(NGSIConstants.TIME_REL_BETWEEN) && endTimeAt.isEmpty()) {
-					throw new ResponseException(ErrorType.BadRequestData, "Timerel is between but endTime is empty");
-				}
-
-				qp.setTimerel(timerel);
-				qp.setTimeAt(timeAt);
-				qp.setTimeproperty(timeproperty);
-				qp.setEndTimeAt(endTimeAt);
+				timerel = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_TIME:
+				timeAt = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY:
+				timeproperty = expandAttribute(queryValue, context);
+				break;
+			case NGSIConstants.QUERY_PARAMETER_ENDTIME:
+				endTimeAt = queryValue;
 				break;
 			case NGSIConstants.QUERY_PARAMETER_QUERY:
 				qp.setQ(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
@@ -240,6 +205,8 @@ public class ParamsResolver {
 				qp.setAttrs(String.join(",", attrs));
 			}
 		}
+		handleGeoQuery(georel, geoproperty, coordinates, geometry, qp);
+		handleTimeQuery(timerel, timeAt, timeproperty, endTimeAt, qp);
 		List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
 		HashMap<String, String> temp = new HashMap<String, String>();
 		if (typeRequired && type == null && attrs == null) {
@@ -285,7 +252,7 @@ public class ParamsResolver {
 
 	}
 
-	public static HashSet<String> expandQueryValues(Context context, String queryValue) throws ResponseException {
+	private static HashSet<String> expandQueryValues(Context context, String queryValue) throws ResponseException {
 		HashSet<String> result = new HashSet<String>();
 		String[] temp = queryValue.split(",");
 		for (String element : temp) {
@@ -297,5 +264,56 @@ public class ParamsResolver {
 	public static String expandAttribute(String attribute, Context context) throws ResponseException {
 		logger.trace("resolveQueryLdContext():: started");
 		return context.expandIri(attribute, false, true, null, null);
+	}
+
+	private static void handleTimeQuery(String timerel, String timeAt, String timeproperty, String endTimeAt,
+			QueryParams qp) throws ResponseException {
+		if (timerel == null && timeAt == null && timeproperty == null && endTimeAt == null) {
+			return;
+		}
+		if (timeproperty == null) {
+			timeproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY;
+		}
+		if (timeAt == null || timeAt.isEmpty()) {
+			throw new ResponseException(ErrorType.BadRequestData, "Time is empty");
+		}
+		if (timerel.equals(NGSIConstants.TIME_REL_BETWEEN) && (endTimeAt == null || endTimeAt.isEmpty())) {
+			throw new ResponseException(ErrorType.BadRequestData, "Timerel is between but endTime is empty");
+		}
+
+		qp.setTimerel(timerel);
+		qp.setTimeAt(timeAt);
+		qp.setTimeproperty(timeproperty);
+		qp.setEndTimeAt(endTimeAt);
+	}
+
+	private static void handleGeoQuery(String georel, String geoproperty, String coordinates, String geometry,
+			QueryParams qp) throws ResponseException {
+		if (georel == null && geoproperty == null && coordinates == null && geometry == null) {
+			return;
+		}
+		if (geoproperty == null) {
+			geoproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_GEOPROPERTY;
+		}
+		GeoqueryRel geoqueryTokens = QueryParser.parseGeoRel(georel);
+		logger.debug("  Geoquery term georelOp: " + geoqueryTokens.getGeorelOp());
+		if (geoqueryTokens.getGeorelOp().isEmpty() || geometry == null || geometry.isEmpty() || coordinates == null
+				|| coordinates.isEmpty()) {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"Georel detected but georel, geometry or coordinates are empty!");
+		}
+		if (!AppConstants.NGB_ALLOWED_GEOM_LIST.contains(geometry.toUpperCase())) {
+			throw new ResponseException(ErrorType.BadRequestData, " geometry detected, Bad geometry!" + geometry);
+		}
+		validateCoordinates(coordinates);
+		GeoqueryRel gr = new GeoqueryRel();
+		gr.setGeorelOp(geoqueryTokens.getGeorelOp());
+		gr.setDistanceType(geoqueryTokens.getDistanceType());
+		gr.setDistanceValue(geoqueryTokens.getDistanceValue());
+
+		qp.setGeorel(gr);
+		qp.setGeometry(geometry);
+		qp.setCoordinates(coordinates);
+		qp.setGeoproperty(geoproperty);
 	}
 }

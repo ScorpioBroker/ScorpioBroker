@@ -11,14 +11,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
-
 public class QueryParser {
 	// Query = (QueryTerm / QueryTermAssoc) *(logicalOp (QueryTerm /
 	// QueryTermAssoc))
 	// QueryTermAssoc = %x28 QueryTerm *(logicalOp QueryTerm) %x29 ; (QueryTerm)
 	private QueryParser() {
-		
+
 	}
+
 	private static String andOp = ";";
 	private static String orOp = "\\|";
 	private static String logicalOp = "((" + andOp + ")|(" + orOp + "))";
@@ -142,6 +142,9 @@ public class QueryParser {
 	}
 
 	public static GeoqueryRel parseGeoRel(String georel) throws ResponseException {
+		if (georel == null || georel.isEmpty()) {
+			throw new ResponseException(ErrorType.BadRequestData, "georel needs to be provided");
+		}
 		String[] temp = georel.split(";");
 		GeoqueryRel result = new GeoqueryRel();
 		result.setGeorelOp(temp[0]);
