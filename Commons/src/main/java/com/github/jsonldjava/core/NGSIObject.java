@@ -346,7 +346,8 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"The key " + activeProperty + " is an invalid entry.");
 				}
-				compactAndValidateGeoProperty(api);
+				validateGeometry(
+						(String) ((List<Map<String, Object>>) this.element).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				return;
 			case NGSIConstants.NGSI_LD_GEO_REL:
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
@@ -452,6 +453,22 @@ class NGSIObject {
 			}
 			throw new ResponseException(ErrorType.BadRequestData,
 					"The key " + activeProperty + " is an invalid entry.");
+		}
+
+	}
+
+	private void validateGeometry(String geometry) throws ResponseException {
+		switch (geometry) {
+		case NGSIConstants.GEO_TYPE_POINT:
+			break;
+		case NGSIConstants.GEO_TYPE_LINESTRING:
+			break;
+		case NGSIConstants.GEO_TYPE_POLYGON:
+			break;
+		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+			break;
+		default:
+			throw new ResponseException(ErrorType.BadRequestData, "Unsupported geometry type: " + geometry);
 		}
 
 	}
