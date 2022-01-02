@@ -21,6 +21,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 public class ParamsResolver {
 	static HashSet<String> validParams = new HashSet<String>();
@@ -133,6 +134,7 @@ public class ParamsResolver {
 			switch (queryParameter) {
 			case NGSIConstants.QUERY_PARAMETER_ID:
 				id = queryValue;
+				HttpUtils.validateUri(id);
 				break;
 			case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
 				idPattern = queryValue;
@@ -191,6 +193,12 @@ public class ParamsResolver {
 					throw new ResponseException(ErrorType.InvalidRequest, "Offset can not be smaller than 0");
 				}
 				break;
+			case NGSIConstants.QUERY_PARAMETER_LAST_N:
+				qp.setLastN(Integer.parseInt(queryValue));
+				break;
+			case NGSIConstants.QUERY_PARAMETER_DETAILS:
+				// nothing to do here this is handled outside tbc!
+				break;
 			case NGSIConstants.QUERYP_PARAMETER_COUNT:
 				qp.setCountResult(true);
 
@@ -202,8 +210,8 @@ public class ParamsResolver {
 		if (attrs != null) {
 			if (geometryProperty != null) {
 				attrs.add(geometryProperty);
-				qp.setAttrs(String.join(",", attrs));
 			}
+			qp.setAttrs(String.join(",", attrs));
 		}
 		handleGeoQuery(georel, geoproperty, coordinates, geometry, qp);
 		handleTimeQuery(timerel, timeAt, timeproperty, endTimeAt, qp);

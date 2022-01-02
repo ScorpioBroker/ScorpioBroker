@@ -84,17 +84,17 @@ public class QueryController {
 	}
 
 	@GetMapping(path = "/attributes")
-	public ResponseEntity<String> getAllAttribute(HttpServletRequest request,
+	public ResponseEntity<String> getAllAttributes(HttpServletRequest request,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
 
-		return QueryControllerFunctions.getAllAttribute(queryService, request, details, false, defaultLimit, maxLimit);
+		return QueryControllerFunctions.getAllAttributes(queryService, request, details, false, defaultLimit, maxLimit);
 	}
 
-	@GetMapping(path = "/attributes/{attributes}")
-	public ResponseEntity<String> getAttributes(HttpServletRequest request,
-			@PathVariable("attributes") String attributes,
+	@GetMapping(path = "/attributes/{attribute}")
+	public ResponseEntity<String> getAttribute(HttpServletRequest request,
+			@PathVariable("attribute") String attribute,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
-		return QueryControllerFunctions.getAttributes(queryService, request, details, false, defaultLimit, maxLimit);
+		return QueryControllerFunctions.getAttribute(queryService, request, attribute, details, false, defaultLimit, maxLimit);
 	}
 
 }

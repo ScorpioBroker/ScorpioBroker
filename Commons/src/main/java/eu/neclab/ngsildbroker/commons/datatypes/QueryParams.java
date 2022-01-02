@@ -65,6 +65,7 @@ public class QueryParams {
 	@Expose
 	private int offSet = -1;
 	private String check;
+	private int lastN;
 
 	public String getCheck() {
 		return check;
@@ -305,6 +306,15 @@ public class QueryParams {
 				+ ", endTimeAt=" + endTimeAt + ", timeproperty=" + timeproperty + ", includeSysAttrs=" + includeSysAttrs
 				+ ", keyValues=" + keyValues + ", temporalValues=" + temporalValues + ", limit=" + limit
 				+ ", countResult=" + countResult + ", offSet=" + offSet + ", check=" + check + "]";
+	}
+
+	public void setLastN(int lastN) {
+		this.lastN = lastN;
+
+	}
+
+	public int getLastN() {
+		return lastN;
 	}
 
 }

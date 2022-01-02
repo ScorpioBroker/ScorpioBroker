@@ -205,14 +205,10 @@ public final class HttpUtils {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
+	private static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult, int endPoint) throws ResponseException {
-
 		String replyBody;
-
-		// CompactedJson compacted = ContextResolverBasic.compact(reply,
-		// requestAtContext);
 		Map<String, Object> compacted;
 		try {
 			compacted = JsonLdProcessor.compact(JsonUtils.fromString(reply), contextLinks, ldContext, opts, endPoint);
@@ -272,8 +268,14 @@ public final class HttpUtils {
 				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
 				break;
 			case 4:// geo+json
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-				replyBody = JsonUtils.toPrettyString(generateGeoJson(result, getGeometry(request), context));
+				switch (endPoint) {
+				case AppConstants.QUERY_ENDPOINT:
+					additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
+					replyBody = JsonUtils.toPrettyString(generateGeoJson(result, getGeometry(request), context));
+					break;
+				default:
+					throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
+				}
 				break;
 			case -1:
 			default:
@@ -430,7 +432,7 @@ public final class HttpUtils {
 		return tenantId;
 	}
 
-	public static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
+	private static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
 			return null;
 		}
@@ -468,7 +470,7 @@ public final class HttpUtils {
 		return builder.toString();
 	}
 
-	public static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
+	private static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
 			return null;
 		}
