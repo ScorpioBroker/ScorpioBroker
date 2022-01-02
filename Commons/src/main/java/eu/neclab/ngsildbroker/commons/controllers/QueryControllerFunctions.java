@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.net.URLDecoder;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +30,6 @@ import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.Validator;
 
 public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	final static Logger logger = LogManager.getLogger(QueryControllerFunctions.class);
@@ -62,8 +60,8 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
 		LinkedMultiValueMap<String, String> paramMap = new LinkedMultiValueMap<String, String>();
 		paramMap.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
-		ResponseEntity<String> result = getQueryData(queryService, request, originalQuery, paramMap, attrs, null, null,
-				null, options, false, true, false, null, temporal, defaultLimit, maxLimit);
+		ResponseEntity<String> result = getQueryData(queryService, request, originalQuery, paramMap, false, false,
+				temporal, defaultLimit, maxLimit, null);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
@@ -80,13 +78,9 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 	public static ResponseEntity<String> queryForEntries(EntryQueryService queryService, HttpServletRequest request,
-			List<String> attrs, Integer limit, Integer offset, String qToken, List<String> options,
-			Boolean showServices, boolean count, boolean temporal, int defaultLimit, int maxLimit,
-			boolean dontCheckForType) {
-
-		return getQueryData(queryService, request, request.getQueryString(), HttpUtils.getQueryParamMap(request), attrs,
-				limit, offset, qToken, options, showServices, dontCheckForType, count, null, temporal, defaultLimit,
-				maxLimit);
+			boolean temporal, int defaultLimit, int maxLimit, boolean typeRequired) {
+		return getQueryData(queryService, request, request.getQueryString(), HttpUtils.getQueryParamMap(request),
+				typeRequired, true, temporal, defaultLimit, maxLimit, null);
 	}
 
 	public static ResponseEntity<String> getAllTypes(EntryQueryService queryService, HttpServletRequest request,
@@ -95,8 +89,8 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		if (details == true) {
 			check = "deatilsType";
 		}
-		ResponseEntity<String> result = getQueryData(queryService, request, null, HttpUtils.getQueryParamMap(request),
-				null, null, null, null, null, false, true, false, check, temporal, defaultLimit, maxLimit);
+		ResponseEntity<String> result = getQueryData(queryService, request, request.getQueryString(),
+				HttpUtils.getQueryParamMap(request), false, true, false, defaultLimit, maxLimit, check);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
@@ -107,10 +101,8 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	public static ResponseEntity<String> getType(EntryQueryService queryService, HttpServletRequest request,
 			String type, boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "type";
-		ArrayList<String> types = new ArrayList<String>();
-		types.add(type);
-		ResponseEntity<String> result = getQueryData(queryService, request, null, HttpUtils.getQueryParamMap(request),
-				types, null, null, null, null, false, true, false, check, temporal, defaultLimit, maxLimit);
+		ResponseEntity<String> result = getQueryData(queryService, request, request.getQueryString(),
+				HttpUtils.getQueryParamMap(request), false, true, false, defaultLimit, maxLimit, check);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
@@ -125,8 +117,8 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		if (details == true) {
 			check = "deatilsAttributes";
 		}
-		ResponseEntity<String> result = getQueryData(queryService, request, null, HttpUtils.getQueryParamMap(request),
-				null, null, null, null, null, false, true, false, check, temporal, defaultLimit, maxLimit);
+		ResponseEntity<String> result = getQueryData(queryService, request, request.getQueryString(),
+				HttpUtils.getQueryParamMap(request), false, true, false, defaultLimit, maxLimit, check);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
@@ -135,12 +127,10 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	}
 
 	public static ResponseEntity<String> getAttributes(EntryQueryService queryService, HttpServletRequest request,
-			String attributes, boolean details, boolean temporal, int defaultLimit, int maxLimit) {
+			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "Attribute";
-		ArrayList<String> types = new ArrayList<String>();
-		types.add(attributes);
-		ResponseEntity<String> result = getQueryData(queryService, request, null, HttpUtils.getQueryParamMap(request),
-				types, null, null, null, null, false, true, false, check, temporal, defaultLimit, maxLimit);
+		ResponseEntity<String> result = getQueryData(queryService, request, request.getQueryString(),
+				HttpUtils.getQueryParamMap(request), false, true, false, defaultLimit, maxLimit, check);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
@@ -149,60 +139,26 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	}
 
 	private static ResponseEntity<String> getQueryData(EntryQueryService queryService, HttpServletRequest request,
-			String originalQueryParams, MultiValueMap<String, String> paramMap, List<String> attrs, Integer limit,
-			Integer offset, String qToken, List<String> options, Boolean showServices, boolean retrieve,
-			Boolean countResult, String check, boolean temporal, int defaultLimit, int maxLimit) {
+			String originalQueryParams, MultiValueMap<String, String> paramMap, boolean typeRequired,
+			boolean forceArray, boolean temporal, int defaultLimit, int maxLimit, String check) {
 		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
-
-		if (limit == null) {
-			limit = defaultLimit;
-		}
-		if (offset == null) {
-			offset = 0;
-		}
-
 		try {
 			logger.trace("getAllEntity() ::");
-			if (countResult == false && limit == 0) {
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-			}
-			// long prelink = System.currentTimeMillis();
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);
 			Context context = JsonLdProcessor.getCoreContextClone();
 			context = context.parse(linkHeaders, true);
-			// long postlink = System.currentTimeMillis();
-
-			if (retrieve || originalQueryParams != null) {
-				Validator.validate(HttpUtils.getQueryParamMap(request), maxLimit, retrieve);
+			if (originalQueryParams != null) {
 				if (originalQueryParams != null) {
 					originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
 				}
-				QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(paramMap, context, temporal);
+				QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(paramMap, context, temporal, typeRequired,
+						defaultLimit, maxLimit);
 				if (qp == null) // invalid query
 					throw new ResponseException(ErrorType.InvalidRequest, "Empty query parameters");
 				qp.setTenant(tenantid);
 				qp.setCheck(check);
-				qp.setKeyValues((options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)));
-				qp.setIncludeSysAttrs(
-						(options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)));
-				if (attrs != null) {
-					ArrayList<String> expandedAttrs = new ArrayList<String>();
-					for (String attrib : attrs) {
-						try {
-							expandedAttrs.add(ParamsResolver.expandAttribute(attrib, context));
-						} catch (ResponseException exception) {
-							continue;
-						}
-					}
-					qp.setAttrs(String.join(",", expandedAttrs));
-				}
-
-				checkParamsForValidity(qp);
 				ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 				QueryResult qResult;
-				qp.setLimit(limit);
-				qp.setOffSet(offset);
-				qp.setCountResult(countResult);
 				try {
 					qResult = queryService.getData(qp, originalQueryParams, linkHeaders, headers, false);
 				} catch (Exception e) {
@@ -211,31 +167,16 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 					return ResponseEntity.status(HttpStatus.NOT_FOUND)
 							.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJson());
 				}
-				return HttpUtils.generateReply(request, qResult, !retrieve, countResult, context, linkHeaders,
+				return HttpUtils.generateReply(request, qResult, forceArray, qp.getCountResult(), context, linkHeaders,
 						AppConstants.QUERY_ENDPOINT);
 
 			} else {
-				ResponseException responseException = new ResponseException(ErrorType.BadRequestData, "invalid query");
-				return ResponseEntity.status(responseException.getHttpStatus())
-						.body(new RestResponse(responseException).toJson());
+				return HttpUtils
+						.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "invalid query"));
 			}
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
-	}
-
-	private static void checkParamsForValidity(QueryParams qp) throws ResponseException {
-		if (qp.getGeometry() != null && !qp.getGeometry().isEmpty()) {
-			if (!NGSIConstants.ALLOWED_GEOMETRIES.contains(qp.getGeometry())) {
-				throw new ResponseException(ErrorType.BadRequestData, "Invalid geometry provided");
-			}
-		}
-		if (qp.getGeorel() != null && qp.getGeorel().getGeorelOp() != null && !qp.getGeorel().getGeorelOp().isEmpty()) {
-			if (!NGSIConstants.ALLOWED_GEOREL.contains(qp.getGeorel().getGeorelOp())) {
-				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel provided");
-			}
-		}
-
 	}
 
 	@SuppressWarnings({ "unchecked" })

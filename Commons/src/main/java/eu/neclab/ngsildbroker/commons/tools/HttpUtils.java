@@ -323,7 +323,7 @@ public final class HttpUtils {
 	}
 
 	private static String getGeometry(HttpServletRequest request) {
-		String result = request.getParameter(NGSIConstants.GEOMETRY_PROPERTY);
+		String result = request.getParameter(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
 		if (result == null) {
 			return NGSIConstants.NGSI_LD_LOCATION_SHORT;
 		}

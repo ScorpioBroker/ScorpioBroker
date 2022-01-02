@@ -67,16 +67,8 @@ public class QueryController {
 	 * @return ResponseEntity object
 	 */
 	@GetMapping("/entities")
-	public ResponseEntity<String> queryForEntities(HttpServletRequest request,
-			@RequestParam(value = "attrs", required = false) List<String> attrs,
-			@RequestParam(value = "limit", required = false) Integer limit,
-			@RequestParam(value = "offset", required = false) Integer offset,
-			@RequestParam(value = "qtoken", required = false) String qToken,
-			@RequestParam(name = "options", required = false) List<String> options,
-			@RequestParam(name = "services", required = false) Boolean showServices,
-			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
-		return QueryControllerFunctions.queryForEntries(queryService, request, attrs, limit, offset, qToken, options,
-				showServices, count, false, defaultLimit, maxLimit, false);
+	public ResponseEntity<String> queryForEntities(HttpServletRequest request) {
+		return QueryControllerFunctions.queryForEntries(queryService, request, false, defaultLimit, maxLimit, true);
 	}
 
 	@GetMapping(path = "/types")
@@ -102,8 +94,7 @@ public class QueryController {
 	public ResponseEntity<String> getAttributes(HttpServletRequest request,
 			@PathVariable("attributes") String attributes,
 			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
-		return QueryControllerFunctions.getAttributes(queryService, request, attributes, details, false, defaultLimit,
-				maxLimit);
+		return QueryControllerFunctions.getAttributes(queryService, request, details, false, defaultLimit, maxLimit);
 	}
 
 }

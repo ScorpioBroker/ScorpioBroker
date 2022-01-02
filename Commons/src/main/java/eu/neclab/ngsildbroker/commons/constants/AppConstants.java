@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 /**
  * @version 1.0
  * @date 12-Jul-2018

@@ -74,8 +74,7 @@ public class HistoryController {
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(name = "options", required = false) List<String> options,
 			@RequestParam(value = "count", required = false, defaultValue = "false") Boolean countResult) {
-		return QueryControllerFunctions.queryForEntries(historyService, request, null, limit, offset, qToken, options,
-				false, countResult, true, defaultLimit, maxLimit, false);
+		return QueryControllerFunctions.queryForEntries(historyService, request, true, defaultLimit, maxLimit, true);
 	}
 
 	@GetMapping("/{entityId}")

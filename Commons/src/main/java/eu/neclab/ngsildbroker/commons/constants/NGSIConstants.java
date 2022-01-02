@@ -248,13 +248,13 @@ public interface NGSIConstants {
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
 
 	public final static String NOTIFICATION = "Notification";
-	//DO NOT CHANGE THIS HEADERS ARE MADE TO LOWER CASE BY SPRING
+	// DO NOT CHANGE THIS HEADERS ARE MADE TO LOWER CASE BY SPRING
 	public static final String TENANT_HEADER = "ngsild-tenant";
 	public static final String LINK_HEADER = "Link";
 	public static final String QUERY_TYPE = "Query";
 	public static final String ISACTIVE_FALSE = "paused";
 	public static final String ISACTIVE_TRUE = "active";
-	
+
 	public static final Set<String> CORE_CONTEXT_URLS = Sets.newHashSet(
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld",
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld",
@@ -264,7 +264,8 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_TIME_POPERTY = "https://uri.etsi.org/ngsi-ld/timeproperty";
 	public static final String NGSI_LD_TIME_REL = "https://uri.etsi.org/ngsi-ld/timerel";
 	public static final String NGSI_LD_OBSERVATIONINTERVAL = "https://uri.etsi.org/ngsi-ld/observationInterval";
-	public static final Set<String> LOCATIONS_IN_REGISTRATION = Set.of(NGSI_LD_LOCATION, NGSI_LD_OBSERVATION_SPACE, NGSI_LD_OPERATION_SPACE);
+	public static final Set<String> LOCATIONS_IN_REGISTRATION = Set.of(NGSI_LD_LOCATION, NGSI_LD_OBSERVATION_SPACE,
+			NGSI_LD_OPERATION_SPACE);
 	public static final String NO_OVERWRITE_OPTION = "noOverwrite";
 	public static final String CSOURCE_NOTIFICATION = "ContextSource Notification";
 	public static final String QUERY_PARAMETER_LAST_N = "lastN";
@@ -273,6 +274,7 @@ public interface NGSIConstants {
 	public static final String FEATURE = "Feature";
 	public static final String GEOMETRY = "geometry";
 	public static final String PROPERTIES = "properties";
-	public static final String GEOMETRY_PROPERTY = "geometryProperty";
-	
+	public static final String QUERY_PARAMETER_GEOMETRY_PROPERTY = "geometryProperty";
+	public static final String QUERYP_PARAMETER_COUNT = "count";
+
 }

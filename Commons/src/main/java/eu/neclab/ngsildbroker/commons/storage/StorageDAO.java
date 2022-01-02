@@ -226,7 +226,7 @@ public abstract class StorageDAO {
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
-			if (qp.getCountResult() != null && qp.getCountResult() == true) {
+			if (qp.getCountResult() == true) {
 				if (qp.getLimit() == 0) {
 					String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
 					Integer count = template.queryForObject(sqlQueryCount, Integer.class);

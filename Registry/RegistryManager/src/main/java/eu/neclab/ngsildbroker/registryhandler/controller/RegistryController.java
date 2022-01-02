@@ -62,8 +62,7 @@ public class RegistryController {
 			@RequestParam(value = "offset", required = false) Integer offset,
 			@RequestParam(value = "qtoken", required = false) String qToken,
 			@RequestParam(value = "count", required = false) boolean count) {
-		return QueryControllerFunctions.queryForEntries(csourceService, request, null, limit, offset, qToken, null,
-				false, count, false, defaultLimit, maxLimit, true);
+		return QueryControllerFunctions.queryForEntries(csourceService, request, false, defaultLimit, maxLimit, false);
 	}
 
 	@PostMapping
