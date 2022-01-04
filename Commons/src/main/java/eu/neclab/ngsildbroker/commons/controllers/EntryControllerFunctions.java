@@ -201,7 +201,7 @@ public interface EntryControllerFunctions {
 
 			Object obj = JsonUtils.fromString(payload);
 			if (!(obj instanceof List)) {
-				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
+				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
 						"This interface only supports arrays of entities"));
 			}
 			jsonPayload = (List<Object>) obj;
@@ -211,7 +211,7 @@ public interface EntryControllerFunctions {
 		}
 		if (jsonPayload.isEmpty()) {
 			return HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.InvalidRequest, "An empty array is not allowed"));
+					new ResponseException(ErrorType.BadRequestData, "An empty array is not allowed"));
 		}
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		BatchResult result = new BatchResult();
