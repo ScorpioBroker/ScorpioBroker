@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,6 +30,8 @@ import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
@@ -88,7 +91,13 @@ public class HistoryController {
 	@DeleteMapping("/{entityId}")
 	public ResponseEntity<String> deleteTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
-		return EntryControllerFunctions.deleteEntry(historyService, request, entityId, logger);
+		ResponseEntity<String> responseEntity = QueryControllerFunctions.getEntity(historyService, request, null, null, entityId, true, defaultLimit,
+				maxLimit);
+		if(responseEntity.getStatusCode() == HttpStatus.NOT_FOUND) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
+		}
+			return EntryControllerFunctions.deleteEntry(historyService, request, entityId, logger);
 	}
 
 	@PostMapping("/{entityId}/attrs")
