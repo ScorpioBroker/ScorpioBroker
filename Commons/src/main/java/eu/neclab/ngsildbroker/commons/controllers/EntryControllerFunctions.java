@@ -447,7 +447,6 @@ public interface EntryControllerFunctions {
 			String entityId, Logger logger) {
 		try {
 			logger.trace("delete entity :: started");
-			HttpUtils.validateUri(entityId);
 			entityService.deleteEntry(HttpUtils.getHeaders(request), entityId);
 			logger.trace("delete entity :: completed");
 			return ResponseEntity.noContent().build();

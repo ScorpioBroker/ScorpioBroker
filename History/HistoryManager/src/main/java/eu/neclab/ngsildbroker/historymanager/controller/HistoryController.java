@@ -26,6 +26,7 @@ import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
@@ -91,13 +92,18 @@ public class HistoryController {
 	@DeleteMapping("/{entityId}")
 	public ResponseEntity<String> deleteTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
-		ResponseEntity<String> responseEntity = QueryControllerFunctions.getEntity(historyService, request, null, null, entityId, true, defaultLimit,
-				maxLimit);
-		if(responseEntity.getStatusCode() == HttpStatus.NOT_FOUND) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
-		}
+		try {
+			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+			HttpUtils.validateUri(entityId);
+			boolean result = historyDAO.entityExists(entityId, HttpUtils.getTenantFromHeaders(headers));
+			if (!result) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND)
+						.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
+			}
 			return EntryControllerFunctions.deleteEntry(historyService, request, entityId, logger);
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
+		}
 	}
 
 	@PostMapping("/{entityId}/attrs")
