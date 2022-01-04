@@ -60,6 +60,8 @@ public class AppendEntityRequest extends EntityRequest {
 				}
 				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)) {
 					overwrite = false;
+				} else if (option.equalsIgnoreCase(NGSIConstants.OVERWRITE_OPTION) || option.equalsIgnoreCase(NGSIConstants.REPLACE_OPTION )) {
+					overwrite = true;
 				} else {
 					throw new ResponseException(ErrorType.BadRequestData, option + " is an invalid option");
 				}
