@@ -346,8 +346,7 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"The key " + activeProperty + " is an invalid entry.");
 				}
-				validateGeometry(
-						(String) ((List<Map<String, Object>>) this.element).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				validateGeometry((String) ((Map<String, Object>) this.element).get(NGSIConstants.JSON_LD_VALUE));
 				return;
 			case NGSIConstants.NGSI_LD_GEO_REL:
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
@@ -662,12 +661,7 @@ class NGSIObject {
 					"Unsupported geometry type: " + geometryType.toString());
 		}
 		HashMap<String, Object> temp = new HashMap<String, Object>();
-		try {
-			temp.put(NGSIConstants.JSON_LD_VALUE, JsonUtils.toString(compacted));
-		} catch (IOException e) {
-			// Should never happen
-			e.printStackTrace();
-		}
+		temp.put(NGSIConstants.JSON_LD_VALUE, compacted);
 		ArrayList<Object> temp1 = new ArrayList<Object>();
 		temp1.add(temp);
 		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {

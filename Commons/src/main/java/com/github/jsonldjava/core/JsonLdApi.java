@@ -8,7 +8,6 @@ import static com.github.jsonldjava.core.JsonLdConsts.RDF_TYPE;
 import static com.github.jsonldjava.core.JsonLdUtils.isKeyword;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,7 +22,6 @@ import java.util.TreeMap;
 
 import com.github.jsonldjava.core.JsonLdConsts.Embed;
 import com.github.jsonldjava.core.JsonLdError.Error;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.github.jsonldjava.utils.Obj;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -256,43 +254,39 @@ public class JsonLdApi {
 					// isArray(compactedValue)
 					// && ((List<Object>) expandedValue).size() == 0);
 				}
-				Object potentialString = null;
+				Object potentialGeoProp = null;
 				switch (endPoint) {
 				case AppConstants.REGISTRY_ENDPOINT:
 					if (NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
 						isGeoProperty = true;
-						potentialString = ((Map<String, Object>) ((List) expandedValue).get(0)).get(JsonLdConsts.VALUE);
+						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
+								.get(JsonLdConsts.VALUE);
 					}
 					break;
 				case AppConstants.SUBSCRIPTION_ENDPOINT:
 					if (NGSIConstants.NGSI_LD_LOCATION.equals(expandedProperty)) {
 						isGeoProperty = true;
-						potentialString = ((Map<String, Object>) ((List) expandedValue).get(0)).get(JsonLdConsts.VALUE);
+						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
+								.get(JsonLdConsts.VALUE);
 					}
 					break;
 				case AppConstants.NOTIFICATION_ENDPOINT:
 				case AppConstants.QUERY_ENDPOINT:
 				case AppConstants.HISTORY_ENDPOINT:
 					if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
-						potentialString = ((Map<String, Object>) ((List) expandedValue).get(0)).get(JsonLdConsts.VALUE);
+						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
+								.get(JsonLdConsts.VALUE);
 					}
 					break;
 				default:
 					break;
 				}
 
-				if (isGeoProperty && potentialString != null && potentialString instanceof String) {
-					try {
-						Object geoProp = JsonUtils.fromString((String) potentialString);
-						Object expandedGeoProp = expandWithCoreContext(geoProp);
-						final String alias = activeCtx.compactIri(expandedProperty, true);
-						result.put(alias, compact(activeCtx, activeProperty, expandedGeoProp, compactArrays, endPoint));
-					} catch (IOException e) {
-						// Should never happen
-						e.printStackTrace();
-					}
+				if (isGeoProperty && potentialGeoProp != null && potentialGeoProp instanceof Map) {
+					Object expandedGeoProp = expandWithCoreContext(potentialGeoProp);
+					final String alias = activeCtx.compactIri(expandedProperty, true);
+					result.put(alias, compact(activeCtx, activeProperty, expandedGeoProp, compactArrays, endPoint));
 					continue;
-
 				}
 				// 7.2)
 				if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
