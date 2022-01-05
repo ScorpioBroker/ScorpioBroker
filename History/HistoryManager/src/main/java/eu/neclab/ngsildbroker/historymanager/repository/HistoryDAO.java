@@ -5,6 +5,9 @@ import java.util.Map;
 
 import org.springframework.stereotype.Repository;
 
+import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
@@ -25,6 +28,18 @@ public class HistoryDAO extends StorageDAO {
 			return false;
 		}
 		return true;
+	}
+	
+	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
+		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+		result.putAll(AppConstants.INTERNAL_NULL_KEY,
+				getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
+		List<String> tenants = getTenants();
+		for (String tenant : tenants) {
+			result.putAll(tenant, getJDBCTemplate(tenant).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
+		}
+
+		return result;
 	}
 
 }

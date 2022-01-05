@@ -92,18 +92,8 @@ public class HistoryController {
 	@DeleteMapping("/{entityId}")
 	public ResponseEntity<String> deleteTemporalEntityById(HttpServletRequest request,
 			@PathVariable("entityId") String entityId) {
-		try {
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			HttpUtils.validateUri(entityId);
-			boolean result = historyDAO.entityExists(entityId, HttpUtils.getTenantFromHeaders(headers));
-			if (!result) {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND)
-						.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
-			}
 			return EntryControllerFunctions.deleteEntry(historyService, request, entityId, logger);
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+		
 	}
 
 	@PostMapping("/{entityId}/attrs")
