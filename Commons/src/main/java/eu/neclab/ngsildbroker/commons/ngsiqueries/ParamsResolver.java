@@ -182,10 +182,11 @@ public class ParamsResolver {
 				qp.setTemporalValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES));
 				break;
 			case NGSIConstants.QUERY_PARAMETER_LIMIT:
-				limit = Integer.parseInt(queryValue);
+				limit = Integer.parseInt(queryValue);				
 				if (limit > maxLimit) {
 					throw new ResponseException(ErrorType.TooManyResults, "Limit exceeds max limit of " + maxLimit);
 				}
+				qp.setLimit(limit);
 				break;
 			case NGSIConstants.QUERY_PARAMETER_OFFSET:
 				offset = Integer.parseInt(queryValue);
