@@ -81,8 +81,8 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		if (dbColumn == null) {
 			sqlWhere.append("data @> '{\"" + geoproperty + "\": [{\"" + NGSIConstants.JSON_LD_TYPE + "\":[\""
 					+ NGSIConstants.NGSI_LD_GEOPROPERTY + "\"]}]}' AND ");
-			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( " + "data#>>'{" + geoproperty + ",0,"
-					+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}'), 4326)";
+			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( " + "data#>'{" + geoproperty + ",0,"
+					+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0}') ), 4326)";
 		}
 		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
 				+ coordinates + " }'), 4326)";

@@ -87,7 +87,7 @@ public class JsonLdProcessor {
 
 		// 2-6) NOTE: these are all the same steps as in expand
 
-		final Object expanded = expand(null, input, opts, -1, false);// input;//
+		final Object expanded = input;//expand(null, input, opts, -1, false);// input;//
 		// 7)
 		// NGSIComment: No need to do this expanded items do contain @context
 		/*

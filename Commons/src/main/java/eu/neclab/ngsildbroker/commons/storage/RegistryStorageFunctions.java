@@ -271,8 +271,7 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 
 		String dbColumn = NGSILD_TO_SQL_RESERVED_PROPERTIES_MAPPING_GEO.get(geoproperty);
 		if (dbColumn == null) {
-			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( c.data#>>'{" + geoproperty + ",0," + NGSIConstants.JSON_LD_VALUE
-					+ "}'), 4326)";
+			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( c.data#>'{" + geoproperty + ",0}') ), 4326)";
 		} else {
 			dbColumn = "c." + dbColumn;
 		}

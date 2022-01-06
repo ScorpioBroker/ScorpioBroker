@@ -203,7 +203,7 @@ public class JsonLdApi {
 			boolean isGeoProperty = false;
 			for (final String expandedProperty : keys) {
 
-				final Object expandedValue = elem.get(expandedProperty);
+				Object expandedValue = elem.get(expandedProperty);
 				// 7.1)
 				if (JsonLdConsts.ID.equals(expandedProperty) || JsonLdConsts.TYPE.equals(expandedProperty)) {
 					// TODO: Relabel these step numbers when spec changes
@@ -254,40 +254,40 @@ public class JsonLdApi {
 					// isArray(compactedValue)
 					// && ((List<Object>) expandedValue).size() == 0);
 				}
-				Object potentialGeoProp = null;
-				switch (endPoint) {
-				case AppConstants.REGISTRY_ENDPOINT:
-					if (NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
-						isGeoProperty = true;
-						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
-								.get(JsonLdConsts.VALUE);
-					}
-					break;
-				case AppConstants.SUBSCRIPTION_ENDPOINT:
-					if (NGSIConstants.NGSI_LD_LOCATION.equals(expandedProperty)) {
-						isGeoProperty = true;
-						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
-								.get(JsonLdConsts.VALUE);
-					}
-					break;
-				case AppConstants.NOTIFICATION_ENDPOINT:
-				case AppConstants.QUERY_ENDPOINT:
-				case AppConstants.HISTORY_ENDPOINT:
-					if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
-						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
-								.get(JsonLdConsts.VALUE);
-					}
-					break;
-				default:
-					break;
-				}
-
-				if (isGeoProperty && potentialGeoProp != null && potentialGeoProp instanceof Map) {
-					Object expandedGeoProp = expandWithCoreContext(potentialGeoProp);
-					final String alias = activeCtx.compactIri(expandedProperty, true);
-					result.put(alias, compact(activeCtx, activeProperty, expandedGeoProp, compactArrays, endPoint));
-					continue;
-				}
+//				Object potentialGeoProp = null;
+//				switch (endPoint) {
+//				case AppConstants.REGISTRY_ENDPOINT:
+//					if (NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
+//						isGeoProperty = true;
+//						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
+//								.get(JsonLdConsts.VALUE);
+//					}
+//					break;
+//				case AppConstants.SUBSCRIPTION_ENDPOINT:
+//					if (NGSIConstants.NGSI_LD_LOCATION.equals(expandedProperty)) {
+//						isGeoProperty = true;
+//						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
+//								.get(JsonLdConsts.VALUE);
+//					}
+//					break;
+//				case AppConstants.NOTIFICATION_ENDPOINT:
+//				case AppConstants.QUERY_ENDPOINT:
+//				case AppConstants.HISTORY_ENDPOINT:
+//					if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
+//						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
+//								.get(JsonLdConsts.VALUE);
+//					}
+//					break;
+//				default:
+//					break;
+//				}
+//
+//				if (isGeoProperty && potentialGeoProp != null && potentialGeoProp instanceof Map) {
+//					Object expandedGeoProp = expandWithCoreContext(potentialGeoProp);
+//					final String alias = activeCtx.compactIri(expandedProperty, true);
+//					result.put(alias, compact(activeCtx, activeProperty, expandedGeoProp, compactArrays, endPoint));
+//					continue;
+//				}
 				// 7.2)
 				if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
 					// 7.2.1)
@@ -356,8 +356,12 @@ public class JsonLdApi {
 
 				// NOTE: expanded value must be an array due to expansion
 				// algorithm.
+				// NGSI NOTE: we just make it a list if it isn't one that can happen if we
 				if (!(expandedValue instanceof List)) {
-					throw new JsonLdError(Error.NOT_IMPLEMENTED, "no array: " + expandedValue);
+					ArrayList<Object> tmp = new ArrayList<Object>();
+					tmp.add(expandedValue);
+					expandedValue = tmp;
+					// throw new JsonLdError(Error.NOT_IMPLEMENTED, "no array: " + expandedValue);
 				}
 				// 7.5)
 				if (((List<Object>) expandedValue).size() == 0) {

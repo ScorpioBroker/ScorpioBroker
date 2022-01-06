@@ -213,10 +213,6 @@ class NGSIObject {
 			break;
 		case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
 			if (activeProperty == null) {
-				/*
-				 * if (!hasAtId) { throw new ResponseException(ErrorType.BadRequestData,
-				 * "A subscription id is mandatory"); }
-				 */
 				if (!hasAtType) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"A subscription needs type which is Subscription");
@@ -246,10 +242,6 @@ class NGSIObject {
 			break;
 		case AppConstants.CSOURCE_REG_CREATE_PAYLOAD:
 			if (activeProperty == null) {
-				/*
-				 * if (!hasAtId) { throw new ResponseException(ErrorType.BadRequestData,
-				 * "A registration id is mandatory"); }
-				 */
 				if (!hasAtType) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"A registration needs type which is CSourceRegistration");
@@ -346,7 +338,8 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"The key " + activeProperty + " is an invalid entry.");
 				}
-				validateGeometry((String) ((Map<String, Object>) this.element).get(NGSIConstants.JSON_LD_VALUE));
+				validateGeometry(
+						(String) ((Map<String, Object>) this.element).get(NGSIConstants.JSON_LD_VALUE));
 				return;
 			case NGSIConstants.NGSI_LD_GEO_REL:
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
@@ -611,64 +604,64 @@ class NGSIObject {
 	}
 
 	private void compactAndValidateGeoProperty(JsonLdApi api) throws ResponseException {
-		Map<String, Object> geoPropMap = (Map<String, Object>) element;
-		Object geoJsonValue;
-		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-			geoJsonValue = ((List<Object>) geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE)).get(0);
-		} else {
-			geoJsonValue = geoPropMap;
-		}
-
-		Object potentialStringValue = ((Map<String, Object>) geoJsonValue).get(NGSIConstants.JSON_LD_VALUE);
-		Map<String, Object> compacted;
-		if (potentialStringValue != null) {
-			if (!(potentialStringValue instanceof String)) {
-				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
-			}
-			try {
-				compacted = (Map<String, Object>) JsonUtils.fromString((String) potentialStringValue);
-			} catch (IOException e) {
-				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
-			}
-		} else {
-			compacted = api.compactWithCoreContext(geoJsonValue);
-		}
-		Object geometryType = compacted.get(NGSIConstants.GEO_JSON_TYPE);
-		if (geometryType == null) {
-			throw new ResponseException(ErrorType.BadRequestData, "No geometry type provided");
-		}
-		if (!(geometryType instanceof String) || !NGSIConstants.ALLOWED_GEOMETRIES.contains((String) geometryType)) {
-			throw new ResponseException(ErrorType.BadRequestData,
-					"Unsupported geometry type: " + geometryType.toString());
-		}
-		Object geoValue = compacted.get(NGSIConstants.CSOURCE_COORDINATES);
-		switch ((String) geometryType) {
-		case NGSIConstants.GEO_TYPE_POINT:
-			validatePoint(geoValue);
-			break;
-		case NGSIConstants.GEO_TYPE_LINESTRING:
-			validateLineString(geoValue);
-			break;
-		case NGSIConstants.GEO_TYPE_POLYGON:
-			validatePolygon(geoValue);
-			break;
-		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
-			validateMultiPolygon(geoValue);
-			break;
-
-		default:
-			throw new ResponseException(ErrorType.BadRequestData,
-					"Unsupported geometry type: " + geometryType.toString());
-		}
-		HashMap<String, Object> temp = new HashMap<String, Object>();
-		temp.put(NGSIConstants.JSON_LD_VALUE, compacted);
-		ArrayList<Object> temp1 = new ArrayList<Object>();
-		temp1.add(temp);
-		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-			geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, temp1);
-		} else {
-			this.element = temp1;
-		}
+//		Map<String, Object> geoPropMap = (Map<String, Object>) element;
+//		Object geoJsonValue;
+//		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+//			geoJsonValue = ((List<Object>) geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE)).get(0);
+//		} else {
+//			geoJsonValue = geoPropMap;
+//		}
+//
+//		Object potentialStringValue = ((Map<String, Object>) geoJsonValue).get(NGSIConstants.JSON_LD_VALUE);
+//		Map<String, Object> compacted;
+//		if (potentialStringValue != null) {
+//			if (!(potentialStringValue instanceof String)) {
+//				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
+//			}
+//			try {
+//				compacted = (Map<String, Object>) JsonUtils.fromString((String) potentialStringValue);
+//			} catch (IOException e) {
+//				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
+//			}
+//		} else {
+//			compacted = api.compactWithCoreContext(geoJsonValue);
+//		}
+//		Object geometryType = compacted.get(NGSIConstants.GEO_JSON_TYPE);
+//		if (geometryType == null) {
+//			throw new ResponseException(ErrorType.BadRequestData, "No geometry type provided");
+//		}
+//		if (!(geometryType instanceof String) || !NGSIConstants.ALLOWED_GEOMETRIES.contains((String) geometryType)) {
+//			throw new ResponseException(ErrorType.BadRequestData,
+//					"Unsupported geometry type: " + geometryType.toString());
+//		}
+//		Object geoValue = compacted.get(NGSIConstants.CSOURCE_COORDINATES);
+//		switch ((String) geometryType) {
+//		case NGSIConstants.GEO_TYPE_POINT:
+//			validatePoint(geoValue);
+//			break;
+//		case NGSIConstants.GEO_TYPE_LINESTRING:
+//			validateLineString(geoValue);
+//			break;
+//		case NGSIConstants.GEO_TYPE_POLYGON:
+//			validatePolygon(geoValue);
+//			break;
+//		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+//			validateMultiPolygon(geoValue);
+//			break;
+//
+//		default:
+//			throw new ResponseException(ErrorType.BadRequestData,
+//					"Unsupported geometry type: " + geometryType.toString());
+//		}
+//		HashMap<String, Object> temp = new HashMap<String, Object>();
+//		temp.put(NGSIConstants.JSON_LD_VALUE, compacted);
+//		ArrayList<Object> temp1 = new ArrayList<Object>();
+//		temp1.add(temp);
+//		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+//			geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, temp1);
+//		} else {
+//			this.element = temp1;
+//		}
 
 	}
 
