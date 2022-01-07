@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
+import java.util.Map;
+
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 
@@ -39,8 +41,8 @@ public class NotificationController {
 	public void notify(HttpServletRequest req, @RequestBody String payload,
 			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = false) String id) {
 		try {
-			subscriptionManager.remoteNotify(id, JsonLdProcessor.expand(HttpUtils.getAtContext(req), payload, opts,
-					AppConstants.NOTIFICAITION_RECEIVED, true));
+			subscriptionManager.remoteNotify(id, (Map<String, Object>) JsonLdProcessor.expand(HttpUtils.getAtContext(req), payload, opts,
+					AppConstants.NOTIFICAITION_RECEIVED, true).get(0));
 		} catch (ResponseException e) {
 			// TODO Error Handling
 			e.printStackTrace();

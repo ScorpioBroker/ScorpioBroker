@@ -1,0 +1,24 @@
+package eu.neclab.ngsildbroker.commons.datatypes;
+
+import java.util.List;
+import java.util.Map;
+
+public class InternalNotification extends Notification {
+
+	private String tenantId;
+
+	public InternalNotification(String id, String type, Long notifiedAt, String subscriptionId,
+			List<Map<String, Object>> data, int triggerReason, List<Object> context, String tenantId) {
+		super(id, type, notifiedAt, subscriptionId, data, triggerReason, context);
+		this.tenantId = tenantId;
+	}
+
+	public String getTenantId() {
+		return tenantId;
+	}
+
+	public void setTenantId(String tenantId) {
+		this.tenantId = tenantId;
+	}
+
+}

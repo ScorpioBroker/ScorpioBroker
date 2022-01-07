@@ -119,7 +119,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ENTITY_TYPE_INFO = "https://uri.etsi.org/ngsi-ld/EntityTypeInfo";
 	public final static String NGSI_LD_ENTITY_COUNT = "https://uri.etsi.org/ngsi-ld/entityCount";
 	public final static String NGSI_LD_ATTRIBUTE_DETAILS = "https://uri.etsi.org/ngsi-ld/default-context/attributeDetails";
-	public final static String NGSI_LD_TENANT = "https://uri.etsi.org/ngsi-ld/default-context/tenant";
+	public final static String NGSI_LD_TENANT = "https://uri.etsi.org/ngsi-ld/tenant";
 	public final static String NGSI_LD_ATTRIBUTE_TYPES = "https://uri.etsi.org/ngsi-ld/attributeTypes";
 	public final static String NGSI_LD_ATTRIBUTE = "https://uri.etsi.org/ngsi-ld/Attribute";
 	public final static String NGSI_LD_ATTRS = "https://uri.etsi.org/ngsi-ld/attrs";
@@ -249,7 +249,7 @@ public interface NGSIConstants {
 
 	public final static String NOTIFICATION = "Notification";
 	// DO NOT CHANGE THIS HEADERS ARE MADE TO LOWER CASE BY SPRING
-	public static final String TENANT_HEADER = "ngsild-tenant";
+	public static final String TENANT_HEADER_FOR_INTERNAL_CHECK = "ngsild-tenant";
 	public static final String LINK_HEADER = "Link";
 	public static final String QUERY_TYPE = "Query";
 	public static final String ISACTIVE_FALSE = "paused";
@@ -280,5 +280,6 @@ public interface NGSIConstants {
 	public static final String QUERY_PARAMETER_GEOMETRY_PROPERTY = "geometryProperty";
 	public static final String QUERYP_PARAMETER_COUNT = "count";
 	public static final String JSON_LD_LIST = "@list";
+	public static final String TENANT_HEADER = "NGSILD-Tenant";
 
 }

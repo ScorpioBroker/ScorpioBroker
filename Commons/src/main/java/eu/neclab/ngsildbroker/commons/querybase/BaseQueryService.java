@@ -194,13 +194,13 @@ public abstract class BaseQueryService implements EntryQueryService {
 							HttpHeaders callHeaders = new HttpHeaders();
 							for (Entry<String, String> entry : headers.entries()) {
 								String key = entry.getKey();
-								if (key.equals(NGSIConstants.TENANT_HEADER)) {
+								if (key.equals(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK)) {
 									continue;
 								}
 								callHeaders.add(key, entry.getValue());
 							}
 							if (uri_tenant != null) {
-								callHeaders.add(NGSIConstants.TENANT_HEADER, uri_tenant);
+								callHeaders.add(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK, uri_tenant);
 							}
 							HttpEntity<String> entity;
 							String resultBody;

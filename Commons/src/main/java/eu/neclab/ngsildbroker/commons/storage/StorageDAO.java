@@ -126,8 +126,8 @@ public abstract class StorageDAO {
 
 	private String getTenant(BaseRequest request) {
 		String tenant;
-		if (request.getHeaders().containsKey(NGSIConstants.TENANT_HEADER)) {
-			tenant = request.getHeaders().get(NGSIConstants.TENANT_HEADER).get(0);
+		if (request.getHeaders().containsKey(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK)) {
+			tenant = request.getHeaders().get(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK).get(0);
 			String databasename = "ngb" + tenant;
 			try {
 				storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT, tenant,

@@ -66,12 +66,10 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.BeanTools;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import reactor.core.publisher.Mono;
 
 public abstract class BaseSubscriptionService implements SubscriptionCRUDService {
 
-	private final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionService.class);
+	protected final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionService.class);
 
 	private final String ALL_TYPES_TYPE = "()";
 
@@ -83,7 +81,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private Timer watchDog = new Timer(true);
 
-	private WebClient webClient = BeanTools.getWebClient();
+	protected WebClient webClient = BeanTools.getWebClient();
 
 	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
@@ -91,12 +89,12 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
-	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
+	protected Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
 	private Table<String, String, TimerTask> subId2TimerTask = HashBasedTable.create();
 	private Table<String, String, List<SubscriptionRequest>> type2EntitiesSubscriptions = HashBasedTable.create();
 	private HashMap<SubscriptionRequest, Long> sub2CreationTime = new HashMap<SubscriptionRequest, Long>();
 	private Table<String, String, List<Object>> tenantId2subscriptionId2Context = HashBasedTable.create();
-	private HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
+
 	private Table<String, String, Set<String>> tenant2Ids2Type;
 
 	@PostConstruct
@@ -112,11 +110,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		Subscription temp = new Subscription();
 		temp.setId("invalid:base");
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,
-				getNotification(new SubscriptionRequest(temp, null, null), null, AppConstants.UPDATE_REQUEST));
+				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
+						AppConstants.UPDATE_REQUEST));
 
 		notificationHandlerMQTT = new NotificationHandlerMQTT();
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, subscriptionInfoDAO,
-				getNotification(new SubscriptionRequest(temp, null, null), null, AppConstants.UPDATE_REQUEST));
+				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
+						AppConstants.UPDATE_REQUEST));
 		logger.trace("call loadStoredSubscriptions() ::");
 		loadStoredSubscriptions();
 
@@ -127,7 +127,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	protected abstract SubscriptionInfoDAOInterface getSubscriptionInfoDao();
 
 	@PreDestroy
-	private void deconstructor() {
+	protected void deconstructor() {
 		synchronized (tenant2subscriptionId2Subscription) {
 			subscriptionInfoDAO.storedSubscriptions(tenant2subscriptionId2Subscription);
 		}
@@ -467,19 +467,23 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	}
 
-	private void sendNotification(List<Map<String, Object>> dataList, SubscriptionRequest subscription,
+	protected void sendNotification(List<Map<String, Object>> dataList, SubscriptionRequest subscription,
 			int triggerReason) {
 
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 
-		NotificationHandler handler;
-		if (endpointProtocol.equals("mqtt")) {
-			handler = notificationHandlerMQTT;
-		} else {
-			handler = notificationHandlerREST;
-		}
+		NotificationHandler handler = getNotificationHandler(endpointProtocol);
+
 		handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
 
+	}
+
+	protected NotificationHandler getNotificationHandler(String endpointProtocol) {
+		if (endpointProtocol.equals("mqtt")) {
+			return notificationHandlerMQTT;
+		} else {
+			return notificationHandlerREST;
+		}
 	}
 
 	protected abstract Notification getNotification(SubscriptionRequest request, List<Map<String, Object>> dataList,
@@ -667,76 +671,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		return subs;
 	}
 
-	public void subscribeToRemote(SubscriptionRequest subscriptionRequest, ArrayList<String> remoteEndPoints) {
-		new Thread() {
-			@Override
-			public void run() {
-
-				Subscription remoteSub = new Subscription();
-				Subscription subscription = subscriptionRequest.getSubscription();
-
-				remoteSub.setDescription(subscription.getDescription());
-				remoteSub.setEntities(subscription.getEntities());
-				remoteSub.setExpiresAt(subscription.getExpiresAt());
-				remoteSub.setLdGeoQuery(subscription.getLdGeoQuery());
-				remoteSub.setLdQuery(subscription.getLdQuery());
-				remoteSub.setLdTempQuery(subscription.getLdTempQuery());
-				remoteSub.setSubscriptionName(subscription.getSubscriptionName());
-				remoteSub.setStatus(subscription.getStatus());
-				remoteSub.setThrottling(subscription.getThrottling());
-				remoteSub.setTimeInterval(subscription.getTimeInterval());
-				remoteSub.setType(subscription.getType());
-				NotificationParam remoteNotification = new NotificationParam();
-				remoteNotification.setAttributeNames(subscription.getNotification().getAttributeNames());
-				remoteNotification.setFormat(Format.normalized);
-				EndPoint endPoint = new EndPoint();
-				endPoint.setAccept(AppConstants.NGB_APPLICATION_JSONLD);
-				endPoint.setUri(prepareNotificationServlet(subscriptionRequest));
-				remoteNotification.setEndPoint(endPoint);
-				remoteSub.setAttributeNames(subscription.getAttributeNames());
-				String body = DataSerializer.toJson(remoteSub);
-				HttpHeaders additionalHeaders = new HttpHeaders();
-				additionalHeaders.add(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD);
-				for (String remoteEndPoint : remoteEndPoints) {
-
-					StringBuilder temp = new StringBuilder(remoteEndPoint);
-					if (remoteEndPoint.endsWith("/")) {
-						temp.deleteCharAt(remoteEndPoint.length() - 1);
-					}
-					temp.append(AppConstants.SUBSCRIPTIONS_URL);
-					webClient.post().uri(temp.toString()).headers(httpHeadersOnWebClientBeingBuilt -> {
-						httpHeadersOnWebClientBeingBuilt.addAll(additionalHeaders);
-					}).bodyValue(body).exchangeToMono(response -> {
-						if (response.statusCode().equals(HttpStatus.OK)) {
-							return Mono.just(Void.class);
-						} else {
-							return response.createException().flatMap(Mono::error);
-						}
-					}).subscribe();
-
-				}
-
-			}
-		}.start();
-
-	}
-
-	private URI prepareNotificationServlet(SubscriptionRequest subToCheck) {
-
-		String uuid = Long.toString(UUID.randomUUID().getLeastSignificantBits());
-		remoteNotifyCallbackId2InternalSub.put(uuid, subToCheck);
-		StringBuilder url = new StringBuilder(MicroServiceUtils.getGatewayURL().toString()).append("/remotenotify/")
-				.append(uuid);
-		try {
-			return new URI(url.toString());
-		} catch (URISyntaxException e) {
-			logger.error("Exception ::", e);
-			// should never happen
-			return null;
-		}
-
-	}
-
 	private Set<String> getTypesForId(String tenantId, String entityId) {
 		synchronized (this.tenant2Ids2Type) {
 
@@ -746,18 +680,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			}
 			return result;
 		}
-	}
-
-	public void remoteNotify(String id, List<Object> list) {
-		// TODO maybe remove
-		new Thread() {
-			@Override
-			public void run() {
-				SubscriptionRequest subscription = remoteNotifyCallbackId2InternalSub.get(id);
-				// sendNotification(list, subscription);
-			}
-		}.start();
-
 	}
 
 	// return true for future date validation

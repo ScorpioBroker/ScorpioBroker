@@ -16,7 +16,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
-abstract class BaseNotificationHandler implements NotificationHandler {
+public abstract class BaseNotificationHandler implements NotificationHandler {
 
 	protected abstract void sendReply(Notification notification, SubscriptionRequest request) throws Exception;
 

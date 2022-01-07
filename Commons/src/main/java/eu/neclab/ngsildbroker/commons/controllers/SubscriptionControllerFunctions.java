@@ -68,7 +68,7 @@ public interface SubscriptionControllerFunctions {
 			subscription = expandSubscription(body, request,
 					JsonLdProcessor.getCoreContextClone().parse(context, true));
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
-					HttpUtils.getHeaders(request));
+					HttpUtils.getHeaders(request), AppConstants.CREATE_REQUEST);
 			String subId = subscriptionService.subscribe(subRequest);
 
 			logger.trace("subscribeRest() :: completed");
@@ -421,7 +421,7 @@ public interface SubscriptionControllerFunctions {
 				subscription.setId(id);
 			}
 			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, linkHeaders,
-					HttpUtils.getHeaders(request));
+					HttpUtils.getHeaders(request), AppConstants.UPDATE_REQUEST);
 
 			// expandSubscriptionAttributes(subscription, context);
 			if (body == null || subscription == null || !id.equals(subscription.getId())) {
@@ -440,7 +440,6 @@ public interface SubscriptionControllerFunctions {
 		LDGeoQuery geoQuery = new LDGeoQuery();
 		List<Map<String, Object>> jsonCoordinates = (List<Map<String, Object>>) map
 				.get(NGSIConstants.NGSI_LD_COORDINATES);
-		
 
 		geoQuery.setCoordinates(getCoordinates(jsonCoordinates));
 		String geometry = (String) ((List<Map<String, Object>>) map.get(NGSIConstants.NGSI_LD_GEOMETRY)).get(0)
@@ -478,10 +477,10 @@ public interface SubscriptionControllerFunctions {
 		ArrayList<Double> result = new ArrayList<Double>();
 
 		for (Map<String, Object> entry : jsonCoordinates) {
-			for(Entry<String, Object> entry1: entry.entrySet()) {
+			for (Entry<String, Object> entry1 : entry.entrySet()) {
 				String key = entry1.getKey();
 				Object value = entry1.getValue();
-				if(key.equals(NGSIConstants.JSON_LD_VALUE)) {
+				if (key.equals(NGSIConstants.JSON_LD_VALUE)) {
 					if (value instanceof Double) {
 						result.add((Double) value);
 					} else if (value instanceof Integer) {
@@ -489,7 +488,7 @@ public interface SubscriptionControllerFunctions {
 					} else if (value instanceof Long) {
 						result.add(((Long) value).doubleValue());
 					}
-				}else if(key.equals(NGSIConstants.JSON_LD_LIST)) {
+				} else if (key.equals(NGSIConstants.JSON_LD_LIST)) {
 					result.addAll(getCoordinates((List<Map<String, Object>>) value));
 				}
 			}

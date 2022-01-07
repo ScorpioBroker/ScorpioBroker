@@ -23,7 +23,8 @@ public class BaseRequest {
 
 	}
 
-	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload, int requestType) {
+	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
+			int requestType) {
 		super();
 		this.headers = headers;
 		this.id = id;
@@ -108,8 +109,8 @@ public class BaseRequest {
 	 * @return the internal null value if the tenant is not present
 	 */
 	public String getTenant() {
-		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
-			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK)) {
+			return headers.get(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK).get(0);
 		}
 		return AppConstants.INTERNAL_NULL_KEY;
 	}
@@ -120,6 +121,10 @@ public class BaseRequest {
 
 	public Map<String, Object> getRequestPayload() {
 		return requestPayload;
+	}
+
+	public void setId(String id) {
+		this.id = id;
 	}
 
 	public void setRequestPayload(Map<String, Object> requestPayload) {

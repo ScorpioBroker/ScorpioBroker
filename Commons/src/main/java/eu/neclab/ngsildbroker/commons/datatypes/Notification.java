@@ -72,7 +72,11 @@ public class Notification {
 		this.data = data;
 	}
 
-	public String toJson() throws Exception {
+	public String toCompactedJsonString() throws Exception {
+		return JsonUtils.toPrettyString(toCompactedJson());
+	}
+
+	public Map<String, Object> toCompactedJson() throws Exception {
 		HashMap<String, Object> temp = new HashMap<String, Object>();
 		temp.put("id", id);
 		temp.put("type", type);
@@ -96,7 +100,7 @@ public class Notification {
 			break;
 		}
 
-		return JsonUtils.toPrettyString(JsonLdProcessor.compact(temp, context, opts));
+		return JsonLdProcessor.compact(temp, context, opts);
 	}
 
 	public int getTriggerReason() {
@@ -122,6 +126,5 @@ public class Notification {
 	public void setType(String type) {
 		this.type = type;
 	}
-	
 
 }

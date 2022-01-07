@@ -25,7 +25,7 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 					request.getHeaders().entries().forEach(entry -> {
 						httpHeadersOnWebClientBeingBuilt.add(entry.getKey(), entry.getValue());
 					});
-				}).bodyValue(notification.toJson()).exchangeToMono(response -> {
+				}).bodyValue(notification.toCompactedJsonString()).exchangeToMono(response -> {
 					if (response.statusCode().is4xxClientError() || response.statusCode().is5xxServerError()) {
 						logger.error("Failed to send notification with return code " + response.statusCode()
 								+ " subscription id: " + request.getSubscription().getId() + " notification id: "

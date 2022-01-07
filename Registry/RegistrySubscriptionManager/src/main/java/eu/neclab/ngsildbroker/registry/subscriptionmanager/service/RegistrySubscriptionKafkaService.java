@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
 @Service
 public class RegistrySubscriptionKafkaService {
@@ -36,6 +37,26 @@ public class RegistrySubscriptionKafkaService {
 			logger.debug("Delete got called: " + key);
 			subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
 					AppConstants.OPERATION_DELETE_ENTITY);
+			break;
+		default:
+			break;
+		}
+	}
+	@KafkaListener(topics = "${scorpio.topics.internalregsub}")
+	public void handleSubscription(@Payload SubscriptionRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+		switch (message.getRequestType()) {
+		case AppConstants.UPDATE_REQUEST:
+			logger.debug("Append got called: " + key);
+			subscriptionService.updateInternal(message);
+			break;
+		case AppConstants.CREATE_REQUEST:
+			logger.debug("Create got called: " + key);
+			subscriptionService.subscribeInternal(message);
+			break;
+		case AppConstants.DELETE_REQUEST:
+			logger.debug("Delete got called: " + key);
+			subscriptionService.unsubscribeInternal(message.getSubscription().getId());
 			break;
 		default:
 			break;

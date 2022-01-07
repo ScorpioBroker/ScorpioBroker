@@ -78,7 +78,7 @@ public class RegistryController {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
 			HttpUtils.validateUri(registrationId);
-			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
 			return HttpUtils.generateReply(request, csourceService.getCSourceRegistrationById(tenantid, registrationId),
 					AppConstants.REGISTRY_ENDPOINT);
 		} catch (Exception exception) {

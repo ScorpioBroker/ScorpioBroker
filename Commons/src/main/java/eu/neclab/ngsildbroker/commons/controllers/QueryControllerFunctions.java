@@ -145,7 +145,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	private static ResponseEntity<String> getQueryData(EntryQueryService queryService, HttpServletRequest request,
 			String originalQueryParams, MultiValueMap<String, String> paramMap, boolean typeRequired,
 			boolean forceArray, boolean temporal, int defaultLimit, int maxLimit, String check) {
-		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
+		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
 		try {
 			logger.trace("getAllEntity() ::");
 			List<Object> linkHeaders = HttpUtils.getAtContext(request);

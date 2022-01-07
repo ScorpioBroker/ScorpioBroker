@@ -6,14 +6,13 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 
-public class SubscriptionRequest extends BaseRequest{
+public class SubscriptionRequest extends BaseRequest {
 	private Subscription subscription;
 	private List<Object> context;
-	
 
 	public SubscriptionRequest(Subscription subscription, List<Object> context2,
-			ArrayListMultimap<String, String> headers) {
-		super(headers, subscription.getId(), null, -1);
+			ArrayListMultimap<String, String> headers, int type) {
+		super(headers, subscription.getId(), null, type);
 		this.context = context2;
 		this.subscription = subscription;
 	}

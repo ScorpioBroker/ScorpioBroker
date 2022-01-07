@@ -10,6 +10,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
+import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 
 @Service
@@ -18,7 +20,7 @@ public class SubscriptionKafkaService {
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionService.class);
 	@Autowired
 	SubscriptionService subscriptionService;
-	
+
 	@KafkaListener(topics = "${scorpio.topics.entity}")
 	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
@@ -34,8 +36,7 @@ public class SubscriptionKafkaService {
 			break;
 		case AppConstants.UPDATE_REQUEST:
 			logger.debug("Update got called: " + key);
-			subscriptionService.checkSubscriptionsWithDelta(message, timeStamp,
-					AppConstants.OPERATION_UPDATE_ENTITY);
+			subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_UPDATE_ENTITY);
 			break;
 		case AppConstants.DELETE_REQUEST:
 			logger.debug("Delete got called: " + key);
@@ -46,36 +47,9 @@ public class SubscriptionKafkaService {
 			break;
 		}
 	}
-
-	@KafkaListener(topics = "${scorpio.topics.registry}")
-	public void handleCSource(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+	@KafkaListener(topics = "${scorpio.topics.internalnotifcation}")
+	public void handleInternalNotification(@Payload InternalNotification message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-		switch (message.getRequestType()) {
-		case AppConstants.APPEND_REQUEST:
-			logger.debug("Append registry got called: " + key);
-			//subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
-			break;
-		case AppConstants.CREATE_REQUEST:
-			logger.debug("Create registry got called: " + key);
-			//subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
-			//		AppConstants.OPERATION_CREATE_ENTITY);
-			break;
-		case AppConstants.UPDATE_REQUEST:
-			logger.debug("Update registry got called: " + key);
-			//subscriptionService.checkSubscriptionsWithDelta(message, timeStamp,
-			//		AppConstants.OPERATION_UPDATE_ENTITY);
-			break;
-		case AppConstants.DELETE_REQUEST:
-			logger.debug("Delete registry got called: " + key);
-			//subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
-			//		AppConstants.OPERATION_DELETE_ENTITY);
-			break;
-		default:
-			break;
-		}
+		subscriptionService.handleRegistryNotification(message);
 	}
-
-
-
-
 }

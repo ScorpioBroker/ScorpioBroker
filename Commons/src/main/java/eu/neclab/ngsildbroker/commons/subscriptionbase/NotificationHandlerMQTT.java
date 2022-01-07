@@ -84,7 +84,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		result.append("\"");
 		result.append(NGSIConstants.BODY);
 		result.append("\":{");
-		result.append(notification.toJson());
+		result.append(notification.toCompactedJsonString());
 		result.append("}");
 		result.append("}");
 		return result.toString();
