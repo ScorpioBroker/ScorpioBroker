@@ -541,4 +541,16 @@ public final class HttpUtils {
 		}
 		return result;
 	}
+	
+	public static String validateIdPattern(String mapValue) throws ResponseException {
+		try {
+			if (!new URI(mapValue).isAbsolute()) {
+				throw new ResponseException(ErrorType.BadRequestData, "idPattern is not a URI");
+			}
+			return mapValue;
+		} catch (URISyntaxException e) {
+			throw new ResponseException(ErrorType.BadRequestData, "idPattern is not a URI");
+		}
+
+	}
 }
