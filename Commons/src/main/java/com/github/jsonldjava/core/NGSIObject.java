@@ -399,6 +399,14 @@ class NGSIObject {
 				}
 				validateTimeProperty();
 				return;
+			case NGSIConstants.NGSI_LD_GEOPROPERTY:
+				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"The key " + activeProperty + " is an invalid entry.");
+				} 
+				validateGeoproperty(
+						(String) ((Map<String, Object>) this.element).get(NGSIConstants.JSON_LD_VALUE));
+				return;
 			default:
 				if (parent != null && parent.parent != null && parent.parent.isArray && parent.parent.parent != null
 						&& (parent.parent.parent.isReceiverInfo || parent.parent.parent.isNotifierInfo)) {
@@ -464,7 +472,11 @@ class NGSIObject {
 		}
 
 	}
+	
+	private void validateGeoproperty(String geoproperty) {
+		// TODO Auto-generated method stub
 
+	}
 	private void validateTimeProperty() {
 		// TODO Auto-generated method stub
 
