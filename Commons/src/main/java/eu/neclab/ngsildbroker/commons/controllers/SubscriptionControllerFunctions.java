@@ -440,22 +440,9 @@ public interface SubscriptionControllerFunctions {
 		LDGeoQuery geoQuery = new LDGeoQuery();
 		List<Map<String, Object>> jsonCoordinates = (List<Map<String, Object>>) map
 				.get(NGSIConstants.NGSI_LD_COORDINATES);
-		ArrayList<Double> coordinates = new ArrayList<Double>();
+		
 
-		for (Map<String, Object> entry : jsonCoordinates) {
-			Object tempValue = entry.get(NGSIConstants.JSON_LD_VALUE);
-			if (tempValue instanceof Double) {
-				coordinates.add((Double) tempValue);
-			} else if (tempValue instanceof Integer) {
-				coordinates.add(((Integer) tempValue).doubleValue());
-			} else if (tempValue instanceof Long) {
-				coordinates.add(((Long) tempValue).doubleValue());
-			} else {
-				throw new ResponseException(ErrorType.BadRequestData, "Failed to parse coordinates");
-			}
-
-		}
-		geoQuery.setCoordinates(coordinates);
+		geoQuery.setCoordinates(getCoordinates(jsonCoordinates));
 		String geometry = (String) ((List<Map<String, Object>>) map.get(NGSIConstants.NGSI_LD_GEOMETRY)).get(0)
 				.get(NGSIConstants.JSON_LD_VALUE);
 		if (geometry.equalsIgnoreCase("point")) {
@@ -485,6 +472,29 @@ public interface SubscriptionControllerFunctions {
 		}
 		geoQuery.setGeoRelation(geoRel);
 		return geoQuery;
+	}
+
+	public static ArrayList<Double> getCoordinates(List<Map<String, Object>> jsonCoordinates) {
+		ArrayList<Double> result = new ArrayList<Double>();
+
+		for (Map<String, Object> entry : jsonCoordinates) {
+			for(Entry<String, Object> entry1: entry.entrySet()) {
+				String key = entry1.getKey();
+				Object value = entry1.getValue();
+				if(key.equals(NGSIConstants.JSON_LD_VALUE)) {
+					if (value instanceof Double) {
+						result.add((Double) value);
+					} else if (value instanceof Integer) {
+						result.add(((Integer) value).doubleValue());
+					} else if (value instanceof Long) {
+						result.add(((Long) value).doubleValue());
+					}
+				}else if(key.equals(NGSIConstants.JSON_LD_LIST)) {
+					result.addAll(getCoordinates((List<Map<String, Object>>) value));
+				}
+			}
+		}
+		return result;
 	}
 
 	private static List<String> getAttribs(List<Map<String, Object>> entry) throws ResponseException {

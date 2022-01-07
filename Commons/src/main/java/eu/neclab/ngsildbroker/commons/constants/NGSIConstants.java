@@ -279,5 +279,6 @@ public interface NGSIConstants {
 	public static final String PROPERTIES = "properties";
 	public static final String QUERY_PARAMETER_GEOMETRY_PROPERTY = "geometryProperty";
 	public static final String QUERYP_PARAMETER_COUNT = "count";
+	public static final String JSON_LD_LIST = "@list";
 
 }
