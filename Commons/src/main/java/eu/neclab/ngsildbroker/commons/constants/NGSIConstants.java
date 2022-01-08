@@ -229,7 +229,7 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_FORBIDDEN_KEY_CHARS = "<,\",',=,;,(,),>,?,*";
 	public static final String[] VALID_SUB_ENDPOINT_SCHEMAS = { "http", "https", "mqtt", "mqtts" };
 	public final static String QUERY_PARAMETER_DELETE_ALL = "deleteAll";
-	public static final String NGSI_LD_NOTIFIERINFO = "https://uri.etsi.org/ngsi-ld/default-context/notifierInfo";
+	public static final String NGSI_LD_NOTIFIERINFO = "https://uri.etsi.org/ngsi-ld/default-context/notifierinfo";
 	public static final String NGSI_LD_RECEIVERINFO = "https://uri.etsi.org/ngsi-ld/default-context/receiverInfo";
 	public static final String NGSI_LD_MQTT_QOS = "https://uri.etsi.org/ngsi-ld/default-context/qos";
 	public static final String NGSI_LD_MQTT_VERSION = "https://uri.etsi.org/ngsi-ld/default-context/version";
