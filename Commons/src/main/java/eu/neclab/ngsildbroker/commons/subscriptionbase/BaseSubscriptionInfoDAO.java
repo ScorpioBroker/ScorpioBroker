@@ -100,7 +100,7 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	@Override
 	public List<String> getEntriesFromSub(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		String tenant = subscriptionRequest.getTenant();
-		if(AppConstants.INTERNAL_NULL_KEY.equals(tenant)) {
+		if (AppConstants.INTERNAL_NULL_KEY.equals(tenant)) {
 			tenant = null;
 		}
 		Subscription subscription = subscriptionRequest.getSubscription();
@@ -113,7 +113,10 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		for (QueryParams qp : qps) {
 			qp.setTenant(tenant);
 			QueryResult qr = query(qp);
-			result.addAll(qr.getActualDataString());
+			List<String> resultString = qr.getActualDataString();
+			if (resultString != null) {
+				result.addAll(resultString);
+			}
 		}
 		return result;
 	}

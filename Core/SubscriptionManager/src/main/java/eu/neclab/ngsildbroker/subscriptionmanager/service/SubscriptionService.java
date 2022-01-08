@@ -96,8 +96,13 @@ public class SubscriptionService extends BaseSubscriptionService {
 		unsubscribeRemote(id);
 		SubscriptionRequest request = tenant2subscriptionId2Subscription.get(HttpUtils.getTenantFromHeaders(headers),
 				id);
-		request.setRequestType(AppConstants.DELETE_REQUEST);
-		kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
+		if (request != null) {
+			// let super unsubscribe take care of further error handling
+			request.setRequestType(AppConstants.DELETE_REQUEST);
+			kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
+		} else {
+			System.err.println(id + " not found on delete");
+		}
 		super.unsubscribe(id, headers);
 
 	}
@@ -117,6 +122,13 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	public void subscribeToRemote(SubscriptionRequest subscriptionRequest, InternalNotification notification) {
+		if (subscriptionRequest == null) {
+			// this can happen when sub is already deleted but a notification for it still
+			// arrives.
+			return;
+		}else {
+			System.err.println("not null in remote subscribe");
+		}
 		new Thread() {
 			@Override
 			public void run() {
@@ -242,10 +254,12 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	private void unsubscribeRemote(String subscriptionId) {
 		String endpoint = internalSubId2ExternalEndpoint.remove(subscriptionId);
-		remoteNotifyCallbackId2InternalSub.remove(internalSubId2RemoteNotifyCallbackId2.remove(subscriptionId));
-		webClient.delete().uri(endpoint).exchangeToMono(response -> {
-			return Mono.just(Void.class);
-		}).subscribe();
+		if (endpoint != null) {
+			remoteNotifyCallbackId2InternalSub.remove(internalSubId2RemoteNotifyCallbackId2.remove(subscriptionId));
+			webClient.delete().uri(endpoint).exchangeToMono(response -> {
+				return Mono.just(Void.class);
+			}).retry(5).subscribe();
+		}
 
 	}
 

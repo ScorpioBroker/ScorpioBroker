@@ -47,7 +47,7 @@ public class SubscriptionKafkaService {
 			break;
 		}
 	}
-	@KafkaListener(topics = "${scorpio.topics.internalnotifcation}")
+	@KafkaListener(topics = "${scorpio.topics.internalnotification}")
 	public void handleInternalNotification(@Payload InternalNotification message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
 		subscriptionService.handleRegistryNotification(message);

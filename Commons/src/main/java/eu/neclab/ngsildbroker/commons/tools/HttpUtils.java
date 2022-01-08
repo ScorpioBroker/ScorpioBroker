@@ -302,8 +302,11 @@ public final class HttpUtils {
 			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE_COLLECTION);
 			ArrayList<Object> value = new ArrayList<Object>();
 			for (Object entry : (List<Object>) result) {
-				value.add(generateGeoJson(entry, geometry, context));
+				Object valueEntry = generateGeoJson(entry, geometry, context);
+				((Map<String, Object>) valueEntry).remove(NGSIConstants.JSON_LD_CONTEXT);
+				value.add(valueEntry);
 			}
+			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
 			resultMap.put(NGSIConstants.FEATURES, value);
 		} else {
 			Map<String, Object> entryMap = (Map<String, Object>) result;
@@ -311,12 +314,7 @@ public final class HttpUtils {
 			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE);
 			Object geometryEntry = entryMap.get(geometry);
 			if (geometryEntry != null) {
-				if (geometryEntry instanceof String) {
-					resultMap.put(NGSIConstants.GEOMETRY, JsonUtils.fromString((String) geometryEntry));
-				} else {
-					resultMap.put(NGSIConstants.GEOMETRY,
-							((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
-				}
+				resultMap.put(NGSIConstants.GEOMETRY, geometryEntry);
 			}
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
 			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
@@ -541,4 +539,5 @@ public final class HttpUtils {
 		}
 		return result;
 	}
+
 }

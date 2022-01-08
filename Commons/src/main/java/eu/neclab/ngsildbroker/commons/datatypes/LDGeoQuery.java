@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.List;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
 
 /**
@@ -13,7 +14,7 @@ public class LDGeoQuery {
 
 	private List<Double> coordinates;
 	private Geometry geometry;
-	private String geoProperty = "location";
+	private String geoProperty = NGSIConstants.NGSI_LD_LOCATION;
 	private GeoRelation geoRelation;
 //	private boolean nextAnd = true;
 //	private LDGeoQuery next;

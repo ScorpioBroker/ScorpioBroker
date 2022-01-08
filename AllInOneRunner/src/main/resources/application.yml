@@ -77,7 +77,7 @@ spring:
         spring:
           json:
             trusted:
-              packages: eu.neclab.ngsildbroker.commons.datatypes.requests
+              packages: eu.neclab.ngsildbroker.commons.datatypes,eu.neclab.ngsildbroker.commons.datatypes.requests
     admin:
       properties:
         cleanup:
@@ -205,3 +205,5 @@ scorpio:
     entity: ENTITY
     registry: REGISTRY
     temporal: TEMPORAL
+    internalnotification: I_NOTIFY
+    internalregsub: I_REGSUB

@@ -7,6 +7,10 @@ public class InternalNotification extends Notification {
 
 	private String tenantId;
 
+	public InternalNotification() {
+		// for serialzation
+	}
+
 	public InternalNotification(String id, String type, Long notifiedAt, String subscriptionId,
 			List<Map<String, Object>> data, int triggerReason, List<Object> context, String tenantId) {
 		super(id, type, notifiedAt, subscriptionId, data, triggerReason, context);

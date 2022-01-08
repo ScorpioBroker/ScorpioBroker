@@ -28,6 +28,9 @@ public class Notification {
 	private String type;
 	private static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
+	public Notification() {
+		// for serialization
+	}
 	public Notification(String id, String type, Long notifiedAt, String subscriptionId, List<Map<String, Object>> data,
 			int triggerReason, List<Object> context) {
 		super();

@@ -131,7 +131,7 @@ public interface SubscriptionControllerFunctions {
 				break;
 			case NGSIConstants.NGSI_LD_GEO_QUERY:
 				try {
-					LDGeoQuery ldGeoQuery = getGeoQuery(((List<Map<String, Object>>) mapValue).get(0));
+					LDGeoQuery ldGeoQuery = getGeoQuery(((List<Map<String, Object>>) mapValue).get(0), context);
 					subscription.setLdGeoQuery(ldGeoQuery);
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
@@ -436,8 +436,14 @@ public interface SubscriptionControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static LDGeoQuery getGeoQuery(Map<String, Object> map) throws Exception {
+	private static LDGeoQuery getGeoQuery(Map<String, Object> map, Context context) throws Exception {
 		LDGeoQuery geoQuery = new LDGeoQuery();
+		Object geoProperty = map.get(NGSIConstants.NGSI_LD_GEOPROPERTY);
+		if (geoProperty != null) {
+			geoQuery.setGeoProperty(
+					context.expandIri(((List<Map<String, String>>) geoProperty).get(0).get(NGSIConstants.JSON_LD_VALUE),
+							false, true, null, null));
+		}
 		List<Map<String, Object>> jsonCoordinates = (List<Map<String, Object>>) map
 				.get(NGSIConstants.NGSI_LD_COORDINATES);
 

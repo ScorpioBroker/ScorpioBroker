@@ -23,7 +23,7 @@ public class InternalNotificationHandler extends BaseNotificationHandler {
 		notification.setSubscriptionId(
 				notification.getSubscriptionId().substring(0, notification.getSubscriptionId().length()
 						- RegistrySubscriptionService.INTERNAL_SUB_ID_SUFFIX.length() - 1));
-		kafkaTemplate.send(topic,
+		kafkaTemplate.send(topic, notification.getId(),
 				new InternalNotification(notification.getId(), notification.getType(), notification.getNotifiedAt(),
 						notification.getSubscriptionId(), notification.getData(), notification.getTriggerReason(),
 						notification.getContext(), request.getTenant()));

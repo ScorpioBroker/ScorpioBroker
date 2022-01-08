@@ -10,6 +10,10 @@ public class SubscriptionRequest extends BaseRequest {
 	private Subscription subscription;
 	private List<Object> context;
 
+	public SubscriptionRequest() {
+		// default constructor for serialization 
+	}
+
 	public SubscriptionRequest(Subscription subscription, List<Object> context2,
 			ArrayListMultimap<String, String> headers, int type) {
 		super(headers, subscription.getId(), null, type);
