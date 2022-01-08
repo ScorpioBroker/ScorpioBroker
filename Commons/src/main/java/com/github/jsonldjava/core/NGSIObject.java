@@ -407,6 +407,21 @@ class NGSIObject {
 				validateGeoproperty(
 						(String) ((Map<String, Object>) this.element).get(NGSIConstants.JSON_LD_VALUE));
 				return;
+			case NGSIConstants.NGSI_LD_MQTT_VERSION:
+				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isNotifierInfo) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"The key " + activeProperty + " is an invalid entry.");
+				}
+				validateMQTTVersion();
+				return;
+			 case NGSIConstants.NGSI_LD_MQTT_QOS:
+				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isNotifierInfo) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"The key " + activeProperty + " is an invalid entry.");
+				}
+				validateMQTTQOS();
+				return;
+				
 			default:
 				if (parent != null && parent.parent != null && parent.parent.isArray && parent.parent.parent != null
 						&& (parent.parent.parent.isReceiverInfo || parent.parent.parent.isNotifierInfo)) {
@@ -438,9 +453,9 @@ class NGSIObject {
 				if (this.parent.isTemporalQ && this.parent.parent == null) {
 					return;
 				}
-				if (this.parent.isArray && parent.parent != null
-						&& (parent.parent.isNotifierInfo || parent.parent.isReceiverInfo)
-						&& parent.parent.parent != null && parent.parent.parent.isEndpoint) {
+				if (this.parent.parent != null
+						&& (this.parent.isNotifierInfo || this.parent.isReceiverInfo)
+						&& parent.parent.isEndpoint) {
 					return;
 				}
 
@@ -501,7 +516,17 @@ class NGSIObject {
 		// TODO Auto-generated method stub
 
 	}
+	
+	private void validateMQTTQOS() {
+		// TODO Auto-generated method stub
 
+	}
+	
+	private void validateMQTTVersion() {
+		// TODO Auto-generated method stub
+
+	}
+	
 	private boolean checkForEntities() throws ResponseException {
 		if (this.parent != null) {
 			if (this.parent.isArray && this.parent.parent != null && this.parent.parent.isEntities) {
