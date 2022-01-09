@@ -195,12 +195,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 					if (sendInitialNotification) {
 						try {
 							List<String> temp = subscriptionInfoDAO.getEntriesFromSub(subscriptionRequest);
-
-							List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
-							for (String entry : temp) {
-								notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
+							if (!temp.isEmpty()) {
+								List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
+								for (String entry : temp) {
+									notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
+								}
+								sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
 							}
-							sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
 						} catch (ResponseException | IOException e) {
 							logger.error("Failed to send initial notifcation", e);
 						}
