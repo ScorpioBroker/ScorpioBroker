@@ -176,7 +176,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 					for (String brokerInfo : brokerList.getActualDataString()) {
 						m = p.matcher(brokerInfo);
 						if (!m.find()) {
-							System.err.println();
+							continue;
 						}
 						final String uri_tenant;
 

@@ -9,8 +9,6 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVE
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,8 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
@@ -31,8 +27,6 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.github.filosganga.geogson.model.Point;
@@ -46,18 +40,15 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
-import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
@@ -263,9 +254,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	}
 
-	private String generateUniqueSubId(Subscription subscription) {
-		return "urn:ngsi-ld:Subscription:" + subscription.hashCode();
-	}
+	protected abstract String generateUniqueSubId(Subscription subscription);
 
 	public void unsubscribe(String id, ArrayListMultimap<String, String> headers) throws ResponseException {
 		String tenant = HttpUtils.getInternalTenant(headers);
@@ -673,11 +662,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private Set<String> getTypesForId(String tenantId, String entityId) {
 		synchronized (this.tenant2Ids2Type) {
-
 			Set<String> result = this.tenant2Ids2Type.get(tenantId, entityId);
-			if (result == null) {
-				System.err.println();
-			}
 			return result;
 		}
 	}

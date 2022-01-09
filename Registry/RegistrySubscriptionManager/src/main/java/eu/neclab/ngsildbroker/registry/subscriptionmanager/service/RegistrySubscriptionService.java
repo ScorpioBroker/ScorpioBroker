@@ -2,9 +2,7 @@ package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -32,8 +30,6 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
 @Service
 public class RegistrySubscriptionService extends BaseSubscriptionService {
-
-	static final String INTERNAL_SUB_ID_SUFFIX = "I_N_T_E_R_N_A_L";
 
 	@Autowired
 	@Qualifier("regsubdao")
@@ -95,10 +91,9 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	}
 
 	void unsubscribeInternal(String subId) {
-		String internalSubId = subId + INTERNAL_SUB_ID_SUFFIX;
-		SubscriptionRequest request = id2InternalSubscriptions.remove(internalSubId);
+		SubscriptionRequest request = id2InternalSubscriptions.remove(subId);
 		try {
-			unsubscribe(internalSubId, request.getHeaders());
+			unsubscribe(subId, request.getHeaders());
 		} catch (ResponseException e) {
 			logger.error("Failed to subscribe internally", e);
 		}
@@ -129,9 +124,9 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	private void makeSubscriptionInternal(SubscriptionRequest request) {
 		Subscription sub = request.getSubscription();
-		String internalSubId = sub.getId() + INTERNAL_SUB_ID_SUFFIX;
-		sub.setId(internalSubId);
-		request.setId(internalSubId);
+		// String internalSubId = sub.getId() + INTERNAL_SUB_ID_SUFFIX;
+		// sub.setId(internalSubId);
+		// request.setId(internalSubId);
 		try {
 			if (sub.getNotification() != null) {
 				sub.getNotification().getEndPoint().setUri(new URI("internal://kafka"));
@@ -139,7 +134,11 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		} catch (URISyntaxException e) {
 			logger.error("Failed to set internal sub endpoint", e);
 		}
-		id2InternalSubscriptions.put(internalSubId, request);
+		id2InternalSubscriptions.put(sub.getId(), request);
 	}
 
+	@Override
+	protected String generateUniqueSubId(Subscription subscription) {
+		return "urn:ngsi-ld:Registry:Subscription:" + subscription.hashCode();
+	}
 }

@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,12 +11,10 @@ import java.util.UUID;
 
 import javax.annotation.PreDestroy;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +31,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
@@ -94,14 +90,11 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Override
 	public void unsubscribe(String id, ArrayListMultimap<String, String> headers) throws ResponseException {
 		unsubscribeRemote(id);
-		SubscriptionRequest request = tenant2subscriptionId2Subscription.get(HttpUtils.getTenantFromHeaders(headers),
-				id);
+		SubscriptionRequest request = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers), id);
 		if (request != null) {
 			// let super unsubscribe take care of further error handling
 			request.setRequestType(AppConstants.DELETE_REQUEST);
 			kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
-		} else {
-			System.err.println(id + " not found on delete");
 		}
 		super.unsubscribe(id, headers);
 
@@ -109,16 +102,17 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	public String subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
+		String result = super.subscribe(subscriptionRequest);
 		kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, subscriptionRequest.getSubscription().getId(),
 				subscriptionRequest);
-		return super.subscribe(subscriptionRequest);
+		return result;
 	}
 
 	@Override
 	public void updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
+		super.updateSubscription(subscriptionRequest);
 		kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, subscriptionRequest.getSubscription().getId(),
 				subscriptionRequest);
-		super.updateSubscription(subscriptionRequest);
 	}
 
 	public void subscribeToRemote(SubscriptionRequest subscriptionRequest, InternalNotification notification) {
@@ -126,8 +120,6 @@ public class SubscriptionService extends BaseSubscriptionService {
 			// this can happen when sub is already deleted but a notification for it still
 			// arrives.
 			return;
-		}else {
-			System.err.println("not null in remote subscribe");
 		}
 		new Thread() {
 			@Override
@@ -261,6 +253,11 @@ public class SubscriptionService extends BaseSubscriptionService {
 			}).retry(5).subscribe();
 		}
 
+	}
+
+	@Override
+	protected String generateUniqueSubId(Subscription subscription) {
+		return "urn:ngsi-ld:Subscription:" + subscription.hashCode();
 	}
 
 }

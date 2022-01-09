@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.registryhandler.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
@@ -13,6 +14,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 
 @Service
+@ConditionalOnProperty(name = "scorpio.registry.autorecording", matchIfMissing = true, havingValue = "active")
 public class CSourceKafkaService {
 	private static final Logger logger = LoggerFactory.getLogger(CSourceKafkaService.class);
 	
