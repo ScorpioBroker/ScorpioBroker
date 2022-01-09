@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
@@ -34,10 +36,9 @@ public class AppendEntityRequest extends EntityRequest {
 			this.entityWithoutSysAttrs = appendResult.getJsonWithoutSysAttrs();
 			this.withSysAttrs = appendResult.getJson();
 			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(appendResult.getFinalNode()));
-		} catch (Exception e) {
+		} catch (IOException e) {
 			throw new ResponseException(ErrorType.UnprocessableEntity, e.getMessage());
 		}
-
 	}
 
 	/**
@@ -46,21 +47,24 @@ public class AppendEntityRequest extends EntityRequest {
 	 * @param entityBody
 	 * @param jsonToUpdate
 	 * @return AppendResult
+	 * @throws JsonGenerationException
 	 * @throws IOException
 	 */
 
 	@SuppressWarnings("unchecked")
 	private AppendResult appendFields(Map<String, Object> entityBody, Map<String, Object> resolved, String[] options)
-			throws Exception {
+			throws ResponseException, IOException {
 		boolean overwrite = true;
 		if (options != null && options.length > 0) {
 			for (String option : options) {
 				if (option.isBlank()) {
 					continue;
 				}
-				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION) || option.equalsIgnoreCase(NGSIConstants.UPDATE_OPTION)) {
+				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)
+						|| option.equalsIgnoreCase(NGSIConstants.UPDATE_OPTION)) {
 					overwrite = false;
-				} else if (option.equalsIgnoreCase(NGSIConstants.OVERWRITE_OPTION) || option.equalsIgnoreCase(NGSIConstants.REPLACE_OPTION )) {
+				} else if (option.equalsIgnoreCase(NGSIConstants.OVERWRITE_OPTION)
+						|| option.equalsIgnoreCase(NGSIConstants.REPLACE_OPTION)) {
 					overwrite = true;
 				} else {
 					throw new ResponseException(ErrorType.BadRequestData, option + " is an invalid option");
