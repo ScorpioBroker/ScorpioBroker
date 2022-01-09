@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -373,9 +374,11 @@ public final class HttpUtils {
 			ArrayListMultimap<String, String> additionalHeaders, HttpStatus status, boolean compress) {
 		BodyBuilder builder = ResponseEntity.status(status);
 		if (additionalHeaders != null) {
-			for (Entry<String, String> entry : additionalHeaders.entries()) {
-				builder.header(entry.getKey(), entry.getValue());
+			HttpHeaders headers = new HttpHeaders();
+			for (Entry<String, Collection<String>> entry : additionalHeaders.asMap().entrySet()) {
+				headers.addAll(entry.getKey(), new ArrayList<String>(entry.getValue()));
 			}
+			builder.headers(headers);
 		}
 		String body;
 		if (compress) {
