@@ -21,11 +21,18 @@ public class InternalNotificationHandler extends BaseNotificationHandler {
 	@Override
 	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
 		notification.setSubscriptionId(notification.getSubscriptionId());
-		kafkaTemplate.send(topic, notification.getId(),
-				new InternalNotification(notification.getId(), notification.getType(), notification.getNotifiedAt(),
-						notification.getSubscriptionId(), notification.getData(), notification.getTriggerReason(),
-						notification.getContext(), request.getTenant()));
+		if (!isInternal(notification)) {
+			kafkaTemplate.send(topic, notification.getId(),
+					new InternalNotification(notification.getId(), notification.getType(), notification.getNotifiedAt(),
+							notification.getSubscriptionId(), notification.getData(), notification.getTriggerReason(),
+							notification.getContext(), request.getTenant()));
+		}
 
+	}
+
+	private boolean isInternal(Notification notification) {
+		
+		return false;
 	}
 
 }

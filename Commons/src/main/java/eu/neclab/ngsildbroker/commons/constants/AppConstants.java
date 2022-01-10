@@ -92,6 +92,7 @@ public class AppConstants {
 	public static final int APPEND_REQUEST = 1;
 	public static final int UPDATE_REQUEST = 2;
 	public static final int DELETE_REQUEST = 3;
+	public static final int DELETE_ATTRIBUTE_REQUEST = 4;
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	
 

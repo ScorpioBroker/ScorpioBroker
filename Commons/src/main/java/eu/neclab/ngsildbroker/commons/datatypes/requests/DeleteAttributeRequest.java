@@ -20,7 +20,7 @@ public class DeleteAttributeRequest extends EntityRequest {
 	public DeleteAttributeRequest(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entityBody, String attrId, String datasetId, String deleteAll)
 			throws ResponseException {
-		super(headers, entityId, entityBody, AppConstants.DELETE_REQUEST);
+		super(headers, entityId, entityBody, AppConstants.DELETE_ATTRIBUTE_REQUEST);
 		generateDeleteAttrib(entityId, entityBody, attrId, datasetId, deleteAll);
 	}
 
