@@ -24,6 +24,7 @@ public class RegistrySubscriptionKafkaService {
 	public void handleCsource(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
 		switch (message.getRequestType()) {
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 		case AppConstants.APPEND_REQUEST:
 			logger.debug("Append got called: " + key);
 			subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
@@ -42,8 +43,10 @@ public class RegistrySubscriptionKafkaService {
 			break;
 		}
 	}
+
 	@KafkaListener(topics = "${scorpio.topics.internalregsub}")
-	public void handleSubscription(@Payload SubscriptionRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+	public void handleSubscription(@Payload SubscriptionRequest message,
+			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
 		switch (message.getRequestType()) {
 		case AppConstants.UPDATE_REQUEST:

@@ -76,7 +76,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
-	private boolean sendInitialNotification = false;
+	private boolean sendInitialNotification;
+	private boolean sendDeleteNotification;
 
 	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
@@ -97,6 +98,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			logger.error(e.getLocalizedMessage());
 		}
 		sendInitialNotification = sendInitialNotification();
+		sendDeleteNotification = sendDeleteNotification();
 		notificationHandlerREST = new NotificationHandlerREST(webClient);
 		Subscription temp = new Subscription();
 		temp.setId("invalid:base");
@@ -112,6 +114,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		loadStoredSubscriptions();
 
 	}
+
+	protected abstract boolean sendDeleteNotification();
 
 	protected abstract boolean sendInitialNotification();
 
@@ -383,16 +387,24 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		return sub;
 	}
 
-	public void checkSubscriptionsWithAbsolute(BaseRequest createRequest, long messageTime, int messageType) {
-
-		String id = createRequest.getId();
-		Set<String> types = getTypesFromEntry(createRequest);
-		synchronized (this.tenant2Ids2Type) {
-			this.tenant2Ids2Type.put(createRequest.getTenant(), id, types);
+	public void checkSubscriptionsWithAbsolute(BaseRequest request, long messageTime, int messageType) {
+		Set<String> types;
+		String id = request.getId();
+		String tenantId = request.getTenant();
+		if (messageType == AppConstants.CREATE_REQUEST) {
+			types = getTypesFromEntry(request);
+			synchronized (this.tenant2Ids2Type) {
+				this.tenant2Ids2Type.put(tenantId, id, types);
+			}
+		} else {
+			synchronized (this.tenant2Ids2Type) {
+				types= this.tenant2Ids2Type.remove(request.getTenant(), request.getId());
+			}
+			if(!sendDeleteNotification) {
+				return;
+			}
 		}
-		String tenantId = createRequest.getId();
 		ArrayList<SubscriptionRequest> subsToCheck = new ArrayList<SubscriptionRequest>();
-
 		List<SubscriptionRequest> subs = getAllTypeBaseRequests(tenantId, types);
 		if (subs != null) {
 			for (SubscriptionRequest sub : subs) {
@@ -413,9 +425,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 			}
 		}
-		addAllTypeSubscriptions(createRequest.getHeaders(), subsToCheck);
-		checkSubscriptions(subsToCheck, createRequest, messageType, messageTime);
-
+		addAllTypeSubscriptions(request.getHeaders(), subsToCheck);
+		checkSubscriptions(subsToCheck, request, messageType, messageTime);
 	}
 
 	protected abstract Set<String> getTypesFromEntry(BaseRequest createRequest);
@@ -459,13 +470,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected void sendNotification(List<Map<String, Object>> dataList, SubscriptionRequest subscription,
 			int triggerReason) {
-
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
-
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
-
 		handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
-
 	}
 
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {

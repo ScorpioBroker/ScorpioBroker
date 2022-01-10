@@ -260,4 +260,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 		return "urn:ngsi-ld:Subscription:" + subscription.hashCode();
 	}
 
+	@Override
+	protected boolean sendDeleteNotification() {
+		return false;
+	}
+
 }

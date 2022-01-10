@@ -25,17 +25,16 @@ public class CSourceKafkaService {
 	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
 		switch (message.getRequestType()) {
-		case AppConstants.APPEND_REQUEST:
-			logger.debug("Append got called: " + key);
-			break;
 		case AppConstants.CREATE_REQUEST:
-			logger.debug("Create got called: " + key);
-			break;
-		case AppConstants.UPDATE_REQUEST:
-			logger.debug("Update got called: " + key);
+			cSourceService.handleEntityCreate(message);
 			break;
 		case AppConstants.DELETE_REQUEST:
-			logger.debug("Delete got called: " + key);
+			cSourceService.handleEntityDelete(message);
+			break;
+		case AppConstants.UPDATE_REQUEST:
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+		case AppConstants.APPEND_REQUEST:
+			cSourceService.handleEntityUpdate(message);
 			break;
 		default:
 			break;

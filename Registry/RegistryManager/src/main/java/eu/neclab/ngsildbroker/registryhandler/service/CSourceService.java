@@ -263,7 +263,17 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		return null;
 	}
 
-	public void handleEntityUpdate(Map<String, Object> finalPayload) {
+	public void handleEntityUpdate(BaseRequest message) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void handleEntityDelete(BaseRequest message) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void handleEntityCreate(BaseRequest message) {
 		// TODO Auto-generated method stub
 		
 	}

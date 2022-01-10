@@ -124,9 +124,6 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	private void makeSubscriptionInternal(SubscriptionRequest request) {
 		Subscription sub = request.getSubscription();
-		// String internalSubId = sub.getId() + INTERNAL_SUB_ID_SUFFIX;
-		// sub.setId(internalSubId);
-		// request.setId(internalSubId);
 		try {
 			if (sub.getNotification() != null) {
 				sub.getNotification().getEndPoint().setUri(new URI("internal://kafka"));
@@ -140,5 +137,10 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	@Override
 	protected String generateUniqueSubId(Subscription subscription) {
 		return "urn:ngsi-ld:Registry:Subscription:" + subscription.hashCode();
+	}
+
+	@Override
+	protected boolean sendDeleteNotification() {
+		return true;
 	}
 }
