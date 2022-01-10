@@ -204,7 +204,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 								for (String entry : temp) {
 									notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
 								}
-								sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
+								sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST, -1);
 							}
 						} catch (ResponseException | IOException e) {
 							logger.error("Failed to send initial notifcation", e);
@@ -398,9 +398,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			}
 		} else {
 			synchronized (this.tenant2Ids2Type) {
-				types= this.tenant2Ids2Type.remove(request.getTenant(), request.getId());
+				types = this.tenant2Ids2Type.remove(request.getTenant(), request.getId());
 			}
-			if(!sendDeleteNotification) {
+			if (!sendDeleteNotification) {
 				return;
 			}
 		}
@@ -454,7 +454,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 							if (data != null) {
 								ArrayList<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
 								dataList.add(data);
-								sendNotification(dataList, subscription, methodType);
+								sendNotification(dataList, subscription, methodType, request.isInternal() ? 1 : 0);
 							}
 						} catch (ResponseException e) {
 							logger.error("Failed to handle new data for the subscriptions, cause: " + e.getMessage());
@@ -469,10 +469,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	}
 
 	protected void sendNotification(List<Map<String, Object>> dataList, SubscriptionRequest subscription,
-			int triggerReason) {
+			int triggerReason, int internalState) {
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
-		handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+		handler.notify(getNotification(subscription, dataList, triggerReason), subscription, internalState);
 	}
 
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {

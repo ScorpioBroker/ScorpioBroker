@@ -58,11 +58,10 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@Autowired
 	KafkaTemplate<String, Object> kafkaTemplate;
 
-
-
 	@Value("${scorpio.topics.registry}")
 	String CSOURCE_TOPIC;
-	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1,1,1,TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
+			new LinkedBlockingQueue<Runnable>());
 	@Value("${scorpio.directDB}")
 	boolean directDB = true;
 
@@ -158,10 +157,15 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@Override
 	public AppendResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
+		return appendToEntry(headers, registrationId, entry, options, false);
+	}
+
+	public AppendResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry, String[] options, boolean internal) throws ResponseException, Exception {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		Map<String, Object> originalRegistration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		AppendCSourceRequest request = new AppendCSourceRequest(headers, registrationId, originalRegistration, entry,
-				options);
+				options, internal);
 		synchronized (this) {
 			TimerTask task = regId2TimerTask.get(registrationId);
 			if (task != null) {
@@ -182,6 +186,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@Override
 	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
+		return createEntry(headers, resolved, false);
+	}
+
+	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved, boolean internal)
+			throws ResponseException, Exception {
 		String id;
 		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
 		if (idObj == null) {
@@ -190,7 +199,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		} else {
 			id = (String) idObj;
 		}
-		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
+		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id, internal);
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		synchronized (this.csourceIds) {
 			if (this.csourceIds.containsEntry(tenantId, request.getId())) {
@@ -209,13 +218,18 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			@Override
 			public void run() {
 				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), new BaseRequest(request));
-				
+
 			}
 		});
 	}
 
 	@Override
 	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId)
+			throws ResponseException, Exception {
+		return deleteEntry(headers, registrationId, false);
+	}
+
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId, boolean internal)
 			throws ResponseException, Exception {
 		if (registrationId == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid delete for registration. No ID provided.");
@@ -230,9 +244,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 
 		Map<String, Object> registration = validateIdAndGetBodyAsMap(registrationId, tenantId);
-		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId);
+		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId, internal);
 		sendToKafka(requestForSub);
-		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
+		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId, internal);
 		pushToDB(request);
 		this.csourceIds.remove(tenantId, registrationId);
 		return true;
@@ -260,22 +274,23 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	@Override
 	protected StorageDAO getCsourceDAO() {
+		// intentional null!!!
 		return null;
 	}
 
 	public void handleEntityUpdate(BaseRequest message) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void handleEntityDelete(BaseRequest message) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void handleEntityCreate(BaseRequest message) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

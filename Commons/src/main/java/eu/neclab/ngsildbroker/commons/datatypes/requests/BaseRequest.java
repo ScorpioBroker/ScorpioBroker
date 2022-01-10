@@ -18,18 +18,20 @@ public class BaseRequest {
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
 	private int requestType;
+	boolean internal;
 
 	public BaseRequest() {
 
 	}
 
 	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
-			int requestType) {
+			int requestType, boolean internal) {
 		super();
 		this.headers = headers;
 		this.id = id;
 		this.requestPayload = requestPayload;
 		this.requestType = requestType;
+		this.internal = internal;
 	}
 
 	public BaseRequest(BaseRequest request) {
@@ -38,6 +40,7 @@ public class BaseRequest {
 		this.requestPayload = request.requestPayload;
 		this.finalPayload = request.finalPayload;
 		this.requestType = request.requestType;
+		this.internal = request.internal;
 	}
 
 	public int getRequestType() {
@@ -145,6 +148,10 @@ public class BaseRequest {
 		} else {
 			this.finalPayload = new HashMap<String, Object>(finalPayload);
 		}
+	}
+
+	public boolean isInternal() {
+		return internal;
 	}
 
 }

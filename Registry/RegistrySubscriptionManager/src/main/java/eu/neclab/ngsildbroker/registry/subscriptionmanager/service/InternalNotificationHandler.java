@@ -19,20 +19,31 @@ public class InternalNotificationHandler extends BaseNotificationHandler {
 	}
 
 	@Override
-	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
+	protected void sendReply(Notification notification, SubscriptionRequest request, int internalState)
+			throws Exception {
 		notification.setSubscriptionId(notification.getSubscriptionId());
-		if (!isInternal(notification)) {
-			kafkaTemplate.send(topic, notification.getId(),
-					new InternalNotification(notification.getId(), notification.getType(), notification.getNotifiedAt(),
-							notification.getSubscriptionId(), notification.getData(), notification.getTriggerReason(),
-							notification.getContext(), request.getTenant()));
+		switch (internalState) {
+		case 1:
+			return;
+		case 0:
+			break;
+		case -1:
+			cleanMixedResult(notification);
+			break;
+		default:
+			break;
 		}
+
+		kafkaTemplate.send(topic, notification.getId(),
+				new InternalNotification(notification.getId(), notification.getType(), notification.getNotifiedAt(),
+						notification.getSubscriptionId(), notification.getData(), notification.getTriggerReason(),
+						notification.getContext(), request.getTenant()));
 
 	}
 
-	private boolean isInternal(Notification notification) {
-		
-		return false;
+	private void cleanMixedResult(Notification notification) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

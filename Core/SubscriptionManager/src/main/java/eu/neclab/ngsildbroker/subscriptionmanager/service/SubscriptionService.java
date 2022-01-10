@@ -222,7 +222,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 					return;
 				}
 				sendNotification((List<Map<String, Object>>) notification.get(NGSIConstants.NGSI_LD_DATA), subscription,
-						AppConstants.UPDATE_REQUEST);
+						AppConstants.UPDATE_REQUEST, 0);
 			}
 		}.start();
 

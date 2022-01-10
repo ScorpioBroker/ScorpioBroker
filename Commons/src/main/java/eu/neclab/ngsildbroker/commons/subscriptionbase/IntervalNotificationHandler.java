@@ -68,7 +68,7 @@ public class IntervalNotificationHandler {
 				baseNotification.setSubscriptionId(subscriptionRequest.getSubscription().getId());
 				baseNotification.setNotifiedAt(System.currentTimeMillis());
 				baseNotification.setData(dataList);
-				notificationHandler.notify(baseNotification, subscriptionRequest);
+				notificationHandler.notify(baseNotification, subscriptionRequest, 1);
 			} catch (Exception e) {
 				logger.error("Failed to read database entry");
 			}

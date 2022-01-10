@@ -19,7 +19,8 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 	}
 
 	@Override
-	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
+	protected void sendReply(Notification notification, SubscriptionRequest request, int internalState)
+			throws Exception {
 		webClient.post().uri(request.getSubscription().getNotification().getEndPoint().getUri())
 				.headers(httpHeadersOnWebClientBeingBuilt -> {
 					request.getHeaders().entries().forEach(entry -> {

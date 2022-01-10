@@ -20,9 +20,6 @@ public class HistoryEntityRequest extends BaseRequest {
 	protected String createdAt;
 	protected String modifiedAt;
 	protected String now;
-	
-
-
 
 	public String getType() {
 		return type;
@@ -62,9 +59,9 @@ public class HistoryEntityRequest extends BaseRequest {
 	public HistoryEntityRequest() {
 	}
 
-	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved, String entityId, int requestType)
-			throws ResponseException {
-		super(headers, entityId, resolved, requestType);
+	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			String entityId, int requestType) throws ResponseException {
+		super(headers, entityId, resolved, requestType, false);
 		this.now = SerializationTools.formatter.format(Instant.now());
 
 	}

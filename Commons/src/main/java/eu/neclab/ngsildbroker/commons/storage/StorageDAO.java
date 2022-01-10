@@ -261,10 +261,11 @@ public abstract class StorageDAO {
 	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
 		boolean result = true;
 		DBWriteTemplates templates = getJDBCTemplates(request);
-		
+
 		if (request instanceof DeleteHistoryEntityRequest) {
-			result = doTemporalSqlAttrInsert(templates, "null", request.getId(), request.getType(), ((DeleteHistoryEntityRequest)request).getResolvedAttrId(),
-					request.getCreatedAt(), request.getModifiedAt(), ((DeleteHistoryEntityRequest)request).getInstanceId(), null);
+			result = doTemporalSqlAttrInsert(templates, "null", request.getId(), request.getType(),
+					((DeleteHistoryEntityRequest) request).getResolvedAttrId(), request.getCreatedAt(),
+					request.getModifiedAt(), ((DeleteHistoryEntityRequest) request).getInstanceId(), null);
 		} else {
 			for (HistoryAttribInstance entry : request.getAttribs()) {
 				result = result && doTemporalSqlAttrInsert(templates, entry.getElementValue(), entry.getEntityId(),
@@ -281,10 +282,10 @@ public abstract class StorageDAO {
 		String sql;
 		int n;
 		if (value != null && !value.equals("null")) {
-			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-					+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
-					+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
-			n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value);
+			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA + ","
+					+ DBConstants.DBCOLUMN_INTERNAL + ") VALUES (?, ?::jsonb, ?) ON CONFLICT(id) DO UPDATE SET "
+					+ DBConstants.DBCOLUMN_DATA + " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+			n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value, request.isInternal());
 		} else {
 			sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = ?";
 			n = templates.getWriterJdbcTemplate().update(sql, request.getId());
@@ -350,7 +351,7 @@ public abstract class StorageDAO {
 								sql = "SELECT type, createdat, modifiedat FROM " + DBConstants.DBTABLE_ENTITY
 										+ " WHERE id = ?";
 								List<Map<String, Object>> tempResult = templates.getWriterJdbcTemplateWithTransaction()
-									.queryForList(sql, entityId);
+										.queryForList(sql, entityId);
 								if (tempResult.isEmpty()) {
 									logger.error("Recovery failed");
 									return tn;
