@@ -82,7 +82,8 @@ public class HistoryPostQueryParser implements PayloadQueryParamParser {
 				params.setQ(QueryParser.parseQuery((String) getValue(entry.getValue()), context).toSql(false));
 				break;
 			case NGSIConstants.NGSI_LD_TEMPORAL_QUERY:
-				parseTemporalQuery(params, (Map<String, Object>) entry.getValue(), context);
+				parseTemporalQuery(params, (List<Map<String, Object>>) entry.getValue(), context);
+				break;
 			case NGSIConstants.JSON_LD_TYPE:
 				if (entry.getValue() instanceof List) {
 					if (((List<String>) entry.getValue()).get(0)
@@ -110,12 +111,13 @@ public class HistoryPostQueryParser implements PayloadQueryParamParser {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void parseTemporalQuery(QueryParams params, Map<String, Object> tempQuery, Context context)
+	private void parseTemporalQuery(QueryParams params, List<Map<String, Object>> list, Context context)
 			throws ResponseException {
 		String timerel = "";
 		String timeAt = "";
 		String timeproperty = "";
 		String endTimeAt = "";
+		Map<String, Object> tempQuery = (Map<String, Object>) list.get(0);
 		for (Entry<String, Object> entry : tempQuery.entrySet()) {
 			String key = entry.getKey();
 			Object value = entry.getValue();
