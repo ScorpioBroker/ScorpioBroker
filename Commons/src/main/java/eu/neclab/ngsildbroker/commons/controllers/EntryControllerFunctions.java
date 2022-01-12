@@ -368,6 +368,7 @@ public interface EntryControllerFunctions {
 			String entityId, String payload, int payloadType, Logger logger) {
 		try {
 			logger.trace("update entry :: started");
+			HttpUtils.validateUri(entityId);
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
 			@SuppressWarnings("unchecked")

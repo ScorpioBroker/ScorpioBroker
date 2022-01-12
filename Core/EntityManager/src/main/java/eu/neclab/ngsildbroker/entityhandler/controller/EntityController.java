@@ -126,6 +126,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			@RequestBody String payload) {
 		try {
 			Object jsonPayload = JsonUtils.fromString(payload);
+			HttpUtils.validateUri(entityId);
 			List<Object> atContext = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
 			logger.trace("partial-update entity :: started");
