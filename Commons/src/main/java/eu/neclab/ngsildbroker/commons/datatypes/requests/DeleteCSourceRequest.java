@@ -16,8 +16,8 @@ public class DeleteCSourceRequest extends CSourceRequest {
 	}
 
 	public DeleteCSourceRequest(Map<String, Object> registration, ArrayListMultimap<String, String> headers,
-			String registrationId, boolean internal) throws ResponseException {
-		super(headers, registrationId, registration, AppConstants.DELETE_REQUEST, internal);
+			String registrationId) throws ResponseException {
+		super(headers, registrationId, registration, AppConstants.DELETE_REQUEST);
 		setFinalPayload(registration);
 	}
 

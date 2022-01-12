@@ -7,8 +7,8 @@ import com.google.common.collect.ArrayListMultimap;
 
 public class CSourceRequest extends BaseRequest {
 	CSourceRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
-			int requestType, boolean internal) {
-		super(headers, id, requestPayload, requestType, internal);
+			int requestType) {
+		super(headers, id, requestPayload, requestType);
 	}
 
 	public CSourceRequest() {

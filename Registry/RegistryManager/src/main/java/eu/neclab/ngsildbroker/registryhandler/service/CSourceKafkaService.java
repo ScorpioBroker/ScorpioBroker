@@ -17,24 +17,22 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 @ConditionalOnProperty(name = "scorpio.registry.autorecording", matchIfMissing = true, havingValue = "active")
 public class CSourceKafkaService {
 	private static final Logger logger = LoggerFactory.getLogger(CSourceKafkaService.class);
-	
+
 	@Autowired
 	CSourceService cSourceService;
-	
+
 	@KafkaListener(topics = "${scorpio.topics.entity}")
 	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
 		switch (message.getRequestType()) {
-		case AppConstants.CREATE_REQUEST:
-			cSourceService.handleEntityCreate(message);
-			break;
 		case AppConstants.DELETE_REQUEST:
 			cSourceService.handleEntityDelete(message);
 			break;
 		case AppConstants.UPDATE_REQUEST:
+		case AppConstants.CREATE_REQUEST:
 		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 		case AppConstants.APPEND_REQUEST:
-			cSourceService.handleEntityUpdate(message);
+			cSourceService.handleEntityCreateOrUpdate(message);
 			break;
 		default:
 			break;
@@ -95,5 +93,4 @@ public class CSourceKafkaService {
 //		return new URI(uri.toString() + "/" + resource);
 //	}
 
-	
 }

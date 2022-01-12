@@ -344,6 +344,7 @@ public interface EntryControllerFunctions {
 
 		boolean failedOnce = !result.getFails().isEmpty();
 		HttpStatus status;
+		//for 1.5.1 update  no more bad request on fail only multi status
 		if (failedOnce) {
 			if (insertedOneEntity || appendedOneEntity) {
 				status = HttpStatus.MULTI_STATUS;

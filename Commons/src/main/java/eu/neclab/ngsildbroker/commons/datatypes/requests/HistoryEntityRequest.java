@@ -61,7 +61,7 @@ public class HistoryEntityRequest extends BaseRequest {
 
 	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			String entityId, int requestType) throws ResponseException {
-		super(headers, entityId, resolved, requestType, false);
+		super(headers, entityId, resolved, requestType);
 		this.now = SerializationTools.formatter.format(Instant.now());
 
 	}

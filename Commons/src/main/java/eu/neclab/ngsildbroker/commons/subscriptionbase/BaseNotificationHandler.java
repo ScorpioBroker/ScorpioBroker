@@ -18,7 +18,7 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
 public abstract class BaseNotificationHandler implements NotificationHandler {
 
-	protected abstract void sendReply(Notification notification, SubscriptionRequest request, int internalState) throws Exception;
+	protected abstract void sendReply(Notification notification, SubscriptionRequest request) throws Exception;
 
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	private HashMap<String, Long> subId2LastReport = new HashMap<String, Long>();
@@ -26,8 +26,8 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 	private Timer executor = new Timer(true);
 
 	@Override
-	public void notify(Notification notification, SubscriptionRequest subscriptionRequest, int internalState) {
-		if(!subscriptionRequest.getSubscription().isActive()) {
+	public void notify(Notification notification, SubscriptionRequest subscriptionRequest) {
+		if (!subscriptionRequest.getSubscription().isActive()) {
 			return;
 		}
 		Subscription subscription = subscriptionRequest.getSubscription();
@@ -57,7 +57,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 							reportNotification(subscription, now);
 							try {
 								logger.trace("Sending notification");
-								sendReply(sendOutNotification, subscriptionRequest, internalState);
+								sendReply(sendOutNotification, subscriptionRequest);
 								reportSuccessfulNotification(subscription, now);
 							} catch (Exception e) {
 								logger.error("Exception ::", e);
@@ -68,7 +68,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			}
 		} else {
 			try {
-				sendReply(notification, subscriptionRequest, internalState);
+				sendReply(notification, subscriptionRequest);
 				reportSuccessfulNotification(subscription, now);
 			} catch (Exception e) {
 				logger.error("Excep	tion ::", e);

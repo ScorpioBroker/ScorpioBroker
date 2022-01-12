@@ -282,10 +282,10 @@ public abstract class StorageDAO {
 		String sql;
 		int n;
 		if (value != null && !value.equals("null")) {
-			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA + ","
-					+ DBConstants.DBCOLUMN_INTERNAL + ") VALUES (?, ?::jsonb, ?) ON CONFLICT(id) DO UPDATE SET "
-					+ DBConstants.DBCOLUMN_DATA + " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
-			n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value, request.isInternal());
+			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
+					+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
+					+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+			n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value);
 		} else {
 			sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = ?";
 			n = templates.getWriterJdbcTemplate().update(sql, request.getId());

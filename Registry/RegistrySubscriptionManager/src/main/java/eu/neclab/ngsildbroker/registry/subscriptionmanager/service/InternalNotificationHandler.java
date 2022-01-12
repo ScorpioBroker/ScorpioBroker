@@ -1,7 +1,13 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.kafka.core.KafkaTemplate;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
@@ -19,21 +25,12 @@ public class InternalNotificationHandler extends BaseNotificationHandler {
 	}
 
 	@Override
-	protected void sendReply(Notification notification, SubscriptionRequest request, int internalState)
-			throws Exception {
+	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
 		notification.setSubscriptionId(notification.getSubscriptionId());
-		switch (internalState) {
-		case 1:
+		cleanNotificationFromInternal(notification);
+		if (notification.getData().isEmpty()) {
 			return;
-		case 0:
-			break;
-		case -1:
-			cleanMixedResult(notification);
-			break;
-		default:
-			break;
 		}
-
 		kafkaTemplate.send(topic, notification.getId(),
 				new InternalNotification(notification.getId(), notification.getType(), notification.getNotifiedAt(),
 						notification.getSubscriptionId(), notification.getData(), notification.getTriggerReason(),
@@ -41,8 +38,15 @@ public class InternalNotificationHandler extends BaseNotificationHandler {
 
 	}
 
-	private void cleanMixedResult(Notification notification) {
-		// TODO Auto-generated method stub
+	private void cleanNotificationFromInternal(Notification notification) {
+		List<Map<String, Object>> list = notification.getData();
+		Iterator<Map<String, Object>> it = list.iterator();
+		while (it.hasNext()) {
+			Map<String, Object> next = it.next();
+			if (((String) next.get(NGSIConstants.JSON_LD_ID)).contains(AppConstants.INTERNAL_REGISTRATION_ID)) {
+				it.remove();
+			}
+		}
 
 	}
 

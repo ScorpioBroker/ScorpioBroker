@@ -82,4 +82,15 @@ public class CSourceDAO extends StorageDAO {
 		return new RegistryStorageFunctions();
 	}
 
+	public Map<String, List<String>> getAllEntities() {
+		List<String> tenants = getTenants();
+		HashMap<String, List<String>> result = new HashMap<String, List<String>>();
+		result.put(AppConstants.INTERNAL_NULL_KEY,
+				getJDBCTemplate(null).queryForList("SELECT data FROM ENTITY", String.class));
+		for (String tenant : tenants) {
+			result.put(tenant, getJDBCTemplate(tenant).queryForList("SELECT data FROM ENTITY", String.class));
+		}
+		return result;
+	}
+
 }

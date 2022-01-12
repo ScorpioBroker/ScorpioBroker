@@ -27,7 +27,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 	private HashMap<URI, MqttClient> uri2client = new HashMap<URI, MqttClient>();
 
 	@Override
-	protected void sendReply(Notification notification, SubscriptionRequest request, int internalState) throws Exception {
+	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
 		URI callback = request.getSubscription().getNotification().getEndPoint().getUri();
 		Map<String, String> clientSettings = request.getSubscription().getNotification().getEndPoint().getNotifierInfo();
 		ArrayListMultimap<String, String> headers = request.getHeaders();

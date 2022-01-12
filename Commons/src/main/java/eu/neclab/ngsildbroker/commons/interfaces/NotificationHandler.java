@@ -16,6 +16,6 @@ public interface NotificationHandler {
 	 * @param ldContext 
 	 */
 
-	void notify(Notification notification, SubscriptionRequest subscriptionRequest, int internalState);
+	void notify(Notification notification, SubscriptionRequest subscriptionRequest);
 
 }

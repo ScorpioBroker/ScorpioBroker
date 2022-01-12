@@ -20,7 +20,7 @@ public class EntityRequest extends BaseRequest {
 	}
 
 	EntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload, int requestType) {
-		super(headers, id, requestPayload, requestType, false);
+		super(headers, id, requestPayload, requestType);
 	}
 
 	public String getWithSysAttrs() {
