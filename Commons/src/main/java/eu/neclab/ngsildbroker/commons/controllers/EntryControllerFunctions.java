@@ -418,6 +418,7 @@ public interface EntryControllerFunctions {
 			if (payload == null || payload.isEmpty()) {
 				throw new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed");
 			}
+			HttpUtils.validateUri(entityId);
 			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
