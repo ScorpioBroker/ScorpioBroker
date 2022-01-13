@@ -512,13 +512,18 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				EntityTools.getLocation(fullEntry, subscription.getSubscription().getLdGeoQuery()))) {
 			return null;
 		}
-		if (subscription.getSubscription().getQueryTerm() != null) {
-			if (!subscription.getSubscription().getQueryTerm().calculate(EntityTools.getBaseProperties(fullEntry))) {
-				return null;
+		if (evaluateQ()) {
+			if (subscription.getSubscription().getQueryTerm() != null) {
+				if (!subscription.getSubscription().getQueryTerm()
+						.calculate(EntityTools.getBaseProperties(fullEntry))) {
+					return null;
+				}
 			}
 		}
 		return EntityTools.clearBaseProps(fullEntry, subscription);
 	}
+
+	protected abstract boolean evaluateQ();
 
 	private boolean evaluateGeoQuery(LDGeoQuery geoQuery, GeoProperty location) {
 		return evaluateGeoQuery(geoQuery, location, -1);

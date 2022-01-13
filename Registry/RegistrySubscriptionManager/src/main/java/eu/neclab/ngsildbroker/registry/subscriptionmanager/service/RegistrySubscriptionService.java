@@ -143,4 +143,9 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	protected boolean sendDeleteNotification() {
 		return true;
 	}
+
+	@Override
+	protected boolean evaluateQ() {
+		return false;
+	}
 }

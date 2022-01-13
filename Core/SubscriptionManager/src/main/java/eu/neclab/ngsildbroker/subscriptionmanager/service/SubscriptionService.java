@@ -265,4 +265,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 		return false;
 	}
 
+	@Override
+	protected boolean evaluateQ() {
+		return true;
+	}
+
 }
