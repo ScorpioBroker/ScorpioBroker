@@ -15,8 +15,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class DeleteAttributeRequest extends EntityRequest {
 
-
-
 	public DeleteAttributeRequest(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entityBody, String attrId, String datasetId, String deleteAll)
 			throws ResponseException {
@@ -50,57 +48,40 @@ public class DeleteAttributeRequest extends EntityRequest {
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> deleteFields(Map<String, Object> entityBody, String attrId, String datasetId,
 			String deleteAll) throws Exception, ResponseException {
-		// ArrayNode myArray = (ArrayNode) innerNode;
 
-		String availableDatasetId = null;
 		if (entityBody.containsKey(attrId)) {
-			// below condition remove the existing datasetId
-			List<Map<String, Object>> myArray = (List<Map<String, Object>>) entityBody.get(attrId);
-			if (datasetId != null && !datasetId.isEmpty()) {
-				Iterator<Map<String, Object>> it = myArray.iterator();
-				while (it.hasNext()) {
-					Map<String, Object> entry = it.next();
-					if (entry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						String payloadDatasetId = (String) (((List<Map<String, Object>>) entry
-								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID);
-						if (payloadDatasetId.equals(datasetId)) {
-							availableDatasetId = "available";
-							it.remove();
-						}
-					}
-				}
-				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
-					throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
-				}
-				// below condition remove all the datasetId
-			} else if (deleteAll != null && !deleteAll.isEmpty() && deleteAll.equals("true")) {
+			if (deleteAll != null && !deleteAll.isEmpty() && deleteAll.equals("true")) {
 				if (entityBody.remove(attrId) == null) {
 					throw new ResponseException(ErrorType.NotFound, attrId + " not found");
 				}
 			} else {
-				// below condition remove the default datasetId
+				List<Map<String, Object>> myArray = (List<Map<String, Object>>) entityBody.get(attrId);
 				Iterator<Map<String, Object>> it = myArray.iterator();
+				boolean found = false;
 				while (it.hasNext()) {
 					Map<String, Object> entry = it.next();
+					String payloadDatasetId = null;
 					if (entry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						String payloadDatasetId = ((List<Map<String, Object>>) entry
-								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID)
-										.toString();
-						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
-							availableDatasetId = "available";
-							it.remove();
-						}
-					} else {
-						availableDatasetId = "NotAvailable";
-						it.remove();
+						payloadDatasetId = (String) (((List<Map<String, Object>>) entry
+								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID);
 					}
+
+					if (payloadDatasetId == null ^ datasetId == null) {
+						continue;
+					}
+					if ((payloadDatasetId == null && datasetId == null) || payloadDatasetId.equals(datasetId)) {
+						found = true;
+						it.remove();
+						break;
+					}
+
 				}
-				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
-					throw new ResponseException(ErrorType.NotFound, "Default attribute instance is not present");
+				if (!found) {
+					throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
 				}
-			}
-			if (myArray.size() == 0) {
-				entityBody.remove(attrId);
+				if (myArray.size() == 0) {
+					entityBody.remove(attrId);
+				}
 			}
 		} else {
 			throw new ResponseException(ErrorType.NotFound, "Attribute is not present");

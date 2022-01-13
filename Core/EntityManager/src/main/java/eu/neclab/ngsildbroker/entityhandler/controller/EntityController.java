@@ -32,6 +32,8 @@ import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
@@ -146,10 +148,11 @@ public class EntityController {// implements EntityHandlerInterface {
 			UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,
 					expandedAttrib, expandedPayload);
 			logger.trace("partial-update entity :: completed");
-			if (update.getStatus()) {
+			if (update.getNotUpdated().isEmpty()) {
 				return ResponseEntity.noContent().build();
 			} else {
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, JsonUtils
+						.toPrettyString(JsonLdProcessor.compact(update.getNotUpdated().get(0), context, opts))));
 			}
 			/*
 			 * There is no 207 multi status response in the Partial Attribute Update
@@ -179,8 +182,6 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.validateUri(entityId);
 			logger.trace("delete attribute :: started");
-			// TODO check if this is needed hopefully jetty errors out before
-			// Validator.validate(HttpUtils.getQueryParamMap(request));
 			Context context = JsonLdProcessor.getCoreContextClone();
 			context = context.parse(HttpUtils.getAtContext(request), true);
 			String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);

@@ -281,5 +281,6 @@ public interface NGSIConstants {
 	public static final String QUERYP_PARAMETER_COUNT = "count";
 	public static final String JSON_LD_LIST = "@list";
 	public static final String TENANT_HEADER = "NGSILD-Tenant";
+	public static final String NGSI_LD_REASON = "https://uri.etsi.org/ngsi-ld/reason";
 
 }

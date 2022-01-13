@@ -24,11 +24,6 @@ public class UpdateEntityRequest extends EntityRequest {
 	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String attrName) throws ResponseException {
 		super(headers, id, resolved, AppConstants.UPDATE_REQUEST);
-		Object bodyId = resolved.get(NGSIConstants.JSON_LD_ID);
-		if (bodyId != null && !getId().equals(bodyId)) {
-			throw new ResponseException(ErrorType.BadRequestData,
-					"The entity id in the url and in the payload must be the same.");
-		}
 		generateUpdate(resolved, entityBody, attrName);
 
 	}
@@ -38,15 +33,7 @@ public class UpdateEntityRequest extends EntityRequest {
 
 		try {
 			this.updateResult = updateFields(entityBody, resolved, attrName);
-			this.entityWithoutSysAttrs = updateResult.getJsonWithoutSysAttrs();
-			if (attrName != null) {
-				Map<String, Object> tmp = new HashMap<String, Object>();
-				tmp.put(attrName, getRequestPayload());
-				setRequestPayload(tmp);
 
-			}
-			this.withSysAttrs = updateResult.getJson();
-			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(updateResult.getFinalNode()));
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.NotFound, e.getMessage());
 		}
@@ -68,233 +55,126 @@ public class UpdateEntityRequest extends EntityRequest {
 			throws Exception, ResponseException {
 		String now = SerializationTools.formatter.format(Instant.now());
 		Map<String, Object> resultJson = new HashMap<String, Object>();
-		UpdateResult updateResult = new UpdateResult(resolved, resultJson);
-//		JsonNode node = objectMapper.readTree(entityBody);
-//		ObjectNode objectNode = (ObjectNode) node;
+		UpdateResult updateResult = new UpdateResult();
+
 		if (attrId != null) {
+			Object datasetId = resolved.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			if (!entityBody.containsKey(attrId)) {
 				throw new ResponseException(ErrorType.NotFound, "Provided attribute is not present");
 			}
 			List<Map<String, Object>> list = ((List<Map<String, Object>>) entityBody.get(attrId));
-			String availableDatasetId = null;
-			for (Map<String, Object> originalNode : list) {
-				if (originalNode.containsKey(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
-					originalNode.remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
-				}
-				if (originalNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-					String payloadDatasetId = (String) ((List<Map<String, Object>>) originalNode
-							.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID);
-					if (resolved.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						String datasetId = (String) ((List<Map<String, Object>>) resolved
-								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID);
-						if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
-							availableDatasetId = "available";
-							originalNode.replace(attrId, resolved.get(attrId));
-							// setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)),
-							// resolved,
-							// updateResult, i);
-						}
-					} else {
-						if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
-							Map<String, Object> replacement = (Map<String, Object>) resolved.get(attrId);
-							if (replacement.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-								replacement.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
-							}
-							ArrayList<Object> tmp = new ArrayList<Object>();
-							HashMap<String, Object> tmp2 = new HashMap<String, Object>();
-							tmp2.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-							tmp2.put(NGSIConstants.JSON_LD_VALUE, now);
-							tmp.add(tmp2);
-							replacement.put(NGSIConstants.NGSI_LD_MODIFIED_AT, tmp);
-							originalNode.replace(attrId, replacement);
-						}
-					}
-				} else {
-					if (resolved.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						ArrayList<Object> tmp = new ArrayList<Object>();
-						HashMap<String, Object> tmp2 = new HashMap<String, Object>();
-						tmp2.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
-						tmp.add(tmp2);
-						originalNode.put(NGSIConstants.NGSI_LD_DATA_SET_ID, tmp);
-					} else {
-						ArrayList<Object> tmp = new ArrayList<Object>();
-						HashMap<String, Object> tmp2 = new HashMap<String, Object>();
-						tmp2.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
-						tmp.add(tmp2);
-						originalNode.put(NGSIConstants.NGSI_LD_DATA_SET_ID, tmp);
-						if (originalNode.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-							originalNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
-							tmp = new ArrayList<Object>();
-							tmp2 = new HashMap<String, Object>();
-							tmp2.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-							tmp2.put(NGSIConstants.JSON_LD_VALUE, now);
-							tmp.add(tmp2);
-							originalNode.put(NGSIConstants.NGSI_LD_MODIFIED_AT, tmp);
-						}
-						originalNode.replace(attrId, resolved.get(attrId));
-
-						// setFieldValue(resolved.fieldNames(), ((ArrayNode) objectNode.get(attrId)),
-						// resolved,
-						// updateResult, i);
-					}
-				}
-				updateResult.setStatus(true);
-			}
-			if (resolved.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-				if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
-					throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
-				}
-			}
+			updateAttrib(list, resolved, datasetId);
+			Map<String, Object> tmp = new HashMap<String, Object>();
+			tmp.put(attrId, getRequestPayload());
+			setRequestPayload(tmp);
 		} else {
+			Object bodyId = resolved.get(NGSIConstants.JSON_LD_ID);
+			if (bodyId != null && !getId().equals(bodyId)) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"The entity id in the url and in the payload must be the same.");
+			}
 			for (Entry<String, Object> entry : resolved.entrySet()) {
-				String field = entry.getKey();
+				String fieldName = entry.getKey();
 				// TOP level updates of context id or type are ignored
-				if (field.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT)
-						|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
-						|| field.equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)) {
+				if (fieldName.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT)
+						|| fieldName.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
+						|| fieldName.equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)) {
 					continue;
 				}
 
-				if (entityBody.containsKey(field)) {
-					Map<String, Object> attrNode = ((List<Map<String, Object>>) resolved.get(field)).get(0);
-					List<Map<String, Object>> list = ((List<Map<String, Object>>) entityBody.get(field));
-					if (list.size() > 1) {
-						String availableDatasetId = null;
-						for (Map<String, Object> originalNode : list) {
-							if (originalNode.containsKey(NGSIConstants.NGSI_LD_INSTANCE_ID)) {
-								originalNode.remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
+				if (entityBody.containsKey(fieldName)) {
+					List<Map<String, Object>> updateValueList = (List<Map<String, Object>>) entry.getValue();
+					List<Map<String, Object>> originalValueList = (List<Map<String, Object>>) entityBody.get(fieldName);
+					for (Map<String, Object> entry2 : updateValueList) {
+						String updateDatasetId = null;
+						if (entry2.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+							updateDatasetId = (String) (((List<Map<String, Object>>) entry2
+									.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID);
+						}
+						Map<String, Object> toRemove = null;
+						for (Map<String, Object> entry3 : originalValueList) {
+							String originalDatasetId = null;
+							if (entry3.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+								originalDatasetId = (String) (((List<Map<String, Object>>) entry3
+										.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID);
 							}
-							if (originalNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-								String payloadDatasetId = (String) ((List<Map<String, Object>>) originalNode
-										.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID);
-								if (attrNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-									String datasetId = (String) ((List<Map<String, Object>>) attrNode
-											.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)
-													.get(NGSIConstants.JSON_LD_ID);
-									if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
-										availableDatasetId = "available";
-										if (originalNode.get(NGSIConstants.JSON_LD_TYPE).toString()
-												.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
-											originalNode.replace(NGSIConstants.NGSI_LD_HAS_OBJECT,
-													attrNode.get(NGSIConstants.NGSI_LD_HAS_OBJECT));
-										}
-										if (originalNode.get(NGSIConstants.JSON_LD_TYPE).toString()
-												.contains(NGSIConstants.NGSI_LD_PROPERTY)) {
-											originalNode.replace(NGSIConstants.NGSI_LD_HAS_VALUE,
-													attrNode.get(NGSIConstants.NGSI_LD_HAS_VALUE));
-										}
-
-										if (originalNode.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-											originalNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
-										}
-										ArrayList<Object> tmp = new ArrayList<Object>();
-										HashMap<String, Object> tmp2 = new HashMap<String, Object>();
-										tmp2.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-										tmp2.put(NGSIConstants.JSON_LD_VALUE, now);
-										tmp.add(tmp2);
-										originalNode.put(NGSIConstants.NGSI_LD_MODIFIED_AT, tmp);
-
-									}
-
-								} else {
-									if (payloadDatasetId.equals(NGSIConstants.DEFAULT_DATA_SET_ID)) {
-
-										if (originalNode.get(NGSIConstants.JSON_LD_TYPE).toString()
-												.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
-											originalNode.replace(NGSIConstants.NGSI_LD_HAS_OBJECT,
-													attrNode.get(NGSIConstants.NGSI_LD_HAS_OBJECT));
-										}
-										if (originalNode.get(NGSIConstants.JSON_LD_TYPE).toString()
-												.contains(NGSIConstants.NGSI_LD_PROPERTY)) {
-											originalNode.replace(NGSIConstants.NGSI_LD_HAS_VALUE,
-													attrNode.get(NGSIConstants.NGSI_LD_HAS_VALUE));
-										}
-
-										if (originalNode.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-											originalNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
-										}
-										ArrayList<Object> tmp = new ArrayList<Object>();
-										HashMap<String, Object> tmp2 = new HashMap<String, Object>();
-										tmp2.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-										tmp2.put(NGSIConstants.JSON_LD_VALUE, now);
-										tmp.add(tmp2);
-										originalNode.put(NGSIConstants.NGSI_LD_MODIFIED_AT, tmp);
-									}
-								}
+							if (updateDatasetId == null ^ originalDatasetId == null) {
+								continue;
+							}
+							if ((updateDatasetId == null && originalDatasetId == null)
+									|| updateDatasetId.equals(originalDatasetId)) {
+								toRemove = entry3;
+								break;
+							}
+						}
+						if (toRemove == null) {
+							String reason;
+							if (updateDatasetId == null) {
+								reason = "default entry not found";
 							} else {
-								if (attrNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-									ArrayList<Object> tmp = new ArrayList<Object>();
-									HashMap<String, Object> tmp2 = new HashMap<String, Object>();
-									tmp2.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
-									tmp.add(tmp2);
-									originalNode.put(NGSIConstants.NGSI_LD_DATA_SET_ID, tmp);
-								} else {
-									ArrayList<Object> tmp = new ArrayList<Object>();
-									HashMap<String, Object> tmp2 = new HashMap<String, Object>();
-									tmp2.put(NGSIConstants.JSON_LD_ID, NGSIConstants.DEFAULT_DATA_SET_ID);
-									tmp.add(tmp2);
-									originalNode.put(NGSIConstants.NGSI_LD_DATA_SET_ID, tmp);
-									if (originalNode.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-										originalNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
-										tmp = new ArrayList<Object>();
-										tmp2 = new HashMap<String, Object>();
-										tmp2.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-										tmp2.put(NGSIConstants.JSON_LD_VALUE, now);
-										tmp.add(tmp2);
-										originalNode.put(NGSIConstants.NGSI_LD_MODIFIED_AT, tmp);
-									}
-									if (originalNode.get(NGSIConstants.JSON_LD_TYPE).toString()
-											.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
-										originalNode.replace(NGSIConstants.NGSI_LD_HAS_OBJECT,
-												attrNode.get(NGSIConstants.NGSI_LD_HAS_OBJECT));
-									}
-									if (originalNode.get(NGSIConstants.JSON_LD_TYPE).toString()
-											.contains(NGSIConstants.NGSI_LD_PROPERTY)) {
-										originalNode.replace(NGSIConstants.NGSI_LD_HAS_VALUE,
-												attrNode.get(NGSIConstants.NGSI_LD_HAS_VALUE));
-									}
-
-								}
+								reason = updateDatasetId + " datasetId not found";
 							}
-							updateResult.setStatus(true);
-						}
+							updateResult.addToNotUpdated(fieldName, reason);
+						} else {
+							entry2.put(NGSIConstants.NGSI_LD_CREATED_AT,
+									toRemove.get(NGSIConstants.NGSI_LD_CREATED_AT));
+							setTemporalProperties(entry2, null, now, true);
+							originalValueList.remove(toRemove);
+							originalValueList.add(entry2);
+							updateResult.addToUpdated(fieldName);
 
-						if (attrNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-							if ((availableDatasetId == null) || (availableDatasetId.isEmpty())) {
-								throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
-							}
 						}
-
-					} else {
-						Map<String, Object> originalNode = ((List<Map<String, Object>>) entityBody.get(field)).get(0);
-						String createdAt = now;
-						// keep original createdAt value if present in the original json
-						if (originalNode.containsKey(NGSIConstants.NGSI_LD_CREATED_AT)) {
-							createdAt = (String) ((List<Map<String, Object>>) originalNode
-									.get(NGSIConstants.NGSI_LD_CREATED_AT)).get(0).get(NGSIConstants.JSON_LD_VALUE);
-						}
-						setTemporalProperties(attrNode, createdAt, now, false);
-						// TODO check if this should ever happen. 5.6.4.4 says BadRequest if AttrId is
-						// present ...
-						entityBody.replace(field, resolved.get(field));
-						updateResult.getAppendedJsonFields().put(field, resolved.get(field));
-						updateResult.setStatus(true);
 					}
-
+				} else {
+					updateResult.addToNotUpdated(fieldName, "attribute not found in original entity");
 				}
 			}
+
 		}
-		setTemporalProperties(entityBody, "", now, true); // root only, modifiedAt only
 		setFinalPayload(entityBody);
-		updateResult.setJson(JsonUtils.toString(entityBody));
-		updateResult.setFinalNode(entityBody);
+		this.withSysAttrs = JsonUtils.toPrettyString(entityBody);
 		removeTemporalProperties(entityBody);
-		updateResult.setJsonWithoutSysAttrs(JsonUtils.toString(entityBody));
+		this.entityWithoutSysAttrs = JsonUtils.toPrettyString(entityBody);
+		this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(entityBody));
 		return updateResult;
 	}
 
-	public boolean getStatus() {
-		return updateResult.getStatus();
+	@SuppressWarnings("unchecked")
+	private void updateAttrib(List<Map<String, Object>> list, Map<String, Object> update, Object datasetId)
+			throws ResponseException {
+		boolean found = false;
+		for (Map<String, Object> originalNode : list) {
+			String payloadDatasetId = null;
+			if (originalNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+				payloadDatasetId = (String) (((List<Map<String, Object>>) originalNode
+						.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID);
+			}
+			if (payloadDatasetId == null ^ datasetId == null) {
+				continue;
+			}
+			if ((payloadDatasetId == null && datasetId == null) || payloadDatasetId.equals(datasetId)) {
+				found = true;
+				updateAttrib(originalNode, update, updateResult);
+				break;
+			}
+		}
+
+		if (!found) {
+			throw new ResponseException(ErrorType.NotFound, "Provided datasetId is not present");
+		}
+	}
+
+	private void updateAttrib(Map<String, Object> originalEntry, Map<String, Object> updateEntry,
+			UpdateResult updateResult) {
+		for (Entry<String, Object> entry : updateEntry.entrySet()) {
+			String key = entry.getKey();
+			if (!originalEntry.containsKey(key)) {
+				updateResult.addToNotUpdated(key, "entry not found in attribute");
+			} else {
+				originalEntry.put(key, entry.getValue());
+				updateResult.addToUpdated(key);
+			}
+		}
 	}
 
 	public UpdateResult getUpdateResult() {

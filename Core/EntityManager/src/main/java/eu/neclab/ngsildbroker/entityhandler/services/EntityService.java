@@ -42,29 +42,26 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 @EnableKafka
 public class EntityService implements EntryCRUDService {
 
-
 	@Value("${scorpio.topics.entity}")
 	private String ENTITY_TOPIC;
 	@Value("${scorpio.directDB}")
 	boolean directDB;
 	public static boolean checkEntity = false;
 
-
 	@Autowired
 	EntityInfoDAO entityInfoDAO;
 
 	@Autowired
 	KafkaTemplate<String, Object> kafkaTemplate;
-	
-	
-	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1,1,1,TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
+
+	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
+			new LinkedBlockingQueue<Runnable>());
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
 	private ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
-	
-	
+
 	// construct in-memory
 	@PostConstruct
 	private void loadStoredEntitiesDetails() throws ResponseException {
@@ -110,7 +107,7 @@ public class EntityService implements EntryCRUDService {
 			@Override
 			public void run() {
 				kafkaTemplate.send(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
-				
+
 			}
 		});
 	}
@@ -164,7 +161,7 @@ public class EntityService implements EntryCRUDService {
 
 		// pubilsh merged message
 		// & check if anything is changed.
-		if (request.getStatus()) {
+		if (!request.getUpdateResult().getUpdated().isEmpty()) {
 			handleRequest(request);
 		}
 		logger.trace("updateMessage() :: completed");
@@ -243,7 +240,8 @@ public class EntityService implements EntryCRUDService {
 			this.entityIds.remove(tenantId, entityId);
 
 		}
-		Map<String, Object> oldEntity = (Map<String, Object>)JsonUtils.fromString(entityInfoDAO.getEntity(entityId, tenantId));
+		Map<String, Object> oldEntity = (Map<String, Object>) JsonUtils
+				.fromString(entityInfoDAO.getEntity(entityId, tenantId));
 
 		EntityRequest request = new DeleteEntityRequest(entityId, headers);
 		if (directDB) {
@@ -273,7 +271,7 @@ public class EntityService implements EntryCRUDService {
 		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, expandedPayload, attrId);
 		// pubilsh merged message
 		// check if anything is changed.
-		if (request.getStatus()) {
+		if (!request.getUpdateResult().getUpdated().isEmpty()) {
 			handleRequest(request);
 		}
 		logger.trace("partialUpdateEntity() :: completed");
@@ -299,6 +297,7 @@ public class EntityService implements EntryCRUDService {
 		logger.trace("deleteAttribute() :: completed");
 		return true;
 	}
+
 	private void handleRequest(EntityRequest request) {
 		if (directDB) {
 			pushToDB(request);

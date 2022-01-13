@@ -16,6 +16,7 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.AppendResult;
@@ -344,7 +345,7 @@ public interface EntryControllerFunctions {
 
 		boolean failedOnce = !result.getFails().isEmpty();
 		HttpStatus status;
-		//for 1.5.1 update  no more bad request on fail only multi status
+		// for 1.5.1 update no more bad request on fail only multi status
 		if (failedOnce) {
 			if (insertedOneEntity || appendedOneEntity) {
 				status = HttpStatus.MULTI_STATUS;
@@ -377,12 +378,7 @@ public interface EntryControllerFunctions {
 					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
 			UpdateResult update = entityService.updateEntry(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("update entry :: completed");
-			if (update.getUpdateResult()) {
-				return ResponseEntity.noContent().build();
-			} else {
-				return ResponseEntity.status(HttpStatus.MULTI_STATUS)
-						.body(JsonUtils.toPrettyString(update.getAppendedJsonFields()));
-			}
+			return HttpUtils.generateReply(request, update, AppConstants.UPDATE_REQUEST);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}

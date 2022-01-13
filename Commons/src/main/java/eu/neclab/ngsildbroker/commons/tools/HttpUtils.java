@@ -45,6 +45,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
@@ -541,6 +542,12 @@ public final class HttpUtils {
 			result.addAll(entry.getKey(), Arrays.asList(entry.getValue()));
 		}
 		return result;
+	}
+
+	public static ResponseEntity<String> generateReply(HttpServletRequest request, UpdateResult update,
+			int endpoint) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

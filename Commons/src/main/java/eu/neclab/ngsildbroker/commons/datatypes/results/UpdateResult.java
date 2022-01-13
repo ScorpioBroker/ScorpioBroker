@@ -1,72 +1,83 @@
 package eu.neclab.ngsildbroker.commons.datatypes.results;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class UpdateResult {
-	private Map<String, Object> jsonToAppend;
-	private Map<String, Object> updatedJsonFields;// = new ArrayList<JsonNode>();
-	private Map<String, Object> finalNode;
-	private boolean status = false;
-	private String json;
-	private String jsonWithoutSysAttrs;
+//	[
+//	  {
+//	    "https://uri.etsi.org/ngsi-ld/default-context/notUpdated": [
+//	      {
+//	        "https://uri.etsi.org/ngsi-ld/attributeName": [
+//	          {
+//	            "@id": "https://uri.etsi.org/ngsi-ld/default-context/attrib3"
+//	          }
+//	        ],
+//	        "https://uri.etsi.org/ngsi-ld/reason": [
+//	          {
+//	            "@value": "already exists"
+//	          }
+//	        ]
+//	      },
+//	      {
+//	        "https://uri.etsi.org/ngsi-ld/attributeName": [
+//	          {
+//	            "@id": "https://uri.etsi.org/ngsi-ld/default-context/attrib4"
+//	          }
+//	        ],
+//	        "https://uri.etsi.org/ngsi-ld/reason": [
+//	          {
+//	            "@value": "already exists"
+//	          }
+//	        ]
+//	      }
+//	    ],
+//	    "https://uri.etsi.org/ngsi-ld/updated": [
+//	      {
+//	        "@value": "attrib1"
+//	      },
+//	      {
+//	        "@value": "attrib2"
+//	      }
+//	    ]
+//	  }
+//	]
+	private List<Map<String, Object>> updated = new ArrayList<Map<String, Object>>();
+	private List<Map<String, Object>> notUpdated = new ArrayList<Map<String, Object>>();
 
-	public boolean getUpdateResult() {
-		return jsonToAppend.size() == updatedJsonFields.size();
-	}
-
-	public UpdateResult(Map<String, Object> resolved,Map<String, Object> resultJson) {
-		super();
-		this.jsonToAppend = resolved;
-		this.updatedJsonFields=resultJson;
-	}
-
-	
-	public Map<String, Object> getFinalNode() {
-		return finalNode;
-	}
-
-	public void setFinalNode(Map<String, Object> finalNode) {
-		this.finalNode = finalNode;
-	}
-
-	public Map<String, Object> getJsonToAppend() {
-		return jsonToAppend;
-	}
-
-	public void setJsonToAppend(Map<String, Object> jsonToAppend) {
-		this.jsonToAppend = jsonToAppend;
-	}
-
-	public Map<String, Object> getAppendedJsonFields() {
-		return updatedJsonFields;
-	}
-
-	public void setAppendedJsonFields(Map<String, Object> updatedJsonFields) {
-		this.updatedJsonFields = updatedJsonFields;
-	}
-
-	public boolean getStatus() {
-		return status;
-	}
-
-	public void setStatus(boolean status) {
-		this.status = status;
+	public void addToUpdated(String updatedAttrId) {
+		HashMap<String, Object> tmp = new HashMap<String, Object>();
+		tmp.put(NGSIConstants.JSON_LD_VALUE, updatedAttrId);
+		updated.add(tmp);
 	}
 
-	public String getJson() {
-		return json;
+	public void addToNotUpdated(String notUpdatedAttrId, String reason) {
+		HashMap<String, Object> notUpdatedEntry = new HashMap<String, Object>();
+		HashMap<String, Object> tmp = new HashMap<String, Object>();
+		List<Map<String, Object>> tmp2 = new ArrayList<Map<String, Object>>();
+		tmp.put(NGSIConstants.JSON_LD_ID, notUpdatedAttrId);
+		tmp2.add(tmp);
+		notUpdatedEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, tmp2);
+		tmp = new HashMap<String, Object>();
+		tmp2 = new ArrayList<Map<String, Object>>();
+		tmp.put(NGSIConstants.JSON_LD_VALUE, reason);
+		tmp2.add(tmp);
+		notUpdatedEntry.put(NGSIConstants.NGSI_LD_REASON, tmp2);
+		notUpdated.add(notUpdatedEntry);
 	}
 
-	public void setJson(String json) {
-		this.json = json;
-	}
-	
-	public String getJsonWithoutSysAttrs() {
-		return jsonWithoutSysAttrs;
+	public List<Map<String, Object>> getUpdated() {
+		return updated;
 	}
 
-	public void setJsonWithoutSysAttrs(String jsonWithoutSysAttrs) {
-		this.jsonWithoutSysAttrs = jsonWithoutSysAttrs;
+	public List<Map<String, Object>> getNotUpdated() {
+		return notUpdated;
 	}
-	
+
 }
