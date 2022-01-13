@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +53,6 @@ public class UpdateEntityRequest extends EntityRequest {
 	private UpdateResult updateFields(Map<String, Object> entityBody, Map<String, Object> resolved, String attrId)
 			throws Exception, ResponseException {
 		String now = SerializationTools.formatter.format(Instant.now());
-		Map<String, Object> resultJson = new HashMap<String, Object>();
 		UpdateResult updateResult = new UpdateResult();
 
 		if (attrId != null) {
@@ -63,7 +61,7 @@ public class UpdateEntityRequest extends EntityRequest {
 				throw new ResponseException(ErrorType.NotFound, "Provided attribute is not present");
 			}
 			List<Map<String, Object>> list = ((List<Map<String, Object>>) entityBody.get(attrId));
-			updateAttrib(list, resolved, datasetId);
+			updateAttrib(list, resolved, datasetId, updateResult);
 			Map<String, Object> tmp = new HashMap<String, Object>();
 			tmp.put(attrId, getRequestPayload());
 			setRequestPayload(tmp);
@@ -140,14 +138,13 @@ public class UpdateEntityRequest extends EntityRequest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void updateAttrib(List<Map<String, Object>> list, Map<String, Object> update, Object datasetId)
-			throws ResponseException {
+	private void updateAttrib(List<Map<String, Object>> list, Map<String, Object> update, Object datasetId,
+			UpdateResult updateResult) throws ResponseException {
 		boolean found = false;
 		for (Map<String, Object> originalNode : list) {
-			String payloadDatasetId = null;
+			Object payloadDatasetId = null;
 			if (originalNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-				payloadDatasetId = (String) (((List<Map<String, Object>>) originalNode
-						.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID);
+				payloadDatasetId = originalNode.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			}
 			if (payloadDatasetId == null ^ datasetId == null) {
 				continue;

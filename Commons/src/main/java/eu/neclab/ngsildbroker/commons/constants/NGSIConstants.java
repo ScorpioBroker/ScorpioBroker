@@ -282,5 +282,8 @@ public interface NGSIConstants {
 	public static final String JSON_LD_LIST = "@list";
 	public static final String TENANT_HEADER = "NGSILD-Tenant";
 	public static final String NGSI_LD_REASON = "https://uri.etsi.org/ngsi-ld/reason";
+	public static final String NGSI_LD_NOT_UPDATED = "https://uri.etsi.org/ngsi-ld/default-context/notUpdated";
+	public static final String NGSI_LD_UPDATED = "https://uri.etsi.org/ngsi-ld/updated";
+	public static final String NGSI_LD_UPDATED_SHORT = "updated";
 
 }

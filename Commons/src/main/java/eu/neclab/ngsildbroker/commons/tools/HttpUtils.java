@@ -30,6 +30,7 @@ import org.springframework.http.ResponseEntity.BodyBuilder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.jsonldjava.core.Context;
@@ -544,10 +545,62 @@ public final class HttpUtils {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> generateReply(HttpServletRequest request, UpdateResult update,
-			int endpoint) {
-		// TODO Auto-generated method stub
-		return null;
+			List<Object> context, int endpoint)
+			throws JsonLdError, ResponseException, JsonGenerationException, IOException {
+		if (update.getNotUpdated().isEmpty()) {
+			return ResponseEntity.noContent().build();
+		}
+		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
+		Map<String, Object> expanded = update.toJsonMap();
+		Map<String, Object> compacted = JsonLdProcessor.compact(expanded, context, ldContext, opts,
+				AppConstants.UPDATE_REQUEST);
+		Object updated = compacted.get(NGSIConstants.NGSI_LD_UPDATED_SHORT);
+		if (updated != null) {
+			List<String> result = new ArrayList<String>();
+			for (String entry : (List<String>) updated) {
+				HashMap<String, Object> tmp = new HashMap<String, Object>();
+				tmp.put(NGSIConstants.JSON_LD_VALUE, entry);
+				result.add((String) ldContext.compactValue("dummy", tmp));
+			}
+			compacted.put(NGSIConstants.NGSI_LD_UPDATED_SHORT, result);
+		}
+		Object resultContext = compacted.get(JsonLdConsts.CONTEXT);
+		Object result;
+		Object graph = compacted.get(JsonLdConsts.GRAPH);
+		if (graph != null) {
+			result = graph;
+		} else {
+			result = compacted;
+		}
+		int sendingContentType = parseAcceptHeader(Collections.list(request.getHeaders(HttpHeaders.ACCEPT)));
+		HttpHeaders resultHeaders = new HttpHeaders();
+		String replyBody;
+		switch (sendingContentType) {
+		case 1:
+			resultHeaders.add(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+			((Map) result).remove(JsonLdConsts.CONTEXT);
+			replyBody = JsonUtils.toPrettyString(result);
+			for (Object entry : context) {
+				if (entry instanceof String) {
+					resultHeaders.add(HttpHeaders.LINK, "<" + entry
+							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+				} else {
+					resultHeaders.add(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+				}
+
+			}
+			break;
+		case 2:
+			resultHeaders.add(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+			replyBody = JsonUtils.toPrettyString(result);
+			break;
+		default:
+			throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
+		}
+		return ResponseEntity.status(HttpStatus.MULTI_STATUS).headers(resultHeaders).body(replyBody);
 	}
 
 }

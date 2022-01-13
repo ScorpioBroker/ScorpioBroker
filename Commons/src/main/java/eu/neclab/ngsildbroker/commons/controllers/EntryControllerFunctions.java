@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -10,6 +11,7 @@ import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -366,6 +368,7 @@ public interface EntryControllerFunctions {
 		return generateBatchResultReply(result, status);
 	}
 
+	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> updateEntry(EntryCRUDService entityService, HttpServletRequest request,
 			String entityId, String payload, int payloadType, Logger logger) {
 		try {
@@ -373,12 +376,21 @@ public interface EntryControllerFunctions {
 			HttpUtils.validateUri(entityId);
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-			@SuppressWarnings("unchecked")
+			List<Object> context = new ArrayList<Object>();
+			context.addAll(contextHeaders);
+			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
+			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
+					.expand(contextHeaders, body, opts, payloadType, atContextAllowed).get(0);
+			if (bodyContext instanceof List) {
+				context.addAll((List<Object>) bodyContext);
+			} else {
+				context.add(bodyContext);
+			}
+
 			UpdateResult update = entityService.updateEntry(HttpUtils.getHeaders(request), entityId, resolved);
 			logger.trace("update entry :: completed");
-			return HttpUtils.generateReply(request, update, AppConstants.UPDATE_REQUEST);
+			return HttpUtils.generateReply(request, update, context, AppConstants.UPDATE_REQUEST);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}

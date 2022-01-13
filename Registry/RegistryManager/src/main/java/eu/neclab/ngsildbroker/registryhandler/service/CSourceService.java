@@ -96,7 +96,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
 			String tenant = entry.getKey();
 			List<String> entityList = entry.getValue();
-			if(entityList.isEmpty()) {
+			if (entityList.isEmpty()) {
 				continue;
 			}
 			for (String entityString : entityList) {
@@ -361,12 +361,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	private CSourceRequest createInternalRegEntry(String tenant) {
 		String id = AppConstants.INTERNAL_REGISTRATION_ID;
+		ArrayListMultimap<String, String> headers = ArrayListMultimap.create();
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
 			id += ":" + tenant;
+			headers.put(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK, tenant);
 		}
-		ArrayListMultimap<String, String> headers = ArrayListMultimap.create();
-		headers.put(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK, tenant);
-
 		Map<String, Object> resolved = new HashMap<String, Object>();
 		resolved.put(NGSIConstants.JSON_LD_ID, id);
 		ArrayList<Object> tmp = new ArrayList<Object>();

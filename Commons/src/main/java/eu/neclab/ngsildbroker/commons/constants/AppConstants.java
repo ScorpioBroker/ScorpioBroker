@@ -78,7 +78,8 @@ public class AppConstants {
 			"\\d\\d\\d\\d-(0[1-9]|1[0-2])-(0[0-9]|[1-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d{1,6})?Z");
 	public static final List<String> FORCE_ARRAY_FIELDS = Arrays.asList(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES,
 			NGSIConstants.NGSI_LD_ENTITIES, NGSIConstants.NGSI_LD_PROPERTIES, NGSIConstants.NGSI_LD_RELATIONSHIPS,
-			NGSIConstants.NGSI_LD_INFORMATION, NGSIConstants.NGSI_LD_RECEIVERINFO, NGSIConstants.NGSI_LD_NOTIFIERINFO);
+			NGSIConstants.NGSI_LD_INFORMATION, NGSIConstants.NGSI_LD_RECEIVERINFO, NGSIConstants.NGSI_LD_NOTIFIERINFO,
+			NGSIConstants.NGSI_LD_UPDATED, NGSIConstants.NGSI_LD_NOT_UPDATED);
 	public static final int ATTRIBUTE_PAYLOAD = 11;
 	public static final int NOTIFICAITION_RECEIVED = 12;
 	public static final int QUERY_PAYLOAD = 13;
@@ -95,6 +96,5 @@ public class AppConstants {
 	public static final int DELETE_ATTRIBUTE_REQUEST = 4;
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	public static final String INTERNAL_REGISTRATION_ID = "scorpio:hosted:registryentries";
-	
 
 }

@@ -2,11 +2,8 @@ package eu.neclab.ngsildbroker.commons.datatypes.results;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class UpdateResult {
@@ -78,6 +75,17 @@ public class UpdateResult {
 
 	public List<Map<String, Object>> getNotUpdated() {
 		return notUpdated;
+	}
+
+	public Map<String, Object> toJsonMap() {
+		HashMap<String, Object> result = new HashMap<String, Object>();
+		if (!updated.isEmpty()) {
+			result.put(NGSIConstants.NGSI_LD_UPDATED, updated);
+		}
+		if (!notUpdated.isEmpty()) {
+			result.put(NGSIConstants.NGSI_LD_NOT_UPDATED, notUpdated);
+		}
+		return result;
 	}
 
 }
