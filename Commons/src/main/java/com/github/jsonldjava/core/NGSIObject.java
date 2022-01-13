@@ -64,7 +64,10 @@ class NGSIObject {
 		this.expandedProperty = expandedProperty;
 	}
 
-	public NGSIObject setElement(Object element) {
+	public NGSIObject setElement(Object element) throws ResponseException{
+		if(this.element == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "null values are not allowed");
+		}
 		this.element = element;
 		return this;
 	}

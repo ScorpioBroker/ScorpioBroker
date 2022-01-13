@@ -1204,7 +1204,10 @@ public class JsonLdApi {
 		// 2) If element is a scalar
 		else {
 			// 2.1)
-			if (activeProperty == null || JsonLdConsts.GRAPH.equals(activeProperty)) {
+			if (activeProperty == null) {
+				throw new ResponseException(ErrorType.BadRequestData, "null values are not allowed");
+			}
+			if (JsonLdConsts.GRAPH.equals(activeProperty)) {
 				return new NGSIObject(null, ngsiElement);
 			}
 			String expandedProperty = activeCtx.expandIri(activeProperty, false, true, null, null);
