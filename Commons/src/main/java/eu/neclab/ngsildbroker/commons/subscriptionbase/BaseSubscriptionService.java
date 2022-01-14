@@ -23,6 +23,7 @@ import javax.annotation.PreDestroy;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
@@ -587,6 +588,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 					}
 
 					queryShape = polygonBuilder.build();
+					break;
+				}
+				case LineString: {
+					LineStringBuilder lineStringBuilder = shapeFactory.lineString();
+					for (int i = 0; i < coordinates.size(); i = i + 2) {
+						lineStringBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+					}
+					queryShape = lineStringBuilder.build();
 					break;
 				}
 				default: {

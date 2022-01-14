@@ -14,7 +14,15 @@ import java.util.Map.Entry;
 import java.util.function.Consumer;
 
 import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
+import com.github.filosganga.geogson.model.Coordinates;
 import com.github.filosganga.geogson.model.Geometry;
+import com.github.filosganga.geogson.model.LineString;
+import com.github.filosganga.geogson.model.Point;
+import com.github.filosganga.geogson.model.Polygon;
+import com.github.filosganga.geogson.model.positions.AreaPositions;
+import com.github.filosganga.geogson.model.positions.LinearPositions;
+import com.github.filosganga.geogson.model.positions.SinglePosition;
+import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -100,7 +108,7 @@ public class SerializationTools {
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_UNIT_CODE)) {
 					unitCode = getValue((List<Map<String, Object>>) value);
 				} else {
-					if(value instanceof String) {
+					if (value instanceof String) {
 						System.out.println();
 					}
 					List<Map<String, Object>> subLevelArray = (List<Map<String, Object>>) value;
@@ -322,8 +330,6 @@ public class SerializationTools {
 		return (String) value.get(0).get(NGSIConstants.JSON_LD_ID);
 	}
 
-	
-
 	/**
 	 * 
 	 * @param timestamp
@@ -455,7 +461,6 @@ public class SerializationTools {
 		return result;
 	}
 
-	
 	@SuppressWarnings("unchecked")
 	public static GeoProperty parseGeoProperty(List<Map<String, Object>> topLevelArray, String key) {
 		GeoProperty prop = new GeoProperty();
@@ -476,21 +481,22 @@ public class SerializationTools {
 				String propKey = entry.getKey();
 				Object value = entry.getValue();
 				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-					Object propValue = ((List<Object>) value).get(0);
-					if (propValue instanceof String) {
-						geoValue = DataSerializer.getGeojsonGeometry((String) propValue);
-					} else {
-						Object atValue = ((Map<String, Object>) propValue).get(NGSIConstants.JSON_LD_VALUE);
-						if (atValue != null) {
-							if (atValue instanceof String) {
-								geoValueStr = (String) atValue;
-								geoValue = DataSerializer.getGeojsonGeometry((String) atValue);
-							}
-						} else {
-							geoValueStr = (String) propValue;
-							geoValue = DataSerializer.getGeojsonGeometry((String) propValue);
-						}
-
+					Map<String, Object> propValue = ((List<Map<String, Object>>) value).get(0);
+					String geometry = ((List<String>) propValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+					List<Map<String, Object>> coordinates = (List<Map<String, Object>>) propValue
+							.get(NGSIConstants.NGSI_LD_COORDINATES);
+					switch (geometry) {
+					case NGSIConstants.NGSI_LD_POINT:
+						geoValue = new Point(getSingeLePosition(coordinates));
+						break;
+					case NGSIConstants.NGSI_LD_POLYOGN:
+						geoValue = new Polygon(getAreaPositions(coordinates));
+						break;
+					case NGSIConstants.NGSI_LD_LINESTRING:
+						geoValue = new LineString(getLinearPositions(coordinates));
+						break;
+					default:
+						break;
 					}
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
 					try {
@@ -548,6 +554,30 @@ public class SerializationTools {
 		}
 		prop.setEntries(entries);
 		return prop;
+	}
+
+	private static LinearPositions getLinearPositions(List<Map<String, Object>> coordinates) {
+		ArrayList<SinglePosition> coordinateList = new ArrayList<SinglePosition>();
+		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
+		for (Map<String, Object> entry : list) {
+			coordinateList.add(getSingeLePosition((List<Map<String, Object>>) entry.get(NGSIConstants.JSON_LD_LIST)));
+		}
+		return new LinearPositions(ImmutableList.copyOf(coordinateList));
+	}
+
+	private static AreaPositions getAreaPositions(List<Map<String, Object>> coordinates) {
+		ArrayList<LinearPositions> coordinateList = new ArrayList<LinearPositions>();
+		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
+		for (Map<String, Object> entry : list) {
+			coordinateList.add(getLinearPositions((List<Map<String, Object>>) entry.get(NGSIConstants.JSON_LD_LIST)));
+		}
+		return new AreaPositions(coordinateList);
+	}
+
+	private static SinglePosition getSingeLePosition(List<Map<String, Object>> coordinates) {
+		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
+		return new SinglePosition(Coordinates.of((Double) list.get(0).get(NGSIConstants.JSON_LD_VALUE),
+				(Double) list.get(1).get(NGSIConstants.JSON_LD_VALUE)));
 	}
 
 }

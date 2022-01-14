@@ -454,6 +454,8 @@ public interface SubscriptionControllerFunctions {
 			geoQuery.setGeometry(Geometry.Point);
 		} else if (geometry.equalsIgnoreCase("polygon")) {
 			geoQuery.setGeometry(Geometry.Polygon);
+		} else if (geometry.equalsIgnoreCase("linestring")) {
+			geoQuery.setGeometry(Geometry.LineString);
 		}
 		String geoRelString = (String) ((List<Map<String, Object>>) map.get(NGSIConstants.NGSI_LD_GEO_REL)).get(0)
 				.get(NGSIConstants.JSON_LD_VALUE);
