@@ -148,4 +148,38 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	protected boolean evaluateQ() {
 		return false;
 	}
+
+	@Override
+	protected boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {
+		List<String> attribs = subscription.getSubscription().getAttributeNames();
+		if (attribs == null || attribs.isEmpty()) {
+			return true;
+		}
+		List<Map<String, Object>> information = (List<Map<String, Object>>) entry
+				.get(NGSIConstants.NGSI_LD_INFORMATION);
+		for (Map<String, Object> informationEntry : information) {
+			Object propertyNames = informationEntry.get(NGSIConstants.NGSI_LD_PROPERTIES);
+			Object relationshipNames = informationEntry.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+			if (relationshipNames == null && relationshipNames == null) {
+				return true;
+			}
+			if (relationshipNames != null) {
+				List<Map<String, String>> list = (List<Map<String, String>>) relationshipNames;
+				for (Map<String, String> relationshipEntry : list) {
+					if (attribs.contains(relationshipEntry.get(NGSIConstants.JSON_LD_ID))) {
+						return true;
+					}
+				}
+			}
+			if (propertyNames != null) {
+				List<Map<String, String>> list = (List<Map<String, String>>) propertyNames;
+				for (Map<String, String> propertyEntry : list) {
+					if (attribs.contains(propertyEntry.get(NGSIConstants.JSON_LD_ID))) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
 }

@@ -487,20 +487,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	protected abstract Notification getNotification(SubscriptionRequest request, List<Map<String, Object>> dataList,
 			int triggerReason);
 
-	private boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {
-
-		if (subscription.getSubscription().getAttributeNames() == null
-				|| subscription.getSubscription().getAttributeNames().isEmpty()) {
-			return true;
-		}
-		Set<String> keys = entry.keySet();
-		for (String attribName : subscription.getSubscription().getAttributeNames()) {
-			if (keys.contains(attribName)) {
-				return true;
-			}
-		}
-		return false;
-	}
+	protected abstract boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription);
 
 	private Map<String, Object> generateDataFromBaseOp(BaseRequest request, SubscriptionRequest subscription,
 			int methodType) throws ResponseException {

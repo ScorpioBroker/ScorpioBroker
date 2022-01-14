@@ -40,7 +40,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.Relationship;
 import eu.neclab.ngsildbroker.commons.datatypes.RelationshipEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.TypedValue;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 
 public class SerializationTools {
 //	public static SimpleDateFormat formatter = new SimpleDateFormat(NGSIConstants.DEFAULT_DATE_FORMAT);

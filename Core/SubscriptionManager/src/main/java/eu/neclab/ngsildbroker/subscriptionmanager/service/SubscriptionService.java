@@ -181,10 +181,11 @@ public class SubscriptionService extends BaseSubscriptionService {
 					result.add(NGSIConstants.TENANT_HEADER, (String) myContext
 							.compactValue(NGSIConstants.NGSI_LD_TENANT, ((List<Map<String, Object>>) tenant).get(0)));
 				}
-				Object receiverInfo = registration.get(NGSIConstants.NGSI_LD_RECEIVERINFO);
+				Object receiverInfo = registration.get(NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO);
 				if (receiverInfo != null) {
 					Map<String, String> headerMap = (Map<String, String>) myContext.compactValue(
-							NGSIConstants.NGSI_LD_RECEIVERINFO, ((List<Map<String, Object>>) receiverInfo).get(0));
+							NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO,
+							((List<Map<String, Object>>) receiverInfo).get(0));
 					for (Entry<String, String> entry : headerMap.entrySet()) {
 						result.add(entry.getKey(), entry.getValue());
 					}
@@ -268,6 +269,22 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Override
 	protected boolean evaluateQ() {
 		return true;
+	}
+
+	@Override
+	protected boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {
+
+		if (subscription.getSubscription().getAttributeNames() == null
+				|| subscription.getSubscription().getAttributeNames().isEmpty()) {
+			return true;
+		}
+		Set<String> keys = entry.keySet();
+		for (String attribName : subscription.getSubscription().getAttributeNames()) {
+			if (keys.contains(attribName)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

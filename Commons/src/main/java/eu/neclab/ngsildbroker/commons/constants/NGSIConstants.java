@@ -285,5 +285,6 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_NOT_UPDATED = "https://uri.etsi.org/ngsi-ld/default-context/notUpdated";
 	public static final String NGSI_LD_UPDATED = "https://uri.etsi.org/ngsi-ld/updated";
 	public static final String NGSI_LD_UPDATED_SHORT = "updated";
+	public static final String NGSI_LD_CONTEXT_SOURCE_INFO = "https://uri.etsi.org/ngsi-ld/default-context/contextSourceInfo";
 
 }
