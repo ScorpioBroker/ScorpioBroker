@@ -50,6 +50,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DESCRIPTION);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_TIME_INTERVAL);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_QUERY);
+		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_CSF);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_IS_ACTIVE);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_EXPIRES);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_THROTTLING);
