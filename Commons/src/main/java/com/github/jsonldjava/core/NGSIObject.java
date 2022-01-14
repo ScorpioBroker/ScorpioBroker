@@ -297,7 +297,7 @@ class NGSIObject {
 			//
 			break;
 		default:
-			validateAttribute(payloadType, expandedProperty, activeProperty, api);
+			//validateAttribute(payloadType, expandedProperty, activeProperty, api);
 			break;
 		}
 	}

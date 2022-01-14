@@ -201,9 +201,12 @@ public class ParamsResolver {
 			case NGSIConstants.QUERY_PARAMETER_DETAILS:
 				// nothing to do here this is handled outside tbc!
 				break;
-			case NGSIConstants.QUERYP_PARAMETER_COUNT:
+			case NGSIConstants.QUERY_PARAMETER_COUNT:
 				qp.setCountResult(true);
-
+				break;
+			case NGSIConstants.QUERY_PARAMETER_CSF:
+				qp.setCsf(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
+				break;
 			default:
 				throw new ResponseException(ErrorType.BadRequestData, queryParameter + " is unknown");
 			}

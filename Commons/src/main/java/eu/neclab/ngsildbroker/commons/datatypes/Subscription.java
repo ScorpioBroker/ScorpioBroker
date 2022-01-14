@@ -28,6 +28,7 @@ public class Subscription {
 	protected String ldContext;
 	protected LDGeoQuery ldGeoQuery;
 	protected String ldQuery;
+	protected String csf;
 	protected LDTemporalQuery ldTempQuery;
 	protected List<URI> requestorList;
 
@@ -193,11 +194,19 @@ public class Subscription {
 
 	public void setActive(boolean isActive) {
 		this.isActive = isActive;
-		if(isActive) {
+		if (isActive) {
 			this.status = "active";
-		}else {
+		} else {
 			this.status = "paused";
 		}
+	}
+
+	public String getCsf() {
+		return csf;
+	}
+
+	public void setCsf(String csf) {
+		this.csf = csf;
 	}
 
 	@Override

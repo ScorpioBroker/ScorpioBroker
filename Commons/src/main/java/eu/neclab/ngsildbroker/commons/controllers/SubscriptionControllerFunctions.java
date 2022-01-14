@@ -154,7 +154,7 @@ public interface SubscriptionControllerFunctions {
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
 							context).toSql());
 				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse q");
 				}
 				break;
 			case NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES:
@@ -220,6 +220,17 @@ public interface SubscriptionControllerFunctions {
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
 				}
+				break;
+			case NGSIConstants.NGSI_LD_CSF:
+				try {
+
+					subscription.setCsf(QueryParser.parseQuery(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
+							context).toSql());
+				} catch (Exception e) {
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
+				}
+
 				break;
 			default:
 				break;
@@ -481,6 +492,7 @@ public interface SubscriptionControllerFunctions {
 		return geoQuery;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static ArrayList<Double> getCoordinates(List<Map<String, Object>> jsonCoordinates) {
 		ArrayList<Double> result = new ArrayList<Double>();
 

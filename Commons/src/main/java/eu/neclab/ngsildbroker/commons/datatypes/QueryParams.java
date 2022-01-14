@@ -23,6 +23,10 @@ public class QueryParams {
 	@SerializedName("q")
 	@Expose
 	private String q;
+	
+	@SerializedName("csf")
+	@Expose
+	private String csf;
 	@SerializedName("georel")
 	@Expose
 	private GeoqueryRel georel;
@@ -316,5 +320,15 @@ public class QueryParams {
 	public int getLastN() {
 		return lastN;
 	}
+
+	public String getCsf() {
+		return csf;
+	}
+
+	public void setCsf(String csf) {
+		this.csf = csf;
+	}
+
+	
 
 }
