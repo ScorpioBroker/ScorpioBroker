@@ -473,77 +473,68 @@ public class SerializationTools {
 			ArrayList<Property> properties = new ArrayList<Property>();
 			ArrayList<Relationship> relationships = new ArrayList<Relationship>();
 			Long createdAt = null, observedAt = null, modifiedAt = null;
-			String geoValueStr = null;
+
 			Geometry<?> geoValue = null;
 			String dataSetId = null;
 			String name = null;
-			for (Entry<String, Object> entry : next.entrySet()) {
-				String propKey = entry.getKey();
-				Object value = entry.getValue();
-				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-					Map<String, Object> propValue = ((List<Map<String, Object>>) value).get(0);
-					String geometry = ((List<String>) propValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
-					List<Map<String, Object>> coordinates = (List<Map<String, Object>>) propValue
-							.get(NGSIConstants.NGSI_LD_COORDINATES);
-					switch (geometry) {
-					case NGSIConstants.NGSI_LD_POINT:
-						geoValue = new Point(getSingeLePosition(coordinates));
-						break;
-					case NGSIConstants.NGSI_LD_POLYOGN:
-						geoValue = new Polygon(getAreaPositions(coordinates));
-						break;
-					case NGSIConstants.NGSI_LD_LINESTRING:
-						geoValue = new LineString(getLinearPositions(coordinates));
-						break;
-					default:
-						break;
-					}
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
-					try {
-						observedAt = date2Long(
-								(String) ((List<Map<String, Object>>) value).get(0).get(NGSIConstants.JSON_LD_VALUE));
-					} catch (Exception e) {
-						throw new JsonParseException(e);
-					}
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
-					try {
-						createdAt = date2Long(
-								(String) ((List<Map<String, Object>>) value).get(0).get(NGSIConstants.JSON_LD_VALUE));
-					} catch (Exception e) {
-						throw new JsonParseException(e);
-					}
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-					try {
-						modifiedAt = date2Long(
-								(String) ((List<Map<String, Object>>) value).get(0).get(NGSIConstants.JSON_LD_VALUE));
-					} catch (Exception e) {
-						throw new JsonParseException(e);
-					}
-
-				} else if (propKey.equals(NGSIConstants.JSON_LD_TYPE)) {
-					continue;
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-					dataSetId = getDataSetId((List<Map<String, Object>>) value);
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_NAME)) {
-					name = getValue((List<Map<String, Object>>) value);
-				} else {
-					List<Map<String, Object>> subLevelArray = (List<Map<String, Object>>) value;
-					Map<String, Object> objValue = subLevelArray.get(0);
-					if (objValue.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-						String valueType = ((List<String>) objValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
-						if (valueType.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
-							properties.add(parseProperty(subLevelArray, propKey));
-						} else if (valueType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
-							relationships.add(parseRelationship(subLevelArray, propKey));
+			boolean realGeoProperty = ((List<String>) next.get(NGSIConstants.JSON_LD_TYPE)).get(0)
+					.equals(NGSIConstants.NGSI_LD_GEOPROPERTY);
+			if (realGeoProperty) {
+				for (Entry<String, Object> entry : next.entrySet()) {
+					String propKey = entry.getKey();
+					Object value = entry.getValue();
+					if (propKey.equals(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+						Map<String, Object> propValue = ((List<Map<String, Object>>) value).get(0);
+						geoValue = getGeoValue(propValue);
+					} else if (propKey.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
+						try {
+							observedAt = date2Long((String) ((List<Map<String, Object>>) value).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE));
+						} catch (Exception e) {
+							throw new JsonParseException(e);
 						}
-					} else {
-						throw new JsonParseException(
-								"cannot determine type of sub attribute. please provide a valid type");
-					}
-				}
+					} else if (propKey.equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
+						try {
+							createdAt = date2Long((String) ((List<Map<String, Object>>) value).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE));
+						} catch (Exception e) {
+							throw new JsonParseException(e);
+						}
+					} else if (propKey.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+						try {
+							modifiedAt = date2Long((String) ((List<Map<String, Object>>) value).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE));
+						} catch (Exception e) {
+							throw new JsonParseException(e);
+						}
 
+					} else if (propKey.equals(NGSIConstants.JSON_LD_TYPE)) {
+						continue;
+					} else if (propKey.equals(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						dataSetId = getDataSetId((List<Map<String, Object>>) value);
+					} else if (propKey.equals(NGSIConstants.NGSI_LD_NAME)) {
+						name = getValue((List<Map<String, Object>>) value);
+					} else {
+						List<Map<String, Object>> subLevelArray = (List<Map<String, Object>>) value;
+						Map<String, Object> objValue = subLevelArray.get(0);
+						if (objValue.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+							String valueType = ((List<String>) objValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+							if (valueType.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
+								properties.add(parseProperty(subLevelArray, propKey));
+							} else if (valueType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+								relationships.add(parseRelationship(subLevelArray, propKey));
+							}
+						} else {
+							throw new JsonParseException(
+									"cannot determine type of sub attribute. please provide a valid type");
+						}
+					}
+
+				}
+			} else {
+				geoValue = getGeoValue(next);
 			}
-			GeoPropertyEntry geoPropEntry = new GeoPropertyEntry(dataSetId, geoValueStr, geoValue);
+			GeoPropertyEntry geoPropEntry = new GeoPropertyEntry(dataSetId, geoValue);
 			geoPropEntry.setProperties(properties);
 			geoPropEntry.setRelationships(relationships);
 			geoPropEntry.setCreatedAt(createdAt);
@@ -556,6 +547,25 @@ public class SerializationTools {
 		return prop;
 	}
 
+	@SuppressWarnings("unchecked")
+	private static Geometry<?> getGeoValue(Map<String, Object> propValue) {
+		String geometry = ((List<String>) propValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+		List<Map<String, Object>> coordinates = (List<Map<String, Object>>) propValue
+				.get(NGSIConstants.NGSI_LD_COORDINATES);
+		switch (geometry) {
+		case NGSIConstants.NGSI_LD_POINT:
+			return new Point(getSingeLePosition(coordinates));
+		case NGSIConstants.NGSI_LD_POLYOGN:
+			return new Polygon(getAreaPositions(coordinates));
+		case NGSIConstants.NGSI_LD_LINESTRING:
+			return new LineString(getLinearPositions(coordinates));
+		default:
+			return null;
+		}
+
+	}
+
+	@SuppressWarnings("unchecked")
 	private static LinearPositions getLinearPositions(List<Map<String, Object>> coordinates) {
 		ArrayList<SinglePosition> coordinateList = new ArrayList<SinglePosition>();
 		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
@@ -565,6 +575,7 @@ public class SerializationTools {
 		return new LinearPositions(ImmutableList.copyOf(coordinateList));
 	}
 
+	@SuppressWarnings("unchecked")
 	private static AreaPositions getAreaPositions(List<Map<String, Object>> coordinates) {
 		ArrayList<LinearPositions> coordinateList = new ArrayList<LinearPositions>();
 		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
@@ -574,6 +585,7 @@ public class SerializationTools {
 		return new AreaPositions(coordinateList);
 	}
 
+	@SuppressWarnings("unchecked")
 	private static SinglePosition getSingeLePosition(List<Map<String, Object>> coordinates) {
 		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
 		return new SinglePosition(Coordinates.of((Double) list.get(0).get(NGSIConstants.JSON_LD_VALUE),
