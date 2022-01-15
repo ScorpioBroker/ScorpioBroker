@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
@@ -567,8 +568,20 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 						polygonBuilder.pointXY(next2.coordinates().getLon(), next2.coordinates().getLat());
 					}
 					entityShape = polygonBuilder.build();
+				}
+				if (next.getGeoValue() instanceof LineString) {
+					LineStringBuilder lineStringBuilder = shapeFactory.lineString();
+					Iterator<SinglePosition> it2 = ((Polygon) next.getGeoValue()).positions().children().iterator()
+							.next().children().iterator();
+					while (it2.hasNext()) {
+						SinglePosition next2 = it2.next();
+						lineStringBuilder.pointXY(next2.coordinates().getLon(), next2.coordinates().getLat());
+					}
+					entityShape = lineStringBuilder.build();
 				} else {
-					logger.error("Unsupported GeoJson type. Currently Point and Polygon are supported.");
+					logger.error(
+							"Unsupported GeoJson type. Currently Point, Polygon and Linestring are supported but was "
+									+ next.getGeoValue().getClass().toString());
 					return false;
 				}
 				Shape queryShape;
