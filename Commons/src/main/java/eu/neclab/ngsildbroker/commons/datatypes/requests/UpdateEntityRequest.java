@@ -116,7 +116,7 @@ public class UpdateEntityRequest extends EntityRequest {
 						} else {
 							entry2.put(NGSIConstants.NGSI_LD_CREATED_AT,
 									toRemove.get(NGSIConstants.NGSI_LD_CREATED_AT));
-							setTemporalProperties(entry2, null, now, true);
+							setTemporalProperties(entry2, "", now, true);
 							originalValueList.remove(toRemove);
 							originalValueList.add(entry2);
 							updateResult.addToUpdated(fieldName);
