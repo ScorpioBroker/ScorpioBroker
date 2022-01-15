@@ -223,10 +223,9 @@ public interface SubscriptionControllerFunctions {
 				break;
 			case NGSIConstants.NGSI_LD_CSF:
 				try {
-
 					subscription.setCsf(QueryParser.parseQuery(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
-							context).toSql());
+							context));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}

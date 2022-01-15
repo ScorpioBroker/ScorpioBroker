@@ -110,9 +110,12 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 
 		// advanced query "q"
 		if (qp.getQ() != null) {
-			// TODO: it's not clear in spec how this should work
-			logger.error("'q' filter has not been developed yet in csource discovery!");
-			return "";
+			logger.debug("'q' filter is not supported in csource discovery!");
+		}
+		if (qp.getCsf() != null) {
+			sqlWhere = qp.getCsf();
+			fullSqlWhere.append(sqlWhere);
+			fullSqlWhere.append(" AND ");
 		}
 
 		// geoquery

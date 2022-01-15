@@ -508,8 +508,17 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 			}
 		}
+		if (evaluateCSF()) {
+			if (subscription.getSubscription().getCsf() != null) {
+				if (!subscription.getSubscription().getCsf().calculate(EntityTools.getBaseProperties(fullEntry))) {
+					return null;
+				}
+			}
+		}
 		return EntityTools.clearBaseProps(fullEntry, subscription);
 	}
+
+	protected abstract boolean evaluateCSF();
 
 	protected abstract boolean evaluateQ();
 

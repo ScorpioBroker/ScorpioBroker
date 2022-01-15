@@ -287,4 +287,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 		return false;
 	}
 
+	@Override
+	protected boolean evaluateCSF() {
+		return false;
+	}
+
 }

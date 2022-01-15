@@ -28,7 +28,7 @@ public class Subscription {
 	protected String ldContext;
 	protected LDGeoQuery ldGeoQuery;
 	protected String ldQuery;
-	protected String csf;
+	protected QueryTerm csf;
 	protected LDTemporalQuery ldTempQuery;
 	protected List<URI> requestorList;
 
@@ -201,11 +201,11 @@ public class Subscription {
 		}
 	}
 
-	public String getCsf() {
+	public QueryTerm getCsf() {
 		return csf;
 	}
 
-	public void setCsf(String csf) {
+	public void setCsf(QueryTerm csf) {
 		this.csf = csf;
 	}
 

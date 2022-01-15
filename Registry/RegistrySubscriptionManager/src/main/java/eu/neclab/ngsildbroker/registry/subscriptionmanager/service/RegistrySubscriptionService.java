@@ -182,4 +182,10 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		}
 		return false;
 	}
+
+	@Override
+	protected boolean evaluateCSF() {
+		return true;
+	}
+
 }
