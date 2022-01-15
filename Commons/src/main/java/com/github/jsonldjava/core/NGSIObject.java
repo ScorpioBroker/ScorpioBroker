@@ -8,6 +8,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 //known structures
 @SuppressWarnings("unchecked")
@@ -64,7 +65,7 @@ class NGSIObject {
 		this.expandedProperty = expandedProperty;
 	}
 
-	public NGSIObject setElement(Object element) throws ResponseException{
+	public NGSIObject setElement(Object element) throws ResponseException {
 		this.element = element;
 		return this;
 	}
@@ -296,10 +297,27 @@ class NGSIObject {
 		case NGSIConstants.NGSI_LD_TIME_STAMP:
 			//
 			break;
+		case NGSIConstants.NGSI_LD_EXPIRES:
+			validateDateTime(activeProperty);
+			checkIfDataTimeIsFuture(activeProperty);
+			break;
 		default:
-			//validateAttribute(payloadType, expandedProperty, activeProperty, api);
+			// validateAttribute(payloadType, expandedProperty, activeProperty, api);
 			break;
 		}
+	}
+
+	private void checkIfDataTimeIsFuture(String activeProperty) throws ResponseException {
+		Long date;
+		try {
+			date = SerializationTools.date2Long((String) ((Map<String, Object>) this.element).get(JsonLdConsts.VALUE));
+		} catch (Exception e) {
+			throw new ResponseException(ErrorType.BadRequestData, "failed to parse date time");
+		}
+		if (date < System.currentTimeMillis()) {
+			throw new ResponseException(ErrorType.BadRequestData, activeProperty + " is in the past");
+		}
+
 	}
 
 	private void validateSubscription(String expandedProperty, String activeProperty, JsonLdApi api, int payloadType)
@@ -319,6 +337,10 @@ class NGSIObject {
 							"The key " + activeProperty + " is an invalid entry.");
 				}
 				return;
+			case NGSIConstants.NGSI_LD_EXPIRES:
+				validateDateTime(activeProperty);
+				checkIfDataTimeIsFuture(activeProperty);
+				return;
 			case NGSIConstants.NGSI_LD_COORDINATES:
 				NGSIObject temp = parent;
 				while (temp.isArray && temp.parent != null) {
@@ -334,8 +356,7 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"The key " + activeProperty + " is an invalid entry.");
 				}
-				validateGeometry(
-						(String) ((Map<String, Object>) this.element).get(NGSIConstants.JSON_LD_VALUE));
+				validateGeometry((String) ((Map<String, Object>) this.element).get(NGSIConstants.JSON_LD_VALUE));
 				return;
 			case NGSIConstants.NGSI_LD_GEO_REL:
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
@@ -399,9 +420,8 @@ class NGSIObject {
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"The key " + activeProperty + " is an invalid entry.");
-				} 
-				validateGeoproperty(
-						(String) ((Map<String, Object>) this.element).get(NGSIConstants.JSON_LD_VALUE));
+				}
+				validateGeoproperty((String) ((Map<String, Object>) this.element).get(NGSIConstants.JSON_LD_VALUE));
 				return;
 			case NGSIConstants.NGSI_LD_MQTT_VERSION:
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isNotifierInfo) {
@@ -410,14 +430,14 @@ class NGSIObject {
 				}
 				validateMQTTVersion();
 				return;
-			 case NGSIConstants.NGSI_LD_MQTT_QOS:
+			case NGSIConstants.NGSI_LD_MQTT_QOS:
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isNotifierInfo) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"The key " + activeProperty + " is an invalid entry.");
 				}
 				validateMQTTQOS();
 				return;
-				
+
 			default:
 				if (parent != null && parent.parent != null && parent.parent.isArray && parent.parent.parent != null
 						&& (parent.parent.parent.isReceiverInfo || parent.parent.parent.isNotifierInfo)) {
@@ -449,8 +469,7 @@ class NGSIObject {
 				if (this.parent.isTemporalQ && this.parent.parent == null) {
 					return;
 				}
-				if (this.parent.parent != null
-						&& (this.parent.isNotifierInfo || this.parent.isReceiverInfo)
+				if (this.parent.parent != null && (this.parent.isNotifierInfo || this.parent.isReceiverInfo)
 						&& parent.parent.isEndpoint) {
 					return;
 				}
@@ -483,11 +502,12 @@ class NGSIObject {
 		}
 
 	}
-	
+
 	private void validateGeoproperty(String geoproperty) {
 		// TODO Auto-generated method stub
 
 	}
+
 	private void validateTimeProperty() {
 		// TODO Auto-generated method stub
 
@@ -512,17 +532,17 @@ class NGSIObject {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	private void validateMQTTQOS() {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	private void validateMQTTVersion() {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	private boolean checkForEntities() throws ResponseException {
 		if (this.parent != null) {
 			if (this.parent.isArray && this.parent.parent != null && this.parent.parent.isEntities) {

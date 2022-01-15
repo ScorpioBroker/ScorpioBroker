@@ -334,9 +334,7 @@ public interface SubscriptionControllerFunctions {
 			throw new ResponseException(ErrorType.BadRequestData,
 					"watchedAttributes  and timeInterval cannot both be set");
 		}
-		if (subscription.getExpiresAt() != null && !isValidFutureDate(subscription.getExpiresAt())) {
-			throw new ResponseException(ErrorType.BadRequestData, "Expire date is not in the future");
-		}
+
 		if (subscription.getNotification().getEndPoint() == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
 		}
@@ -601,11 +599,6 @@ public interface SubscriptionControllerFunctions {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid endpoint");
 		}
 		return uri;
-	}
-
-	// return true for future date validation
-	private static boolean isValidFutureDate(Long date) {
-		return System.currentTimeMillis() < date;
 	}
 
 }
