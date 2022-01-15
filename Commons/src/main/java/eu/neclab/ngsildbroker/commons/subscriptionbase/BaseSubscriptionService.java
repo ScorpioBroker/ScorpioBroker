@@ -146,7 +146,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	public String subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		logger.debug("Subscribe got called " + subscriptionRequest.getSubscription().toString());
 		Subscription subscription = subscriptionRequest.getSubscription();
-		validateSub(subscription);
 		if (subscription.getId() == null) {
 			subscription.setId(generateUniqueSubId(subscription));
 		} else {
@@ -240,27 +239,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 	}
 
-	private void validateSub(Subscription subscription) throws ResponseException {
-		if (subscription.getThrottling() > 0 && subscription.getTimeInterval() > 0) {
-			throw new ResponseException(ErrorType.BadRequestData, "throttling  and timeInterval cannot both be set");
-		}
-		if (subscription.getTimeInterval() > 0) {
-			if (subscription.getAttributeNames() == null || subscription.getAttributeNames().isEmpty()) {
-				return;
-			}
-			throw new ResponseException(ErrorType.BadRequestData,
-					"watchedAttributes  and timeInterval cannot both be set");
-		}
-		if (subscription.getExpiresAt() != null && !isValidFutureDate(subscription.getExpiresAt())) {
-			logger.error("Invalid expire date!");
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
-		}
-		if (subscription.getNotification().getEndPoint() == null) {
-			throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
-		}
-
-	}
-
 	protected abstract String generateUniqueSubId(Subscription subscription);
 
 	public void unsubscribe(String id, ArrayListMultimap<String, String> headers) throws ResponseException {
@@ -326,9 +304,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				oldSub.setStatus(NGSIConstants.ISACTIVE_FALSE);
 			} else {
 				oldSub.setStatus(NGSIConstants.ISACTIVE_TRUE);
-			}
-			if (subscription.getExpiresAt() != null && !isValidFutureDate(subscription.getExpiresAt())) {
-				throw new ResponseException(ErrorType.BadRequestData, "Invalid expire date!");
 			}
 			if (subscription.getExpiresAt() != null && subscription.getExpiresAt() > 0) {
 				oldSub.setExpiresAt(subscription.getExpiresAt());
@@ -696,11 +671,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			Set<String> result = this.tenant2Ids2Type.get(tenantId, entityId);
 			return result;
 		}
-	}
-
-	// return true for future date validation
-	private boolean isValidFutureDate(Long date) {
-		return System.currentTimeMillis() < date;
 	}
 
 	class CancelTask extends TimerTask {
