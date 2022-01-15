@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -29,6 +30,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoRelation;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -36,6 +38,7 @@ import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
+import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -320,46 +323,60 @@ public interface SubscriptionControllerFunctions {
 	}
 
 	public static ResponseEntity<String> getAllSubscriptions(SubscriptionCRUDService subscriptionService,
-			HttpServletRequest request, int limit, int offset, boolean count, Logger logger) {
-		logger.trace("getAllSubscriptions() :: started");
-		if (limit < 0 || offset < 0) {
-			return HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.BadRequestData, "offset and limit can not smaller than 0"));
-		}
-		List<SubscriptionRequest> result = null;
-		result = subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request));
-		int toIndex = offset + limit;
-		ArrayList<Object> additionalLinks = new ArrayList<Object>();
-		if (limit == 0 || toIndex > result.size() - 1) {
-			toIndex = result.size();
-			if (toIndex < 0) {
-				toIndex = 0;
-			}
-
-		} else {
-			additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, toIndex, limit, null, "next"));
-		}
-
-		if (offset > 0) {
-			int newOffSet = offset - limit;
-			if (newOffSet < 0) {
-				newOffSet = 0;
-			}
-			additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, newOffSet, limit, null, "prev"));
-		}
-
-		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
-		if (count == true) {
-			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(result.size()));
-		}
-		if (!additionalLinks.isEmpty()) {
-			for (Object entry : additionalLinks) {
-				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
-			}
-		}
-		List<SubscriptionRequest> realResult = result.subList(offset, toIndex);
-		logger.trace("getAllSubscriptions() :: completed");
+			HttpServletRequest request, int defaultLimit, int maxLimit, Logger logger) {
 		try {
+			logger.trace("getAllSubscriptions() :: started");
+			MultiValueMap<String, String> params = HttpUtils.getQueryParamMap(request);
+			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, JsonLdProcessor.getCoreContextClone(),
+					false, false, defaultLimit, maxLimit);
+			int limit = qp.getLimit();
+			int offset = qp.getOffSet();
+			if (limit > maxLimit) {
+				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
+						"provided limit exceeds the max limit of " + maxLimit));
+			}
+			if (limit == 0) {
+				limit = defaultLimit;
+			}
+			boolean count = qp.getCountResult();
+			if (limit < 0 || offset < 0) {
+				return HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.BadRequestData, "offset and limit can not smaller than 0"));
+			}
+			List<SubscriptionRequest> result = null;
+			result = subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request));
+			int toIndex = offset + limit;
+			ArrayList<Object> additionalLinks = new ArrayList<Object>();
+			if (limit == 0 || toIndex > result.size() - 1) {
+				toIndex = result.size();
+				if (toIndex < 0) {
+					toIndex = 0;
+				}
+
+			} else {
+				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, toIndex, limit, null, "next"));
+			}
+
+			if (offset > 0) {
+				int newOffSet = offset - limit;
+				if (newOffSet < 0) {
+					newOffSet = 0;
+				}
+				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, newOffSet, limit, null, "prev"));
+			}
+
+			ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
+			if (count == true) {
+				additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(result.size()));
+			}
+			if (!additionalLinks.isEmpty()) {
+				for (Object entry : additionalLinks) {
+					additionalHeaders.put(HttpHeaders.LINK, (String) entry);
+				}
+			}
+			List<SubscriptionRequest> realResult = result.subList(offset, toIndex);
+			logger.trace("getAllSubscriptions() :: completed");
+
 			return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
 					additionalHeaders, AppConstants.SUBSCRIPTION_ENDPOINT);
 		} catch (Exception exception) {

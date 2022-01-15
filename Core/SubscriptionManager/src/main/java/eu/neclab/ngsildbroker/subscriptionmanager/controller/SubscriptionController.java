@@ -36,6 +36,11 @@ public class SubscriptionController {
 	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
 	String coreContext;
 
+	@Value("${scorpio.subscription.default-limit:50}")
+	private int defaultLimit;
+	@Value("${scorpio.subscription.max-limit:1000}")
+	private int maxLimit;
+
 	@PostConstruct
 	public void init() {
 		JsonLdProcessor.init(coreContext);
@@ -43,15 +48,13 @@ public class SubscriptionController {
 
 	@PostMapping
 	public ResponseEntity<String> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
-		return SubscriptionControllerFunctions.subscribeRest(manager, request, payload, AppConstants.SUBSCRIPTIONS_URL, logger);
+		return SubscriptionControllerFunctions.subscribeRest(manager, request, payload, AppConstants.SUBSCRIPTIONS_URL,
+				logger);
 	}
 
 	@GetMapping
-	public ResponseEntity<String> getAllSubscriptions(HttpServletRequest request,
-			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
-			@RequestParam(required = false, name = "offset", defaultValue = "0") int offset,
-			@RequestParam(required = false, name = "count", defaultValue = "false") boolean count) {
-		return SubscriptionControllerFunctions.getAllSubscriptions(manager, request, limit, offset, count, logger);
+	public ResponseEntity<String> getAllSubscriptions(HttpServletRequest request) {
+		return SubscriptionControllerFunctions.getAllSubscriptions(manager, request, defaultLimit, maxLimit, logger);
 	}
 
 	@GetMapping("/{id}")
