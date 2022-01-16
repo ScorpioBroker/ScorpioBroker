@@ -42,7 +42,7 @@ public abstract class EntityTools {
 		}
 		return new Notification(data.get(0).getId(), data.get(0).getType(), System.currentTimeMillis(),
 				data.get(0).getSubscriptionId(), newData, data.get(0).getTriggerReason(),
-				new ArrayList<Object>(context));
+				new ArrayList<Object>(context), data.get(0).getHeaders());
 	}
 
 	@SuppressWarnings("unchecked")

@@ -65,7 +65,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 			int triggerReason) {
 		return new Notification(EntityTools.getRandomID("notification:"), NGSIConstants.CSOURCE_NOTIFICATION,
 				System.currentTimeMillis(), request.getSubscription().getId(), dataList, triggerReason,
-				request.getContext());
+				request.getContext(), request.getHeaders());
 	}
 
 	@Override

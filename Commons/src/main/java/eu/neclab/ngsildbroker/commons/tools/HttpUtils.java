@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.http.HttpRequest;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -207,44 +208,75 @@ public final class HttpUtils {
 		return generateReply(request, reply, additionalHeaders, context, additionalContext, forceArrayResult, endPoint);
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult, int endPoint) throws ResponseException {
-		String replyBody;
-		Map<String, Object> compacted;
 		try {
-			compacted = JsonLdProcessor.compact(JsonUtils.fromString(reply), contextLinks, ldContext, opts, endPoint);
-			Object context = compacted.get(JsonLdConsts.CONTEXT);
-			Object result;
-			Object graph = compacted.get(JsonLdConsts.GRAPH);
-			if (graph != null) {
-				result = graph;
-			} else {
-				result = compacted;
+			return generateReply(request, JsonUtils.fromString(reply), additionalHeaders, ldContext, contextLinks,
+					forceArrayResult, endPoint);
+		} catch (JsonLdError | IOException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+		}
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static ResponseEntity<String> generateReply(HttpServletRequest request, Object expanded,
+			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
+			boolean forceArrayResult, int endPoint) throws ResponseException {
+		String replyBody;
+		try {
+
+			replyBody = getReplyBody(Collections.list(request.getHeaders(HttpHeaders.ACCEPT)), endPoint,
+					additionalHeaders, expanded, forceArrayResult, ldContext, contextLinks, getGeometry(request));
+			boolean compress = false;
+			String options = getQueryParamMap(request).getFirst(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
+				compress = true;
 			}
-			if (forceArrayResult && !(result instanceof List)) {
-				ArrayList<Object> temp = new ArrayList<Object>();
-				temp.add(result);
-				result = temp;
+			return generateReply(replyBody, additionalHeaders, compress);
+		} catch (JsonLdError | IOException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+		}
+
+	}
+
+	private static String getReplyBody(List<String> acceptHeader, int endPoint,
+			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
+			Context ldContext, List<Object> contextLinks, String geometryProperty)
+			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
+		String replyBody;
+		int sendingContentType = parseAcceptHeader(acceptHeader);
+		Map<String, Object> compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
+		Object context = compacted.get(JsonLdConsts.CONTEXT);
+		Object result;
+		Object graph = compacted.get(JsonLdConsts.GRAPH);
+		if (graph != null) {
+			result = graph;
+		} else {
+			result = compacted;
+		}
+		if (forceArrayResult && !(result instanceof List)) {
+			ArrayList<Object> temp = new ArrayList<Object>();
+			temp.add(result);
+			result = temp;
+		}
+		if (additionalHeaders == null) {
+			additionalHeaders = ArrayListMultimap.create();
+		}
+		switch (sendingContentType) {
+		case 1:
+			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+			if (result instanceof Map) {
+				((Map) result).remove(JsonLdConsts.CONTEXT);
 			}
-			if (additionalHeaders == null) {
-				additionalHeaders = ArrayListMultimap.create();
-			}
-			int sendingContentType = parseAcceptHeader(Collections.list(request.getHeaders(HttpHeaders.ACCEPT)));
-			switch (sendingContentType) {
-			case 1:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-				if (result instanceof Map) {
-					((Map) result).remove(JsonLdConsts.CONTEXT);
+			if (result instanceof List) {
+				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+				for (Map<String, Object> entry : list) {
+					entry.remove(JsonLdConsts.CONTEXT);
 				}
-				if (result instanceof List) {
-					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-					for (Map<String, Object> entry : list) {
-						entry.remove(JsonLdConsts.CONTEXT);
-					}
-				}
-				replyBody = JsonUtils.toPrettyString(result);
+			}
+			replyBody = JsonUtils.toPrettyString(result);
+			if (contextLinks != null) {
 				for (Object entry : contextLinks) {
 					if (entry instanceof String) {
 						additionalHeaders.put(HttpHeaders.LINK, "<" + entry
@@ -255,45 +287,37 @@ public final class HttpUtils {
 					}
 
 				}
-				break;
-			case 2:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-				if (result instanceof List) {
-					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-					for (Map<String, Object> entry : list) {
-						entry.put(JsonLdConsts.CONTEXT, context);
-					}
+			}
+			break;
+		case 2:
+			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+			if (result instanceof List) {
+				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+				for (Map<String, Object> entry : list) {
+					entry.put(JsonLdConsts.CONTEXT, context);
 				}
-				replyBody = JsonUtils.toPrettyString(result);
+			}
+			replyBody = JsonUtils.toPrettyString(result);
+			break;
+		case 3:
+			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
+			replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
+			break;
+		case 4:// geo+json
+			switch (endPoint) {
+			case AppConstants.QUERY_ENDPOINT:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
+				replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
 				break;
-			case 3:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
-				break;
-			case 4:// geo+json
-				switch (endPoint) {
-				case AppConstants.QUERY_ENDPOINT:
-					additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-					replyBody = JsonUtils.toPrettyString(generateGeoJson(result, getGeometry(request), context));
-					break;
-				default:
-					throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
-				}
-				break;
-			case -1:
 			default:
 				throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
 			}
-
-			boolean compress = false;
-			String options = getQueryParamMap(request).getFirst(NGSIConstants.QUERY_PARAMETER_OPTIONS);
-			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
-				compress = true;
-			}
-			return generateReply(replyBody, additionalHeaders, compress);
-		} catch (JsonLdError | IOException e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+			break;
+		case -1:
+		default:
+			throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
 		}
+		return replyBody;
 
 	}
 
@@ -601,6 +625,28 @@ public final class HttpUtils {
 			throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
 		}
 		return ResponseEntity.status(HttpStatus.MULTI_STATUS).headers(resultHeaders).body(replyBody);
+	}
+
+	public static ResponseEntity<String> generateNotification(ArrayListMultimap<String, String> headers,
+			Object notificationData, List<Object> context, String geometryProperty)
+			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
+		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
+
+		if (headers == null) {
+			headers = ArrayListMultimap.create();
+			headers.putAll(HttpHeaders.ACCEPT, Arrays.asList("application/json"));
+		}
+		String body = getReplyBody(headers.get(HttpHeaders.ACCEPT), AppConstants.QUERY_ENDPOINT, headers,
+				notificationData, true, ldContext, context, geometryProperty);
+		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
+	}
+
+	private static HttpHeaders getHttpHeaders(ArrayListMultimap<String, String> headers) {
+		HttpHeaders result = new HttpHeaders();
+		for (String key : headers.keySet()) {
+			result.put(key, headers.get(key));
+		}
+		return result;
 	}
 
 }

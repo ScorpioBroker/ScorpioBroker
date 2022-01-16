@@ -1,16 +1,17 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.ResponseEntity;
+
 import com.github.jsonldjava.core.JsonLdOptions;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 /**
@@ -26,13 +27,15 @@ public class Notification {
 	private int triggerReason;
 	private List<Object> context;
 	private String type;
+	private ArrayListMultimap<String, String> headers;
 	private static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	public Notification() {
 		// for serialization
 	}
+
 	public Notification(String id, String type, Long notifiedAt, String subscriptionId, List<Map<String, Object>> data,
-			int triggerReason, List<Object> context) {
+			int triggerReason, List<Object> context, ArrayListMultimap<String, String> headers) {
 		super();
 		this.id = id;
 		this.notifiedAt = notifiedAt;
@@ -41,6 +44,7 @@ public class Notification {
 		this.triggerReason = triggerReason;
 		this.type = type;
 		this.context = context;
+		this.headers = headers;
 	}
 
 	public String getId() {
@@ -75,35 +79,46 @@ public class Notification {
 		this.data = data;
 	}
 
-	public String toCompactedJsonString() throws Exception {
-		return JsonUtils.toPrettyString(toCompactedJson());
-	}
-
-	public Map<String, Object> toCompactedJson() throws Exception {
-		HashMap<String, Object> temp = new HashMap<String, Object>();
-		temp.put("id", id);
-		temp.put("type", type);
-		temp.put("subscriptionId", subscriptionId);
-		temp.put("notifiedAt", SerializationTools.formatter.format(Instant.ofEpochMilli(notifiedAt)));
-		temp.put("data", data);
+	public ResponseEntity<String> toCompactedJson() throws Exception {
+		ResponseEntity<String> dataResponse = HttpUtils.generateNotification(headers, data, context, "location");
+		StringBuilder notificationBody = new StringBuilder();
+		notificationBody.append("{\n\t\"id\": \"");
+		notificationBody.append(id);
+		notificationBody.append("\",\n\t\"type\": \"");
+		notificationBody.append(type);
+		notificationBody.append("\",\n\t\"subscriptionId\": \"");
+		notificationBody.append(subscriptionId);
+		notificationBody.append("\",\n\t\"notifiedAt\": \"");
+		notificationBody.append(SerializationTools.formatter.format(Instant.ofEpochMilli(notifiedAt)));
+		notificationBody.append("\",\n\t\"data\": ");
+		notificationBody.append(dataResponse.getBody());
 		switch (triggerReason) {
 		case AppConstants.CREATE_REQUEST:
-			temp.put("triggerReason", TriggerReason.newlyMatching.toString());
+			notificationBody.append(",\n\t\"triggerReason\": \"");
+			notificationBody.append(TriggerReason.newlyMatching.toString());
+			notificationBody.append("\"");
 			break;
 		case AppConstants.APPEND_REQUEST:
-			temp.put("triggerReason", TriggerReason.updated.toString());
+			notificationBody.append("\"\n\t\"triggerReason\": \"");
+			notificationBody.append(TriggerReason.updated.toString());
+			notificationBody.append("\"");
 			break;
 		case AppConstants.UPDATE_REQUEST:
-			temp.put("triggerReason", TriggerReason.updated.toString());
+			notificationBody.append("\"\n\t\"triggerReason\": ");
+			notificationBody.append(TriggerReason.updated.toString());
+			notificationBody.append("\"");
 			break;
 		case AppConstants.DELETE_REQUEST:
-			temp.put("triggerReason", TriggerReason.noLongerMatching.toString());
+			notificationBody.append("\"\n\t\"triggerReason\": ");
+			notificationBody.append(TriggerReason.noLongerMatching.toString());
+			notificationBody.append("\"");
 			break;
 		default:
 			break;
 		}
-
-		return JsonLdProcessor.compact(temp, context, opts);
+		notificationBody.append("\n}");
+		System.err.println(notificationBody.toString());
+		return ResponseEntity.ok().headers(dataResponse.getHeaders()).body(notificationBody.toString());
 	}
 
 	public int getTriggerReason() {
@@ -128,6 +143,14 @@ public class Notification {
 
 	public void setType(String type) {
 		this.type = type;
+	}
+
+	public ArrayListMultimap<String, String> getHeaders() {
+		return headers;
+	}
+
+	public void setHeaders(ArrayListMultimap<String, String> headers) {
+		this.headers = headers;
 	}
 
 }

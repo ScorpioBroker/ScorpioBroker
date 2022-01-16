@@ -34,7 +34,7 @@ public class InternalNotificationHandler extends BaseNotificationHandler {
 		kafkaTemplate.send(topic, notification.getId(),
 				new InternalNotification(notification.getId(), notification.getType(), notification.getNotifiedAt(),
 						notification.getSubscriptionId(), notification.getData(), notification.getTriggerReason(),
-						notification.getContext(), request.getTenant()));
+						notification.getContext(), request.getTenant(), request.getHeaders()));
 
 	}
 

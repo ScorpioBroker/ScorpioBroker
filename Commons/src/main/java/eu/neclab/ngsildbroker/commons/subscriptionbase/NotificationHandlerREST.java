@@ -2,6 +2,8 @@ package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.time.Duration;
 import java.util.Date;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
@@ -19,14 +21,12 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 	}
 
 	@Override
-	protected void sendReply(Notification notification, SubscriptionRequest request)
-			throws Exception {
+	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
+		ResponseEntity<String> compacted = notification.toCompactedJson();
 		webClient.post().uri(request.getSubscription().getNotification().getEndPoint().getUri())
 				.headers(httpHeadersOnWebClientBeingBuilt -> {
-					request.getHeaders().entries().forEach(entry -> {
-						httpHeadersOnWebClientBeingBuilt.add(entry.getKey(), entry.getValue());
-					});
-				}).bodyValue(notification.toCompactedJsonString()).exchangeToMono(response -> {
+					httpHeadersOnWebClientBeingBuilt.addAll(compacted.getHeaders());
+				}).bodyValue(compacted.getBody()).exchangeToMono(response -> {
 					if (response.statusCode().is4xxClientError() || response.statusCode().is5xxServerError()) {
 						logger.error("Failed to send notification with return code " + response.statusCode()
 								+ " subscription id: " + request.getSubscription().getId() + " notification id: "

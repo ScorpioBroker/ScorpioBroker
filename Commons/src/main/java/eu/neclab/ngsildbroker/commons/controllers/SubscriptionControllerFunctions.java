@@ -68,8 +68,8 @@ public interface SubscriptionControllerFunctions {
 			} else {
 				context.add(bodyContext);
 			}
-			subscription = expandSubscription(body, request,
-					JsonLdProcessor.getCoreContextClone().parse(context, true));
+			subscription = expandSubscription(body, request, JsonLdProcessor.getCoreContextClone().parse(context, true),
+					false);
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
 					HttpUtils.getHeaders(request), AppConstants.CREATE_REQUEST);
 			String subId = subscriptionService.subscribe(subRequest);
@@ -83,7 +83,7 @@ public interface SubscriptionControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	private static Subscription expandSubscription(Map<String, Object> body, HttpServletRequest request,
-			Context context) throws ResponseException {
+			Context context, boolean update) throws ResponseException {
 		Subscription subscription = new Subscription();
 
 		for (Entry<String, Object> mapEntry : body.entrySet()) {
@@ -238,7 +238,7 @@ public interface SubscriptionControllerFunctions {
 				break;
 			}
 		}
-		validateSub(subscription);
+		validateSub(subscription, update);
 		return subscription;
 	}
 
@@ -323,7 +323,7 @@ public interface SubscriptionControllerFunctions {
 		return notifyParam;
 	}
 
-	private static void validateSub(Subscription subscription) throws ResponseException {
+	private static void validateSub(Subscription subscription, boolean update) throws ResponseException {
 		if (subscription.getThrottling() > 0 && subscription.getTimeInterval() > 0) {
 			throw new ResponseException(ErrorType.BadRequestData, "throttling  and timeInterval cannot both be set");
 		}
@@ -334,8 +334,11 @@ public interface SubscriptionControllerFunctions {
 			throw new ResponseException(ErrorType.BadRequestData,
 					"watchedAttributes  and timeInterval cannot both be set");
 		}
-
-		if (subscription.getNotification().getEndPoint() == null) {
+		if (update && subscription.getNotification() != null && subscription.getNotification().getEndPoint() == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
+		}
+		if (!update
+				&& (subscription.getNotification() == null || subscription.getNotification().getEndPoint() == null)) {
 			throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification endpoint entry");
 		}
 
@@ -462,7 +465,7 @@ public interface SubscriptionControllerFunctions {
 				context.add(bodyContext);
 			}
 			Subscription subscription = expandSubscription(body, request,
-					JsonLdProcessor.getCoreContextClone().parse(context, true));
+					JsonLdProcessor.getCoreContextClone().parse(context, true), true);
 			if (subscription.getId() == null) {
 				subscription.setId(id);
 			}

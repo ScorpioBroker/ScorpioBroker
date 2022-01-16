@@ -29,7 +29,8 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 	@Override
 	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
 		URI callback = request.getSubscription().getNotification().getEndPoint().getUri();
-		Map<String, String> clientSettings = request.getSubscription().getNotification().getEndPoint().getNotifierInfo();
+		Map<String, String> clientSettings = request.getSubscription().getNotification().getEndPoint()
+				.getNotifierInfo();
 		ArrayListMultimap<String, String> headers = request.getHeaders();
 		MqttClient client = getClient(callback, clientSettings);
 		String qosString = null;
@@ -58,7 +59,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 	}
 
 	private String getPayload(Notification notification, ArrayListMultimap<String, String> headers) throws Exception {
-		
+
 		// Map<String, String> metaData = new HashMap<String, String>();
 		StringBuilder result = new StringBuilder("{\"" + NGSIConstants.METADATA + "\":{");
 		for (Entry<String, Collection<String>> entry : headers.asMap().entrySet()) {
@@ -83,9 +84,8 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		result.append(",");
 		result.append("\"");
 		result.append(NGSIConstants.BODY);
-		result.append("\":{");
-		result.append(notification.toCompactedJsonString());
-		result.append("}");
+		result.append("\":");
+		result.append(notification.toCompactedJson().getBody());
 		result.append("}");
 		return result.toString();
 	}
