@@ -149,7 +149,8 @@ public class SubscriptionService extends BaseSubscriptionService {
 				remoteSub.setAttributeNames(subscription.getAttributeNames());
 				String body = DataSerializer.toJson(remoteSub);
 				for (Map<String, Object> entry : notification.getData()) {
-					HttpHeaders additionalHeaders = getAdditionalHeaders(entry, subscriptionRequest.getContext(),
+					HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(entry,
+							subscriptionRequest.getContext(),
 							subscription.getNotification().getEndPoint().getAccept());
 					String remoteEndpoint = getRemoteEndPoint(entry);
 					StringBuilder temp = new StringBuilder(remoteEndpoint);
@@ -169,29 +170,6 @@ public class SubscriptionService extends BaseSubscriptionService {
 						}
 					}).subscribe();
 				}
-			}
-
-			@SuppressWarnings("unchecked")
-			private HttpHeaders getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
-					String accept) {
-				HttpHeaders result = new HttpHeaders();
-				Context myContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
-				result.add(HttpHeaders.ACCEPT, accept);
-				Object tenant = registration.get(NGSIConstants.NGSI_LD_TENANT);
-				if (tenant != null) {
-					result.add(NGSIConstants.TENANT_HEADER, (String) myContext
-							.compactValue(NGSIConstants.NGSI_LD_TENANT, ((List<Map<String, Object>>) tenant).get(0)));
-				}
-				Object receiverInfo = registration.get(NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO);
-				if (receiverInfo != null) {
-					Map<String, String> headerMap = (Map<String, String>) myContext.compactValue(
-							NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO,
-							((List<Map<String, Object>>) receiverInfo).get(0));
-					for (Entry<String, String> entry : headerMap.entrySet()) {
-						result.add(entry.getKey(), entry.getValue());
-					}
-				}
-				return result;
 			}
 		}.start();
 

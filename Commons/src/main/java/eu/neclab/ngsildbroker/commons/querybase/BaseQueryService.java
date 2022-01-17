@@ -43,6 +43,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 public abstract class BaseQueryService implements EntryQueryService {
 
@@ -152,68 +153,41 @@ public abstract class BaseQueryService implements EntryQueryService {
 				if (registryDAO == null) {
 					return new RemoteQueryResult(null, ErrorType.None, -1, true);
 				}
-				QueryResult brokerList = null;
+				QueryResult registrations = null;
 				if (directDbConnection) {
-					brokerList = registryDAO.query(qp);
+					registrations = registryDAO.query(qp);
 				} else {
-					brokerList = getFromContextRegistry(qp);
+					registrations = getFromContextRegistry(qp);
 				}
 				try {
 					logger.trace("Asynchronous 1 context registry");
 					if (registryDAO == null) {
 						return new RemoteQueryResult(null, ErrorType.None, -1, true);
 					}
-					// TODO REWORK THIS!!!
-					Pattern p = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_REGEX);
-					Pattern ptenant = Pattern.compile(NGSIConstants.NGSI_LD_ENDPOINT_TENANT);
-					Matcher m;
-					Matcher mtenant;
-
-					Set<Callable<RemoteQueryResult>> callablesCollection = new HashSet<Callable<RemoteQueryResult>>();
-					if (brokerList.getActualDataString() == null) {
-						return null;
+					if (registrations.getActualDataString() == null) {
+						return new RemoteQueryResult(null, ErrorType.None, -1, true);
 					}
-					for (String brokerInfo : brokerList.getActualDataString()) {
-						m = p.matcher(brokerInfo);
-						if (!m.find()) {
-							continue;
-						}
-						final String uri_tenant;
-
-						String uri = m.group(1);
-						mtenant = ptenant.matcher(brokerInfo);
-						if (mtenant != null && mtenant.matches()) {
-							mtenant.find();
-							uri_tenant = mtenant.group(1);
-
-						} else {
-							uri_tenant = null;
-						}
-						logger.debug("url " + uri.toString() + "/ngsi-ld/v1/entities/?" + rawQueryString);
+					Set<Callable<RemoteQueryResult>> callablesCollection = new HashSet<Callable<RemoteQueryResult>>();
+					for (String registration : registrations.getActualDataString()) {
+						Map<String, Object> reg = (Map<String, Object>) JsonUtils.fromString(registration);
+						String endpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
+								.get(NGSIConstants.JSON_LD_VALUE);
+						HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
+								headers.get(HttpHeaders.ACCEPT).get(0));
+						logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
 						Callable<RemoteQueryResult> callable = () -> {
-							HttpHeaders callHeaders = new HttpHeaders();
-							for (Entry<String, String> entry : headers.entries()) {
-								String key = entry.getKey();
-								if (key.equals(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK)) {
-									continue;
-								}
-								callHeaders.add(key, entry.getValue());
-							}
-							if (uri_tenant != null) {
-								callHeaders.add(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK, uri_tenant);
-							}
 							HttpEntity<String> entity;
 							String resultBody;
 							ResponseEntity<String> response;
 							int count = 0;
 							if (postQuery) {
-								entity = new HttpEntity<String>(rawQueryString, callHeaders);
-								response = restTemplate.exchange(uri + "/ngsi-ld/v1/entityOperations/query",
+								entity = new HttpEntity<String>(rawQueryString, additionalHeaders);
+								response = restTemplate.exchange(endpoint + "/ngsi-ld/v1/entityOperations/query",
 										HttpMethod.POST, entity, String.class);
 								resultBody = response.getBody();
 							} else {
-								entity = new HttpEntity<String>(callHeaders);
-								response = restTemplate.exchange(uri + "/ngsi-ld/v1/entities/?" + rawQueryString,
+								entity = new HttpEntity<String>(additionalHeaders);
+								response = restTemplate.exchange(endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString,
 										HttpMethod.GET, entity, String.class);
 								resultBody = response.getBody();
 							}
@@ -230,7 +204,6 @@ public abstract class BaseQueryService implements EntryQueryService {
 							return result;
 						};
 						callablesCollection.add(callable);
-
 					}
 					logger.debug("csource call response :: ");
 					return getDataFromCsources(callablesCollection);
@@ -242,7 +215,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 							"No reply from registry. Looks like you are running without a context source registry.");
 					logger.error(e.getMessage());
 				}
-				return null;
+				return new RemoteQueryResult(null, ErrorType.None, -1, true);
 			}
 		});
 
