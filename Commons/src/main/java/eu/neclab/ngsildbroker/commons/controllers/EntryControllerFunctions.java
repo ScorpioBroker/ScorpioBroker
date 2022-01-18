@@ -84,14 +84,14 @@ public interface EntryControllerFunctions {
 				continue;
 			}
 			try {
-				//need to be check
-//				AppendResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray);
-//				if (updateResult.getStatus()) {
-//					result.addSuccess(entityId);
-//				} else {
-//					result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
-//							JsonUtils.toPrettyString(updateResult.getJsonToAppend()) + " was not added")));
-//				}
+
+				UpdateResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray);
+				if (updateResult.getNotUpdated().isEmpty()) {
+					result.addSuccess(entityId);
+				} else {
+					result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
+							JsonUtils.toPrettyString(updateResult.getNotUpdated()) + " was not added")));
+				}
 			} catch (Exception e) {
 
 				RestResponse response;
@@ -313,16 +313,15 @@ public interface EntryControllerFunctions {
 					ResponseException responseException = ((ResponseException) e);
 					if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
 						try {
-							//need to be check
-//							AppendResult updateResult = entityService.appendToEntry(headers, entityId, resolved,
-//									optionsArray);
-//							if (updateResult.getStatus()) {
-//								result.addSuccess(entityId);
-//								appendedOneEntity = true;
-//							} else {
-//								result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
-//										JsonUtils.toPrettyString(updateResult.getJsonToAppend()) + " was not added")));
-//							}
+							UpdateResult updateResult = entityService.appendToEntry(headers, entityId, resolved,
+									optionsArray);
+							if (updateResult.getNotUpdated().isEmpty()) {
+								result.addSuccess(entityId);
+								appendedOneEntity = true;
+							} else {
+								result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
+										JsonUtils.toPrettyString(updateResult.getNotUpdated()) + " was not added")));
+							}
 						} catch (Exception e1) {
 							if (e instanceof ResponseException) {
 								response = new RestResponse((ResponseException) e1);
@@ -418,19 +417,20 @@ public interface EntryControllerFunctions {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
-	
+
+	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> appendToEntry(EntryCRUDService entityService, HttpServletRequest request,
 			String entityId, String payload, String options, int payloadType, Logger logger) {
 		try {
 			logger.trace("append entity :: started");
 			String[] optionsArray = getOptionsArray(options);
-			List<Object> contextHeaders = HttpUtils.getAtContext(request);			
+			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
 			List<Object> context = new ArrayList<Object>();
 			context.addAll(contextHeaders);
 			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
 			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
-			
+
 			if (bodyContext instanceof List) {
 				context.addAll((List<Object>) bodyContext);
 			} else {
@@ -446,7 +446,7 @@ public interface EntryControllerFunctions {
 			UpdateResult update = entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved,
 					optionsArray);
 			logger.trace("append entity :: completed");
-			
+
 			logger.trace("update entry :: completed");
 			return HttpUtils.generateReply(request, update, context, AppConstants.UPDATE_REQUEST);
 //			if (append.getAppendResult()) {
