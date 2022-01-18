@@ -10,10 +10,13 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
 public class AppendHistoryEntityRequest extends HistoryEntityRequest {
+
+	private UpdateResult updateResult = new UpdateResult();
 
 	public AppendHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			String entityId) throws ResponseException {
@@ -23,8 +26,7 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 	}
 
 	public AppendHistoryEntityRequest(BaseRequest entityRequest) throws ResponseException, IOException {
-		this(entityRequest.getHeaders(), entityRequest.getRequestPayload(),
-				entityRequest.getId());
+		this(entityRequest.getHeaders(), entityRequest.getRequestPayload(), entityRequest.getId());
 
 	}
 
@@ -48,16 +50,21 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 					Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send the overwrite op to
 																// delete current values
 					try {
-						storeEntry(getId(), null, null, now, attribId, JsonUtils.toPrettyString(jsonElement), EntityTools.getInstanceId(jsonElement),overwriteOp);
+						storeEntry(getId(), null, null, now, attribId, JsonUtils.toPrettyString(jsonElement),
+								EntityTools.getInstanceId(jsonElement), overwriteOp);
 					} catch (IOException e) {
-						//should never happen
+						// should never happen
 					}
-
+					updateResult.addToUpdated(getId());
 					instanceCount++;
 				}
 			}
 			this.createdAt = now;
 		}
+	}
+
+	public UpdateResult getUpdateResult() {
+		return updateResult;
 	}
 
 }

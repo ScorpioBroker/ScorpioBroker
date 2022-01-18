@@ -30,7 +30,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequ
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.results.AppendResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -65,15 +64,16 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
 	private ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-	
+
 	// construct in-memory
-		@PostConstruct
-		private void loadStoredTemporalEntitiesDetails() throws ResponseException {
-			synchronized (this.entityIds) {
-				this.entityIds = historyDAO.getAllIds();
-			}
-			logger.trace("filling in-memory hashmap completed:");
+	@PostConstruct
+	private void loadStoredTemporalEntitiesDetails() throws ResponseException {
+		synchronized (this.entityIds) {
+			this.entityIds = historyDAO.getAllIds();
 		}
+		logger.trace("filling in-memory hashmap completed:");
+	}
+
 	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		return createTemporalEntity(headers, resolved, false);
@@ -81,7 +81,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	String createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			boolean fromEntity) throws ResponseException, Exception {
-		
+
 		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		synchronized (this.entityIds) {
@@ -123,7 +123,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public boolean delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
 			String instanceId, Context linkHeaders) throws ResponseException, Exception {
-		
+
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		synchronized (this.entityIds) {
 
@@ -143,17 +143,17 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		handleRequest(request);
 		return true;
 	}
+
 	// need to be check and change
 	// endpoint "/entities/{entityId}/attrs"
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
-		if (!historyDAO.entityExists(entityId, HttpUtils.getTenantFromHeaders(headers))) {
+		if (!this.entityIds.containsEntry(HttpUtils.getTenantFromHeaders(headers), entityId)) {
 			throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
 		}
 		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, resolved, entityId);
 		handleRequest(request);
-		//return new AppendResult(resolved, request.getFinalPayload());
-		return null;
+		return request.getUpdateResult();
 	}
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
