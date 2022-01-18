@@ -194,9 +194,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			Map<String, Object> entry) throws ResponseException, Exception {
 		throw new MethodNotFoundException("not supported in registry");
 	}
-
+	// need to be check and change 
 	@Override
-	public AppendResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
+	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		Map<String, Object> originalRegistration = validateIdAndGetBodyAsMap(registrationId, tenantId);
@@ -211,7 +211,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 		pushToDB(request);
 		sendToKafka(request);
-		return new AppendResult(entry, request.getFinalPayload());
+	//	return new AppendResult(entry, request.getFinalPayload());
+		return null;
 	}
 
 	@SuppressWarnings("unchecked")

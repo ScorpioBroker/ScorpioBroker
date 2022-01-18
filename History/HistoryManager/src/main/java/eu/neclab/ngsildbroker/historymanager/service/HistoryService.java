@@ -143,16 +143,17 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		handleRequest(request);
 		return true;
 	}
-
+	// need to be check and change
 	// endpoint "/entities/{entityId}/attrs"
-	public AppendResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
 		if (!historyDAO.entityExists(entityId, HttpUtils.getTenantFromHeaders(headers))) {
 			throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
 		}
 		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, resolved, entityId);
 		handleRequest(request);
-		return new AppendResult(resolved, request.getFinalPayload());
+		//return new AppendResult(resolved, request.getFinalPayload());
+		return null;
 	}
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")

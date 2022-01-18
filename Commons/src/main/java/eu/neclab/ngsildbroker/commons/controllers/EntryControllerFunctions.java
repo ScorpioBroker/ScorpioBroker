@@ -85,13 +85,14 @@ public interface EntryControllerFunctions {
 				continue;
 			}
 			try {
-				AppendResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray);
-				if (updateResult.getStatus()) {
-					result.addSuccess(entityId);
-				} else {
-					result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
-							JsonUtils.toPrettyString(updateResult.getJsonToAppend()) + " was not added")));
-				}
+				//need to be check
+//				AppendResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray);
+//				if (updateResult.getStatus()) {
+//					result.addSuccess(entityId);
+//				} else {
+//					result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
+//							JsonUtils.toPrettyString(updateResult.getJsonToAppend()) + " was not added")));
+//				}
 			} catch (Exception e) {
 
 				RestResponse response;
@@ -313,15 +314,16 @@ public interface EntryControllerFunctions {
 					ResponseException responseException = ((ResponseException) e);
 					if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
 						try {
-							AppendResult updateResult = entityService.appendToEntry(headers, entityId, resolved,
-									optionsArray);
-							if (updateResult.getStatus()) {
-								result.addSuccess(entityId);
-								appendedOneEntity = true;
-							} else {
-								result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
-										JsonUtils.toPrettyString(updateResult.getJsonToAppend()) + " was not added")));
-							}
+							//need to be check
+//							AppendResult updateResult = entityService.appendToEntry(headers, entityId, resolved,
+//									optionsArray);
+//							if (updateResult.getStatus()) {
+//								result.addSuccess(entityId);
+//								appendedOneEntity = true;
+//							} else {
+//								result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
+//										JsonUtils.toPrettyString(updateResult.getJsonToAppend()) + " was not added")));
+//							}
 						} catch (Exception e1) {
 							if (e instanceof ResponseException) {
 								response = new RestResponse((ResponseException) e1);
@@ -417,14 +419,24 @@ public interface EntryControllerFunctions {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
-
+	
 	public static ResponseEntity<String> appendToEntry(EntryCRUDService entityService, HttpServletRequest request,
 			String entityId, String payload, String options, int payloadType, Logger logger) {
 		try {
 			logger.trace("append entity :: started");
 			String[] optionsArray = getOptionsArray(options);
-			List<Object> contextHeaders = HttpUtils.getAtContext(request);
+			List<Object> contextHeaders = HttpUtils.getAtContext(request);			
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+			List<Object> context = new ArrayList<Object>();
+			context.addAll(contextHeaders);
+			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
+			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
+			
+			if (bodyContext instanceof List) {
+				context.addAll((List<Object>) bodyContext);
+			} else {
+				context.add(bodyContext);
+			}
 			if (payload == null || payload.isEmpty()) {
 				throw new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed");
 			}
@@ -432,15 +444,18 @@ public interface EntryControllerFunctions {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
-			AppendResult append = entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved,
+			UpdateResult update = entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved,
 					optionsArray);
 			logger.trace("append entity :: completed");
-			if (append.getAppendResult()) {
-				return ResponseEntity.noContent().build();
-			} else {
-				return ResponseEntity.status(HttpStatus.MULTI_STATUS)
-						.body(JsonUtils.toPrettyString(append.getAppendedJsonFields()));
-			}
+			
+			logger.trace("update entry :: completed");
+			return HttpUtils.generateReply(request, update, context, AppConstants.UPDATE_REQUEST);
+//			if (append.getAppendResult()) {
+//				return ResponseEntity.noContent().build();
+//			} else {
+//				return ResponseEntity.status(HttpStatus.MULTI_STATUS)
+//						.body(JsonUtils.toPrettyString(append.getAppendedJsonFields()));
+//			}
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}

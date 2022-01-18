@@ -14,13 +14,14 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.AppendResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class AppendEntityRequest extends EntityRequest {
 
-	private AppendResult appendResult;
+	private UpdateResult updateResult;
 
 	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String[] options) throws ResponseException {
@@ -32,10 +33,7 @@ public class AppendEntityRequest extends EntityRequest {
 			throws ResponseException {
 
 		try {
-			this.appendResult = appendFields(entityBody, resolved, options);
-			this.entityWithoutSysAttrs = appendResult.getJsonWithoutSysAttrs();
-			this.withSysAttrs = appendResult.getJson();
-			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(appendResult.getFinalNode()));
+			this.updateResult = appendFields(entityBody, resolved, options);
 		} catch (IOException e) {
 			throw new ResponseException(ErrorType.UnprocessableEntity, e.getMessage());
 		}
@@ -52,7 +50,7 @@ public class AppendEntityRequest extends EntityRequest {
 	 */
 
 	@SuppressWarnings("unchecked")
-	private AppendResult appendFields(Map<String, Object> entityBody, Map<String, Object> resolved, String[] options)
+	private UpdateResult appendFields(Map<String, Object> entityBody, Map<String, Object> resolved, String[] options)
 			throws ResponseException, IOException {
 		boolean overwrite = true;
 		if (options != null && options.length > 0) {
@@ -73,8 +71,7 @@ public class AppendEntityRequest extends EntityRequest {
 		}
 		String now = SerializationTools.formatter.format(Instant.now());
 		Map<String, Object> resultJson = new HashMap<String, Object>();
-		AppendResult appendResult = new AppendResult(resolved, resultJson);
-		appendResult.setStatus(true);
+		UpdateResult updateResult = new UpdateResult();
 		for (Entry<String, Object> entry : resolved.entrySet()) {
 			String key = entry.getKey();
 			if (key.equalsIgnoreCase(NGSIConstants.JSON_LD_CONTEXT) || key.equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
@@ -84,82 +81,89 @@ public class AppendEntityRequest extends EntityRequest {
 			Object value = entry.getValue();
 			if (value == null) {
 				entityBody.remove(key);
-				appendResult.getAppendedJsonFields().put(key, value);
+				// appendResult.getAppendedJsonFields().put(key, value);
+
 				continue;
 			}
 
-			List<Map<String, Object>> list = ((List<Map<String, Object>>) entityBody.get(key));
-			Map<String, Object> attrNode = ((List<Map<String, Object>>) resolved.get(key)).get(0);
-			boolean appendpayload = true;
-			if (entityBody.containsKey(key) && list.size() > 1) {
-				for (Map<String, Object> originalNode : list) {
-					if (originalNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-						String payloadDatasetId = (String) ((List<Map<String, Object>>) originalNode
-								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID);
-						if (entry.getValue().toString().contains(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-							String datasetId = (String) ((List<Map<String, Object>>) attrNode
-									.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0).get(NGSIConstants.JSON_LD_ID);
-							if (payloadDatasetId.equalsIgnoreCase(datasetId)) {
-								appendpayload = false;
-								throw new ResponseException(ErrorType.AlreadyExists, datasetId);
-							}
+			if (entityBody.containsKey(key)) {
+				List<Map<String, Object>> updateValueList = (List<Map<String, Object>>) entry.getValue();
+				List<Map<String, Object>> originalValueList = (List<Map<String, Object>>) entityBody.get(key);
+				for (Map<String, Object> entry2 : updateValueList) {
+					String updateDatasetId = null;
+					if (entry2.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						updateDatasetId = (String) (((List<Map<String, Object>>) entry2
+								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID);
+					}
+					Map<String, Object> toRemove = null;
+					for (Map<String, Object> entry3 : originalValueList) {
+						String originalDatasetId = null;
+						if (entry3.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+							originalDatasetId = (String) (((List<Map<String, Object>>) entry3
+									.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID);
 
-						} else {
-							appendpayload = true;
 						}
+						if (updateDatasetId == null ^ originalDatasetId == null) {
+							continue;
+						}
+						if ((updateDatasetId == null && originalDatasetId == null)
+								|| updateDatasetId.equals(originalDatasetId)) {
+							toRemove = null;
+							break;
+						}
+						if (!updateDatasetId.equals(originalDatasetId)) {
+							toRemove = entry2;
+							continue;
+						}
+					}
+					if (toRemove == null) {
+						String reason;
+						if (updateDatasetId == null) {
+							reason = "default entry is found";
+						} else {
+							reason = updateDatasetId + "  datasetId is found ";
+						}
+						updateResult.addToNotUpdated(key, reason);
 					} else {
-						if (attrNode.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-							appendpayload = true;
-						} else {
-							appendpayload = false;
-							throw new ResponseException(ErrorType.AlreadyExists, key);
-						}
+						entry2.put(NGSIConstants.NGSI_LD_CREATED_AT, toRemove.get(NGSIConstants.NGSI_LD_CREATED_AT));
+						setTemporalProperties(entry2, "", now, true);
+						originalValueList.add(entry2);
+						updateResult.addToUpdated(key);
 
 					}
-
 				}
-				if (appendpayload == true) {
-					list.add(attrNode);
-
-					appendResult.setStatus(true);
-				}
-			}
-
-			else {
-
+			} else {
 				if ((entityBody.containsKey(key) && overwrite) || !entityBody.containsKey(key)) {
-					if (value instanceof List && !((List<Object>) value).isEmpty()) {
-						// TODO: should we keep the createdAt value if attribute already exists?
-						// (overwrite operation) => if (objectNode.has(key)) ...
+					if (value instanceof List && !((List<Object>) value).isEmpty()) { // TODO: should we keep the
+																						// createdAt value if attribut
+																						// already exists? // (overwrite
+																						// operation) => if
+																						// (objectNode.has(key)) ...
 						setTemporalProperties(((List<Object>) value).get(0), now, now, false);
 					}
 					entityBody.put(key, value);
-					appendResult.getAppendedJsonFields().put(key, value);
+					updateResult.addToUpdated(key);
 					continue;
 
 				}
 			}
-			appendResult.setStatus(false);
+
 		}
-		setTemporalProperties(entityBody, "", now, true); // root only, modifiedAt only
+
 		setFinalPayload(entityBody);
-		appendResult.setJson(JsonUtils.toPrettyString(entityBody));
+		this.withSysAttrs = JsonUtils.toPrettyString(entityBody);
 		removeTemporalProperties(entityBody);
-		appendResult.setJsonWithoutSysAttrs(JsonUtils.toPrettyString(entityBody));
-		appendResult.setFinalNode(entityBody);
-		return appendResult;
+		this.entityWithoutSysAttrs = JsonUtils.toPrettyString(entityBody);
+		this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(entityBody));
+		return updateResult;
 	}
 
-	public boolean getStatus() {
-		return appendResult.getStatus();
+	public UpdateResult getUpdateResult() {
+		return updateResult;
 	}
 
-	public AppendResult getAppendResult() {
-		return appendResult;
-	}
-
-	public void setAppendResult(AppendResult appendResult) {
-		this.appendResult = appendResult;
+	public void setUpdateResult(UpdateResult updateResult) {
+		this.updateResult = updateResult;
 	}
 
 }

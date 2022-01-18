@@ -177,7 +177,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public AppendResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
@@ -193,7 +193,7 @@ public class EntityService implements EntryCRUDService {
 		handleRequest(request);
 
 		logger.trace("appendMessage() :: completed");
-		return request.getAppendResult();
+		return request.getUpdateResult();
 	}
 
 	@SuppressWarnings("unchecked")
