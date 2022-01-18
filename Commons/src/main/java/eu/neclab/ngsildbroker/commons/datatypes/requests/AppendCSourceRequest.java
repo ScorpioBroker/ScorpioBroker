@@ -7,10 +7,13 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class AppendCSourceRequest extends CSourceRequest {
+
+	private UpdateResult updateResult = new UpdateResult();
 
 	public AppendCSourceRequest(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> originalRegistration, Map<String, Object> update, String[] options)
@@ -43,13 +46,21 @@ public class AppendCSourceRequest extends CSourceRequest {
 			}
 			if (overwrite) {
 				originalRegistration.put(key, value);
+				updateResult.addToUpdated(key);
 			} else {
 				if (!originalRegistration.containsKey(key)) {
 					originalRegistration.put(key, value);
+					updateResult.addToUpdated(key);
+				} else {
+					updateResult.addToNotUpdated(key, "already exists and was not overwriten");
 				}
 			}
 		}
 		return originalRegistration;
+	}
+
+	public UpdateResult getUpdateResult() {
+		return updateResult;
 	}
 
 }

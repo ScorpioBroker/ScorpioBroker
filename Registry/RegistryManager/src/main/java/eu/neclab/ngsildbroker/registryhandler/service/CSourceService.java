@@ -211,8 +211,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 		pushToDB(request);
 		sendToKafka(request);
-	//	return new AppendResult(entry, request.getFinalPayload());
-		return null;
+		return request.getUpdateResult();
 	}
 
 	@SuppressWarnings("unchecked")
