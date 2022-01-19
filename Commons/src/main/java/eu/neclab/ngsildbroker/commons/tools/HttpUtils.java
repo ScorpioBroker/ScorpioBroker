@@ -514,21 +514,26 @@ public final class HttpUtils {
 			ResponseException responseException = (ResponseException) e;
 			logger.debug("Exception :: ", responseException);
 			return ResponseEntity.status(responseException.getHttpStatus())
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.body(new RestResponse(responseException).toJson());
 		}
 		if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
-					new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.").toJson());
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+							.toJson());
 		}
 		if (e instanceof JsonProcessingException || e instanceof JsonLdError) {
 			logger.debug("Exception :: ", e);
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
 							.toJson());
 		}
 		logger.error("Exception :: ", e);
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 				.body(new RestResponse(ErrorType.InternalError, e.getMessage()).toJson());
 	}
 
