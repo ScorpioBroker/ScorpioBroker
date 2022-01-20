@@ -132,7 +132,7 @@ public final class HttpUtils {
 
 	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply, int endPoint)
 			throws ResponseException {
-		return generateReply(request, reply, null, endPoint);
+		return generateReply(request, reply, ArrayListMultimap.create(), endPoint);
 
 	}
 
