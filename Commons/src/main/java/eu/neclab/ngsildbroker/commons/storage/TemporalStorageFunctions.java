@@ -182,11 +182,11 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 			sqlQuery += "  - '" + NGSIConstants.NGSI_LD_CREATED_AT + "' - '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
 		}
 		if(qp.getLastN() > 0) {
-			sqlQuery += " order by teai.modifiedat desc)) [-5: " + qp.getLastN() + "]) as attributedata" + "  from " + DBConstants.DBTABLE_TEMPORALENTITY
+			sqlQuery += " order by teai.observedat desc)) [-5: " + qp.getLastN() + "]) as attributedata" + "  from " + DBConstants.DBTABLE_TEMPORALENTITY
 					+ " te" + "  left join " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 					+ " teai on (teai.temporalentity_id = te.id)" + "  where ";
 			
-		}else {
+		} else {
 		sqlQuery += " order by teai.modifiedat desc) as attributedata" + "  from " + DBConstants.DBTABLE_TEMPORALENTITY
 				+ " te" + "  left join " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 				+ " teai on (teai.temporalentity_id = te.id)" + "  where ";
