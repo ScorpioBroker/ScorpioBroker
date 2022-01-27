@@ -110,7 +110,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		StringBuilder fullSqlWhere = new StringBuilder(70);
 		String sqlWhereGeoquery = "";
 		String sqlWhere = "";
-		String sqlQuery ="";
+		String sqlQuery = "";
 		List<Map<String, String>> entities = qp.getEntities();
 		if (entities != null && entities.size() > 0) {
 			for (Map<String, String> entityInfo : entities) {
@@ -147,7 +147,12 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 			sqlWhere = getSqlWhereForField("teai." + DBCOLUMN_HISTORY_INSTANCE_ID, qp.getInstanceId());
 			fullSqlWhere.append(sqlWhere + " AND ");
 		}
-
+		if (qp.getScopeQ() != null) {
+			sqlWhere = qp.getScopeQ();
+			fullSqlWhere.append("te.");
+			fullSqlWhere.append(sqlWhere);
+			fullSqlWhere.append(" AND ");
+		}
 		// temporal query
 		if (qp.getTimerel() != null) {
 			sqlWhere = translateNgsildTimequeryToSql(qp.getTimerel(), qp.getTimeAt(), qp.getTimeproperty(),
@@ -170,26 +175,27 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 						+ sqlWhereTemporal + " and " + sqlWhere + ") ";
 			}
 		}
-		if(qp.getLastN() > 0) {
+		if (qp.getLastN() > 0) {
 			sqlQuery = "with r as ("
 					+ "  select te.id, te.type, te.createdat, te.modifiedat, coalesce(teai.attributeid, '') as attributeid, array_to_json((array_agg(teai.data";
-		}
-		else {
+		} else {
 			sqlQuery = "with r as ("
-				+ "  select te.id, te.type, te.createdat, te.modifiedat, coalesce(teai.attributeid, '') as attributeid, jsonb_agg(teai.data";
+					+ "  select te.id, te.type, te.createdat, te.modifiedat, coalesce(teai.attributeid, '') as attributeid, jsonb_agg(teai.data";
 		}
 		if (!qp.getIncludeSysAttrs()) {
 			sqlQuery += "  - '" + NGSIConstants.NGSI_LD_CREATED_AT + "' - '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
 		}
-		if(qp.getLastN() > 0) {
-			sqlQuery += " order by teai.observedat desc)) [-5: " + qp.getLastN() + "]) as attributedata" + "  from " + DBConstants.DBTABLE_TEMPORALENTITY
-					+ " te" + "  left join " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-					+ " teai on (teai.temporalentity_id = te.id)" + "  where ";
-			
+		if (qp.getLastN() > 0) {
+			sqlQuery += " order by teai.observedat desc)) [-5: " + qp.getLastN() + "]) as attributedata" + "  from "
+					+ DBConstants.DBTABLE_TEMPORALENTITY + " te" + "  left join "
+					+ DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE + " teai on (teai.temporalentity_id = te.id)"
+					+ "  where ";
+
 		} else {
-		sqlQuery += " order by teai.modifiedat desc) as attributedata" + "  from " + DBConstants.DBTABLE_TEMPORALENTITY
-				+ " te" + "  left join " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-				+ " teai on (teai.temporalentity_id = te.id)" + "  where ";
+			sqlQuery += " order by teai.modifiedat desc) as attributedata" + "  from "
+					+ DBConstants.DBTABLE_TEMPORALENTITY + " te" + "  left join "
+					+ DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE + " teai on (teai.temporalentity_id = te.id)"
+					+ "  where ";
 		}
 		sqlQuery += fullSqlWhere.substring(0, fullSqlWhere.length() - 5); // remove the last AND
 		sqlQuery += "  group by te.id, te.type, te.createdat, te.modifiedat, teai.attributeid "
@@ -264,8 +270,6 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		return sqlQuery;
 
 	}
-
-	
 
 	@Override
 	public String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,

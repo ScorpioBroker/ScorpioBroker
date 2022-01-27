@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.ngsiqueries;
 
+import java.util.ArrayList;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.regex.Pattern;
 
@@ -8,6 +9,7 @@ import com.github.jsonldjava.core.Context;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
@@ -157,6 +159,50 @@ public class QueryParser {
 			result.setDistanceValue(maxMin[1]);
 		}
 		return result;
+	}
+
+	public static ScopeQueryTerm parseScopeQuery(String queryString) {
+		ScopeQueryTerm current = new ScopeQueryTerm();
+		String scopeLevel = "";
+		ArrayList<String> scopeLevels = new ArrayList<String>();
+		OfInt it = queryString.chars().iterator();
+		while (it.hasNext()) {
+			char b = (char) it.next().intValue();
+			if (b == '(') {
+				ScopeQueryTerm child = new ScopeQueryTerm();
+				current.setFirstChild(child);
+				current = child;
+			} else if (b == ';') {
+				ScopeQueryTerm next = new ScopeQueryTerm();
+				current.setScopeLevels(scopeLevels.toArray(new String[0]));
+				current.setNext(next);
+				current.setNextAnd(true);
+				current = next;
+				scopeLevels.clear();
+			} else if (b == '|') {
+				ScopeQueryTerm next = new ScopeQueryTerm();
+				current.setScopeLevels(scopeLevels.toArray(new String[0]));
+				current.setNext(next);
+				current.setNextAnd(false);
+				current = next;
+				scopeLevels.clear();
+			} else if (b == ')') {
+				current.setScopeLevels(scopeLevels.toArray(new String[0]));
+				current = current.getParent();
+				scopeLevels.clear();
+
+			} else if (b == '/') {
+				if (!scopeLevel.equals("")) {
+					scopeLevels.add(scopeLevel);
+					scopeLevel = "";
+				}
+			} else {
+				scopeLevel += (char) b;
+			}
+
+		}
+
+		return current;
 	}
 
 }

@@ -23,7 +23,7 @@ public class QueryParams {
 	@SerializedName("q")
 	@Expose
 	private String q;
-	
+
 	@SerializedName("csf")
 	@Expose
 	private String csf;
@@ -70,6 +70,16 @@ public class QueryParams {
 	private int offSet = 0;
 	private String check;
 	private int lastN;
+
+	private String scopeQ;
+
+	public String getScopeQ() {
+		return scopeQ;
+	}
+
+	public void setScopeQ(String scopeQ) {
+		this.scopeQ = scopeQ;
+	}
 
 	public String getCheck() {
 		return check;
@@ -328,7 +338,5 @@ public class QueryParams {
 	public void setCsf(String csf) {
 		this.csf = csf;
 	}
-
-	
 
 }

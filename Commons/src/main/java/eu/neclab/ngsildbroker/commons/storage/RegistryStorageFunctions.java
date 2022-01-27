@@ -112,6 +112,12 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 		if (qp.getQ() != null) {
 			logger.debug("'q' filter is not supported in csource discovery!");
 		}
+		if (qp.getScopeQ() != null) {
+			sqlWhere = qp.getScopeQ();
+			fullSqlWhere.append(sqlWhere);
+			fullSqlWhere.append(" AND ");
+			
+		}
 		if (qp.getCsf() != null) {
 			sqlWhere = qp.getCsf();
 			fullSqlWhere.append(sqlWhere);

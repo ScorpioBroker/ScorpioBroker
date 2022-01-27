@@ -21,7 +21,6 @@
 		<module>Registry</module>
 		<module>Storage</module>
 		<module>History</module>
-		<module>AllInOneRunnerExperimental</module>
 	</modules>
 	<profiles>
 		<profile>

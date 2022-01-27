@@ -189,6 +189,11 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			fullSqlWhereProperty.append(sqlWhereProperty);
 
 		}
+		if (qp.getScopeQ() != null) {
+			sqlWhereProperty = qp.getScopeQ();
+			fullSqlWhereProperty.append(" AND ");
+			fullSqlWhereProperty.append(sqlWhereProperty);
+		}
 		if (qp.getGeorel() != null) {
 			GeoqueryRel gqr = qp.getGeorel();
 			logger.trace("Georel value " + gqr.getGeorelOp());

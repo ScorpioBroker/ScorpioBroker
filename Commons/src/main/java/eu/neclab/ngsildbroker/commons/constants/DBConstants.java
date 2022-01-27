@@ -82,6 +82,7 @@ public class DBConstants {
 
 	public final static Map<String, String> NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING = initNgsildToPostgisGeoOperatorsMapping();
 	public static final String DBCOLUMN_INTERNAL = "internal";
+	public static final String DBCOLUMN_SCOPE = "scopes";
 
 	public static Map<String, String> initNgsildToPostgisGeoOperatorsMapping() {
 		Map<String, String> map = new HashMap<>();

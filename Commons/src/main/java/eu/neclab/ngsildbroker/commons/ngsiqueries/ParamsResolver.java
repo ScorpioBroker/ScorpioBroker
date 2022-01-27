@@ -176,6 +176,9 @@ public class ParamsResolver {
 			case NGSIConstants.QUERY_PARAMETER_QUERY:
 				qp.setQ(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
 				break;
+			case NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY:
+				qp.setScopeQ(QueryParser.parseScopeQuery(queryValue).toSql());
+				break;
 			case NGSIConstants.QUERY_PARAMETER_OPTIONS:
 				List<String> options = Arrays.asList(queryValue.split(","));
 				qp.setIncludeSysAttrs(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS));
