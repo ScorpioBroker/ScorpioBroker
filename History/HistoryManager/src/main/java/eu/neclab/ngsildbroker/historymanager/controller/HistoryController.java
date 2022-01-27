@@ -122,6 +122,8 @@ public class HistoryController {
 			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
 			@PathVariable("instanceId") String instanceId, @RequestBody(required = false) String payload) {
 		try {
+			HttpUtils.validateUri(entityId);
+			HttpUtils.validateUri(instanceId);
 			logger.trace("modifyAttribInstanceTemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
 			Context context = JsonLdProcessor.getCoreContextClone();
