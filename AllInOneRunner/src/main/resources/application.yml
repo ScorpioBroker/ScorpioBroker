@@ -41,26 +41,6 @@ management:
     web:
       exposure:
         include: "*"
-max:
-  request:
-    size: 104857600
-maxLimit: 500
-ngb:
-  debugmode: false
-reader:
-  datasource:
-    hikari:
-      connectionTimeout: 30000
-      idleTimeout: 30000
-      maxLifetime: 2000000
-      maximumPoolSize: 20
-      minimumIdle: 5
-      poolName: SpringBootHikariCP_Reader
-    password: ${mysettings.postgres.password}
-    url: ${jdbcurl}
-    username: ${mysettings.postgres.username}
-  enabled: true
-
 spring:
   application.name: ${mysettings.application-name}
   kafka:
@@ -114,24 +94,12 @@ spring:
     username: ${mysettings.postgres.username}
   flyway:
     baselineOnMigrate: true
+    connect-retries: 10
+    connect-retries-interval: 2
   main:
     lazy-initialization: false
     allow-bean-definition-overriding: true
     allow-circular-references: true
-writer:
-  datasource:
-    hikari:
-      connectionTimeout: 30000
-      idleTimeout: 30000
-      maxLifetime: 2000000
-      maximumPoolSize: 20
-      minimumIdle: 5
-      poolName: SpringBootHikariCP_Writer
-    password: ${mysettings.postgres.password}
-    url: ${jdbcurl}
-    username: ${mysettings.postgres.username}
-  enabled: true
-
 # Increase the Hystrix timeout to 60s (globally)
 hystrix:
   command:
