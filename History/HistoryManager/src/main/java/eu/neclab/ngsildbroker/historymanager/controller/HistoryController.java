@@ -151,6 +151,8 @@ public class HistoryController {
 			@PathVariable("instanceId") String instanceId) {
 		try {
 			logger.trace("deleteAtrribInstanceTemporalEntity :: started");
+			HttpUtils.validateUri(entityId);
+			HttpUtils.validateUri(instanceId);
 			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
 			Context context = JsonLdProcessor.getCoreContextClone();
 			List<Object> links = HttpUtils.getAtContext(request);
