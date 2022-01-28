@@ -46,7 +46,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 			if (entry.getValue() instanceof List) {
 				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
 				for (Map<String, Object> jsonElement : valueArray) {
-					jsonElement = setCommonTemporalProperties(jsonElement, now, true);
+					jsonElement = setCommonTemporalProperties(jsonElement, now);
 					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload,
 							JsonUtils.toPrettyString(jsonElement), EntityTools.getInstanceId(jsonElement), false);
 				}

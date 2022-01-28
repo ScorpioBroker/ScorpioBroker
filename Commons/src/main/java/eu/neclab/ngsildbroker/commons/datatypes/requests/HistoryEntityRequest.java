@@ -3,7 +3,6 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -72,30 +71,23 @@ public class HistoryEntityRequest extends BaseRequest {
 				elementValue, instanceId, overwriteOp));
 	}
 
-	@SuppressWarnings("unchecked")
-	protected Map<String, Object> setCommonTemporalProperties(Map<String, Object> jsonElement, String date,
-			boolean fromEntity) {
-		String valueCreatedAt;
-		if (fromEntity) {
-			// reuse modifiedAt field from Attribute in Entity, if exists
-			if (jsonElement.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)
-					&& jsonElement.get(NGSIConstants.NGSI_LD_MODIFIED_AT) instanceof List
-					&& !((List<Object>) jsonElement.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).isEmpty()
-					&& ((List<Object>) jsonElement.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0) instanceof Map
-					&& ((List<Map<String, Object>>) jsonElement.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
-							.containsKey(NGSIConstants.JSON_LD_VALUE)) {
-				valueCreatedAt = (String) ((List<Map<String, Object>>) jsonElement
-						.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0).get(NGSIConstants.JSON_LD_VALUE);
-			} else {
-				valueCreatedAt = date;
-			}
-		} else {
-			valueCreatedAt = date;
+	protected Map<String, Object> setCommonDateProperties(Map<String, Object> jsonElement, String now) {
+		ArrayList<Object> temp = new ArrayList<Object>();
+		HashMap<String, Object> tempObj = new HashMap<String, Object>();
+		tempObj.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+		tempObj.put(NGSIConstants.JSON_LD_VALUE, now);
+		temp.add(tempObj);
+		if (jsonElement.get(NGSIConstants.NGSI_LD_CREATED_AT) == null) {
+			jsonElement.put(NGSIConstants.NGSI_LD_CREATED_AT, temp);
 		}
-		// append/overwrite temporal fields. as we are creating new instances,
-		// modifiedAt and createdAt are the same
-		jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_CREATED_AT, valueCreatedAt);
-		jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, valueCreatedAt);
+		if (jsonElement.get(NGSIConstants.NGSI_LD_MODIFIED_AT) == null) {
+			jsonElement.put(NGSIConstants.NGSI_LD_MODIFIED_AT, temp);
+		}
+		return jsonElement;
+	}
+
+	protected Map<String, Object> setCommonTemporalProperties(Map<String, Object> jsonElement, String now) {
+		jsonElement = setCommonDateProperties(jsonElement, now);
 		// system generated instance id
 		UUID uuid = UUID.randomUUID();
 		String instanceid = "urn" + ":" + "ngsi-ld" + ":" + uuid;

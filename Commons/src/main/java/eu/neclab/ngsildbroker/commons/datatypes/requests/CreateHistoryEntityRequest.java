@@ -69,21 +69,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 	@SuppressWarnings("unchecked")
 	private void createTemporalEntity(Map<String, Object> resolved, boolean fromEntity) throws Exception {
 		this.attributeCount = 0;
-		if (resolved.get(NGSIConstants.NGSI_LD_CREATED_AT) == null
-				|| resolved.get(NGSIConstants.NGSI_LD_CREATED_AT) == null) {
-			ArrayList<Object> temp = new ArrayList<Object>();
-			HashMap<String, Object> tempObj = new HashMap<String, Object>();
-			tempObj.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-			tempObj.put(NGSIConstants.JSON_LD_VALUE, now);
-			temp.add(tempObj);
-			if (resolved.get(NGSIConstants.NGSI_LD_CREATED_AT) == null) {
-				resolved.put(NGSIConstants.NGSI_LD_CREATED_AT, temp);
-			}
-			if (resolved.get(NGSIConstants.NGSI_LD_MODIFIED_AT) == null) {
-				resolved.put(NGSIConstants.NGSI_LD_MODIFIED_AT, temp);
-			}
-		}
-
+		resolved = setCommonDateProperties(resolved, now);
 		this.type = ((List<String>) resolved.get(NGSIConstants.JSON_LD_TYPE)).get(0);
 		this.createdAt = (String) ((List<Map<String, Object>>) resolved.get(NGSIConstants.NGSI_LD_CREATED_AT)).get(0)
 				.get(NGSIConstants.JSON_LD_VALUE);
@@ -106,11 +92,10 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
 				// TODO check if changes in the array are reflect in the object
 				for (Map<String, Object> jsonElement : valueArray) {
-					jsonElement = setCommonTemporalProperties(jsonElement, now, fromEntity);
+					jsonElement = setCommonTemporalProperties(jsonElement, now);
 					storeEntry(getId(), type, createdAt, modifiedAt, attribId, JsonUtils.toPrettyString(jsonElement),
 							EntityTools.getInstanceId(jsonElement), false);
-					// pushAttributeToKafka(id, type, createdAt, modifiedAt, attribId,
-					// jsonElement.toString(), createTemporalEntityIfNotExists, false);
+
 				}
 			}
 			attributeCount++;

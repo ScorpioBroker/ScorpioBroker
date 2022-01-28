@@ -45,7 +45,7 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
 				Integer instanceCount = 0;
 				for (Map<String, Object> jsonElement : valueArray) {
-					jsonElement = setCommonTemporalProperties(jsonElement, now, false);
+					jsonElement = setCommonTemporalProperties(jsonElement, now);
 					//
 					Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send the overwrite op to
 																// delete current values
