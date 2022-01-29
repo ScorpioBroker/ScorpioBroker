@@ -20,9 +20,10 @@ public class SubscriptionKafkaService {
 	@Autowired
 	SubscriptionService subscriptionService;
 
-	@KafkaListener(topics = "${scorpio.topics.entity}")
+	@KafkaListener(topics = "${scorpio.topics.entity}", groupId = "subscription")
 	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
+		System.err.println("subscriptionkafka service got called");
 		switch (message.getRequestType()) {
 		case AppConstants.APPEND_REQUEST:
 			logger.debug("Append got called: " + key);
@@ -46,8 +47,10 @@ public class SubscriptionKafkaService {
 			break;
 		}
 	}
-	@KafkaListener(topics = "${scorpio.topics.internalnotification}")
-	public void handleInternalNotification(@Payload InternalNotification message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+
+	@KafkaListener(topics = "${scorpio.topics.internalnotification}", groupId = "subscription")
+	public void handleInternalNotification(@Payload InternalNotification message,
+			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
 		subscriptionService.handleRegistryNotification(message);
 	}

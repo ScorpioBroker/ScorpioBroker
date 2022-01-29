@@ -50,7 +50,6 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
       bootstrap-servers: ${bootstrap.servers}
-      group-id: ${mysettings.application-name}
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
@@ -127,7 +126,7 @@ ngsild:
 scorpio:
   directDB: true
   history:
-    autorecording: notactive
+    autorecording: active
     max-limit: 1000
     default-limit: 50
     batch-operations:
@@ -158,6 +157,7 @@ scorpio:
   registry:
     max-limit: 1000
     default-limit: 50
+    autorecording: active
     batch-operations:
       create:
         max: 1000

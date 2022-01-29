@@ -20,7 +20,7 @@ public class RegistrySubscriptionKafkaService {
 	@Autowired
 	RegistrySubscriptionService subscriptionService;
 
-	@KafkaListener(topics = "${scorpio.topics.registry}")
+	@KafkaListener(topics = "${scorpio.topics.registry}", groupId = "csourcesubscription")
 	public void handleCsource(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
 		switch (message.getRequestType()) {
@@ -44,7 +44,7 @@ public class RegistrySubscriptionKafkaService {
 		}
 	}
 
-	@KafkaListener(topics = "${scorpio.topics.internalregsub}")
+	@KafkaListener(topics = "${scorpio.topics.internalregsub}", groupId = "csourcesubscription")
 	public void handleSubscription(@Payload SubscriptionRequest message,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {

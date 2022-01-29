@@ -166,6 +166,9 @@ public abstract class BaseQueryService implements EntryQueryService {
 					Set<Callable<RemoteQueryResult>> callablesCollection = new HashSet<Callable<RemoteQueryResult>>();
 					for (String registration : registrations.getActualDataString()) {
 						Map<String, Object> reg = (Map<String, Object>) JsonUtils.fromString(registration);
+						if (reg.get(NGSIConstants.JSON_LD_ID).equals(AppConstants.INTERNAL_REGISTRATION_ID)) {
+							continue;
+						}
 						String endpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
 								.get(NGSIConstants.JSON_LD_VALUE);
 						HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,

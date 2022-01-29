@@ -261,10 +261,11 @@ public class ParamsResolver {
 	}
 
 	private static void validateCoordinates(String coordinates) throws ResponseException {
-		if (!coordinates.matches(
-				"^\\[*(\\[\\s*[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)(,\\d)?,[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)\\],?)+\\]*$")) {
-			throw new ResponseException(ErrorType.BadRequestData, "coordinates are not valid");
-		}
+		//to be removed coordinates can overflow in gist
+//		if (!coordinates.matches(
+//				"^\\[*(\\[\\s*[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)(,\\d)?,[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)\\],?)+\\]*$")) {
+//			throw new ResponseException(ErrorType.BadRequestData, "coordinates are not valid");
+//		}
 
 	}
 

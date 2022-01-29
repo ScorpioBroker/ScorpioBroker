@@ -193,7 +193,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			Map<String, Object> entry) throws ResponseException, Exception {
 		throw new MethodNotFoundException("not supported in registry");
 	}
-	// need to be check and change 
+
+	// need to be check and change
 	@Override
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
@@ -315,8 +316,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				CSourceRequest regEntry = createInternalRegEntry(tenant);
 				if (regEntry.getFinalPayload() == null) {
 					deleteEntry(regEntry.getHeaders(), regEntry.getId());
+				} else {
+					upsert(regEntry);
 				}
-				upsert(regEntry);
 			} catch (Exception e) {
 				logger.error("Failed to store internal registry entry", e);
 			}
@@ -337,8 +339,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		boolean update = true;
 		Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
 		if (ids == null) {
-			update = false;
 			ids = new HashSet<String>();
+		} else {
+			update = false;
 		}
 		ids.add(id);
 		tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
@@ -348,9 +351,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				CSourceRequest regEntry = createInternalRegEntry(tenant);
 				if (regEntry.getFinalPayload() == null) {
 					deleteEntry(regEntry.getHeaders(), regEntry.getId());
+				} else {
+					upsert(regEntry);
 				}
-				upsert(regEntry);
-				updateEntry(regEntry.getHeaders(), regEntry.getId(), regEntry.getFinalPayload());
 			} catch (Exception e) {
 				logger.error("Failed to store internal registry entry", e);
 			}
@@ -372,7 +375,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		resolved.put(NGSIConstants.JSON_LD_TYPE, tmp);
 		tmp = new ArrayList<Object>();
 		HashMap<String, Object> tmp2 = new HashMap<String, Object>();
-		tmp2.put(NGSIConstants.JSON_LD_ID, MicroServiceUtils.getGatewayURL().toString());
+		tmp2.put(NGSIConstants.JSON_LD_VALUE, MicroServiceUtils.getGatewayURL().toString());
 		tmp.add(tmp2);
 		resolved.put(NGSIConstants.NGSI_LD_ENDPOINT, tmp);
 		Set<Map<String, Object>> informationEntries = tenant2InformationEntry2EntityIds.row(tenant).keySet();
