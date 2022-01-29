@@ -27,14 +27,13 @@ public class HistoryKafkaService {
 	HistoryService historyService;
 
 	public HistoryKafkaService() {
-		System.err.println("HISTORY KAFKA SERVICE STARTED");
+
 	}
 
 	@KafkaListener(topics = "${scorpio.topics.entity}", groupId = "history")
 	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) throws Exception {
 		HistoryEntityRequest request;
-		System.err.println("history create from entity");
 		switch (message.getRequestType()) {
 		case AppConstants.APPEND_REQUEST:
 			logger.debug("Append got called: " + key);

@@ -16,40 +16,8 @@ public class LDGeoQuery {
 	private Geometry geometry;
 	private String geoProperty = NGSIConstants.NGSI_LD_LOCATION;
 	private GeoRelation geoRelation;
-//	private boolean nextAnd = true;
-//	private LDGeoQuery next;
 
 	public LDGeoQuery(){
-
-	}
-
-	
-	
-//	public boolean isNextAnd() {
-//		return nextAnd;
-//	}
-//
-//
-//
-//	public void setNextAnd(boolean nextAnd) {
-//		this.nextAnd = nextAnd;
-//	}
-//
-//
-//
-//	public LDGeoQuery getNext() {
-//		return next;
-//	}
-//
-//
-//
-//	public void setNext(LDGeoQuery next) {
-//		this.next = next;
-//	}
-
-
-
-	public void finalize() throws Throwable {
 
 	}
 

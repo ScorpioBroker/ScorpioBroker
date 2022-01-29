@@ -428,6 +428,9 @@ public interface EntryControllerFunctions {
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
 			List<Object> context = new ArrayList<Object>();
 			context.addAll(contextHeaders);
+			if (payload == null || payload.isEmpty()) {
+				throw new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed");
+			}
 			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
 			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 
@@ -436,9 +439,7 @@ public interface EntryControllerFunctions {
 			} else {
 				context.add(bodyContext);
 			}
-			if (payload == null || payload.isEmpty()) {
-				throw new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed");
-			}
+
 			HttpUtils.validateUri(entityId);
 			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor

@@ -23,7 +23,6 @@ public class SubscriptionKafkaService {
 	@KafkaListener(topics = "${scorpio.topics.entity}", groupId = "subscription")
 	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
-		System.err.println("subscriptionkafka service got called");
 		switch (message.getRequestType()) {
 		case AppConstants.APPEND_REQUEST:
 			logger.debug("Append got called: " + key);

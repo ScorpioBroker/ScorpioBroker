@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.github.jsonldjava.core.JsonLdError;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -30,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, JsonSerializer<Subscription> {
@@ -191,8 +194,16 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				result.setNotification(notifyParam);
 
 			} else if (key.equals(NGSIConstants.NGSI_LD_QUERY)) {
-				result.setLdQuery(
-						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				try {
+					result.setLdQueryString(
+							value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (JsonLdError e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ResponseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			} else if (key.equals(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES)) {
 				Iterator<JsonElement> it = value.getAsJsonArray().iterator();
 				ArrayList<String> watched = new ArrayList<String>();

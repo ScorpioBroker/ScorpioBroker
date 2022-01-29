@@ -34,14 +34,12 @@ import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
-import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
@@ -54,7 +52,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.BeanTools;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -162,10 +159,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			this.tenant2subscriptionId2Subscription.put(subscriptionRequest.getTenant(),
 					subscription.getId().toString(), subscriptionRequest);
 		}
-		if (subscription.getLdQuery() != null && !subscription.getLdQuery().trim().equals("")) {
-			subscription.setQueryTerm(QueryParser.parseQuery(subscription.getLdQuery(),
-					JsonLdProcessor.getCoreContextClone().parse(subscriptionRequest.getContext(), true)));
-		}
+
 		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 		if (subscription.getTimeInterval() > 0) {
 			if (endpointProtocol.equals("mqtt")) {
@@ -290,23 +284,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				throw new ResponseException(ErrorType.NotFound, subscription.getId().toString() + " not found");
 			}
 			Subscription oldSub = oldSubRequest.getSubscription();
-
-			if (subscription.getAttributeNames() != null) {
-				oldSub.setAttributeNames(subscription.getAttributeNames());
-			}
-			if (subscription.getDescription() != null) {
-				oldSub.setDescription(subscription.getDescription());
-			}
-			if (subscription.getEntities() != null && !subscription.getEntities().isEmpty()) {
-				oldSub.setEntities(subscription.getEntities());
-			}
-			if (subscription.isActive() == false) {
-				oldSub.setStatus(NGSIConstants.ISACTIVE_FALSE);
-			} else {
-				oldSub.setStatus(NGSIConstants.ISACTIVE_TRUE);
-			}
-			if (subscription.getExpiresAt() != null && subscription.getExpiresAt() > 0) {
-				oldSub.setExpiresAt(subscription.getExpiresAt());
+			oldSub.update(subscription);
+			if (oldSub.getExpiresAt() != null && oldSub.getExpiresAt() > 0) {
 				synchronized (subId2TimerTask) {
 					TimerTask task = subId2TimerTask.get(subscriptionRequest.getTenant(), oldSub.getId().toString());
 					if (task != null) {
@@ -314,27 +293,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 					} else {
 						task = new CancelTask(subscriptionRequest);
 					}
-					watchDog.schedule(task, subscription.getExpiresAt() - System.currentTimeMillis());
+					watchDog.schedule(task, oldSub.getExpiresAt() - System.currentTimeMillis());
 				}
-
-			}
-			if (subscription.getLdGeoQuery() != null) {
-				oldSub.setLdGeoQuery(subscription.getLdGeoQuery());
-			}
-			if (subscription.getLdQuery() != null) {
-				oldSub.setLdQuery(subscription.getLdQuery());
-			}
-			if (subscription.getLdTempQuery() != null) {
-				oldSub.setLdTempQuery(subscription.getLdTempQuery());
-			}
-			if (subscription.getNotification() != null) {
-				oldSub.setNotification(subscription.getNotification());
-			}
-			if (subscription.getThrottling() != 0) {
-				oldSub.setThrottling(subscription.getThrottling());
-			}
-			if (subscription.getTimeInterval() != 0) {
-				oldSub.setTimeInterval(subscription.getTimeInterval());
 			}
 
 			this.tenantId2subscriptionId2Context.put(tenant, oldSub.getId().toString(),
@@ -477,9 +437,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			return null;
 		}
 		if (evaluateQ()) {
-			if (subscription.getSubscription().getQueryTerm() != null) {
-				if (!subscription.getSubscription().getQueryTerm()
-						.calculate(EntityTools.getBaseProperties(fullEntry))) {
+			if (subscription.getSubscription().getLdQuery() != null) {
+				if (!subscription.getSubscription().getLdQuery().calculate(EntityTools.getBaseProperties(fullEntry))) {
 					return null;
 				}
 			}

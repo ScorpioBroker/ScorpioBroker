@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -15,29 +16,53 @@ public class NotificationParam {
 	private List<String> attributeNames;
 	private EndPoint endPoint;
 	private Format format;
-	
 	private int timesSent = 0;
 	private Date lastNotification;
 	private Date lastSuccessfulNotification;
 	private Date lastFailedNotification;
 
-	
-	
-	
-	public NotificationParam(){
-
+	// duplicate
+	public NotificationParam(NotificationParam notification) {
+		this.attributeNames = new ArrayList<String>(notification.attributeNames);
+		this.endPoint = new EndPoint(notification.endPoint);
+		this.format = notification.format;
+		this.timesSent = notification.timesSent;
+		this.lastNotification = Date.from(notification.lastNotification.toInstant());
+		this.lastSuccessfulNotification = Date.from(notification.lastSuccessfulNotification.toInstant());
+		this.lastFailedNotification = Date.from(notification.lastFailedNotification.toInstant());
 	}
 
-	
-	
+	public NotificationParam() {
+	}
+
+	public NotificationParam update(NotificationParam notification) {
+		if (notification.attributeNames != null) {
+			this.attributeNames = new ArrayList<String>(notification.attributeNames);
+		}
+		if (notification.attributeNames != null) {
+			this.endPoint.update(notification.endPoint);
+		}
+		if (notification.attributeNames != null) {
+			this.format = notification.format;
+		}
+		if (notification.attributeNames != null) {
+			this.timesSent = notification.timesSent;
+		}
+		if (notification.attributeNames != null) {
+			this.lastNotification = Date.from(notification.lastNotification.toInstant());
+		}
+		if (notification.attributeNames != null) {
+			this.lastSuccessfulNotification = Date.from(notification.lastSuccessfulNotification.toInstant());
+		}
+		if (notification.attributeNames != null) {
+			this.lastFailedNotification = Date.from(notification.lastFailedNotification.toInstant());
+		}
+		return this;
+	}
+
 	public int getTimesSent() {
 		return timesSent;
 	}
-
-
-
-	
-
 
 	public Date getLastNotification() {
 		return lastNotification;
@@ -52,29 +77,22 @@ public class NotificationParam {
 		this.lastNotification = lastNotification;
 	}
 
-
-
 	public Date getLastSuccessfulNotification() {
 		return lastSuccessfulNotification;
 	}
-
-
 
 	public void setLastSuccessfulNotification(Date lastSuccessfulNotification) {
 		this.lastSuccessfulNotification = lastSuccessfulNotification;
 	}
 
-
-
 	public Date getLastFailedNotification() {
 		return lastFailedNotification;
 	}
 
-
-
 	public void setLastFailedNotification(Date lastFailedNotification) {
 		this.lastFailedNotification = lastFailedNotification;
 	}
+
 	public void finalize() throws Throwable {
 
 	}
@@ -103,8 +121,6 @@ public class NotificationParam {
 		this.format = format;
 	}
 
-
-
 	@Override
 	public String toString() {
 		return "NotificationParam [attributeNames=" + attributeNames + ", endPoint=" + endPoint + ", format=" + format
@@ -112,6 +128,5 @@ public class NotificationParam {
 				+ ", lastSuccessfulNotification=" + lastSuccessfulNotification + ", lastFailedNotification="
 				+ lastFailedNotification + "]";
 	}
-	
 
 }

@@ -21,10 +21,8 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
-import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
@@ -92,25 +90,33 @@ public class SubscriptionService extends BaseSubscriptionService {
 		if (request != null) {
 			// let super unsubscribe take care of further error handling
 			request.setRequestType(AppConstants.DELETE_REQUEST);
-			kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
+			sendToKafka(id, request);
+
 		}
 		super.unsubscribe(id, headers);
 
 	}
 
+	private void sendToKafka(String id, SubscriptionRequest request) {
+		new Thread() {
+			@Override
+			public void run() {
+				kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
+			}
+		}.start();
+	}
+
 	@Override
 	public String subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		String result = super.subscribe(subscriptionRequest);
-		kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, subscriptionRequest.getSubscription().getId(),
-				subscriptionRequest);
+		sendToKafka(subscriptionRequest.getSubscription().getId(), subscriptionRequest);
 		return result;
 	}
 
 	@Override
 	public void updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		super.updateSubscription(subscriptionRequest);
-		kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, subscriptionRequest.getSubscription().getId(),
-				subscriptionRequest);
+		sendToKafka(subscriptionRequest.getSubscription().getId(), subscriptionRequest);
 	}
 
 	public void subscribeToRemote(SubscriptionRequest subscriptionRequest, InternalNotification notification) {
@@ -122,33 +128,12 @@ public class SubscriptionService extends BaseSubscriptionService {
 		new Thread() {
 			@Override
 			public void run() {
-
-				Subscription remoteSub = new Subscription();
-				Subscription subscription = subscriptionRequest.getSubscription();
-				remoteSub.setDescription(subscription.getDescription());
-				remoteSub.setEntities(subscription.getEntities());
-				remoteSub.setExpiresAt(subscription.getExpiresAt());
-				remoteSub.setLdGeoQuery(subscription.getLdGeoQuery());
-				remoteSub.setLdQuery(subscription.getLdQuery());
-				remoteSub.setLdTempQuery(subscription.getLdTempQuery());
-				remoteSub.setSubscriptionName(subscription.getSubscriptionName());
-				remoteSub.setStatus(subscription.getStatus());
-				remoteSub.setThrottling(subscription.getThrottling());
-				remoteSub.setTimeInterval(subscription.getTimeInterval());
-				remoteSub.setType(subscription.getType());
-				NotificationParam remoteNotification = new NotificationParam();
-				remoteNotification.setAttributeNames(subscription.getNotification().getAttributeNames());
-				remoteNotification.setFormat(subscription.getNotification().getFormat());
-				EndPoint endPoint = new EndPoint();
-				endPoint.setAccept(AppConstants.NGB_APPLICATION_JSONLD);
-				endPoint.setUri(prepareNotificationServlet(subscriptionRequest));
-				remoteNotification.setEndPoint(endPoint);
-				remoteSub.setAttributeNames(subscription.getAttributeNames());
+				Subscription remoteSub = new Subscription(subscriptionRequest.getSubscription());
+				remoteSub.getNotification().getEndPoint().setUri(prepareNotificationServlet(subscriptionRequest));
 				String body = DataSerializer.toJson(remoteSub);
 				for (Map<String, Object> entry : notification.getData()) {
 					HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(entry,
-							subscriptionRequest.getContext(),
-							subscription.getNotification().getEndPoint().getAccept());
+							subscriptionRequest.getContext(), remoteSub.getNotification().getEndPoint().getAccept());
 					String remoteEndpoint = getRemoteEndPoint(entry);
 					StringBuilder temp = new StringBuilder(remoteEndpoint);
 					if (remoteEndpoint.endsWith("/")) {
@@ -159,7 +144,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 						httpHeadersOnWebClientBeingBuilt.addAll(additionalHeaders);
 					}).bodyValue(body).exchangeToMono(response -> {
 						if (response.statusCode().is2xxSuccessful()) {
-							internalSubId2ExternalEndpoint.put(subscription.getId(),
+							internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
 									response.headers().header(HttpHeaders.LOCATION).get(0));
 							return Mono.just(Void.class);
 						} else {

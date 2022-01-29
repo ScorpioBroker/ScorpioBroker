@@ -39,7 +39,6 @@ import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
@@ -70,6 +69,7 @@ public interface SubscriptionControllerFunctions {
 			}
 			subscription = expandSubscription(body, request, JsonLdProcessor.getCoreContextClone().parse(context, true),
 					false);
+			subscription.setActive(true);
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
 					HttpUtils.getHeaders(request), AppConstants.CREATE_REQUEST);
 			String subId = subscriptionService.subscribe(subRequest);
@@ -85,7 +85,7 @@ public interface SubscriptionControllerFunctions {
 	private static Subscription expandSubscription(Map<String, Object> body, HttpServletRequest request,
 			Context context, boolean update) throws ResponseException {
 		Subscription subscription = new Subscription();
-
+		subscription.setLdContext(context);
 		for (Entry<String, Object> mapEntry : body.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();
@@ -152,10 +152,8 @@ public interface SubscriptionControllerFunctions {
 				break;
 			case NGSIConstants.NGSI_LD_QUERY:
 				try {
-
-					subscription.setLdQuery(QueryParser.parseQuery(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
-							context).toSql());
+					subscription.setLdQueryString(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse q");
 				}
@@ -226,9 +224,8 @@ public interface SubscriptionControllerFunctions {
 				break;
 			case NGSIConstants.NGSI_LD_CSF:
 				try {
-					subscription.setCsf(QueryParser.parseQuery(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
-							context));
+					subscription.setCsfQueryString(
+							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}

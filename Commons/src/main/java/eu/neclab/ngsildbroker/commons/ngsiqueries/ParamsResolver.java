@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.ngsiqueries;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,7 +12,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.util.MultiValueMap;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -99,8 +102,8 @@ public class ParamsResolver {
 				}
 				temp.setCoordinates(coordinatesString);
 			}
-			if (subscription.getLdQuery() != null && !subscription.getLdQuery().isEmpty()) {
-				temp.setQ(subscription.getLdQuery());
+			if (subscription.getLdQuery() != null && !subscription.getLdQueryString().isEmpty()) {
+				temp.setQ(subscription.getLdQueryString());
 			}
 			result.add(temp);
 		}
@@ -138,7 +141,7 @@ public class ParamsResolver {
 				break;
 			case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
 				idPattern = queryValue;
-				//HttpUtils.validateIdPattern(idPattern);
+				// HttpUtils.validateIdPattern(idPattern);
 				break;
 			case NGSIConstants.QUERY_PARAMETER_TYPE:
 				type = String.join(",", expandQueryValues(context, queryValue));
@@ -186,7 +189,7 @@ public class ParamsResolver {
 				qp.setTemporalValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES));
 				break;
 			case NGSIConstants.QUERY_PARAMETER_LIMIT:
-				limit = Integer.parseInt(queryValue);				
+				limit = Integer.parseInt(queryValue);
 				if (limit > maxLimit) {
 					throw new ResponseException(ErrorType.TooManyResults, "Limit exceeds max limit of " + maxLimit);
 				}
@@ -260,12 +263,63 @@ public class ParamsResolver {
 
 	}
 
-	private static void validateCoordinates(String coordinates) throws ResponseException {
-		//to be removed coordinates can overflow in gist
-//		if (!coordinates.matches(
-//				"^\\[*(\\[\\s*[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)(,\\d)?,[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)\\],?)+\\]*$")) {
-//			throw new ResponseException(ErrorType.BadRequestData, "coordinates are not valid");
-//		}
+	@SuppressWarnings("unchecked")
+	private static void validateCoordinates(List<Object> coordinateList, String type) throws ResponseException {
+		try {
+			switch (type) {
+			case NGSIConstants.GEO_TYPE_POINT:
+				if (coordinateList.size() != 2) {
+					throw new ResponseException(ErrorType.BadRequestData, "points have to be 2 entries");
+				}
+				break;
+			case NGSIConstants.GEO_TYPE_LINESTRING:
+				if (coordinateList.size() < 2) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Linestring has to be an array of at least 2 points");
+				}
+				for (Object entry : coordinateList) {
+					if (!(entry instanceof List)) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"Linestring has to be an array of at least 2 points");
+					}
+					validateCoordinates((List<Object>) entry, NGSIConstants.GEO_TYPE_POINT);
+				}
+				break;
+			case NGSIConstants.GEO_TYPE_POLYGON:
+				boolean error = false;
+				if (coordinateList.size() == 1 && (coordinateList.get(0) instanceof List)) {
+					coordinateList = (List<Object>) coordinateList.get(0);
+					if (coordinateList.size() == 1 && (coordinateList.get(0) instanceof List)) {
+						coordinateList = (List<Object>) coordinateList.get(0);
+						if (coordinateList.size() < 4
+								|| !coordinateList.get(0).equals(coordinateList.get(coordinateList.size() - 1))) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"Polygons have to be an array of array with at least 3 points and have to close");
+						}
+						for (Object entry : coordinateList) {
+							if (!(entry instanceof List)) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Polygons have to be an array of array with at least 3 points and have to close");
+							}
+							validateCoordinates((List<Object>) entry, NGSIConstants.GEO_TYPE_POINT);
+						}
+					} else {
+						error = true;
+					}
+				} else {
+					error = true;
+				}
+				if (error) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Polygons have to be an array of array with at least 3 points and have to close");
+				}
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, "Unsupported type");
+			}
+		} catch (Exception e) {
+			throw new ResponseException(ErrorType.BadRequestData, "coordinates are not valid");
+		}
 
 	}
 
@@ -304,6 +358,7 @@ public class ParamsResolver {
 		qp.setEndTimeAt(endTimeAt);
 	}
 
+	@SuppressWarnings("unchecked")
 	private static void handleGeoQuery(String georel, String geoproperty, String coordinates, String geometry,
 			QueryParams qp) throws ResponseException {
 		if (georel == null && geoproperty == null && coordinates == null && geometry == null) {
@@ -322,7 +377,11 @@ public class ParamsResolver {
 		if (!AppConstants.NGB_ALLOWED_GEOM_LIST.contains(geometry.toUpperCase())) {
 			throw new ResponseException(ErrorType.BadRequestData, " geometry detected, Bad geometry!" + geometry);
 		}
-		validateCoordinates(coordinates);
+		try {
+			validateCoordinates((List<Object>) JsonUtils.fromString(coordinates), geometry);
+		} catch (IOException e) {
+			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse coordinates");
+		}
 		GeoqueryRel gr = new GeoqueryRel();
 		gr.setGeorelOp(geoqueryTokens.getGeorelOp());
 		gr.setDistanceType(geoqueryTokens.getDistanceType());

@@ -4,6 +4,14 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLdProcessor;
+
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
+
 /**
  * @author hebgen
  * @version 1.0
@@ -20,17 +28,110 @@ public class Subscription {
 	private Integer throttling = 0;
 	private Integer timeInterval = 0;
 	private String type;
-	private Boolean internal = false;
-	private QueryTerm queryTerm;
-	private boolean isActive = true;
-	protected List<String> attributeNames;
-	protected List<EntityInfo> entities = new ArrayList<EntityInfo>();
-	protected String ldContext;
-	protected LDGeoQuery ldGeoQuery;
-	protected String ldQuery;
-	protected QueryTerm csf;
-	protected LDTemporalQuery ldTempQuery;
-	protected List<URI> requestorList;
+	private List<URI> requestorList;
+	private Boolean isActive;
+	private List<String> attributeNames;
+	private List<EntityInfo> entities = new ArrayList<EntityInfo>();
+	private Context ldContext;
+	private String ldQueryString;
+	private String csfQueryString;
+	private LDGeoQuery ldGeoQuery;
+	private LDTemporalQuery ldTempQuery;
+
+	@JsonIgnore
+	private QueryTerm ldQuery;
+	@JsonIgnore
+	private QueryTerm csfQuery;
+
+	// duplicate
+	public Subscription(Subscription subscription) {
+		this.description = subscription.description;
+		this.expiresAt = subscription.expiresAt.longValue();
+		this.id = subscription.id;
+		this.subscriptionName = subscription.subscriptionName;
+		this.notification = new NotificationParam(subscription.notification);
+		this.status = subscription.status;
+		this.throttling = subscription.throttling.intValue();
+		this.timeInterval = subscription.timeInterval.intValue();
+		this.type = subscription.type;
+		this.requestorList = new ArrayList<URI>(subscription.requestorList);
+		this.isActive = subscription.isActive;
+		this.attributeNames = new ArrayList<String>(subscription.attributeNames);
+		this.entities = new ArrayList<EntityInfo>(subscription.entities);
+		this.ldContext = subscription.ldContext;
+		this.ldQueryString = subscription.ldQueryString;
+		this.csfQueryString = subscription.csfQueryString;
+		this.ldGeoQuery = subscription.ldGeoQuery;
+		this.ldTempQuery = subscription.ldTempQuery;
+		this.ldQuery = subscription.ldQuery;
+		this.csfQuery = subscription.csfQuery;
+	}
+
+	public Subscription() {
+	}
+
+	public void update(Subscription subscription) {
+		if (subscription.description != null) {
+			this.description = subscription.description;
+		}
+		if (subscription.expiresAt != null) {
+			this.expiresAt = subscription.expiresAt;
+		}
+		if (subscription.id != null) {
+			this.id = subscription.id;
+		}
+		if (subscription.subscriptionName != null) {
+			this.subscriptionName = subscription.subscriptionName;
+		}
+		if (subscription.notification != null) {
+			this.notification.update(subscription.notification);
+		}
+		if (subscription.status != null) {
+			this.status = subscription.status;
+		}
+		if (subscription.throttling != null) {
+			this.throttling = subscription.throttling;
+		}
+		if (subscription.timeInterval != null) {
+			this.timeInterval = subscription.timeInterval;
+		}
+		if (subscription.type != null) {
+			this.type = subscription.type;
+		}
+		if (subscription.requestorList != null) {
+			this.requestorList = subscription.requestorList;
+		}
+		if (subscription.isActive != null) {
+			this.isActive = subscription.isActive;
+		}
+		if (subscription.attributeNames != null) {
+			this.attributeNames = subscription.attributeNames;
+		}
+		if (subscription.entities != null) {
+			this.entities = subscription.entities;
+		}
+		if (subscription.ldContext != null) {
+			this.ldContext = subscription.ldContext;
+		}
+		if (subscription.ldQueryString != null) {
+			this.ldQueryString = subscription.ldQueryString;
+		}
+		if (subscription.csfQueryString != null) {
+			this.csfQueryString = subscription.csfQueryString;
+		}
+		if (subscription.ldGeoQuery != null) {
+			this.ldGeoQuery = subscription.ldGeoQuery;
+		}
+		if (subscription.ldTempQuery != null) {
+			this.ldTempQuery = subscription.ldTempQuery;
+		}
+		if (subscription.ldQuery != null) {
+			this.ldQuery = subscription.ldQuery;
+		}
+		if (subscription.csfQuery != null) {
+			this.csfQuery = subscription.csfQuery;
+		}
+	}
 
 	public List<String> getAttributeNames() {
 		return attributeNames;
@@ -48,11 +149,11 @@ public class Subscription {
 		this.entities = entities;
 	}
 
-	public String getLdContext() {
+	public Object getLdContext() {
 		return ldContext;
 	}
 
-	public void setLdContext(String ldContext) {
+	public void setLdContext(Context ldContext) {
 		this.ldContext = ldContext;
 	}
 
@@ -62,14 +163,6 @@ public class Subscription {
 
 	public void setLdGeoQuery(LDGeoQuery ldGeoQuery) {
 		this.ldGeoQuery = ldGeoQuery;
-	}
-
-	public String getLdQuery() {
-		return ldQuery;
-	}
-
-	public void setLdQuery(String ldQuery) {
-		this.ldQuery = ldQuery;
 	}
 
 	public LDTemporalQuery getLdTempQuery() {
@@ -94,14 +187,6 @@ public class Subscription {
 
 	public void removeEntityInfo(EntityInfo entity) {
 		this.entities.remove(entity);
-	}
-
-	public Boolean isInternal() {
-		return internal;
-	}
-
-	public void setInternal(Boolean internal) {
-		this.internal = internal;
 	}
 
 	public String getDescription() {
@@ -176,47 +261,57 @@ public class Subscription {
 		this.type = type;
 	}
 
-	public QueryTerm getQueryTerm() {
-		return queryTerm;
-	}
-
-	public void setQueryTerm(QueryTerm queryTerm) {
-		this.queryTerm = queryTerm;
+	public QueryTerm getLdQuery() {
+		return ldQuery;
 	}
 
 	public void finalize() throws Throwable {
 
 	}
 
-	public boolean isActive() {
+	public Boolean isActive() {
 		return isActive;
 	}
 
-	public void setActive(boolean isActive) {
+	public void setActive(Boolean isActive) {
 		this.isActive = isActive;
-		if (isActive) {
-			this.status = "active";
-		} else {
-			this.status = "paused";
+		if (isActive != null) {
+			if (isActive) {
+				this.status = "active";
+			} else {
+				this.status = "paused";
+			}
 		}
 	}
 
 	public QueryTerm getCsf() {
-		return csf;
+		return csfQuery;
 	}
 
-	public void setCsf(QueryTerm csf) {
-		this.csf = csf;
+	public String getLdQueryString() {
+		return ldQueryString;
 	}
 
-	@Override
-	public String toString() {
-		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id
-				+ ", subscriptionName=" + subscriptionName + ", notification=" + notification + ", status=" + status
-				+ ", throttling=" + throttling + ", timeInterval=" + timeInterval + ", type=" + type + ", internal="
-				+ internal + ", queryTerm=" + queryTerm + ", attributeNames=" + attributeNames + ", entities="
-				+ entities + ", ldContext=" + ldContext + ", ldGeoQuery=" + ldGeoQuery + ", ldQuery=" + ldQuery
-				+ ", ldTempQuery=" + ldTempQuery + ", requestorList=" + requestorList + "]";
+	public void setLdQueryString(String ldQueryString) throws ResponseException {
+		this.ldQueryString = ldQueryString;
+		if (ldQueryString != null) {
+			this.ldQuery = QueryParser.parseQuery(ldQueryString, ldContext);
+		} else {
+			this.ldQuery = null;
+		}
+	}
+
+	public String getCsfQueryString() {
+		return csfQueryString;
+	}
+
+	public void setCsfQueryString(String csfQueryString) throws ResponseException {
+		this.csfQueryString = csfQueryString;
+		if (csfQueryString != null) {
+			this.csfQuery = QueryParser.parseQuery(csfQueryString, ldContext);
+		} else {
+			this.csfQuery = null;
+		}
 	}
 
 }
