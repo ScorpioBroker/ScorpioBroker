@@ -587,8 +587,9 @@ public class SerializationTools {
 	@SuppressWarnings("unchecked")
 	private static SinglePosition getSingeLePosition(List<Map<String, Object>> coordinates) {
 		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
-		return new SinglePosition(Coordinates.of((Double) list.get(0).get(NGSIConstants.JSON_LD_VALUE),
-				(Double) list.get(1).get(NGSIConstants.JSON_LD_VALUE)));
+		return new SinglePosition(
+				Coordinates.of(Double.parseDouble(list.get(0).get(NGSIConstants.JSON_LD_VALUE).toString()),
+						Double.parseDouble(list.get(1).get(NGSIConstants.JSON_LD_VALUE).toString())));
 	}
 
 }
