@@ -1,60 +1,95 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
-import java.time.Duration;
 import java.util.Date;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.reactive.function.client.WebClient;
-
+import org.springframework.web.client.RestTemplate;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 class NotificationHandlerREST extends BaseNotificationHandler {
+	// Comment about webclient ...
+	// it just doesn't work for us at the moment maybe we are doing something wrong
+	// but for now its the restTemplate
+//	private WebClient webClient;
+//	webClient.post().uri(request.getSubscription().getNotification().getEndPoint().getUri())
+//	.headers(httpHeadersOnWebClientBeingBuilt -> {
+//		httpHeadersOnWebClientBeingBuilt.addAll(compacted.getHeaders());
+//	}).bodyValue(compacted.getBody()).exchangeToMono(response -> {
+//		if (response.statusCode().is4xxClientError() || response.statusCode().is5xxServerError()) {
+//			logger.error("Failed to send notification with return code " + response.statusCode()
+//					+ " subscription id: " + request.getSubscription().getId() + " notification id: "
+//					+ notification.getId());
+//			request.getSubscription().getNotification()
+//					.setLastFailedNotification(new Date(System.currentTimeMillis()));
+//			return Mono.just(Void.class);
+//		} else {
+//			return Mono.just(Void.class);
+//
+//		}
+//	}).doOnError(onError -> {
+//		logger.error("Failed to send notification retrying subscription id: "
+//				+ request.getSubscription().getId() + " notification id: " + notification.getId());
+//	}).doOnSuccess(response -> {
+//		logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
+//				+ notification.getId());
+//	}).retryWhen(Retry.backoff(5, Duration.ofSeconds(2))).doOnError(onError -> {
+//		logger.error("Finally failed to send notification subscription id: "
+//				+ request.getSubscription().getId() + " notification id: " + notification.getId());
+//		logger.debug(onError.getMessage());
+//		request.getSubscription().getNotification()
+//				.setLastFailedNotification(new Date(System.currentTimeMillis()));
+//		return;
+//	}).onErrorResume(fallback -> {
+//		return Mono.empty();
+//	}).subscribe();
 
-	private WebClient webClient;
+	private RestTemplate restTemplate;
 
-	NotificationHandlerREST(WebClient webClient) {
-		this.webClient = webClient;
-
+	NotificationHandlerREST(RestTemplate restTemplate) {
+		this.restTemplate = restTemplate;
 	}
 
 	@Override
 	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
-		ResponseEntity<String> compacted = notification.toCompactedJson();
-		webClient.post().uri(request.getSubscription().getNotification().getEndPoint().getUri())
-				.headers(httpHeadersOnWebClientBeingBuilt -> {
-					httpHeadersOnWebClientBeingBuilt.addAll(compacted.getHeaders());
-				}).bodyValue(compacted.getBody()).exchangeToMono(response -> {
-					if (response.statusCode().is4xxClientError() || response.statusCode().is5xxServerError()) {
-						logger.error("Failed to send notification with return code " + response.statusCode()
-								+ " subscription id: " + request.getSubscription().getId() + " notification id: "
-								+ notification.getId());
-						request.getSubscription().getNotification()
-								.setLastFailedNotification(new Date(System.currentTimeMillis()));
-						return Mono.just(Void.class);
-					} else {
-						return Mono.just(Void.class);
+		ResponseEntity<String> compacted;
+		compacted = notification.toCompactedJson();
+		HttpEntity<String> entity = new HttpEntity<String>(compacted.getBody(), compacted.getHeaders());
 
-					}
-				}).doOnError(onError -> {
-					logger.error("Failed to send notification retrying subscription id: "
+		int retryCount = 5;
+		boolean success = false;
+		while (true) {
+			ResponseEntity<String> response = restTemplate.exchange(
+					request.getSubscription().getNotification().getEndPoint().getUri(), HttpMethod.POST, entity,
+					String.class);
+			HttpStatus returnStatus = response.getStatusCode();
+			if (returnStatus.is2xxSuccessful()) {
+				logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
+						+ notification.getId());
+				success = true;
+				break;
+			} else if (returnStatus.is3xxRedirection()) {
+				logger.info("redirect");
+				success = true;
+				break;
+			} else if (returnStatus.is4xxClientError() || returnStatus.is5xxServerError()) {
+				if (retryCount == 0) {
+					logger.error("finally failed to send notification subscription id: "
 							+ request.getSubscription().getId() + " notification id: " + notification.getId());
-				}).doOnSuccess(response -> {
-					logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
-							+ notification.getId());
-				}).retryWhen(Retry.backoff(5, Duration.ofSeconds(2))).doOnError(onError -> {
-					logger.error("Finally failed to send notification subscription id: "
-							+ request.getSubscription().getId() + " notification id: " + notification.getId());
-					logger.debug(onError.getMessage());
-					request.getSubscription().getNotification()
-							.setLastFailedNotification(new Date(System.currentTimeMillis()));
-					return;
-				}).onErrorResume(fallback -> {
-					return Mono.empty();
-				}).subscribe();
-
+					break;
+				}
+				logger.error("failed to send notification subscription id: " + request.getSubscription().getId()
+						+ " notification id: " + notification.getId());
+				logger.error("retrying " + retryCount + " times");
+				retryCount--;
+			}
+		}
+		if (!success) {
+			request.getSubscription().getNotification().setLastFailedNotification(new Date(System.currentTimeMillis()));
+		}
 	}
 
 }

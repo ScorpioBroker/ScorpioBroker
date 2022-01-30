@@ -12,7 +12,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.util.MultiValueMap;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.utils.JsonUtils;
 

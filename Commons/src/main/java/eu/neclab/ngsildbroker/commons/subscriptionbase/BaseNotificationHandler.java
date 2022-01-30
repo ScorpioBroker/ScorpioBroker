@@ -71,7 +71,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 				sendReply(notification, subscriptionRequest);
 				reportSuccessfulNotification(subscription, now);
 			} catch (Exception e) {
-				logger.error("Excep	tion ::", e);
+				logger.error("Exception ::", e);
 				reportFailedNotification(subscription, now);
 			}
 		}

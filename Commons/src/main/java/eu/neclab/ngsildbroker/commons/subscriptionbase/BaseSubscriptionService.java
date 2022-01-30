@@ -28,8 +28,8 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.reactive.function.client.WebClient;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.client.RestTemplate;
 import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
@@ -53,7 +53,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.tools.BeanTools;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
@@ -71,7 +70,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private Timer watchDog = new Timer(true);
 
-	protected WebClient webClient = BeanTools.getWebClient();
+	// protected WebClient webClient = BeanTools.getWebClient();
+
+	@Autowired
+	protected RestTemplate restTemplate;
 
 	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
@@ -98,7 +100,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 		sendInitialNotification = sendInitialNotification();
 		sendDeleteNotification = sendDeleteNotification();
-		notificationHandlerREST = new NotificationHandlerREST(webClient);
+		notificationHandlerREST = new NotificationHandlerREST(restTemplate);
 		Subscription temp = new Subscription();
 		temp.setId("invalid:base");
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,

@@ -13,7 +13,10 @@ import javax.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +36,6 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterf
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import reactor.core.publisher.Mono;
 
 @Service
 public class SubscriptionService extends BaseSubscriptionService {
@@ -77,9 +79,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@PreDestroy
 	private void unsubscribeToAllRemote() {
 		for (String entry : internalSubId2ExternalEndpoint.values()) {
-			webClient.delete().uri(entry).exchangeToMono(response -> {
-				return Mono.just(Void.class);
-			}).subscribe();
+			restTemplate.delete(entry);
 		}
 	}
 
@@ -140,17 +140,14 @@ public class SubscriptionService extends BaseSubscriptionService {
 						temp.deleteCharAt(remoteEndpoint.length() - 1);
 					}
 					temp.append(AppConstants.SUBSCRIPTIONS_URL);
-					webClient.post().uri(temp.toString()).headers(httpHeadersOnWebClientBeingBuilt -> {
-						httpHeadersOnWebClientBeingBuilt.addAll(additionalHeaders);
-					}).bodyValue(body).exchangeToMono(response -> {
-						if (response.statusCode().is2xxSuccessful()) {
-							internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
-									response.headers().header(HttpHeaders.LOCATION).get(0));
-							return Mono.just(Void.class);
-						} else {
-							return response.createException().flatMap(Mono::error);
-						}
-					}).subscribe();
+					HttpEntity<String> entity = new HttpEntity<String>(body, additionalHeaders);
+
+					ResponseEntity<String> response = restTemplate.exchange(temp.toString(), HttpMethod.POST, entity,
+							String.class);
+					if (response.getStatusCode().is2xxSuccessful()) {
+						internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
+								response.getHeaders().getFirst(HttpHeaders.LOCATION));
+					}
 				}
 			}
 		}.start();
@@ -210,11 +207,8 @@ public class SubscriptionService extends BaseSubscriptionService {
 		String endpoint = internalSubId2ExternalEndpoint.remove(subscriptionId);
 		if (endpoint != null) {
 			remoteNotifyCallbackId2InternalSub.remove(internalSubId2RemoteNotifyCallbackId2.remove(subscriptionId));
-			webClient.delete().uri(endpoint).exchangeToMono(response -> {
-				return Mono.just(Void.class);
-			}).retry(5).subscribe();
+			restTemplate.delete(endpoint);
 		}
-
 	}
 
 	@Override
