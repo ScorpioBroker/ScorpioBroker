@@ -61,11 +61,12 @@ public interface SubscriptionControllerFunctions {
 			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 			body = (Map<String, Object>) JsonLdProcessor
 					.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, atContextAllowed).get(0);
-
-			if (bodyContext instanceof List) {
-				context.addAll((List<Object>) bodyContext);
-			} else {
-				context.add(bodyContext);
+			if (bodyContext != null) {
+				if (bodyContext instanceof List) {
+					context.addAll((List<Object>) bodyContext);
+				} else {
+					context.add(bodyContext);
+				}
 			}
 			subscription = expandSubscription(body, request, JsonLdProcessor.getCoreContextClone().parse(context, true),
 					false);
@@ -455,11 +456,12 @@ public interface SubscriptionControllerFunctions {
 			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 			body = (Map<String, Object>) JsonLdProcessor
 					.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed).get(0);
-
-			if (bodyContext instanceof List) {
-				context.addAll((List<Object>) bodyContext);
-			} else {
-				context.add(bodyContext);
+			if (bodyContext != null) {
+				if (bodyContext instanceof List) {
+					context.addAll((List<Object>) bodyContext);
+				} else {
+					context.add(bodyContext);
+				}
 			}
 			Subscription subscription = expandSubscription(body, request,
 					JsonLdProcessor.getCoreContextClone().parse(context, true), true);

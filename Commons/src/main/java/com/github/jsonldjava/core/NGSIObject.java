@@ -416,6 +416,7 @@ class NGSIObject {
 				}
 				validateTimeProperty();
 				return;
+			case NGSIConstants.NGSI_LD_GEOPROPERTY_GEOQ_ATTRIB:
 			case NGSIConstants.NGSI_LD_GEOPROPERTY:
 				if (this.parent == null || this.parent.parent == null || !this.parent.parent.isGeoQ) {
 					throw new ResponseException(ErrorType.BadRequestData,

@@ -290,5 +290,6 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_CSF = "https://uri.etsi.org/ngsi-ld/csf";
 	public static final String NGSI_LD_TRIGGER_REASON = "https://uri.etsi.org/ngsi-ld/triggerReason";
 	public static final String QUERY_PARAMETER_SCOPE_QUERY = "scopeQ";
+	public static final String NGSI_LD_GEOPROPERTY_GEOQ_ATTRIB = "https://uri.etsi.org/ngsi-ld/geoproperty";
 
 }
