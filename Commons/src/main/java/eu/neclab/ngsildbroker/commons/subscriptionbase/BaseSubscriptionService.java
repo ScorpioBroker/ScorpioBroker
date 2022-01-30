@@ -504,8 +504,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 						polygonBuilder.pointXY(next2.coordinates().getLon(), next2.coordinates().getLat());
 					}
 					entityShape = polygonBuilder.build();
-				}
-				if (next.getGeoValue() instanceof LineString) {
+				} else if (next.getGeoValue() instanceof LineString) {
 					LineStringBuilder lineStringBuilder = shapeFactory.lineString();
 					Iterator<SinglePosition> it2 = ((Polygon) next.getGeoValue()).positions().children().iterator()
 							.next().children().iterator();

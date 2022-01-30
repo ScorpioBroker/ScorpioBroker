@@ -486,7 +486,7 @@ public interface SubscriptionControllerFunctions {
 	@SuppressWarnings("unchecked")
 	private static LDGeoQuery getGeoQuery(Map<String, Object> map, Context context) throws Exception {
 		LDGeoQuery geoQuery = new LDGeoQuery();
-		Object geoProperty = map.get(NGSIConstants.NGSI_LD_GEOPROPERTY);
+		Object geoProperty = map.get(NGSIConstants.NGSI_LD_GEOPROPERTY_GEOQ_ATTRIB);
 		if (geoProperty != null) {
 			geoQuery.setGeoProperty(
 					context.expandIri(((List<Map<String, String>>) geoProperty).get(0).get(NGSIConstants.JSON_LD_VALUE),
@@ -532,19 +532,27 @@ public interface SubscriptionControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static ArrayList<Double> getCoordinates(List<Map<String, Object>> jsonCoordinates) {
 		ArrayList<Double> result = new ArrayList<Double>();
-
+		boolean lon = true;
 		for (Map<String, Object> entry : jsonCoordinates) {
 			for (Entry<String, Object> entry1 : entry.entrySet()) {
 				String key = entry1.getKey();
 				Object value = entry1.getValue();
 				if (key.equals(NGSIConstants.JSON_LD_VALUE)) {
+					double myValue = 0;
 					if (value instanceof Double) {
-						result.add((Double) value);
+						myValue = (Double) value;
 					} else if (value instanceof Integer) {
-						result.add(((Integer) value).doubleValue());
+						myValue = ((Integer) value).doubleValue();
 					} else if (value instanceof Long) {
-						result.add(((Long) value).doubleValue());
+						myValue = ((Long) value).doubleValue();
 					}
+					if (lon) {
+						myValue = SerializationTools.getProperLon(myValue);
+					} else {
+						myValue = SerializationTools.getProperLat(myValue);
+					}
+					result.add(myValue);
+					lon = !lon;
 				} else if (key.equals(NGSIConstants.JSON_LD_LIST)) {
 					result.addAll(getCoordinates((List<Map<String, Object>>) value));
 				}

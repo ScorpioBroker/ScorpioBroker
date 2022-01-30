@@ -587,9 +587,29 @@ public class SerializationTools {
 	@SuppressWarnings("unchecked")
 	private static SinglePosition getSingeLePosition(List<Map<String, Object>> coordinates) {
 		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
-		return new SinglePosition(
-				Coordinates.of(Double.parseDouble(list.get(0).get(NGSIConstants.JSON_LD_VALUE).toString()),
-						Double.parseDouble(list.get(1).get(NGSIConstants.JSON_LD_VALUE).toString())));
+		return new SinglePosition(Coordinates.of(
+				getProperLon(Double.parseDouble(list.get(0).get(NGSIConstants.JSON_LD_VALUE).toString())),
+				getProperLat(Double.parseDouble(list.get(1).get(NGSIConstants.JSON_LD_VALUE).toString()))));
+	}
+
+	public static double getProperLat(double lat) {
+		while (lat > 90) {
+			lat = lat - 180;
+		}
+		while (lat < -90) {
+			lat = lat + 180;
+		}
+		return lat;
+	}
+
+	public static double getProperLon(double lon) {
+		while (lon > 180) {
+			lon = lon - 360;
+		}
+		while (lon < -180) {
+			lon = lon + 360;
+		}
+		return lon;
 	}
 
 }
