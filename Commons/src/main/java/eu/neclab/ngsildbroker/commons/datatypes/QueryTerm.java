@@ -174,14 +174,13 @@ public class QueryTerm {
 
 						switch (operator) {
 						case "==":
-							if (range[0].compareTo(value.toString()) <= 0
-									&& range[1].compareTo(value.toString()) >= 0) {
+
+							if (compare(range[0], value) >= 0 && compare(range[1], value) <= 0) {
 								return true;
 							}
 							break;
 						case "!=":
-							if (range[0].compareTo(value.toString()) <= 0
-									&& range[1].compareTo(value.toString()) <= 0) {
+							if (compare(range[0], value) <= 0 && compare(range[1], value) >= 0) {
 								return true;
 							}
 							break;
@@ -234,22 +233,23 @@ public class QueryTerm {
 							}
 							break;
 						case ">=":
-							if (value.toString().compareTo(operant) >= 0) {
+							
+							if (compare(operant, value) >= 0) {
 								return true;
 							}
 							break;
 						case "<=":
-							if (value.toString().compareTo(operant) <= 0) {
+							if (compare(operant, value) <= 0) {
 								return true;
 							}
 							break;
 						case ">":
-							if (value.toString().compareTo(operant) > 0) {
+							if (compare(operant, value) > 0) {
 								return true;
 							}
 							break;
 						case "<":
-							if (value.toString().compareTo(operant) < 0) {
+							if (compare(operant, value) < 0) {
 								return true;
 							}
 							break;
@@ -273,6 +273,19 @@ public class QueryTerm {
 			}
 			return finalReturnValue;
 
+		}
+
+	}
+
+	private int compare(String operant, Object value) {
+		try {
+			if (value instanceof Integer || value instanceof Long || value instanceof Double) {
+				return Double.compare(Double.parseDouble(value.toString()), Double.parseDouble(operant));
+			} else {
+				return value.toString().compareTo(operant);
+			}
+		} catch (NumberFormatException e) {
+			return -1;
 		}
 
 	}

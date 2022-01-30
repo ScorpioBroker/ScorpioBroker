@@ -1,11 +1,14 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.util.Date;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
@@ -61,31 +64,37 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 
 		int retryCount = 5;
 		boolean success = false;
+		ThreadLocalRandom random = ThreadLocalRandom.current();
 		while (true) {
-			ResponseEntity<String> response = restTemplate.exchange(
-					request.getSubscription().getNotification().getEndPoint().getUri(), HttpMethod.POST, entity,
-					String.class);
-			HttpStatus returnStatus = response.getStatusCode();
-			if (returnStatus.is2xxSuccessful()) {
-				logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
-						+ notification.getId());
-				success = true;
-				break;
-			} else if (returnStatus.is3xxRedirection()) {
-				logger.info("redirect");
-				success = true;
-				break;
-			} else if (returnStatus.is4xxClientError() || returnStatus.is5xxServerError()) {
+			try {
+				ResponseEntity<String> response = restTemplate.exchange(
+						request.getSubscription().getNotification().getEndPoint().getUri(), HttpMethod.POST, entity,
+						String.class);
+				HttpStatus returnStatus = response.getStatusCode();
+				if (returnStatus.is2xxSuccessful()) {
+					logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
+							+ notification.getId());
+					success = true;
+					break;
+				} else if (returnStatus.is3xxRedirection()) {
+					logger.info("redirect");
+					success = true;
+					break;
+				}
+			} catch (HttpServerErrorException e) {
 				if (retryCount == 0) {
 					logger.error("finally failed to send notification subscription id: "
 							+ request.getSubscription().getId() + " notification id: " + notification.getId());
 					break;
 				}
+				int waitTime = random.nextInt(500, 5000);
 				logger.error("failed to send notification subscription id: " + request.getSubscription().getId()
-						+ " notification id: " + notification.getId());
-				logger.error("retrying " + retryCount + " times");
+						+ " notification id: " + notification.getId(), e);
+				logger.error("retrying " + retryCount + " times waiting " + waitTime + " ms");
+				Thread.sleep(waitTime);
 				retryCount--;
 			}
+
 		}
 		if (!success) {
 			request.getSubscription().getNotification().setLastFailedNotification(new Date(System.currentTimeMillis()));

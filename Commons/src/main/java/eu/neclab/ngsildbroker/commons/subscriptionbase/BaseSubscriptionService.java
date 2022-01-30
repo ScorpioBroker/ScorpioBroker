@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +23,7 @@ import javax.annotation.PreDestroy;
 
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
@@ -37,6 +39,7 @@ import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -430,10 +433,11 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private Map<String, Object> generateDataFromBaseOp(BaseRequest request, SubscriptionRequest subscription,
 			int methodType) throws ResponseException {
 		Map<String, Object> deltaInfo = request.getRequestPayload();
+
 		if (!shouldFire(deltaInfo, subscription)) {
 			return null;
 		}
-		Map<String, Object> fullEntry = request.getFinalPayload();
+		Map<String, Object> fullEntry = new HashMap<String, Object>(request.getFinalPayload());
 		if (!evaluateGeoQuery(subscription.getSubscription().getLdGeoQuery(),
 				EntityTools.getLocation(fullEntry, subscription.getSubscription().getLdGeoQuery()))) {
 			return null;
@@ -557,11 +561,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 					return SpatialPredicate.Intersects.evaluate(entityShape, queryShape);
 				} else if (GEO_REL_NEAR.equals(relation)) {
 					if (geoQuery.getGeoRelation().getMaxDistance() != null) {
-						Shape bufferedShape = queryShape.getBuffered(geoQuery.getGeoRelation().getMaxDistanceAsDouble(),
+						Shape bufferedShape = queryShape.getBuffered(
+								geoQuery.getGeoRelation().getMaxDistanceAsDouble() * DistanceUtils.KM_TO_DEG,
 								queryShape.getContext());
 						return SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
 					} else if (geoQuery.getGeoRelation().getMinDistance() != null) {
-						Shape bufferedShape = queryShape.getBuffered(geoQuery.getGeoRelation().getMinDistanceAsDouble(),
+						Shape bufferedShape = queryShape.getBuffered(
+								geoQuery.getGeoRelation().getMinDistanceAsDouble() * DistanceUtils.KM_TO_DEG,
 								queryShape.getContext());
 						return !SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
 					} else {
