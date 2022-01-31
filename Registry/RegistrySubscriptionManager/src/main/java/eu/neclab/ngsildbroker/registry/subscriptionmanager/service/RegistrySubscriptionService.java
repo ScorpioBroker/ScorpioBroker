@@ -131,6 +131,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		} catch (URISyntaxException e) {
 			logger.error("Failed to set internal sub endpoint", e);
 		}
+		sub.setTimeInterval(0);
 		id2InternalSubscriptions.put(sub.getId(), request);
 	}
 
