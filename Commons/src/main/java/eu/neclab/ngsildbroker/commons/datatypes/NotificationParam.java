@@ -39,22 +39,22 @@ public class NotificationParam {
 		if (notification.attributeNames != null) {
 			this.attributeNames = new ArrayList<String>(notification.attributeNames);
 		}
-		if (notification.attributeNames != null) {
+		if (notification.endPoint != null) {
 			this.endPoint.update(notification.endPoint);
 		}
-		if (notification.attributeNames != null) {
+		if (notification.format != null) {
 			this.format = notification.format;
 		}
-		if (notification.attributeNames != null) {
-			this.timesSent = notification.timesSent;
-		}
-		if (notification.attributeNames != null) {
+
+		this.timesSent = notification.timesSent;
+
+		if (notification.lastNotification != null) {
 			this.lastNotification = Date.from(notification.lastNotification.toInstant());
 		}
-		if (notification.attributeNames != null) {
+		if (notification.lastSuccessfulNotification != null) {
 			this.lastSuccessfulNotification = Date.from(notification.lastSuccessfulNotification.toInstant());
 		}
-		if (notification.attributeNames != null) {
+		if (notification.lastFailedNotification != null) {
 			this.lastFailedNotification = Date.from(notification.lastFailedNotification.toInstant());
 		}
 		return this;

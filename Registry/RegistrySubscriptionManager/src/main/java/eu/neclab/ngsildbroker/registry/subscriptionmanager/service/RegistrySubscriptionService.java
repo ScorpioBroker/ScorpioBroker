@@ -93,7 +93,9 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	void unsubscribeInternal(String subId) {
 		SubscriptionRequest request = id2InternalSubscriptions.remove(subId);
 		try {
-			unsubscribe(subId, request.getHeaders());
+			if (request != null) {
+				unsubscribe(subId, request.getHeaders());
+			}
 		} catch (ResponseException e) {
 			logger.error("Failed to subscribe internally", e);
 		}
