@@ -233,7 +233,7 @@ public class QueryTerm {
 							}
 							break;
 						case ">=":
-							
+
 							if (compare(operant, value) >= 0) {
 								return true;
 							}
@@ -919,6 +919,9 @@ public class QueryTerm {
 		char charcount = 'a';
 		String lastAttrib = null;
 		for (String subPath : attribPath) {
+			if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+				result.append("NOT ");
+			}
 			result.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
 			result.append(subPath);
 			if (attribute.contains("[") && iElem == 0) {
@@ -1006,47 +1009,6 @@ public class QueryTerm {
 			result.append(')');
 		}
 
-		/*
-		 * StringBuilder attributeFilterProperty = new StringBuilder("(m.attrdata#");
-		 * StringBuilder attributeFilterRelationship = new StringBuilder("m.attrdata#");
-		 * String testValueTypeForPatternOp = new String( "jsonb_typeof(m.attrdata#>'{"
-		 * + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE +
-		 * ",0,@value}') = 'string'"); StringBuilder testValueTypeForDateTime = new
-		 * StringBuilder( "m.attrdata#>>'{" + attribId + ",0," +
-		 * NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@type}' = ");
-		 * 
-		 * if (operator.equals(NGSIConstants.QUERY_PATTERNOP) ||
-		 * operator.equals(NGSIConstants.QUERY_NOTPATTERNOP) || operant.matches(DATE) ||
-		 * operant.matches(TIME) || operant.matches(DATETIME)) {
-		 * attributeFilterProperty.append(">>");
-		 * attributeFilterRelationship.append(">>"); } else {
-		 * attributeFilterProperty.append(">"); attributeFilterRelationship.append(">");
-		 * }
-		 * 
-		 * attributeFilterProperty.append("'{" + attribId + ",0," +
-		 * NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@value}')");
-		 * attributeFilterRelationship.append("'{" + attribId + ",0," +
-		 * NGSIConstants.NGSI_LD_HAS_OBJECT + ",0,@id}'"); if
-		 * (operant.matches(DATETIME)) { attributeFilterProperty.append("::timestamp ");
-		 * testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE_TIME + "'");
-		 * } else if (operant.matches(DATE)) {
-		 * attributeFilterProperty.append("::date ");
-		 * testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE + "'"); }
-		 * else if (operant.matches(TIME)) { attributeFilterProperty.append("::time ");
-		 * testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_TIME + "'"); }
-		 * 
-		 * 
-		 * boolean useRelClause = applyOperator(attributeFilterProperty,
-		 * attributeFilterRelationship); if (useRelClause) { result.append("((" +
-		 * attributeFilterProperty.toString() + ") or (" +
-		 * attributeFilterRelationship.toString() + "))"); } else { result.append("(" +
-		 * attributeFilterProperty.toString()); if
-		 * (operator.equals(NGSIConstants.QUERY_PATTERNOP) ||
-		 * operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) { result.append(" and " +
-		 * testValueTypeForPatternOp); } if (operant.matches(DATE) ||
-		 * operant.matches(TIME) || operant.matches(DATETIME)) { result.append(" and " +
-		 * testValueTypeForDateTime.toString()); } result.append(")"); }
-		 */
 	}
 
 }
