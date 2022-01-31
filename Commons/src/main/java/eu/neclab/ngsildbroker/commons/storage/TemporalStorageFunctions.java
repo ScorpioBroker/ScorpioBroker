@@ -289,7 +289,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
 					sqlWhere.append("NOT ");
 				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
-						+ "::geography, " + georel.getDistanceValue() + ") ");
+						+ "::geography, " + georel.getDistanceValue() + ", false) ");
 			} else {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"GeoQuery: Type and distance are required for near relation");

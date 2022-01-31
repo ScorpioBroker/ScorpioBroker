@@ -243,6 +243,7 @@ public abstract class StorageDAO {
 				return queryResult;
 			} else {
 				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
+				System.err.println(sqlQuery);
 				List<String> list = template.queryForList(sqlQuery, String.class);
 				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);

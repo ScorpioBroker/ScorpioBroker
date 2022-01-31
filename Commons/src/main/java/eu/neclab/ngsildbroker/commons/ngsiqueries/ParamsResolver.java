@@ -288,8 +288,7 @@ public class ParamsResolver {
 				boolean error = false;
 				if (coordinateList.size() == 1 && (coordinateList.get(0) instanceof List)) {
 					coordinateList = (List<Object>) coordinateList.get(0);
-					if (coordinateList.size() == 1 && (coordinateList.get(0) instanceof List)) {
-						coordinateList = (List<Object>) coordinateList.get(0);
+					if (coordinateList.size() > 1 && (coordinateList.get(0) instanceof List)) {
 						if (coordinateList.size() < 4
 								|| !coordinateList.get(0).equals(coordinateList.get(coordinateList.size() - 1))) {
 							throw new ResponseException(ErrorType.BadRequestData,
@@ -317,7 +316,12 @@ public class ParamsResolver {
 				throw new ResponseException(ErrorType.BadRequestData, "Unsupported type");
 			}
 		} catch (Exception e) {
+			if (e instanceof ResponseException) {
+				throw e;
+			}
+			logger.error("failed to parse coordinates", e);
 			throw new ResponseException(ErrorType.BadRequestData, "coordinates are not valid");
+
 		}
 
 	}
