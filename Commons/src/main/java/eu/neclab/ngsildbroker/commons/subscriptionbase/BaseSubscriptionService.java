@@ -75,8 +75,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	// protected WebClient webClient = BeanTools.getWebClient();
 
-	@Autowired
-	protected RestTemplate restTemplate;
+	protected RestTemplate restTemplate = HttpUtils.getRestTemplate();
 
 	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
 

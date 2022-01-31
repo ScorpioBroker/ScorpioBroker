@@ -57,8 +57,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 	@Value("${scorpio.directDB}")
 	boolean directDbConnection;
 
-	@Autowired
-	RestTemplate restTemplate;
+	
+	RestTemplate restTemplate = HttpUtils.getRestTemplate();
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 

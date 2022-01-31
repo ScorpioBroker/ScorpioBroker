@@ -17,10 +17,4 @@ public class AtContextServer {
 		SpringApplication.run(AtContextServer.class, args);
 	}
 
-
-	@Bean
-	RestTemplate restTemp() {
-		return new RestTemplate();
-	}
-
 }

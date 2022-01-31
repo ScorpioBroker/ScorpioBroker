@@ -117,7 +117,6 @@ public class Notification {
 			break;
 		}
 		notificationBody.append("\n}");
-		System.err.println(notificationBody.toString());
 		return ResponseEntity.ok().headers(dataResponse.getHeaders()).body(notificationBody.toString());
 	}
 
