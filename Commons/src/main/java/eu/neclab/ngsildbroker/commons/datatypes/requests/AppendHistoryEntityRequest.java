@@ -47,12 +47,14 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now);
 					//
-					Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send the overwrite op to
-																// delete current values
+					// Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send
+					// the overwrite op to
+					// delete current values
 					try {
 						storeEntry(getId(), null, null, now, attribId, JsonUtils.toPrettyString(jsonElement),
-								EntityTools.getInstanceId(jsonElement), overwriteOp);
+								EntityTools.getInstanceId(jsonElement), false);
 					} catch (IOException e) {
+						e.printStackTrace();
 						// should never happen
 					}
 					updateResult.addToUpdated(getId());

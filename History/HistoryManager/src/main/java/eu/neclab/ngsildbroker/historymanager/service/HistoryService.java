@@ -148,7 +148,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	// endpoint "/entities/{entityId}/attrs"
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
-		if (!this.entityIds.containsEntry(HttpUtils.getTenantFromHeaders(headers), entityId)) {
+		if (!this.entityIds.containsEntry(HttpUtils.getInternalTenant(headers), entityId)) {
 			throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
 		}
 		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, resolved, entityId);
