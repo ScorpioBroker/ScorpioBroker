@@ -130,7 +130,9 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			if (!this.entityIds.containsEntry(tenantId, entityId)) {
 				throw new ResponseException(ErrorType.NotFound, entityId + " not found");
 			}
-			this.entityIds.remove(tenantId, entityId);
+			if (attributeId == null) {
+				this.entityIds.remove(tenantId, entityId);
+			}
 		}
 		logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
 
