@@ -10,6 +10,7 @@ import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
 @Import(WebSecurityConfiguration.class)
 public class HistoryHandler {
 	public static void main(String[] args) {
+		System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
 		SpringApplication.run(HistoryHandler.class, args);
 	}
 }

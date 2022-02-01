@@ -33,8 +33,11 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		String sql = getSQLForTypes();
 
 		for (Map<String, Object> entry : getJDBCTemplate(null).queryForList(sql)) {
-			addToResult(result, AppConstants.INTERNAL_NULL_KEY, entry.get("id").toString(),
-					entry.get("type").toString());
+			Object id = entry.get("id");
+			Object type = entry.get("type");
+			if (id != null && type != null) {
+				addToResult(result, AppConstants.INTERNAL_NULL_KEY, id.toString(), type.toString());
+			}
 		}
 		List<String> tenants = getTenants();
 		for (String tenantId : tenants) {

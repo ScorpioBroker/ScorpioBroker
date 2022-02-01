@@ -110,6 +110,8 @@ hystrix:
 server:
   port: 9090
   tomcat:
+    relaxed-path-chars: <,>,[,\,],^,`,{,|,}
+    relaxed-query-chars: <,>,[,\,],^,`,{,|,}
     max:
       threads:200
 selfhostcorecontext: http://localhost:9090/corecontext

@@ -4,6 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.web.firewall.DefaultHttpFirewall;
+import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
@@ -13,15 +15,8 @@ import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
 public class QueryHandler {
 
 	public static void main(String[] args) {
+		System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
 		SpringApplication.run(QueryHandler.class, args);
 	}
-
-	@Bean
-	RestTemplate restTemp() {
-		return new RestTemplate();
-	}
-
-	
-	
 
 }
