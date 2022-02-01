@@ -140,7 +140,6 @@ public class ParamsResolver {
 				break;
 			case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
 				idPattern = queryValue;
-				// HttpUtils.validateIdPattern(idPattern);
 				break;
 			case NGSIConstants.QUERY_PARAMETER_TYPE:
 				type = String.join(",", expandQueryValues(context, queryValue));
