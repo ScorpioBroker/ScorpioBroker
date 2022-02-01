@@ -70,7 +70,9 @@ public interface SubscriptionControllerFunctions {
 			}
 			subscription = expandSubscription(body, request, JsonLdProcessor.getCoreContextClone().parse(context, true),
 					false);
-			subscription.setActive(true);
+			if (subscription.isActive() == null) {
+				subscription.setActive(true);
+			}
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
 					HttpUtils.getHeaders(request), AppConstants.CREATE_REQUEST);
 			String subId = subscriptionService.subscribe(subRequest);
