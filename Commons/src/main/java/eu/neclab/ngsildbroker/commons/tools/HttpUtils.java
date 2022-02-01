@@ -643,12 +643,16 @@ public final class HttpUtils {
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
-		if (headers == null || headers.isEmpty()) {
+		if (headers == null) {
 			headers = ArrayListMultimap.create();
-			headers.putAll(HttpHeaders.ACCEPT, Arrays.asList("application/json"));
 		}
-		String body = getReplyBody(headers.get(HttpHeaders.ACCEPT.toLowerCase()), AppConstants.QUERY_ENDPOINT, headers,
-				notificationData, true, ldContext, context, geometryProperty);
+		List<String> acceptHeader = headers.get(HttpHeaders.ACCEPT.toLowerCase());
+		if (acceptHeader == null || acceptHeader.isEmpty()) {
+			acceptHeader = new ArrayList<String>();
+			acceptHeader.add("application/json");
+		}
+		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
+				ldContext, context, geometryProperty);
 		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
 	}
 

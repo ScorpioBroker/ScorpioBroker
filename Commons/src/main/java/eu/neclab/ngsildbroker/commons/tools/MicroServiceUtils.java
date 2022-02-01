@@ -8,20 +8,24 @@ import java.net.UnknownHostException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
+@Service
 public class MicroServiceUtils {
 	private final static Logger logger = LogManager.getLogger(MicroServiceUtils.class);
 
-	@Value("${gatewayurl:}")
-	private static String gatewayUrl;
+	@Value("${scorpio.gatewayurl:}")
+	private String gatewayUrl;
 
-	public static URI getGatewayURL() {
+	@Value("${server.port}")
+	private int port;
+
+	public URI getGatewayURL() {
 		logger.trace("getGatewayURL() :: started");
 		String url = null;
 		try {
 			if (gatewayUrl == null || gatewayUrl.strip().isEmpty()) {
 				String hostIP = InetAddress.getLocalHost().getHostName();
-				int port = 9090;
 				url = new StringBuilder("http://").append(hostIP).append(":").append(port).toString();
 			} else {
 				url = gatewayUrl;

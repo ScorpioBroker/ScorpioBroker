@@ -5,9 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 
 @SpringBootApplication
-@Import(WebSecurityConfiguration.class)
+@Import({ WebSecurityConfiguration.class, MicroServiceUtils.class })
 public class SubscriptionHandler {
 
 	public static void main(String[] args) {

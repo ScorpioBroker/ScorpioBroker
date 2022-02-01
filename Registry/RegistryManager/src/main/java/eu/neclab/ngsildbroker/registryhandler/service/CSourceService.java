@@ -85,6 +85,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	private Table<String, Map<String, Object>, Set<String>> tenant2InformationEntry2EntityIds = HashBasedTable.create();
 	private Table<String, String, Map<String, Object>> tenant2EntityId2InformationEntry = HashBasedTable.create();
+	
+	@Autowired
+	private MicroServiceUtils microServiceUtils;
 
 	@PostConstruct
 	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
@@ -375,7 +378,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		resolved.put(NGSIConstants.JSON_LD_TYPE, tmp);
 		tmp = new ArrayList<Object>();
 		HashMap<String, Object> tmp2 = new HashMap<String, Object>();
-		tmp2.put(NGSIConstants.JSON_LD_VALUE, MicroServiceUtils.getGatewayURL().toString());
+		tmp2.put(NGSIConstants.JSON_LD_VALUE, microServiceUtils.getGatewayURL().toString());
 		tmp.add(tmp2);
 		resolved.put(NGSIConstants.NGSI_LD_ENDPOINT, tmp);
 		Set<Map<String, Object>> informationEntries = tenant2InformationEntry2EntityIds.row(tenant).keySet();

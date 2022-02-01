@@ -118,7 +118,7 @@ selfhostcorecontext: http://localhost:9090/corecontext
 logging:
   level:
     root: INFO
-    eu.neclab.ngsildbroker: DEBUG
+    eu.neclab.ngsildbroker: INFO
     org.apache.kafka: ERROR
     org.spring.kafka: ERROR
     org.springframework.kafka: ERROR
@@ -126,9 +126,10 @@ logging:
 ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
 scorpio:
+  gatewayurl: http://localhost:9090
   directDB: true
   history:
-    autorecording: notactive
+    autorecording: active
     max-limit: 1000
     default-limit: 50
     batch-operations:
@@ -159,7 +160,7 @@ scorpio:
   registry:
     max-limit: 1000
     default-limit: 50
-    autorecording: notactive
+    autorecording: active
     batch-operations:
       create:
         max: 1000

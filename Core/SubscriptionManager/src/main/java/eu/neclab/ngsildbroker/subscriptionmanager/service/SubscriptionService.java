@@ -61,6 +61,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Value("${scorpio.topics.internalregsub}")
 	private String INTERNAL_SUBSCRIPTION_TOPIC;
 
+	@Autowired
+	private MicroServiceUtils microServiceUtils;
+
 	@Override
 	protected SubscriptionInfoDAOInterface getSubscriptionInfoDao() {
 		return subService;
@@ -180,7 +183,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 		String uuid = Long.toString(UUID.randomUUID().getLeastSignificantBits());
 		remoteNotifyCallbackId2InternalSub.put(uuid, subToCheck);
 		internalSubId2RemoteNotifyCallbackId2.put(subToCheck.getId(), uuid);
-		StringBuilder url = new StringBuilder(MicroServiceUtils.getGatewayURL().toString()).append("/remotenotify/")
+		StringBuilder url = new StringBuilder(microServiceUtils.getGatewayURL().toString()).append("/remotenotify/")
 				.append(uuid);
 		try {
 			return new URI(url.toString());
