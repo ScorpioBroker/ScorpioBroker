@@ -27,7 +27,9 @@ public class EndPoint {
 		} catch (URISyntaxException e) {
 			// will never happen
 		}
-		this.notifierInfo = new HashMap<String, String>(endPoint.notifierInfo);
+		if (endPoint.notifierInfo != null) {
+			this.notifierInfo = new HashMap<String, String>(endPoint.notifierInfo);
+		}
 	}
 
 	public void update(EndPoint endPoint) {

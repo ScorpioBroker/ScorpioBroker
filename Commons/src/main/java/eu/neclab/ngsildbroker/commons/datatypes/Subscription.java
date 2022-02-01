@@ -43,7 +43,9 @@ public class Subscription {
 	// duplicate
 	public Subscription(Subscription subscription) {
 		this.description = subscription.description;
-		this.expiresAt = subscription.expiresAt.longValue();
+		if (this.expiresAt != null) {
+			this.expiresAt = subscription.expiresAt.longValue();
+		}
 		this.id = subscription.id;
 		this.subscriptionName = subscription.subscriptionName;
 		this.notification = new NotificationParam(subscription.notification);
@@ -51,10 +53,16 @@ public class Subscription {
 		this.throttling = subscription.throttling.intValue();
 		this.timeInterval = subscription.timeInterval.intValue();
 		this.type = subscription.type;
-		this.requestorList = new ArrayList<URI>(subscription.requestorList);
+		if (requestorList != null) {
+			this.requestorList = new ArrayList<URI>(subscription.requestorList);
+		}
 		this.isActive = subscription.isActive;
-		this.attributeNames = new ArrayList<String>(subscription.attributeNames);
-		this.entities = new ArrayList<EntityInfo>(subscription.entities);
+		if (attributeNames != null) {
+			this.attributeNames = new ArrayList<String>(subscription.attributeNames);
+		}
+		if (subscription.entities != null) {
+			this.entities = new ArrayList<EntityInfo>(subscription.entities);
+		}
 		this.ldContext = subscription.ldContext;
 		this.ldQueryString = subscription.ldQueryString;
 		this.csfQueryString = subscription.csfQueryString;

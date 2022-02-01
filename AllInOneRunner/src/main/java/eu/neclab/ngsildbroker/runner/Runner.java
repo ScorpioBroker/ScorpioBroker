@@ -2,12 +2,6 @@ package eu.neclab.ngsildbroker.runner;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import org.springframework.nativex.hint.NativeHint;
-import org.springframework.nativex.hint.ResourceHint;
-import org.springframework.security.web.firewall.DefaultHttpFirewall;
-import org.springframework.security.web.firewall.HttpFirewall;
-
 import eu.neclab.ngsildbroker.entityhandler.EntityHandler;
 import eu.neclab.ngsildbroker.historymanager.HistoryHandler;
 import eu.neclab.ngsildbroker.queryhandler.QueryHandler;

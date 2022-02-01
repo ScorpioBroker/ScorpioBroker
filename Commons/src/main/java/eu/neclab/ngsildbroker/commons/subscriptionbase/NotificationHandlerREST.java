@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.util.Date;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.http.HttpEntity;

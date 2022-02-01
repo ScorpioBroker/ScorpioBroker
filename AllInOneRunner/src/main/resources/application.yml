@@ -118,7 +118,7 @@ selfhostcorecontext: http://localhost:9090/corecontext
 logging:
   level:
     root: INFO
-    eu.neclab.ngsildbroker: INFO
+    eu.neclab.ngsildbroker: DEBUG
     org.apache.kafka: ERROR
     org.spring.kafka: ERROR
     org.springframework.kafka: ERROR

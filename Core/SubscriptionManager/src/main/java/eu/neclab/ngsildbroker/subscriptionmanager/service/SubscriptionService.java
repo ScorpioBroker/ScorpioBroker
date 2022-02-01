@@ -1,7 +1,9 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import com.github.jsonldjava.utils.JsonUtils;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -45,7 +53,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Autowired
 	KafkaTemplate<String, Object> kafkaTemplate;
-
+	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
 	private HashMap<String, String> internalSubId2RemoteNotifyCallbackId2 = new HashMap<String, String>();
 	private HashMap<String, String> internalSubId2ExternalEndpoint = new HashMap<String, String>();
@@ -126,14 +134,27 @@ public class SubscriptionService extends BaseSubscriptionService {
 			return;
 		}
 		new Thread() {
+
 			@Override
 			public void run() {
 				Subscription remoteSub = new Subscription(subscriptionRequest.getSubscription());
 				remoteSub.getNotification().getEndPoint().setUri(prepareNotificationServlet(subscriptionRequest));
-				String body = DataSerializer.toJson(remoteSub);
+				String body;
+				try {
+					Map<String, Object> expandedBody = (Map<String, Object>) JsonUtils
+							.fromString(DataSerializer.toJson(remoteSub));
+					expandedBody.remove(NGSIConstants.NGSI_LD_STATUS);
+					body = JsonUtils.toPrettyString(
+							JsonLdProcessor.compact(expandedBody, subscriptionRequest.getContext(), opts));
+				} catch (Exception e) {
+					throw new AssertionError();
+				}
+				System.err.println(body);
 				for (Map<String, Object> entry : notification.getData()) {
 					HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(entry,
-							subscriptionRequest.getContext(), remoteSub.getNotification().getEndPoint().getAccept());
+							subscriptionRequest.getContext(),
+							Arrays.asList(remoteSub.getNotification().getEndPoint().getAccept()));
+					additionalHeaders.add(HttpHeaders.CONTENT_TYPE, "application/ld+json");
 					String remoteEndpoint = getRemoteEndPoint(entry);
 					StringBuilder temp = new StringBuilder(remoteEndpoint);
 					if (remoteEndpoint.endsWith("/")) {

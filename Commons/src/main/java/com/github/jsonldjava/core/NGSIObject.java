@@ -223,6 +223,10 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData, "A subscription needs a notification entry");
 				}
 				validateNotificationEntry(((List<Map<String, Object>>) notification).get(0));
+				Object entities = ((Map<String, Object>) element).get(NGSIConstants.NGSI_LD_ENTITIES);
+				if (entities == null || ((List<Object>) entities).isEmpty()) {
+					throw new ResponseException(ErrorType.BadRequestData, "A subscription needs an entities entry");
+				}
 			} else {
 				validateSubscription(expandedProperty, activeProperty, api, payloadType);
 			}

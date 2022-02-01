@@ -16,7 +16,6 @@ import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -57,7 +56,6 @@ public abstract class BaseQueryService implements EntryQueryService {
 	@Value("${scorpio.directDB}")
 	boolean directDbConnection;
 
-	
 	RestTemplate restTemplate = HttpUtils.getRestTemplate();
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
@@ -172,7 +170,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 						String endpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
 								.get(NGSIConstants.JSON_LD_VALUE);
 						HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
-								headers.get(HttpHeaders.ACCEPT).get(0));
+								headers.get(HttpHeaders.ACCEPT.toLowerCase()));
 						logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
 						Callable<RemoteQueryResult> callable = () -> {
 							HttpEntity<String> entity;
@@ -199,7 +197,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 							RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, -1, true);
 							result.setCount(count);
 							result.addData(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(resultBody), opts,
-									AppConstants.ENTITY_RETRIEVED_PAYLOAD, true));
+									AppConstants.ENTITY_RETRIEVED_PAYLOAD,
+									HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
 							return result;
 						};
 						callablesCollection.add(callable);
@@ -207,12 +206,10 @@ public abstract class BaseQueryService implements EntryQueryService {
 					logger.debug("csource call response :: ");
 					return getDataFromCsources(callablesCollection);
 				} catch (ResourceAccessException | UnknownHostException e) {
-					logger.error("Failed to reach an endpoint in the registry");
-					logger.error(e.getMessage());
+					logger.error("Failed to reach an endpoint in the registry", e);
 				} catch (Exception e) {
 					logger.error(
-							"No reply from registry. Looks like you are running without a context source registry.");
-					logger.error(e.getMessage());
+							"No reply from registry. Looks like you are running without a context source registry.", e);
 				}
 				return new RemoteQueryResult(null, ErrorType.None, -1, true);
 			}

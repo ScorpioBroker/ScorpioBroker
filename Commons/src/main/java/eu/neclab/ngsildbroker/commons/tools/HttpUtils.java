@@ -152,7 +152,7 @@ public final class HttpUtils {
 		return generateReply(request, reply, additionalHeaders, context, false, endPoint);
 	}
 
-	private static int parseAcceptHeader(List<String> acceptHeaders) {
+	public static int parseAcceptHeader(List<String> acceptHeaders) {
 		float q = 1;
 		int appGroup = -1;
 		Iterator<String> it = acceptHeaders.iterator();
@@ -654,10 +654,10 @@ public final class HttpUtils {
 
 	@SuppressWarnings("unchecked")
 	public static HttpHeaders getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
-			String accept) {
+			List<String> accept) {
 		HttpHeaders result = new HttpHeaders();
 		Context myContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
-		result.add(HttpHeaders.ACCEPT, accept);
+		result.addAll(HttpHeaders.ACCEPT, accept);
 		Object tenant = registration.get(NGSIConstants.NGSI_LD_TENANT);
 		if (tenant != null) {
 			result.add(NGSIConstants.TENANT_HEADER, (String) myContext.compactValue(NGSIConstants.NGSI_LD_TENANT,

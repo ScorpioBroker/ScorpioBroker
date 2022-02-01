@@ -23,13 +23,21 @@ public class NotificationParam {
 
 	// duplicate
 	public NotificationParam(NotificationParam notification) {
-		this.attributeNames = new ArrayList<String>(notification.attributeNames);
+		if (notification.attributeNames != null) {
+			this.attributeNames = new ArrayList<String>(notification.attributeNames);
+		}
 		this.endPoint = new EndPoint(notification.endPoint);
 		this.format = notification.format;
 		this.timesSent = notification.timesSent;
-		this.lastNotification = Date.from(notification.lastNotification.toInstant());
-		this.lastSuccessfulNotification = Date.from(notification.lastSuccessfulNotification.toInstant());
-		this.lastFailedNotification = Date.from(notification.lastFailedNotification.toInstant());
+		if (notification.lastNotification != null) {
+			this.lastNotification = Date.from(notification.lastNotification.toInstant());
+		}
+		if (notification.lastSuccessfulNotification != null) {
+			this.lastSuccessfulNotification = Date.from(notification.lastSuccessfulNotification.toInstant());
+		}
+		if (notification.lastFailedNotification != null) {
+			this.lastFailedNotification = Date.from(notification.lastFailedNotification.toInstant());
+		}
 	}
 
 	public NotificationParam() {
