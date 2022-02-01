@@ -28,7 +28,7 @@ public class Subscription {
 	private List<URI> requestorList;
 	private Boolean isActive;
 	private List<String> attributeNames;
-	private List<EntityInfo> entities = new ArrayList<EntityInfo>();
+	private List<EntityInfo> entities;
 	private Context ldContext;
 	private String ldQueryString;
 	private String csfQueryString;

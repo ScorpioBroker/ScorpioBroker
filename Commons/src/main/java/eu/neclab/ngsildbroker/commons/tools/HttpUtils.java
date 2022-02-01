@@ -314,12 +314,14 @@ public final class HttpUtils {
 				replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
 				break;
 			default:
-				throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
+				throw new ResponseException(ErrorType.NotAcceptable,
+						"Provided accept types " + acceptHeader + " are not supported");
 			}
 			break;
 		case -1:
 		default:
-			throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
+			throw new ResponseException(ErrorType.NotAcceptable,
+					"Provided accept types " + acceptHeader + " are not supported");
 		}
 		return replyBody;
 
@@ -641,11 +643,11 @@ public final class HttpUtils {
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
-		if (headers == null) {
+		if (headers == null || headers.isEmpty()) {
 			headers = ArrayListMultimap.create();
 			headers.putAll(HttpHeaders.ACCEPT, Arrays.asList("application/json"));
 		}
-		String body = getReplyBody(headers.get(HttpHeaders.ACCEPT), AppConstants.QUERY_ENDPOINT, headers,
+		String body = getReplyBody(headers.get(HttpHeaders.ACCEPT.toLowerCase()), AppConstants.QUERY_ENDPOINT, headers,
 				notificationData, true, ldContext, context, geometryProperty);
 		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
 	}
