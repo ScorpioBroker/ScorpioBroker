@@ -129,7 +129,7 @@ scorpio:
   gatewayurl: http://localhost:9090
   directDB: true
   history:
-    autorecording: active
+    autorecording: notactive
     max-limit: 1000
     default-limit: 50
     batch-operations:
@@ -160,7 +160,7 @@ scorpio:
   registry:
     max-limit: 1000
     default-limit: 50
-    autorecording: active
+    autorecording: notactive
     batch-operations:
       create:
         max: 1000

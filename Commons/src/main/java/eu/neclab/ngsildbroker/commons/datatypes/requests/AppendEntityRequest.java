@@ -57,12 +57,8 @@ public class AppendEntityRequest extends EntityRequest {
 				if (option.isBlank()) {
 					continue;
 				}
-				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)
-						|| option.equalsIgnoreCase(NGSIConstants.UPDATE_OPTION)) {
+				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)) {
 					overwrite = false;
-				} else if (option.equalsIgnoreCase(NGSIConstants.OVERWRITE_OPTION)
-						|| option.equalsIgnoreCase(NGSIConstants.REPLACE_OPTION)) {
-					overwrite = true;
 				} else {
 					throw new ResponseException(ErrorType.BadRequestData, option + " is an invalid option");
 				}
@@ -80,8 +76,6 @@ public class AppendEntityRequest extends EntityRequest {
 			Object value = entry.getValue();
 			if (value == null) {
 				entityBody.remove(key);
-				// appendResult.getAppendedJsonFields().put(key, value);
-
 				continue;
 			}
 
@@ -94,7 +88,8 @@ public class AppendEntityRequest extends EntityRequest {
 						updateDatasetId = (String) (((List<Map<String, Object>>) entry2
 								.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)).get(NGSIConstants.JSON_LD_ID);
 					}
-					Map<String, Object> toRemove = null;
+					Map<String, Object> dateReferenceItem = entry2;
+					boolean found = false;
 					for (Map<String, Object> entry3 : originalValueList) {
 						String originalDatasetId = null;
 						if (entry3.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
@@ -107,15 +102,22 @@ public class AppendEntityRequest extends EntityRequest {
 						}
 						if ((updateDatasetId == null && originalDatasetId == null)
 								|| updateDatasetId.equals(originalDatasetId)) {
-							toRemove = entry3;
+							dateReferenceItem = entry3;
+							found = true;
 							break;
 						}
-						if (!updateDatasetId.equals(originalDatasetId)) {
-							toRemove = entry2;
-							continue;
-						}
 					}
-					if (toRemove == null) {
+					if (!found || (found && overwrite)) {
+						if (found) {
+							originalValueList.remove(dateReferenceItem);
+						}
+						entry2.put(NGSIConstants.NGSI_LD_CREATED_AT,
+								dateReferenceItem.get(NGSIConstants.NGSI_LD_CREATED_AT));
+						setTemporalProperties(entry2, "", now, true);
+						originalValueList.add(entry2);
+						updateResult.addToUpdated(key);
+						// entityBody.put(key, originalValueList);
+					} else {
 						String reason;
 						if (updateDatasetId == null) {
 							reason = "default entry is found";
@@ -123,33 +125,17 @@ public class AppendEntityRequest extends EntityRequest {
 							reason = updateDatasetId + "  datasetId is found ";
 						}
 						updateResult.addToNotUpdated(key, reason);
-					} else {
-						entry2.put(NGSIConstants.NGSI_LD_CREATED_AT, toRemove.get(NGSIConstants.NGSI_LD_CREATED_AT));
-						setTemporalProperties(entry2, "", now, true);
-						originalValueList.add(entry2);
-						updateResult.addToUpdated(key);
-						entityBody.put(key, value);
-
 					}
+
 				}
 			} else {
-				if ((entityBody.containsKey(key) && overwrite) || !entityBody.containsKey(key)) {
-					if (value instanceof List && !((List<Object>) value).isEmpty()) { // TODO: should we keep the
-																						// createdAt value if attribut
-																						// already exists? // (overwrite
-																						// operation) => if
-																						// (objectNode.has(key)) ...
-						setTemporalProperties(((List<Object>) value).get(0), now, now, false);
-					}
-					entityBody.put(key, value);
-					updateResult.addToUpdated(key);
-					continue;
+				setTemporalProperties(((List<Object>) value).get(0), now, now, false);
+				entityBody.put(key, value);
+				updateResult.addToUpdated(key);
+				continue;
 
-				} 
 			}
-             
 		}
-
 		setFinalPayload(entityBody);
 		this.withSysAttrs = JsonUtils.toPrettyString(entityBody);
 		removeTemporalProperties(entityBody);

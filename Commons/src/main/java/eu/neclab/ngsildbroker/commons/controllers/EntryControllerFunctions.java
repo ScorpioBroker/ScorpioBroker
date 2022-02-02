@@ -2,11 +2,13 @@ package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -273,6 +275,10 @@ public interface EntryControllerFunctions {
 		}
 		boolean insertedOneEntity = false;
 		boolean appendedOneEntity = false;
+		boolean replace = true;
+		if (ArrayUtils.contains(optionsArray, NGSIConstants.UPDATE_OPTION)) {
+			replace = false;
+		}
 		for (Map<String, Object> entry : jsonPayload) {
 			Map<String, Object> resolved;
 			try {
@@ -298,8 +304,6 @@ public interface EntryControllerFunctions {
 				result.addSuccess(entityService.createEntry(headers, resolved));
 				insertedOneEntity = true;
 			} catch (Exception e) {
-
-				RestResponse response;
 				String entityId;
 				if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
 					entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
@@ -308,40 +312,59 @@ public interface EntryControllerFunctions {
 							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
 					continue;
 				}
-				if (e instanceof ResponseException) {
+				if (replace) {
+					try {
+						entityService.deleteEntry(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID));
+						result.addSuccess(entityService.createEntry(headers, resolved));
+						insertedOneEntity = true;
+					} catch (Exception e1) {
+						RestResponse response;
+						if (e1 instanceof ResponseException) {
+							response = new RestResponse((ResponseException) e1);
+						} else {
+							response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
+						}
+						result.addFail(new BatchFailure(entityId, response));// TODO Auto-generated catch block
+					}
+				} else {
+					RestResponse response;
 
-					ResponseException responseException = ((ResponseException) e);
-					if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
-						try {
-							UpdateResult updateResult = entityService.appendToEntry(headers, entityId, resolved,
-									optionsArray);
-							if (updateResult.getNotUpdated().isEmpty()) {
-								result.addSuccess(entityId);
-								appendedOneEntity = true;
-							} else {
-								result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
-										JsonUtils.toPrettyString(updateResult.getNotUpdated()) + " was not added")));
-							}
-						} catch (Exception e1) {
-							if (e instanceof ResponseException) {
-								response = new RestResponse((ResponseException) e1);
-							} else {
-								response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
+					if (e instanceof ResponseException) {
+
+						ResponseException responseException = ((ResponseException) e);
+						if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
+							try {
+								UpdateResult updateResult = entityService.appendToEntry(headers, entityId, resolved,
+										new String[0]);
+								if (updateResult.getNotUpdated().isEmpty()) {
+									result.addSuccess(entityId);
+									appendedOneEntity = true;
+								} else {
+									result.addFail(new BatchFailure(entityId,
+											new RestResponse(ErrorType.MultiStatus,
+													JsonUtils.toPrettyString(updateResult.getNotUpdated())
+															+ " was not added")));
+								}
+							} catch (Exception e1) {
+								if (e1 instanceof ResponseException) {
+									response = new RestResponse((ResponseException) e1);
+								} else {
+									response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
+								}
+
+								result.addFail(new BatchFailure(entityId, response));
 							}
 
+						} else {
+							response = new RestResponse((ResponseException) e);
 							result.addFail(new BatchFailure(entityId, response));
 						}
 
 					} else {
-						response = new RestResponse((ResponseException) e);
+						response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 						result.addFail(new BatchFailure(entityId, response));
 					}
-
-				} else {
-					response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-					result.addFail(new BatchFailure(entityId, response));
 				}
-
 			}
 		}
 
