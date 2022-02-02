@@ -16,10 +16,11 @@ What is in this release:
 3. improved core context handling. The default core context is now configured via the property ngsild.corecontext and will be always used
 4. reorganization of kafka topics. We have reduced the amount of used kafka topics to 5 and reduced the amount of data transmitted through kafka
 5. Updating to newer versions of kafka and postgres in our default docker-compose files.
-6. persistance of subscriptions in postgres 
-7. various bugfixes
-8. updated Spring Boot to version 2.6.2 and base Java image to Java 17 
-9. Updated configuration. We have updated our configuration to allow an easier reconfiguration from the user side. These settings can all be set via environment variables. The format for setting those is capital letters and subsections devided by an underscore so e.g.: SCORPIO_GATEWAYURL  An overview of the current settings can be seen below.
+6. Integration of the spring actuator plugin providing various infos like health or log via the /actuator/info endpoint
+7. persistance of subscriptions in postgres 
+8. various bugfixes
+9. updated Spring Boot to version 2.6.2 and base Java image to Java 17 
+10. Updated configuration. We have updated our configuration to allow an easier reconfiguration from the user side. These settings can all be set via environment variables. The format for setting those is capital letters and subsections devided by an underscore so e.g.: SCORPIO_GATEWAYURL  An overview of the current settings can be seen below.
 
 mysettings:
   application-name: entity-manager
