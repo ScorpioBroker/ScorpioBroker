@@ -1,7 +1,10 @@
+mysettings:
+  eureka:
+    host: ${eurekahost:localhost}
 spring:
-  application:
-    name: gateway
   cloud:
+    discovery:
+      enabled: true
     gateway:
       routes:
       - uri: lb://AIO-RUNNER
@@ -59,8 +62,3 @@ spring:
         predicates:
         - Method=GET
         - Path=/ngsi-ld/contextes/**
-      - uri: lb://AIO-RUNNER
-        id: info
-        predicates:
-        - Method=GET
-        - Path=/scorpio/v1/info/**
