@@ -107,7 +107,7 @@ public class AppendEntityRequest extends EntityRequest {
 						}
 						if ((updateDatasetId == null && originalDatasetId == null)
 								|| updateDatasetId.equals(originalDatasetId)) {
-							toRemove = null;
+							toRemove = entry3;
 							break;
 						}
 						if (!updateDatasetId.equals(originalDatasetId)) {
@@ -128,6 +128,7 @@ public class AppendEntityRequest extends EntityRequest {
 						setTemporalProperties(entry2, "", now, true);
 						originalValueList.add(entry2);
 						updateResult.addToUpdated(key);
+						entityBody.put(key, value);
 
 					}
 				}
@@ -144,9 +145,9 @@ public class AppendEntityRequest extends EntityRequest {
 					updateResult.addToUpdated(key);
 					continue;
 
-				}
+				} 
 			}
-
+             
 		}
 
 		setFinalPayload(entityBody);
