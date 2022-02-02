@@ -21,7 +21,7 @@ public class SecurityConfiguration {
 			http.authorizeExchange().anyExchange().authenticated().and().httpBasic().and().oauth2Client().and()
 					.oauth2Login().and().formLogin();
 		} else {
-			http.authorizeExchange().anyExchange().permitAll();
+			http.authorizeExchange().anyExchange().permitAll().and().csrf().disable();
 		}
 		return http.build();
 	}
