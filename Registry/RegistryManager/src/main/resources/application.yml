@@ -1,5 +1,5 @@
 mysettings:
-  application-name: regmanager
+  application-name: registry-manager
   kafka:
     bootstrap:
       host: ${bushost:localhost}

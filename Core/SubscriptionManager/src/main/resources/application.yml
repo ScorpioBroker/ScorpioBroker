@@ -1,5 +1,5 @@
 mysettings:
-  application-name: submanager
+  application-name: subscription-manager
   kafka:
     bootstrap:
       host: ${bushost:localhost}

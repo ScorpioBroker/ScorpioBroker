@@ -101,12 +101,12 @@ spring:
         predicates:
         - Method=GET,POST,PATCH,DELETE
         - Path=/ngsi-ld/v1/subscriptions/**
-      - uri: lb://C-SOURCES
+      - uri: lb://REGISTRY-MANAGER
         id: csourcereg
         predicates:
         - Method=GET,POST,PATCH,DELETE
         - Path=/ngsi-ld/v1/csourceRegistrations/**
-      - uri: lb://C-SOURCES
+      - uri: lb://REGISTRY-SUBSCRIPTION-MANAGER
         id: csourcesubs
         predicates:
         - Method=GET,POST,PATCH,DELETE
@@ -121,11 +121,6 @@ spring:
         predicates:
         - Method=GET
         - Path=/ngsi-ld/contextes/**
-      - uri: lb://STORAGE-MANAGER
-        id: info
-        predicates:
-        - Method=GET
-        - Path=/scorpio/v1/info/**
 logging:
   level:
     root: INFO

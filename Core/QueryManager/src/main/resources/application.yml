@@ -1,5 +1,5 @@
 mysettings:
-  application-name: querymanager
+  application-name: query-manager
   kafka:
     bootstrap:
       host: ${bushost:localhost}

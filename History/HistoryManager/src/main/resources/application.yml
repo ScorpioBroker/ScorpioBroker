@@ -1,5 +1,5 @@
 mysettings:
-  application-name: historymanager
+  application-name: history-manager
   kafka:
     bootstrap:
       host: ${bushost:localhost}

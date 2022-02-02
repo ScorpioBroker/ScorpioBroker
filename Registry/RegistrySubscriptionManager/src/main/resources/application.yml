@@ -1,5 +1,5 @@
 mysettings:
-  application-name: regsubmanager
+  application-name: registry-subscription-manager
   kafka:
     bootstrap:
       host: ${bushost:localhost}
