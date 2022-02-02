@@ -1,102 +1,80 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
+import javax.el.MethodNotFoundException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.AppendCSourceRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.CreateCSourceRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
+import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
+import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.registryhandler.config.CSourceProducerChannel;
-import eu.neclab.ngsildbroker.registryhandler.config.StartupConfig;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
-import eu.neclab.ngsildbroker.registryhandler.repository.CSourceInfoDAO;
 
 @Service
-public class CSourceService {
+public class CSourceService extends BaseQueryService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
-	// public static final Gson GSON = DataSerializer.GSON;
-
-	@Value("${bootstrap.servers}")
-	String BOOTSTRAP_SERVERS;
 
 	@Autowired
-	@Qualifier("rmops")
-	KafkaOps operations;
-	@Autowired
-	ObjectMapper objectMapper;
+	CSourceDAO csourceInfoDAO;
+
+	Map<String, Object> myRegistryInformation;
+	@Value("${scorpio.registry.autoregmode:types}")
+	String AUTO_REG_MODE;
 
 	@Autowired
-	StartupConfig startupConfig;
+	KafkaTemplate<String, Object> kafkaTemplate;
 
-	@Autowired
-	@Qualifier("rmcsourcedao")
-	CSourceDAO csourceDAO;
-
-	@Autowired
-	CSourceInfoDAO csourceInfoDAO;
-
-	@Autowired
-	CSourceSubscriptionService csourceSubService;
-
-	@Autowired
-	@Qualifier("rmqueryParser")
-	QueryParser queryParser;
-
-	@Value("${csource.source.topic}")
+	@Value("${scorpio.topics.registry}")
 	String CSOURCE_TOPIC;
-
-	@Value("${csource.directdb:true}")
+	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
+			new LinkedBlockingQueue<Runnable>());
+	@Value("${scorpio.directDB}")
 	boolean directDB = true;
 
-	private final CSourceProducerChannel producerChannels;
 	private ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
@@ -105,355 +83,104 @@ public class CSourceService {
 
 	ThreadPoolExecutor executor = new ThreadPoolExecutor(20, 50, 600000, TimeUnit.MILLISECONDS, workQueue);
 
-	CSourceService(CSourceProducerChannel producerChannels) {
-
-		this.producerChannels = producerChannels;
-	}
+	private Table<String, Map<String, Object>, Set<String>> tenant2InformationEntry2EntityIds = HashBasedTable.create();
+	private Table<String, String, Map<String, Object>> tenant2EntityId2InformationEntry = HashBasedTable.create();
+	
+	@Autowired
+	private MicroServiceUtils microServiceUtils;
 
 	@PostConstruct
 	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
 		synchronized (this.csourceIds) {
 			this.csourceIds = csourceInfoDAO.getAllIds();
 		}
+		Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
+		for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
+			String tenant = entry.getKey();
+			List<String> entityList = entry.getValue();
+			if (entityList.isEmpty()) {
+				continue;
+			}
+			for (String entityString : entityList) {
+				Map<String, Object> entity = (Map<String, Object>) JsonUtils.fromString(entityString);
+				Map<String, Object> informationEntry = getInformationFromEntity(entity);
+				String id = (String) entity.get(NGSIConstants.JSON_LD_ID);
+				tenant2EntityId2InformationEntry.put(tenant, id, informationEntry);
+				Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
+				if (ids == null) {
+					ids = new HashSet<String>();
+				}
+				ids.add(id);
+				tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
+			}
+			CSourceRequest regEntry = createInternalRegEntry(tenant);
+			try {
+				upsert(regEntry);
+			} catch (Exception e) {
+				logger.error("Failed to create initial internal reg status", e);
+			}
+		}
+
 	}
 
-	public List<JsonNode> getCSourceRegistrations(String tenant) throws ResponseException, IOException, Exception {
+	public List<String> getCSourceRegistrations(String tenant) throws ResponseException, IOException, Exception {
 		if (directDB) {
-			ArrayList<JsonNode> result = new ArrayList<JsonNode>();
-			List<String> regs = csourceInfoDAO.getAllRegistrations(tenant);
-			for (String reg : regs) {
-				result.add(objectMapper.readTree(reg));
-			}
-			return result;
+			return csourceInfoDAO.getAllRegistrations(tenant);
 		} else {
 			logger.trace("getAll() ::");
-
-			Map<String, byte[]> records = operations.pullFromKafka(this.CSOURCE_TOPIC);
-			Map<String, JsonNode> entityMap = new HashMap<String, JsonNode>();
-			JsonNode entityJsonBody = objectMapper.createObjectNode();
-			byte[] result = null;
-			String key = null;
-
-			for (String recordKey : records.keySet()) {
-				result = records.get(recordKey);
-				key = recordKey;
-				entityJsonBody = objectMapper.readTree(result);
-				if (!entityJsonBody.isNull())
-					entityMap.put(key, entityJsonBody);
-			}
-			return new ArrayList<JsonNode>(entityMap.values());
+			// TODO redo this completely with support of the storagemanager
+			return new ArrayList<String>();
 		}
 
 	}
 
-	// private List<String> getParamsList(String types) {
-	// if (types != null) {
-	// return Stream.of(types.split(",")).collect(Collectors.toList());
-	// }
-	// return null;
-	// }
-	//
-	// private boolean filterForParams(List<String> params, String matchEntity) {
-	// if (params == null)
-	// return true;
-	// if (!params.contains(matchEntity)) {
-	// return false;
-	// }
-	// return true;
-	// }
-	//
-	// private boolean filterForParamsPatterns(List<String> idPatterns, String
-	// matchEntity) {
-	// if (idPatterns == null)
-	// return true;
-	// for (String idPattern : idPatterns) {
-	// if (Pattern.compile(idPattern).matcher(matchEntity).matches()) {
-	// return true;
-	// }
-	// }
-	// return false;
-	// }
-
-	public CSourceRegistration getCSourceRegistrationById(String tenantheaders, String registrationId)
+	public String getCSourceRegistrationById(String tenantId, String registrationId)
 			throws ResponseException, Exception {
-		if (registrationId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-
-		String entityBody = validateIdAndGetBody(registrationId, tenantheaders);
-		JsonNode csourceJsonBody = objectMapper.createObjectNode();
-		csourceJsonBody = objectMapper.readTree(entityBody);
-
-		return DataSerializer.getCSourceRegistration(objectMapper.writeValueAsString(csourceJsonBody));
-
+		return validateIdAndGetBody(registrationId, tenantId);
 	}
 
-	public boolean updateCSourceRegistration(ArrayListMultimap<String, String> headers, String registrationId,
-			String payload) throws ResponseException, Exception {
-		MessageChannel messageChannel = producerChannels.csourceWriteChannel();
-		if (registrationId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-		String tenantid;
-		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
-			tenantid = headers.get(NGSIConstants.TENANT_HEADER).get(0);
-		} else {
-			tenantid = null;
-		}
-
-		String csourceBody = validateIdAndGetBody(registrationId, tenantid);
-		JsonNode csourceJsonBody = objectMapper.createObjectNode();
-		csourceJsonBody = objectMapper.readTree(csourceBody);
-
-		CSourceRegistration prevCSourceRegistration = DataSerializer.getCSourceRegistration(csourceJsonBody.toString());
-		logger.debug("Previous CSource Registration:: " + prevCSourceRegistration);
-
-		CSourceRegistration updateCS = DataSerializer.getCSourceRegistration(payload);
-		CSourceRegistration newCSourceRegistration = prevCSourceRegistration.update(updateCS);
-		AppendCSourceRequest request = new AppendCSourceRequest(headers, registrationId, csourceJsonBody,
-				newCSourceRegistration);
-
-		synchronized (this) {
-			TimerTask task = regId2TimerTask.get(registrationId.toString());
-			if (task != null) {
-				task.cancel();
-			}
-			this.csourceTimerTask(headers, newCSourceRegistration);
-		}
-		csourceSubService.checkSubscriptions(new CreateCSourceRequest(prevCSourceRegistration, headers),
-				new CreateCSourceRequest(newCSourceRegistration, headers));
-		this.operations.pushToKafka(messageChannel, registrationId.getBytes(),
-				DataSerializer.toJson(request).getBytes());
-		handleFed();
-		return true;
+	private void pushToDB(CSourceRequest request) throws SQLException {
+		this.csourceInfoDAO.storeRegistryEntry(request);
 	}
 
-	private void handleFed() {
-		new Thread() {
-			public void run() {
-				startupConfig.handleUpdatedTypesForFed();
-			};
-		}.start();
-	}
-
-	public URI registerCSource(ArrayListMultimap<String, String> headers, CSourceRegistration csourceRegistration)
-			throws ResponseException, Exception {
-		CSourceRequest request = new CreateCSourceRequest(csourceRegistration, headers);
-		String id;
-		URI idUri = csourceRegistration.getId();
-		if (idUri == null) {
-			idUri = generateUniqueRegId(csourceRegistration);
-			csourceRegistration.setId(idUri);
-
-		}
-		id = idUri.toString();
-
-		if (csourceRegistration.getType() == null) {
-			logger.error("Invalid type!");
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-		if (!isValidURL(csourceRegistration.getEndpoint().toString())) {
-			logger.error("Invalid endpoint URL!");
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-		if (csourceRegistration.getInformation() == null) {
-			logger.error("Information is empty!");
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-		if (csourceRegistration.getExpires() != null && !isValidFutureDate(csourceRegistration.getExpires())) {
-			logger.error("Invalid expire date!");
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		synchronized (this.csourceIds) {
-			if (this.csourceIds.containsEntry(tenantId, request.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists);
-			}
-			this.csourceIds.put(tenantId, request.getId());
-		}
-
-		// TODO: [check for valid identifier (id)]
-
-		operations.pushToKafka(producerChannels.csourceWriteChannel(),
-				request.getId().getBytes(NGSIConstants.ENCODE_FORMAT),
-				DataSerializer.toJson(request).getBytes(NGSIConstants.ENCODE_FORMAT));
-		this.csourceTimerTask(headers, csourceRegistration);
-		if (!csourceRegistration.isInternal()) {
-			csourceSubService.checkSubscriptions(request, TriggerReason.newlyMatching);
-		}
-		handleFed();
-		return idUri;
-	}
-
-	private URI generateUniqueRegId(CSourceRegistration csourceRegistration) {
-
-		try {
-
-			String key = "urn:ngsi-ld:csourceregistration:" + csourceRegistration.hashCode();
-			while (this.operations.isMessageExists(key, this.CSOURCE_TOPIC)) {
-				key = key + "1";
-			}
-			return new URI(key);
-		} catch (URISyntaxException e) {
-			// Left empty intentionally should never happen
-			throw new AssertionError();
-		}
-	}
-
-	public void csourceTimerTask(ArrayListMultimap<String, String> headers, CSourceRegistration csourceReg) {
-		if (csourceReg.getExpires() != null) {
+	public void csourceTimerTask(ArrayListMultimap<String, String> headers, Map<String, Object> registration) {
+		Object expiresAt = registration.get(NGSIConstants.NGSI_LD_EXPIRES);
+		String regId = (String) registration.get(NGSIConstants.JSON_LD_ID);
+		if (expiresAt != null) {
 			TimerTask cancel = new TimerTask() {
 				@Override
 				public void run() {
 					try {
 						synchronized (this) {
-							deleteCSourceRegistration(headers, csourceReg.getId().toString());
+							deleteEntry(headers, regId);
 						}
 					} catch (Exception e) {
 						logger.error("Timer Task -> Exception while expiring residtration :: ", e);
 					}
 				}
 			};
-			regId2TimerTask.put(csourceReg.getId().toString(), cancel);
-			watchDog.schedule(cancel, csourceReg.getExpires() - System.currentTimeMillis());
+			regId2TimerTask.put(regId, cancel);
+			watchDog.schedule(cancel, getMillisFromDateTime(expiresAt) - System.currentTimeMillis());
 		}
 	}
 
-	public boolean deleteCSourceRegistration(ArrayListMultimap<String, String> headers, String registrationId)
-			throws ResponseException, Exception {
-		MessageChannel messageChannel = producerChannels.csourceWriteChannel();
-		if (registrationId == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		synchronized (this.csourceIds) {
-			if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
-				throw new ResponseException(ErrorType.NotFound);
-			}
-		}
-
-		/*
-		 * String csourceBody = null; if (directDB) { csourceBody =
-		 * this.csourceInfoDAO.getEntity(tenantId, registrationId);
-		 * 
-		 * }
-		 */
-		// CSourceRegistration csourceRegistration =
-		// DataSerializer.getCSourceRegistration(csourceBody);
-		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
-		this.csourceSubService.checkSubscriptions(request, TriggerReason.noLongerMatching);
-		this.operations.pushToKafka(messageChannel, registrationId.getBytes(),
-				DataSerializer.toJson(request).getBytes(NGSIConstants.ENCODE_FORMAT));
-		handleFed();
-		return true;
-		// TODO: [push to other DELETE TOPIC]
-	}
-
-	// for testing
-	// @StreamListener(CSourceConsumerChannel.csourceReadChannel)
-//	@KafkaListener(topics = "${csource.source.topic}", groupId = "regmanger")
-//	public void handleEntityCreate(Message<?> message) {
-//		String payload = new String((byte[]) message.getPayload());
-//		String key = operations.getMessageKey(message);
-//		logger.debug("key received ::::: " + key);
-//		logger.debug("Received message: {} :::: " + payload);
-//	}
-
-	@KafkaListener(topics = "${csource.registry.topic}", groupId = "regmanger") // (CSourceConsumerChannel.contextRegistryReadChannel)
-	public void handleEntityRegistration(Message<?> message) {
-		executor.execute(new Thread() {
-			@Override
-			public void run() {
-				String payload = new String((byte[]) message.getPayload());
-				String datavalue;
-				JsonObject jsonObject = new JsonParser().parse(payload).getAsJsonObject();
-				if (jsonObject.has("CSource")) {
-					datavalue = jsonObject.get("CSource").toString();
-				} else {
-					datavalue = "null";
-				}
-				CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(datavalue);
-				JsonObject jsonObjectpayload = new JsonParser().parse(payload).getAsJsonObject();
-				ArrayListMultimap<String, String> requestheaders = ArrayListMultimap.create();
-				if (jsonObjectpayload.has("headers")) {
-					String headers = jsonObjectpayload.get("headers").toString();
-					JsonObject jsonObjectheaders = new JsonParser().parse(headers).getAsJsonObject();
-					for (Entry<String, JsonElement> entry : jsonObjectheaders.entrySet()) {
-						JsonArray array = entry.getValue().getAsJsonArray();
-						for (JsonElement item : array) {
-							requestheaders.put(entry.getKey(), item.getAsString());
-						}
-					}
-				}
-				// objectMapper.readValue((byte[]) message.getPayload(),
-				// CSourceRegistration.class);
-				csourceRegistration.setInternal(true);
-				try {
-					registerCSource(requestheaders, csourceRegistration);
-				} catch (Exception e) {
-					logger.trace("Failed to register csource " + csourceRegistration.getId().toString(), e);
-				}
-			}
-		});
-	}
-
-	private static boolean isValidURL(String urlString) {
-		URL url;
-		try {
-			url = new URL(urlString);
-			url.toURI();
-			return true;
-		} catch (Exception e) {
-			// put logger
-		}
-		return false;
-	}
-
-	// return true for future date validation
-	private boolean isValidFutureDate(Long date) {
-
-		return System.currentTimeMillis() < date;
-	}
-
-	@KafkaListener(topics = "${csource.query.topic}", groupId = "csourceQueryHandler")
-	@SendTo
-	// @SendTo("QUERY_RESULT") // for tests without QueryManager
-	public byte[] handleContextQuery(@Payload byte[] message) throws Exception {
-		logger.trace("handleContextQuery() :: started");
-		String payload = new String((byte[]) message);
-		logger.debug("Received message: " + payload);
-		String resultPayload = "";
-		try {
-			QueryParams qp = DataSerializer.getQueryParams(payload);
-			QueryResult csourceList = csourceDAO.queryExternalCsources(qp);
-			resultPayload = csourceDAO.getListAsJsonArray(csourceList.getActualDataString());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		logger.trace("Pushing result to Kafka... ");
-		logger.trace("handleContextQuery() :: completed");
-		return resultPayload.getBytes();
-	}
-
-	private String validateIdAndGetBody(String registrationid, String tenantId) throws ResponseException {
+	private String validateIdAndGetBody(String registrationid, String tenantId) throws ResponseException, Exception {
 		// null id check
 		if (registrationid == null) {
-			throw new ResponseException(ErrorType.BadRequestData);
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid query for registration. No ID provided.");
 		}
 
 		synchronized (this.csourceIds) {
 			if (tenantId != null) {
 				if (!this.csourceIds.containsKey(tenantId)) {
-					throw new ResponseException(ErrorType.TenantNotFound);
+					throw new ResponseException(ErrorType.TenantNotFound, "Tenant not found");
 				}
 				if (!this.csourceIds.containsValue(registrationid)) {
-					throw new ResponseException(ErrorType.NotFound);
+					throw new ResponseException(ErrorType.NotFound, registrationid + " not found");
 				}
 			} else {
 				if (!this.csourceIds.containsValue(registrationid)) {
-					throw new ResponseException(ErrorType.NotFound);
+					throw new ResponseException(ErrorType.NotFound, registrationid + " not found");
 				}
 			}
 		}
@@ -462,6 +189,280 @@ public class CSourceService {
 			entityBody = this.csourceInfoDAO.getEntity(tenantId, registrationid);
 		}
 		return entityBody;
+	}
+
+	@Override
+	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry) throws ResponseException, Exception {
+		throw new MethodNotFoundException("not supported in registry");
+	}
+
+	// need to be check and change
+	@Override
+	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
+		String tenantId = HttpUtils.getInternalTenant(headers);
+		Map<String, Object> originalRegistration = validateIdAndGetBodyAsMap(registrationId, tenantId);
+		AppendCSourceRequest request = new AppendCSourceRequest(headers, registrationId, originalRegistration, entry,
+				options);
+		synchronized (this) {
+			TimerTask task = regId2TimerTask.get(registrationId);
+			if (task != null) {
+				task.cancel();
+			}
+			this.csourceTimerTask(headers, request.getFinalPayload());
+		}
+		pushToDB(request);
+		sendToKafka(request);
+		return request.getUpdateResult();
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> validateIdAndGetBodyAsMap(String registrationId, String tenantId) throws Exception {
+		return (Map<String, Object>) JsonUtils.fromString(validateIdAndGetBody(registrationId, tenantId));
+	}
+
+	@Override
+	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+			throws ResponseException, Exception {
+		String id;
+		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
+		if (idObj == null) {
+			id = EntityTools.generateUniqueRegId(resolved);
+			resolved.put(NGSIConstants.JSON_LD_ID, id);
+		} else {
+			id = (String) idObj;
+		}
+		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
+		String tenantId = HttpUtils.getInternalTenant(headers);
+		synchronized (this.csourceIds) {
+			if (this.csourceIds.containsEntry(tenantId, request.getId())) {
+				throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
+			}
+			this.csourceIds.put(tenantId, request.getId());
+		}
+		pushToDB(request);
+		sendToKafka(request);
+		return request.getId();
+
+	}
+
+	private void sendToKafka(BaseRequest request) {
+		kafkaExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), new BaseRequest(request));
+
+			}
+		});
+	}
+
+	@Override
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId)
+			throws ResponseException, Exception {
+		if (registrationId == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid delete for registration. No ID provided.");
+		}
+
+		String tenantId = HttpUtils.getInternalTenant(headers);
+
+		synchronized (this.csourceIds) {
+			if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
+				throw new ResponseException(ErrorType.NotFound, registrationId + " not found.");
+			}
+		}
+
+		Map<String, Object> registration = validateIdAndGetBodyAsMap(registrationId, tenantId);
+		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId);
+		sendToKafka(requestForSub);
+		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
+		pushToDB(request);
+		this.csourceIds.remove(tenantId, registrationId);
+		return true;
+
+	}
+
+	private long getMillisFromDateTime(Object expiresAt) {
+		@SuppressWarnings("unchecked")
+		String value = (String) ((List<Map<String, Object>>) expiresAt).get(0).get(NGSIConstants.JSON_LD_VALUE);
+		try {
+			return SerializationTools.date2Long(value);
+		} catch (Exception e) {
+			throw new AssertionError("In invalid date time came pass the payload checker");
+		}
+	}
+
+	public QueryResult query(QueryParams qp) throws ResponseException {
+		return csourceInfoDAO.query(qp);
+	}
+
+	@Override
+	protected StorageDAO getQueryDAO() {
+		return csourceInfoDAO;
+	}
+
+	@Override
+	protected StorageDAO getCsourceDAO() {
+		// intentional null!!!
+		return null;
+	}
+
+	public void handleEntityDelete(BaseRequest message) {
+		String id = message.getId();
+		String tenant = message.getTenant();
+		Map<String, Object> informationEntry = tenant2EntityId2InformationEntry.remove(tenant, id);
+		Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
+		ids.remove(id);
+		if (ids.isEmpty()) {
+			tenant2InformationEntry2EntityIds.remove(tenant, informationEntry);
+			try {
+				CSourceRequest regEntry = createInternalRegEntry(tenant);
+				if (regEntry.getFinalPayload() == null) {
+					deleteEntry(regEntry.getHeaders(), regEntry.getId());
+				} else {
+					upsert(regEntry);
+				}
+			} catch (Exception e) {
+				logger.error("Failed to store internal registry entry", e);
+			}
+		} else {
+			tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
+		}
+	}
+
+	public void handleEntityCreateOrUpdate(BaseRequest message) {
+		Map<String, Object> informationEntry = getInformationFromEntity(message.getFinalPayload());
+		checkInformationEntry(informationEntry, message.getId(), message.getTenant());
+	}
+
+	private void checkInformationEntry(Map<String, Object> informationEntry, String id, String tenant) {
+		if (informationEntry == null) {
+			return;
+		}
+		boolean update = true;
+		Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
+		if (ids == null) {
+			ids = new HashSet<String>();
+		} else {
+			update = false;
+		}
+		ids.add(id);
+		tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
+		tenant2EntityId2InformationEntry.put(tenant, id, informationEntry);
+		if (update) {
+			try {
+				CSourceRequest regEntry = createInternalRegEntry(tenant);
+				if (regEntry.getFinalPayload() == null) {
+					deleteEntry(regEntry.getHeaders(), regEntry.getId());
+				} else {
+					upsert(regEntry);
+				}
+			} catch (Exception e) {
+				logger.error("Failed to store internal registry entry", e);
+			}
+		}
+
+	}
+
+	private CSourceRequest createInternalRegEntry(String tenant) {
+		String id = AppConstants.INTERNAL_REGISTRATION_ID;
+		ArrayListMultimap<String, String> headers = ArrayListMultimap.create();
+		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
+			id += ":" + tenant;
+			headers.put(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK, tenant);
+		}
+		Map<String, Object> resolved = new HashMap<String, Object>();
+		resolved.put(NGSIConstants.JSON_LD_ID, id);
+		ArrayList<Object> tmp = new ArrayList<Object>();
+		tmp.add(NGSIConstants.NGSI_LD_CSOURCE_REGISTRATION);
+		resolved.put(NGSIConstants.JSON_LD_TYPE, tmp);
+		tmp = new ArrayList<Object>();
+		HashMap<String, Object> tmp2 = new HashMap<String, Object>();
+		tmp2.put(NGSIConstants.JSON_LD_VALUE, microServiceUtils.getGatewayURL().toString());
+		tmp.add(tmp2);
+		resolved.put(NGSIConstants.NGSI_LD_ENDPOINT, tmp);
+		Set<Map<String, Object>> informationEntries = tenant2InformationEntry2EntityIds.row(tenant).keySet();
+
+		tmp = new ArrayList<Object>();
+		for (Map<String, Object> entry : informationEntries) {
+			tmp.add(entry);
+		}
+		try {
+			if (tmp.isEmpty()) {
+				return new DeleteCSourceRequest(null, headers, id);
+			}
+			resolved.put(NGSIConstants.NGSI_LD_INFORMATION, tmp);
+
+			return new CreateCSourceRequest(resolved, headers, id);
+		} catch (ResponseException e) {
+			logger.error("failed to create internal registry entry", e);
+			return null;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> getInformationFromEntity(Map<String, Object> entity) {
+		HashMap<String, Object> result = new HashMap<String, Object>();
+		Map<String, Object> entities = new HashMap<String, Object>();
+		ArrayList<Map<String, Object>> propertyNames = new ArrayList<Map<String, Object>>();
+		ArrayList<Map<String, Object>> relationshipNames = new ArrayList<Map<String, Object>>();
+		if (AUTO_REG_MODE.contains("types")) {
+			entities.put(NGSIConstants.JSON_LD_TYPE, entity.get(NGSIConstants.JSON_LD_TYPE));
+		}
+		if (AUTO_REG_MODE.contains("ids")) {
+			entities.put(NGSIConstants.JSON_LD_ID, entity.get(NGSIConstants.JSON_LD_ID));
+		}
+		if (AUTO_REG_MODE.contains("attributes")) {
+			for (Entry<String, Object> entry : entity.entrySet()) {
+				Object value = entry.getValue();
+				if (value instanceof List) {
+					Object listValue = ((List<Object>) value).get(0);
+					if (listValue instanceof Map) {
+						Map<String, Object> mapValue = (Map<String, Object>) value;
+						Object type = mapValue.get(NGSIConstants.JSON_LD_TYPE);
+						if (type != null) {
+							String typeString = ((List<String>) type).get(0);
+							HashMap<String, Object> tmp = new HashMap<String, Object>();
+							tmp.put(NGSIConstants.JSON_LD_ID, entry.getKey());
+							switch (typeString) {
+							case NGSIConstants.NGSI_LD_PROPERTY:
+								propertyNames.add(tmp);
+								break;
+							case NGSIConstants.NGSI_LD_RELATIONSHIP:
+								relationshipNames.add(tmp);
+								break;
+							default:
+								continue;
+							}
+						}
+					}
+				}
+			}
+		}
+		if (!entities.isEmpty()) {
+			ArrayList<Map<String, Object>> tmp = new ArrayList<Map<String, Object>>();
+			tmp.add(entities);
+			result.put(NGSIConstants.NGSI_LD_ENTITIES, tmp);
+		}
+		if (!propertyNames.isEmpty()) {
+			result.put(NGSIConstants.NGSI_LD_PROPERTIES, propertyNames);
+		}
+		if (!relationshipNames.isEmpty()) {
+			result.put(NGSIConstants.NGSI_LD_PROPERTIES, propertyNames);
+		}
+		if (!result.isEmpty()) {
+			return result;
+		}
+		return null;
+	}
+
+	private void upsert(CSourceRequest regEntry) throws ResponseException, Exception {
+		if (csourceIds.containsEntry(regEntry.getTenant(), regEntry.getId())) {
+			appendToEntry(regEntry.getHeaders(), regEntry.getId(), regEntry.getFinalPayload(), null);
+		} else {
+			createEntry(regEntry.getHeaders(), regEntry.getFinalPayload());
+		}
+
 	}
 
 }

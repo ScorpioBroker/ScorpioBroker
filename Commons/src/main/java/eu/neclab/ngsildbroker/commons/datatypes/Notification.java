@@ -1,98 +1,155 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.net.URI;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import org.springframework.http.ResponseEntity;
+
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 /**
  * @author hebgen
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
-public class Notification extends QueryResult {
-	
-	
-	public Notification(URI id, Long notifiedAt, URI subscriptionId, List<Entity> data) {
-		super(null, null, null, -1, true);
-		this.id = id;
-		this.notifiedAt = notifiedAt;
-		this.subscriptionId = subscriptionId;
-		this.data = data;
-	}
-	
-	
-	
-	public Notification(URI id, Long notifiedAt, URI subscriptionId, List<Entity> data, String errorMsg, ErrorType errorType, int shortErrorMsg, boolean success) {
-		super(null, errorMsg, errorType, shortErrorMsg, success);
-		this.id = id;
-		this.notifiedAt = notifiedAt;
-		this.subscriptionId = subscriptionId;
-		this.data = data;
-	}
-
-
-
-	private URI id;
+public class Notification {
+	private String id;
 	private Long notifiedAt;
-	private URI subscriptionId;
-	private List<Entity> data;
-	private final String type = "Notification";
+	private String subscriptionId;
+	private List<Map<String, Object>> data;
+	private int triggerReason;
+	private List<Object> context;
+	private String type;
+	private ArrayListMultimap<String, String> headers;
+	private static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	
+	public Notification() {
+		// for serialization
+	}
 
-	public URI getId() {
+	public Notification(String id, String type, Long notifiedAt, String subscriptionId, List<Map<String, Object>> data,
+			int triggerReason, List<Object> context, ArrayListMultimap<String, String> headers) {
+		super();
+		this.id = id;
+		this.notifiedAt = notifiedAt;
+		this.subscriptionId = subscriptionId;
+		this.data = data;
+		this.triggerReason = triggerReason;
+		this.type = type;
+		this.context = context;
+		this.headers = headers;
+	}
+
+	public String getId() {
 		return id;
 	}
 
-
-
-	public void setId(URI id) {
+	public void setId(String id) {
 		this.id = id;
 	}
-
-
 
 	public Long getNotifiedAt() {
 		return notifiedAt;
 	}
 
-
-
 	public void setNotifiedAt(Long notifiedAt) {
 		this.notifiedAt = notifiedAt;
 	}
 
-
-
-	public URI getSubscriptionId() {
+	public String getSubscriptionId() {
 		return subscriptionId;
 	}
 
-
-
-	public void setSubscriptionId(URI subscriptionId) {
+	public void setSubscriptionId(String subscriptionId) {
 		this.subscriptionId = subscriptionId;
 	}
 
+	public List<Map<String, Object>> getData() {
+		return data;
+	}
 
+	public void setData(List<Map<String, Object>> data) {
+		this.data = data;
+	}
+
+	public ResponseEntity<String> toCompactedJson() throws Exception {
+		ResponseEntity<String> dataResponse = HttpUtils.generateNotification(headers, data, context, "location");
+		StringBuilder notificationBody = new StringBuilder();
+		notificationBody.append("{\n\t\"id\": \"");
+		notificationBody.append(id);
+		notificationBody.append("\",\n\t\"type\": \"");
+		notificationBody.append(type);
+		notificationBody.append("\",\n\t\"subscriptionId\": \"");
+		notificationBody.append(subscriptionId);
+		notificationBody.append("\",\n\t\"notifiedAt\": \"");
+		notificationBody.append(SerializationTools.formatter.format(Instant.ofEpochMilli(notifiedAt)));
+		notificationBody.append("\",\n\t\"data\": ");
+		notificationBody.append(dataResponse.getBody());
+		switch (triggerReason) {
+		case AppConstants.CREATE_REQUEST:
+			notificationBody.append(",\n\t\"triggerReason\": \"");
+			notificationBody.append(TriggerReason.newlyMatching.toString());
+			notificationBody.append("\"");
+			break;
+		case AppConstants.APPEND_REQUEST:
+			notificationBody.append("\"\n\t\"triggerReason\": \"");
+			notificationBody.append(TriggerReason.updated.toString());
+			notificationBody.append("\"");
+			break;
+		case AppConstants.UPDATE_REQUEST:
+			notificationBody.append("\"\n\t\"triggerReason\": ");
+			notificationBody.append(TriggerReason.updated.toString());
+			notificationBody.append("\"");
+			break;
+		case AppConstants.DELETE_REQUEST:
+			notificationBody.append("\"\n\t\"triggerReason\": ");
+			notificationBody.append(TriggerReason.noLongerMatching.toString());
+			notificationBody.append("\"");
+			break;
+		default:
+			break;
+		}
+		notificationBody.append("\n}");
+		return ResponseEntity.ok().headers(dataResponse.getHeaders()).body(notificationBody.toString());
+	}
+
+	public int getTriggerReason() {
+		return triggerReason;
+	}
+
+	public void setTriggerReason(int triggerReason) {
+		this.triggerReason = triggerReason;
+	}
+
+	public List<Object> getContext() {
+		return context;
+	}
+
+	public void setContext(List<Object> context) {
+		this.context = context;
+	}
 
 	public String getType() {
 		return type;
 	}
 
-
-	public List<Entity> getData() {
-		return data;
+	public void setType(String type) {
+		this.type = type;
 	}
 
-	public void setData(List<Entity> data) {
-		this.data = data;
+	public ArrayListMultimap<String, String> getHeaders() {
+		return headers;
 	}
 
-
-	public void finalize() throws Throwable {
-
+	public void setHeaders(ArrayListMultimap<String, String> headers) {
+		this.headers = headers;
 	}
 
 }

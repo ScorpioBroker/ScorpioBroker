@@ -1,10 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -12,9 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,23 +20,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.CSourceRegistration;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
+import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 
 /**
@@ -54,207 +38,65 @@ import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 @RequestMapping("/ngsi-ld/v1/csourceRegistrations")
 public class RegistryController {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
-	private final static String MY_REQUEST_MAPPING = "/ngsi-ld/v1/csourceRegistrations";
-	private final static String MY_REQUEST_MAPPING_ALT = "/ngsi-ld/v1/csourceRegistrations/";
 
 	@Autowired
-	CSourceService csourceService;
-	@Autowired
-	@Qualifier("rmconRes")
-	ContextResolverBasic contextResolver;
-	@Autowired
-	@Qualifier("rmparamsResolver")
-	ParamsResolver paramsResolver;
-	@Autowired
-	CSourceDAO csourceDAO;
-	@Autowired
-	ObjectMapper objectMapper;
-	private HttpUtils httpUtils;
+	private CSourceService csourceService;
+
+	@Value("${scorpio.entity.default-limit:50}")
+	private int defaultLimit;
+	@Value("${scorpio.entity.max-limit:1000}")
+	private int maxLimit;
+
+	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	private String coreContext;
 
 	@PostConstruct
-	private void setup() {
-		this.httpUtils = HttpUtils.getInstance(contextResolver);
+	public void init() {
+		JsonLdProcessor.init(coreContext);
 	}
 
-	// @GetMapping
-	// public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
-	// @RequestParam HashMap<String, String> queryMap) {
-	// try {
-	// return ResponseEntity.status(HttpStatus.OK)
-	// .body(csourceService.getCSourceRegistrations(queryMap));
-	// } catch (ResponseException exception) {
-	// return ResponseEntity.status(exception.getHttpStatus()).body(new
-	// RestResponse(exception));
-	// } catch (Exception e) {
-	// return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	// .body(new RestResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server
-	// error",
-	// "Internal error")));
-	// }
-	// }
-
 	@GetMapping
-	public ResponseEntity<byte[]> discoverCSource(HttpServletRequest request,
+	public ResponseEntity<String> discoverCSource(HttpServletRequest request,
 			@RequestParam HashMap<String, String> queryMap,
-			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit,
+			@RequestParam(required = false, name = "limit") Integer limit,
 			@RequestParam(value = "offset", required = false) Integer offset,
-			@RequestParam(value = "qtoken", required = false) String qToken) {
-		try {
-			logger.trace("getCSources() ::");
-			String queryParams = request.getQueryString();
-			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
-			if ((request.getRequestURI().equals(MY_REQUEST_MAPPING)
-					|| request.getRequestURI().equals(MY_REQUEST_MAPPING_ALT)) && queryParams != null) {
-
-				List<Object> linkHeaders = HttpUtils.parseLinkHeader(request, NGSIConstants.HEADER_REL_LDCONTEXT);
-				QueryParams qp = paramsResolver.getQueryParamsFromUriQuery(request.getParameterMap(), linkHeaders);
-				if (offset == null) {
-					offset = 0;
-				}
-				if (qp == null) // invalid query
-					throw new ResponseException(ErrorType.InvalidRequest);
-				qp.setTenant(tenantid);
-				qp.setLimit(limit);
-				qp.setOffSet(offset);
-				QueryResult queryResult = csourceDAO.query(qp);
-				String nextLink = HttpUtils.generateNextLink(request, queryResult);
-				String prevLink = HttpUtils.generatePrevLink(request, queryResult);
-				ArrayList<String> additionalLinks = new ArrayList<String>();
-				if (nextLink != null) {
-					additionalLinks.add(nextLink);
-				}
-				if (prevLink != null) {
-					additionalLinks.add(prevLink);
-				}
-				HashMap<String, List<String>> additionalHeaders = new HashMap<String, List<String>>();
-				if (!additionalLinks.isEmpty()) {
-					additionalHeaders.put(HttpHeaders.LINK, additionalLinks);
-				}
-				List<String> csourceList = queryResult.getActualDataString();
-				if (csourceList.size() > 0) {
-					return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
-				} else {
-					throw new ResponseException(ErrorType.NotFound);
-				}
-			} else {
-				// spec v0.9.0 section 5.10.2.4: if neither Entity types nor Attribute names are
-				// provided, an error of BadRequestData shall be raised
-				throw new ResponseException(ErrorType.BadRequestData,
-						"You must provide at least type or attrs as parameter");
-			}
-		} catch (ResponseException exception) {
-			logger.error("Exception ::", exception);
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception exception) {
-			logger.error("Exception ::", exception);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, exception.getLocalizedMessage()).toJsonBytes());
-		}
+			@RequestParam(value = "qtoken", required = false) String qToken,
+			@RequestParam(value = "count", required = false) boolean count) {
+		return QueryControllerFunctions.queryForEntries(csourceService, request, false, defaultLimit, maxLimit, false);
 	}
 
 	@PostMapping
-	public ResponseEntity<byte[]> registerCSource(HttpServletRequest request,
+	public ResponseEntity<String> registerCSource(HttpServletRequest request,
 			@RequestBody(required = false) String payload) {
-		try {
-			HttpUtils.doPreflightCheck(request, payload);
-			logger.debug("payload received :: " + payload);
-
-			this.validate(payload);
-
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
-
-			logger.debug("Resolved payload::" + resolved);
-			CSourceRegistration csourceRegistration = DataSerializer.getCSourceRegistration(resolved);
-			logger.debug("Csource :: " + csourceRegistration);
-			URI uri = csourceService.registerCSource(HttpUtils.getHeaders(request), csourceRegistration);
-
-			return ResponseEntity.status(HttpStatus.CREATED).header("location", AppConstants.CSOURCE_URL + uri).build();
-		} catch (ResponseException exception) {
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception e) {
-			e.printStackTrace();
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
-		}
+		return EntryControllerFunctions.createEntry(csourceService, request, payload,
+				AppConstants.CSOURCE_REG_CREATE_PAYLOAD, AppConstants.CSOURCE_URL, logger);
 	}
 
-	@GetMapping("{registrationId}")
-	public ResponseEntity<byte[]> getCSourceById(HttpServletRequest request,
+	@GetMapping("/{registrationId}")
+	public ResponseEntity<String> getCSourceById(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
-			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
-			List<String> csourceList = new ArrayList<String>();
-			csourceList.add(DataSerializer.toJson(csourceService.getCSourceRegistrationById(tenantid, registrationId)));
-			return httpUtils.generateReply(request, csourceDAO.getListAsJsonArray(csourceList));
-		} catch (ResponseException exception) {
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
+			HttpUtils.validateUri(registrationId);
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
+			return HttpUtils.generateReply(request, csourceService.getCSourceRegistrationById(tenantid, registrationId),
+					AppConstants.REGISTRY_ENDPOINT);
+		} catch (Exception exception) {
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
-	@PatchMapping("{registrationId}")
-	public ResponseEntity<byte[]> updateCSource(HttpServletRequest request,
+	@PatchMapping("/{registrationId}")
+	public ResponseEntity<String> updateCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
-		try {
-			HttpUtils.doPreflightCheck(request, payload);
-			logger.debug("update CSource() ::" + registrationId);
-			String resolved = httpUtils.expandPayload(request, payload, AppConstants.CSOURCE_URL_ID);
-
-			csourceService.updateCSourceRegistration(HttpUtils.getHeaders(request), registrationId, resolved);
-			logger.debug("update CSource request completed::" + registrationId);
-			return ResponseEntity.noContent().build();
-		} catch (ResponseException exception) {
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception e) {
-			e.printStackTrace();
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
-		}
+		return EntryControllerFunctions.appendToEntry(csourceService, request, registrationId, payload, "",
+				AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, logger);
 	}
 
-	@DeleteMapping("{registrationId}")
-	public ResponseEntity<byte[]> deleteCSource(HttpServletRequest request,
+	@DeleteMapping("/{registrationId}")
+	public ResponseEntity<String> deleteCSource(HttpServletRequest request,
 			@PathVariable("registrationId") String registrationId) {
-		try {
-			logger.debug("delete CSource() ::" + registrationId);
-			csourceService.deleteCSourceRegistration(HttpUtils.getHeaders(request), registrationId);
-			logger.debug("delete CSource() completed::" + registrationId);
-			return ResponseEntity.noContent().build();
-		} catch (ResponseException exception) {
-			return ResponseEntity.status(exception.getHttpStatus()).body(new RestResponse(exception).toJsonBytes());
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RestResponse(ErrorType.InternalError, e.getLocalizedMessage()).toJsonBytes());
-		}
+		return EntryControllerFunctions.deleteEntry(csourceService, request, registrationId, logger);
 	}
 
-	private void validate(String payload) throws ResponseException {
-		logger.trace("validation :: started");
-		if (payload == null) {
-			throw new ResponseException(ErrorType.UnprocessableEntity);
-		}
-		JsonNode json = null;
-		try {
-			json = objectMapper.readTree(payload);
-			if (json.isNull()) {
-				throw new ResponseException(ErrorType.UnprocessableEntity);
-			}
-//			if (json.get(NGSIConstants.QUERY_PARAMETER_ID) == null) {
-//				if(json.isObject()) {
-//					((ObjectNode)json).set(NGSIConstants.QUERY_PARAMETER_ID, new TextNode(generateUniqueRegId(payload)));
-//				}else {
-//					throw new ResponseException(ErrorType.BadRequestData);
-//				}
-//				
-//			}
-		} catch (JsonParseException e) {
-			throw new ResponseException(ErrorType.BadRequestData);
-		} catch (IOException e) {
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
-		logger.trace("validation :: completed");
-	}
 }

@@ -9,10 +9,100 @@
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
 	<artifactId>AllInOneRunner</artifactId>
-	<version>1.1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<profiles>
+
+		<profile>
+			<id>native</id>
+			<activation>
+				<property>
+					<name>native</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.experimental</groupId>
+						<artifactId>spring-aot-maven-plugin</artifactId>
+						<version>0.11.0</version>
+						<executions>
+							<execution>
+								<id>generate</id>
+								<goals>
+									<goal>generate</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+
+						<configuration>
+							<profiles>
+								<profile>docker</profile>
+							</profiles>
+							<requiresUnpack>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>InfoServer</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>AtContextServer</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>EntityManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>HistoryManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>QueryManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>RegistryManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<!-- <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>StorageManager</artifactId> 
+									<version>1.1.0-SNAPSHOT</version> </dependency> -->
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>SubscriptionManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+							</requiresUnpack>
+							<image>
+								<builder>paketobuildpacks/builder:tiny</builder>
+								<env>
+									<BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
+								</env>
+								<name>scorpiobroker/aaio</name>
+							</image>
+						</configuration>
+					</plugin>
+					<!-- <plugin> <groupId>org.graalvm.buildtools</groupId> <artifactId>native-maven-plugin</artifactId> 
+						<version>0.9.8</version> <extensions>true</extensions> <executions> <execution> 
+						<id>build-native</id> <goals> <goal>build</goal> </goals> <phase>package</phase> 
+						</execution> <execution> <id>test-native</id> <goals> <goal>test</goal> </goals> 
+						<phase>test</phase> </execution> </executions> <configuration> ... </configuration> 
+						</plugin> Avoid a clash between Spring Boot repackaging and native-maven-plugin 
+						<plugin> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-maven-plugin</artifactId> 
+						<configuration> <classifier>exec</classifier> </configuration> </plugin> -->
+				</plugins>
+			</build>
+		</profile>
+
 		<profile>
 			<id>aaio</id>
 			<build>
@@ -90,19 +180,11 @@
 					<artifactId>Commons</artifactId>
 					<version>1.1.0-SNAPSHOT</version>
 				</dependency>
-				<dependency>
-					<groupId>org.springframework.security</groupId>
-					<artifactId>spring-security-config</artifactId>
-				</dependency>
-				<dependency>
-					<groupId>org.springframework.security.oauth</groupId>
-					<artifactId>spring-security-oauth2</artifactId>
-					<version>2.5.1.RELEASE</version>
-				</dependency>
-				<dependency>
-					<groupId>org.springframework.security.oauth.boot</groupId>
-					<artifactId>spring-security-oauth2-autoconfigure</artifactId>
-				</dependency>
+				<!-- <dependency> <groupId>org.springframework.security</groupId> <artifactId>spring-security-config</artifactId> 
+					</dependency> <dependency> <groupId>org.springframework.security.oauth</groupId> 
+					<artifactId>spring-security-oauth2</artifactId> <version>2.5.1.RELEASE</version> 
+					</dependency> <dependency> <groupId>org.springframework.security.oauth.boot</groupId> 
+					<artifactId>spring-security-oauth2-autoconfigure</artifactId> </dependency> -->
 			</dependencies>
 		</profile>
 		<profile>
@@ -122,21 +204,12 @@
 					</plugin>
 				</plugins>
 			</build>
-			<dependencies>
-				<dependency>
-					<groupId>org.springframework.security</groupId>
-					<artifactId>spring-security-config</artifactId>
-				</dependency>
-				<dependency>
-					<groupId>org.springframework.security.oauth</groupId>
-					<artifactId>spring-security-oauth2</artifactId>
-					<version>2.5.1.RELEASE</version>
-				</dependency>
-				<dependency>
-					<groupId>org.springframework.security.oauth.boot</groupId>
-					<artifactId>spring-security-oauth2-autoconfigure</artifactId>
-				</dependency>
-			</dependencies>
+			<!-- <dependencies> <dependency> <groupId>org.springframework.security</groupId> 
+				<artifactId>spring-security-config</artifactId> </dependency> <dependency> 
+				<groupId>org.springframework.security.oauth</groupId> <artifactId>spring-security-oauth2</artifactId> 
+				<version>2.5.1.RELEASE</version> </dependency> <dependency> <groupId>org.springframework.security.oauth.boot</groupId> 
+				<artifactId>spring-security-oauth2-autoconfigure</artifactId> </dependency> 
+				</dependencies> -->
 		</profile>
 	</profiles>
 	<dependencies>
@@ -172,18 +245,15 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>StorageManager</artifactId>
+			<artifactId>RegistrySubscriptionManager</artifactId>
 			<version>1.1.0-SNAPSHOT</version>
 		</dependency>
+		<!-- <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>StorageManager</artifactId> 
+			<version>1.1.0-SNAPSHOT</version> </dependency> -->
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>SubscriptionManager</artifactId>
 			<version>1.1.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>2.6</version>
 		</dependency>
 	</dependencies>
 </project>

@@ -13,19 +13,19 @@ spring:
     lazy-initialization: true
     allow-bean-definition-overriding: true
   kafka:
+    producer:
+      bootstrap-servers: ${bootstrap.servers}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      bootstrap-servers: ${bootstrap.servers}
+      group-id: ${mysettings.application-name}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
     admin:
       properties:
         cleanup:
-          policy: compact
-  cloud:
-    stream:
-      kafka:
-        binder:
-          brokers: ${bootstrap.server}
-      bindings:
-         ATCONTEXT_WRITE_CHANNEL:
-          destination: ATCONTEXT
-          contentType: application/json
+          policy: compact  
 
 server:
   port: 27015

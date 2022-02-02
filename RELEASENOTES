@@ -1,4 +1,89 @@
 RELEASE NOTES
+Scorpio 2.0:
+
+With the release we are moving to NGSI-LD 1.3.1. In the following weeks we will update the documentation where needed. 
+------------------------------------------------------
+Attention: Be aware there are breaking changes in the core context of NGSI-LD 1.3.1 compared to 1.2.2 which we supported before. Currently we have to recommend users with an existing dataset to wait with the update until we provide a migration tool to migrate the data from 1.2.2 to 1.3.1
+------------------------------------------------------
+
+What is in this release:
+
+1. Performance improvements on NGSI-LD compacting and expanding
+2. Introducing multiple flavours of Scorpio. Using maven profiles we provide 4 different flavours of Scorpio. 
+  - 2 of them are our original flavours providing an All In One variant and a distributed setup with Spring Cloud in front enabling scaling through Spring Cloud's gateway and eureka discovery server 
+  - all in one runner without dependencies to eureka enabling faster start up times and allowing scaling from external gateways/loadbalancers
+  - distributed without dependencies to eureka enabling faster start up times and allowing scaling from external gateways/loadbalancers
+3. improved core context handling. The default core context is now configured via the property ngsild.corecontext and will be always used
+4. reorganization of kafka topics. We have reduced the amount of used kafka topics to 5 and reduced the amount of data transmitted through kafka
+5. Updating to newer versions of kafka and postgres in our default docker-compose files.
+6. Integration of the spring actuator plugin providing various infos like health or log via the /actuator/info endpoint
+7. persistance of subscriptions in postgres 
+8. various bugfixes
+9. updated Spring Boot to version 2.6.2 and base Java image to Java 17 
+10. Updated configuration. We have updated our configuration to allow an easier reconfiguration from the user side. These settings can all be set via environment variables. The format for setting those is capital letters and subsections devided by an underscore so e.g.: SCORPIO_GATEWAYURL  An overview of the current settings can be seen below.
+
+mysettings:
+  application-name: entity-manager
+  kafka:
+    bootstrap:
+      host: ${bushost:localhost}
+      port: ${busport:9092}
+  postgres:
+    host: ${dbhost:localhost}
+    port: ${dbport:5432}
+    username: ${dbuser:ngb}
+    password: ${dbpass:ngb}
+    database-name: ${dbname:ngb}
+  gateway:
+    host: ${gateway.host:localhost}
+    port: ${gateway.port:9090}
+scorpio:
+  gatewayurl: http://localhost:9090
+  directDB: true
+  history:
+    autorecording: active
+    max-limit: 1000
+    default-limit: 50
+    batch-operations:
+      create:
+        max: 1000
+      upsert:
+        max: 1000
+      update:
+        max: 1000
+      delete:
+        max: 1000
+      query:
+        max: 1000
+  entity:
+    max-limit: 1000
+    default-limit: 50
+    batch-operations:
+      create:
+        max: 1000
+      upsert:
+        max: 1000
+      update:
+        max: 1000
+      delete:
+        max: 1000
+      query:
+        max: 1000
+  registry:
+    max-limit: 1000
+    default-limit: 50
+    autorecording: active
+    batch-operations:
+      create:
+        max: 1000
+      upsert:
+        max: 1000
+      update:
+        max: 1000
+      delete:
+        max: 1000
+      query:
+        max: 1000
 Scorpio FIWARE 8.1.0
  - This release mainly contains optimizations of the tenant support.
  - Various bugfixes where done to the history manager.

@@ -5,59 +5,54 @@ services:
     image: zookeeper
     ports:
       - "2181"
+    logging:
+      driver: none
   kafka:
-    image: wurstmeister/kafka
-    hostname: kafka
+    image: bitnami/kafka
     ports:
       - "9092"
     environment:
       KAFKA_ADVERTISED_HOST_NAME: kafka
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_LOG_RETENTION_MS: 10000
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
+      ALLOW_PLAINTEXT_LISTENER: "yes"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - zookeeper
+    logging:
+      driver: none
   postgres:
-    image: mdillon/postgis
+    image: postgis/postgis
     ports:
       - "5432"
     environment:
       POSTGRES_USER: ngb
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
-  atctxsrv:
-    image: scorpiobroker/scorpio:AtContextServer_0.9.2-SNAPSHOT
-    ports:
-      - "27015"
-    depends_on:
-      - kafka
-      - eureka
-  cfgsrv:
-    image: scorpiobroker/scorpio:config-server_0.9.2-SNAPSHOT
-    ports:
-      - "8888"
-    depends_on:
-      - eureka
+    logging:
+      driver: none
   emgr:
-    image: scorpiobroker/scorpio:EntityManager_0.9.2-SNAPSHOT
+    image: scorpiobroker/scorpio:EntityManager_1.1.0-SNAPSHOT
     ports:
       - "1025"
     depends_on:
       - kafka
       - eureka
   eureka:
-    image: scorpiobroker/scorpio:eureka-server_0.9.2-SNAPSHOT
+    image: scorpiobroker/scorpio:eureka-server_1.1.0-SNAPSHOT
     ports:
       - "8761"
   gateway:
-    image: scorpiobroker/scorpio:gateway_0.9.2-SNAPSHOT
+    image: scorpiobroker/scorpio:gateway_1.1.0-SNAPSHOT
     ports:
       - "9090:9090"
     depends_on:
       - eureka
   histmgr:
-    image: scorpiobroker/scorpio:HistoryManager_0.9.2-SNAPSHOT
+    image: scorpiobroker/scorpio:HistoryManager_1.1.0-SNAPSHOT
     ports:
       - "1040"
     depends_on:
@@ -65,7 +60,7 @@ services:
       - gateway
       - eureka
   qrymgr:
-    image: scorpiobroker/scorpio:QueryManager_0.9.2-SNAPSHOT
+    image: scorpiobroker/scorpio:QueryManager_1.1.0-SNAPSHOT
     ports:
       - "1026"
     depends_on:
@@ -73,7 +68,7 @@ services:
       - postgres
       - eureka
   regmgr:
-    image: scorpiobroker/scorpio:RegistryManager_0.9.2-SNAPSHOT
+    image: scorpiobroker/scorpio:RegistryManager_1.1.0-SNAPSHOT
     ports:
       - "1030"
     depends_on:
@@ -81,18 +76,18 @@ services:
       - postgres
       - gateway
       - eureka
-  stomgr:
-    image: scorpiobroker/scorpio:StorageManager_0.9.2-SNAPSHOT
+  regsbsmgr:
+    image: scorpiobroker/scorpio:RegistrySubscriptionManager_1.1.0-SNAPSHOT
     ports:
-      - "1029"
+      - "2025"
     depends_on:
       - kafka
       - postgres
       - eureka
   sbsmgr:
-    image: scorpiobroker/scorpio:SubscriptionManager_0.9.2-SNAPSHOT
+    image: scorpiobroker/scorpio:SubscriptionManager_1.1.0-SNAPSHOT
     ports:
-      - "2025"
+      - "2026"
     depends_on:
       - kafka
       - eureka
