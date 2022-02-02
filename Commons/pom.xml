@@ -25,7 +25,7 @@
 				</dependency>
 			</dependencies>
 		</profile>
-		<profile>
+	<!-- 	<profile>
 			<id>docker-dist</id>
 			<dependencies>
 				<dependency>
@@ -63,7 +63,7 @@
 					<artifactId>spring-cloud-starter-config</artifactId>
 				</dependency>
 			</dependencies>
-		</profile>
+		</profile> -->
 		<profile>
 			<id>docker-aaio-no-eureka</id>
 			<dependencies>
