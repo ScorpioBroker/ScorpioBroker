@@ -118,7 +118,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ATTRIBUTE_NAME = "https://uri.etsi.org/ngsi-ld/attributeName";
 	public final static String NGSI_LD_ENTITY_TYPE_INFO = "https://uri.etsi.org/ngsi-ld/EntityTypeInfo";
 	public final static String NGSI_LD_ENTITY_COUNT = "https://uri.etsi.org/ngsi-ld/entityCount";
-	public final static String NGSI_LD_ATTRIBUTE_DETAILS = "https://uri.etsi.org/ngsi-ld/default-context/attributeDetails";
+	public final static String NGSI_LD_ATTRIBUTE_DETAILS = "https://uri.etsi.org/ngsi-ld/attributeDetails";
 	public final static String NGSI_LD_TENANT = "https://uri.etsi.org/ngsi-ld/tenant";
 	public final static String NGSI_LD_ATTRIBUTE_TYPES = "https://uri.etsi.org/ngsi-ld/attributeTypes";
 	public final static String NGSI_LD_ATTRIBUTE = "https://uri.etsi.org/ngsi-ld/Attribute";
@@ -126,7 +126,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ATTRIBUTE_LIST_1 = "https://uri.etsi.org/ngsi-ld/AttributeList";
 	public final static String NGSI_LD_ATTRIBUTE_LIST_2 = "https://uri.etsi.org/ngsi-ld/attributeList";
 	public final static String NGSI_LD_TYPE_NAMES = "https://uri.etsi.org/ngsi-ld/typeNames";
-	public final static String NGSI_LD_ATTRIBUTE_COUNT = "https://uri.etsi.org/ngsi-ld/default-context/attributeCount";
+	public final static String NGSI_LD_ATTRIBUTE_COUNT = "https://uri.etsi.org/ngsi-ld/attributeCount";
 	public final static String NGSI_LD_TEMPORAL_QUERY = "https://uri.etsi.org/ngsi-ld/temporalQ";
 	public final static String NGSI_LD_MANAGEMENTINTERVAL = "https://uri.etsi.org/ngsi-ld/managementInterval";
 	public static final String NGSI_LD_GEOREL = "https://uri.etsi.org/ngsi-ld/georel";
