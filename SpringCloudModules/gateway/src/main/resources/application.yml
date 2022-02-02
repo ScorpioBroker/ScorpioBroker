@@ -23,6 +23,11 @@ ribbon:
   ConnectTimeout: 60000
 server:
   port: ${mysettings.gateway.port}
+  tomcat:
+    relaxed-path-chars: <,>,[,\,],^,`,{,|,}
+    relaxed-query-chars: <,>,[,\,],^,`,{,|,}
+    max:
+      threads:200
 eureka:
   client:
     register-with-eureka: true
