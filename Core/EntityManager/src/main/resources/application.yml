@@ -164,3 +164,9 @@ scorpio:
         max: 1000
       query:
         max: 1000
+  topics:
+    entity: ENTITY
+    registry: REGISTRY
+    temporal: TEMPORAL
+    internalnotification: I_NOTIFY
+    internalregsub: I_REGSUB
