@@ -1,8 +1,13 @@
 package com.github.jsonldjava.core;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -296,7 +301,7 @@ class NGSIObject {
 			// think of error scenario
 			break;
 		case NGSIConstants.NGSI_LD_LOCATION:
-			compactAndValidateGeoProperty(api);
+			// compactAndValidateGeoProperty(api);
 			break;
 		case NGSIConstants.NGSI_LD_TIME_STAMP:
 			//
@@ -616,7 +621,7 @@ class NGSIObject {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"You can't have geo properties without a value");
 				} else {
-					compactAndValidateGeoProperty(api);
+					handleStringGeoProperty(api);
 				}
 			}
 		}
@@ -661,66 +666,22 @@ class NGSIObject {
 
 	}
 
-	private void compactAndValidateGeoProperty(JsonLdApi api) throws ResponseException {
-//		Map<String, Object> geoPropMap = (Map<String, Object>) element;
-//		Object geoJsonValue;
-//		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-//			geoJsonValue = ((List<Object>) geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE)).get(0);
-//		} else {
-//			geoJsonValue = geoPropMap;
-//		}
-//
-//		Object potentialStringValue = ((Map<String, Object>) geoJsonValue).get(NGSIConstants.JSON_LD_VALUE);
-//		Map<String, Object> compacted;
-//		if (potentialStringValue != null) {
-//			if (!(potentialStringValue instanceof String)) {
-//				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
-//			}
-//			try {
-//				compacted = (Map<String, Object>) JsonUtils.fromString((String) potentialStringValue);
-//			} catch (IOException e) {
-//				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
-//			}
-//		} else {
-//			compacted = api.compactWithCoreContext(geoJsonValue);
-//		}
-//		Object geometryType = compacted.get(NGSIConstants.GEO_JSON_TYPE);
-//		if (geometryType == null) {
-//			throw new ResponseException(ErrorType.BadRequestData, "No geometry type provided");
-//		}
-//		if (!(geometryType instanceof String) || !NGSIConstants.ALLOWED_GEOMETRIES.contains((String) geometryType)) {
-//			throw new ResponseException(ErrorType.BadRequestData,
-//					"Unsupported geometry type: " + geometryType.toString());
-//		}
-//		Object geoValue = compacted.get(NGSIConstants.CSOURCE_COORDINATES);
-//		switch ((String) geometryType) {
-//		case NGSIConstants.GEO_TYPE_POINT:
-//			validatePoint(geoValue);
-//			break;
-//		case NGSIConstants.GEO_TYPE_LINESTRING:
-//			validateLineString(geoValue);
-//			break;
-//		case NGSIConstants.GEO_TYPE_POLYGON:
-//			validatePolygon(geoValue);
-//			break;
-//		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
-//			validateMultiPolygon(geoValue);
-//			break;
-//
-//		default:
-//			throw new ResponseException(ErrorType.BadRequestData,
-//					"Unsupported geometry type: " + geometryType.toString());
-//		}
-//		HashMap<String, Object> temp = new HashMap<String, Object>();
-//		temp.put(NGSIConstants.JSON_LD_VALUE, compacted);
-//		ArrayList<Object> temp1 = new ArrayList<Object>();
-//		temp1.add(temp);
-//		if (geoPropMap.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-//			geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, temp1);
-//		} else {
-//			this.element = temp1;
-//		}
-
+	private void handleStringGeoProperty(JsonLdApi api) throws ResponseException {
+		Map<String, Object> geoPropMap = (Map<String, Object>) element;
+		Map<String, Object> geoJsonValue = ((List<Map<String, Object>>) geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE))
+				.get(0);
+		Object atValue = geoJsonValue.get(NGSIConstants.JSON_LD_VALUE);
+		if (atValue != null) {
+			if (!(atValue instanceof String)) {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
+			}
+			try {
+				geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE,
+						Arrays.asList(api.expandWithCoreContext(JsonUtils.fromString((String) atValue))));
+			} catch (IOException e) {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
+			}
+		}
 	}
 
 	private void validateMultiPolygon(Object geoValue) throws ResponseException {

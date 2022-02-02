@@ -522,7 +522,7 @@ public class JsonLdApi {
 
 	}
 
-	private Object expandWithCoreContext(Object geoProp) {
+	public Object expandWithCoreContext(Object geoProp) {
 		try {
 			return expand(JsonLdProcessor.getCoreContextClone(), geoProp, -2, false);
 		} catch (JsonLdError | ResponseException e) {
@@ -2392,8 +2392,10 @@ public class JsonLdApi {
 		return normalizeUtils.hashBlankNodes(bnodes.keySet());
 	}
 
-	public Map<String, Object> compactWithCoreContext(Object geoJsonValue) {
-		return (Map<String, Object>) compact(JsonLdProcessor.getCoreContextClone(), null, geoJsonValue);
-	}
+	/*
+	 * public Map<String, Object> expandWithCoreContext(Object geoJsonValue) {
+	 * return expand(JsonLdProcessor.getCoreContextClone(), geoJsonValue, -1,
+	 * false); }
+	 */
 
 }
