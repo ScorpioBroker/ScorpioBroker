@@ -60,6 +60,7 @@ spring:
     name: gateway
   main:
     allow-bean-definition-overriding: true
+    web-application-type: reactive
   cloud:
     discovery:
       enabled: true
