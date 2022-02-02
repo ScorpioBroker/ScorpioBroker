@@ -147,6 +147,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 					Map<String, Object> expandedBody = (Map<String, Object>) JsonUtils
 							.fromString(DataSerializer.toJson(remoteSub));
 					expandedBody.remove(NGSIConstants.NGSI_LD_STATUS);
+					expandedBody.remove(NGSIConstants.JSON_LD_ID);
 					body = JsonUtils.toPrettyString(
 							JsonLdProcessor.compact(expandedBody, subscriptionRequest.getContext(), opts));
 				} catch (Exception e) {
