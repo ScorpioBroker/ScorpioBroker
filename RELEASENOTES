@@ -1,7 +1,7 @@
 RELEASE NOTES
 Scorpio 2.0:
 
-With the release we are moving to NGSI-LD 1.3.1. 
+With the release we are moving to NGSI-LD 1.3.1. In the following weeks we will update the documentation where needed. 
 ------------------------------------------------------
 Attention: Be aware there are breaking changes in the core context of NGSI-LD 1.3.1 compared to 1.2.2 which we supported before. Currently we have to recommend users with an existing dataset to wait with the update until we provide a migration tool to migrate the data from 1.2.2 to 1.3.1
 ------------------------------------------------------
