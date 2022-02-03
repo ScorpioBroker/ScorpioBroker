@@ -474,6 +474,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		if (src.getSubscriptionName() != null) {
 			top.add(NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME, SerializationTools.getValueArray(src.getSubscriptionName()));
 		}
+		if (src.isActive() != null) {
+			top.add(NGSIConstants.NGSI_LD_IS_ACTIVE, SerializationTools.getValueArray(src.isActive()));
+		}
+
 
 		return top;
 	}
