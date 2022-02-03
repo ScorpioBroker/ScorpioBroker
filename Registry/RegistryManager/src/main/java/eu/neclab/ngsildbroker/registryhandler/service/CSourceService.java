@@ -65,6 +65,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@Value("${scorpio.registry.autoregmode:types}")
 	String AUTO_REG_MODE;
 
+	@Value("${scorpio.registry.autorecording:active}")
+	String AUTO_REG_STATUS;
+
 	@Autowired
 	KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -85,7 +88,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	private Table<String, Map<String, Object>, Set<String>> tenant2InformationEntry2EntityIds = HashBasedTable.create();
 	private Table<String, String, Map<String, Object>> tenant2EntityId2InformationEntry = HashBasedTable.create();
-	
+
 	@Autowired
 	private MicroServiceUtils microServiceUtils;
 
@@ -94,33 +97,34 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		synchronized (this.csourceIds) {
 			this.csourceIds = csourceInfoDAO.getAllIds();
 		}
-		Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
-		for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
-			String tenant = entry.getKey();
-			List<String> entityList = entry.getValue();
-			if (entityList.isEmpty()) {
-				continue;
-			}
-			for (String entityString : entityList) {
-				Map<String, Object> entity = (Map<String, Object>) JsonUtils.fromString(entityString);
-				Map<String, Object> informationEntry = getInformationFromEntity(entity);
-				String id = (String) entity.get(NGSIConstants.JSON_LD_ID);
-				tenant2EntityId2InformationEntry.put(tenant, id, informationEntry);
-				Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
-				if (ids == null) {
-					ids = new HashSet<String>();
+		if (AUTO_REG_STATUS.equals("active")) {
+			Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
+			for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
+				String tenant = entry.getKey();
+				List<String> entityList = entry.getValue();
+				if (entityList.isEmpty()) {
+					continue;
 				}
-				ids.add(id);
-				tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
-			}
-			CSourceRequest regEntry = createInternalRegEntry(tenant);
-			try {
-				upsert(regEntry);
-			} catch (Exception e) {
-				logger.error("Failed to create initial internal reg status", e);
+				for (String entityString : entityList) {
+					Map<String, Object> entity = (Map<String, Object>) JsonUtils.fromString(entityString);
+					Map<String, Object> informationEntry = getInformationFromEntity(entity);
+					String id = (String) entity.get(NGSIConstants.JSON_LD_ID);
+					tenant2EntityId2InformationEntry.put(tenant, id, informationEntry);
+					Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
+					if (ids == null) {
+						ids = new HashSet<String>();
+					}
+					ids.add(id);
+					tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
+				}
+				CSourceRequest regEntry = createInternalRegEntry(tenant);
+				try {
+					upsert(regEntry);
+				} catch (Exception e) {
+					logger.error("Failed to create initial internal reg status", e);
+				}
 			}
 		}
-
 	}
 
 	public List<String> getCSourceRegistrations(String tenant) throws ResponseException, IOException, Exception {
@@ -406,25 +410,41 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		Map<String, Object> entities = new HashMap<String, Object>();
 		ArrayList<Map<String, Object>> propertyNames = new ArrayList<Map<String, Object>>();
 		ArrayList<Map<String, Object>> relationshipNames = new ArrayList<Map<String, Object>>();
-		if (AUTO_REG_MODE.contains("types")) {
-			entities.put(NGSIConstants.JSON_LD_TYPE, entity.get(NGSIConstants.JSON_LD_TYPE));
-		}
-		if (AUTO_REG_MODE.contains("ids")) {
-			entities.put(NGSIConstants.JSON_LD_ID, entity.get(NGSIConstants.JSON_LD_ID));
-		}
-		if (AUTO_REG_MODE.contains("attributes")) {
-			for (Entry<String, Object> entry : entity.entrySet()) {
-				Object value = entry.getValue();
+		for (Entry<String, Object> entry : entity.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+			if (key.equals(NGSIConstants.JSON_LD_ID)) {
+				if (AUTO_REG_MODE.contains("ids")) {
+					entities.put(NGSIConstants.JSON_LD_ID, value);
+				}
+				continue;
+			}
+			if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
+				if (AUTO_REG_MODE.contains("types")) {
+					entities.put(NGSIConstants.JSON_LD_TYPE, entity.get(NGSIConstants.JSON_LD_TYPE));
+				}
+				continue;
+			}
+			if (AUTO_REG_MODE.contains("attributes")) {
 				if (value instanceof List) {
 					Object listValue = ((List<Object>) value).get(0);
 					if (listValue instanceof Map) {
-						Map<String, Object> mapValue = (Map<String, Object>) value;
+						Map<String, Object> mapValue = (Map<String, Object>) listValue;
 						Object type = mapValue.get(NGSIConstants.JSON_LD_TYPE);
 						if (type != null) {
-							String typeString = ((List<String>) type).get(0);
+							String typeString;
+							if (type instanceof List) {
+								typeString = ((List<String>) type).get(0);
+							} else if (type instanceof String) {
+								typeString = (String) type;
+							} else {
+								continue;
+							}
+
 							HashMap<String, Object> tmp = new HashMap<String, Object>();
 							tmp.put(NGSIConstants.JSON_LD_ID, entry.getKey());
 							switch (typeString) {
+							case NGSIConstants.NGSI_LD_GEOPROPERTY:
 							case NGSIConstants.NGSI_LD_PROPERTY:
 								propertyNames.add(tmp);
 								break;

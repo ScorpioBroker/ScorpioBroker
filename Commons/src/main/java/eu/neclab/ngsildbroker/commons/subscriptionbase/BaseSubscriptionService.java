@@ -11,6 +11,7 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WIT
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -631,6 +632,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private Set<String> getTypesForId(String tenantId, String entityId) {
 		synchronized (this.tenant2Ids2Type) {
 			Set<String> result = this.tenant2Ids2Type.get(tenantId, entityId);
+			if (result == null) {
+				return new HashSet<String>();
+			}
 			return result;
 		}
 	}
