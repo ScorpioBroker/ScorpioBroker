@@ -152,6 +152,7 @@ scorpio:
   registry:
     max-limit: 1000
     default-limit: 50
+    autoregmode: attributes
     autorecording: active
     batch-operations:
       create:
