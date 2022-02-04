@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.github.jsonldjava.core.JsonLdError;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -30,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, JsonSerializer<Subscription> {
@@ -48,11 +51,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			String key = entry.getKey();
 			JsonElement value = entry.getValue();
 			if (key.equals(NGSIConstants.JSON_LD_ID)) {
-				try {
-					result.setId(new URI(value.getAsString()));
-				} catch (URISyntaxException e) {
-					throw new JsonParseException("Invalid Id " + value.getAsString());
-				}
+					result.setId(value.getAsString());
 			} else if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
 				result.setType(value.getAsString());
 			} else if (key.equals(NGSIConstants.NGSI_LD_ENTITIES)) {
@@ -195,8 +194,16 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				result.setNotification(notifyParam);
 
 			} else if (key.equals(NGSIConstants.NGSI_LD_QUERY)) {
-				result.setLdQuery(
-						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				try {
+					result.setLdQueryString(
+							value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (JsonLdError e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ResponseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			} else if (key.equals(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES)) {
 				Iterator<JsonElement> it = value.getAsJsonArray().iterator();
 				ArrayList<String> watched = new ArrayList<String>();
@@ -212,7 +219,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsInt());
 			} else if (key.equals(NGSIConstants.NGSI_LD_EXPIRES)) {
 				try {
-					result.setExpires(SerializationTools.date2Long(value.getAsJsonArray().get(0).getAsJsonObject()
+					result.setExpiresAt(SerializationTools.date2Long(value.getAsJsonArray().get(0).getAsJsonObject()
 							.get(NGSIConstants.JSON_LD_VALUE).getAsString()));
 				} catch (Exception e) {
 					throw new JsonParseException(e);
@@ -223,12 +230,21 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			} else if (key.equals(NGSIConstants.NGSI_LD_DESCRIPTION)) {
 				result.setDescription(
 						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
-			}
+			} else if (key.equals(NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME)) {
+				result.setSubscriptionName(
+						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
 
+			} else if (key.equals(NGSIConstants.NGSI_LD_IS_ACTIVE)) {
+				if (value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsBoolean() == false) {
+					result.setStatus(NGSIConstants.ISACTIVE_FALSE);
+					result.setActive(false);
+				}else {
+					result.setStatus(NGSIConstants.ISACTIVE_TRUE);
+					result.setActive(true);
+				}
+			}
 		}
-		if (result.getNotification() == null) {
-			throw new JsonParseException("no notification parameter provided");
-		}
+		
 		// if (result.getId() == null) {
 		//
 		// }
@@ -304,7 +320,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		JsonArray tempArray;
 		if (src.getNotification() != null) {
 			NotificationParam notification = src.getNotification();
-			if (notification.getAttributeNames() != null) {
+			if (notification.getAttributeNames() != null && !notification.getAttributeNames().isEmpty()) {
 				for (String attrib : notification.getAttributeNames()) {
 					tempObj = new JsonObject();
 					tempObj.add(NGSIConstants.JSON_LD_ID, context.serialize(attrib));
@@ -420,10 +436,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			temp.add(notificationObj);
 			top.add(NGSIConstants.NGSI_LD_NOTIFICATION, temp);
 		}
-		if (src.getLdQuery() != null) {
+		if (src.getLdQueryString() != null) {
 			tempArray = new JsonArray();
 			tempObj = new JsonObject();
-			tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getLdQuery()));
+			tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getLdQueryString()));
 			tempArray.add(tempObj);
 			top.add(NGSIConstants.NGSI_LD_QUERY, tempArray);
 		}
@@ -439,15 +455,19 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		if (attribs.size() > 0) {
 			top.add(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES, attribs);
 		}
-		if (src.getThrottling() != null && src.getTimeInterval() != 0) {
+		if (src.getThrottling() != null && src.getThrottling() > 0) {
 			top.add(NGSIConstants.NGSI_LD_THROTTLING, SerializationTools.getValueArray(src.getThrottling()));
 		}
 		if (src.getTimeInterval() != null && src.getTimeInterval() != 0) {
 			top.add(NGSIConstants.NGSI_LD_TIME_INTERVAL, SerializationTools.getValueArray(src.getTimeInterval()));
 		}
-		if (src.getExpires() != null) {
-			top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools
-					.getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpires()))));
+		if (src.getExpiresAt() != null) {
+			//top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools
+					//.getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpiresAt()))));
+			JsonArray array = SerializationTools
+                    .getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpiresAt())));
+             array.get(0).getAsJsonObject().addProperty(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+             top.add(NGSIConstants.NGSI_LD_EXPIRES, array);
 		}
 		if (src.getStatus() != null) {
 			top.add(NGSIConstants.NGSI_LD_STATUS, SerializationTools.getValueArray(src.getStatus()));
@@ -455,6 +475,13 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		if (src.getDescription() != null) {
 			top.add(NGSIConstants.NGSI_LD_DESCRIPTION, SerializationTools.getValueArray(src.getDescription()));
 		}
+		if (src.getSubscriptionName() != null) {
+			top.add(NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME, SerializationTools.getValueArray(src.getSubscriptionName()));
+		}
+		if (src.isActive() != null) {
+			top.add(NGSIConstants.NGSI_LD_IS_ACTIVE, SerializationTools.getValueArray(src.isActive()));
+		}
+
 
 		return top;
 	}

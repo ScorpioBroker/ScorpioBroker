@@ -5,19 +5,19 @@ import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
-public abstract class BaseEntry {
-	protected String name;
-	protected Long observedAt = -1l;
-	protected List<Property> properties;
+abstract class BaseEntry {
+	private String name;
+	private Long observedAt = -1l;
+	private List<Property> properties;
 	private Object refToAccessControl;
-	protected List<Relationship> relationships;
-	protected int timeSeriesId;
+	private List<Relationship> relationships;
+	private int timeSeriesId;
 	protected String type;
 	private Long createdAt = -1l;
 	private Long modifiedAt = -1l;
-	protected String dataSetId;
+	private String dataSetId;
 
-	public BaseEntry(String dataSetId) {
+	BaseEntry(String dataSetId) {
 		this.dataSetId = dataSetId;
 		if (this.dataSetId == null || this.dataSetId.trim().isEmpty()) {
 			this.dataSetId = NGSIConstants.DEFAULT_DATA_SET_ID;

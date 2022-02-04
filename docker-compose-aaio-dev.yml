@@ -8,8 +8,7 @@ services:
     logging:
       driver: none
   kafka:
-    image: wurstmeister/kafka
-    hostname: kafka
+    image: bitnami/kafka
     ports:
       - "9092"
     environment:
@@ -18,15 +17,15 @@ services:
       KAFKA_ADVERTISED_PORT: 9092
       KAFKA_LOG_RETENTION_MS: 10000
       KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
+      ALLOW_PLAINTEXT_LISTENER: "yes"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - zookeeper
     logging:
       driver: none
-
   postgres:
-    image: mdillon/postgis
+    image: postgis/postgis
     ports:
       - "5432"
     environment:
@@ -36,9 +35,9 @@ services:
     logging:
       driver: none
   scorpio:
-    image: scorpiobroker/scorpio:scorpio-aaio_0.9.2-SNAPSHOT
+    image: scorpiobroker/scorpio:scorpio-aaio-no-eureka_1.1.0-SNAPSHOT
     ports:
       - "9090:9090"
     depends_on:
+      - postgres
       - kafka
-      - postgres    

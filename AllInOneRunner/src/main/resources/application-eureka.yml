@@ -2,9 +2,9 @@ server:
   port: 27015
 mysettings:
   eureka:
-    protocol: ${eureka.protocol:http}
-    host: ${eureka.host:localhost}
-    port: ${eureka.port:8761}
+    protocol: ${eurekaprotocol:http}
+    host: ${eurekahost:localhost}
+    port: ${eurekaport:8761}
 eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}
 eureka:
   client:
@@ -12,3 +12,5 @@ eureka:
     fetchRegistry: true
     serviceUrl:
       defaultZone: ${eurekaurl}/eureka/
+  instance:
+    preferIpAddress: true

@@ -6,12 +6,13 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import com.github.jsonldjava.core.Context;
+
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.BadRequestException;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class QueryTerm {
@@ -25,7 +26,7 @@ public class QueryTerm {
 
 	private static final List<String> TIME_PROPS = Arrays.asList(NGSIConstants.NGSI_LD_OBSERVED_AT,
 			NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_MODIFIED_AT);
-	private List<Object> linkHeaders;
+	private Context linkHeaders;
 	private QueryTerm next = null;
 	private boolean nextAnd = true;
 	private QueryTerm firstChild = null;
@@ -34,11 +35,9 @@ public class QueryTerm {
 	private String operator = "";
 	private String operant = "";
 
-	ParamsResolver paramsResolver;
+	public QueryTerm(Context context) {
+		this.linkHeaders = context;
 
-	public QueryTerm(List<Object> linkHeaders, ParamsResolver paramsResolver) {
-		this.linkHeaders = linkHeaders;
-		this.paramsResolver = paramsResolver;
 	}
 
 	public boolean hasNext() {
@@ -74,8 +73,9 @@ public class QueryTerm {
 		}
 
 		return result;
-	} 
-	@SuppressWarnings("rawtypes")//rawtypes are fine here and intentionally used
+	}
+
+	@SuppressWarnings("rawtypes") // rawtypes are fine here and intentionally used
 	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant)
 			throws ResponseException {
 
@@ -174,14 +174,13 @@ public class QueryTerm {
 
 						switch (operator) {
 						case "==":
-							if (range[0].compareTo(value.toString()) <= 0
-									&& range[1].compareTo(value.toString()) >= 0) {
+
+							if (compare(range[0], value) >= 0 && compare(range[1], value) <= 0) {
 								return true;
 							}
 							break;
 						case "!=":
-							if (range[0].compareTo(value.toString()) <= 0
-									&& range[1].compareTo(value.toString()) <= 0) {
+							if (compare(range[0], value) <= 0 && compare(range[1], value) >= 0) {
 								return true;
 							}
 							break;
@@ -194,7 +193,7 @@ public class QueryTerm {
 						if (!(value instanceof List)) {
 							return false;
 						}
-						@SuppressWarnings("unchecked")//check above
+						@SuppressWarnings("unchecked") // check above
 						List<Object> myList = (List<Object>) value;
 						switch (operator) {
 						case "!=":
@@ -234,22 +233,23 @@ public class QueryTerm {
 							}
 							break;
 						case ">=":
-							if (value.toString().compareTo(operant) >= 0) {
+
+							if (compare(operant, value) >= 0) {
 								return true;
 							}
 							break;
 						case "<=":
-							if (value.toString().compareTo(operant) <= 0) {
+							if (compare(operant, value) <= 0) {
 								return true;
 							}
 							break;
 						case ">":
-							if (value.toString().compareTo(operant) > 0) {
+							if (compare(operant, value) > 0) {
 								return true;
 							}
 							break;
 						case "<":
-							if (value.toString().compareTo(operant) < 0) {
+							if (compare(operant, value) < 0) {
 								return true;
 							}
 							break;
@@ -273,6 +273,19 @@ public class QueryTerm {
 			}
 			return finalReturnValue;
 
+		}
+
+	}
+
+	private int compare(String operant, Object value) {
+		try {
+			if (value instanceof Integer || value instanceof Long || value instanceof Double) {
+				return Double.compare(Double.parseDouble(value.toString()), Double.parseDouble(operant));
+			} else {
+				return value.toString().compareTo(operant);
+			}
+		} catch (NumberFormatException e) {
+			return -1;
 		}
 
 	}
@@ -327,12 +340,12 @@ public class QueryTerm {
 	 * since the URI constants are // controlled } return result; }
 	 */
 
-	@SuppressWarnings("rawtypes")//Intentional usage of raw type here.
+	@SuppressWarnings("rawtypes") // Intentional usage of raw type here.
 	private Object getCompoundValue(Object value, String[] compound) throws ResponseException {
 		if (!(value instanceof Map)) {
 			return null;
 		}
-		
+
 		Map complexValue = (Map) value;
 		String firstElement = expandAttributeName(compound[0].replaceAll("\\]", "").replaceAll("\\[", ""));
 		Object potentialResult = complexValue.get(firstElement);
@@ -349,7 +362,7 @@ public class QueryTerm {
 		return getCompoundValue(potentialResult, Arrays.copyOfRange(compound, 1, compound.length));
 	}
 
-	@SuppressWarnings("rawtypes")//Intentional usage of raw type here.
+	@SuppressWarnings("rawtypes") // Intentional usage of raw type here.
 	private Object getValue(BaseEntry myEntry) {
 		Object value = null;
 		if (myEntry instanceof PropertyEntry) {
@@ -381,9 +394,7 @@ public class QueryTerm {
 	}
 
 	private String expandAttributeName(String attribute) throws ResponseException {
-
-		return paramsResolver.expandAttribute(attribute, linkHeaders);
-
+		return linkHeaders.expandIri(attribute, false, true, null, null);
 	}
 
 	public QueryTerm getNext() {
@@ -436,8 +447,8 @@ public class QueryTerm {
 		operant = operant.strip();
 		if (operant.matches(URI) && !operant.matches(TIME)) { // uri and time patterns are ambiguous in the abnf grammar
 			this.operant = "\"" + operant + "\"";
-		} else if(operant.startsWith("'") && operant.endsWith("'")) {
-			this.operant = "\"" + operant.substring(1,operant.length() - 1) + "\"";
+		} else if (operant.startsWith("'") && operant.endsWith("'")) {
+			this.operant = "\"" + operant.substring(1, operant.length() - 1) + "\"";
 		} else {
 			this.operant = operant;
 		}
@@ -525,8 +536,6 @@ public class QueryTerm {
 	public String toSql() throws ResponseException {
 		StringBuilder builder = new StringBuilder();
 		toSql(builder, false);
-		// builder.append(";");
-		System.out.println(builder.toString());
 		return builder.toString();
 	}
 
@@ -705,7 +714,7 @@ public class QueryTerm {
 				attributeFilterProperty.append(')');
 			}
 		}
-		if(operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+		if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
 			result.append("NOT ");
 		}
 		result.append("(" + attributeFilterProperty.toString() + ")");
@@ -718,7 +727,7 @@ public class QueryTerm {
 				for (String subPart : attribute.split("\\.")) {
 					if (subPart.contains("[")) {
 						for (String subParts : subPart.split("\\[")) {
-							subParts = subParts.replaceAll("\\]", "");
+							// subParts = subParts.replaceAll("\\]", "");
 							attribPath.add(expandAttributeName(subParts));
 						}
 					} else {
@@ -743,7 +752,7 @@ public class QueryTerm {
 		return attribPath;
 	}
 
-	private boolean applyOperator(StringBuilder attributeFilterProperty) throws BadRequestException {
+	private boolean applyOperator(StringBuilder attributeFilterProperty) throws ResponseException {
 		boolean useRelClause = false;
 
 		String typecast = "jsonb";
@@ -788,65 +797,48 @@ public class QueryTerm {
 		 * operant.matches(DATETIME)); break;
 		 */
 		case NGSIConstants.QUERY_GREATEREQ:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater equal");
 			}
 			attributeFilterProperty.append(" >= '" + operant + "'::" + typecast);
 			break;
 		case NGSIConstants.QUERY_LESSEQ:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less equal");
 			}
 			attributeFilterProperty.append(" <= '" + operant + "'::" + typecast);
 			break;
 		case NGSIConstants.QUERY_GREATER:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater");
 			}
 			attributeFilterProperty.append(" > '" + operant + "'::" + typecast);
 			break;
 		case NGSIConstants.QUERY_LESS:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
 			}
 			attributeFilterProperty.append(" < '" + operant + "'::" + typecast);
 			break;
 		case NGSIConstants.QUERY_PATTERNOP:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
 			}
 			attributeFilterProperty.append(" ~ '" + operant + "'");
 			break;
 		case NGSIConstants.QUERY_NOTPATTERNOP:
-			if (operant.matches(LIST)) {
-				throw new BadRequestException();
-			}
-			if (operant.matches(RANGE)) {
-				throw new BadRequestException();
+			if (operant.matches(LIST) || operant.matches(RANGE)) {
+				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
 			}
 			attributeFilterProperty.append(" !~ '" + operant + "'");
 			break;
 		default:
-			throw new BadRequestException();
+			throw new ResponseException(ErrorType.BadRequestData, "Bad operator in query");
 		}
 		return useRelClause;
 	}
-	//Not used anymore
+
+	// Not used anymore
 	/*
 	 * private boolean applyOperator(StringBuilder attributeFilterProperty,
 	 * StringBuilder attributeFilterRelationship) throws BadRequestException {
@@ -916,7 +908,7 @@ public class QueryTerm {
 	 */
 	private void getAttribQueryForTemporalEntity(StringBuilder result) throws ResponseException {
 		ArrayList<String> attribPath = getAttribPathArray(this.attribute);
-		//https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
+		// https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
 		/*
 		 * String attribId = null; for (String subPath : attribPath) { attribId =
 		 * subPath; break; // sub-properties are not supported yet in HistoryManager }
@@ -927,6 +919,9 @@ public class QueryTerm {
 		char charcount = 'a';
 		String lastAttrib = null;
 		for (String subPath : attribPath) {
+			if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+				result.append("NOT ");
+			}
 			result.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
 			result.append(subPath);
 			if (attribute.contains("[") && iElem == 0) {
@@ -1013,59 +1008,7 @@ public class QueryTerm {
 		for (int i = 0; i < attribPath.size(); i++) {
 			result.append(')');
 		}
-		
-		/*
-		 * StringBuilder attributeFilterProperty = new StringBuilder("(m.attrdata#");
-		 * StringBuilder attributeFilterRelationship = new StringBuilder("m.attrdata#");
-		 * String testValueTypeForPatternOp = new String( "jsonb_typeof(m.attrdata#>'{"
-		 * + attribId + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE +
-		 * ",0,@value}') = 'string'"); StringBuilder testValueTypeForDateTime = new
-		 * StringBuilder( "m.attrdata#>>'{" + attribId + ",0," +
-		 * NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@type}' = ");
-		 * 
-		 * if (operator.equals(NGSIConstants.QUERY_PATTERNOP) ||
-		 * operator.equals(NGSIConstants.QUERY_NOTPATTERNOP) || operant.matches(DATE) ||
-		 * operant.matches(TIME) || operant.matches(DATETIME)) {
-		 * attributeFilterProperty.append(">>");
-		 * attributeFilterRelationship.append(">>"); } else {
-		 * attributeFilterProperty.append(">"); attributeFilterRelationship.append(">");
-		 * }
-		 * 
-		 * attributeFilterProperty.append("'{" + attribId + ",0," +
-		 * NGSIConstants.NGSI_LD_HAS_VALUE + ",0,@value}')");
-		 * attributeFilterRelationship.append("'{" + attribId + ",0," +
-		 * NGSIConstants.NGSI_LD_HAS_OBJECT + ",0,@id}'"); if
-		 * (operant.matches(DATETIME)) { attributeFilterProperty.append("::timestamp ");
-		 * testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE_TIME + "'");
-		 * } else if (operant.matches(DATE)) {
-		 * attributeFilterProperty.append("::date ");
-		 * testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_DATE + "'"); }
-		 * else if (operant.matches(TIME)) { attributeFilterProperty.append("::time ");
-		 * testValueTypeForDateTime.append("'" + NGSIConstants.NGSI_LD_TIME + "'"); }
-		 * 
-		 * 
-		 * boolean useRelClause = applyOperator(attributeFilterProperty,
-		 * attributeFilterRelationship); if (useRelClause) { result.append("((" +
-		 * attributeFilterProperty.toString() + ") or (" +
-		 * attributeFilterRelationship.toString() + "))"); } else { result.append("(" +
-		 * attributeFilterProperty.toString()); if
-		 * (operator.equals(NGSIConstants.QUERY_PATTERNOP) ||
-		 * operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) { result.append(" and " +
-		 * testValueTypeForPatternOp); } if (operant.matches(DATE) ||
-		 * operant.matches(TIME) || operant.matches(DATETIME)) { result.append(" and " +
-		 * testValueTypeForDateTime.toString()); } result.append(")"); }
-		 */
-	}
 
-	// Only for testing;
-	public void setParamsResolver(ParamsResolver paramsResolver) {
-		this.paramsResolver = paramsResolver;
-		if (this.hasNext()) {
-			next.setParamsResolver(paramsResolver);
-		}
-		if (this.getFirstChild() != null) {
-			this.getFirstChild().setParamsResolver(paramsResolver);
-		}
 	}
 
 }

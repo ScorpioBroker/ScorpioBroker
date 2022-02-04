@@ -11,7 +11,40 @@
 ![NGSI-LD Test Suite](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/node.js.yml/badge.svg) 
 ![PMD](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/pmd.yml/badge.svg) 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4781/badge)](https://bestpractices.coreinfrastructure.org/projects/4781)
+```diff
+ATTENTION!!!
+There is an existing security exploit in all versions older than 2.15 of Log4J. Scorpio uses Log4j for logging as well and so we are affected by this exploit as well.
+What now?
 
+We have replaced log4j in the development branch with the Spring-Boot-Logging which relies on Slf4J. We released a new version 1.1.3 on dockerhub. Also latest is -updated already.
+Please update them as soon as possible.
+
+But i have an older version running and don't want to update. What now?
+
+You should still update!
+
+However in case you really really really can't do it.
+You can deactivate the feature of Log4J which is responsible for the exploit.
+
+For people running Scorpio natively with java -jar. Add -Dlog4j2.formatMsgNoLookups=true before the -jar. So e.g. java -Dlog4j2.formatMsgNoLookups=true -jar myapp.jar
+
+If you are running the docker-aaio version:
+Download the run_replacement.sh file and place it on your docker host.
+In your docker-compose file modify the scorpio entry like this 
+  scorpio:
+    image: scorpiobroker/scorpio:scorpio-aaio_1.0.8
+    ports:
+      - "9090:9090"
+    depends_on:
+      - kafka
+      - postgres
+    volumes:
+      - /<path>/<to>/run_replacement.sh:/usr/src/scorpio/run.sh
+
+If you are running the docker-dist version:
+Go to your docker-compose file and place this in every Scorpio service definition.
+  command: java -Dlog4j2.formatMsgNoLookups=true -jar $JAR_FILE_RUN ${spring_args}
+```
 Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India. It implements the full [NGSI-LD API](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf) as specified by the ETSI Industry Specification Group on cross cutting Context Information Management ([ETSI ISG CIM](https://www.etsi.org/committee/cim)).
 
 The NGSI-LD API enables the management, access and discovery of context information. Context information consists of *entities* (e.g. a building) and their *properties* (e.g. address and geographic location) and *relationships* (e.g. owner). Thus Scorpio enables applications and services to request context information – what they need, when they need it and how they need it.

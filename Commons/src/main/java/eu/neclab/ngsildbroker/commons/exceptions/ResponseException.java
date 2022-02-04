@@ -14,20 +14,7 @@ public class ResponseException extends Exception{
 	private HttpStatus httpStatus; 
 	private ErrorType error;
 	
-	public ResponseException(String message) {
-        super(message);
-    }
 	
-	/*public ResponseException(int code,String message) {
-        super(message);
-        this.httpStatus=HttpStatus.valueOf(code);
-    }*/
-	
-	public ResponseException(ErrorType error) {
-		super(error.getMessage());
-		this.error=error;
-		this.httpStatus=HttpStatus.valueOf(error.getCode());
-	}
 	
 	public ResponseException(ErrorType error,String errorMessage) {
 		super(errorMessage);
@@ -35,11 +22,7 @@ public class ResponseException extends Exception{
 		this.httpStatus=HttpStatus.valueOf(error.getCode());
 	}
 	
-	/*public ResponseException(HttpStatus httpStatus,String message) {
-        super(message);
-        this.httpStatus=httpStatus;
-    }*/
-
+	
 	public HttpStatus getHttpStatus() {
 		return httpStatus;
 	}
