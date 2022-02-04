@@ -86,7 +86,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		try {
 			subscribe(request);
 		} catch (ResponseException e) {
-			logger.error("Failed to subscribe internally", e);
+			logger.debug("Failed to subscribe internally", e);
 		}
 	}
 
@@ -97,7 +97,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 				unsubscribe(subId, request.getHeaders());
 			}
 		} catch (ResponseException e) {
-			logger.error("Failed to subscribe internally", e);
+			logger.debug("Failed to subscribe internally", e);
 		}
 	}
 
@@ -108,7 +108,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 			try {
 				unsubscribe(entry.getKey(), entry.getValue().getHeaders());
 			} catch (ResponseException e) {
-				logger.error("Failed to subscribe internally", e);
+				logger.debug("Failed to subscribe internally", e);
 			}
 		}
 		super.deconstructor();
@@ -119,7 +119,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		try {
 			updateSubscription(request);
 		} catch (ResponseException e) {
-			logger.error("Failed to subscribe internally", e);
+			logger.debug("Failed to subscribe internally", e);
 		}
 
 	}
@@ -131,7 +131,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 				sub.getNotification().getEndPoint().setUri(new URI("internal://kafka"));
 			}
 		} catch (URISyntaxException e) {
-			logger.error("Failed to set internal sub endpoint", e);
+			logger.debug("Failed to set internal sub endpoint", e);
 		}
 		sub.setTimeInterval(0);
 		id2InternalSubscriptions.put(sub.getId(), request);

@@ -237,6 +237,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			} else if (key.equals(NGSIConstants.NGSI_LD_IS_ACTIVE)) {
 				if (value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsBoolean() == false) {
 					result.setStatus(NGSIConstants.ISACTIVE_FALSE);
+					result.setActive(false);
+				}else {
+					result.setStatus(NGSIConstants.ISACTIVE_TRUE);
+					result.setActive(true);
 				}
 			}
 		}
@@ -432,10 +436,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			temp.add(notificationObj);
 			top.add(NGSIConstants.NGSI_LD_NOTIFICATION, temp);
 		}
-		if (src.getLdQuery() != null) {
+		if (src.getLdQueryString() != null) {
 			tempArray = new JsonArray();
 			tempObj = new JsonObject();
-			tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getLdQuery()));
+			tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getLdQueryString()));
 			tempArray.add(tempObj);
 			top.add(NGSIConstants.NGSI_LD_QUERY, tempArray);
 		}
@@ -474,6 +478,10 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 		if (src.getSubscriptionName() != null) {
 			top.add(NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME, SerializationTools.getValueArray(src.getSubscriptionName()));
 		}
+		if (src.isActive() != null) {
+			top.add(NGSIConstants.NGSI_LD_IS_ACTIVE, SerializationTools.getValueArray(src.isActive()));
+		}
+
 
 		return top;
 	}

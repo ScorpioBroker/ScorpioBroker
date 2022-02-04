@@ -187,10 +187,16 @@ public class Subscription {
 	}
 
 	public void addEntityInfo(EntityInfo entity) {
+		if(this.entities == null) {
+			this.entities = new ArrayList<EntityInfo>();
+		}
 		this.entities.add(entity);
 	}
 
 	public void removeEntityInfo(EntityInfo entity) {
+		if(this.entities == null) {
+			return;
+		}
 		this.entities.remove(entity);
 	}
 
