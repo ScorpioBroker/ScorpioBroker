@@ -101,7 +101,7 @@ public class ScopeQueryTerm {
 	}
 
 	private String getSQLScopeQuery() {
-		StringBuilder result = new StringBuilder();
+		StringBuilder result = new StringBuilder("'^");
 		for (String entry : scopeLevels) {
 			result.append("\\/");
 			switch (entry) {
@@ -116,6 +116,8 @@ public class ScopeQueryTerm {
 				break;
 			}
 		}
+		result.append("'");
+		System.err.println(result.toString());
 		return result.toString();
 	}
 
