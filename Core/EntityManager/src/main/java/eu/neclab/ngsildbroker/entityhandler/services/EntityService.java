@@ -34,6 +34,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
+import eu.neclab.ngsildbroker.commons.messagebus.InternalKafkaReplacement;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 @Service
@@ -46,12 +47,18 @@ public class EntityService implements EntryCRUDService {
 	@Value("${scorpio.directDB}")
 	boolean directDB;
 	public static boolean checkEntity = false;
+	
+	@Value("${scorpio.kafka.enabled:true}")
+	boolean kafkaEnabled;
 
 	@Autowired
 	EntityInfoDAO entityInfoDAO;
 
-	@Autowired
+	@Autowired(required = false)
 	KafkaTemplate<String, Object> kafkaTemplate;
+	
+	@Autowired(required = false)
+	InternalKafkaReplacement internalKafkaReplacement;
 
 	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
@@ -105,7 +112,11 @@ public class EntityService implements EntryCRUDService {
 		kafkaExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
+				if(kafkaEnabled) {
 				kafkaTemplate.send(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
+				}else {
+					internalKafkaReplacement.newMessage(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
+				}
 
 			}
 		});

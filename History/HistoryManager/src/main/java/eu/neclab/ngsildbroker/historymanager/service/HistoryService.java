@@ -49,8 +49,11 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Autowired
 	HistoryDAO historyDAO;
 
-	@Autowired
+	@Autowired(required = false)
 	KafkaTemplate<String, Object> kafkaTemplate;
+
+	@Value("${scorpio.kafka.enabled:true}")
+	boolean kafkaEnabled;
 
 	@Value("${scorpio.directdb:true}")
 	boolean directDB;
@@ -100,7 +103,9 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			kafkaExecutor.execute(new Runnable() {
 				@Override
 				public void run() {
-					kafkaTemplate.send(TEMP_TOPIC, request.getId(), new BaseRequest(request));
+					if (kafkaEnabled) {
+						kafkaTemplate.send(TEMP_TOPIC, request.getId(), new BaseRequest(request));
+					}
 
 				}
 			});

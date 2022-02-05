@@ -2,6 +2,10 @@ package eu.neclab.ngsildbroker.runner;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+
+import eu.neclab.ngsildbroker.commons.messagebus.InternalKafkaReplacement;
 import eu.neclab.ngsildbroker.entityhandler.EntityHandler;
 import eu.neclab.ngsildbroker.historymanager.HistoryHandler;
 import eu.neclab.ngsildbroker.queryhandler.QueryHandler;
@@ -18,4 +22,9 @@ public class Runner {
 				RegistrySubscriptionHandler.class, EntityHandler.class, SubscriptionHandler.class }, args);
 	}
 
+	@Bean
+	@ConditionalOnProperty(prefix = "scorpio.kafka", matchIfMissing = false, name = "enabled", havingValue = "false")
+	InternalKafkaReplacement internalKafkaReplacement() {
+		return new InternalKafkaReplacement();
+	}
 }
