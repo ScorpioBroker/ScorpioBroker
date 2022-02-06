@@ -12,6 +12,7 @@ import com.google.common.collect.Maps;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.interfaces.ScorpioBaseObject;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
 public class BaseRequest implements ScorpioBaseObject {
 
@@ -37,8 +38,8 @@ public class BaseRequest implements ScorpioBaseObject {
 	public BaseRequest(BaseRequest request) {
 		this.id = request.id;
 		this.headers = request.headers;
-		this.requestPayload = new HashMap<String, Object>(request.requestPayload);
-		this.finalPayload = new HashMap<String, Object>(request.finalPayload);
+		this.requestPayload = EntityTools.deepCopyOfJsonMap(request.requestPayload);
+		this.finalPayload = EntityTools.deepCopyOfJsonMap(request.finalPayload);
 		this.requestType = request.requestType;
 	}
 
