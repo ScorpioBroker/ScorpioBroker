@@ -1,0 +1,7 @@
+scorpio:
+  history:
+    autorecording: notactive
+  registry:
+    autorecording: notactive
+  kafka:
+    enabled: false
