@@ -35,7 +35,10 @@ public class InternalKafkaReplacement {
 
 				@Override
 				public void run() {
-					listener.newMessage(topic, key, object.duplicate());
+					ScorpioBaseObject toSend = object.duplicate();
+					System.err.println(topic);
+					System.err.println(toSend.toString());
+					listener.newMessage(topic, key, toSend);
 
 				}
 			});

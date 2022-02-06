@@ -1,10 +1,12 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.interfaces.ScorpioBaseObject;
 
 public class SubscriptionRequest extends BaseRequest {
 	private Subscription subscription;
@@ -43,6 +45,12 @@ public class SubscriptionRequest extends BaseRequest {
 
 	public void setHeaders(ArrayListMultimap<String, String> headers) {
 		this.headers = headers;
+	}
+
+	@Override
+	public ScorpioBaseObject duplicate() {
+		return new SubscriptionRequest(new Subscription(subscription), new ArrayList<Object>(context),
+				ArrayListMultimap.create(headers), getRequestType());
 	}
 
 }

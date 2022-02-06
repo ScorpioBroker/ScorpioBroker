@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -36,8 +37,8 @@ public class BaseRequest implements ScorpioBaseObject {
 	public BaseRequest(BaseRequest request) {
 		this.id = request.id;
 		this.headers = request.headers;
-		this.requestPayload = request.requestPayload;
-		this.finalPayload = request.finalPayload;
+		this.requestPayload = new HashMap<String, Object>(request.requestPayload);
+		this.finalPayload = new HashMap<String, Object>(request.finalPayload);
 		this.requestType = request.requestType;
 	}
 
@@ -152,4 +153,12 @@ public class BaseRequest implements ScorpioBaseObject {
 	public ScorpioBaseObject duplicate() {
 		return new BaseRequest(this);
 	}
+
+	@Override
+	public String toString() {
+		return "Class " + this.getClass().toString() + " BaseRequest [headers=" + headers + ", id=" + id
+				+ ", requestPayload=" + requestPayload + ", finalPayload=" + finalPayload + ", requestType="
+				+ requestType + "]";
+	}
+
 }
