@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -22,12 +21,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import com.github.jsonldjava.utils.JsonUtils;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -38,6 +34,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.messagebus.InternalKafkaReplacement;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
@@ -51,8 +48,6 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Qualifier("subdao")
 	SubscriptionInfoDAOInterface subService;
 
-	@Autowired
-	KafkaTemplate<String, Object> kafkaTemplate;
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
 	private HashMap<String, String> internalSubId2RemoteNotifyCallbackId2 = new HashMap<String, String>();
@@ -60,6 +55,15 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Value("${scorpio.topics.internalregsub}")
 	private String INTERNAL_SUBSCRIPTION_TOPIC;
+
+	@Value("${scorpio.kafka.enabled:true}")
+	boolean kafkaEnabled;
+
+	@Autowired(required = false)
+	InternalKafkaReplacement internalKafkaReplacement;
+
+	@Autowired(required = false)
+	KafkaTemplate<String, Object> kafkaTemplate;
 
 	@Autowired
 	private MicroServiceUtils microServiceUtils;
@@ -112,7 +116,11 @@ public class SubscriptionService extends BaseSubscriptionService {
 		new Thread() {
 			@Override
 			public void run() {
-				kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
+				if (kafkaEnabled) {
+					kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
+				} else {
+					internalKafkaReplacement.newMessage(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
+				}
 			}
 		}.start();
 	}

@@ -47,7 +47,7 @@ public class EntityService implements EntryCRUDService {
 	@Value("${scorpio.directDB}")
 	boolean directDB;
 	public static boolean checkEntity = false;
-	
+
 	@Value("${scorpio.kafka.enabled:true}")
 	boolean kafkaEnabled;
 
@@ -56,7 +56,7 @@ public class EntityService implements EntryCRUDService {
 
 	@Autowired(required = false)
 	KafkaTemplate<String, Object> kafkaTemplate;
-	
+
 	@Autowired(required = false)
 	InternalKafkaReplacement internalKafkaReplacement;
 
@@ -112,9 +112,9 @@ public class EntityService implements EntryCRUDService {
 		kafkaExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				if(kafkaEnabled) {
-				kafkaTemplate.send(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
-				}else {
+				if (kafkaEnabled) {
+					kafkaTemplate.send(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
+				} else {
 					internalKafkaReplacement.newMessage(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
 				}
 

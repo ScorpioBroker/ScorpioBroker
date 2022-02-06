@@ -44,6 +44,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
+import eu.neclab.ngsildbroker.commons.messagebus.InternalKafkaReplacement;
 import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -68,8 +69,14 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@Value("${scorpio.registry.autorecording:active}")
 	String AUTO_REG_STATUS;
 
-	@Autowired
+	@Value("${scorpio.kafka.enabled:true}")
+	boolean kafkaEnabled;
+
+	@Autowired(required = false)
 	KafkaTemplate<String, Object> kafkaTemplate;
+
+	@Autowired(required = false)
+	InternalKafkaReplacement internalKafkaReplacement;
 
 	@Value("${scorpio.topics.registry}")
 	String CSOURCE_TOPIC;
@@ -255,8 +262,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		kafkaExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), new BaseRequest(request));
-
+				if (kafkaEnabled) {
+					kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), new BaseRequest(request));
+				} else {
+					internalKafkaReplacement.newMessage(CSOURCE_TOPIC, request.getId(), new BaseRequest(request));
+				}
 			}
 		});
 	}

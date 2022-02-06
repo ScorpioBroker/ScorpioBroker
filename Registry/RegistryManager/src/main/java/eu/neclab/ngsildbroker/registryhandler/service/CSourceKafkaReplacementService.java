@@ -1,26 +1,19 @@
-package eu.neclab.ngsildbroker.historymanager.service;
+package eu.neclab.ngsildbroker.registryhandler.service;
 
 import javax.annotation.PostConstruct;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.TopicListener;
 import eu.neclab.ngsildbroker.commons.messagebus.InternalKafkaReplacement;
 
 @Service
 @ConditionalOnProperty(prefix = "scorpio.kafka", matchIfMissing = false, name = "enabled", havingValue = "false")
-public class HistoryKafkaReplacementService extends HistoryKafkaServiceBase implements TopicListener {
+public class CSourceKafkaReplacementService extends CSourceKafkaServiceBase implements TopicListener {
 
 	@Value("${scorpio.topics.entity}")
 	private String topic;
@@ -38,7 +31,7 @@ public class HistoryKafkaReplacementService extends HistoryKafkaServiceBase impl
 			return;
 		}
 		BaseRequest message = (BaseRequest) origMessage;
-		handleBaseMessage(key, message);
+		handleBaseRequest(message, key);
 	}
 
 }
