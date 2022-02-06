@@ -24,6 +24,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
+import eu.neclab.ngsildbroker.commons.messagebus.InternalKafkaReplacement;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -35,7 +36,13 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	@Qualifier("regsubdao")
 	SubscriptionInfoDAOInterface subService;
 
-	@Autowired
+	@Value("${scorpio.kafka.enabled:true}")
+	boolean kafkaEnabled;
+
+	@Autowired(required = false)
+	InternalKafkaReplacement internalKafkaReplacement;
+
+	@Autowired(required = false)
 	KafkaTemplate<String, Object> kafkaTemplate;
 
 	@Value("${scorpio.topics.internalnotification}")
@@ -47,7 +54,8 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@PostConstruct
 	private void notificationHandlerSetup() {
-		this.internalHandler = new InternalNotificationHandler(kafkaTemplate, NOTIFICATION_TOPIC);
+		this.internalHandler = new InternalNotificationHandler(kafkaTemplate, internalKafkaReplacement, kafkaEnabled,
+				NOTIFICATION_TOPIC);
 	}
 
 	@Override

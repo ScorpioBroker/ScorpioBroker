@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.HashMultimap;
 
+import eu.neclab.ngsildbroker.commons.interfaces.ScorpioBaseObject;
 import eu.neclab.ngsildbroker.commons.interfaces.TopicListener;
 
 public class InternalKafkaReplacement {
@@ -26,7 +27,7 @@ public class InternalKafkaReplacement {
 		listener2ThreadExecutor.remove(topicListener);
 	}
 
-	public synchronized void newMessage(String topic, String key, Object object) {
+	public synchronized void newMessage(String topic, String key, ScorpioBaseObject object) {
 		Set<TopicListener> listeners = topic2Listeners.get(topic);
 		for (TopicListener listener : listeners) {
 			ThreadPoolExecutor executor = listener2ThreadExecutor.get(listener);
@@ -34,7 +35,7 @@ public class InternalKafkaReplacement {
 
 				@Override
 				public void run() {
-					listener.newMessage(topic, key, object);
+					listener.newMessage(topic, key, object.duplicate());
 
 				}
 			});

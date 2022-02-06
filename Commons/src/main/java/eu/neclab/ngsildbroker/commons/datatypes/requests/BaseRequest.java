@@ -10,8 +10,9 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.interfaces.ScorpioBaseObject;
 
-public class BaseRequest {
+public class BaseRequest implements ScorpioBaseObject {
 
 	ArrayListMultimap<String, String> headers;
 	private String id;
@@ -145,5 +146,10 @@ public class BaseRequest {
 		} else {
 			this.finalPayload = new HashMap<String, Object>(finalPayload);
 		}
+	}
+
+	@Override
+	public ScorpioBaseObject duplicate() {
+		return new BaseRequest(this);
 	}
 }
