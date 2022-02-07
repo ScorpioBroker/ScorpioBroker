@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.HashMultimap;
 
+import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.ScorpioBaseObject;
 import eu.neclab.ngsildbroker.commons.interfaces.TopicListener;
 
@@ -35,8 +36,13 @@ public class InternalKafkaReplacement {
 
 				@Override
 				public void run() {
-					if (object instanceof ScorpioBaseObject) {
-						Object toSend = ((ScorpioBaseObject)object).duplicate();
+					Object toSend = null;
+					if (object instanceof SubscriptionRequest) {
+						toSend = ((SubscriptionRequest) object).duplicate();
+					} else if (object instanceof ScorpioBaseObject) {
+						toSend = ((ScorpioBaseObject) object).duplicate();
+					}
+					if (toSend != null) {
 						System.err.println(topic);
 						System.err.println(object.toString());
 						System.err.println(listener);
