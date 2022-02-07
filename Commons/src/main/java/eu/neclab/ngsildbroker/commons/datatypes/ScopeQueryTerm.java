@@ -117,7 +117,6 @@ public class ScopeQueryTerm {
 			}
 		}
 		result.append("$'");
-		System.err.println(result.toString());
 		return result.toString();
 	}
 

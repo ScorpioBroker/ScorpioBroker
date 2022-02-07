@@ -6,7 +6,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class Constants {
-	
+
 	public final static HashMultimap<Integer, String> allowedDateTimes = HashMultimap.create();
 	static {
 		allowedDateTimes.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_OBSERVED_AT);
@@ -58,8 +58,8 @@ public class Constants {
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_ID_PATTERN);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_IS_ACTIVE);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_EXPIRES);
-		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE);
-		
+		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE_Q);
+
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DESCRIPTION);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_TIME_INTERVAL);
@@ -72,8 +72,8 @@ public class Constants {
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_ID_PATTERN);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_IS_ACTIVE);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_EXPIRES);
-		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE);
-		
+		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE_Q);
+
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
