@@ -43,10 +43,6 @@ public class InternalKafkaReplacement {
 						toSend = ((ScorpioBaseObject) object).duplicate();
 					}
 					if (toSend != null) {
-						System.err.println(topic);
-						System.err.println(object.toString());
-						System.err.println(listener);
-						System.err.println(toSend.toString());
 						listener.newMessage(topic, key, toSend);
 					}
 
