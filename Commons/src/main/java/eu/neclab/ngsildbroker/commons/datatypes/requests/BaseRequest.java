@@ -151,7 +151,7 @@ public class BaseRequest implements ScorpioBaseObject {
 	}
 
 	@Override
-	public ScorpioBaseObject duplicate() {
+	public Object duplicate() {
 		return new BaseRequest(this);
 	}
 

@@ -187,14 +187,14 @@ public class Subscription {
 	}
 
 	public void addEntityInfo(EntityInfo entity) {
-		if(this.entities == null) {
+		if (this.entities == null) {
 			this.entities = new ArrayList<EntityInfo>();
 		}
 		this.entities.add(entity);
 	}
 
 	public void removeEntityInfo(EntityInfo entity) {
-		if(this.entities == null) {
+		if (this.entities == null) {
 			return;
 		}
 		this.entities.remove(entity);
@@ -323,6 +323,17 @@ public class Subscription {
 		} else {
 			this.csfQuery = null;
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id
+				+ ", subscriptionName=" + subscriptionName + ", notification=" + notification + ", status=" + status
+				+ ", throttling=" + throttling + ", timeInterval=" + timeInterval + ", type=" + type
+				+ ", requestorList=" + requestorList + ", isActive=" + isActive + ", attributeNames=" + attributeNames
+				+ ", entities=" + entities + ", ldContext=" + ldContext + ", ldQueryString=" + ldQueryString
+				+ ", csfQueryString=" + csfQueryString + ", ldGeoQuery=" + ldGeoQuery + ", ldTempQuery=" + ldTempQuery
+				+ ", ldQuery=" + ldQuery + ", csfQuery=" + csfQuery + "]";
 	}
 
 }

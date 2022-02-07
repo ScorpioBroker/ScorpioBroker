@@ -48,7 +48,7 @@ public class SubscriptionRequest extends BaseRequest {
 	}
 
 	@Override
-	public ScorpioBaseObject duplicate() {
+	public Object duplicate() {
 		return new SubscriptionRequest(new Subscription(subscription), new ArrayList<Object>(context),
 				ArrayListMultimap.create(headers), getRequestType());
 	}

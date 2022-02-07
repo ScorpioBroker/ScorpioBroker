@@ -27,7 +27,7 @@ public class InternalKafkaReplacement {
 		listener2ThreadExecutor.remove(topicListener);
 	}
 
-	public synchronized void newMessage(String topic, String key, ScorpioBaseObject object) {
+	public synchronized void newMessage(String topic, String key, Object object) {
 		Set<TopicListener> listeners = topic2Listeners.get(topic);
 		for (TopicListener listener : listeners) {
 			ThreadPoolExecutor executor = listener2ThreadExecutor.get(listener);
@@ -35,10 +35,14 @@ public class InternalKafkaReplacement {
 
 				@Override
 				public void run() {
-					ScorpioBaseObject toSend = object.duplicate();
-					System.err.println(topic);
-					System.err.println(toSend.toString());
-					listener.newMessage(topic, key, toSend);
+					if (object instanceof ScorpioBaseObject) {
+						Object toSend = ((ScorpioBaseObject)object).duplicate();
+						System.err.println(topic);
+						System.err.println(object.toString());
+						System.err.println(listener);
+						System.err.println(toSend.toString());
+						listener.newMessage(topic, key, toSend);
+					}
 
 				}
 			});
