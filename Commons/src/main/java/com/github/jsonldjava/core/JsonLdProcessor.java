@@ -183,7 +183,7 @@ public class JsonLdProcessor {
 
 		// 3)
 		Context activeCtx = coreContext.clone();
-		if (contextLinks != null) {
+		if (contextLinks != null && !contextLinks.isEmpty()) {
 			activeCtx = activeCtx.parse(contextLinks, true);
 		}
 		// 4)
