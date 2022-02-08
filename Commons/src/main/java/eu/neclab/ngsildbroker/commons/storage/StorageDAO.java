@@ -41,9 +41,10 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import eu.neclab.ngsildbroker.commons.interfaces.StorageInterface;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 
-public abstract class StorageDAO {
+public abstract class StorageDAO implements StorageInterface {
 	private final static Logger logger = LoggerFactory.getLogger(StorageDAO.class);
 
 	@Autowired
@@ -75,7 +76,7 @@ public abstract class StorageDAO {
 		storageFunctions = getStorageFunctions();
 	}
 
-	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
+	private boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
 			throws SQLException {
 		try {
 			String sql;
@@ -143,7 +144,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public String findDataBaseNameByTenantId(String tenantidvalue) {
+	private String findDataBaseNameByTenantId(String tenantidvalue) {
 		if (tenantidvalue == null)
 			return null;
 		try {
@@ -163,7 +164,7 @@ public abstract class StorageDAO {
 		}
 	}
 
-	public DataSource determineTargetDataSource(String tenantidvalue) {
+	private DataSource determineTargetDataSource(String tenantidvalue) {
 
 		if (tenantidvalue == null)
 			return writerDataSource;
@@ -195,7 +196,7 @@ public abstract class StorageDAO {
 		return new HikariDataSource(tenantHikariConfig);
 	}
 
-	public Boolean flywayMigrate(DataSource tenantDataSource) {
+	private Boolean flywayMigrate(DataSource tenantDataSource) {
 		try {
 			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
 					.baselineOnMigrate(true).outOfOrder(true).load();
@@ -207,7 +208,7 @@ public abstract class StorageDAO {
 
 		return true;
 	}
-
+	@Override
 	public QueryResult query(QueryParams qp) throws ResponseException {
 		JdbcTemplate template;
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
@@ -257,7 +258,7 @@ public abstract class StorageDAO {
 		}
 		return queryResult;
 	}
-
+	@Override
 	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
 		boolean result = true;
 		DBWriteTemplates templates = getJDBCTemplates(request);
@@ -276,6 +277,7 @@ public abstract class StorageDAO {
 		return result;
 	}
 
+	@Override
 	public boolean storeRegistryEntry(CSourceRequest request) throws SQLException {
 		DBWriteTemplates templates = getJDBCTemplates(request);
 		String value = request.getResultCSourceRegistrationString();
@@ -403,6 +405,7 @@ public abstract class StorageDAO {
 
 	}
 
+	@Override
 	public boolean storeEntity(EntityRequest request) throws SQLTransientConnectionException {
 
 		String sql;
