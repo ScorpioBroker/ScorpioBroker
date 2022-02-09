@@ -201,7 +201,10 @@ public class QueryParser {
 			}
 
 		}
-
+		if(!scopeLevel.isEmpty()) {
+			scopeLevels.add(scopeLevel);
+		}
+		current.setScopeLevels(scopeLevels.toArray(new String[0]));
 		return current;
 	}
 
