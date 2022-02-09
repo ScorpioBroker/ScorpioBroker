@@ -3,8 +3,7 @@ package eu.neclab.ngsildbroker.atcontextserver.controller;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("ngsi-ld/contextes")
 public class AtContextServerController {
-	private final static Logger logger = LogManager.getLogger(AtContextServerController.class);
 
 	/*
 	 * @Autowired AtContext atContext;
@@ -47,7 +45,6 @@ public class AtContextServerController {
 	@GetMapping(path = "/{contextId}")
 	public ResponseEntity<Object> getContextForEntity(HttpServletRequest request,
 			@PathVariable("contextId") String contextId) {
-		logger.trace("getAtContext() for " + contextId);
 		/*
 		 * if(contextId.equals(AppConstants.CORE_CONTEXT_URL_SUFFIX)) { return
 		 * ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(
