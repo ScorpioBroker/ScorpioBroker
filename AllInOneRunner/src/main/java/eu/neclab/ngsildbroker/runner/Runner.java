@@ -6,20 +6,16 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.nativex.hint.ResourceHint;
 import org.springframework.nativex.hint.ResourcesHints;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Import;
 
 import eu.neclab.ngsildbroker.commons.messagebus.InternalKafkaReplacement;
-import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 
 @SpringBootApplication
 @ComponentScan(basePackages = { "eu.neclab.ngsildbroker.*" }, excludeFilters = {
-		@Filter(type = FilterType.REGEX, pattern = { "eu.neclab.ngsildbroker.commons.*" }),
 		@Filter(type = FilterType.ANNOTATION, value = SpringBootApplication.class) })
-@Import({ MicroServiceUtils.class, WebSecurityConfiguration.class })
+
 @ResourcesHints({ @ResourceHint(patterns = "org/flywaydb/core/internal/version.txt") })
 public class Runner {
 
