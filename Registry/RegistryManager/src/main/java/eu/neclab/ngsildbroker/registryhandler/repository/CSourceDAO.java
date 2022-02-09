@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -22,7 +22,7 @@ import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 @Repository("rmcsourcedao")
 public class CSourceDAO extends StorageDAO {
 
-	private final static Logger logger = LogManager.getLogger(CSourceDAO.class);
+	private final static Logger logger = LoggerFactory.getLogger(CSourceDAO.class);
 
 	protected final static String DBCOLUMN_CSOURCE_INFO_ENTITY_ID = "entity_id";
 	protected final static String DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN = "entity_idpattern";

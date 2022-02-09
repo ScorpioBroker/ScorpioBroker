@@ -5,14 +5,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MicroServiceUtils {
-	private final static Logger logger = LogManager.getLogger(MicroServiceUtils.class);
+	private final static Logger logger = LoggerFactory.getLogger(MicroServiceUtils.class);
 
 	@Value("${scorpio.gatewayurl:}")
 	private String gatewayUrl;

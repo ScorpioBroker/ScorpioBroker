@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -26,7 +26,7 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 
 public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements SubscriptionInfoDAOInterface {
-	private final static Logger logger = LogManager.getLogger(BaseSubscriptionInfoDAO.class);
+	private final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionInfoDAO.class);
 
 	public Table<String, String, Set<String>> getIds2Type() throws ResponseException {
 		Table<String, String, Set<String>> result = HashBasedTable.create();

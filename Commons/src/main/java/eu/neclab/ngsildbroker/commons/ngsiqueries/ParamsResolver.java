@@ -8,8 +8,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.MultiValueMap;
 
 import com.github.jsonldjava.core.Context;
@@ -49,7 +50,7 @@ public class ParamsResolver {
 		validParams.add(NGSIConstants.QUERY_PARAMETER_LAST_N);
 	}
 
-	private final static Logger logger = LogManager.getLogger(ParamsResolver.class);
+	private final static Logger logger = LoggerFactory.getLogger(ParamsResolver.class);
 
 //TODO REWORK THIS COMPLETELY 
 	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {

@@ -7,8 +7,8 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -32,7 +32,7 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 public interface QueryControllerFunctions {// implements QueryHandlerInterface {
-	final static Logger logger = LogManager.getLogger(QueryControllerFunctions.class);
+	final static Logger logger = LoggerFactory.getLogger(QueryControllerFunctions.class);
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	static final String emptyResult1 = "[ ]";
 	static final String emptyResult2 = "[]";
