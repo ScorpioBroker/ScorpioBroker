@@ -47,7 +47,7 @@ services:
   scorpio:
     image: scorpiobroker/scorpio:scorpio-aaio_latest
     ports:
-      - "9090:9090"
+      - "27015"
     depends_on:
       - gateway
       - eureka
