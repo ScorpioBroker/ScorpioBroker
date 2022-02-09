@@ -1,6 +1,6 @@
 mysettings:
   eureka:
-    host: ${eurekahost:localhost}
+    host: ${eureka.host:eureka}
 spring:
   cloud:
     discovery:
