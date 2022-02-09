@@ -341,7 +341,6 @@ public class Subscription {
 		}
 	}
 
-
 	@Override
 	public String toString() {
 		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id
@@ -351,6 +350,7 @@ public class Subscription {
 				+ ", entities=" + entities + ", ldContext=" + ldContext + ", ldQueryString=" + ldQueryString
 				+ ", csfQueryString=" + csfQueryString + ", ldGeoQuery=" + ldGeoQuery + ", ldTempQuery=" + ldTempQuery
 				+ ", ldQuery=" + ldQuery + ", csfQuery=" + csfQuery + "]";
+	}
 
 	public Boolean getIsActive() {
 		return isActive;
