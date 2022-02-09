@@ -161,7 +161,6 @@ public class SubscriptionService extends BaseSubscriptionService {
 				} catch (Exception e) {
 					throw new AssertionError();
 				}
-				System.err.println(body);
 				for (Map<String, Object> entry : notification.getData()) {
 					HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(entry,
 							subscriptionRequest.getContext(),
