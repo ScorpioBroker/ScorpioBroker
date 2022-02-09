@@ -47,18 +47,18 @@ public abstract class BaseQueryService implements EntryQueryService {
 //	public static final Gson GSON = DataSerializer.GSON;
 
 	@Value("${atcontext.url}")
-	String atContextServerUrl;
+	public String atContextServerUrl;
 
 	private StorageDAO entryDAO;
 
 	private StorageDAO registryDAO;
 
 	@Value("${scorpio.directDB}")
-	boolean directDbConnection;
+	public boolean directDbConnection;
 
 	RestTemplate restTemplate = HttpUtils.getRestTemplate();
 
-	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	public JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@PostConstruct
 	private void setup() {
