@@ -90,7 +90,7 @@ spring:
   main:
     lazy-initialization: false
     allow-bean-definition-overriding: true
-    allow-circular-references: true
+    allow-circular-references: false
 # Increase the Hystrix timeout to 60s (globally)
 hystrix:
   command:
