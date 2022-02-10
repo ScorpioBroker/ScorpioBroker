@@ -25,6 +25,25 @@
 	</dependencies>
 	<profiles>
 		<profile>
+			<id>native</id>
+			<activation>
+				<property>
+					<name>native</name>
+				</property>
+			</activation>
+			<build>
+				<resources>
+					<resource>
+						<filtering>true</filtering>
+						<directory>db</directory>
+						<excludes>
+							<exclude>*.yml</exclude>
+						</excludes>
+					</resource>
+				</resources>
+			</build>
+		</profile>
+		<profile>
 			<id>dist</id>
 			<build>
 				<plugins>

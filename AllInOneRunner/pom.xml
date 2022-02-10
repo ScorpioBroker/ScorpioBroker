@@ -66,39 +66,60 @@
 							<!-- ... -->
 						</configuration>
 					</plugin>
-					<!-- Avoid a clash between Spring Boot repackaging and native-maven-plugin -->
+
+
+
+
 					<plugin>
 						<groupId>org.springframework.boot</groupId>
 						<artifactId>spring-boot-maven-plugin</artifactId>
 						<configuration>
+							<requiresUnpack>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>AtContextServer</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>EntityManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>HistoryManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>QueryManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>RegistryManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>StorageManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+								<dependency>
+									<groupId>eu.neclab.ngsildbroker</groupId>
+									<artifactId>SubscriptionManager</artifactId>
+									<version>1.1.0-SNAPSHOT</version>
+								</dependency>
+							</requiresUnpack>
+							<image>
+								<env>
+									<BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
+								</env>
+								<name>scorpiobroker/aaio</name>
+							</image>
 							<classifier>exec</classifier>
 						</configuration>
 					</plugin>
-					<!-- <plugin> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-maven-plugin</artifactId> 
-						<configuration> <profiles> <profile>docker</profile> </profiles> <requiresUnpack> 
-						<dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>InfoServer</artifactId> 
-						<version>1.1.0-SNAPSHOT</version> </dependency> <dependency> <groupId>eu.neclab.ngsildbroker</groupId> 
-						<artifactId>AtContextServer</artifactId> <version>1.1.0-SNAPSHOT</version> 
-						</dependency> <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>EntityManager</artifactId> 
-						<version>1.1.0-SNAPSHOT</version> </dependency> <dependency> <groupId>eu.neclab.ngsildbroker</groupId> 
-						<artifactId>HistoryManager</artifactId> <version>1.1.0-SNAPSHOT</version> 
-						</dependency> <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>QueryManager</artifactId> 
-						<version>1.1.0-SNAPSHOT</version> </dependency> <dependency> <groupId>eu.neclab.ngsildbroker</groupId> 
-						<artifactId>RegistryManager</artifactId> <version>1.1.0-SNAPSHOT</version> 
-						</dependency> <dependency> <groupId>eu.neclab.ngsildbroker</groupId> <artifactId>StorageManager</artifactId> 
-						<version>1.1.0-SNAPSHOT</version> </dependency> <dependency> <groupId>eu.neclab.ngsildbroker</groupId> 
-						<artifactId>SubscriptionManager</artifactId> <version>1.1.0-SNAPSHOT</version> 
-						</dependency> </requiresUnpack> <image> <builder>paketobuildpacks/builder:tiny</builder> 
-						<env> <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE> </env> <name>scorpiobroker/aaio</name> 
-						</image> </configuration> </plugin> -->
-					<!-- <plugin> <groupId>org.graalvm.buildtools</groupId> <artifactId>native-maven-plugin</artifactId> 
-						<version>0.9.8</version> <extensions>true</extensions> <executions> <execution> 
-						<id>build-native</id> <goals> <goal>build</goal> </goals> <phase>package</phase> 
-						</execution> <execution> <id>test-native</id> <goals> <goal>test</goal> </goals> 
-						<phase>test</phase> </execution> </executions> <configuration> ... </configuration> 
-						</plugin> Avoid a clash between Spring Boot repackaging and native-maven-plugin 
-						<plugin> <groupId>org.springframework.boot</groupId> <artifactId>spring-boot-maven-plugin</artifactId> 
-						<configuration> <classifier>exec</classifier> </configuration> </plugin> -->
 				</plugins>
 			</build>
 		</profile>
