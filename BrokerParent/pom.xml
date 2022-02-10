@@ -35,9 +35,10 @@
 				<resources>
 					<resource>
 						<filtering>true</filtering>
-						<directory>db</directory>
+						<directory>src/main/resources</directory>
 						<excludes>
 							<exclude>*.yml</exclude>
+							<exclude>**/*.sql</exclude>
 						</excludes>
 					</resource>
 				</resources>
