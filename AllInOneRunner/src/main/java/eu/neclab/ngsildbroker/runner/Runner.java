@@ -17,6 +17,7 @@ import eu.neclab.ngsildbroker.commons.messagebus.InternalKafkaReplacement;
 		@Filter(type = FilterType.ANNOTATION, value = SpringBootApplication.class) })
 
 @ResourcesHints({ @ResourceHint(patterns = "org/flywaydb/core/internal/version.txt") })
+
 public class Runner {
 
 	public static void main(String[] args) throws Exception {

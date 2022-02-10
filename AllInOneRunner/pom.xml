@@ -12,7 +12,6 @@
 	<packaging>jar</packaging>
 
 	<profiles>
-
 		<profile>
 			<id>native</id>
 			<activation>
@@ -20,7 +19,13 @@
 					<name>native</name>
 				</property>
 			</activation>
+
 			<build>
+				<resources>
+					<resource>
+						<filtering>false</filtering>
+					</resource>
+				</resources>
 				<plugins>
 					<plugin>
 						<groupId>org.springframework.experimental</groupId>
