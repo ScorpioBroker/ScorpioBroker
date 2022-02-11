@@ -7,17 +7,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.nativex.hint.ResourceHint;
 import org.springframework.nativex.hint.ResourcesHints;
 
 import eu.neclab.ngsildbroker.commons.messagebus.InternalKafkaReplacement;
+import eu.neclab.ngsildbroker.commons.securityConfig.WebSecurityConfiguration;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 
 @SpringBootApplication
 @ComponentScan(basePackages = { "eu.neclab.ngsildbroker.*" }, excludeFilters = {
-		@Filter(type = FilterType.ANNOTATION, value = SpringBootApplication.class) })
+		@Filter(type = FilterType.ANNOTATION, value = SpringBootApplication.class),
+		@Filter(type = FilterType.REGEX, pattern = { "eu.neclab.ngsildbroker.commons.*" }) })
 
 @ResourcesHints({ @ResourceHint(patterns = "org/flywaydb/core/internal/version.txt") })
-
+@Import({ WebSecurityConfiguration.class, MicroServiceUtils.class })
 public class Runner {
 
 	public static void main(String[] args) throws Exception {
