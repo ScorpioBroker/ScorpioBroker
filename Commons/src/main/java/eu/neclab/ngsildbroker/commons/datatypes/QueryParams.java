@@ -6,6 +6,8 @@ import java.util.Map;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+
 public class QueryParams {
 
 	@SerializedName("tenant")
@@ -70,6 +72,8 @@ public class QueryParams {
 	private int offSet = 0;
 	private String check;
 	private int lastN;
+	private QueryTerm ldQuery;
+	private QueryTerm csfQuery;
 
 	private String scopeQ;
 
@@ -121,6 +125,42 @@ public class QueryParams {
 
 	public void setQ(String q) {
 		this.q = q;
+	}
+
+	public QueryTerm getLdQuery() {
+		return ldQuery;
+	}
+
+	public void setLdQuery(QueryTerm ldQuery, boolean temporalFormat) {
+		if (ldQuery != null) {
+			this.ldQuery = ldQuery;
+			try {
+				this.q = ldQuery.toSql(temporalFormat);
+			} catch (ResponseException e) {
+				e.printStackTrace();
+			}
+		} else {
+			this.ldQuery = null;
+			this.q = null;
+		}
+	}
+
+	public QueryTerm getCsfQuery() {
+		return csfQuery;
+	}
+
+	public void setCsfQuery(QueryTerm csfQuery) {
+		if (csfQuery != null) {
+			this.csfQuery = csfQuery;
+			try {
+				this.csf = csfQuery.toSql();
+			} catch (ResponseException e) {
+				e.printStackTrace();
+			}
+		} else {
+			this.csfQuery = null;
+			this.csf = null;
+		}
 	}
 
 	public QueryParams withQ(String q) {

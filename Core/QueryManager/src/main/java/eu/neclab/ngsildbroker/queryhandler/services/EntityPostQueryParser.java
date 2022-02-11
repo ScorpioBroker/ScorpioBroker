@@ -79,7 +79,7 @@ public class EntityPostQueryParser implements PayloadQueryParamParser {
 						QueryParser.parseGeoRel((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEO_REL))));
 				break;
 			case NGSIConstants.NGSI_LD_QUERY:
-				params.setQ(QueryParser.parseQuery((String) getValue(entry.getValue()), context).toSql(false));
+				params.setLdQuery(QueryParser.parseQuery((String) getValue(entry.getValue()), context), false);
 				break;
 			case NGSIConstants.JSON_LD_TYPE:
 				if (entry.getValue() instanceof List) {

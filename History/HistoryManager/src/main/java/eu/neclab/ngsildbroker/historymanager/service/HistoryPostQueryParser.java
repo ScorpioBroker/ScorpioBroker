@@ -79,7 +79,7 @@ public class HistoryPostQueryParser implements PayloadQueryParamParser {
 						QueryParser.parseGeoRel((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEO_REL))));
 				break;
 			case NGSIConstants.NGSI_LD_QUERY:
-				params.setQ(QueryParser.parseQuery((String) getValue(entry.getValue()), context).toSql(false));
+				params.setLdQuery(QueryParser.parseQuery((String) getValue(entry.getValue()), context), true);
 				break;
 			case NGSIConstants.NGSI_LD_TEMPORAL_QUERY:
 				parseTemporalQuery(params, (List<Map<String, Object>>) entry.getValue(), context);
