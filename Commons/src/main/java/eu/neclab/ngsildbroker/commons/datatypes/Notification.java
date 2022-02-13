@@ -3,11 +3,15 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.http.ResponseEntity;
+import java.util.Map.Entry;
 
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.google.common.collect.ArrayListMultimap;
+
+import org.apache.http.HttpStatus;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
+import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
@@ -79,8 +83,8 @@ public class Notification {
 		this.data = data;
 	}
 
-	public ResponseEntity<String> toCompactedJson() throws Exception {
-		ResponseEntity<String> dataResponse = HttpUtils.generateNotification(headers, data, context, "location");
+	public RestResponse<String> toCompactedJson() throws Exception {
+		RestResponse<String> dataResponse = HttpUtils.generateNotification(headers, data, context, "location");
 		StringBuilder notificationBody = new StringBuilder();
 		notificationBody.append("{\n\t\"id\": \"");
 		notificationBody.append(id);
@@ -91,7 +95,7 @@ public class Notification {
 		notificationBody.append("\",\n\t\"notifiedAt\": \"");
 		notificationBody.append(SerializationTools.formatter.format(Instant.ofEpochMilli(notifiedAt)));
 		notificationBody.append("\",\n\t\"data\": ");
-		notificationBody.append(dataResponse.getBody());
+		notificationBody.append(dataResponse.getEntity());
 		switch (triggerReason) {
 		case AppConstants.CREATE_REQUEST:
 			notificationBody.append(",\n\t\"triggerReason\": \"");
@@ -117,7 +121,11 @@ public class Notification {
 			break;
 		}
 		notificationBody.append("\n}");
-		return ResponseEntity.ok().headers(dataResponse.getHeaders()).body(notificationBody.toString());
+		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(notificationBody.toString());
+		for (Entry<String, List<Object>> entry : dataResponse.getHeaders().entrySet()) {
+			builder = builder.header(entry.getKey(), entry.getValue());
+		}
+		return builder.build();
 	}
 
 	public int getTriggerReason() {

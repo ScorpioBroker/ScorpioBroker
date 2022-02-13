@@ -2,13 +2,12 @@ package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +30,8 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
@@ -389,8 +390,8 @@ public interface EntryControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<String> updateEntry(EntryCRUDService entityService, HttpServletRequest request,
-			String entityId, String payload, int payloadType, Logger logger) {
+	public static org.jboss.resteasy.reactive.RestResponse<Object> updateEntry(EntryCRUDService entityService,
+			HttpServerRequest request, String entityId, String payload, int payloadType, Logger logger) {
 		try {
 			logger.trace("update entry :: started");
 			HttpUtils.validateUri(entityId);
@@ -416,8 +417,8 @@ public interface EntryControllerFunctions {
 		}
 	}
 
-	public static ResponseEntity<String> createEntry(EntryCRUDService entityService, HttpServletRequest request,
-			String payload, int payloadType, String baseUrl, Logger logger) {
+	public static org.jboss.resteasy.reactive.RestResponse<Object> createEntry(EntryCRUDService entityService,
+			HttpServerRequest req, String payload, int payloadType, String baseUrl, Logger logger) {
 		String result = null;
 		try {
 			logger.trace("create entity :: started");
@@ -439,8 +440,9 @@ public interface EntryControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<String> appendToEntry(EntryCRUDService entityService, HttpServletRequest request,
-			String entityId, String payload, String options, int payloadType, Logger logger) {
+	public static org.jboss.resteasy.reactive.RestResponse<Object> appendToEntry(EntryCRUDService entityService,
+			HttpServerRequest request, String entityId, String payload, String options, int payloadType,
+			Logger logger) {
 		try {
 			logger.trace("append entity :: started");
 			String[] optionsArray = getOptionsArray(options);

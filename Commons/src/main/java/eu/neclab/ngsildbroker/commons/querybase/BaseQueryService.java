@@ -13,16 +13,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
 
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -39,6 +36,11 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.mutiny.core.http.HttpHeaders;
 
 public abstract class BaseQueryService implements EntryQueryService {
 
@@ -46,19 +48,20 @@ public abstract class BaseQueryService implements EntryQueryService {
 
 //	public static final Gson GSON = DataSerializer.GSON;
 
-	@Value("${atcontext.url}")
-	String atContextServerUrl;
+	// @Value("${atcontext.url}")
+	// public String atContextServerUrl;
 
 	private StorageDAO entryDAO;
 
 	private StorageDAO registryDAO;
 
-	@Value("${scorpio.directDB}")
-	boolean directDbConnection;
+	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
+	public boolean directDbConnection;
 
-	RestTemplate restTemplate = HttpUtils.getRestTemplate();
+	@Inject
+	WebClient webClient;
 
-	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	public JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@PostConstruct
 	private void setup() {
@@ -144,6 +147,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 				 * registry at all this is a bit dangerous because it's implicit logic which
 				 * might be overseen when thinking about the get results through kafka scenario
 				 */
+				//TODO Error handling retries?
 				if (registryDAO == null) {
 					return new RemoteQueryResult(null, ErrorType.None, -1, true);
 				}
@@ -169,44 +173,41 @@ public abstract class BaseQueryService implements EntryQueryService {
 						}
 						String endpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
 								.get(NGSIConstants.JSON_LD_VALUE);
-						HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
-								headers.get(HttpHeaders.ACCEPT.toLowerCase()));
+						MultiMap additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
+								headers.get(HttpHeaders.ACCEPT.toString()));
 						logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
 						Callable<RemoteQueryResult> callable = () -> {
-							HttpEntity<String> entity;
+
 							String resultBody;
-							ResponseEntity<String> response;
+							HttpResponse<Buffer> response;
 							int count = 0;
 							if (postQuery) {
-								entity = new HttpEntity<String>(rawQueryString, additionalHeaders);
-								response = restTemplate.exchange(endpoint + "/ngsi-ld/v1/entityOperations/query",
-										HttpMethod.POST, entity, String.class);
-								resultBody = response.getBody();
+								response = webClient.postAbs(endpoint + "/ngsi-ld/v1/entityOperations/query")
+										.putHeaders(additionalHeaders).sendBuffer(Buffer.buffer(rawQueryString))
+										.result();
+								resultBody = response.bodyAsString();
 							} else {
-								entity = new HttpEntity<String>(additionalHeaders);
-								response = restTemplate.exchange(endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString,
-										HttpMethod.GET, entity, String.class);
-								resultBody = response.getBody();
+								response = webClient.getAbs(endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString)
+										.putHeaders(additionalHeaders).send().result();
+								resultBody = response.bodyAsString();
 							}
-							if (response.getHeaders().containsKey(NGSIConstants.COUNT_HEADER_RESULT)) {
-								count = Integer
-										.parseInt(response.getHeaders().get(NGSIConstants.COUNT_HEADER_RESULT).get(0));
+							if (response.headers().contains(NGSIConstants.COUNT_HEADER_RESULT)) {
+								count = Integer.parseInt(response.headers().get(NGSIConstants.COUNT_HEADER_RESULT));
 							}
 							logger.debug("http call result :: ::" + resultBody);
 
 							RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, -1, true);
 							result.setCount(count);
+
 							result.addData(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(resultBody), opts,
 									AppConstants.ENTITY_RETRIEVED_PAYLOAD,
-									HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
+									HttpUtils.parseAcceptHeader(additionalHeaders.getAll(HttpHeaders.ACCEPT)) == 2));
 							return result;
 						};
 						callablesCollection.add(callable);
 					}
 					logger.debug("csource call response :: ");
 					return getDataFromCsources(callablesCollection);
-				} catch (ResourceAccessException | UnknownHostException e) {
-					logger.error("Failed to reach an endpoint in the registry", e);
 				} catch (Exception e) {
 					logger.error(
 							"No reply from registry. Looks like you are running without a context source registry.", e);

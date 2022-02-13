@@ -1,0 +1,6 @@
+mysettings:
+  kafka:
+    bootstrap:
+      host: ${bushost:kafka}
+  postgres:
+    host: ${dbhost:postgres}

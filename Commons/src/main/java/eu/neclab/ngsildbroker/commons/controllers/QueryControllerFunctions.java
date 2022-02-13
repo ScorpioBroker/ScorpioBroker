@@ -5,13 +5,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Response.StatusType;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.MultiValueMap;
+import org.apache.http.HttpStatus;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -22,7 +22,7 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
+
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -30,9 +30,11 @@ import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpServerRequest;
 
 public interface QueryControllerFunctions {// implements QueryHandlerInterface {
-	final static Logger logger = LogManager.getLogger(QueryControllerFunctions.class);
+	final static Logger logger = LoggerFactory.getLogger(QueryControllerFunctions.class);
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	static final String emptyResult1 = "[ ]";
 	static final String emptyResult2 = "[]";
@@ -47,24 +49,28 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 * @throws ResponseException
 	 */
 
-	public static ResponseEntity<String> getEntity(EntryQueryService queryService, HttpServletRequest request,
+	public static RestResponse<String> getEntity(EntryQueryService queryService, HttpServerRequest request,
 			List<String> attrs, List<String> options, String entityId, boolean temporal, int defaultLimit,
 			int maxLimit) {
 
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (ResponseException exception) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJson());
+			return RestResponseBuilderImpl.create(RestResponse.Status.BAD_REQUEST,
+					new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.BadRequestData,
+							"id is not a URI").toJson())
+					.build();
 		}
 		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
-		MultiValueMap<String, String> paramMap = HttpUtils.getQueryParamMap(request);
+		MultiMap paramMap = request.params();
 		paramMap.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
-		ResponseEntity<String> result = getQueryData(queryService, request, originalQuery, paramMap, false, false,
+		RestResponse<String> result = getQueryData(queryService, request, originalQuery, paramMap, false, false,
 				temporal, defaultLimit, maxLimit, null);
-		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
+		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
+			return RestResponseBuilderImpl.create(RestResponse.Status.NOT_FOUND,
+					new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.NotFound, "Resource not found.")
+							.toJson())
+					.build();
 		}
 		return result;
 	}
@@ -77,19 +83,19 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 * @param type
 	 * @return ResponseEntity object
 	 */
-	public static ResponseEntity<String> queryForEntries(EntryQueryService queryService, HttpServletRequest request,
+	public static RestResponse<String> queryForEntries(EntryQueryService queryService, HttpServerRequest request,
 			boolean temporal, int defaultLimit, int maxLimit, boolean typeRequired) {
 		return getQueryData(queryService, request, request.getQueryString(), HttpUtils.getQueryParamMap(request),
 				typeRequired, true, temporal, defaultLimit, maxLimit, null);
 	}
 
-	public static ResponseEntity<String> getAllTypes(EntryQueryService queryService, HttpServletRequest request,
+	public static RestResponse<String> getAllTypes(EntryQueryService queryService, HttpServerRequest request,
 			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "NonDeatilsType";
 		if (details == true) {
 			check = "deatilsType";
 		}
-		ResponseEntity<String> result = getQueryData(queryService, request, "", HttpUtils.getQueryParamMap(request),
+		RestResponse<String> result = getQueryData(queryService, request, "", HttpUtils.getQueryParamMap(request),
 				false, false, false, defaultLimit, maxLimit, check);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -98,13 +104,13 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		return result;
 	}
 
-	public static ResponseEntity<String> getType(EntryQueryService queryService, HttpServletRequest request,
-			String type, boolean details, boolean temporal, int defaultLimit, int maxLimit) {
+	public static RestResponse<String> getType(EntryQueryService queryService, HttpServerRequest request, String type,
+			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "type";
 		MultiValueMap<String, String> params = HttpUtils.getQueryParamMap(request);
 		params.put(NGSIConstants.QUERY_PARAMETER_ATTRS, Arrays.asList(type));
-		ResponseEntity<String> result = getQueryData(queryService, request, "", params, false, false, false,
-				defaultLimit, maxLimit, check);
+		RestResponse<String> result = getQueryData(queryService, request, "", params, false, false, false, defaultLimit,
+				maxLimit, check);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
@@ -112,14 +118,14 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		return result;
 	}
 
-	public static ResponseEntity<String> getAllAttributes(EntryQueryService queryService, HttpServletRequest request,
+	public static RestResponse<String> getAllAttributes(EntryQueryService queryService, HttpServerRequest request,
 			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 
 		String check = "NonDeatilsAttributes";
 		if (details == true) {
 			check = "deatilsAttributes";
 		}
-		ResponseEntity<String> result = getQueryData(queryService, request, "", HttpUtils.getQueryParamMap(request),
+		RestResponse<String> result = getQueryData(queryService, request, "", HttpUtils.getQueryParamMap(request),
 				false, false, false, defaultLimit, maxLimit, check);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -128,13 +134,13 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		return result;
 	}
 
-	public static ResponseEntity<String> getAttribute(EntryQueryService queryService, HttpServletRequest request,
+	public static RestResponse<String> getAttribute(EntryQueryService queryService, HttpServerRequest request,
 			String attribute, boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "Attribute";
 		MultiValueMap<String, String> params = HttpUtils.getQueryParamMap(request);
 		params.put(NGSIConstants.QUERY_PARAMETER_ATTRS, Arrays.asList(attribute));
-		ResponseEntity<String> result = getQueryData(queryService, request, "", params, false, false, false,
-				defaultLimit, maxLimit, check);
+		RestResponse<String> result = getQueryData(queryService, request, "", params, false, false, false, defaultLimit,
+				maxLimit, check);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
@@ -142,8 +148,8 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		return result;
 	}
 
-	private static ResponseEntity<String> getQueryData(EntryQueryService queryService, HttpServletRequest request,
-			String originalQueryParams, MultiValueMap<String, String> paramMap, boolean typeRequired,
+	private static RestResponse<String> getQueryData(EntryQueryService queryService, HttpServerRequest request,
+			String originalQueryParams, MultiMap paramMap, boolean typeRequired,
 			boolean forceArray, boolean temporal, int defaultLimit, int maxLimit, String check) {
 		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
 		try {
@@ -182,7 +188,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	}
 
 	@SuppressWarnings({ "unchecked" })
-	public static ResponseEntity<String> postQuery(EntryQueryService queryService, HttpServletRequest request,
+	public static RestResponse<String> postQuery(EntryQueryService queryService, HttpServerRequest request,
 			String payload, Integer limit, Integer offset, String qToken, List<String> options, boolean count,
 			int defaultLimit, int maxLimit, int payloadType, PayloadQueryParamParser queryParser) {
 		try {

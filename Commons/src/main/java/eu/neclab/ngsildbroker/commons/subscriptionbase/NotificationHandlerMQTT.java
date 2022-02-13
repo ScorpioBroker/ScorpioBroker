@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.springframework.http.HttpHeaders;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
@@ -20,6 +18,7 @@ import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import io.vertx.mutiny.core.http.HttpHeaders;
 
 class NotificationHandlerMQTT extends BaseNotificationHandler {
 
@@ -52,7 +51,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		} else {
 			Mqtt5BlockingClient client5 = (Mqtt5BlockingClient) client;
 			client5.publishWith().topic(callback.getPath().substring(1))
-					.contentType(headers.get(HttpHeaders.CONTENT_TYPE).get(0)).qos(MqttQos.fromCode(qos))
+					.contentType(headers.get(HttpHeaders.CONTENT_TYPE.toString()).get(0)).qos(MqttQos.fromCode(qos))
 					.payload(payload.getBytes()).send();
 		}
 
@@ -85,7 +84,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		result.append("\"");
 		result.append(NGSIConstants.BODY);
 		result.append("\":");
-		result.append(notification.toCompactedJson().getBody());
+		result.append(notification.toCompactedJson().getEntity());
 		result.append("}");
 		return result.toString();
 	}

@@ -20,6 +20,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
@@ -30,7 +31,6 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.client.RestTemplate;
 import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
@@ -56,6 +56,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.vertx.ext.web.client.WebClient;
 
 public abstract class BaseSubscriptionService implements SubscriptionCRUDService {
 
@@ -73,7 +74,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	// protected WebClient webClient = BeanTools.getWebClient();
 
-	protected RestTemplate restTemplate = HttpUtils.getRestTemplate();
+	@Inject
+	WebClient webClient;
 
 	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
@@ -100,7 +102,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 		sendInitialNotification = sendInitialNotification();
 		sendDeleteNotification = sendDeleteNotification();
-		notificationHandlerREST = new NotificationHandlerREST(restTemplate);
+		notificationHandlerREST = new NotificationHandlerREST(webClient);
 		Subscription temp = new Subscription();
 		temp.setId("invalid:base");
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,

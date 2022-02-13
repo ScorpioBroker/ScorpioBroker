@@ -8,9 +8,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.util.MultiValueMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -24,6 +25,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.vertx.core.MultiMap;
 
 public class ParamsResolver {
 	static HashSet<String> validParams = new HashSet<String>();
@@ -49,7 +51,7 @@ public class ParamsResolver {
 		validParams.add(NGSIConstants.QUERY_PARAMETER_LAST_N);
 	}
 
-	private final static Logger logger = LogManager.getLogger(ParamsResolver.class);
+	private final static Logger logger = LoggerFactory.getLogger(ParamsResolver.class);
 
 //TODO REWORK THIS COMPLETELY 
 	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
@@ -111,7 +113,7 @@ public class ParamsResolver {
 	}
 
 	// new simplified format
-	public static QueryParams getQueryParamsFromUriQuery(MultiValueMap<String, String> multiValueMap, Context context,
+	public static QueryParams getQueryParamsFromUriQuery(MultiMap multiValueMap, Context context,
 			boolean temporalEntityFormat, boolean typeRequired, int defaultLimit, int maxLimit)
 			throws ResponseException {
 		QueryParams qp = new QueryParams();

@@ -7,11 +7,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.interfaces.ScorpioBaseObject;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
-public class BaseRequest {
+public class BaseRequest implements ScorpioBaseObject {
 
 	ArrayListMultimap<String, String> headers;
 	private String id;
@@ -35,8 +38,8 @@ public class BaseRequest {
 	public BaseRequest(BaseRequest request) {
 		this.id = request.id;
 		this.headers = request.headers;
-		this.requestPayload = request.requestPayload;
-		this.finalPayload = request.finalPayload;
+		this.requestPayload = EntityTools.deepCopyOfJsonMap(request.requestPayload);
+		this.finalPayload = EntityTools.deepCopyOfJsonMap(request.finalPayload);
 		this.requestType = request.requestType;
 	}
 
@@ -146,4 +149,17 @@ public class BaseRequest {
 			this.finalPayload = new HashMap<String, Object>(finalPayload);
 		}
 	}
+
+	@Override
+	public Object duplicate() {
+		return new BaseRequest(this);
+	}
+
+	@Override
+	public String toString() {
+		return "Class " + this.getClass().toString() + " BaseRequest [headers=" + headers + ", id=" + id
+				+ ", requestPayload=" + requestPayload + ", finalPayload=" + finalPayload + ", requestType="
+				+ requestType + "]";
+	}
+
 }

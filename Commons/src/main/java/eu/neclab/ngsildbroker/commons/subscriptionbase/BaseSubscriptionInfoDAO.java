@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -7,10 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
@@ -24,30 +23,39 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Tuple;
 
 public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements SubscriptionInfoDAOInterface {
-	private final static Logger logger = LogManager.getLogger(BaseSubscriptionInfoDAO.class);
+	private final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionInfoDAO.class);
 
 	public Table<String, String, Set<String>> getIds2Type() throws ResponseException {
 		Table<String, String, Set<String>> result = HashBasedTable.create();
 		String sql = getSQLForTypes();
 
-		for (Map<String, Object> entry : getJDBCTemplate(null).queryForList(sql)) {
-			Object id = entry.get("id");
-			Object type = entry.get("type");
+		defaultClient.query(sql).executeAndAwait().forEach(t -> {
+			Object id = t.getValue("id");
+			Object type = t.getValue("type");
 			if (id != null && type != null) {
 				addToResult(result, AppConstants.INTERNAL_NULL_KEY, id.toString(), type.toString());
 			}
-		}
-		List<String> tenants = getTenants();
-		for (String tenantId : tenants) {
-			tenantId = getTenant(tenantId);
-			List<Map<String, Object>> temp = getJDBCTemplate(tenantId).queryForList(sql);
-			for (Map<String, Object> entry : temp) {
-				addToResult(result, tenantId, entry.get("id").toString(), entry.get("type").toString());
-			}
+		});
 
+//		getTenants().onItem().call(t ->{})
+
+		List<String> tenants = getTenants().collect().asList().await().atMost(Duration.ofMillis(500));
+		if (tenants != null) {
+			for (String tenantId : tenants) {
+				tenant2Client.get(tenantId).query(sql).executeAndAwait().forEach(t -> {
+					Object id = t.getValue("id");
+					Object type = t.getValue("type");
+					if (id != null && type != null) {
+						addToResult(result, tenantId, id.toString(), type.toString());
+					}
+				});
+			}
 		}
+
 		return result;
 	}
 
@@ -65,39 +73,31 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 
 	public List<String> getStoredSubscriptions() {
 		List<String> tenants;
-		tenants = getTenants();
+		tenants = getTenants().collect().asList().await().atMost(Duration.ofMillis(500));
 		ArrayList<String> result = new ArrayList<String>();
-		try {
-			result.addAll(
-					getJDBCTemplate(null).queryForList("SELECT subscription_request FROM subscriptions", String.class));
-			for (String tenantId : tenants) {
-				tenantId = getTenant(tenantId);
-				result.addAll(getJDBCTemplate(tenantId).queryForList("SELECT subscription_request FROM subscriptions",
-						String.class));
-			}
-		} catch (DataAccessException e) {
-			logger.error("Subscriptions could not be loaded", e);
+		defaultClient.query("SELECT subscription_request FROM subscriptions").executeAndAwait().forEach(r -> {
+			result.add(r.getString(0));
+		});
+		for (String tenantId : tenants) {
+			PgPool client = tenant2Client.get(tenantId);
+			client.query("SELECT subscription_request FROM subscriptions").executeAndAwait().forEach(r -> {
+				result.add(r.getString(0));
+			});
 		}
 		return result;
 	}
 
 	public void storedSubscriptions(Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription) {
 		Set<String> tenants = tenant2subscriptionId2Subscription.rowKeySet();
-		try {
-			for (String tenant : tenants) {
-				Map<String, SubscriptionRequest> row = tenant2subscriptionId2Subscription.row(tenant);
-				tenant = getTenant(tenant);
-				JdbcTemplate template = getJDBCTemplate(tenant);
-				template.execute("DELETE FROM subscriptions");
-				for (Entry<String, SubscriptionRequest> entry : row.entrySet()) {
-					template.update("INSERT INTO subscriptions (subscription_id, subscription_request) VALUES (?, ?)",
-							entry.getKey(), DataSerializer.toJson(entry.getValue()));
-				}
+		for (String tenant : tenants) {
+			Map<String, SubscriptionRequest> row = tenant2subscriptionId2Subscription.row(tenant);
+			PgPool client = tenant2Client.get(tenant);
+			client.query("DELETE FROM subscriptions").executeAndAwait();
+			for (Entry<String, SubscriptionRequest> entry : row.entrySet()) {
+				client.preparedQuery("INSERT INTO subscriptions (subscription_id, subscription_request) VALUES (?, ?)")
+						.executeAndAwait(Tuple.of(entry.getKey(), DataSerializer.toJson(entry.getValue())));
 			}
-		} catch (DataAccessException e) {
-			logger.error("Subscriptions could not be loaded", e);
 		}
-
 	}
 
 	@Override

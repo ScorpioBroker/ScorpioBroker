@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -156,6 +157,71 @@ public abstract class EntityTools {
 			return null;
 		}
 		return ((List<Map<String, String>>) instanceId).get(0).get(NGSIConstants.JSON_LD_ID);
+	}
+
+	public static Map<String, Object> deepCopyOfJsonMap(Map<String, Object> original) {
+		if (original == null) {
+			return null;
+		}
+		HashMap<String, Object> result = new HashMap<String, Object>();
+		for (Entry<String, Object> entry : original.entrySet()) {
+			String key = entry.getKey();
+			Object object = entry.getValue();
+			if (object instanceof List) {
+				result.put(key, deepCopyOfJsonList((List<Object>) object));
+				continue;
+			}
+			if (object instanceof Map) {
+				result.put(key, deepCopyOfJsonMap((Map<String, Object>) object));
+				continue;
+			}
+			Object baseDataTypeCopy = getBaseDataTypeCopy(object);
+			if (baseDataTypeCopy != null) {
+				result.put(key, baseDataTypeCopy);
+			}
+
+		}
+
+		return result;
+	}
+
+	private static List<Object> deepCopyOfJsonList(List<Object> object) {
+		List<Object> result = new ArrayList<Object>();
+		for (Object entry : object) {
+			if (entry instanceof List) {
+				result.add(deepCopyOfJsonList((List<Object>) entry));
+				continue;
+			}
+			if (entry instanceof Map) {
+				result.add(deepCopyOfJsonMap((Map<String, Object>) entry));
+				continue;
+			}
+			Object baseDataTypeCopy = getBaseDataTypeCopy(entry);
+			if (baseDataTypeCopy != null) {
+				result.add(baseDataTypeCopy);
+			}
+		}
+		return result;
+	}
+
+	private static Object getBaseDataTypeCopy(Object object) {
+		if (object instanceof Integer) {
+			return Integer.valueOf(((Integer) object).intValue());
+		}
+		if (object instanceof Long) {
+			return Long.valueOf(((Long) object).longValue());
+		}
+		if (object instanceof Double) {
+			return Double.valueOf(((Double) object).doubleValue());
+		}
+		if (object instanceof Boolean) {
+			return Boolean.valueOf(((Boolean) object).booleanValue());
+		}
+		if (object instanceof String) {
+			// Strings are immutable
+			return object;
+		}
+		return null;
 	}
 
 	@SuppressWarnings("unchecked")

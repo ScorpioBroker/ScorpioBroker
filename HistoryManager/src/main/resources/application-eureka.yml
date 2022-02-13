@@ -1,0 +1,14 @@
+mysettings:
+  eureka:
+    protocol: ${eurekaprotocol:http}
+    host: ${eurekahost:localhost}
+    port: ${eurekaport:8761}
+eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}
+eureka:
+  client:
+    register-with-eureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: ${eurekaurl}/eureka/
+  instance:
+    preferIpAddress: true

@@ -19,21 +19,13 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
+import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.ResponseEntity.BodyBuilder;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -54,6 +46,10 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**
  * A utility class to handle HTTP Requests and Responses.
@@ -95,12 +91,12 @@ public final class HttpUtils {
 
 	}
 
-	public static List<Object> getAtContext(HttpServletRequest req) {
+	public static List<Object> getAtContext(HttpServerRequest req) {
 		return parseLinkHeader(req, NGSIConstants.HEADER_REL_LDCONTEXT);
 	}
 
-	public static List<Object> parseLinkHeader(HttpServletRequest req, String headerRelLdcontext) {
-		return parseLinkHeader(Collections.list(req.getHeaders("Link")), headerRelLdcontext);
+	public static List<Object> parseLinkHeader(HttpServerRequest req, String headerRelLdcontext) {
+		return parseLinkHeader(req.headers().getAll("Link"), headerRelLdcontext);
 	}
 
 	public static List<Object> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
@@ -568,18 +564,6 @@ public final class HttpUtils {
 
 	}
 
-	public static MultiValueMap<String, String> getQueryParamMap(HttpServletRequest request) {
-		Map<String, String[]> paramMap = request.getParameterMap();
-		if (paramMap == null) {
-			return new LinkedMultiValueMap<String, String>();
-		}
-		LinkedMultiValueMap<String, String> result = new LinkedMultiValueMap<String, String>(paramMap.size());
-		for (Entry<String, String[]> entry : paramMap.entrySet()) {
-			result.addAll(entry.getKey(), Arrays.asList(entry.getValue()));
-		}
-		return result;
-	}
-
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> generateReply(HttpServletRequest request, UpdateResult update,
 			List<Object> context, int endpoint)
@@ -638,30 +622,38 @@ public final class HttpUtils {
 		return ResponseEntity.status(HttpStatus.MULTI_STATUS).headers(resultHeaders).body(replyBody);
 	}
 
-	public static ResponseEntity<String> generateNotification(ArrayListMultimap<String, String> headers,
-			Object notificationData, List<Object> context, String geometryProperty)
+	public static org.jboss.resteasy.reactive.RestResponse<String> generateNotification(
+			ArrayListMultimap<String, String> headers, Object notificationData, List<Object> context,
+			String geometryProperty)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
 		if (headers == null) {
 			headers = ArrayListMultimap.create();
 		}
-		List<String> acceptHeader = headers.get(HttpHeaders.ACCEPT.toLowerCase());
+		List<String> acceptHeader = headers.get(io.vertx.mutiny.core.http.HttpHeaders.ACCEPT.toString());
 		if (acceptHeader == null || acceptHeader.isEmpty()) {
 			acceptHeader = new ArrayList<String>();
 			acceptHeader.add("application/json");
 		}
 		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
 				ldContext, context, geometryProperty);
-		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
+		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
+		for (Entry<String, String> entry : headers.entries()) {
+			builder = builder.header(entry.getKey(), entry.getValue());
+		}
+		return builder.build();
 	}
 
 	@SuppressWarnings("unchecked")
-	public static HttpHeaders getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
+	public static MultiMap getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
 			List<String> accept) {
-		HttpHeaders result = new HttpHeaders();
+		HeadersMultiMap result = HeadersMultiMap.headers();
+
 		Context myContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
-		result.addAll(HttpHeaders.ACCEPT, accept);
+		for (String entry : accept) {
+			result.add(HttpHeaders.ACCEPT, entry);
+		}
 		Object tenant = registration.get(NGSIConstants.NGSI_LD_TENANT);
 		if (tenant != null) {
 			result.add(NGSIConstants.TENANT_HEADER, (String) myContext.compactValue(NGSIConstants.NGSI_LD_TENANT,
@@ -678,14 +670,6 @@ public final class HttpUtils {
 			} catch (Exception e) {
 				logger.error("Failed to read additional headers", e);
 			}
-		}
-		return result;
-	}
-
-	private static HttpHeaders getHttpHeaders(ArrayListMultimap<String, String> headers) {
-		HttpHeaders result = new HttpHeaders();
-		for (String key : headers.keySet()) {
-			result.put(key, headers.get(key));
 		}
 		return result;
 	}

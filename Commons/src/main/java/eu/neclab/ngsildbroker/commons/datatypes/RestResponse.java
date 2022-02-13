@@ -1,11 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import org.springframework.http.HttpStatus;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
  * @version 1.0
@@ -15,7 +14,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 public class RestResponse {
 	private String type;
 	@JsonIgnore
-	private HttpStatus status;
+	private HttpResponseStatus status;
 	private String title;
 	private String details;
 
@@ -26,7 +25,7 @@ public class RestResponse {
 	 */
 
 	public RestResponse(ErrorType errorType, String details) {
-		this.status = HttpStatus.valueOf(errorType.getCode());
+		this.status = HttpResponseStatus.valueOf(errorType.getCode());
 		this.title = errorType.getMessage();
 		this.details = details;
 		this.type = errorType.getErrorType();
@@ -44,7 +43,7 @@ public class RestResponse {
 		return type;
 	}
 
-	public HttpStatus getStatus() {
+	public HttpResponseStatus getStatus() {
 		return status;
 	}
 

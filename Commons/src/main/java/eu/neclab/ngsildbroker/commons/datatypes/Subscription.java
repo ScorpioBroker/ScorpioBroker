@@ -341,6 +341,17 @@ public class Subscription {
 		}
 	}
 
+	@Override
+	public String toString() {
+		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id
+				+ ", subscriptionName=" + subscriptionName + ", notification=" + notification + ", status=" + status
+				+ ", throttling=" + throttling + ", timeInterval=" + timeInterval + ", type=" + type
+				+ ", requestorList=" + requestorList + ", isActive=" + isActive + ", attributeNames=" + attributeNames
+				+ ", entities=" + entities + ", ldContext=" + ldContext + ", ldQueryString=" + ldQueryString
+				+ ", csfQueryString=" + csfQueryString + ", ldGeoQuery=" + ldGeoQuery + ", ldTempQuery=" + ldTempQuery
+				+ ", ldQuery=" + ldQuery + ", csfQuery=" + csfQuery + "]";
+	}
+
 	public Boolean getIsActive() {
 		return isActive;
 	}
@@ -351,6 +362,7 @@ public class Subscription {
 
 	public ScopeQueryTerm getScopeQuery() {
 		return scopeQuery;
+
 	}
 
 }

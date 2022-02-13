@@ -5,7 +5,9 @@ import java.util.Map;
 
 import com.google.common.collect.ArrayListMultimap;
 
-public class InternalNotification extends Notification {
+import eu.neclab.ngsildbroker.commons.interfaces.ScorpioBaseObject;
+
+public class InternalNotification extends Notification implements ScorpioBaseObject {
 
 	private String tenantId;
 
@@ -14,7 +16,8 @@ public class InternalNotification extends Notification {
 	}
 
 	public InternalNotification(String id, String type, Long notifiedAt, String subscriptionId,
-			List<Map<String, Object>> data, int triggerReason, List<Object> context, String tenantId, ArrayListMultimap<String, String> headers) {
+			List<Map<String, Object>> data, int triggerReason, List<Object> context, String tenantId,
+			ArrayListMultimap<String, String> headers) {
 		super(id, type, notifiedAt, subscriptionId, data, triggerReason, context, headers);
 		this.tenantId = tenantId;
 	}
@@ -25,6 +28,12 @@ public class InternalNotification extends Notification {
 
 	public void setTenantId(String tenantId) {
 		this.tenantId = tenantId;
+	}
+
+	@Override
+	public ScorpioBaseObject duplicate() {
+		return new InternalNotification(getId(), getType(), getNotifiedAt(), getSubscriptionId(), getData(),
+				getTriggerReason(), getContext(), getTenantId(), getHeaders());
 	}
 
 }
