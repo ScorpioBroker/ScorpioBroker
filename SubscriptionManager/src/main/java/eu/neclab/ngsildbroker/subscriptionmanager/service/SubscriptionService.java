@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -36,7 +37,9 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterf
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.client.HttpResponse;
@@ -46,7 +49,7 @@ import io.vertx.ext.web.client.WebClient;
 public class SubscriptionService extends BaseSubscriptionService {
 
 	@Inject
-	SubscriptionInfoDAOInterface subService;
+	SubscriptionInfoDAO subService;
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
@@ -64,7 +67,14 @@ public class SubscriptionService extends BaseSubscriptionService {
 	MicroServiceUtils microServiceUtils;
 
 	@Inject
+	Vertx vertx;
+
 	WebClient webClient;
+
+	@PostConstruct
+	void setupWebClient() {
+		webClient = WebClient.create(vertx);
+	}
 
 	@Override
 	protected SubscriptionInfoDAOInterface getSubscriptionInfoDao() {
@@ -90,7 +100,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	@PreDestroy
-	private void unsubscribeToAllRemote() {
+	void unsubscribeToAllRemote() {
 		for (String entry : internalSubId2ExternalEndpoint.values()) {
 			// TODO check
 			webClient.delete(entry).send().result().body();

@@ -45,7 +45,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	private HashMap<String, SubscriptionRequest> id2InternalSubscriptions = new HashMap<String, SubscriptionRequest>();
 
 	@PostConstruct
-	private void notificationHandlerSetup() {
+	void notificationHandlerSetup() {
 		this.internalHandler = new InternalNotificationHandler(kafkaSender);
 	}
 

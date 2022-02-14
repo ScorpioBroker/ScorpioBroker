@@ -34,6 +34,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
@@ -56,14 +57,17 @@ public abstract class BaseQueryService implements EntryQueryService {
 	public boolean directDbConnection;
 
 	@Inject
+	Vertx vertx;
+
 	WebClient webClient;
 
 	public JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@PostConstruct
-	private void setup() {
+	void setup() {
 		entryDAO = getQueryDAO();
 		registryDAO = getCsourceDAO();
+		webClient = WebClient.create(vertx);
 	}
 
 	/**
@@ -144,7 +148,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 				 * registry at all this is a bit dangerous because it's implicit logic which
 				 * might be overseen when thinking about the get results through kafka scenario
 				 */
-				//TODO Error handling retries?
+				// TODO Error handling retries?
 				if (registryDAO == null) {
 					return new RemoteQueryResult(null, ErrorType.None, -1, true);
 				}

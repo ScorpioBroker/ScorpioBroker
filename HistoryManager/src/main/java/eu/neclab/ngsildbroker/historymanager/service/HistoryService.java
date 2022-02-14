@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
@@ -47,7 +48,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	HistoryDAO historyDAO;
 
 	@Inject
-	@Channel("temporalEntityChannel")
+	@Channel(AppConstants.HISTORY_CHANNEL)
 	Emitter<BaseRequest> emitter;
 
 	@ConfigProperty(name = "scorpio.directdb", defaultValue = "true")
@@ -63,7 +64,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	// construct in-memory
 	@PostConstruct
-	private void loadStoredTemporalEntitiesDetails() throws ResponseException {
+	void loadStoredTemporalEntitiesDetails() throws ResponseException {
 		synchronized (this.entityIds) {
 			this.entityIds = historyDAO.getAllIds();
 		}

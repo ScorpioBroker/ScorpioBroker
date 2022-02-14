@@ -44,7 +44,6 @@ public abstract class StorageDAO {
 	@Inject
 	protected PgPool defaultClient;
 
-
 	protected HashMap<String, PgPool> tenant2Client = new HashMap<String, PgPool>();
 
 	protected abstract StorageFunctionsInterface getStorageFunctions();
@@ -52,7 +51,7 @@ public abstract class StorageDAO {
 	StorageFunctionsInterface storageFunctions;
 
 	@PostConstruct
-	public void init() {
+	void init() {
 		loadTenantClients();
 		storageFunctions = getStorageFunctions();
 	}

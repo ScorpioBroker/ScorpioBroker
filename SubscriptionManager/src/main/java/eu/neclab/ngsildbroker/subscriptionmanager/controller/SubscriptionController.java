@@ -39,7 +39,7 @@ public class SubscriptionController {
 	int maxLimit;
 
 	@PostConstruct
-	public void init() {
+	void init() {
 		JsonLdProcessor.init(coreContext);
 	}
 

@@ -9,6 +9,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import io.quarkus.arc.properties.IfBuildProperty;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 
 @ApplicationScoped
@@ -16,7 +17,7 @@ import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 public class RegistrySubscriptionKafkaService extends RegistrySubscriptionKafkaServiceBase {
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
-	public void handleCsource(Message<BaseRequest> message) {
+	public Uni<Void> handleCsource(Message<BaseRequest> message) {
 		IncomingKafkaRecordMetadata metaData = message.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
 		long timestamp = System.currentTimeMillis();
 		if (metaData != null) {
@@ -24,10 +25,12 @@ public class RegistrySubscriptionKafkaService extends RegistrySubscriptionKafkaS
 		}
 		BaseRequest payload = message.getPayload();
 		handleBaseRequestRegistry(payload, payload.getId(), timestamp);
+		return Uni.createFrom().nullItem();
 	}
 
 	@Incoming(AppConstants.INTERNAL_RETRIEVE_SUBS_CHANNEL)
-	public void handleSubscription(Message<SubscriptionRequest> message) {
+	public Uni<Void> handleSubscription(Message<SubscriptionRequest> message) {
 		handleBaseRequestSubscription(message.getPayload(), message.getPayload().getId());
+		return Uni.createFrom().nullItem();
 	}
 }

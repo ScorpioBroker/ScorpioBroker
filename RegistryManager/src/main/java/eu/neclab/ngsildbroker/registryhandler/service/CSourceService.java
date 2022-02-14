@@ -93,10 +93,10 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	private Table<String, String, Map<String, Object>> tenant2EntityId2InformationEntry = HashBasedTable.create();
 
 	@Inject
-	private MicroServiceUtils microServiceUtils;
+	MicroServiceUtils microServiceUtils;
 
 	@PostConstruct
-	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
+	void loadStoredEntitiesDetails() throws IOException, ResponseException {
 		synchronized (this.csourceIds) {
 			this.csourceIds = csourceInfoDAO.getAllIds();
 		}

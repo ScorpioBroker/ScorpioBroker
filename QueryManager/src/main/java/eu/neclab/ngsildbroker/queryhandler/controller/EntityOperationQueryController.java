@@ -38,7 +38,7 @@ public class EntityOperationQueryController {
 	private PayloadQueryParamParser paramParser = new EntityPostQueryParser();
 
 	@PostConstruct
-	public void init() {
+	void init() {
 		JsonLdProcessor.init(coreContext);
 	}
 

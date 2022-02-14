@@ -38,7 +38,7 @@ public class RegistrySubscriptionController {
 	int maxLimit;
 
 	@PostConstruct
-	public void init() {
+	void init() {
 		JsonLdProcessor.init(coreContext);
 	}
 

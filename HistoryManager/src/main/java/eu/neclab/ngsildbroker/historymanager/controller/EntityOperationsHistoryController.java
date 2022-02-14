@@ -51,7 +51,7 @@ public class EntityOperationsHistoryController {
 	private PayloadQueryParamParser paramParser = new HistoryPostQueryParser();
 
 	@PostConstruct
-	public void init() {
+	void init() {
 		JsonLdProcessor.init(coreContext);
 	}
 

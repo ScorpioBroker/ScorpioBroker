@@ -35,9 +35,6 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 @Singleton
 public class EntityService implements EntryCRUDService {
 
-	@ConfigProperty(name = "scorpio.topics.entity")
-	private String ENTITY_TOPIC;
-
 	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
 	boolean directDB;
 
@@ -53,7 +50,7 @@ public class EntityService implements EntryCRUDService {
 
 	// construct in-memory
 	@PostConstruct
-	private void loadStoredEntitiesDetails() throws ResponseException {
+	void loadStoredEntitiesDetails() throws ResponseException {
 		synchronized (this.entityIds) {
 			this.entityIds = entityInfoDAO.getAllIds();
 		}

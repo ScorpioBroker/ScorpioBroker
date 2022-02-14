@@ -22,7 +22,7 @@ import io.vertx.core.http.HttpServerRequest;
 public class QueryController {
 
 	@Inject
-	private QueryService queryService;
+	QueryService queryService;
 
 	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
 	int defaultLimit;
@@ -33,7 +33,7 @@ public class QueryController {
 	String coreContext;
 
 	@PostConstruct
-	public void init() {
+	void init() {
 		JsonLdProcessor.init(coreContext);
 	}
 
@@ -47,6 +47,7 @@ public class QueryController {
 	 * @throws ResponseException
 	 */
 	@Path("/entities/{entityId}")
+	@GET
 	public RestResponse<Object> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") List<String> attrs,
 			@QueryParam(value = "options") List<String> options, String entityId) throws ResponseException {
 		return QueryControllerFunctions.getEntity(queryService, request, attrs, options, entityId, false, defaultLimit,

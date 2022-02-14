@@ -50,7 +50,7 @@ public class HistoryController {
 	String coreContext;
 
 	@PostConstruct
-	public void init() {
+	void init() {
 		JsonLdProcessor.init(coreContext);
 	}
 

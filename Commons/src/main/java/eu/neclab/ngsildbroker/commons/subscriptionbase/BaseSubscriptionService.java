@@ -56,6 +56,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 
 public abstract class BaseSubscriptionService implements SubscriptionCRUDService {
@@ -75,6 +76,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	// protected WebClient webClient = BeanTools.getWebClient();
 
 	@Inject
+	Vertx vertx;
+
 	WebClient webClient;
 
 	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
@@ -93,8 +96,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private Table<String, String, Set<String>> tenant2Ids2Type;
 
 	@PostConstruct
-	private void setup() {
+	void setup() {
 		subscriptionInfoDAO = getSubscriptionInfoDao();
+		webClient = WebClient.create(vertx);
 		try {
 			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
 		} catch (ResponseException e) {
