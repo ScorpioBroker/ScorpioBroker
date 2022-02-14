@@ -13,7 +13,7 @@ import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 @ApplicationScoped
 public class SubscriptionKafkaService extends SubscriptionKafkaServiceBase {
 
-	@Incoming(AppConstants.ENTITY_CHANNEL)
+	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	public void handleEntity(Message<BaseRequest> message) {
 		IncomingKafkaRecordMetadata metaData = message.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
 		long timestamp = System.currentTimeMillis();
@@ -25,7 +25,7 @@ public class SubscriptionKafkaService extends SubscriptionKafkaServiceBase {
 
 	}
 
-	@Incoming(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
+	@Incoming(AppConstants.INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL)
 	public void handleInternalNotification(Message<InternalNotification> message) {
 		handleBaseRequestInternalNotification(message.getPayload());
 	}

@@ -102,4 +102,9 @@ public class AppConstants {
 	public static final String INTERNAL_NOTIFICATION_CHANNEL = "inotification";
 	public static final String HISTORY_CHANNEL = "history";
 
+	public static final String REGISTRY_RETRIEVE_CHANNEL = "registryretrieve";
+	public static final String ENTITY_RETRIEVE_CHANNEL = "entityretrieve";
+	public static final String INTERNAL_RETRIEVE_SUBS_CHANNEL = "isubsretrieve";
+	public static final String INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL = "inotificationretrieve";
+	
 }

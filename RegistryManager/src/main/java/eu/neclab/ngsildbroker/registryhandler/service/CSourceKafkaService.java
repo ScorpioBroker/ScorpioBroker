@@ -11,7 +11,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 @ApplicationScoped
 public class CSourceKafkaService extends CSourceKafkaServiceBase {
 
-	@Incoming(AppConstants.ENTITY_CHANNEL)
+	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	public void handleEntity(Message<BaseRequest> message) {
 		handleBaseRequest(message.getPayload(), message.getPayload().getId());
 	}

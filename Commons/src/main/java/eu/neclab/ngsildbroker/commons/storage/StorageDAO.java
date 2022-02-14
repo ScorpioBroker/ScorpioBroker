@@ -44,8 +44,6 @@ public abstract class StorageDAO {
 	@Inject
 	protected PgPool defaultClient;
 
-	@Inject
-	AgroalConnectionPoolConfiguration agroalConfiguration;
 
 	protected HashMap<String, PgPool> tenant2Client = new HashMap<String, PgPool>();
 

@@ -15,7 +15,7 @@ import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 @IfBuildProperty(name = "scorpio.kafka.enabled", enableIfMissing = true, stringValue = "true")
 public class RegistrySubscriptionKafkaService extends RegistrySubscriptionKafkaServiceBase {
 
-	@Incoming(AppConstants.REGISTRY_CHANNEL)
+	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	public void handleCsource(Message<BaseRequest> message) {
 		IncomingKafkaRecordMetadata metaData = message.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
 		long timestamp = System.currentTimeMillis();
@@ -26,7 +26,7 @@ public class RegistrySubscriptionKafkaService extends RegistrySubscriptionKafkaS
 		handleBaseRequestRegistry(payload, payload.getId(), timestamp);
 	}
 
-	@Incoming(AppConstants.INTERNAL_SUBS_CHANNEL)
+	@Incoming(AppConstants.INTERNAL_RETRIEVE_SUBS_CHANNEL)
 	public void handleSubscription(Message<SubscriptionRequest> message) {
 		handleBaseRequestSubscription(message.getPayload(), message.getPayload().getId());
 	}
