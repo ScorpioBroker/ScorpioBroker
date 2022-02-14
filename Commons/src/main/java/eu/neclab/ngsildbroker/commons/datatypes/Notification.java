@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.google.common.collect.ArrayListMultimap;
 
-import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;

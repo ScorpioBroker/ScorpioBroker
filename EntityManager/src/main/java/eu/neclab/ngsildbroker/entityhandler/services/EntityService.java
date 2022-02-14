@@ -10,12 +10,15 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -27,7 +30,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.messagebus.KafkaSenderInterface;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 @Singleton
@@ -43,7 +45,8 @@ public class EntityService implements EntryCRUDService {
 	EntityInfoDAO entityInfoDAO;
 
 	@Inject
-	KafkaSenderInterface kafkaSenderInterface;
+	@Channel(AppConstants.ENTITY_CHANNEL)
+	Emitter<BaseRequest> kafkaSenderInterface;
 
 	private ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
@@ -89,7 +92,7 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	private void sendToKafka(BaseRequest request) {
-		kafkaSenderInterface.newMessage(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
+		kafkaSenderInterface.send(new BaseRequest(request));
 	}
 
 	private void pushToDB(EntityRequest request) {
@@ -98,8 +101,8 @@ public class EntityService implements EntryCRUDService {
 			try {
 				logger.debug("Received message: " + request.getWithSysAttrs());
 				logger.trace("Writing data...");
-				if (entityInfoDAO != null && entityInfoDAO.storeEntity(request)) {
-
+				if (entityInfoDAO != null) {
+					entityInfoDAO.storeEntity(request);
 					logger.trace("Writing is complete");
 				}
 				success = true;

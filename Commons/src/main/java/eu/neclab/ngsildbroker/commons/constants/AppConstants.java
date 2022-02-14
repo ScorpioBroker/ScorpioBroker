@@ -96,5 +96,10 @@ public class AppConstants {
 	public static final int DELETE_ATTRIBUTE_REQUEST = 4;
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	public static final String INTERNAL_REGISTRATION_ID = "scorpio:hosted:registryentries";
+	public static final String REGISTRY_CHANNEL = "registry";
+	public static final String ENTITY_CHANNEL = "entity";
+	public static final String INTERNAL_SUBS_CHANNEL = "isubs";
+	public static final String INTERNAL_NOTIFICATION_CHANNEL = "inotification";
+	public static final String HISTORY_CHANNEL = "history";
 
 }

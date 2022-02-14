@@ -1,0 +1,64 @@
+mysettings:
+  eureka:
+    host: ${eureka.host:eureka}
+spring:
+  cloud:
+    discovery:
+      enabled: true
+    gateway:
+      routes:
+      - uri: lb://QUERY-MANAGER
+        id: querymanager
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/entities/**
+      - uri: lb://ENTITY-MANAGER
+        id: entitymanager
+        predicates:
+        - Method=POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/entities/**
+      - uri: lb://QUERY-MANAGER
+        id: querymanager1
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/attributes/**
+      - uri: lb://QUERY-MANAGER
+        id: querymanager2
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/types/**
+      - uri: lb://QUERY-MANAGER
+        id: querymanager3
+        predicates:
+        - Method=POST
+        - Path=/ngsi-ld/v1/entityOperations/query/**
+      - uri: lb://ENTITY-MANAGER
+        id: entitymanager1
+        predicates:
+        - Method=POST
+        - Path=/ngsi-ld/v1/entityOperations/**
+      - uri: lb://SUBSCRIPTION-MANAGER
+        id: subscriptionsmanager1
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/subscriptions/**
+      - uri: lb://REGISTRY-MANAGER
+        id: csourcereg
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/csourceRegistrations/**
+      - uri: lb://REGISTRY-SUBSCRIPTION-MANAGER
+        id: csourcesubs
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/csourceSubscriptions/**
+      - uri: lb://HISTORY-MANAGER
+        id: history
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/temporal/entities/**
+      - uri: lb://ATCONTEXT-SERVER
+        id: atcontext
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/contextes/**

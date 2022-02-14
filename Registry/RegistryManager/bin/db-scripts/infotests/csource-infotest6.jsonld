@@ -1,0 +1,33 @@
+{
+  "@context": [
+    "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
+    {
+      "Vehicle":"http://example.org/vehicle/Vehicle",
+      "brandName":"http://example.org/vehicle/brandName",
+      "speed":"http://example.org/vehicle/speed",
+      "isParked": {
+        "@type": "@id",
+        "@id": "http://example.org/common/isParked"
+      }
+    }
+  ],
+  "id": "urn:ngsi-ld:ContextSourceRegistration:infotest_entity_type_attributes",
+  "type": "ContextSourceRegistration",
+  "information": [
+    {
+      "entities": [
+        {
+          "type": "Vehicle"
+        }
+      ],
+      "properties": [
+        "brandName",
+        "speed"
+      ],
+      "relationships": [
+        "isParked"
+      ]
+    }
+  ],
+  "endpoint": "http://my.csource.org:1026"
+}

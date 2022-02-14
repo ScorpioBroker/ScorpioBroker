@@ -9,12 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.servlet.http.HttpServletRequest;
-
+import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.MultiValueMap;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -42,13 +38,16 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpServerRequest;
+import com.google.common.net.HttpHeaders;
 
 public interface SubscriptionControllerFunctions {
 	static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<String> subscribeRest(SubscriptionCRUDService subscriptionService,
-			HttpServletRequest request, String payload, String baseUrl, Logger logger) {
+	public static RestResponse<Object> subscribeRest(SubscriptionCRUDService subscriptionService,
+			HttpServerRequest request, String payload, String baseUrl, Logger logger) {
 		logger.trace("subscribeRest() :: started");
 		Subscription subscription = null;
 
@@ -78,15 +77,15 @@ public interface SubscriptionControllerFunctions {
 			String subId = subscriptionService.subscribe(subRequest);
 
 			logger.trace("subscribeRest() :: completed");
-			return ResponseEntity.created(new URI(baseUrl + subId)).build();
+			return RestResponse.created(new URI(baseUrl + subId));
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Subscription expandSubscription(Map<String, Object> body, HttpServletRequest request,
-			Context context, boolean update) throws ResponseException {
+	private static Subscription expandSubscription(Map<String, Object> body, HttpServerRequest request, Context context,
+			boolean update) throws ResponseException {
 		Subscription subscription = new Subscription();
 		subscription.setLdContext(context);
 		for (Entry<String, Object> mapEntry : body.entrySet()) {
@@ -353,11 +352,11 @@ public interface SubscriptionControllerFunctions {
 
 	}
 
-	public static ResponseEntity<String> getAllSubscriptions(SubscriptionCRUDService subscriptionService,
-			HttpServletRequest request, int defaultLimit, int maxLimit, Logger logger) {
+	public static RestResponse<Object> getAllSubscriptions(SubscriptionCRUDService subscriptionService,
+			HttpServerRequest request, int defaultLimit, int maxLimit, Logger logger) {
 		try {
 			logger.trace("getAllSubscriptions() :: started");
-			MultiValueMap<String, String> params = HttpUtils.getQueryParamMap(request);
+			MultiMap params = request.params();
 			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, JsonLdProcessor.getCoreContextClone(),
 					false, false, defaultLimit, maxLimit);
 			int limit = qp.getLimit();
@@ -424,8 +423,8 @@ public interface SubscriptionControllerFunctions {
 		return result;
 	}
 
-	public static ResponseEntity<String> getSubscriptionById(SubscriptionCRUDService subscriptionService,
-			HttpServletRequest request, String id, int limit, Logger logger) {
+	public static RestResponse<Object> getSubscriptionById(SubscriptionCRUDService subscriptionService,
+			HttpServerRequest request, String id, int limit, Logger logger) {
 		try {
 			HttpUtils.validateUri(id);
 			logger.trace("call getSubscriptions() ::");
@@ -439,8 +438,8 @@ public interface SubscriptionControllerFunctions {
 		}
 	}
 
-	public static ResponseEntity<String> deleteSubscription(SubscriptionCRUDService subscriptionService,
-			HttpServletRequest request, String id, Logger logger) {
+	public static RestResponse<Object> deleteSubscription(SubscriptionCRUDService subscriptionService,
+			HttpServerRequest request, String id, Logger logger) {
 		try {
 			logger.trace("call deleteSubscription() ::");
 			HttpUtils.validateUri(id);
@@ -448,12 +447,12 @@ public interface SubscriptionControllerFunctions {
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
-		return ResponseEntity.noContent().build();
+		return RestResponse.noContent();
 	}
 
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<String> updateSubscription(SubscriptionCRUDService subscriptionService,
-			HttpServletRequest request, String id, String payload, Logger logger) {
+	public static RestResponse<Object> updateSubscription(SubscriptionCRUDService subscriptionService,
+			HttpServerRequest request, String id, String payload, Logger logger) {
 		logger.trace("call updateSubscription() ::");
 
 		try {
@@ -491,7 +490,7 @@ public interface SubscriptionControllerFunctions {
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
-		return ResponseEntity.noContent().build();
+		return RestResponse.noContent();
 	}
 
 	@SuppressWarnings("unchecked")

@@ -1,0 +1,77 @@
+{
+  "https://uri.etsi.org/ngsi-ld/information": [
+    {
+      "https://uri.etsi.org/ngsi-ld/properties": [
+        {
+          "@id": "http://example.org/vehicle/brandName"
+        }, 
+        {
+          "@id": "http://example.org/vehicle/speed"
+        }
+      ], 
+      "https://uri.etsi.org/ngsi-ld/entities": [
+        {
+          "@id": "urn:ngsi-ld:Vehicle:A456", 
+          "@type": [
+            "http://example.org/vehicle/Vehicle"
+          ]
+        }, 
+        {
+          "@id": "urn:ngsi-ld:Vehicle:A789", 
+          "@type": [
+            "http://example.org/vehicle/Vehicle"
+          ]
+        }
+      ], 
+      "https://uri.etsi.org/ngsi-ld/relationships": [
+        {
+          "@id": "http://example.org/common/isParked"
+        }
+      ]
+    }, 
+    {
+      "https://uri.etsi.org/ngsi-ld/entities": [
+        {
+          "@type": [
+            "http://example.org/parking/OffStreetParking"
+          ], 
+          "https://uri.etsi.org/ngsi-ld/idPattern": [
+            {
+              "@value": ".*downtown$"
+            }
+          ]
+        }
+      ]
+    }
+  ], 
+  "https://uri.etsi.org/ngsi-ld/endpoint": [
+    {
+      "@value": "http://my.csource.org:1026"
+    }
+  ], 
+  "https://uri.etsi.org/ngsi-ld/expires": [
+    {
+      "@type": "https://uri.etsi.org/ngsi-ld/DateTime", 
+      "@value": "2030-11-29T14:53:15"
+    }
+  ], 
+  "https://uri.etsi.org/ngsi-ld/description": [
+    {
+      "@value": "DescriptionExample"
+    }
+  ], 
+  "https://uri.etsi.org/ngsi-ld/name": [
+    {
+      "@value": "NameExample"
+    }
+  ], 
+  "https://uri.etsi.org/ngsi-ld/location": [
+    {
+      "@value": "{ \"type\": \"Point\", \"coordinates\": [ 8.684783577919006, 49.406131991436396 ] }"
+    }
+  ], 
+  "@id": "urn:ngsi-ld:ContextSourceRegistration:csr1a3456", 
+  "@type": [
+    "https://uri.etsi.org/ngsi-ld/ContextSourceRegistration"
+  ]
+}

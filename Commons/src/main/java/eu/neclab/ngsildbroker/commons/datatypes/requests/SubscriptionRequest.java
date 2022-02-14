@@ -6,7 +6,6 @@ import java.util.List;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.interfaces.ScorpioBaseObject;
 
 public class SubscriptionRequest extends BaseRequest {
 	private Subscription subscription;

@@ -14,6 +14,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -28,7 +30,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.messagebus.KafkaSenderInterface;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
@@ -56,7 +57,8 @@ public class SubscriptionService extends BaseSubscriptionService {
 	String INTERNAL_SUBSCRIPTION_TOPIC;
 
 	@Inject
-	KafkaSenderInterface kafkaSender;
+	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
+	Emitter<SubscriptionRequest> kafkaSender;
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
@@ -110,7 +112,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	private void sendToKafka(String id, SubscriptionRequest request) {
-		kafkaSender.newMessage(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
+		kafkaSender.send(request);
 	}
 
 	@Override

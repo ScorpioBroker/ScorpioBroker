@@ -13,16 +13,18 @@ import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
-import eu.neclab.ngsildbroker.commons.messagebus.KafkaSenderInterface;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -35,10 +37,8 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	RegistrySubscriptionInfoDAO subService;
 
 	@Inject
-	KafkaSenderInterface kafkaSender;
-
-	@ConfigProperty(name = "scorpio.topics.internalnotification")
-	String NOTIFICATION_TOPIC;
+	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
+	Emitter<InternalNotification> kafkaSender;
 
 	private NotificationHandler internalHandler;
 
@@ -46,7 +46,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@PostConstruct
 	private void notificationHandlerSetup() {
-		this.internalHandler = new InternalNotificationHandler(kafkaSender, NOTIFICATION_TOPIC);
+		this.internalHandler = new InternalNotificationHandler(kafkaSender);
 	}
 
 	@Override

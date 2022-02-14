@@ -1,15 +1,10 @@
 package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.net.URLDecoder;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.Response.StatusType;
-
-import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
-import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +17,6 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -49,28 +43,22 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 * @throws ResponseException
 	 */
 
-	public static RestResponse<String> getEntity(EntryQueryService queryService, HttpServerRequest request,
+	public static RestResponse<Object> getEntity(EntryQueryService queryService, HttpServerRequest request,
 			List<String> attrs, List<String> options, String entityId, boolean temporal, int defaultLimit,
 			int maxLimit) {
 
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (ResponseException exception) {
-			return RestResponseBuilderImpl.create(RestResponse.Status.BAD_REQUEST,
-					new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.BadRequestData,
-							"id is not a URI").toJson())
-					.build();
+			return HttpUtils.handleControllerExceptions(exception);
 		}
 		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
 		MultiMap paramMap = request.params();
 		paramMap.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
-		RestResponse<String> result = getQueryData(queryService, request, originalQuery, paramMap, false, false,
+		RestResponse<Object> result = getQueryData(queryService, request, originalQuery, paramMap, false, false,
 				temporal, defaultLimit, maxLimit, null);
 		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
-			return RestResponseBuilderImpl.create(RestResponse.Status.NOT_FOUND,
-					new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.NotFound, "Resource not found.")
-							.toJson())
-					.build();
+			return HttpUtils.NOT_FOUND_REPLY;
 		}
 		return result;
 	}
@@ -83,74 +71,70 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 * @param type
 	 * @return ResponseEntity object
 	 */
-	public static RestResponse<String> queryForEntries(EntryQueryService queryService, HttpServerRequest request,
+	public static RestResponse<Object> queryForEntries(EntryQueryService queryService, HttpServerRequest request,
 			boolean temporal, int defaultLimit, int maxLimit, boolean typeRequired) {
-		return getQueryData(queryService, request, request.getQueryString(), HttpUtils.getQueryParamMap(request),
-				typeRequired, true, temporal, defaultLimit, maxLimit, null);
+		return getQueryData(queryService, request, request.query(), request.params(), typeRequired, true, temporal,
+				defaultLimit, maxLimit, null);
 	}
 
-	public static RestResponse<String> getAllTypes(EntryQueryService queryService, HttpServerRequest request,
+	public static RestResponse<Object> getAllTypes(EntryQueryService queryService, HttpServerRequest request,
 			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "NonDeatilsType";
 		if (details == true) {
 			check = "deatilsType";
 		}
-		RestResponse<String> result = getQueryData(queryService, request, "", HttpUtils.getQueryParamMap(request),
-				false, false, false, defaultLimit, maxLimit, check);
-		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
+		RestResponse<Object> result = getQueryData(queryService, request, "", request.params(), false, false, false,
+				defaultLimit, maxLimit, check);
+		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
+			return HttpUtils.NOT_FOUND_REPLY;
 		}
 		return result;
 	}
 
-	public static RestResponse<String> getType(EntryQueryService queryService, HttpServerRequest request, String type,
+	public static RestResponse<Object> getType(EntryQueryService queryService, HttpServerRequest request, String type,
 			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "type";
-		MultiValueMap<String, String> params = HttpUtils.getQueryParamMap(request);
-		params.put(NGSIConstants.QUERY_PARAMETER_ATTRS, Arrays.asList(type));
-		RestResponse<String> result = getQueryData(queryService, request, "", params, false, false, false, defaultLimit,
+		MultiMap params = request.params();
+		params.add(NGSIConstants.QUERY_PARAMETER_ATTRS, type);
+		RestResponse<Object> result = getQueryData(queryService, request, "", params, false, false, false, defaultLimit,
 				maxLimit, check);
-		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
+		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
+			return HttpUtils.NOT_FOUND_REPLY;
 		}
 		return result;
 	}
 
-	public static RestResponse<String> getAllAttributes(EntryQueryService queryService, HttpServerRequest request,
+	public static RestResponse<Object> getAllAttributes(EntryQueryService queryService, HttpServerRequest request,
 			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 
 		String check = "NonDeatilsAttributes";
 		if (details == true) {
 			check = "deatilsAttributes";
 		}
-		RestResponse<String> result = getQueryData(queryService, request, "", HttpUtils.getQueryParamMap(request),
-				false, false, false, defaultLimit, maxLimit, check);
-		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
+		RestResponse<Object> result = getQueryData(queryService, request, "", request.params(), false, false, false,
+				defaultLimit, maxLimit, check);
+		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
+			return HttpUtils.NOT_FOUND_REPLY;
 		}
 		return result;
 	}
 
-	public static RestResponse<String> getAttribute(EntryQueryService queryService, HttpServerRequest request,
+	public static RestResponse<Object> getAttribute(EntryQueryService queryService, HttpServerRequest request,
 			String attribute, boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "Attribute";
-		MultiValueMap<String, String> params = HttpUtils.getQueryParamMap(request);
-		params.put(NGSIConstants.QUERY_PARAMETER_ATTRS, Arrays.asList(attribute));
-		RestResponse<String> result = getQueryData(queryService, request, "", params, false, false, false, defaultLimit,
+		MultiMap params = request.params();
+		params.add(NGSIConstants.QUERY_PARAMETER_ATTRS, attribute);
+		RestResponse<Object> result = getQueryData(queryService, request, "", params, false, false, false, defaultLimit,
 				maxLimit, check);
-		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
+		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
+			return HttpUtils.NOT_FOUND_REPLY;
 		}
 		return result;
 	}
 
-	private static RestResponse<String> getQueryData(EntryQueryService queryService, HttpServerRequest request,
-			String originalQueryParams, MultiMap paramMap, boolean typeRequired,
-			boolean forceArray, boolean temporal, int defaultLimit, int maxLimit, String check) {
+	private static RestResponse<Object> getQueryData(EntryQueryService queryService, HttpServerRequest request,
+			String originalQueryParams, MultiMap paramMap, boolean typeRequired, boolean forceArray, boolean temporal,
+			int defaultLimit, int maxLimit, String check) {
 		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
 		try {
 			logger.trace("getAllEntity() ::");
@@ -172,8 +156,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 				} catch (Exception e) {
 					// logger.error(e.getMessage());
 					logger.error("Tenant for the request not found", e);
-					return ResponseEntity.status(HttpStatus.NOT_FOUND)
-							.body(new RestResponse(ErrorType.TenantNotFound, "Tenant not found.").toJson());
+					return HttpUtils.NOT_FOUND_REPLY;
 				}
 				return HttpUtils.generateReply(request, qResult, forceArray, qp.getCountResult(), context, linkHeaders,
 						AppConstants.QUERY_ENDPOINT);
@@ -188,7 +171,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	}
 
 	@SuppressWarnings({ "unchecked" })
-	public static RestResponse<String> postQuery(EntryQueryService queryService, HttpServerRequest request,
+	public static RestResponse<Object> postQuery(EntryQueryService queryService, HttpServerRequest request,
 			String payload, Integer limit, Integer offset, String qToken, List<String> options, boolean count,
 			int defaultLimit, int maxLimit, int payloadType, PayloadQueryParamParser queryParser) {
 		try {

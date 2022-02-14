@@ -1,40 +1,40 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
+import io.vertx.core.http.HttpServerRequest;
 
-@RestController
-@RequestMapping("/ngsi-ld/v1/entityOperations")
+@Path("/ngsi-ld/v1/entityOperations")
 public class EntityBatchController {
 
-	@Autowired
+	@Inject
 	EntityService entityService;
 
-	@Value("${batchoperations.maxnumber.create:-1}")
+	@ConfigProperty(name = "batchoperations.maxnumber.create", defaultValue = "-1")
 	int maxCreateBatch;
-	@Value("${batchoperations.maxnumber.update:-1}")
+
+	@ConfigProperty(name = "batchoperations.maxnumber.update", defaultValue = "-1")
 	int maxUpdateBatch;
-	@Value("${batchoperations.maxnumber.upsert:-1}")
+
+	@ConfigProperty(name = "batchoperations.maxnumber.upsert", defaultValue = "-1")
 	int maxUpsertBatch;
-	@Value("${batchoperations.maxnumber.delete:-1}")
+
+	@ConfigProperty(name = "batchoperations.maxnumber.delete", defaultValue = "-1")
 	int maxDeleteBatch;
 
-	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 
 	@PostConstruct
@@ -42,29 +42,34 @@ public class EntityBatchController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	@PostMapping("/create")
-	public ResponseEntity<String> createMultiple(HttpServletRequest request, @RequestBody String payload) {
+	@Path("/create")
+	@POST
+	public RestResponse<Object> createMultiple(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createMultiple(entityService, request, payload, maxCreateBatch,
 				AppConstants.ENTITY_CREATE_PAYLOAD);
 	}
 
-	@PostMapping("/upsert")
-	public ResponseEntity<String> upsertMultiple(HttpServletRequest request, @RequestBody String payload,
-			@RequestParam(required = false, name = "options") String options) {
+	@Path("/upsert")
+	@POST
+	public RestResponse<Object> upsertMultiple(HttpServerRequest request, String payload,
+			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch,
 				AppConstants.ENTITY_CREATE_PAYLOAD);
 	}
 
-	@PostMapping("/update")
-	public ResponseEntity<String> updateMultiple(HttpServletRequest request, @RequestBody String payload,
-			@RequestParam(required = false, name = "options") String options) {
+	@Path("/update")
+	@POST
+	public RestResponse<Object> updateMultiple(HttpServerRequest request, String payload,
+			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.updateMultiple(entityService, request, payload, maxUpdateBatch, options,
 				AppConstants.ENTITY_UPDATE_PAYLOAD);
 	}
 
-	@PostMapping("/delete")
-	public ResponseEntity<String> deleteMultiple(HttpServletRequest request, @RequestBody String payload) {
-		return EntryControllerFunctions.deleteMultiple(entityService, request, payload, AppConstants.ENTITY_CREATE_PAYLOAD);
+	@Path("/delete")
+	@POST
+	public RestResponse<Object> deleteMultiple(HttpServerRequest request, String payload) {
+		return EntryControllerFunctions.deleteMultiple(entityService, request, payload,
+				AppConstants.ENTITY_CREATE_PAYLOAD);
 	}
 
 }

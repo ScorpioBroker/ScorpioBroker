@@ -22,6 +22,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +45,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.messagebus.KafkaSenderInterface;
 import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -69,7 +70,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	String AUTO_REG_STATUS;
 
 	@Inject
-	KafkaSenderInterface kafkaSender;
+	@Channel(AppConstants.REGISTRY_CHANNEL)
+	Emitter<BaseRequest> kafkaSender;
 
 	@ConfigProperty(name = "scorpio.topics.registry")
 	String CSOURCE_TOPIC;
@@ -253,7 +255,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	private void sendToKafka(BaseRequest request) {
-		kafkaSender.newMessage(CSOURCE_TOPIC, request.getId(), new BaseRequest(request));
+		kafkaSender.send(new BaseRequest(request));
 	}
 
 	@Override

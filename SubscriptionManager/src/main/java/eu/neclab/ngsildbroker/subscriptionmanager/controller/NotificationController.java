@@ -33,13 +33,13 @@ public class NotificationController {
 
 	@Inject
 	SubscriptionService subscriptionManager;
-	
+
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	
+	@SuppressWarnings("unchecked")
 	@Path("/{id}")
 	@POST
-	public RestResponse<Void> notify(HttpServerRequest req, String payload, String id) {
+	public RestResponse<Object> notify(HttpServerRequest req, String payload, String id) {
 		try {
 			List<Object> atContextLinks = HttpUtils.getAtContext(req);
 			subscriptionManager.remoteNotify(id,

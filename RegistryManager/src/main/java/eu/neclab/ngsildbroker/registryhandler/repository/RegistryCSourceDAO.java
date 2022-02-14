@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -11,14 +12,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.RegistryStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.Tuple;
 
 @ApplicationScoped
 public class RegistryCSourceDAO extends StorageDAO {
@@ -55,27 +60,32 @@ public class RegistryCSourceDAO extends StorageDAO {
 
 	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		result.putAll(AppConstants.INTERNAL_NULL_KEY,
-				getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM csource", String.class));
-		List<String> tenants = getTenants();
-		for (String tenant : tenants) {
-			result.putAll(tenant,
-					getJDBCTemplate(tenant).queryForList("SELECT DISTINCT id FROM csource", String.class));
-		}
+		for (Entry<String, PgPool> entry : this.tenant2Client.entrySet()) {
+			String key = entry.getKey();
+			entry.getValue().query("SELECT DISTINCT id FROM csource").executeAndAwait().forEach(t -> {
+				result.put(key, t.getString(0));
+			});
 
+		}
 		return result;
 	}
 
 	public String getEntity(String tenantId, String entityId) throws ResponseException {
-
-		List<String> tempList = getJDBCTemplate(getTenant(tenantId))
-				.queryForList("SELECT data FROM csource WHERE id='" + entityId + "'", String.class);
-		return tempList.get(0);
+		String result = null;
+		RowSet<Row> rowSet = this.tenant2Client.get(tenantId).preparedQuery("SELECT data FROM csources WHERE id=?")
+				.executeAndAwait(Tuple.of(entityId));
+		for (Row entry : rowSet) {
+			result = entry.getString(0);
+		}
+		return result;
 	}
 
 	public List<String> getAllRegistrations(String tenant) throws ResponseException {
-		tenant = getTenant(tenant);
-		return getJDBCTemplate(tenant).queryForList("SELECT data FROM csource", String.class);
+		List<String> result = Lists.newArrayList();
+		this.tenant2Client.get(tenant).query("SELECT data FROM csource").executeAndAwait().forEach(t -> {
+			result.add(t.getString(0));
+		});
+		return result;
 	}
 
 	@Override
@@ -84,12 +94,15 @@ public class RegistryCSourceDAO extends StorageDAO {
 	}
 
 	public Map<String, List<String>> getAllEntities() {
-		List<String> tenants = getTenants();
 		HashMap<String, List<String>> result = new HashMap<String, List<String>>();
-		result.put(AppConstants.INTERNAL_NULL_KEY,
-				getJDBCTemplate(null).queryForList("SELECT data FROM ENTITY", String.class));
-		for (String tenant : tenants) {
-			result.put(tenant, getJDBCTemplate(tenant).queryForList("SELECT data FROM ENTITY", String.class));
+		for (Entry<String, PgPool> entry : this.tenant2Client.entrySet()) {
+			String tenant = entry.getKey();
+			PgPool client = entry.getValue();
+			List<String> temp = Lists.newArrayList();
+			client.query("SELECT data FROM ENTITY").executeAndAwait().forEach(t -> {
+				temp.add(t.getString(0));
+			});
+			result.put(tenant, temp);
 		}
 		return result;
 	}

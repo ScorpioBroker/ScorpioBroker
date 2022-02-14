@@ -44,19 +44,19 @@ public class SubscriptionController {
 	}
 
 	@POST
-	public RestResponse<String> subscribeRest(HttpServerRequest request, String payload) {
+	public RestResponse<Object> subscribeRest(HttpServerRequest request, String payload) {
 		return SubscriptionControllerFunctions.subscribeRest(manager, request, payload, AppConstants.SUBSCRIPTIONS_URL,
 				logger);
 	}
 
 	@GET
-	public RestResponse<String> getAllSubscriptions(HttpServerRequest request) {
+	public RestResponse<Object> getAllSubscriptions(HttpServerRequest request) {
 		return SubscriptionControllerFunctions.getAllSubscriptions(manager, request, defaultLimit, maxLimit, logger);
 	}
 
 	@Path("/{id}")
 	@GET
-	public RestResponse<String> getSubscriptionById(HttpServerRequest request, String id,
+	public RestResponse<Object> getSubscriptionById(HttpServerRequest request, String id,
 			@QueryParam(value = "limit") int limit) {
 		return SubscriptionControllerFunctions.getSubscriptionById(manager, request, id, limit, logger);
 
@@ -64,13 +64,13 @@ public class SubscriptionController {
 
 	@Path("/{id}")
 	@DELETE
-	public RestResponse<String> deleteSubscription(HttpServerRequest request, String id) {
+	public RestResponse<Object> deleteSubscription(HttpServerRequest request, String id) {
 		return SubscriptionControllerFunctions.deleteSubscription(manager, request, id, logger);
 	}
 
 	@Path("/{id}")
 	@PATCH
-	public RestResponse<String> updateSubscription(HttpServerRequest request, String id, String payload) {
+	public RestResponse<Object> updateSubscription(HttpServerRequest request, String id, String payload) {
 		return SubscriptionControllerFunctions.updateSubscription(manager, request, id, payload, logger);
 	}
 

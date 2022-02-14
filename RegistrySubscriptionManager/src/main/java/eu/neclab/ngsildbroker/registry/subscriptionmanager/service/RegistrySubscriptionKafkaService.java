@@ -5,6 +5,7 @@ import javax.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import io.quarkus.arc.properties.IfBuildProperty;
@@ -14,16 +15,19 @@ import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 @IfBuildProperty(name = "scorpio.kafka.enabled", enableIfMissing = true, stringValue = "true")
 public class RegistrySubscriptionKafkaService extends RegistrySubscriptionKafkaServiceBase {
 
-	@Incoming("registryChannel")
+	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	public void handleCsource(Message<BaseRequest> message) {
 		IncomingKafkaRecordMetadata metaData = message.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
-		handleBaseRequestRegistry(message.getPayload(), (String) metaData.getKey(),
-				metaData.getTimestamp().toEpochMilli());
+		long timestamp = System.currentTimeMillis();
+		if (metaData != null) {
+			timestamp = metaData.getTimestamp().toEpochMilli();
+		}
+		BaseRequest payload = message.getPayload();
+		handleBaseRequestRegistry(payload, payload.getId(), timestamp);
 	}
 
-	@Incoming("internalRegistrySubscriptionChannel")
+	@Incoming(AppConstants.INTERNAL_SUBS_CHANNEL)
 	public void handleSubscription(Message<SubscriptionRequest> message) {
-		IncomingKafkaRecordMetadata metaData = message.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
-		handleBaseRequestSubscription(message.getPayload(), (String) metaData.getKey());
+		handleBaseRequestSubscription(message.getPayload(), message.getPayload().getId());
 	}
 }

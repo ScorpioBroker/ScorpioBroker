@@ -3,34 +3,20 @@ package eu.neclab.ngsildbroker.entityhandler.controller;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.container.ResourceContext;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -45,11 +31,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
-import io.quarkus.vertx.web.Body;
-import io.quarkus.vertx.web.Route;
-import io.quarkus.vertx.web.Route.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.ext.web.RoutingContext;
 
 /**
  * 
@@ -158,7 +140,7 @@ public class EntityController {// implements EntityHandlerInterface {
 					expandedAttrib, expandedPayload);
 			logger.trace("partial-update entity :: completed");
 			if (update.getNotUpdated().isEmpty()) {
-				return ResponseEntity.noContent().build();
+				return RestResponse.noContent();
 			} else {
 				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, JsonUtils
 						.toPrettyString(JsonLdProcessor.compact(update.getNotUpdated().get(0), context, opts))));
@@ -183,11 +165,10 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 
-	@DeleteMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<String> deleteAttribute(HttpServletRequest request, @PathVariable("entityId") String entityId,
-			@PathVariable("attrId") String attrId,
-			@RequestParam(value = "datasetId", required = false) String datasetId,
-			@RequestParam(value = "deleteAll", required = false) String deleteAll) {
+	@Path("/{entityId}/attrs/{attrId}")
+	@DELETE
+	public RestResponse<Object> deleteAttribute(HttpServerRequest request, String entityId, String attrId,
+			@QueryParam(value = "datasetId") String datasetId, @QueryParam(value = "deleteAll") String deleteAll) {
 		try {
 			HttpUtils.validateUri(entityId);
 			logger.trace("delete attribute :: started");
@@ -197,7 +178,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,
 					deleteAll);
 			logger.trace("delete attribute :: completed");
-			return ResponseEntity.noContent().build();
+			return RestResponse.noContent();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
@@ -209,8 +190,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param entityId
 	 * @return
 	 */
-	@DeleteMapping("/{entityId}")
-	public ResponseEntity<String> deleteEntity(HttpServletRequest request, @PathVariable("entityId") String entityId) {
+	@Path("/{entityId}")
+	@DELETE
+	public RestResponse<Object> deleteEntity(HttpServerRequest request, String entityId) {
 		return EntryControllerFunctions.deleteEntry(entityService, request, entityId, logger);
 	}
 }
