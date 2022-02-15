@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.el.MethodNotFoundException;
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -39,7 +39,7 @@ import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
-@ApplicationScoped
+@Singleton
 public class HistoryService extends BaseQueryService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryService.class);

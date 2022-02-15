@@ -18,8 +18,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.el.MethodNotFoundException;
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -54,7 +54,7 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.RegistryCSourceDAO;
 
-@ApplicationScoped
+@Singleton
 public class CSourceService extends BaseQueryService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
@@ -359,7 +359,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 					upsert(regEntry);
 				}
 			} catch (Exception e) {
-				logger.error("Failed to store internal registry entry", e);
+				logger.error("Failed to store internal registry entry 1s", e);
 			}
 		}
 

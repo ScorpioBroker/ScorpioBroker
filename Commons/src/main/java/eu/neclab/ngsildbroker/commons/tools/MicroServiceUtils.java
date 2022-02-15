@@ -5,14 +5,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ApplicationScoped
+@Singleton
 public class MicroServiceUtils {
 	private final static Logger logger = LoggerFactory.getLogger(MicroServiceUtils.class);
 

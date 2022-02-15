@@ -2,7 +2,7 @@ package eu.neclab.ngsildbroker.historymanager.repository;
 
 import java.util.Map.Entry;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 
 import com.google.common.collect.ArrayListMultimap;
 
@@ -12,7 +12,7 @@ import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.storage.TemporalStorageFunctions;
 import io.vertx.mutiny.pgclient.PgPool;
 
-@ApplicationScoped
+@Singleton
 public class HistoryDAO extends StorageDAO {
 
 	@Override

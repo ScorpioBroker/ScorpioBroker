@@ -30,8 +30,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
-import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
-import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.pgclient.PgPool;
@@ -53,7 +51,7 @@ public abstract class StorageDAO {
 
 	@Inject
 	Flyway baseFlyway;
-	
+
 	@PostConstruct
 	void init() {
 		loadTenantClients();
@@ -224,9 +222,9 @@ public abstract class StorageDAO {
 		int n;
 		if (value != null && !value.equals("null")) {
 			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-					+ ") VALUES ($1, $2::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
+					+ ") VALUES ($1, '" + value + "'::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
 					+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
-			client.preparedQuery(sql).executeAndForget(Tuple.of(request.getId(), value));
+			client.preparedQuery(sql).executeAndForget(Tuple.of(request.getId()));
 		} else {
 			sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = $1";
 			client.preparedQuery(sql).executeAndForget(Tuple.of(request.getId()));
@@ -253,8 +251,9 @@ public abstract class StorageDAO {
 						unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)));
 					}
 					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
-					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId, value)));
+							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, '" + value
+							+ "'::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
+					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)));
 					// update modifiedat field in temporalentity
 					sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 							+ " SET modifiedat = $1::timestamp WHERE id = $2";
@@ -280,9 +279,9 @@ public abstract class StorageDAO {
 							recoverUnis.add(conn.preparedQuery(recoverSql).execute(Tuple.of(entityId,
 									row.getString("type"), row.getString("createdat"), row.getString("modifiedat"))));
 							recoverSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
-							recoverUnis.add(
-									conn.preparedQuery(recoverSql).execute(Tuple.of(entityId, attributeId, value)));
+									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, '" + value
+									+ "'::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
+							recoverUnis.add(conn.preparedQuery(recoverSql).execute(Tuple.of(entityId, attributeId)));
 							// update modifiedat field in temporalentity
 							recoverSql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 									+ " SET modifiedat = $1::timestamp WHERE id = $2";
@@ -326,11 +325,12 @@ public abstract class StorageDAO {
 		if (value != null && !value.equals("null")) {
 			sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
-					+ ") VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb) ON CONFLICT(id) DO UPDATE SET ("
-					+ DBConstants.DBCOLUMN_DATA + ", " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  "
-					+ DBConstants.DBCOLUMN_KVDATA + ") = (EXCLUDED." + DBConstants.DBCOLUMN_DATA + ", EXCLUDED."
+					+ ") VALUES ($1, '" + value + "'::jsonb, '" + valueWithoutSysAttrs + "'::jsonb, '" + kvValue
+					+ "'::jsonb) ON CONFLICT(id) DO UPDATE SET (" + DBConstants.DBCOLUMN_DATA + ", "
+					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
+					+ ") = (EXCLUDED." + DBConstants.DBCOLUMN_DATA + ", EXCLUDED."
 					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  EXCLUDED." + DBConstants.DBCOLUMN_KVDATA + ")";
-			client.preparedQuery(sql).executeAndForget(Tuple.of(key, value, valueWithoutSysAttrs, kvValue));
+			client.preparedQuery(sql).executeAndForget(Tuple.of(key));
 
 		} else {
 			sql = "DELETE FROM " + DBConstants.DBTABLE_ENTITY + " WHERE id = $1";

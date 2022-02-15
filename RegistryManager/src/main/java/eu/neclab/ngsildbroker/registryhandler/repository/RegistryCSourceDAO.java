@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,12 +20,13 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.RegistryStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-@ApplicationScoped
+@Singleton
 public class RegistryCSourceDAO extends StorageDAO {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryCSourceDAO.class);
@@ -72,10 +73,12 @@ public class RegistryCSourceDAO extends StorageDAO {
 
 	public String getEntity(String tenantId, String entityId) throws ResponseException {
 		String result = null;
-		RowSet<Row> rowSet = this.tenant2Client.get(tenantId).preparedQuery("SELECT data FROM csources WHERE id=$1")
+		System.out.println(entityId);
+		
+		RowSet<Row> rowSet = this.tenant2Client.get(tenantId).preparedQuery("SELECT data FROM csource WHERE id=$1")
 				.executeAndAwait(Tuple.of(entityId));
 		for (Row entry : rowSet) {
-			result = entry.getString(0);
+			result = ((JsonObject) entry.getJson(0)).encode();
 		}
 		return result;
 	}
@@ -100,7 +103,7 @@ public class RegistryCSourceDAO extends StorageDAO {
 			PgPool client = entry.getValue();
 			List<String> temp = Lists.newArrayList();
 			client.query("SELECT data FROM ENTITY").executeAndAwait().forEach(t -> {
-				temp.add(t.getString(0));
+				temp.add(((JsonObject) t.getJson(0)).encode());
 			});
 			result.put(tenant, temp);
 		}

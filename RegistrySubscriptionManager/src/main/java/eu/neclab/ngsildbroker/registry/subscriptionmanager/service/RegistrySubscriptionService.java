@@ -10,8 +10,8 @@ import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
@@ -30,7 +30,7 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterf
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 
-@ApplicationScoped
+@Singleton
 public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@Inject

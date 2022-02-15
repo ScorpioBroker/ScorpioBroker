@@ -1,12 +1,12 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 
-@ApplicationScoped
+@Singleton
 public class QueryDAO extends StorageDAO {
 
 	@Override

@@ -1,6 +1,6 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -9,7 +9,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import io.smallrye.mutiny.Uni;
 
-@ApplicationScoped
+@Singleton
 public class HistoryKafkaService extends HistoryKafkaServiceBase{
 
 	

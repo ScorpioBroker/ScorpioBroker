@@ -2,7 +2,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.util.Map.Entry;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 
 import com.google.common.collect.ArrayListMultimap;
 
@@ -10,12 +10,13 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-@ApplicationScoped
+@Singleton
 public class EntityInfoDAO extends StorageDAO {
 
 	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
@@ -32,11 +33,14 @@ public class EntityInfoDAO extends StorageDAO {
 
 	public String getEntity(String entityId, String tenantId) throws ResponseException {
 		String result = null;
+		System.out.println(entityId);
 		RowSet<Row> rowSet = this.tenant2Client.get(tenantId).preparedQuery("SELECT data FROM entity WHERE id=$1")
 				.executeAndAwait(Tuple.of(entityId));
 		for (Row entry : rowSet) {
-			result = entry.getString(0);
+			result = ((JsonObject) entry.getJson(0)).encode();
 		}
+		System.out.println(result);
+		System.out.println("%%%%%%%%%%%%%%%");
 		return result;
 	}
 

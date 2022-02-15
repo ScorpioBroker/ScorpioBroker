@@ -12,6 +12,40 @@
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>Commons</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>EntityManager</artifactId>
+			<version>3.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>HistoryManager</artifactId>
+			<version>3.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>QueryManager</artifactId>
+			<version>3.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>RegistryManager</artifactId>
+			<version>3.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>RegistrySubscriptionManager</artifactId>
+			<version>3.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>SubscriptionManager</artifactId>
+			<version>3.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
+		</dependency>
 	</dependencies>
 
 </project>
