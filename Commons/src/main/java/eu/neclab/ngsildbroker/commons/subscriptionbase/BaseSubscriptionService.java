@@ -68,7 +68,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private NotificationHandlerREST notificationHandlerREST;
 	private IntervalNotificationHandler intervalHandlerREST;
 
-	private NotificationHandlerMQTT notificationHandlerMQTT;
+	//private NotificationHandlerMQTT notificationHandlerMQTT;
 	private IntervalNotificationHandler intervalHandlerMQTT;
 
 	private Timer watchDog = new Timer(true);
@@ -113,8 +113,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
 						AppConstants.UPDATE_REQUEST));
 
-		notificationHandlerMQTT = new NotificationHandlerMQTT();
-		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, subscriptionInfoDAO,
+		//notificationHandlerMQTT = new NotificationHandlerMQTT();
+		intervalHandlerMQTT = new IntervalNotificationHandler(null, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
 						AppConstants.UPDATE_REQUEST));
 		logger.trace("call loadStoredSubscriptions() ::");
@@ -422,7 +422,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {
 		if (endpointProtocol.equals("mqtt")) {
-			return notificationHandlerMQTT;
+			return null; //notificationHandlerMQTT;
 		} else {
 			return notificationHandlerREST;
 		}
