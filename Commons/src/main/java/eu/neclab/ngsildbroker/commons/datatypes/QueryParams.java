@@ -6,6 +6,8 @@ import java.util.Map;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+
 public class QueryParams {
 
 	@SerializedName("tenant")
@@ -296,6 +298,9 @@ public class QueryParams {
 	}
 
 	public String getTenant() {
+		if (tenant == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
 		return tenant;
 	}
 

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
@@ -39,7 +40,7 @@ import io.vertx.core.http.HttpServerRequest;
  * @date 10-Jul-2018
  */
 
-@Path("/ngsi-ld/v1/entities")
+@Path("/ngsi-ld/v1")
 public class EntityController {// implements EntityHandlerInterface {
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityController.class);
@@ -65,7 +66,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload jsonld message
 	 * @return ResponseEntity object
 	 */
-	@Path("")
+	@Path("/entities")
 	@POST
 	public RestResponse<Object> createEntity(HttpServerRequest req, String payload) {
 		return EntryControllerFunctions.createEntry(entityService, req, payload, AppConstants.ENTITY_CREATE_PAYLOAD,
@@ -80,7 +81,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 
-	@Path("/{entityId}/attrs")
+	@Path("/entities/{entityId}/attrs")
 	@PATCH
 	public RestResponse<Object> updateEntity(HttpServerRequest request, String entityId, String payload) {
 		return EntryControllerFunctions.updateEntry(entityService, request, entityId, payload,
@@ -95,7 +96,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 
-	@Path("/{entityId}/attrs")
+	@Path("/entities/{entityId}/attrs")
 	@POST
 	public RestResponse<Object> appendEntity(HttpServerRequest request, String entityId, String payload,
 			@QueryParam(value = "options") String options) {
@@ -113,7 +114,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	@Path("/{entityId}/attrs/{attrId}")
+	@Path("/entities/{entityId}/attrs/{attrId}")
 	@PATCH
 	public RestResponse<Object> partialUpdateEntity(HttpServerRequest request, String entityId, String attrId,
 			String payload) {
@@ -165,7 +166,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 
-	@Path("/{entityId}/attrs/{attrId}")
+	@Path("/entities/{entityId}/attrs/{attrId}")
 	@DELETE
 	public RestResponse<Object> deleteAttribute(HttpServerRequest request, String entityId, String attrId,
 			@QueryParam(value = "datasetId") String datasetId, @QueryParam(value = "deleteAll") String deleteAll) {
@@ -190,7 +191,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param entityId
 	 * @return
 	 */
-	@Path("/{entityId}")
+	@Path("/entities/{entityId}")
 	@DELETE
 	public RestResponse<Object> deleteEntity(HttpServerRequest request, String entityId) {
 		return EntryControllerFunctions.deleteEntry(entityService, request, entityId, logger);

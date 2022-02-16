@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
@@ -172,17 +173,21 @@ public abstract class StorageDAO {
 		}
 		if (qp.getCheck() != null) {
 			String sqlQuery = storageFunctions.typesAndAttributeQuery(qp);
-			List<String> list = Lists.newArrayList();
-			client.query(sqlQuery).executeAndAwait().forEach(t -> {
-				list.add(t.getString(0));
-			});
-			queryResult.setDataString(list);
-			queryResult.setActualDataString(list);
+			if (sqlQuery != null && !sqlQuery.isEmpty()) {
+				List<String> list = Lists.newArrayList();
+				client.query(sqlQuery).executeAndAwait().forEach(t -> {
+					list.add(((JsonObject) t.getJson(0)).encode());
+				});
+				queryResult.setDataString(list);
+				queryResult.setActualDataString(list);
+			}
 			return queryResult;
 		}
 		if (qp.getCountResult()) {
 
 			String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
+			System.err.println("2");
+			System.err.println(sqlQueryCount);
 			Integer count = client.query(sqlQueryCount).executeAndAwait().iterator().next().getInteger(0);
 			queryResult.setCount(count);
 		}
@@ -192,8 +197,10 @@ public abstract class StorageDAO {
 
 		String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
 		List<String> list = Lists.newArrayList();
+		System.err.println("3");
+		System.err.println(sqlQuery);
 		client.query(sqlQuery).executeAndAwait().forEach(t -> {
-			list.add(t.getString(0));
+			list.add(((JsonObject) t.getJson(0)).encode());
 		});
 		queryResult.setDataString(list);
 		queryResult.setActualDataString(list);
