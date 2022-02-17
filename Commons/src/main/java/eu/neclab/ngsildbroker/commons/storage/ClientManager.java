@@ -8,6 +8,7 @@ import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.flywaydb.core.Flyway;
 
@@ -18,14 +19,12 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-@ApplicationScoped
+@Singleton
 public class ClientManager {
 
 	@Inject
 	PgPool defaultClient;
 
-	@Inject
-	Flyway flyway;
 
 	protected HashMap<String, PgPool> tenant2Client = new HashMap<String, PgPool>();
 
