@@ -33,13 +33,19 @@ public class MicroServiceUtils {
 	@Value("${scorpio.topics.internalregsub:}")
 	private String internalregsubTopic;
 
+	@Value("${scorpio.topics.partitions:-1}")
+	private int partitions;
+
+	@Value("${scorpio.topics.replication:-1}")
+	private short replication;
+
 	@PostConstruct
 	private void setupTopics() {
-    	kafkaAdmin.createOrModifyTopics(new NewTopic(entityTopic, null, null));
-    	kafkaAdmin.createOrModifyTopics(new NewTopic(registryTopic, null, null));
-    	kafkaAdmin.createOrModifyTopics(new NewTopic(temporalTopic, null, null));
-    	kafkaAdmin.createOrModifyTopics(new NewTopic(internalnotificationTopic, null, null));
-    	kafkaAdmin.createOrModifyTopics(new NewTopic(internalregsubTopic, null, null));
+		kafkaAdmin.createOrModifyTopics(new NewTopic(entityTopic, partitions, replication));
+		kafkaAdmin.createOrModifyTopics(new NewTopic(registryTopic, partitions, replication));
+		kafkaAdmin.createOrModifyTopics(new NewTopic(temporalTopic, partitions, replication));
+		kafkaAdmin.createOrModifyTopics(new NewTopic(internalnotificationTopic, partitions, replication));
+		kafkaAdmin.createOrModifyTopics(new NewTopic(internalregsubTopic, partitions, replication));
 	}
 
 	@Value("${scorpio.gatewayurl:}")
