@@ -40,8 +40,7 @@ public abstract class StorageDAO {
 
 	StorageFunctionsInterface storageFunctions;
 
-	@Inject
-	Flyway baseFlyway;
+
 
 	@Inject
 	protected ClientManager clientManager;
