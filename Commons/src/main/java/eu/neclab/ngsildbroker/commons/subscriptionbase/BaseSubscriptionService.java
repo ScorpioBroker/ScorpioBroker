@@ -131,7 +131,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@PreDestroy
 	protected void deconstructor() {
 		synchronized (tenant2subscriptionId2Subscription) {
-			subscriptionInfoDAO.storedSubscriptions(tenant2subscriptionId2Subscription);
+			subscriptionInfoDAO.storeSubscriptions(tenant2subscriptionId2Subscription);
 		}
 	}
 

@@ -21,7 +21,7 @@ public class EntityInfoDAO extends StorageDAO {
 
 	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		for (Entry<String, PgPool> entry : this.tenant2Client.entrySet()) {
+		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
 			PgPool client = entry.getValue();
 			String tenant = entry.getKey();
 			client.query("SELECT DISTINCT id FROM entity").executeAndAwait().forEach(t -> {
@@ -33,14 +33,11 @@ public class EntityInfoDAO extends StorageDAO {
 
 	public String getEntity(String entityId, String tenantId) throws ResponseException {
 		String result = null;
-		System.out.println(entityId);
-		RowSet<Row> rowSet = this.tenant2Client.get(tenantId).preparedQuery("SELECT data FROM entity WHERE id=$1")
-				.executeAndAwait(Tuple.of(entityId));
+		RowSet<Row> rowSet = clientManager.getClient(tenantId, false)
+				.preparedQuery("SELECT data FROM entity WHERE id=$1").executeAndAwait(Tuple.of(entityId));
 		for (Row entry : rowSet) {
 			result = ((JsonObject) entry.getJson(0)).encode();
 		}
-		System.out.println(result);
-		System.out.println("%%%%%%%%%%%%%%%");
 		return result;
 	}
 

@@ -14,7 +14,7 @@ public interface SubscriptionInfoDAOInterface {
 
 	public List<String> getStoredSubscriptions();
 
-	public void storedSubscriptions(Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription);
+	public void storeSubscriptions(Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription);
 
 	public List<String> getEntriesFromSub(SubscriptionRequest subscriptionRequest) throws ResponseException;
 }

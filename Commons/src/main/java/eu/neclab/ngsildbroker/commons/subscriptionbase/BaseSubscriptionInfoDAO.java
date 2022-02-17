@@ -33,27 +33,14 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		Table<String, String, Set<String>> result = HashBasedTable.create();
 		String sql = getSQLForTypes();
 
-		defaultClient.query(sql).executeAndAwait().forEach(t -> {
-			Object id = t.getValue("id");
-			Object type = t.getValue("type");
-			if (id != null && type != null) {
-				addToResult(result, AppConstants.INTERNAL_NULL_KEY, id.toString(), type.toString());
-			}
-		});
-
-//		getTenants().onItem().call(t ->{})
-
-		List<String> tenants = getTenants().collect().asList().await().atMost(Duration.ofMillis(500));
-		if (tenants != null) {
-			for (String tenantId : tenants) {
-				tenant2Client.get(tenantId).query(sql).executeAndAwait().forEach(t -> {
-					Object id = t.getValue("id");
-					Object type = t.getValue("type");
-					if (id != null && type != null) {
-						addToResult(result, tenantId, id.toString(), type.toString());
-					}
-				});
-			}
+		for (Entry<String, PgPool> tenant2Client : clientManager.getAllClients().entrySet()) {
+			tenant2Client.getValue().query(sql).executeAndAwait().forEach(t -> {
+				Object id = t.getValue("id");
+				Object type = t.getValue("type");
+				if (id != null && type != null) {
+					addToResult(result, tenant2Client.getKey(), id.toString(), type.toString());
+				}
+			});
 		}
 
 		return result;
@@ -72,14 +59,9 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	}
 
 	public List<String> getStoredSubscriptions() {
-		List<String> tenants;
-		tenants = getTenants().collect().asList().await().atMost(Duration.ofMillis(500));
 		ArrayList<String> result = new ArrayList<String>();
-		defaultClient.query("SELECT subscription_request FROM subscriptions").executeAndAwait().forEach(r -> {
-			result.add(r.getString(0));
-		});
-		for (String tenantId : tenants) {
-			PgPool client = tenant2Client.get(tenantId);
+		for (Entry<String, PgPool> tenant2Client : clientManager.getAllClients().entrySet()) {
+			PgPool client = tenant2Client.getValue();
 			client.query("SELECT subscription_request FROM subscriptions").executeAndAwait().forEach(r -> {
 				result.add(r.getString(0));
 			});
@@ -87,11 +69,11 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		return result;
 	}
 
-	public void storedSubscriptions(Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription) {
+	public void storeSubscriptions(Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription) {
 		Set<String> tenants = tenant2subscriptionId2Subscription.rowKeySet();
 		for (String tenant : tenants) {
 			Map<String, SubscriptionRequest> row = tenant2subscriptionId2Subscription.row(tenant);
-			PgPool client = tenant2Client.get(tenant);
+			PgPool client = clientManager.getClient(tenant, true);
 			client.query("DELETE FROM subscriptions").executeAndAwait();
 			for (Entry<String, SubscriptionRequest> entry : row.entrySet()) {
 				client.preparedQuery("INSERT INTO subscriptions (subscription_id, subscription_request) VALUES (?, ?)")

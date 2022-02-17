@@ -61,7 +61,7 @@ public class RegistryCSourceDAO extends StorageDAO {
 
 	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		for (Entry<String, PgPool> entry : this.tenant2Client.entrySet()) {
+		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
 			String key = entry.getKey();
 			entry.getValue().query("SELECT DISTINCT id FROM csource").executeAndAwait().forEach(t -> {
 				result.put(key, t.getString(0));
@@ -73,10 +73,8 @@ public class RegistryCSourceDAO extends StorageDAO {
 
 	public String getEntity(String tenantId, String entityId) throws ResponseException {
 		String result = null;
-		System.out.println(entityId);
-		
-		RowSet<Row> rowSet = this.tenant2Client.get(tenantId).preparedQuery("SELECT data FROM csource WHERE id=$1")
-				.executeAndAwait(Tuple.of(entityId));
+		RowSet<Row> rowSet = clientManager.getClient(tenantId, false)
+				.preparedQuery("SELECT data FROM csource WHERE id=$1").executeAndAwait(Tuple.of(entityId));
 		for (Row entry : rowSet) {
 			result = ((JsonObject) entry.getJson(0)).encode();
 		}
@@ -85,7 +83,7 @@ public class RegistryCSourceDAO extends StorageDAO {
 
 	public List<String> getAllRegistrations(String tenant) throws ResponseException {
 		List<String> result = Lists.newArrayList();
-		this.tenant2Client.get(tenant).query("SELECT data FROM csource").executeAndAwait().forEach(t -> {
+		clientManager.getClient(tenant, false).query("SELECT data FROM csource").executeAndAwait().forEach(t -> {
 			result.add(t.getString(0));
 		});
 		return result;
@@ -98,7 +96,7 @@ public class RegistryCSourceDAO extends StorageDAO {
 
 	public Map<String, List<String>> getAllEntities() {
 		HashMap<String, List<String>> result = new HashMap<String, List<String>>();
-		for (Entry<String, PgPool> entry : this.tenant2Client.entrySet()) {
+		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
 			String tenant = entry.getKey();
 			PgPool client = entry.getValue();
 			List<String> temp = Lists.newArrayList();
