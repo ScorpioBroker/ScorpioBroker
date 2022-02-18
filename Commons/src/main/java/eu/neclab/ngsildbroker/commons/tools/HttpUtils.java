@@ -503,7 +503,7 @@ public final class HttpUtils {
 		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
 	}
 
-	public static RestResponse<Object> handleControllerExceptions(Exception e) {
+	public static RestResponse<Object> handleControllerExceptions(Throwable e) {
 		if (e instanceof ResponseException) {
 			ResponseException responseException = (ResponseException) e;
 			logger.debug("Exception :: ", responseException);

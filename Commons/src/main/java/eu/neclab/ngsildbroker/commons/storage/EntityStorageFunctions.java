@@ -21,7 +21,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 	private final static Logger logger = LoggerFactory.getLogger(EntityStorageFunctions.class);
 	private Random random = new Random();
 
-	public String translateNgsildQueryToSql(QueryParams qp) throws ResponseException {
+	public String translateNgsildQueryToSql(QueryParams qp) {
 		String fullSqlWhereProperty = commonTranslateSql(qp);
 		String tableDataColumn;
 		if (qp.getKeyValues()) {
@@ -73,7 +73,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 	// [SPEC] spec is not clear on how to define a "property of property" in
 	// the geoproperty field. (probably using dots)
 	public String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
-			String geoproperty) throws ResponseException {
+			String geoproperty) {
 		StringBuilder sqlWhere = new StringBuilder(50);
 		String georelOp = georel.getGeorelOp();
 		logger.trace("  Geoquery term georelOp: " + georelOp);
@@ -90,15 +90,13 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 
 		switch (georelOp) {
 		case NGSIConstants.GEO_REL_NEAR:
-			if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
-				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
-					sqlWhere.append("NOT ");
-				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
-						+ "::geography, " + georel.getDistanceValue() + ") ");
-			} else {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"GeoQuery: Type and distance are required for near relation");
+
+			if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
+				sqlWhere.append("NOT ");
 			}
+			sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue + "::geography, "
+					+ georel.getDistanceValue() + ") ");
+
 			break;
 		case NGSIConstants.GEO_REL_WITHIN:
 		case NGSIConstants.GEO_REL_CONTAINS:
@@ -109,7 +107,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + ", " + referenceValue + ") ");
 			break;
 		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
+			break;
 		}
 		return sqlWhere.toString();
 	}
@@ -197,12 +195,8 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		if (qp.getGeorel() != null) {
 			GeoqueryRel gqr = qp.getGeorel();
 			logger.trace("Georel value " + gqr.getGeorelOp());
-			try {
-				sqlWhereProperty = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
-						qp.getGeoproperty());
-			} catch (ResponseException e) {
-				e.printStackTrace();
-			}
+			sqlWhereProperty = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
+					qp.getGeoproperty());
 			fullSqlWhereProperty.append(" AND ");
 			fullSqlWhereProperty.append(sqlWhereProperty);
 
@@ -215,7 +209,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		return fullSqlWhereProperty.toString();
 	}
 
-	public String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+	public String translateNgsildQueryToCountResult(QueryParams qp) {
 		String fullSqlWhereProperty = commonTranslateSql(qp);
 		String tableName = DBConstants.DBTABLE_ENTITY;
 		String sqlQuery = "SELECT Count(*) FROM " + tableName + " ";

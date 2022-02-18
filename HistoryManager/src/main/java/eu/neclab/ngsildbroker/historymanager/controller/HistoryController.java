@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 @Path("/ngsi-ld/v1/temporal/entities")
@@ -61,13 +62,13 @@ public class HistoryController {
 	}
 
 	@GET
-	public RestResponse<Object> retrieveTemporalEntity(HttpServerRequest request) {
+	public Uni<RestResponse<Object>> retrieveTemporalEntity(HttpServerRequest request) {
 		return QueryControllerFunctions.queryForEntries(historyService, request, true, defaultLimit, maxLimit, true);
 	}
 
 	@Path("/{entityId}")
 	@GET
-	public RestResponse<Object> retrieveTemporalEntityById(HttpServerRequest request, String entityId) {
+	public Uni<RestResponse<Object>> retrieveTemporalEntityById(HttpServerRequest request, String entityId) {
 		return QueryControllerFunctions.getEntity(historyService, request, null, null, entityId, true, defaultLimit,
 				maxLimit);
 

@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -170,7 +171,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
 		qp.setIncludeSysAttrs(true);
-		QueryResult queryResult = historyDAO.query(qp);
+		QueryResult queryResult = historyDAO.query(qp).await().atMost(Duration.ofMillis(500));
 		List<String> entityList = queryResult.getActualDataString();
 		if (entityList.size() == 0) {
 			throw new ResponseException(ErrorType.NotFound, "Entity not found");

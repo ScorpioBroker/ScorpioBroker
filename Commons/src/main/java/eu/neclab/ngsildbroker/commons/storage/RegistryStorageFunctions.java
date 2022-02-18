@@ -128,12 +128,8 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 		if (qp.getGeorel() != null) {
 			GeoqueryRel gqr = qp.getGeorel();
 			logger.debug("Georel value " + gqr.getGeorelOp());
-			try {
-				sqlWhere = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
-						qp.getGeoproperty());
-			} catch (ResponseException e) {
-				e.printStackTrace();
-			}
+			sqlWhere = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
+					qp.getGeoproperty());
 			fullSqlWhere.append(sqlWhere + " AND ");
 		}
 		return fullSqlWhere.toString();
@@ -265,13 +261,7 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 
 	@Override
 	public String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
-			String geoproperty) throws ResponseException {
-		if (georel.getGeorelOp().isEmpty() || geometry == null || coordinates == null || geometry.isEmpty()
-				|| coordinates.isEmpty()) {
-			logger.error("georel, geometry and coordinates are empty or invalid!");
-			throw new ResponseException(ErrorType.BadRequestData,
-					"georel, geometry and coordinates are empty or invalid!");
-		}
+			String geoproperty) {
 
 		StringBuilder sqlWhere = new StringBuilder(50);
 
@@ -297,17 +287,15 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 					+ referenceValue + ") ");
 			break;
 		case NGSIConstants.GEO_REL_NEAR:
-			if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
-				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
-					sqlWhere.append("NOT " + DBConstants.POSTGIS_WITHIN + "( " + dbColumn + ", ST_Buffer("
-							+ referenceValue + "::geography, " + georel.getDistanceValue() + ")::geometry ) ");
-				else
-					sqlWhere.append(DBConstants.POSTGIS_INTERSECTS + "( " + dbColumn + ", ST_Buffer(" + referenceValue
-							+ "::geography, " + georel.getDistanceValue() + ")::geometry ) ");
+
+			if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
+				sqlWhere.append("NOT " + DBConstants.POSTGIS_WITHIN + "( " + dbColumn + ", ST_Buffer(" + referenceValue
+						+ "::geography, " + georel.getDistanceValue() + ")::geometry ) ");
 			} else {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"GeoQuery: Type and distance are required for near relation");
+				sqlWhere.append(DBConstants.POSTGIS_INTERSECTS + "( " + dbColumn + ", ST_Buffer(" + referenceValue
+						+ "::geography, " + georel.getDistanceValue() + ")::geometry ) ");
 			}
+
 			break;
 		case NGSIConstants.GEO_REL_OVERLAPS:
 			sqlWhere.append("(");
@@ -320,27 +308,28 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 			sqlWhere.append("NOT " + DBConstants.POSTGIS_WITHIN + "( " + dbColumn + ", " + referenceValue + ") ");
 			break;
 		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
+			break;
 		}
 		return sqlWhere.toString();
 	}
 
 	@Override
-	public String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+	public String translateNgsildQueryToCountResult(QueryParams qp) {
 		String fullSqlWhereProperty = commonTranslateSql(qp);
 		String tableName = DBConstants.DBTABLE_CSOURCE + " c ";
-		String sqlQuery = "SELECT Count(*) FROM " + tableName + " ";
+		String sqlQuery = "SELECT Count(*) FROM " + tableName + " INNER JOIN " + DBConstants.DBTABLE_CSOURCE_INFO
+				+ " ci ON (ci.csource_id = c.id) ";
 		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
+			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " 1=1 ";
 		}
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();
 
 		if (limit > 0) {
-			sqlQuery += "LIMIT " + limit + " ";
+			sqlQuery += "AND LIMIT " + limit + " ";
 		}
 		if (offSet > 0) {
-			sqlQuery += "OFFSET " + offSet + " ";
+			sqlQuery += "AND OFFSET " + offSet + " ";
 		}
 		// order by ?
 		return sqlQuery;

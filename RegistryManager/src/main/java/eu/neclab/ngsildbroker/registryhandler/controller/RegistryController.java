@@ -21,6 +21,7 @@ import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -50,7 +51,7 @@ public class RegistryController {
 	}
 
 	@GET
-	public RestResponse<Object> discoverCSource(HttpServerRequest request) {
+	public Uni<RestResponse<Object>> discoverCSource(HttpServerRequest request) {
 		return QueryControllerFunctions.queryForEntries(csourceService, request, false, defaultLimit, maxLimit, false);
 	}
 

@@ -97,7 +97,7 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		ArrayList<String> result = new ArrayList<String>();
 		for (QueryParams qp : qps) {
 			qp.setTenant(tenant);
-			QueryResult qr = query(qp);
+			QueryResult qr = query(qp).await().atMost(Duration.ofMillis(500));
 			List<String> resultString = qr.getActualDataString();
 			if (resultString != null) {
 				result.addAll(resultString);

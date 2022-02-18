@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.groups.UniAndGroup2;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
@@ -39,8 +40,6 @@ public abstract class StorageDAO {
 	protected abstract StorageFunctionsInterface getStorageFunctions();
 
 	StorageFunctionsInterface storageFunctions;
-
-
 
 	@Inject
 	protected ClientManager clientManager;
@@ -119,47 +118,57 @@ public abstract class StorageDAO {
 		return true;
 	}
 
-	public QueryResult query(QueryParams qp) throws ResponseException {
+	public Uni<QueryResult> query(QueryParams qp) {
 		PgPool client = clientManager.getClient(qp.getTenant(), false);
 		if (client == null) {
-			throw new ResponseException(ErrorType.TenantNotFound, qp.getTenant() + " tenant was not found");
+			return Uni.createFrom()
+					.failure(new ResponseException(ErrorType.TenantNotFound, qp.getTenant() + " tenant was not found"));
 		}
-		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 
 		if (qp.getCheck() != null) {
 			String sqlQuery = storageFunctions.typesAndAttributeQuery(qp);
 			if (sqlQuery != null && !sqlQuery.isEmpty()) {
-				List<String> list = Lists.newArrayList();
-				client.query(sqlQuery).executeAndAwait().forEach(t -> {
-					list.add(((JsonObject) t.getJson(0)).encode());
+				return client.query(sqlQuery).execute().onItem().transform(rows -> {
+					QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+					List<String> list = Lists.newArrayList();
+					rows.forEach(t -> {
+						list.add(((JsonObject) t.getJson(0)).encode());
+					});
+					return queryResult;
 				});
-				queryResult.setDataString(list);
-				queryResult.setActualDataString(list);
 			}
-			return queryResult;
 		}
-		if (qp.getCountResult()) {
+		return client.withTransaction(conn -> {
+			Uni<RowSet<Row>> count = Uni.createFrom().nullItem();
+			Uni<RowSet<Row>> entries = Uni.createFrom().nullItem();
+			if (qp.getCountResult()) {
+				String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
+				count = conn.preparedQuery(sqlQueryCount).execute();
+			}
+			if (qp.getLimit() != 0 || !qp.getCountResult()) {
+				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
+				entries = conn.preparedQuery(sqlQuery).execute();
+			}
 
-			String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
-			System.err.println("2");
-			System.err.println(sqlQueryCount);
-			Integer count = client.query(sqlQueryCount).executeAndAwait().iterator().next().getInteger(0);
-			queryResult.setCount(count);
-		}
-		if (qp.getLimit() == 0 && qp.getCountResult()) {
-			return queryResult;
-		}
+			return Uni.combine().all().unis(count, entries).combinedWith((c, e) -> {
+				QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+				if (c != null) {
+					queryResult.setCount(c.iterator().next().getInteger(0));
+				}
+				if (e != null) {
+					List<String> list = Lists.newArrayList();
+					e.forEach(t -> {
+						list.add(((JsonObject) t.getJson(0)).encode());
+					});
+					queryResult.setDataString(list);
+					queryResult.setActualDataString(list);
+				}
 
-		String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
-		List<String> list = Lists.newArrayList();
-		System.err.println("3");
-		System.err.println(sqlQuery);
-		client.query(sqlQuery).executeAndAwait().forEach(t -> {
-			list.add(((JsonObject) t.getJson(0)).encode());
+				return queryResult;
+			});
+
 		});
-		queryResult.setDataString(list);
-		queryResult.setActualDataString(list);
-		return queryResult;
+
 	}
 
 	public void storeTemporalEntity(HistoryEntityRequest request) throws SQLException {

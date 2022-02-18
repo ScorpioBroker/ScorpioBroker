@@ -36,7 +36,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 	}
 
 	@Override
-	public String translateNgsildQueryToSql(QueryParams qp) throws ResponseException {
+	public String translateNgsildQueryToSql(QueryParams qp) {
 
 		String fullSqlWhereProperty = commonTranslateSql(qp);
 		int limit = qp.getLimit();
@@ -61,7 +61,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 	}
 
 	protected String translateNgsildTimequeryToSql(String timerel, String time, String timeproperty, String endTime,
-			String dbPrefix) throws ResponseException {
+			String dbPrefix) {
 		StringBuilder sqlWhere = new StringBuilder(50);
 
 		String sqlTestStatic = dbPrefix + "static = true AND ";
@@ -89,14 +89,14 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 			sqlWhere.append(dbColumn + " BETWEEN '" + time + "'::timestamp AND '" + endTime + "'::timestamp");
 			break;
 		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);
+			break;
 		}
 		sqlWhere.append(")");
 		return sqlWhere.toString();
 	}
 
 	@Override
-	public String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+	public String translateNgsildQueryToCountResult(QueryParams qp) {
 
 		String fullSqlWhereProperty = commonTranslateSql(qp);
 		String sqlQuery = "SELECT Count(*) FROM ";
@@ -106,7 +106,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		return sqlQuery;
 	}
 
-	protected String commonTranslateSql(QueryParams qp) throws ResponseException {
+	protected String commonTranslateSql(QueryParams qp) {
 		StringBuilder fullSqlWhere = new StringBuilder(70);
 		String sqlWhereGeoquery = "";
 		String sqlWhere = "";
@@ -247,10 +247,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_CREATED_AT
 							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE
 							+ "')) from jsonb_array_elements(attributedata) as x(t))";
-				} else {
-					throw new ResponseException(ErrorType.BadRequestData, "Invalid timeproperty");
-
-				}
+				} 
 			}
 		} else {
 			sqlQuery += "attributedata";
@@ -273,7 +270,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 
 	@Override
 	public String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
-			String geoproperty) throws ResponseException {
+			String geoproperty) {
 		StringBuilder sqlWhere = new StringBuilder(50);
 
 		String georelOp = georel.getGeorelOp();
@@ -285,15 +282,11 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 
 		switch (georelOp) {
 		case NGSIConstants.GEO_REL_NEAR:
-			if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
-				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
-					sqlWhere.append("NOT ");
-				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
-						+ "::geography, " + georel.getDistanceValue() + ", false) ");
-			} else {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"GeoQuery: Type and distance are required for near relation");
+			if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
+				sqlWhere.append("NOT ");
 			}
+			sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue + "::geography, "
+					+ georel.getDistanceValue() + ", false) ");
 			break;
 		case NGSIConstants.GEO_REL_WITHIN:
 		case NGSIConstants.GEO_REL_CONTAINS:
@@ -304,7 +297,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 			sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + ", " + referenceValue + ") ");
 			break;
 		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
+			break;
 		}
 		return sqlWhere.toString();
 	}

@@ -17,6 +17,7 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 @Path("/ngsi-ld/v1")
@@ -49,7 +50,7 @@ public class QueryController {
 	 */
 	@Path("/entities/{entityId}")
 	@GET
-	public RestResponse<Object> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") List<String> attrs,
+	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") List<String> attrs,
 			@QueryParam(value = "options") List<String> options, String entityId) throws ResponseException {
 		return QueryControllerFunctions.getEntity(queryService, request, attrs, options, entityId, false, defaultLimit,
 				maxLimit);
@@ -65,19 +66,19 @@ public class QueryController {
 	 */
 	@Path("/entities")
 	@GET
-	public RestResponse<Object> queryForEntities(HttpServerRequest request) {
+	public Uni<RestResponse<Object>> queryForEntities(HttpServerRequest request) {
 		return QueryControllerFunctions.queryForEntries(queryService, request, false, defaultLimit, maxLimit, true);
 	}
 
 	@Path("/types")
 	@GET
-	public RestResponse<Object> getAllTypes(HttpServerRequest request, @QueryParam(value = "details") boolean details) {
+	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request, @QueryParam(value = "details") boolean details) {
 		return QueryControllerFunctions.getAllTypes(queryService, request, details, false, defaultLimit, maxLimit);
 	}
 
 	@Path("/types/{entityType}")
 	@GET
-	public RestResponse<Object> getType(HttpServerRequest request, String entityType,
+	public Uni<RestResponse<Object>> getType(HttpServerRequest request, String entityType,
 			@QueryParam(value = "details") boolean details) {
 		return QueryControllerFunctions.getType(queryService, request, entityType, details, false, defaultLimit,
 				maxLimit);
@@ -85,14 +86,14 @@ public class QueryController {
 
 	@Path("/attributes")
 	@GET
-	public RestResponse<Object> getAllAttributes(HttpServerRequest request,
+	public Uni<RestResponse<Object>> getAllAttributes(HttpServerRequest request,
 			@QueryParam(value = "details") boolean details) {
 		return QueryControllerFunctions.getAllAttributes(queryService, request, details, false, defaultLimit, maxLimit);
 	}
 
 	@Path("/attributes/{attribute}")
 	@GET
-	public RestResponse<Object> getAttribute(HttpServerRequest request, String attribute,
+	public Uni<RestResponse<Object>> getAttribute(HttpServerRequest request, String attribute,
 			@QueryParam(value = "details") boolean details) {
 		return QueryControllerFunctions.getAttribute(queryService, request, attribute, details, false, defaultLimit,
 				maxLimit);

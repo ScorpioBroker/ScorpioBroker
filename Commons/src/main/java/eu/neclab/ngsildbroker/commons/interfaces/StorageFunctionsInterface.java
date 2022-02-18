@@ -6,13 +6,13 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public interface StorageFunctionsInterface {
 
-	String translateNgsildQueryToSql(QueryParams qp) throws ResponseException;
+	String translateNgsildQueryToSql(QueryParams qp);
 
-	String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException;
+	String translateNgsildQueryToCountResult(QueryParams qp);
 
 	String typesAndAttributeQuery(QueryParams qp);
 
 	String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
-			String geoproperty) throws ResponseException;
+			String geoproperty);
 
 }

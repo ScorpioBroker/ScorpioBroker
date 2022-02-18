@@ -6,6 +6,8 @@ import org.eclipse.microprofile.reactive.messaging.*;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import java.util.stream.Stream;
 
 @Singleton

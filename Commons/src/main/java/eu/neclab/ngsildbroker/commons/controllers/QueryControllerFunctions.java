@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.commons.controllers;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +26,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 
@@ -43,24 +46,27 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 * @throws ResponseException
 	 */
 
-	public static RestResponse<Object> getEntity(EntryQueryService queryService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> getEntity(EntryQueryService queryService, HttpServerRequest request,
 			List<String> attrs, List<String> options, String entityId, boolean temporal, int defaultLimit,
 			int maxLimit) {
 
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (ResponseException exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
 		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
 		MultiMap paramMap = request.params();
 		paramMap.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
-		RestResponse<Object> result = getQueryData(queryService, request, originalQuery, paramMap, false, false,
-				temporal, defaultLimit, maxLimit, null);
-		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
-			return HttpUtils.NOT_FOUND_REPLY;
-		}
-		return result;
+		return getQueryData(queryService, request, originalQuery, paramMap, false, false, temporal, defaultLimit,
+				maxLimit, null).onItem().transform(t -> {
+					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
+						return HttpUtils.NOT_FOUND_REPLY;
+					} else {
+						return t;
+					}
+				});
+
 	}
 
 	/**
@@ -71,103 +77,107 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 * @param type
 	 * @return ResponseEntity object
 	 */
-	public static RestResponse<Object> queryForEntries(EntryQueryService queryService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> queryForEntries(EntryQueryService queryService, HttpServerRequest request,
 			boolean temporal, int defaultLimit, int maxLimit, boolean typeRequired) {
 		return getQueryData(queryService, request, request.query(), request.params(), typeRequired, true, temporal,
 				defaultLimit, maxLimit, null);
 	}
 
-	public static RestResponse<Object> getAllTypes(EntryQueryService queryService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> getAllTypes(EntryQueryService queryService, HttpServerRequest request,
 			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "NonDeatilsType";
 		if (details == true) {
 			check = "deatilsType";
 		}
-		RestResponse<Object> result = getQueryData(queryService, request, "", request.params(), false, false, false,
-				defaultLimit, maxLimit, check);
-		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
-			return HttpUtils.NOT_FOUND_REPLY;
-		}
-		return result;
+		return getQueryData(queryService, request, "", request.params(), false, false, false, defaultLimit, maxLimit,
+				check).onItem().transform(t -> {
+					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
+						return HttpUtils.NOT_FOUND_REPLY;
+					} else {
+						return t;
+					}
+				});
 	}
 
-	public static RestResponse<Object> getType(EntryQueryService queryService, HttpServerRequest request, String type,
-			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
+	public static Uni<RestResponse<Object>> getType(EntryQueryService queryService, HttpServerRequest request,
+			String type, boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "type";
 		MultiMap params = request.params();
 		params.add(NGSIConstants.QUERY_PARAMETER_ATTRS, type);
-		RestResponse<Object> result = getQueryData(queryService, request, "", params, false, false, false, defaultLimit,
-				maxLimit, check);
-		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
-			return HttpUtils.NOT_FOUND_REPLY;
-		}
-		return result;
+		return getQueryData(queryService, request, "", params, false, false, false, defaultLimit, maxLimit, check)
+				.onItem().transform(t -> {
+					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
+						return HttpUtils.NOT_FOUND_REPLY;
+					} else {
+						return t;
+					}
+				});
 	}
 
-	public static RestResponse<Object> getAllAttributes(EntryQueryService queryService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> getAllAttributes(EntryQueryService queryService, HttpServerRequest request,
 			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 
 		String check = "NonDeatilsAttributes";
 		if (details == true) {
 			check = "deatilsAttributes";
 		}
-		RestResponse<Object> result = getQueryData(queryService, request, "", request.params(), false, false, false,
-				defaultLimit, maxLimit, check);
-		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
-			return HttpUtils.NOT_FOUND_REPLY;
-		}
-		return result;
+		return getQueryData(queryService, request, "", request.params(), false, false, false, defaultLimit, maxLimit,
+				check).onItem().transform(t -> {
+					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
+						return HttpUtils.NOT_FOUND_REPLY;
+					} else {
+						return t;
+					}
+				});
 	}
 
-	public static RestResponse<Object> getAttribute(EntryQueryService queryService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> getAttribute(EntryQueryService queryService, HttpServerRequest request,
 			String attribute, boolean details, boolean temporal, int defaultLimit, int maxLimit) {
 		String check = "Attribute";
 		MultiMap params = request.params();
 		params.add(NGSIConstants.QUERY_PARAMETER_ATTRS, attribute);
-		RestResponse<Object> result = getQueryData(queryService, request, "", params, false, false, false, defaultLimit,
-				maxLimit, check);
-		if (result.getEntity().equals(emptyResult1) || result.getEntity().equals(emptyResult2)) {
-			return HttpUtils.NOT_FOUND_REPLY;
-		}
-		return result;
+		return getQueryData(queryService, request, "", params, false, false, false, defaultLimit, maxLimit, check)
+				.onItem().transform(t -> {
+					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
+						return HttpUtils.NOT_FOUND_REPLY;
+					} else {
+						return t;
+					}
+				});
 	}
 
-	private static RestResponse<Object> getQueryData(EntryQueryService queryService, HttpServerRequest request,
+	private static Uni<RestResponse<Object>> getQueryData(EntryQueryService queryService, HttpServerRequest request,
 			String originalQueryParams, MultiMap paramMap, boolean typeRequired, boolean forceArray, boolean temporal,
 			int defaultLimit, int maxLimit, String check) {
-		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
-		try {
-			logger.trace("getAllEntity() ::");
-			List<Object> linkHeaders = HttpUtils.getAtContext(request);
-			Context context = JsonLdProcessor.getCoreContextClone();
-			context = context.parse(linkHeaders, true);
-			if (originalQueryParams != null) {
-				originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
-				QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(paramMap, context, temporal, typeRequired,
-						defaultLimit, maxLimit);
-				if (qp == null) // invalid query
-					throw new ResponseException(ErrorType.InvalidRequest, "Empty query parameters");
-				qp.setTenant(tenantid);
-				qp.setCheck(check);
-				ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-				QueryResult qResult;
-				try {
-					qResult = queryService.getData(qp, originalQueryParams, linkHeaders, headers, false);
-				} catch (Exception e) {
-					// logger.error(e.getMessage());
-					logger.error("Tenant for the request not found", e);
-					return HttpUtils.NOT_FOUND_REPLY;
-				}
-				return HttpUtils.generateReply(request, qResult, forceArray, qp.getCountResult(), context, linkHeaders,
-						AppConstants.QUERY_ENDPOINT);
-
-			} else {
-				return HttpUtils
-						.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "invalid query"));
-			}
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+		logger.trace("getAllEntity() ::");
+		if (originalQueryParams == null || originalQueryParams.isEmpty()) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.InvalidRequest, "Empty query parameters")));
 		}
+		String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
+		List<Object> linkHeaders = HttpUtils.getAtContext(request);
+		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+		Context context = JsonLdProcessor.getCoreContextClone().parse(linkHeaders, true);
+		QueryParams qp;
+		try {
+			originalQueryParams = URLDecoder.decode(originalQueryParams, NGSIConstants.ENCODE_FORMAT);
+			qp = ParamsResolver.getQueryParamsFromUriQuery(paramMap, context, temporal, typeRequired, defaultLimit,
+					maxLimit);
+			qp.setTenant(tenantid);
+			qp.setCheck(check);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return queryService.getData(qp, originalQueryParams, linkHeaders, headers, false).onItem().transform(t -> {
+			try {
+				return HttpUtils.generateReply(request, t, forceArray, qp.getCountResult(), context, linkHeaders,
+						AppConstants.QUERY_ENDPOINT);
+			} catch (ResponseException e) {
+				return HttpUtils.handleControllerExceptions(e);
+			}
+		}).onFailure().recoverWithItem(t -> {
+			return HttpUtils.handleControllerExceptions(t);
+		});
 	}
 
 	@SuppressWarnings({ "unchecked" })
@@ -197,8 +207,9 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 					context);
 
 			return HttpUtils.generateReply(request,
-					queryService.getData(params, payload, linkHeaders, HttpUtils.getHeaders(request), true), true,
-					count, context, linkHeaders, AppConstants.QUERY_ENDPOINT);
+					queryService.getData(params, payload, linkHeaders, HttpUtils.getHeaders(request), true).await()
+							.atMost(Duration.ofMillis(500)),
+					true, count, context, linkHeaders, AppConstants.QUERY_ENDPOINT);
 
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);

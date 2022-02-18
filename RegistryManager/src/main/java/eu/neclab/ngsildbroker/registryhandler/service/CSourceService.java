@@ -53,6 +53,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.RegistryCSourceDAO;
+import io.smallrye.mutiny.Uni;
 
 @Singleton
 public class CSourceService extends BaseQueryService implements EntryCRUDService {
@@ -293,7 +294,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 	}
 
-	public QueryResult query(QueryParams qp) throws ResponseException {
+	public Uni<QueryResult> query(QueryParams qp) {
 		return csourceInfoDAO.query(qp);
 	}
 
