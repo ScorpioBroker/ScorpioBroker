@@ -1,132 +1,156 @@
-/*
- * package eu.neclab.ngsildbroker.entityhandler.controller;
- * 
- * import static org.mockito.ArgumentMatchers.any; import static
- * org.mockito.Mockito.times; import static org.mockito.Mockito.verify; import
- * static org.mockito.Mockito.when; import static
- * org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
- * import static
- * org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
- * import static
- * org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
- * import static
- * org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
- * import static
- * org.springframework.test.web.servlet.result.MockMvcResultMatchers.
- * redirectedUrl; import static
- * org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
- * 
- * import org.junit.After; import org.junit.Assert; import org.junit.Before;
- * import org.junit.Test; import org.junit.runner.RunWith; import
- * org.mockito.Mockito; import
- * org.springframework.beans.factory.annotation.Autowired; import
- * org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
- * import org.springframework.boot.test.context.SpringBootTest; import
- * org.springframework.boot.test.mock.mockito.MockBean; import
- * org.springframework.test.context.junit4.SpringRunner; import
- * org.springframework.test.web.servlet.MockMvc;
- * 
- * import eu.neclab.ngsildbroker.commons.constants.AppConstants; import
- * eu.neclab.ngsildbroker.commons.datatypes.AppendResult; import
- * eu.neclab.ngsildbroker.commons.datatypes.UpdateResult; import
- * eu.neclab.ngsildbroker.commons.enums.ErrorType; import
- * eu.neclab.ngsildbroker.commons.exceptions.ResponseException; import
- * eu.neclab.ngsildbroker.entityhandler.services.EntityInfoDAO; import
- * eu.neclab.ngsildbroker.entityhandler.services.EntityService;
- * 
- * 
- * @SpringBootTest(properties=
- * {"spring.main.allow-bean-definition-overriding=true"})
- * 
- * @RunWith(SpringRunner.class)
- * 
- * @AutoConfigureMockMvc//(secure = false) public class EntityControllerTest {
- * 
- * @Autowired private MockMvc mockMvc;
- * 
- * @MockBean private EntityService entityService;
- * 
- * @MockBean private EntityInfoDAO entityInfoDAO;
- * 
- * private String appendPayload; private String updatePayload; private String
- * entityPayload; private String partialUpdatePayload; private String
- * partialUpdateDefaultCasePayload;
- * 
- * @Before public void setup() throws Exception { //@formatter:off
- * 
- * appendPayload="{\r\n" + "	\"brandName1\": {\r\n" +
- * "		\"type\": \"Property\",\r\n" + "		\"value\": \"BMW\"\r\n" +
- * "	}\r\n" + "}";
- * 
- * updatePayload="{\r\n" + "	\"brandName1\": {\r\n" +
- * "		\"type\": \"Property\",\r\n" + "		\"value\": \"Audi\"\r\n" +
- * "	}\r\n" + "}"; partialUpdatePayload= "{\r\n" + "		\"value\": 20,\r\n"
- * + "		\"datasetId\": \"urn:ngsi-ld:Property:speedometerA4567-speed\"\r\n"
- * + "}";
- * 
- * partialUpdateDefaultCasePayload= "{\r\n" + "		\"value\": 11\r\n" + "}";
- * 
- * entityPayload= "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
- * "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
- * "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
- * + "      },\r\n" + "   \"speed\":[{  \r\n" +
- * "         \"type\":\"Property\",\r\n" + "         \"value\":55,\r\n" +
- * "         \"datasetId\":\"urn:ngsi-ld:Property:speedometerA4567-speed\",\r\n"
- * + "   \"source\":\r\n" + "      {  \r\n" +
- * "         \"type\":\"Property\",\r\n" +
- * "         \"value\":\"Speedometer\"\r\n" + "      }\r\n" + "      },\r\n" +
- * "      {  \r\n" + "         \"type\":\"Property\",\r\n" +
- * "         \"value\":60,\r\n" + "   \"source\":\r\n" + "      {  \r\n" +
- * "         \"type\":\"Property\",\r\n" + "         \"value\":\"GPS\"\r\n" +
- * "      }\r\n" + "      },\r\n" + "      {  \r\n" +
- * "         \"type\":\"Property\",\r\n" + "         \"value\":52.5,\r\n" +
- * "   \"source\":\r\n" + "      {  \r\n" +
- * "         \"type\":\"Property\",\r\n" + "         \"value\":\"GPS_NEW\"\r\n"
- * + "      }\r\n" + "      }],\r\n" +
- * "      \"createdAt\":\"2017-07-29T12:00:04Z\",\r\n" +
- * "      \"modifiedAt\":\"2017-07-29T12:00:04Z\",\r\n" + "   \"location\":\r\n"
- * + "      {  \r\n" + "      \"type\":\"GeoProperty\",\r\n" +
- * "	\"value\": \"{ \\\"type\\\": \\\"Point\\\", \\\"coordinates\\\": [ -8.5, 41.2]}\""
- * + "      }\r\n" + "}";
- * 
- * //@formatter:on }
- * 
- * 
- * @After public void tearDown() { appendPayload=null; updatePayload=null;
- * entityPayload=null; partialUpdatePayload=null;
- * partialUpdateDefaultCasePayload=null; }
- * 
- *//**
+
+  package eu.neclab.ngsildbroker.entityhandler.controller;
+  
+	import static org.junit.jupiter.api.Assertions.assertEquals;
+	import static org.mockito.ArgumentMatchers.any;
+	import static org.mockito.Mockito.times;
+	import static org.mockito.Mockito.verify;
+	import static org.mockito.Mockito.when;
+	import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+	import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+	import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+	import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+	import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+	import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+	import javax.servlet.http.HttpServletRequest;
+	import org.junit.After;
+	import org.junit.Assert;
+	import org.junit.Before;
+	import org.junit.Test;
+	import org.junit.runner.RunWith;
+	import org.mockito.Mock;
+	import org.mockito.Mockito;
+	import org.springframework.beans.factory.annotation.Autowired;
+	import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+	import org.springframework.boot.test.context.SpringBootTest;
+	import org.springframework.boot.test.mock.mockito.MockBean;
+	import org.springframework.http.HttpStatus;
+	import org.springframework.http.ResponseEntity;
+	import org.springframework.mock.web.MockHttpServletRequest;
+	import org.springframework.test.context.junit4.SpringRunner;
+	import org.springframework.test.web.servlet.MockMvc;
+	import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+	import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+	import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+	import eu.neclab.ngsildbroker.entityhandler.services.EntityInfoDAO;
+	import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
+	import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
+	import org.slf4j.Logger;
+  
+  @SpringBootTest(properties=
+  {"spring.main.allow-bean-definition-overriding=true"})
+  
+  @RunWith(SpringRunner.class)
+  
+  @AutoConfigureMockMvc//(secure = false) 
+  public class EntityControllerTest {
+  
+  @Autowired private MockMvc mockMvc;
+  
+  @MockBean private EntityService entityService;
+  
+  @MockBean private EntityInfoDAO entityInfoDAO;
+  
+  private String appendPayload; 
+  private String updatePayload; 
+  private String entityPayload; 
+  private String partialUpdatePayload; 
+  private String partialUpdateDefaultCasePayload;
+  
+  @Mock
+  private Logger loggerMock;
+  
+  static HttpServletRequest request;
+  
+  
+  @Before public void setup() throws Exception { //@formatter:off
+  appendPayload="{\r\n" + "	\"brandName1\": {\r\n" +
+  "		\"type\": \"Property\",\r\n" + "		\"value\": \"BMW\"\r\n" +
+  "	}\r\n" + "}";
+  
+  updatePayload="{\r\n" + "	\"brandName1\": {\r\n" +
+  "		\"type\": \"Property\",\r\n" + "		\"value\": \"Audi\"\r\n" +
+  "	}\r\n" + "}"; partialUpdatePayload= "{\r\n" + "		\"value\": 20,\r\n"
+  + "		\"datasetId\": \"urn:ngsi-ld:Property:speedometerA4567-speed\"\r\n"
+  + "}";
+  
+  partialUpdateDefaultCasePayload= "{\r\n" + "		\"value\": 11\r\n" + "}";
+  
+  entityPayload= "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
+  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
+  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
+  + "      },\r\n" + "   \"speed\":[{  \r\n" +
+  "         \"type\":\"Property\",\r\n" + "         \"value\":55,\r\n" +
+  "         \"datasetId\":\"urn:ngsi-ld:Property:speedometerA4567-speed\",\r\n"
+  + "   \"source\":\r\n" + "      {  \r\n" +
+  "         \"type\":\"Property\",\r\n" +
+  "         \"value\":\"Speedometer\"\r\n" + "      }\r\n" + "      },\r\n" +
+  "      {  \r\n" + "         \"type\":\"Property\",\r\n" +
+  "         \"value\":60,\r\n" + "   \"source\":\r\n" + "      {  \r\n" +
+  "         \"type\":\"Property\",\r\n" + "         \"value\":\"GPS\"\r\n" +
+  "      }\r\n" + "      },\r\n" + "      {  \r\n" +
+  "         \"type\":\"Property\",\r\n" + "         \"value\":52.5,\r\n" +
+  "   \"source\":\r\n" + "      {  \r\n" +
+  "         \"type\":\"Property\",\r\n" + "         \"value\":\"GPS_NEW\"\r\n"
+  + "      }\r\n" + "      }],\r\n" +
+  "   \"location\":\r\n"
+  + "      {  \r\n" + "      \"type\":\"GeoProperty\",\r\n" +
+  "	\"value\": \"{ \\\"type\\\": \\\"Point\\\", \\\"coordinates\\\": [ -8.5, 41.2]}\""
+  + "      }\r\n" + "}";
+  
+   //@formatter:on 
+  }
+  
+  
+  @After 
+  public void tearDown() 
+  { 
+	  appendPayload=null; 
+	  updatePayload=null;
+      entityPayload=null; 
+      partialUpdatePayload=null;
+      partialUpdateDefaultCasePayload=null; 
+  }
+  
+ /**
 	 * this method is use for create the entity
 	 */
-/*
- * @Test public void createEntityTest() { try {
- * when(entityService.createMessage(any(),
- * any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
- * mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.
- * NGB_APPLICATION_JSON)
- * .accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload)).
- * andExpect(status().isCreated())
- * .andExpect(redirectedUrl("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101"));
- * verify(entityService, times(1)).createMessage(any(), any()); } catch
- * (Exception e) { Assert.fail(); e.printStackTrace(); } }
- * 
- *//**
+
+  @Test 
+	public void createEntityTest() {
+
+		try {
+			when(entityService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
+			mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload)).andExpect(status().isCreated())
+					.andExpect(redirectedUrl("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101"));
+			verify(entityService, times(1)).createEntry(any(), any());
+
+		} catch (Exception e) {
+			Assert.fail();
+			e.printStackTrace();
+		}
+	}
+ 
+  /**
 	 * this method is use for the entity if entity already exist
 	 */
-/*
- * @Test public void createEntityAlreadyExistTest() { try {
- * when(entityService.createMessage(any(), any())).thenThrow(new
- * ResponseException(ErrorType.AlreadyExists));
- * mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.
- * NGB_APPLICATION_JSON)
- * .accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
- * .andExpect(status().isConflict()).andExpect(jsonPath("$.title").
- * value("Already exists.")); verify(entityService,
- * times(1)).createMessage(any(), any()); } catch (Exception e) { Assert.fail();
- * } }
- * 
- *//**
+
+  @Test 
+	public void createEntityAlreadyExistTest() {
+		try {
+			
+			when(entityService.createEntry(any(), any())).thenThrow(new ResponseException(ErrorType.AlreadyExists,"urn:ngsi-ld:Vehicle:A101 already exists"));
+			mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
+					.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
+					.andExpect(status().isConflict()).andExpect(jsonPath("$.title").value("Already exists."));
+			verify(entityService, times(1)).createEntry(any(), any());
+		} catch (Exception e) {
+			Assert.fail();
+		}
+	}
+  
+ /**
 	 * this method is validate for the bad request if create the entity
 	 */
 /*
@@ -654,3 +678,4 @@
 		 * times(1)).deleteAttribute(any(), any(), any(), any(), any()); } catch
 		 * (Exception e) { Assert.fail(); } } }
 		 */
+ }
