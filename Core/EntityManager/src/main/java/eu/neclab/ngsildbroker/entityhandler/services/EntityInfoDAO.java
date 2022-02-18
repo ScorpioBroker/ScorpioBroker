@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.util.List;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Repository;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -32,6 +33,22 @@ public class EntityInfoDAO extends StorageDAO {
 				.queryForList("SELECT data FROM entity WHERE id='" + entityId + "'", String.class);
 		return tempList.get(0);
 	}
+	
+
+	public String getEndpoint(String entityId, String tenantId) throws ResponseException {
+		String endpoint=null;
+		try {
+		endpoint = getJDBCTemplate(getTenant(tenantId))
+				.queryForObject("SELECT endpoint FROM csource cs, csourceinformation csi WHERE cs.id=csi.csource_id AND csi.entity_id='" + entityId + "'", String.class);
+		
+		}
+		catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+		return endpoint;
+	}
+	
+	
 
 	@Override
 	protected StorageFunctionsInterface getStorageFunctions() {

@@ -3,8 +3,10 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import java.io.IOException;
 import java.sql.SQLTransientConnectionException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -16,13 +18,21 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -30,6 +40,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.RemoteQueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -41,10 +53,12 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 @EnableKafka
 public class EntityService implements EntryCRUDService {
 
+	
 	@Value("${scorpio.topics.entity}")
 	private String ENTITY_TOPIC;
 	@Value("${scorpio.directDB}")
 	boolean directDB;
+	RestTemplate restTemplate = HttpUtils.getRestTemplate();
 	public static boolean checkEntity = false;
 
 	@Autowired
@@ -257,12 +271,10 @@ public class EntityService implements EntryCRUDService {
 			Map<String, Object> expandedPayload) throws ResponseException, Exception {
 		logger.trace("partialUpdateEntity() :: started");
 		// get message channel for ENTITY_APPEND topic
+		String tenantid = HttpUtils.getInternalTenant(headers);
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
-		}
-
-		String tenantid = HttpUtils.getInternalTenant(headers);
-
+		}		
 		// get entity details
 		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantid);
 
@@ -275,6 +287,28 @@ public class EntityService implements EntryCRUDService {
 		}
 		logger.trace("partialUpdateEntity() :: completed");
 		return request.getUpdateResult();
+	}
+	
+	public void patchtoEndpoint(String entityId, String tenantid, String payload, String attrId ) throws ResponseException, Exception  {
+		String endpoint = entityInfoDAO.getEndpoint(entityId, tenantid);
+		if (endpoint != null) {
+		System.out.println( endpoint);
+		
+		HttpHeaders header = new HttpHeaders();
+		header.set(NGSIConstants.TENANT_HEADER, tenantid);
+        header.set(NGSIConstants.CONTENT_TYPE_HEADER, NGSIConstants.CONTENT_TYPE_HEADER_VALUE);
+        
+        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+        RestTemplate restTemplate = new RestTemplate(requestFactory);
+		
+			logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/"+ entityId +"attrs" + attrId);	
+			HttpEntity<String> httpEntity = new HttpEntity<>(payload, header);
+			ResponseEntity<String> response;
+			String patchuri=endpoint+"/ngsi-ld/v1/entities/"+entityId+"/attrs/"+attrId;
+			response = restTemplate.exchange(patchuri,
+					HttpMethod.PATCH, httpEntity, String.class);
+			System.out.println("Response from Iotagent :"+response.getStatusCode());
+		}
 	}
 
 	public boolean deleteAttribute(ArrayListMultimap<String, String> headers, String entityId, String attrId,

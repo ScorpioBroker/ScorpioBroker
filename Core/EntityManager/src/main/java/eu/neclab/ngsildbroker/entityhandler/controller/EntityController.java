@@ -11,7 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
@@ -29,12 +35,14 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.entityhandler.services.EntityInfoDAO;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 
 /**
@@ -52,6 +60,10 @@ public class EntityController {// implements EntityHandlerInterface {
 	EntityService entityService;
 	@Autowired
 	ObjectMapper objectMapper;
+	@Autowired
+	EntityInfoDAO entityInfoDAO;
+	//RestTemplate restTemplate = HttpUtils.getRestTemplate();
+
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
@@ -147,6 +159,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,
 					expandedAttrib, expandedPayload);
 			logger.trace("partial-update entity :: completed");
+			String tenantid = HttpUtils.getInternalTenant(HttpUtils.getHeaders(request));
+			entityService.patchtoEndpoint(entityId, tenantid, payload, attrId);
 			if (update.getNotUpdated().isEmpty()) {
 				return ResponseEntity.noContent().build();
 			} else {
