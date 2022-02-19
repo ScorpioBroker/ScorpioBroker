@@ -171,22 +171,24 @@ public abstract class StorageDAO {
 
 	}
 
-	public void storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
+	public Uni<Void> storeTemporalEntity(HistoryEntityRequest request) {
 		PgPool client = clientManager.getClient(request.getTenant(), true);
 		if (request instanceof DeleteHistoryEntityRequest) {
-			doTemporalSqlAttrInsert(client, "null", request.getId(), request.getType(),
+			return doTemporalSqlAttrInsert(client, "null", request.getId(), request.getType(),
 					((DeleteHistoryEntityRequest) request).getResolvedAttrId(), request.getCreatedAt(),
 					request.getModifiedAt(), ((DeleteHistoryEntityRequest) request).getInstanceId(), null);
 		} else {
+			List<Uni<Void>> unis = Lists.newArrayList();
 			for (HistoryAttribInstance entry : request.getAttribs()) {
-				doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(), entry.getEntityType(),
-						entry.getAttributeId(), entry.getEntityCreatedAt(), entry.getEntityModifiedAt(),
-						entry.getInstanceId(), entry.getOverwriteOp());
+				unis.add(doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(),
+						entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
+						entry.getEntityModifiedAt(), entry.getInstanceId(), entry.getOverwriteOp()));
 			}
+			return Uni.combine().all().unis(unis).discardItems();
 		}
 	}
 
-	public void storeRegistryEntry(CSourceRequest request) throws SQLException {
+	public Uni<Void> storeRegistryEntry(CSourceRequest request) {
 		PgPool client = clientManager.getClient(request.getTenant(), true);
 		String value = request.getResultCSourceRegistrationString();
 		String sql;
@@ -195,18 +197,20 @@ public abstract class StorageDAO {
 			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
 					+ ") VALUES ($1, '" + value + "'::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
 					+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
-			client.preparedQuery(sql).executeAndForget(Tuple.of(request.getId()));
+			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3).onItem()
+					.ignore().andContinueWithNull();
 		} else {
 			sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = $1";
-			client.preparedQuery(sql).executeAndForget(Tuple.of(request.getId()));
+			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3).onItem()
+					.ignore().andContinueWithNull();
 		}
 	}
 
-	private void doTemporalSqlAttrInsert(PgPool client, String value, String entityId, String entityType,
+	private Uni<Void> doTemporalSqlAttrInsert(PgPool client, String value, String entityId, String entityType,
 			String attributeId, String entityCreatedAt, String entityModifiedAt, String instanceId,
 			Boolean overwriteOp) {
 		if (!value.equals("null")) {
-			client.withTransaction(conn -> {
+			return client.withTransaction(conn -> {
 				String sql;
 				List<Uni<RowSet<Row>>> unis = Lists.newArrayList();
 				if (entityId != null && entityType != null && entityCreatedAt != null && entityModifiedAt != null) {
@@ -272,20 +276,21 @@ public abstract class StorageDAO {
 			if (entityId != null && attributeId != null && instanceId != null) {
 				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 						+ " WHERE temporalentity_id = $1 AND attributeid = $2 AND instanceid = $3";
-				client.preparedQuery(sql).executeAndForget(Tuple.of(entityId, attributeId, instanceId));
+				return client.preparedQuery(sql).execute(Tuple.of(entityId, attributeId, instanceId)).replaceWithVoid();
 			} else if (entityId != null && attributeId != null) {
 				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 						+ " WHERE temporalentity_id = $1 AND attributeid = $2";
-				client.preparedQuery(sql).executeAndForget(Tuple.of(entityId, attributeId));
+				return client.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)).replaceWithVoid();
 			} else if (entityId != null) {
 				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1";
-				client.preparedQuery(sql).executeAndForget(Tuple.of(entityId));
+				return client.preparedQuery(sql).execute(Tuple.of(entityId)).replaceWithVoid();
 			}
+			return Uni.createFrom().nullItem();
 		}
 
 	}
 
-	public void storeEntity(EntityRequest request) throws SQLTransientConnectionException {
+	public Uni<Void> storeEntity(EntityRequest request) {
 
 		String sql;
 		String key = request.getId();
@@ -301,12 +306,12 @@ public abstract class StorageDAO {
 					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
 					+ ") = (EXCLUDED." + DBConstants.DBCOLUMN_DATA + ", EXCLUDED."
 					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  EXCLUDED." + DBConstants.DBCOLUMN_KVDATA + ")";
-			client.preparedQuery(sql).executeAndForget(Tuple.of(key));
 
 		} else {
 			sql = "DELETE FROM " + DBConstants.DBTABLE_ENTITY + " WHERE id = $1";
-			client.preparedQuery(sql).executeAndForget(Tuple.of(key));
 		}
+		return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
+				.andContinueWithNull();
 
 	}
 

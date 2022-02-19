@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -39,6 +40,8 @@ import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
 public class HistoryService extends BaseQueryService implements EntryCRUDService {
@@ -50,7 +53,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	@Inject
 	@Channel(AppConstants.HISTORY_CHANNEL)
-	Emitter<BaseRequest> emitter;
+	MutinyEmitter<BaseRequest> emitter;
 
 	@ConfigProperty(name = "scorpio.directdb", defaultValue = "true")
 	boolean directDB;
@@ -72,39 +75,32 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		logger.trace("filling in-memory hashmap completed:");
 	}
 
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
-			throws ResponseException, Exception {
+	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
 		return createTemporalEntity(headers, resolved, false);
 	}
 
-	String createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			boolean fromEntity) throws ResponseException, Exception {
+	Uni<String> createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			boolean fromEntity) {
 
-		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
 		String tenantId = HttpUtils.getInternalTenant(headers);
+		String id = (String) resolved.get(NGSIConstants.JSON_LD_ID);
 		synchronized (this.entityIds) {
-			if (this.entityIds.containsEntry(tenantId, request.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
+			if (this.entityIds.containsEntry(tenantId, id)) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists, id + " already exists"));
 			}
-			this.entityIds.put(tenantId, request.getId());
 		}
-		logger.trace("creating temporal entity");
-		handleRequest(request);
-		return request.getId();
-	}
 
-	private void pushToKafka(BaseRequest request) throws ResponseException {
-		if (historyToKafkaEnabled) {
-			emitter.send(request);
-		}
-	}
-
-	private void pushToDB(HistoryEntityRequest request) throws ResponseException {
+		CreateHistoryEntityRequest request;
 		try {
-			historyDAO.storeTemporalEntity(request);
-		} catch (SQLException e) {
-			throw new ResponseException(ErrorType.InternalError, e.getLocalizedMessage());
+			request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
+		} catch (Exception e) {
+			return Uni.createFrom().failure(e);
 		}
+		this.entityIds.put(tenantId, request.getId());
+		logger.trace("creating temporal entity");
+		return handleRequest(request).onItem().transform(t -> {
+			return request.getId();
+		});
 
 	}
 
@@ -189,11 +185,18 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		throw new MethodNotFoundException();
 	}
 
-	void handleRequest(HistoryEntityRequest request) throws ResponseException {
-		if (directDB) {
-			pushToDB(request);
+	Uni<Void> handleRequest(HistoryEntityRequest request) {
+		List<Uni<Void>> unis = Lists.newArrayList();
+		unis.add(historyDAO.storeTemporalEntity(request));
+		if (historyToKafkaEnabled) {
+			unis.add(emitter.send(new BaseRequest(request)));
 		}
-		pushToKafka(request);
+		return Uni.combine().all().unis(unis).discardItems().onItem().call(t -> {
+			synchronized (this.entityIds) {
+				this.entityIds.put(request.getTenant(), request.getId());
+			}
+			return Uni.createFrom().nullItem();
+		});
 	}
 
 	@Override

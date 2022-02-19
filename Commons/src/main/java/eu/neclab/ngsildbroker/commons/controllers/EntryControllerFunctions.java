@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -29,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 public interface EntryControllerFunctions {
@@ -150,7 +153,7 @@ public interface EntryControllerFunctions {
 				continue;
 			}
 			try {
-				result.addSuccess(entityService.createEntry(headers, resolved));
+		//		result.addSuccess(entityService.createEntry(headers, resolved));
 			} catch (Exception e) {
 				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
 				if (e instanceof ResponseException) {
@@ -301,7 +304,7 @@ public interface EntryControllerFunctions {
 				continue;
 			}
 			try {
-				result.addSuccess(entityService.createEntry(headers, resolved));
+//				result.addSuccess(entityService.createEntry(headers, resolved));
 				insertedOneEntity = true;
 			} catch (Exception e) {
 				String entityId;
@@ -320,7 +323,7 @@ public interface EntryControllerFunctions {
 						if (replace) {
 							try {
 								entityService.deleteEntry(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID));
-								result.addSuccess(entityService.createEntry(headers, resolved));
+	//							result.addSuccess(entityService.createEntry(headers, resolved));
 								insertedOneEntity = true;
 							} catch (Exception e1) {
 								if (e1 instanceof ResponseException) {
@@ -423,26 +426,38 @@ public interface EntryControllerFunctions {
 		}
 	}
 
-	public static RestResponse<Object> createEntry(EntryCRUDService entityService, HttpServerRequest request,
+	@SuppressWarnings("unchecked")
+	public static Uni<RestResponse<Object>> createEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int payloadType, String baseUrl, Logger logger) {
 		String result = null;
+		logger.trace("create entity :: started");
+		List<Object> contextHeaders = HttpUtils.getAtContext(request);
+		boolean atContextAllowed;
 		try {
-			logger.trace("create entity :: started");
-			List<Object> contextHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-			if (payload == null || payload.isEmpty()) {
-				return HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload"));
-			}
-			@SuppressWarnings("unchecked")
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
-			result = entityService.createEntry(HttpUtils.getHeaders(request), resolved);
-			logger.trace("create entity :: completed");
-			return RestResponse.created(new URI(baseUrl + result));
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
+		if (payload == null || payload.isEmpty()) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload")));
+		}
+		Map<String, Object> resolved;
+		try {
+			resolved = (Map<String, Object>) JsonLdProcessor
+					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem().transform(t -> {
+			logger.trace("create entity :: completed");
+			try {
+				return RestResponse.created(new URI(baseUrl + t));
+			} catch (URISyntaxException e) {
+				return HttpUtils.handleControllerExceptions(e);
+			}
+		});
+
 	}
 
 	@SuppressWarnings("unchecked")

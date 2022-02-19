@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.io.IOException;
 import java.sql.SQLTransientConnectionException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Random;
 
@@ -31,6 +32,9 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.UniHelper;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
 public class EntityService implements EntryCRUDService {
@@ -43,7 +47,7 @@ public class EntityService implements EntryCRUDService {
 
 	@Inject
 	@Channel(AppConstants.ENTITY_CHANNEL)
-	Emitter<BaseRequest> kafkaSenderInterface;
+	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	private ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
@@ -66,26 +70,35 @@ public class EntityService implements EntryCRUDService {
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
-			throws ResponseException, Exception {
+	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
 		// get message channel for ENTITY_CREATE topic.
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
-		EntityRequest request = new CreateEntityRequest(resolved, headers);
+		EntityRequest request;
+		try {
+			request = new CreateEntityRequest(resolved, headers);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 
 		synchronized (this.entityIds) {
 			if (this.entityIds.containsEntry(tenantId, request.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists"));
 			}
-			this.entityIds.put(tenantId, request.getId());
-		}
-		pushToDB(request);
-		sendToKafka(request);
 
-		logger.debug("createMessage() :: completed");
-		return request.getId();
+		}
+
+		return Uni.combine().all()
+				.unis(entityInfoDAO.storeEntity(request), kafkaSenderInterface.send(new BaseRequest(request)))
+				.combinedWith((t, u) -> {
+					synchronized (this.entityIds) {
+						this.entityIds.put(tenantId, request.getId());
+					}
+					return request.getId();
+				});
 	}
 
 	private void sendToKafka(BaseRequest request) {
@@ -94,26 +107,14 @@ public class EntityService implements EntryCRUDService {
 
 	private void pushToDB(EntityRequest request) {
 		boolean success = false;
-		while (!success) {
-			try {
-				logger.debug("Received message: " + request.getWithSysAttrs());
-				logger.trace("Writing data...");
-				if (entityInfoDAO != null) {
-					entityInfoDAO.storeEntity(request);
-					logger.trace("Writing is complete");
-				}
-				success = true;
-			} catch (SQLTransientConnectionException e) {
-				logger.warn("SQL Exception attempting retry");
-				Random random = new Random();
-				int randomNumber = random.nextInt(4000) + 500;
-				try {
-					Thread.sleep(randomNumber);
-				} catch (InterruptedException e1) {
-					logger.error(e1.getLocalizedMessage(), e1);
-				}
-			}
+
+		logger.debug("Received message: " + request.getWithSysAttrs());
+		logger.trace("Writing data...");
+		if (entityInfoDAO != null) {
+			entityInfoDAO.storeEntity(request).await().atMost(Duration.ofMillis(500));
+			logger.trace("Writing is complete");
 		}
+		success = true;
 	}
 
 	/**

@@ -56,7 +56,7 @@ public class RegistryController {
 	}
 
 	@POST
-	public RestResponse<Object> registerCSource(HttpServerRequest request, String payload) {
+	public Uni<RestResponse<Object>> registerCSource(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createEntry(csourceService, request, payload,
 				AppConstants.CSOURCE_REG_CREATE_PAYLOAD, AppConstants.CSOURCE_URL, logger);
 	}

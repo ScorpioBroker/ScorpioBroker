@@ -56,7 +56,7 @@ public class HistoryController {
 	}
 
 	@POST
-	public RestResponse<Object> createTemporalEntity(HttpServerRequest request, String payload) {
+	public Uni<RestResponse<Object>> createTemporalEntity(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createEntry(historyService, request, payload,
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, AppConstants.HISTORY_URL, logger);
 	}

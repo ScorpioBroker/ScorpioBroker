@@ -23,7 +23,6 @@ import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +53,7 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.RegistryCSourceDAO;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
 public class CSourceService extends BaseQueryService implements EntryCRUDService {
@@ -72,7 +72,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	@Inject
 	@Channel(AppConstants.REGISTRY_CHANNEL)
-	Emitter<BaseRequest> kafkaSender;
+	MutinyEmitter<BaseRequest> kafkaSender;
 
 	@ConfigProperty(name = "scorpio.topics.registry")
 	String CSOURCE_TOPIC;
@@ -231,8 +231,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
-			throws ResponseException, Exception {
+	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
 		String id;
 		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
 		if (idObj == null) {
@@ -241,18 +240,27 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		} else {
 			id = (String) idObj;
 		}
-		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		synchronized (this.csourceIds) {
-			if (this.csourceIds.containsEntry(tenantId, request.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
+			if (this.csourceIds.containsEntry(tenantId, id)) {
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.AlreadyExists, "CSource already exists"));
 			}
-			this.csourceIds.put(tenantId, request.getId());
 		}
-		pushToDB(request);
-		sendToKafka(request);
-		return request.getId();
-
+		CSourceRequest request;
+		try {
+			request = new CreateCSourceRequest(resolved, headers, id);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
+		return Uni.combine().all()
+				.unis(csourceInfoDAO.storeRegistryEntry(request), kafkaSender.send(new BaseRequest(request)))
+				.combinedWith((t, u) -> {
+					synchronized (this.csourceIds) {
+						this.csourceIds.put(tenantId, request.getId());
+					}
+					return request.getId();
+				});
 	}
 
 	private void sendToKafka(BaseRequest request) {

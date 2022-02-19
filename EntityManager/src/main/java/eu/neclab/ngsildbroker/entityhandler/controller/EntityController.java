@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -68,7 +69,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@Path("/entities")
 	@POST
-	public RestResponse<Object> createEntity(HttpServerRequest req, String payload) {
+	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, String payload) {
 		return EntryControllerFunctions.createEntry(entityService, req, payload, AppConstants.ENTITY_CREATE_PAYLOAD,
 				AppConstants.ENTITES_URL, logger);
 	}

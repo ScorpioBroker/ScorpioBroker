@@ -2,15 +2,10 @@ package eu.neclab.ngsildbroker.commons.querybase;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import io.vertx.core.Future;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
@@ -36,13 +31,11 @@ import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.groups.UniConvert;
 import io.smallrye.mutiny.vertx.UniHelper;
-import io.vertx.codegen.annotations.Nullable;
+import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.mutiny.core.http.HttpHeaders;
@@ -127,10 +120,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 	 */
 	public Uni<QueryResult> getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders,
 			ArrayListMultimap<String, String> headers, Boolean postQuery) {
-
-		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
 		Uni<QueryResult> entryQuery = entryDAO.query(qp);
-		Uni<List<RemoteQueryResult>> csourceQuery = Uni.createFrom().nothing();
+		Uni<List<RemoteQueryResult>> csourceQuery = Uni.createFrom().nullItem();
 		if (registryDAO != null) {
 			csourceQuery = registryDAO.query(qp).onItem().transformToUni(t -> {
 				List<Uni<RemoteQueryResult>> remoteResults = Lists.newArrayList();
@@ -178,7 +169,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 						return remoteResult;
 					}));
 				}
-				if(remoteResults.isEmpty()) {
+				if (remoteResults.isEmpty()) {
 					return Uni.createFrom().nullItem();
 				}
 				return Uni.combine().all().unis(remoteResults).combinedWith(remoteEntries -> {
