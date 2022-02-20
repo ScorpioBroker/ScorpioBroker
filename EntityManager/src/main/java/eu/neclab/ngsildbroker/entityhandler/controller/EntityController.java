@@ -41,6 +41,7 @@ import io.vertx.core.http.HttpServerRequest;
  * @date 10-Jul-2018
  */
 
+@Singleton
 @Path("/ngsi-ld/v1")
 public class EntityController {// implements EntityHandlerInterface {
 

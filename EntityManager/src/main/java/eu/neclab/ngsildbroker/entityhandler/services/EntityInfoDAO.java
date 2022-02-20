@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.util.Map.Entry;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Singleton;
 
 import com.google.common.collect.ArrayListMultimap;

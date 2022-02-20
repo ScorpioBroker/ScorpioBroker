@@ -150,6 +150,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 						exchange = webClient.getAbs(endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString)
 								.putHeaders(additionalHeaders).send();
 					}
+
 					remoteResults.add(UniHelper.toUni(exchange).onItem().transform(response -> {
 						RemoteQueryResult remoteResult = new RemoteQueryResult(null, ErrorType.None, -1, true);
 						int count = 0;
@@ -167,6 +168,9 @@ public abstract class BaseQueryService implements EntryQueryService {
 							e.printStackTrace();
 						}
 						return remoteResult;
+					}).onFailure().recoverWithItem(e -> {
+						logger.error("Failed to retrieve remote entries", e);
+						return new RemoteQueryResult(null, ErrorType.None, -1, true);
 					}));
 				}
 				if (remoteResults.isEmpty()) {

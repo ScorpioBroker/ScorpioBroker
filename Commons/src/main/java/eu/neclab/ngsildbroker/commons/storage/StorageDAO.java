@@ -258,10 +258,9 @@ public abstract class StorageDAO {
 									+ "'::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
 							recoverUnis.add(conn.preparedQuery(recoverSql).execute(Tuple.of(entityId, attributeId)));
 							// update modifiedat field in temporalentity
-							recoverSql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
-									+ " SET modifiedat = $1::timestamp WHERE id = $2";
-							recoverUnis
-									.add(conn.preparedQuery(recoverSql).execute(Tuple.of(entityModifiedAt, entityId)));
+							recoverSql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = '"
+									+ entityModifiedAt + "'::timestamp WHERE id = $1";
+							recoverUnis.add(conn.preparedQuery(recoverSql).execute(Tuple.of(entityId)));
 							logger.info("Recovery successful");
 							return Uni.combine().all().unis(recoverUnis).discardItems();
 						});
