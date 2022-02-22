@@ -36,13 +36,14 @@ public class EntityInfoDAO extends StorageDAO {
 	
 
 	public String getEndpoint(String entityId, String tenantId) throws ResponseException {
-		String endpoint=null;
+		String endpoint = null;
 		try {
-		endpoint = getJDBCTemplate(getTenant(tenantId))
-				.queryForObject("SELECT endpoint FROM csource cs, csourceinformation csi WHERE cs.id=csi.csource_id AND csi.entity_id='" + entityId + "'", String.class);
-		
-		}
-		catch (EmptyResultDataAccessException e) {
+			endpoint = getJDBCTemplate(getTenant(tenantId)).queryForObject(
+					"SELECT endpoint FROM csource cs, csourceinformation csi WHERE cs.id=csi.csource_id AND csi.entity_id='"
+							+ entityId + "'",
+					String.class);
+
+		} catch (EmptyResultDataAccessException e) {
 			return null;
 		}
 		return endpoint;

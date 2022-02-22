@@ -294,5 +294,4 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SCOPE = "https://uri.etsi.org/ngsi-ld/default-context/scope";
 	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/default-context/scopeQ";
 	public static final String CONTENT_TYPE_HEADER = "Content-Type";
-	public static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
 }

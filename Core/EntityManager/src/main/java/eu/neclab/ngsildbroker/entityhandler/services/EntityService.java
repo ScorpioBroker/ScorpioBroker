@@ -3,10 +3,8 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import java.io.IOException;
 import java.sql.SQLTransientConnectionException;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -40,8 +38,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.RemoteQueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -271,10 +267,12 @@ public class EntityService implements EntryCRUDService {
 			Map<String, Object> expandedPayload) throws ResponseException, Exception {
 		logger.trace("partialUpdateEntity() :: started");
 		// get message channel for ENTITY_APPEND topic
-		String tenantid = HttpUtils.getInternalTenant(headers);
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
-		}		
+		}
+
+		String tenantid = HttpUtils.getInternalTenant(headers);
+
 		// get entity details
 		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantid);
 
@@ -289,25 +287,24 @@ public class EntityService implements EntryCRUDService {
 		return request.getUpdateResult();
 	}
 	
-	public void patchtoEndpoint(String entityId, String tenantid, String payload, String attrId ) throws ResponseException, Exception  {
+	@SuppressWarnings("unused")
+	public void patchtoEndpoint(String entityId, ArrayListMultimap<String, String> headers, String payload,
+			String attrId) throws ResponseException, Exception {
+		String tenantid = HttpUtils.getInternalTenant(headers);
 		String endpoint = entityInfoDAO.getEndpoint(entityId, tenantid);
 		if (endpoint != null) {
-		System.out.println( endpoint);
-		
-		HttpHeaders header = new HttpHeaders();
-		header.set(NGSIConstants.TENANT_HEADER, tenantid);
-        header.set(NGSIConstants.CONTENT_TYPE_HEADER, NGSIConstants.CONTENT_TYPE_HEADER_VALUE);
-        
-        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-        RestTemplate restTemplate = new RestTemplate(requestFactory);
-		
-			logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/"+ entityId +"attrs" + attrId);	
+			HttpHeaders header = new HttpHeaders();
+			header.set(NGSIConstants.TENANT_HEADER, tenantid);
+			header.set(NGSIConstants.CONTENT_TYPE_HEADER, AppConstants.NGB_APPLICATION_JSON);
+
+			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+			RestTemplate restTemplate = new RestTemplate(requestFactory);
+
+			logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/" + entityId + "attrs" + attrId);
 			HttpEntity<String> httpEntity = new HttpEntity<>(payload, header);
-			ResponseEntity<String> response;
-			String patchuri=endpoint+"/ngsi-ld/v1/entities/"+entityId+"/attrs/"+attrId;
-			response = restTemplate.exchange(patchuri,
-					HttpMethod.PATCH, httpEntity, String.class);
-			System.out.println("Response from Iotagent :"+response.getStatusCode());
+			String patchuri = endpoint + "/ngsi-ld/v1/entities/" + entityId + "/attrs/" + attrId;
+			ResponseEntity<String> response = restTemplate.exchange(patchuri, HttpMethod.PATCH, httpEntity,
+					String.class);
 		}
 	}
 
