@@ -11,6 +11,7 @@ import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.apache.kafka.clients.admin.AdminClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -102,7 +103,6 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	}
 
 	@PreDestroy
-	@Override
 	protected void deconstructor() {
 		for (Entry<String, SubscriptionRequest> entry : id2InternalSubscriptions.entrySet()) {
 			try {
@@ -111,7 +111,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 				logger.debug("Failed to subscribe internally", e);
 			}
 		}
-		super.deconstructor();
+
 	}
 
 	public void updateInternal(SubscriptionRequest request) {

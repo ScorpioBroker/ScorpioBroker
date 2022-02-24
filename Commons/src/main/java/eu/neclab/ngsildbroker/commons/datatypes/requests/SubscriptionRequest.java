@@ -9,6 +9,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 public class SubscriptionRequest extends BaseRequest {
 	private Subscription subscription;
 	private List<Object> context;
+	private boolean active;
+	
 
 	public SubscriptionRequest() {
 		// default constructor for serialization
@@ -44,5 +46,15 @@ public class SubscriptionRequest extends BaseRequest {
 	public void setHeaders(ArrayListMultimap<String, String> headers) {
 		this.headers = headers;
 	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+	
+	
 
 }

@@ -122,13 +122,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected abstract SubscriptionInfoDAOInterface getSubscriptionInfoDao();
 
-	@PreDestroy
-	protected void deconstructor() {
-		synchronized (tenant2subscriptionId2Subscription) {
-			subscriptionInfoDAO.storedSubscriptions(tenant2subscriptionId2Subscription);
-		}
-	}
-
 	private void loadStoredSubscriptions() {
 		synchronized (this.tenant2subscriptionId2Subscription) {
 			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions();
@@ -210,7 +203,18 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				};
 			}.start();
 		}
+		storeSub(subscriptionRequest);
 		return subscription.getId();
+	}
+
+	private void storeSub(SubscriptionRequest subscriptionRequest) {
+		new Thread() {
+			@Override
+			public void run() {
+				subscriptionInfoDAO.storeSubscription(subscriptionRequest);
+			}
+		}.start();
+		
 	}
 
 	private void putInTable(Table<String, String, List<SubscriptionRequest>> table, String row, String colum,
@@ -377,7 +381,11 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		if (subs == null) {
 			return;
 		}
-		subsToCheck.addAll(subs);
+		for (SubscriptionRequest entry : subs) {
+			if (entry.isActive()) {
+				subsToCheck.add(entry);
+			}
+		}
 	}
 
 	private void checkSubscriptions(ArrayList<SubscriptionRequest> subsToCheck, BaseRequest request, int methodType,
@@ -628,7 +636,12 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		for (String type : types) {
 			List<SubscriptionRequest> tmp = this.type2EntitiesSubscriptions.get(tenant, type);
 			if (tmp != null) {
-				subs.addAll(tmp);
+				for (SubscriptionRequest entry : tmp) {
+					if (entry.isActive()) {
+						subs.add(entry);
+					}
+				}
+
 			}
 		}
 		return subs;
