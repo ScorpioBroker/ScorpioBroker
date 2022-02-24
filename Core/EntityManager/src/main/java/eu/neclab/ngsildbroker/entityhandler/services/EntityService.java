@@ -62,13 +62,11 @@ public class EntityService implements EntryCRUDService {
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
 
 	// construct in-memory
-	@PostConstruct
+	@SuppressWarnings("unused")
 	private void loadStoredEntitiesDetails() throws ResponseException {
-		synchronized (this.entityIds) {
 			this.entityIds = entityInfoDAO.getAllIds();
 		}
-		logger.trace("filling in-memory hashmap completed:");
-	}
+
 
 	/**
 	 * Method to publish jsonld message to kafka topic
@@ -88,12 +86,10 @@ public class EntityService implements EntryCRUDService {
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 
-		synchronized (this.entityIds) {
 			if (this.entityIds.containsEntry(tenantId, request.getId())) {
 				throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
 			}
 			this.entityIds.put(tenantId, request.getId());
-		}
 		pushToDB(request);
 		sendToKafka(request);
 
@@ -201,14 +197,12 @@ public class EntityService implements EntryCRUDService {
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
 		}
-		synchronized (this.entityIds) {
 			if (!this.entityIds.containsKey(tenantId)) {
 				throw new ResponseException(ErrorType.TenantNotFound, "tenant " + tenantId + " not found");
 			}
 			if (!this.entityIds.containsValue(entityId)) {
 				throw new ResponseException(ErrorType.NotFound, "Entity Id " + entityId + " not found");
 			}
-		}
 		String entityBody = null;
 		if (directDB) {
 			entityBody = this.entityInfoDAO.getEntity(entityId, tenantId);
@@ -231,14 +225,12 @@ public class EntityService implements EntryCRUDService {
 			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
 		}
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		synchronized (this.entityIds) {
 
 			if (!this.entityIds.containsEntry(tenantId, entityId)) {
 				throw new ResponseException(ErrorType.NotFound, entityId + " not found");
 			}
 			this.entityIds.remove(tenantId, entityId);
 
-		}
 		Map<String, Object> oldEntity = (Map<String, Object>) JsonUtils
 				.fromString(entityInfoDAO.getEntity(entityId, tenantId));
 

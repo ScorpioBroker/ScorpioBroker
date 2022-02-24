@@ -66,12 +66,9 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	private ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 
 	// construct in-memory
-	@PostConstruct
+	@SuppressWarnings("unused")
 	private void loadStoredTemporalEntitiesDetails() throws ResponseException {
-		synchronized (this.entityIds) {
 			this.entityIds = historyDAO.getAllIds();
-		}
-		logger.trace("filling in-memory hashmap completed:");
 	}
 
 	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
@@ -84,12 +81,10 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		synchronized (this.entityIds) {
 			if (this.entityIds.containsEntry(tenantId, request.getId())) {
 				throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
 			}
 			this.entityIds.put(tenantId, request.getId());
-		}
 		logger.trace("creating temporal entity");
 		handleRequest(request);
 		return request.getId();
@@ -125,7 +120,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			String instanceId, Context linkHeaders) throws ResponseException, Exception {
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		synchronized (this.entityIds) {
 
 			if (!this.entityIds.containsEntry(tenantId, entityId)) {
 				throw new ResponseException(ErrorType.NotFound, entityId + " not found");
@@ -133,7 +127,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			if (attributeId == null) {
 				this.entityIds.remove(tenantId, entityId);
 			}
-		}
 		logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
 
 		String resolvedAttrId = null;
