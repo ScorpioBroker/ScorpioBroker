@@ -8,9 +8,6 @@ import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.PostConstruct;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +16,8 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -61,13 +56,6 @@ public class EntityService implements EntryCRUDService {
 	private ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 	private final static Logger logger = LogManager.getLogger(EntityService.class);
 
-	// construct in-memory
-	@SuppressWarnings("unused")
-	private void loadStoredEntitiesDetails() throws ResponseException {
-			this.entityIds = entityInfoDAO.getAllIds();
-		}
-
-
 	/**
 	 * Method to publish jsonld message to kafka topic
 	 * 
@@ -83,13 +71,6 @@ public class EntityService implements EntryCRUDService {
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
 		EntityRequest request = new CreateEntityRequest(resolved, headers);
-
-		String tenantId = HttpUtils.getInternalTenant(headers);
-
-			if (this.entityIds.containsEntry(tenantId, request.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
-			}
-			this.entityIds.put(tenantId, request.getId());
 		pushToDB(request);
 		sendToKafka(request);
 
@@ -107,7 +88,7 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	private void pushToDB(EntityRequest request) {
+	private void pushToDB(EntityRequest request) throws ResponseException {
 		boolean success = false;
 		while (!success) {
 			try {
@@ -197,12 +178,6 @@ public class EntityService implements EntryCRUDService {
 		if (entityId == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
 		}
-			if (!this.entityIds.containsKey(tenantId)) {
-				throw new ResponseException(ErrorType.TenantNotFound, "tenant " + tenantId + " not found");
-			}
-			if (!this.entityIds.containsValue(entityId)) {
-				throw new ResponseException(ErrorType.NotFound, "Entity Id " + entityId + " not found");
-			}
 		String entityBody = null;
 		if (directDB) {
 			entityBody = this.entityInfoDAO.getEntity(entityId, tenantId);
@@ -225,12 +200,6 @@ public class EntityService implements EntryCRUDService {
 			throw new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed");
 		}
 		String tenantId = HttpUtils.getInternalTenant(headers);
-
-			if (!this.entityIds.containsEntry(tenantId, entityId)) {
-				throw new ResponseException(ErrorType.NotFound, entityId + " not found");
-			}
-			this.entityIds.remove(tenantId, entityId);
-
 		Map<String, Object> oldEntity = (Map<String, Object>) JsonUtils
 				.fromString(entityInfoDAO.getEntity(entityId, tenantId));
 
@@ -289,7 +258,7 @@ public class EntityService implements EntryCRUDService {
 		return true;
 	}
 
-	private void handleRequest(EntityRequest request) {
+	private void handleRequest(EntityRequest request) throws ResponseException {
 		if (directDB) {
 			pushToDB(request);
 		}

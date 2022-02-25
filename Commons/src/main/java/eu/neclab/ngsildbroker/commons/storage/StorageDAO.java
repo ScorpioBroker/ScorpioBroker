@@ -23,6 +23,7 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -276,23 +277,33 @@ public abstract class StorageDAO {
 		return result;
 	}
 
-	public boolean storeRegistryEntry(CSourceRequest request) throws SQLException {
+	public boolean storeRegistryEntry(CSourceRequest request) throws SQLException, ResponseException {
 		DBWriteTemplates templates = getJDBCTemplates(request);
 		String value = request.getResultCSourceRegistrationString();
 		String sql;
-		int n;
+		int n = 0;
 		if (value != null && !value.equals("null")) {
+			if(request.getRequestType()==0){
+			
 			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-					+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
-					+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+					+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO NOTHING";
 			n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value);
+			if (n == 0) {
+				throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
+			}
+			}
+			else if(request.getRequestType()==2) {
+				sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
+						+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
+						+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+				n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value);
+			}
 		} else {
 			sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = ?";
 			n = templates.getWriterJdbcTemplate().update(sql, request.getId());
 		}
 		return n > 0;
 	}
-
 	private boolean doTemporalSqlAttrInsert(DBWriteTemplates templates, String value, String entityId,
 			String entityType, String attributeId, String entityCreatedAt, String entityModifiedAt, String instanceId,
 			Boolean overwriteOp) {
@@ -310,9 +321,12 @@ public abstract class StorageDAO {
 							if (entityId != null && entityType != null && entityCreatedAt != null
 									&& entityModifiedAt != null) {
 								sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-										+ " (id, type, createdat, modifiedat) VALUES (?, ?, ?::timestamp, ?::timestamp) ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat";
+										+ " (id, type, createdat, modifiedat) VALUES (?, ?, ?::timestamp, ?::timestamp) ON CONFLICT(id) DO NOTHING";
 								tn = templates.getWriterJdbcTemplateWithTransaction().update(sql, entityId, entityType,
 										entityCreatedAt, entityModifiedAt);
+								if(tn==0) {
+									System.out.println(entityId + "already existes");
+								}
 							}
 
 							if (entityId != null && attributeId != null) {
@@ -403,7 +417,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public boolean storeEntity(EntityRequest request) throws SQLTransientConnectionException {
+	public boolean storeEntity(EntityRequest request) throws SQLTransientConnectionException, ResponseException {
 
 		String sql;
 		String key = request.getId();
@@ -413,14 +427,28 @@ public abstract class StorageDAO {
 		int n = 0;
 		DBWriteTemplates templates = getJDBCTemplates(request);
 		if (value != null && !value.equals("null")) {
-			sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
-					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
-					+ ") VALUES (?, ?::jsonb, ?::jsonb, ?::jsonb) ON CONFLICT(id) DO UPDATE SET ("
-					+ DBConstants.DBCOLUMN_DATA + ", " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  "
-					+ DBConstants.DBCOLUMN_KVDATA + ") = (EXCLUDED." + DBConstants.DBCOLUMN_DATA + ", EXCLUDED."
-					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  EXCLUDED." + DBConstants.DBCOLUMN_KVDATA + ")";
-			n = templates.getWriterJdbcTemplate().update(sql, key, value, valueWithoutSysAttrs, kvValue);
+			if (request.getRequestType() == 0) {
+				sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
+						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
+						+ ") VALUES (?, ?::jsonb, ?::jsonb, ?::jsonb) ON CONFLICT(id) DO NOTHING";
+				n = templates.getWriterJdbcTemplate().update(sql, key, value, valueWithoutSysAttrs, kvValue);
+				if (n == 0) {
+					throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
+
+				}
+			} else if (request.getRequestType() == 1 || request.getRequestType() == 2) {
+				sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
+						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
+						+ ") VALUES (?, ?::jsonb, ?::jsonb, ?::jsonb) ON CONFLICT(id) DO UPDATE SET ("
+						+ DBConstants.DBCOLUMN_DATA + ", " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  "
+						+ DBConstants.DBCOLUMN_KVDATA + ") = (EXCLUDED." + DBConstants.DBCOLUMN_DATA + ", EXCLUDED."
+						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  EXCLUDED." + DBConstants.DBCOLUMN_KVDATA
+						+ ")";
+				n = templates.getWriterJdbcTemplate().update(sql, key, value, valueWithoutSysAttrs, kvValue);
+
+			}
 		} else {
+
 			sql = "DELETE FROM " + DBConstants.DBTABLE_ENTITY + " WHERE id = ?";
 			n = templates.getWriterJdbcTemplate().update(sql, key);
 		}
@@ -447,8 +475,8 @@ public abstract class StorageDAO {
 
 		return result;
 	}
-
-	protected String getTenant(String tenantId) {
+	
+	protected String getTenant(String tenantId){
 		if (tenantId == null) {
 			return null;
 		}
@@ -457,5 +485,4 @@ public abstract class StorageDAO {
 		}
 		return tenantId;
 	}
-
 }

@@ -94,7 +94,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	@SuppressWarnings("unused")
 	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
-			this.csourceIds = csourceInfoDAO.getAllIds();
+			//this.csourceIds = csourceInfoDAO.getAllIds();
 		if (AUTO_REG_STATUS.equals("active")) {
 			Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
 			for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
@@ -141,7 +141,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		return validateIdAndGetBody(registrationId, tenantId);
 	}
 
-	private void pushToDB(CSourceRequest request) throws SQLException {
+	private void pushToDB(CSourceRequest request) throws SQLException, ResponseException {
 		this.csourceInfoDAO.storeRegistryEntry(request);
 	}
 
@@ -171,19 +171,6 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		if (registrationid == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid query for registration. No ID provided.");
 		}
-
-			if (tenantId != null) {
-				if (!this.csourceIds.containsKey(tenantId)) {
-					throw new ResponseException(ErrorType.TenantNotFound, "Tenant not found");
-				}
-				if (!this.csourceIds.containsValue(registrationid)) {
-					throw new ResponseException(ErrorType.NotFound, registrationid + " not found");
-				}
-			} else {
-				if (!this.csourceIds.containsValue(registrationid)) {
-					throw new ResponseException(ErrorType.NotFound, registrationid + " not found");
-				}
-			}
 		String entityBody = null;
 		if (directDB) {
 			entityBody = this.csourceInfoDAO.getEntity(tenantId, registrationid);
@@ -232,11 +219,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			id = (String) idObj;
 		}
 		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
-		String tenantId = HttpUtils.getInternalTenant(headers);
+		/*String tenantId = HttpUtils.getInternalTenant(headers);
 			if (this.csourceIds.containsEntry(tenantId, request.getId())) {
 				throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
 			}
-			this.csourceIds.put(tenantId, request.getId());
+			this.csourceIds.put(tenantId, request.getId());*/
 		pushToDB(request);
 		sendToKafka(request);
 		return request.getId();
@@ -262,9 +249,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 
-			if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
-				throw new ResponseException(ErrorType.NotFound, registrationId + " not found.");
-			}
+			//if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
+			//	throw new ResponseException(ErrorType.NotFound, registrationId + " not found.");
+			//}
 
 		Map<String, Object> registration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId);
