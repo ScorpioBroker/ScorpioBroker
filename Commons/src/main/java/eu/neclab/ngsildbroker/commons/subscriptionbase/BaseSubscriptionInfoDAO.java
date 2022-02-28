@@ -112,6 +112,9 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	@Override
 	public void storeSubscription(SubscriptionRequest sub) {
 		String tenant = sub.getTenant();
+		if (AppConstants.INTERNAL_NULL_KEY.equals(tenant)) {
+			tenant = null;
+		}
 		JdbcTemplate template = getJDBCTemplate(tenant);
 		template.update("INSERT INTO " + dbname
 				+ " (subscription_id, subscription_request) VALUES (?, ?) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request",
@@ -121,6 +124,9 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	@Override
 	public void deleteSubscription(SubscriptionRequest sub) {
 		String tenant = sub.getTenant();
+		if (AppConstants.INTERNAL_NULL_KEY.equals(tenant)) {
+			tenant = null;
+		}
 		JdbcTemplate template = getJDBCTemplate(tenant);
 		template.update("DELETE FROM " + dbname + " WHERE subscription_id=?", sub.getId());
 

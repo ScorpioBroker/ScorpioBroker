@@ -11,7 +11,6 @@ import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.apache.kafka.clients.admin.AdminClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -195,8 +194,8 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	}
 
 	@Override
-	protected String getSyncTopic() {
-		return REG_SUB_SYNC_TOPIC;
+	protected void setSyncTopic() {
+		this.subSyncTopic = REG_SUB_SYNC_TOPIC;
 	}
 
 }

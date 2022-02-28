@@ -84,7 +84,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private boolean sendInitialNotification;
 	private boolean sendDeleteNotification;
 
-	private String subSyncTopic = getSyncTopic();
+	protected String subSyncTopic;
 
 	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
@@ -101,6 +101,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	@PostConstruct
 	private void setup() {
+		setSyncTopic();
 		subscriptionInfoDAO = getSubscriptionInfoDao();
 		try {
 			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
@@ -125,7 +126,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	}
 
-	protected abstract String getSyncTopic();
+	protected abstract void setSyncTopic();
 
 	protected abstract boolean sendDeleteNotification();
 

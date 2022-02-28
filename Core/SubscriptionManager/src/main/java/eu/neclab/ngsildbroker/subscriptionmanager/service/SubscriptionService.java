@@ -273,8 +273,8 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	@Override
-	protected String getSyncTopic() {
-		return SUB_SYNC_TOPIC;
+	protected void setSyncTopic() {
+		this.subSyncTopic = SUB_SYNC_TOPIC;
 	}
 
 }

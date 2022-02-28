@@ -39,7 +39,7 @@ public abstract class BaseSubscriptionSyncManager {
 	@Autowired
 	KafkaTemplate<String, AnnouncementMessage> kafkaTemplate;
 
-;
+	;
 
 	@Value("${scorpio.sync.announcement-time:200}")
 	int announcementTime;
@@ -61,7 +61,7 @@ public abstract class BaseSubscriptionSyncManager {
 		executor.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
-				kafkaTemplate.send(getAliveTopic(), INSTANCE_ID);
+				kafkaTemplate.send(getAliveTopic(), "alive", INSTANCE_ID);
 			}
 		}, 0, announcementTime);
 

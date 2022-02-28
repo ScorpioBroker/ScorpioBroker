@@ -6,6 +6,10 @@ public class AliveAnnouncement implements AnnouncementMessage {
 
 	private String id;
 
+	public AliveAnnouncement() {
+		// for serialization
+	}
+
 	public AliveAnnouncement(String id) {
 		this.id = id;
 	}
