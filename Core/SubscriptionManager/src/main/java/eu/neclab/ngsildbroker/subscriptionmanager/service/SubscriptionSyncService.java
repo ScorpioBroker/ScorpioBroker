@@ -23,13 +23,13 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 		return SUB_ALIVE_TOPIC;
 	}
 
-	@KafkaListener(topics = "${scorpio.topics.subsync}")
+	@KafkaListener(topics = "${scorpio.topics.subsync}", groupId = "subscription")
 	private void listenForSubs(@Payload SubscriptionRequest message,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
 		listenForSubscriptionUpdates(message, key);
 	}
 
-	@KafkaListener(topics = "${scorpio.topics.subalive}")
+	@KafkaListener(topics = "${scorpio.topics.subalive}", groupId = "subscription")
 	private void listenForAlive(@Payload AnnouncementMessage message,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
 		listenForAnnouncements(message);

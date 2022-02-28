@@ -23,13 +23,13 @@ public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager
 		return SUB_ALIVE_TOPIC;
 	}
 
-	@KafkaListener(topics = "${scorpio.topics.regsubsync}")
+	@KafkaListener(topics = "${scorpio.topics.regsubsync}", groupId = "csourcesubscription")
 	private void listenForSubs(@Payload SubscriptionRequest message,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
 		listenForSubscriptionUpdates(message, key);
 	}
 
-	@KafkaListener(topics = "${scorpio.topics.regsubalive}")
+	@KafkaListener(topics = "${scorpio.topics.regsubalive}", groupId = "csourcesubscription")
 	private void listenForAlive(@Payload AnnouncementMessage message,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
 		listenForAnnouncements(message);

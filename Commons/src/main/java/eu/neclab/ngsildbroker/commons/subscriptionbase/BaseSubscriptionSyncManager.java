@@ -39,14 +39,13 @@ public abstract class BaseSubscriptionSyncManager {
 	@Autowired
 	KafkaTemplate<String, AnnouncementMessage> kafkaTemplate;
 
-	@Value("{scorpio.sync.timeout}")
-	long timeout;
+;
 
-	@Value("{scorpio.sync.announcement-time}")
-	long announcementTime;
+	@Value("${scorpio.sync.announcement-time:200}")
+	int announcementTime;
 
-	@Value("{scorpio.sync.check-time}")
-	long checkTime;
+	@Value("${scorpio.sync.check-time:1000}")
+	int checkTime;
 
 	AliveAnnouncement INSTANCE_ID = new AliveAnnouncement(UUID.randomUUID().toString());
 
