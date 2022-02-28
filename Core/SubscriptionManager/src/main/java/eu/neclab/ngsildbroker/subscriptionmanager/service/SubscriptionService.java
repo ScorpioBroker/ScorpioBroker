@@ -51,8 +51,6 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Qualifier("subdao")
 	SubscriptionInfoDAOInterface subService;
 
-	@Autowired
-	KafkaTemplate<String, Object> kafkaTemplate;
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
 	private HashMap<String, String> internalSubId2RemoteNotifyCallbackId2 = new HashMap<String, String>();
@@ -60,6 +58,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Value("${scorpio.topics.internalregsub}")
 	private String INTERNAL_SUBSCRIPTION_TOPIC;
+
+	@Value("${scorpio.topics.subsync}")
+	private String SUB_SYNC_TOPIC;
 
 	@Autowired
 	private MicroServiceUtils microServiceUtils;
@@ -269,6 +270,11 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Override
 	protected boolean evaluateCSF() {
 		return false;
+	}
+
+	@Override
+	protected String getSyncTopic() {
+		return SUB_SYNC_TOPIC;
 	}
 
 }

@@ -13,8 +13,6 @@ public interface SubscriptionInfoDAOInterface {
 	public Table<String, String, Set<String>> getIds2Type() throws ResponseException;
 
 	public List<String> getStoredSubscriptions();
-
-	public void storedSubscriptions(Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription);
 	
 	public void storeSubscription(SubscriptionRequest sub);
 	

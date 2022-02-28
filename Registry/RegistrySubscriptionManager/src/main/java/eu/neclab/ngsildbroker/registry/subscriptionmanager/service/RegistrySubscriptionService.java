@@ -42,6 +42,9 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	@Value("${scorpio.topics.internalnotification}")
 	private String NOTIFICATION_TOPIC;
 
+	@Value("${scorpio.topics.regsubsync}")
+	private String REG_SUB_SYNC_TOPIC;
+
 	private NotificationHandler internalHandler;
 
 	private HashMap<String, SubscriptionRequest> id2InternalSubscriptions = new HashMap<String, SubscriptionRequest>();
@@ -189,6 +192,11 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	@Override
 	protected boolean evaluateCSF() {
 		return true;
+	}
+
+	@Override
+	protected String getSyncTopic() {
+		return REG_SUB_SYNC_TOPIC;
 	}
 
 }
