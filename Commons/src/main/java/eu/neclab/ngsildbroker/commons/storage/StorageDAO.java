@@ -436,7 +436,7 @@ public abstract class StorageDAO {
 					throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
 
 				}
-			} else if (request.getRequestType() == 1 || request.getRequestType() == 2) {
+			} else {
 				sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
 						+ ") VALUES (?, ?::jsonb, ?::jsonb, ?::jsonb) ON CONFLICT(id) DO UPDATE SET ("
