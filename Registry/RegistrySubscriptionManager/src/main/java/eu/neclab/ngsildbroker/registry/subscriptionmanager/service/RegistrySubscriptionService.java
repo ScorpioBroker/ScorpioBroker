@@ -198,4 +198,9 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		this.subSyncTopic = REG_SUB_SYNC_TOPIC;
 	}
 
+	@Override
+	protected void setSyncId() {
+		this.syncIdentifier = RegistrySubscriptionSyncService.SYNC_ID;
+	}
+
 }

@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.annotations.Expose;
 
@@ -13,8 +12,10 @@ public class SubscriptionRequest extends BaseRequest {
 	private Subscription subscription;
 	@Expose
 	private List<Object> context;
-	
+
 	private boolean active;
+
+	private int type;
 
 	public SubscriptionRequest() {
 		// default constructor for serialization
@@ -57,6 +58,14 @@ public class SubscriptionRequest extends BaseRequest {
 
 	public void setActive(boolean active) {
 		this.active = active;
+	}
+
+	public int getType() {
+		return type;
+	}
+
+	public void setType(int type) {
+		this.type = type;
 	}
 
 }

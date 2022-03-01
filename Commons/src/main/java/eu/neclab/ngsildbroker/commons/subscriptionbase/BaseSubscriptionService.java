@@ -21,6 +21,7 @@ import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
@@ -32,6 +33,7 @@ import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.client.RestTemplate;
 
@@ -86,6 +88,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected String subSyncTopic;
 
+	protected String syncIdentifier;
+
 	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	protected Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
@@ -98,10 +102,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	@Autowired
 	protected KafkaTemplate<String, Object> kafkaTemplate;
+	
+	@Value("${scorpio.sync.check-time:1000}")
+	int checkTime;
 
 	@PostConstruct
 	private void setup() {
 		setSyncTopic();
+		setSyncId();
 		subscriptionInfoDAO = getSubscriptionInfoDao();
 		try {
 			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
@@ -125,6 +133,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		loadStoredSubscriptions();
 
 	}
+	
+	@PreDestroy
+	private void destroy() throws InterruptedException {
+		Thread.sleep(checkTime);
+	}
+
+	protected abstract void setSyncId();
 
 	protected abstract void setSyncTopic();
 
@@ -139,7 +154,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions();
 			for (String subscriptionString : subscriptions) {
 				try {
-					subscribe(DataSerializer.getSubscriptionRequest(subscriptionString));
+					subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true);
 				} catch (ResponseException e) {
 					logger.error("Failed to load stored subscription", e);
 				}
@@ -227,12 +242,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private void createSub(SubscriptionRequest subscriptionRequest) {
 		subscriptionInfoDAO.storeSubscription(subscriptionRequest);
-		kafkaTemplate.send(subSyncTopic, "create", subscriptionRequest);
+		subscriptionRequest.setType(AppConstants.CREATE_REQUEST);
+		kafkaTemplate.send(subSyncTopic, syncIdentifier, subscriptionRequest);
 	}
 
 	private void updateSub(SubscriptionRequest subscriptionRequest) {
 		subscriptionInfoDAO.storeSubscription(subscriptionRequest);
-		kafkaTemplate.send(subSyncTopic, "update", subscriptionRequest);
+		subscriptionRequest.setType(AppConstants.UPDATE_REQUEST);
+		kafkaTemplate.send(subSyncTopic, syncIdentifier, subscriptionRequest);
 	}
 
 	private void putInTable(Table<String, String, List<SubscriptionRequest>> table, String row, String colum,
@@ -306,7 +323,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private void deleteSub(SubscriptionRequest removedSub) {
 		subscriptionInfoDAO.deleteSubscription(removedSub);
-		kafkaTemplate.send(subSyncTopic, "delete", removedSub);
+		removedSub.setType(AppConstants.DELETE_REQUEST);
+		kafkaTemplate.send(subSyncTopic, syncIdentifier, removedSub);
 	}
 
 	public void updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {

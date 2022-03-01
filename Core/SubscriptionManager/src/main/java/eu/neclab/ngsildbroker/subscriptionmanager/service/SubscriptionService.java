@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -19,13 +18,9 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import com.github.jsonldjava.utils.JsonUtils;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
@@ -275,6 +270,11 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Override
 	protected void setSyncTopic() {
 		this.subSyncTopic = SUB_SYNC_TOPIC;
+	}
+
+	@Override
+	protected void setSyncId() {
+		this.syncIdentifier = SubscriptionSyncService.SYNC_ID;
 	}
 
 }

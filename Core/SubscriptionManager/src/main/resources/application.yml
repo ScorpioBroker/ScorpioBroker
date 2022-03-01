@@ -100,7 +100,7 @@ hystrix:
           thread:
             timeoutInMilliseconds: 60000
 server:
-  port: 2026
+  port: 2027
   tomcat:
     relaxed-path-chars: <,>,[,\,],^,`,{,|,}
     relaxed-query-chars: <,>,[,\,],^,`,{,|,}

@@ -20,7 +20,7 @@ public class SubscriptionKafkaService {
 	@Autowired
 	SubscriptionService subscriptionService;
 
-	@KafkaListener(topics = "${scorpio.topics.entity}", groupId = "subscription")
+	@KafkaListener(topics = "${scorpio.topics.entity}", groupId = "${random.uuid}")
 	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
 		switch (message.getRequestType()) {
@@ -47,7 +47,7 @@ public class SubscriptionKafkaService {
 		}
 	}
 
-	@KafkaListener(topics = "${scorpio.topics.internalnotification}", groupId = "subscription")
+	@KafkaListener(topics = "${scorpio.topics.internalnotification}", groupId = "${random.uuid}")
 	public void handleInternalNotification(@Payload InternalNotification message,
 			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {

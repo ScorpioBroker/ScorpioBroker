@@ -1,13 +1,14 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 import com.google.common.collect.Sets;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.HandingOfAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.TakingAnnouncement;
@@ -47,21 +49,30 @@ public abstract class BaseSubscriptionSyncManager {
 	@Value("${scorpio.sync.check-time:1000}")
 	int checkTime;
 
-	AliveAnnouncement INSTANCE_ID = new AliveAnnouncement(UUID.randomUUID().toString());
+	protected String syncId;
+	
+	protected String aliveTopic;
+
+	AliveAnnouncement INSTANCE_ID;
 
 	@PostConstruct
 	public void setup() {
-		currentInstances.add(INSTANCE_ID.getId());
-		lastInstances.add(INSTANCE_ID.getId());
+		setSyncId();
+		setAliveTopic();
+		INSTANCE_ID = new AliveAnnouncement(syncId);
 		startSyncing();
 		// TODO FIGURE OUT HOW TO SET RENTENTION TIME FOR THE TOPIC
 	}
+
+	protected abstract void setAliveTopic();
+
+	protected abstract void setSyncId();
 
 	private void startSyncing() {
 		executor.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
-				kafkaTemplate.send(getAliveTopic(), "alive", INSTANCE_ID);
+				kafkaTemplate.send(aliveTopic, syncId, INSTANCE_ID);
 			}
 		}, 0, announcementTime);
 
@@ -69,35 +80,41 @@ public abstract class BaseSubscriptionSyncManager {
 			@Override
 			public void run() {
 				synchronized (currentInstances) {
-					if (currentInstances.equals(lastInstances)) {
+					if (!currentInstances.equals(lastInstances)) {
 						recalculateSubscriptions();
 					}
-					lastInstances = currentInstances;
+					lastInstances.clear();
+					lastInstances.addAll(currentInstances);
+					currentInstances.clear();
 				}
 			}
 		}, 0, checkTime);
 
 	}
 
-	protected abstract String getAliveTopic();
-
-	protected void listenForAnnouncements(AnnouncementMessage announcement) {
+	protected void listenForAnnouncements(AnnouncementMessage announcement, String key) {
+		if (key.equals(syncId)) {
+			return;
+		}
 		if (announcement instanceof AliveAnnouncement) {
 			synchronized (currentInstances) {
 				currentInstances.add(announcement.getId());
 			}
 		}
-		if (announcement instanceof TakingAnnouncement) {
-
-		}
-		if (announcement instanceof HandingOfAnnouncement) {
-
-		}
+//		if (announcement instanceof TakingAnnouncement) {
+//
+//		}
+//		if (announcement instanceof HandingOfAnnouncement) {
+//
+//		}
 	}
 
 	protected void listenForSubscriptionUpdates(SubscriptionRequest sub, String key) {
-		switch (key) {
-		case "delete":
+		if (key.equals(syncId)) {
+			return;
+		}
+		switch (sub.getType()) {
+		case AppConstants.DELETE_REQUEST:
 			try {
 				subscriptionService.unsubscribe(sub.getId(), sub.getHeaders(), true);
 			} catch (ResponseException e) {
@@ -105,7 +122,7 @@ public abstract class BaseSubscriptionSyncManager {
 				e.printStackTrace();
 			}
 			break;
-		case "update":
+		case AppConstants.UPDATE_REQUEST:
 			try {
 				subscriptionService.updateSubscription(sub, true);
 			} catch (ResponseException e) {
@@ -113,8 +130,9 @@ public abstract class BaseSubscriptionSyncManager {
 				e.printStackTrace();
 			}
 			break;
-		case "create":
+		case AppConstants.CREATE_REQUEST:
 			try {
+				sub.setActive(false);
 				subscriptionService.subscribe(sub, true);
 			} catch (ResponseException e) {
 				// TODO Auto-generated catch block
@@ -127,7 +145,9 @@ public abstract class BaseSubscriptionSyncManager {
 	}
 
 	private void recalculateSubscriptions() {
-		List<String> sortedInstances = currentInstances.stream().sorted().collect(Collectors.toList());
+		HashSet<String> temp = Sets.newHashSet(currentInstances);
+		temp.add(INSTANCE_ID.getId());
+		List<String> sortedInstances = temp.stream().sorted().collect(Collectors.toList());
 		int myPos = sortedInstances.indexOf(INSTANCE_ID.getId());
 		List<String> sortedSubs = subscriptionService.getAllSubscriptionIds();
 		int stepRange = sortedSubs.size() / sortedInstances.size();
@@ -140,6 +160,11 @@ public abstract class BaseSubscriptionSyncManager {
 		}
 		List<String> mySubs = sortedSubs.subList(start, end);
 		subscriptionService.activateSubs(mySubs);
+	}
+	
+	@PreDestroy
+	private void destroy() {
+		executor.cancel();
 	}
 
 }

@@ -22,4 +22,9 @@ public class AliveAnnouncement implements AnnouncementMessage {
 		this.id = id;
 	}
 
+	@Override
+	public String toString() {
+		return "AliveAnnouncement [id=" + id + "]";
+	}
+
 }

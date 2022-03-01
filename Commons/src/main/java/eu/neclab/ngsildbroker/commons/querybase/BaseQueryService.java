@@ -254,7 +254,6 @@ public abstract class BaseQueryService implements EntryQueryService {
 
 	private QueryResult mergeStorage(RemoteQueryResult fromCsources, QueryResult fromStorage) throws IOException {
 		if (fromStorage == null || fromCsources == null) {
-			System.out.println();
 		}
 		if (fromStorage.getActualDataString() != null) {
 			for (String entry : fromStorage.getActualDataString()) {
