@@ -259,7 +259,7 @@ public abstract class StorageDAO {
 		return queryResult;
 	}
 
-	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
+	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException{
 		boolean result = true;
 		DBWriteTemplates templates = getJDBCTemplates(request);
 
@@ -309,7 +309,7 @@ public abstract class StorageDAO {
 			Boolean overwriteOp) {
 		try {
 			Integer n = 0;
-
+			
 			if (!value.equals("null")) {
 				// https://gist.github.com/mdellabitta/1444003
 				try {
@@ -321,14 +321,11 @@ public abstract class StorageDAO {
 							if (entityId != null && entityType != null && entityCreatedAt != null
 									&& entityModifiedAt != null) {
 								sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-										+ " (id, type, createdat, modifiedat) VALUES (?, ?, ?::timestamp, ?::timestamp) ON CONFLICT(id) DO NOTHING";
+										+ " (id, type, createdat, modifiedat) VALUES (?, ?, ?::timestamp, ?::timestamp) ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat";
 								tn = templates.getWriterJdbcTemplateWithTransaction().update(sql, entityId, entityType,
 										entityCreatedAt, entityModifiedAt);
-								if(tn==0) {
-									System.out.println(entityId + "already existes");
-								}
 							}
-
+                     
 							if (entityId != null && attributeId != null) {
 								if (overwriteOp != null && overwriteOp) {
 									sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
@@ -347,12 +344,12 @@ public abstract class StorageDAO {
 										entityId);
 
 							}
-
 							return tn;
 
 						}
 					});
-				} catch (DataIntegrityViolationException e) {
+				}
+				catch (DataIntegrityViolationException e) {
 					logger.info("Failed to create attribute instance because of data inconsistency");
 					logger.info("Attempting recovery");
 					try {
