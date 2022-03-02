@@ -265,6 +265,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 				Object entity = JsonUtils.fromString(entry);
 				fromCsources.addData(entity);
 			}
+		}
+		if(fromStorage != null && fromCsources != null) {
 			fromCsources.setCount(fromCsources.getCount() + fromStorage.getCount());
 		}
 		return fromCsources;

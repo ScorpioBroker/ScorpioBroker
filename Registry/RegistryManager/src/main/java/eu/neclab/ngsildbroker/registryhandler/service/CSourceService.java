@@ -78,7 +78,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@Value("${scorpio.directDB}")
 	boolean directDB = true;
 
-	private ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
+	//private ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
 	Timer watchDog = new Timer(true);
@@ -117,7 +117,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				}
 				CSourceRequest regEntry = createInternalRegEntry(tenant);
 				try {
-					upsert(regEntry);
+					storeInternalEntry(regEntry);
 				} catch (Exception e) {
 					logger.error("Failed to create initial internal reg status", e);
 				}
@@ -258,7 +258,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		sendToKafka(requestForSub);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		pushToDB(request);
-		this.csourceIds.remove(tenantId, registrationId);
+		//this.csourceIds.remove(tenantId, registrationId);
 		return true;
 
 	}
@@ -301,7 +301,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				if (regEntry.getFinalPayload() == null) {
 					deleteEntry(regEntry.getHeaders(), regEntry.getId());
 				} else {
-					upsert(regEntry);
+					storeInternalEntry(regEntry);
 				}
 			} catch (Exception e) {
 				logger.error("Failed to store internal registry entry", e);
@@ -336,7 +336,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				if (regEntry.getFinalPayload() == null) {
 					deleteEntry(regEntry.getHeaders(), regEntry.getId());
 				} else {
-					upsert(regEntry);
+					storeInternalEntry(regEntry);
 				}
 			} catch (Exception e) {
 				logger.error("Failed to store internal registry entry", e);
@@ -453,12 +453,24 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		return null;
 	}
 
-	private void upsert(CSourceRequest regEntry) throws ResponseException, Exception {
-		if (csourceIds.containsEntry(regEntry.getTenant(), regEntry.getId())) {
-			appendToEntry(regEntry.getHeaders(), regEntry.getId(), regEntry.getFinalPayload(), null);
-		} else {
-			createEntry(regEntry.getHeaders(), regEntry.getFinalPayload());
-		}
+	private void storeInternalEntry(CSourceRequest regEntry)  {
+			try {
+				appendToEntry(regEntry.getHeaders(), regEntry.getId(), regEntry.getFinalPayload(), null);
+			} catch (ResponseException e) {
+				try {
+					createEntry(regEntry.getHeaders(), regEntry.getFinalPayload());
+				} catch (Exception e1) {
+					logger.error("Failed to store internal regentry", e1);
+				}
+			} catch (Exception e) {
+				logger.error("Failed to store internal regentry", e);
+			}
+			
+		
+			
+		
+			
+		
 
 	}
 

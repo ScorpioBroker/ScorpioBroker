@@ -171,6 +171,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		Subscription subscription = subscriptionRequest.getSubscription();
 		if (subscription.getId() == null) {
 			subscription.setId(generateUniqueSubId(subscription));
+			subscriptionRequest.setId(subscription.getId());
 		} else {
 			synchronized (tenant2subscriptionId2Subscription) {
 				if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
