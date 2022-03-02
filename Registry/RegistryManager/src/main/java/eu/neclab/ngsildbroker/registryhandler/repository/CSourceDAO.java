@@ -14,6 +14,7 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.RegistryStorageFunctions;
@@ -51,8 +52,7 @@ public class CSourceDAO extends StorageDAO {
 		map.put(NGSIConstants.GEO_REL_DISJOINT, null);
 		return Collections.unmodifiableMap(map);
 	}
-
-	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
+	public String getEntity(String tenantId, String registrationid) throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		result.putAll(AppConstants.INTERNAL_NULL_KEY,
 				getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM csource", String.class));
@@ -61,14 +61,20 @@ public class CSourceDAO extends StorageDAO {
 			result.putAll(tenant,
 					getJDBCTemplate(tenant).queryForList("SELECT DISTINCT id FROM csource", String.class));
 		}
-
-		return result;
-	}
-
-	public String getEntity(String tenantId, String entityId) throws ResponseException {
-
+		if (tenantId != null) {
+			if (!result.containsKey(tenantId)) {
+				throw new ResponseException(ErrorType.TenantNotFound, "Tenant not found");
+			}
+			if (!result.containsValue(registrationid)) {
+				throw new ResponseException(ErrorType.NotFound, registrationid + " not found");
+			}
+		} else {
+			if (!result.containsValue(registrationid)) {
+				throw new ResponseException(ErrorType.NotFound, registrationid + " not found");
+			}
+		}
 		List<String> tempList = getJDBCTemplate(getTenant(tenantId))
-				.queryForList("SELECT data FROM csource WHERE id='" + entityId + "'", String.class);
+				.queryForList("SELECT data FROM csource WHERE id='" + registrationid + "'", String.class);
 		return tempList.get(0);
 	}
 
