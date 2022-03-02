@@ -409,7 +409,7 @@ public interface SubscriptionControllerFunctions {
 			logger.trace("getAllSubscriptions() :: completed");
 
 			return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
-					additionalHeaders, AppConstants.SUBSCRIPTION_ENDPOINT);
+					additionalHeaders, null, true, AppConstants.SUBSCRIPTION_ENDPOINT);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
