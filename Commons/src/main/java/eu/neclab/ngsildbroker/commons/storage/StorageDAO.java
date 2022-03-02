@@ -283,16 +283,15 @@ public abstract class StorageDAO {
 		String sql;
 		int n = 0;
 		if (value != null && !value.equals("null")) {
-			if(request.getRequestType()==0){
-			
-			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-					+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO NOTHING";
-			n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value);
-			if (n == 0) {
-				throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
-			}
-			}
-			else if(request.getRequestType()==2) {
+			if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
+
+				sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
+						+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO NOTHING";
+				n = templates.getWriterJdbcTemplate().update(sql, request.getId(), value);
+				if (n == 0) {
+					throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
+				}
+			} else if (request.getRequestType() == AppConstants.OPERATION_APPEND_ENTITY) {
 				sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
 						+ ") VALUES (?, ?::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
 						+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
@@ -424,7 +423,7 @@ public abstract class StorageDAO {
 		int n = 0;
 		DBWriteTemplates templates = getJDBCTemplates(request);
 		if (value != null && !value.equals("null")) {
-			if (request.getRequestType() == 0) {
+			if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 				sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
 						+ ") VALUES (?, ?::jsonb, ?::jsonb, ?::jsonb) ON CONFLICT(id) DO NOTHING";
@@ -434,14 +433,10 @@ public abstract class StorageDAO {
 
 				}
 			} else {
-				sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
-						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
-						+ ") VALUES (?, ?::jsonb, ?::jsonb, ?::jsonb) ON CONFLICT(id) DO UPDATE SET ("
-						+ DBConstants.DBCOLUMN_DATA + ", " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  "
-						+ DBConstants.DBCOLUMN_KVDATA + ") = (EXCLUDED." + DBConstants.DBCOLUMN_DATA + ", EXCLUDED."
-						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  EXCLUDED." + DBConstants.DBCOLUMN_KVDATA
-						+ ")";
-				n = templates.getWriterJdbcTemplate().update(sql, key, value, valueWithoutSysAttrs, kvValue);
+				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = ?::jsonb , "
+						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = ?::jsonb , " + DBConstants.DBCOLUMN_KVDATA
+						+ " = ?::jsonb WHERE " + DBConstants.DBCOLUMN_ID + "=id";
+						n = templates.getWriterJdbcTemplate().update(sql, value, valueWithoutSysAttrs, kvValue);
 
 			}
 		} else {

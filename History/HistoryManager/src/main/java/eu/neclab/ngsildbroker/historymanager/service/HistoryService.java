@@ -165,6 +165,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
 		qp.setIncludeSysAttrs(true);
+		qp.setTenant(HttpUtils.getInternalTenant(headers));
 		QueryResult queryResult = historyDAO.query(qp);
 		List<String> entityList = queryResult.getActualDataString();
 		if (entityList.size() == 0) {
