@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
@@ -21,25 +22,40 @@ public class HistoryDAO extends StorageDAO {
 		return new TemporalStorageFunctions();
 	}
 
-	public boolean entityExists(String entityId, String tenantId) throws ResponseException {
-		List<Map<String, Object>> list = getJDBCTemplate(tenantId)
-				.queryForList("Select id from temporalentity where id='" + entityId + "';");
-		if (list == null || list.isEmpty()) {
-			return false;
+	public void entityExists(String entityId, String tenantId) throws ResponseException {
+		
+		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+		if (tenantId == AppConstants.INTERNAL_NULL_KEY) {
+			result.putAll(AppConstants.INTERNAL_NULL_KEY,
+					getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
+			if (result.containsValue(entityId)) {
+				throw new ResponseException(ErrorType.AlreadyExists, entityId + " already exists");
+			}
+		} else {
+
+			result.putAll(tenantId,
+					getJDBCTemplate(tenantId).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
+			if (result.containsValue(entityId)) {
+				throw new ResponseException(ErrorType.AlreadyExists, entityId + " already exists");
+			}
+
 		}
-		return true;
 	}
 	
-	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
+	public void getAllIds(String entityId, String tenantId) throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		result.putAll(AppConstants.INTERNAL_NULL_KEY,
 				getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
 		List<String> tenants = getTenants();
 		for (String tenant : tenants) {
-			result.putAll(tenant, getJDBCTemplate(tenant).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
+			result.putAll(tenant,
+					getJDBCTemplate(tenant).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
 		}
-
-		return result;
+		if (!result.containsValue(entityId)) {
+			throw new ResponseException(ErrorType.NotFound, "Entity Id " + entityId + " not found");
+		}
+		if (!result.containsKey(tenantId)) {
+			throw new ResponseException(ErrorType.TenantNotFound, "tenant " + tenantId + " not found");
+		}
 	}
-
 }
