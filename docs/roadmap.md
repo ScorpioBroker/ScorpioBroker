@@ -19,8 +19,7 @@ The following list of features are planned to be addressed in the short term, an
    - DB migration scripts to get 1.2.1 entities transformed to 1.3.1
 3. IoT Agent Integration
 4. Multi-typing  (1.5)
-5. NGSI-LD Scopes (1.5) 
-6. Support for queries where attribute is implicitly specified in query filter or geoquery
+
 
 ### Medium Term
 The following list of features are planned to be addressed in the medium term, typically within the subsequent release(s) generated in the next 6 months after the next planned release.
