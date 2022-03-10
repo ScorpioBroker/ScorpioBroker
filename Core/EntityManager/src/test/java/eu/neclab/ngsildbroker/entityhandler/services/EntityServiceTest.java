@@ -1,12 +1,10 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Method;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -14,7 +12,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -24,15 +21,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -43,6 +36,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.Gson;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -101,7 +95,6 @@ public class EntityServiceTest {
 	@Before
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
-
 		ObjectMapper objectMapper = new ObjectMapper();
 
 		entityPayload = "{\r\n" + "    \"http://example.org/vehicle/brandName\": [\r\n" + "      {\r\n"
@@ -179,7 +172,7 @@ public class EntityServiceTest {
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(entityPayload, Map.class);
 			String id = entityService.createEntry(multimaparr, resolved);
-			Assert.assertEquals(id, "urn:ngsi-ld:Vehicle:A103");
+			Assert.assertEquals("urn:ngsi-ld:Vehicle:A103", id);
 			verify(entityService).createEntry(any(), any());
 		} catch (Exception ex) {
 			Assert.fail();
@@ -187,8 +180,10 @@ public class EntityServiceTest {
 
 	}
 
+	/**
+	 * this method is use for check the entity is already exist
+	 */
 	@Test
-
 	public void createMessageThrowsAlreadyExistTest() throws ResponseException, Exception {
 		MockitoAnnotations.initMocks(this);
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
@@ -204,9 +199,17 @@ public class EntityServiceTest {
 		EntityRequest request = new CreateEntityRequest(resolved, multimaparr);
 		Mockito.doThrow(new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists"))
 				.when(entityService).createEntry(multimaparr, resolved);
-		verify(entityService).createEntry(any(), any());
+		try {
+			entityService.createEntry(multimaparr, resolved);
+		} catch (Exception e) {
+			Assert.assertEquals(request.getId() + " already exists", e.getMessage());
+		}
+
 	}
 
+	/**
+	 * this method is use for update the entity
+	 */
 	@Test
 	public void updateMessageTest() throws Exception {
 		try {
@@ -227,8 +230,36 @@ public class EntityServiceTest {
 			UpdateEntityRequest request = new UpdateEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
 					resolved, null);
 			updateResult = entityService.updateEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved);
-			Assert.assertEquals(updateResult.getUpdated(), request.getUpdateResult().getUpdated());
+			Assert.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
 			verify(entityService).updateEntry(any(), any(), any());
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * this method is use for update the entity if entity is not exist
+	 */
+	@Test
+	public void updateMessageEntityNotExistTest() throws Exception {
+		try {
+			MockitoAnnotations.initMocks(this);
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A104");
+			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
+			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(entityService);
+			ReflectionTestUtils.setField(entityService, "directDB", true);
+			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
+			multimaparr.put("content-type", "application/json");
+			Gson gson = new Gson();
+			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
+			try {
+				entityService.updateEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved);
+			} catch (Exception e) {
+				Assert.assertEquals("Entity Id " + "urn:ngsi-ld:Vehicle:A103" + " not found", e.getMessage());
+			}
 		} catch (Exception ex) {
 			Assert.fail();
 		}
@@ -257,8 +288,37 @@ public class EntityServiceTest {
 			AppendEntityRequest request = new AppendEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
 					resolved, null);
 			updateResult = entityService.appendToEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved, null);
-			Assert.assertEquals(updateResult.getUpdated(), request.getUpdateResult().getUpdated());
+			Assert.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
 			verify(entityService).appendToEntry(any(), any(), any(), any());
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * this method is use for append the field or attribute in entity if entity id
+	 * is not exist
+	 */
+	@Test
+	public void appendFieldEntityNotExistTest() {
+		try {
+			MockitoAnnotations.initMocks(this);
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A104");
+			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
+			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(entityService);
+			ReflectionTestUtils.setField(entityService, "directDB", true);
+			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
+			multimaparr.put("content-type", "application/json");
+			Gson gson = new Gson();
+			Map<String, Object> resolved = gson.fromJson(appendPayload, Map.class);
+			try {
+				entityService.appendToEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved, null);
+			} catch (Exception e) {
+				Assert.assertEquals("Entity Id " + "urn:ngsi-ld:Vehicle:A103" + " not found", e.getMessage());
+			}
 		} catch (Exception ex) {
 			Assert.fail();
 		}
@@ -289,13 +349,47 @@ public class EntityServiceTest {
 					resolved, "http://example.org/vehicle/speed");
 			updateResult = entityService.partialUpdateEntity(multimaparr, "urn:ngsi-ld:Vehicle:A103",
 					"http://example.org/vehicle/speed", resolved);
-			Assert.assertEquals(updateResult.getUpdated(), request.getUpdateResult().getUpdated());
+			Assert.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
 			verify(entityService).partialUpdateEntity(any(), any(), any(), any());
 		} catch (Exception ex) {
 			Assert.fail();
 		}
 	}
 
+	/**
+	 * this method is use for the update partial attribute field if entity id is not
+	 * exist
+	 */
+	@Test
+	public void updatePartialAttributeFieldEntityNotExistTest() {
+		try {
+
+			MockitoAnnotations.initMocks(this);
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A104");
+			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
+			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(entityService);
+			ReflectionTestUtils.setField(entityService, "directDB", true);
+			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
+			multimaparr.put("content-type", "application/json");
+			Gson gson = new Gson();
+			Map<String, Object> resolved = gson.fromJson(updatePartialAttributesPayload, Map.class);
+			try {
+				entityService.partialUpdateEntity(multimaparr, "urn:ngsi-ld:Vehicle:A103",
+						"http://example.org/vehicle/speed", resolved);
+			} catch (Exception e) {
+				Assert.assertEquals("Entity Id " + "urn:ngsi-ld:Vehicle:A103" + " not found", e.getMessage());
+			}
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * this method is use for the update partial default attribute field
+	 */
 	@Test
 	public void updatePartialDefaultAttributeFieldTest() {
 		try {
@@ -316,7 +410,7 @@ public class EntityServiceTest {
 					resolved, "http://example.org/vehicle/speed");
 			updateResult = entityService.partialUpdateEntity(multimaparr, "urn:ngsi-ld:Vehicle:A103",
 					"http://example.org/vehicle/speed", resolved);
-			Assert.assertEquals(updateResult.getUpdated(), request.getUpdateResult().getUpdated());
+			Assert.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
 			verify(entityService).partialUpdateEntity(any(), any(), any(), any());
 		} catch (Exception ex) {
 			Assert.fail();
@@ -341,7 +435,7 @@ public class EntityServiceTest {
 			multimaparr.put("content-type", "application/json");
 			boolean result = entityService.deleteAttribute(multimaparr, "urn:ngsi-ld:Vehicle:A103",
 					"http://example.org/vehicle/speed", "urn:ngsi-ld:Property:speedometerA4567-speed", "deleteAll");
-			Assert.assertEquals(result, true);
+			Assert.assertEquals(true, result);
 			verify(entityService).deleteAttribute(any(), any(), any(), any(), any());
 		} catch (Exception ex) {
 			Assert.fail();
@@ -365,8 +459,34 @@ public class EntityServiceTest {
 			multimaparr.put("content-type", "application/json");
 			boolean result = entityService.deleteAttribute(multimaparr, "urn:ngsi-ld:Vehicle:A103",
 					"http://example.org/vehicle/speed", null, null);
-			Assert.assertEquals(result, true);
+			Assert.assertEquals(true, result);
 			verify(entityService).deleteAttribute(any(), any(), any(), any(), any());
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * this method is use for all delete the attribute if entity id is not exist
+	 */
+	@Test
+	public void deleteAllAttributeInstanceIfEnityNotExistTest() {
+		try {
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A104");
+			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
+			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(entityService);
+			ReflectionTestUtils.setField(entityService, "directDB", true);
+			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
+			multimaparr.put("content-type", "application/json");
+			try {
+				entityService.deleteAttribute(multimaparr, "urn:ngsi-ld:Vehicle:A103",
+						"http://example.org/vehicle/speed", null, null);
+			} catch (Exception e) {
+				Assert.assertEquals("Entity Id " + "urn:ngsi-ld:Vehicle:A103" + " not found", e.getMessage());
+			}
 		} catch (Exception ex) {
 			Assert.fail();
 		}
