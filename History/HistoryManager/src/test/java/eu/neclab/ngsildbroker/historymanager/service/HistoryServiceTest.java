@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.sql.DataSource;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -26,39 +26,43 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.Gson;
+import com.zaxxer.hikari.HikariConfig;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.datatypes.DBWriteTemplates;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
 @RunWith(SpringRunner.class)
@@ -67,6 +71,7 @@ import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 @SpringBootTest
 
 @AutoConfigureMockMvc
+@PowerMockRunnerDelegate(SpringRunner.class)
 public class HistoryServiceTest {
 
 	@Value("${scorpio.directDB}")
@@ -85,18 +90,34 @@ public class HistoryServiceTest {
 	StorageDAO storageDAO = mock(StorageDAO.class);;
 
 	@Mock
-	DBWriteTemplates dBWriteTemplates;
-
-	@Mock
 	ParamsResolver paramsResolver;
 
 	@Mock
 	JdbcTemplate template;
 
+	@MockBean
+	DBWriteTemplates defaultTemplates;
+
 	@InjectMocks
 
 	@Spy
 	private HistoryService historyService;
+
+	@Mock
+	private JdbcTemplate writerJdbcTemplate;
+
+	@Mock
+	private DataSource writerDataSource;
+
+	@Mock
+	private HikariConfig hikariConfig;
+	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
+	private TransactionTemplate writerTransactionTemplate;
+	private JdbcTemplate writerJdbcTemplateWithTransaction;
+
+	private HashMap<String, DBWriteTemplates> tenant2Templates = new HashMap<String, DBWriteTemplates>();
+
+	StorageFunctionsInterface storageFunctions;
 
 	URI uri;
 
@@ -115,10 +136,20 @@ public class HistoryServiceTest {
 	JsonNode updatePartialAttributesNode;
 	JsonNode updatePartialDefaultAttributesNode;
 	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
+	// protected StorageFunctionsInterface getStorageFunctions();
 
 	@Before
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
+
+		writerJdbcTemplate.execute("SELECT 1"); // create connection pool and connect to database
+		DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(writerDataSource);
+		writerJdbcTemplateWithTransaction = new JdbcTemplate(transactionManager.getDataSource());
+		writerTransactionTemplate = new TransactionTemplate(transactionManager);
+		defaultTemplates = new DBWriteTemplates(writerJdbcTemplateWithTransaction, writerTransactionTemplate,
+				writerJdbcTemplate);
+		// storageFunctions = getStorageFunctions();
+
 		uri = new URI(AppConstants.HISTORY_URL + "urn:ngsi-ld:testunit:151");
 		ObjectMapper objectMapper = new ObjectMapper();
 
@@ -191,7 +222,37 @@ public class HistoryServiceTest {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * this method is use for check the temporal entity is already exist
+	 */
+	@Test
+	public void createTemporalEntityThrowsAlreadyExistTest() throws ResponseException, Exception {
+		MockitoAnnotations.initMocks(this);
+		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
+		when(historyDAO.getAllIds()).thenReturn(entityIds);
+		Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
+		postConstruct.setAccessible(true);
+		postConstruct.invoke(historyService);
+		ReflectionTestUtils.setField(historyService, "directDB", true);
+		multimaparr.put("content-type", "application/json");
+		Gson gson = new Gson();
+		Map<String, Object> resolved = gson.fromJson(temporalPayload, Map.class);
+		EntityRequest request = new CreateEntityRequest(resolved, multimaparr);
+		Mockito.doThrow(new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists"))
+				.when(historyService).createEntry(multimaparr, resolved);
+		try {
+			historyService.createEntry(multimaparr, resolved);
+		} catch (Exception e) {
+			Assert.assertEquals(request.getId() + " already exists", e.getMessage());
+		}
 
+	}
+	
+	/**
+	 * this method is use for append the field or attribute in Temporal entity
+	 */
 	@Test
 	public void appendTemporalFieldTest() {
 		try {
@@ -218,7 +279,39 @@ public class HistoryServiceTest {
 			e.printStackTrace();
 		}
 	}
-
+	
+	/**
+	 * this method is use for append the field or attribute in temporal entity if entity id
+	 * is not exist
+	 */
+	@Test
+	public void appendFieldTemporalEntityNotExistTest() {
+		try {
+			MockitoAnnotations.initMocks(this);
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
+			when(historyDAO.getAllIds()).thenReturn(entityIds);
+			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(historyService);
+			ReflectionTestUtils.setField(historyService, "directDB", true);
+			multimaparr.put("content-type", "application/json");
+			Gson gson = new Gson();
+			String[] optionsArray = new String[0];
+			Map<String, Object> resolved = gson.fromJson(tempAppendPayload, Map.class);
+			try {
+				historyService.appendToEntry(multimaparr, "urn:ngsi-ld:Vehicle:1", resolved, optionsArray);
+			} catch (Exception e) {
+				Assert.assertEquals("You cannot create an attribute on a none existing entity", e.getMessage());
+			}
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+	
+	/**
+	 * this method is use for all delete the temporal entity
+	 */
 	@Test
 	public void deleteTemporalByIdTest() {
 		try {
@@ -239,18 +332,80 @@ public class HistoryServiceTest {
 			e.printStackTrace();
 		}
 	}
-
+	
 	/**
-	 * this method is use test "addAttrib2TemporalEntity" method of HistoryService
-	 *//*
-		 * 
-		 * @Test public void addAttrib2TemporalEntityTest() { try {
-		 * Mockito.doReturn(true).when(historyDAO).entityExists(any(), any());
-		 * historyService.addAttrib2TemporalEntity(ArrayListMultimap.create(),
-		 * "urn:ngsi-ld:testunit:151", temporalPayload); verify(kafkaOperations,
-		 * times(3)).pushToKafka(any(), any(), any()); } catch (Exception e) {
-		 * Assert.fail(); e.printStackTrace(); } }
-		 * 
-		 * }
-		 */
+	 * this method is use for all delete the temporal entity if id is not exist
+	 */
+	@Test
+	public void deleteAllAttributeInstanceIfEnityNotExistTest() {
+		try {
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
+			when(historyDAO.getAllIds()).thenReturn(entityIds);
+			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(historyService);
+			ReflectionTestUtils.setField(historyService, "directDB", true);
+			multimaparr.put("content-type", "application/json");
+			try {
+				historyService.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:1");
+			} catch (Exception e) {
+				Assert.assertEquals("urn:ngsi-ld:Vehicle:1" + " not found", e.getMessage());
+			}
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+	
+	/**
+	 * this method is use for update temporal entity
+	 */
+	@Test
+	public void updateTemporalFieldTest() throws Exception {
+		try {
+			String tenant = null;
+			MockitoAnnotations.initMocks(this);
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
+			when(historyDAO.getAllIds()).thenReturn(entityIds);
+			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(historyService);
+			ReflectionTestUtils.setField(historyService, "directDB", true);
+			multimaparr.put("content-type", "application/json");
+			Context context = JsonLdProcessor.getCoreContextClone();
+			Gson gson = new Gson();
+			Map<String, Object> resolved = gson.fromJson(tempupdatePayload, Map.class);
+			QueryParams qp = new QueryParams();
+			List<Map<String, String>> temp1 = new ArrayList<Map<String, String>>();
+			HashMap<String, String> temp2 = new HashMap<String, String>();
+			temp2.put(NGSIConstants.JSON_LD_ID, "urn:ngsi-ld:Vehicle:1");
+			temp1.add(temp2);
+			qp.setEntities(temp1);
+			qp.setAttrs("https://uri.etsi.org/ngsi-ld/default-context/brandName");
+			qp.setInstanceId("urn:ngsi-ld:9c7690ed-eba4-4d95-a28b-4584f953f8ab");
+			qp.setIncludeSysAttrs(true);
+			// qp.setTenant(tenant);
+			// StorageDAO historyDAO = new HistoryDAO();
+			// Method postConstruct1 = StorageDAO.class.getDeclaredMethod("init");
+			// postConstruct1.setAccessible(true);
+			// postConstruct1.invoke(storageDAO);
+
+			// QueryResult queryResult=historyDAO.query(qp);
+
+			// HistoryDAO b = PowerMockito.spy(new HistoryDAO());
+			// PowerMockito.doReturn(defaultTemplates).when(b, "getJDBCTemplates",null);
+			// when(historyDAO.query(qp)).thenReturn(queryResult);
+
+			// historyService.modifyAttribInstanceTemporalEntity(multimaparr,
+			// "urn:ngsi-ld:Vehicle:1", resolved,
+			// "https://uri.etsi.org/ngsi-ld/default-context/brandName",
+			// "urn:ngsi-ld:9c7690ed-eba4-4d95-a28b-4584f953f8ab", context);
+			// Assert.assertEquals(updateResult.getUpdated(),
+			// request.getUpdateResult().getUpdated());
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+
 }
