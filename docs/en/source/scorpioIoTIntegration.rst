@@ -1,7 +1,7 @@
 Integrate Scorpio Broker with NGSILD Based IoT agent 
 ****************************************************
 
-This tutorial introduces the concept of an IoT Agent and wires up the dummy UltraLight 2.0 IoT devices so that measurements can be read and commands can be sent using NGSI-LD requests sent to the Scorpio Broker.
+This tutorial introduces the concept of an integration of Scorpio Broker with IoT Agent which wires up the dummy UltraLight 2.0 IoT devices so that measurements can be read and commands can be sent using NGSI-LD requests sent to the Scorpio Broker.
  
 **IOT AGENT:** An IoT Agent is a component that lets a group of devices send their data to and be managed from a Context Broker using their own native protocols. if someone want to know more about IoT Agent then can refer `Link`_.
 There are several IoT Agent in the market which are in production or already workable. 
@@ -309,72 +309,72 @@ Response
 
 .. code-block:: console 
 
-{
-    "id": "urn:ngsi-ld:Device:water001",
-    "type": "Device",
-    "category": {
-        "type": "Property",
-        "value": "sensor",
-        "observedAt": "2022-02-04T10:02:50.332Z"
-    },
-    "controlledAsset": {
-        "type": "Relationship",
-        "object": "urn:ngsi-ld:Building:barn001",
-        "observedAt": "2022-02-04T10:02:50.332Z"
-    },
-    "heartRate": {
-        "type": "Property",
-        "unitCode": "5K"
-    },
-    "off_info": {
-        "type": "Property",
-        "value": {
-            "type": "commandResult",
-            "@value": " "
-        }
-    },
-    "off_status": {
-        "type": "Property",
-        "value": {
-            "type": "commandStatus",
-            "@value": "UNKNOWN"
-        }
-    },
-    "on_info": {
-        "type": "Property",
-        "value": {
-            "type": "commandResult",
-            "@value": " on OK"
-        },
-        "observedAt": "2022-02-04T10:02:50.332Z"
-    },
-    "on_status": {
-        "type": "Property",
-        "value": {
-            "type": "commandStatus",
-            "@value": "OK"
-        },
-        "observedAt": "2022-02-04T10:02:50.332Z"
-    },
-    "supportedProtocol": {
-        "type": "Property",
-        "value": "ul20",
-        "observedAt": "2022-02-04T10:02:50.332Z"
-    },
-    "location": {
-        "type": "GeoProperty",
-        "value": {
-            "type": "Point",
-            "coordinates": [
-                0,
-                0
-            ]
-        }
-    },
-    "status": {
-        "type": "Property"
-    }
-}
+        {
+          "id": "urn:ngsi-ld:Device:water001",
+          "type": "Device",
+          "category": {
+              "type": "Property",
+              "value": "sensor",
+              "observedAt": "2022-02-04T10:02:50.332Z"
+            },
+          "controlledAsset": {
+              "type": "Relationship",
+              "object": "urn:ngsi-ld:Building:barn001",
+              "observedAt": "2022-02-04T10:02:50.332Z"
+            },
+          "heartRate": {
+              "type": "Property",
+              "unitCode": "5K"
+             },
+          "off_info": {
+              "type": "Property",
+              "value": {
+                  "type": "commandResult",
+                  "@value": " "
+                     }
+             },
+          "off_status": {
+              "type": "Property",
+              "value": {
+                  "type": "commandStatus",
+                  "@value": "UNKNOWN"
+                     }
+             },
+          "on_info": {
+              "type": "Property",
+              "value": {
+                  "type": "commandResult",
+                  "@value": " on OK"
+                },
+                "observedAt": "2022-02-04T10:02:50.332Z"
+             },
+          "on_status": {
+              "type": "Property",
+              "value": {
+                  "type": "commandStatus",
+                  "@value": "OK"
+                  },
+                  "observedAt": "2022-02-04T10:02:50.332Z"
+             },
+          "supportedProtocol": {
+              "type": "Property",
+              "value": "ul20",
+              "observedAt": "2022-02-04T10:02:50.332Z"
+             },
+          "location": {
+              "type": "GeoProperty",
+              "value": {
+                  "type": "Point",
+                  "coordinates": [
+                      0,
+                      0
+                  ]
+                }
+             },
+          "status": {
+              "type": "Property"
+             }
+      }
 
 
 
