@@ -1,17 +1,16 @@
-{{- if .Values.HistoryManager.enabled }}
+{{- if .Values.historyManager.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ include "historyManager.fullname" . }}
   labels:
-    service: {{ .Values.HistoryManager.name }}
-  name: {{ .Values.HistoryManager.name }}
-  namespace: {{.Values.namespace}}
+    {{ include "historyManager.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
 spec:
   ports:
   - name: "1040"
     port: 1040
     targetPort: 1040
   selector:
-    service: {{ .Values.HistoryManager.name }}
-status: {}
+    {{ include "historyManager.matchLabels" . | nindent 4 }}
 {{- end }}

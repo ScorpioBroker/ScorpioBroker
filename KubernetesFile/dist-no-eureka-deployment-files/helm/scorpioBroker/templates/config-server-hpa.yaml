@@ -1,17 +1,16 @@
 {{- if eq .Values.profile "dist" }}
-{{- if and .Values.ConfigServer.enabled .Values.ConfigServer.hpa.enabled }}
+{{- if and .Values.configServer.enabled .Values.configServer.hpa.enabled }}
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
- name: {{ .Values.ConfigServer.name }}-hpa
- namespace: {{.Values.namespace}}
+ name: {{ include "configServer.fullname" . }}-hpa
 spec:
  scaleTargetRef:
    apiVersion: apps/v1
    kind: Deployment
-   name: {{ .Values.ConfigServer.name }}
- minReplicas: {{ .Values.ConfigServer.hpa.minReplicas }}
- maxReplicas: {{ .Values.ConfigServer.hpa.maxReplicas }}
- targetCPUUtilizationPercentage: {{ .Values.ConfigServer.hpa.targetCPUUtilizationPercentage }}
+   name: {{ include "configServer.fullname" . }}
+ minReplicas: {{ .Values.configServer.hpa.minReplicas }}
+ maxReplicas: {{ .Values.configServer.hpa.maxReplicas }}
+ targetCPUUtilizationPercentage: {{ .Values.configServer.hpa.targetCPUUtilizationPercentage }}
 {{- end }}
 {{- end }}

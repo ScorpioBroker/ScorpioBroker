@@ -3,13 +3,12 @@
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
- name: {{ .Values.gateway.name }}-hpa
- namespace: {{.Values.namespace}}
+ name: {{ include "gateway.fullname" . }}-hpa
 spec:
  scaleTargetRef:
    apiVersion: apps/v1
    kind: Deployment
-   name: {{ .Values.gateway.name }}
+   name: {{ include "gateway.fullname" . }}
  minReplicas: {{ .Values.gateway.hpa.minReplicas }}
  maxReplicas: {{ .Values.gateway.hpa.maxReplicas }}
  targetCPUUtilizationPercentage: {{ .Values.gateway.hpa.targetCPUUtilizationPercentage }}

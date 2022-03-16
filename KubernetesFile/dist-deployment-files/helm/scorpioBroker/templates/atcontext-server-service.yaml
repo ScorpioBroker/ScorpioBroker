@@ -1,18 +1,16 @@
-{{- if .Values.AtContextServer.enabled }}
+{{- if .Values.atContextServer.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ include "atContextServer.fullname" . }}
   labels:
-    service: {{ .Values.AtContextServer.name }}
-  name: {{ .Values.AtContextServer.name }}
-  namespace: {{.Values.namespace}}
+    {{- include "atContextServer.labels" . | nindent 4 }}
 spec:
   ports:
   - name: "27015"
     port: 27015
     targetPort: 27015
   selector:
-    service: {{ .Values.AtContextServer.name }}
-status: {}
+    {{- include "atContextServer.matchLabels" . | nindent 4 }}
 {{- end }}
 

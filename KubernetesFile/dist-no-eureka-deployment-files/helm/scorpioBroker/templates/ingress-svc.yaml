@@ -18,21 +18,21 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.AtContextServer.name }}
+            name: {{ .Values.atContextServer.name }}
             port:
               number: 27015
       - path: /ngsi-ld/v1/entities/*
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.EntityManager.name }}
+            name: {{ .Values.entityManager.name }}
             port:
               number: 1025
       - path: /ngsi-ld/v1/entityOperations/*
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.EntityManager.name }}
+            name: {{ .Values.entityManager.name }}
             port:
               number: 1025
 
@@ -40,14 +40,14 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.HistoryManager.name }}
+            name: {{ .Values.historyManager.name }}
             port:
               number: 1040
       - path: /ngsi-ld/v1/entityOperations/*
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.QueryManager.name }}
+            name: {{ .Values.queryManager.name }}
             port:
               number: 1026
 
@@ -55,45 +55,37 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.QueryManager.name }}
+            name: {{ .Values.queryManager.name }}
             port:
               number: 1026
       - path: /ngsi-ld/v1/csourceRegistrations/*
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.RegistryManager.name }}
+            name: {{ .Values.registryManager.name }}
             port:
               number: 1030
       - path: /ngsi-ld/v1/csourceSubscriptions/*
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.RegistryManager.name }}
+            name: {{ .Values.registrySubscriptionManager.name }}
             port:
-              number: 1030
-
-      - path: /scorpio/v1/info/
-        pathType: Prefix
-        backend:
-          service:
-            name: {{ .Values.StorageManager.name }}
-            port:
-              number: 1029
+              number: 2025
       - path: /remotenotify/
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.SubscriptionManager.name }}
+            name: {{ .Values.subscriptionManager.name }}
             port:
-              number: 2025
+              number: 2026
       - path: /ngsi-ld/v1/subscriptions/
         pathType: Prefix
         backend:
           service:
-            name: {{ .Values.SubscriptionManager.name }}
+            name: {{ .Values.subscriptionManager.name }}
             port:
-              number: 2025
+              number: 2026
   {{- if .Values.ingress.tls }}
   tls:
 {{ toYaml .Values.ingress.tls | indent 4 }}

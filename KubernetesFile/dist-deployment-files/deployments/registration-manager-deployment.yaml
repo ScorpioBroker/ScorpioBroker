@@ -33,7 +33,7 @@ spec:
               command:
               - /bin/sh
               - -c
-              - curl -X PUT "http://eureka:8761/eureka/apps/C-SOURCES/$HOSTNAME:c-sources:1030/status?value=OUT_OF_SERVICE"
+              - curl -X PUT "http://eureka:8761/eureka/apps/REGISTRY-MANAGER/$HOSTNAME:registry-manager:1030/status?value=OUT_OF_SERVICE"
         readinessProbe:
           exec:
             command:

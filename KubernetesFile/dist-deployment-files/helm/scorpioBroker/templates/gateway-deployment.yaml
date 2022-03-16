@@ -3,24 +3,31 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "gateway.fullname" . }}
   labels:
-    service: {{ .Values.gateway.name }}
-  name: {{ .Values.gateway.name }}
-  namespace: {{.Values.namespace}}
+    {{ include "gateway.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.gateway.replicas }}
+  strategy:
+  {{- with .Values.gateway.updateStrategy }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
-      service: {{ .Values.gateway.name }}
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+      {{- include "gateway.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        service: {{ .Values.gateway.name }}
+        {{ include "gateway.labels" . | nindent 8 }}
+        {{- with .Values.gateway.additionalLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.gateway.additionalAnnotations -}}
+      annotations:
+        {{- with .Values.gateway.additionalAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
     spec:
       containers:
       - image: {{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}
@@ -28,9 +35,9 @@ spec:
         env:
           - name: spring_args
             value: {{ .Values.springArgs.value }}
-        {{- end}}
+        {{- end }}
         imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
-        name: {{ .Values.gateway.name }}
+        name: {{ include "gateway.fullname" . }}
         ports:
         - containerPort: 9090
           protocol: TCP
@@ -40,27 +47,32 @@ spec:
               command:
               - /bin/sh
               - -c
-              - curl -X PUT "http://eureka:8761/eureka/apps/GATEWAY/$HOSTNAME:gateway:9090/status?value=OUT_OF_SERVICE"
-        {{- if .Values.gateway.readinessProbe.enabled }}
+              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/GATEWAY/$HOSTNAME:gateway:9090/status?value=OUT_OF_SERVICE"
+        
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:9090/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /actuator/health
+            port: 9090
           failureThreshold: {{ .Values.gateway.readinessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.gateway.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.gateway.readinessProbe.periodSeconds }}
-          {{- end}}
+          
+        
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 9090
+          failureThreshold: {{ .Values.gateway.livenessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.gateway.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.gateway.livenessProbe.periodSeconds }}
+              
         resources:
 {{ toYaml .Values.gateway.resources | indent 10 }}
       restartPolicy: {{ .Values.gateway.restartPolicy }}
       {{- if .Values.gateway.serviceAccount.enabled }}
       serviceAccountName: {{ .Values.gateway.serviceAccount.name }}
-      {{- end}}
+      {{- end }}
       securityContext: {{ .Values.gateway.securityContext | toYaml }}
       terminationGracePeriodSeconds: {{ .Values.gateway.terminationGracePeriodSeconds }}
-status: {}
 {{- end }}
 {{- end }}

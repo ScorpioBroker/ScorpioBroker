@@ -1,19 +1,17 @@
 {{- if eq .Values.profile "dist" }}
-{{- if .Values.ConfigServer.enabled }}
+{{- if .Values.configServer.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ include "configServer.fullname" . }}
   labels:
-    service: {{ .Values.ConfigServer.name }}
-  name: {{ .Values.ConfigServer.name }}
-  namespace: {{.Values.namespace}}
+    {{- include "configServer.labels" . | nindent 4 }}
 spec:
   ports:
   - name: "8888"
     port: 8888
     targetPort: 8888
   selector:
-    service: {{ .Values.ConfigServer.name }}
-status: {}
+    {{- include "configServer.matchLabels" . | nindent 4 }}
 {{- end }}
 {{- end }}

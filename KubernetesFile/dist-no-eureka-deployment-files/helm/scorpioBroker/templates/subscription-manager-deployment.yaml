@@ -1,70 +1,83 @@
-{{- if .Values.SubscriptionManager.enabled }}
+{{- if .Values.subscriptionManager.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "subscriptionManager.fullname" . }}
   labels:
-    service: {{ .Values.SubscriptionManager.name }}
-  name: {{ .Values.SubscriptionManager.name }}
-  namespace: {{.Values.namespace}}
+    {{ include "subscriptionManager.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.SubscriptionManager.replicas }}
+  replicas: {{ .Values.subscriptionManager.replicas }}
+  strategy:
+  {{- with .Values.subscriptionManager.updateStrategy }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
-      service: {{ .Values.SubscriptionManager.name }}
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+      {{- include "subscriptionManager.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        service: {{ .Values.SubscriptionManager.name }}
+        {{ include "subscriptionManager.labels" . | nindent 8 }}
+        {{- with .Values.subscriptionManager.additionalLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.subscriptionManager.additionalAnnotations -}}
+      annotations:
+        {{- with .Values.subscriptionManager.additionalAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
     spec:
       containers:
-      {{- if eq .Values.profile "dist"}}        
-      - image: {{ .Values.SubscriptionManager.image.repository }}:{{ .Values.SubscriptionManager.image.tag }}
-      {{ else }}
-      - image: {{ .Values.SubscriptionManager.image.repository }}:{{ .Values.SubscriptionManager.image.no_eureka_tag }} 
-      {{ end }}  
+        {{- if eq .Values.profile "dist"}}
+      - image: {{ .Values.subscriptionManager.image.repository }}:{{ .Values.subscriptionManager.image.tag }}
+        {{ else }}
+      - image: {{ .Values.subscriptionManager.image.repository }}:{{ .Values.subscriptionManager.image.no_eureka_tag }}
+        {{ end }}
         {{- if .Values.springArgs.overrideSpringArgs }}
         env:
           - name: spring_args
             value: {{ .Values.springArgs.value }}
-        {{- end}}
-        imagePullPolicy: {{ .Values.SubscriptionManager.image.pullPolicy }}
-        name: {{ .Values.SubscriptionManager.name }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.subscriptionManager.image.pullPolicy }}
+        name: {{ include "subscriptionManager.fullname" . }}
         ports:
-        - containerPort: 2025
+        - containerPort: 2026
           protocol: TCP
-        {{- if eq .Values.profile "dist"}}   
+        {{- if eq .Values.profile "dist"}}
         lifecycle:
            preStop:
             exec:
               command:
               - /bin/sh
               - -c
-              - curl -X PUT "http://eureka:8761/eureka/apps/SUBSCRIPTION-MANAGER/$HOSTNAME:subscription-manager:2025/status?value=OUT_OF_SERVICE"
+              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/SUBSCRIPTION-MANAGER/$HOSTNAME:subscription-manager:2026/status?value=OUT_OF_SERVICE"
         {{ end }}
-        {{- if .Values.SubscriptionManager.readinessProbe.enabled }}
+        
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:2025/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: {{ .Values.SubscriptionManager.readinessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.SubscriptionManager.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.SubscriptionManager.readinessProbe.periodSeconds }}
-          {{- end}}
+          httpGet:
+            path: /actuator/health
+            port: 2026
+          failureThreshold: {{ .Values.subscriptionManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.subscriptionManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.subscriptionManager.readinessProbe.periodSeconds }}
+         
+          
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 2026
+          failureThreshold: {{ .Values.subscriptionManager.livenessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.subscriptionManager.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.subscriptionManager.livenessProbe.periodSeconds }}
+            
         resources:
-{{ toYaml .Values.SubscriptionManager.resources | indent 10 }}
-      restartPolicy: {{ .Values.SubscriptionManager.restartPolicy }}
-      {{- if .Values.SubscriptionManager.serviceAccount.enabled }}
-      serviceAccountName: {{ .Values.SubscriptionManager.serviceAccount.name }}
-      {{- end}}
-      securityContext: {{ .Values.SubscriptionManager.securityContext | toYaml }}
-      terminationGracePeriodSeconds: {{ .Values.SubscriptionManager.terminationGracePeriodSeconds }}
-status: {}
+{{ toYaml .Values.subscriptionManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.subscriptionManager.restartPolicy }}
+      {{- if .Values.subscriptionManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.subscriptionManager.serviceAccount.name }}
+      {{- end }}
+      securityContext: {{ .Values.subscriptionManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.subscriptionManager.terminationGracePeriodSeconds }}
 {{- end }}
+

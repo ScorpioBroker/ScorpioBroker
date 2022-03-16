@@ -2,18 +2,21 @@
 {{- if .Values.eureka.enabled }}
 apiVersion: v1
 kind: Service
-metadata:
+metadata:  
+  name: {{ include "eureka.fullname" . }}-node-port
   labels:
-    service: {{ .Values.eureka.name }}
-  name: {{ .Values.eureka.name }}-node-port
-  namespace: {{.Values.namespace}}
+    {{- include "eureka.labels" . | nindent 4 }}
 spec:
-  type: NodePort
+  type: {{ .Values.eureka.service.type }}
   ports:
-  - port: 8761
-    targetPort: 8761
-    nodePort : 30000
+  - port: {{ .Values.eureka.service.port }}
+    targetPort: {{ .Values.eureka.service.port }}
+    {{- if and (eq .Values.eureka.service.type "NodePort") .Values.eureka.service.nodePort }}
+    nodePort: {{ .Values.eureka.service.nodePort }}
+    {{- else if eq .Values.eureka.service.type "ClusterIP" }}
+    nodePort: null
+    {{- end }}
   selector:
-    service: {{ .Values.eureka.name }}
+    {{- include "eureka.matchLabels" . | nindent 4 }}
 {{- end }}
 {{- end }}

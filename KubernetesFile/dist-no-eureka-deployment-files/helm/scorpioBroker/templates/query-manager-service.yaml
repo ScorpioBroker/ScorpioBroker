@@ -1,17 +1,16 @@
-{{- if .Values.QueryManager.enabled }}
+{{- if .Values.queryManager.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
+  name: {{ include "queryManager.fullname" . }}
   labels:
-    service: {{ .Values.QueryManager.name }}
-  name: {{ .Values.QueryManager.name }}
-  namespace: {{.Values.namespace}}
+    {{ include "queryManager.labels" . | nindent 4 }}
+  namespace: {{ .Release.Namespace }}
 spec:
   ports:
   - name: "1026"
     port: 1026
     targetPort: 1026
   selector:
-    service: {{ .Values.QueryManager.name }}
-status: {}
+    {{ include "queryManager.matchLabels" . | nindent 4 }}
 {{- end }}

@@ -1,36 +1,43 @@
 {{- if eq .Values.profile "dist" }}
-{{- if .Values.ConfigServer.enabled }}
+{{- if .Values.configServer.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "configServer.fullname" . }}
   labels:
-    service: {{ .Values.ConfigServer.name }}
-  name: {{ .Values.ConfigServer.name }}
-  namespace: {{.Values.namespace}}
+    {{- include "configServer.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.ConfigServer.replicas }}
+  replicas: {{ .Values.configServer.replicas }}
+  strategy:
+  {{- with .Values.configServer.updateStrategy }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
-      service: {{ .Values.ConfigServer.name }}
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+      {{- include "configServer.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        service: {{ .Values.ConfigServer.name }}
+        {{ include "configServer.labels" . | nindent 8 }}
+        {{- with .Values.configServer.additionalLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.configServer.additionalAnnotations -}}
+      annotations:
+        {{- with .Values.configServer.additionalAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
     spec:
       containers:
-      - image: {{ .Values.ConfigServer.image.repository }}:{{ .Values.ConfigServer.image.tag }}
+      - image: {{ .Values.configServer.image.repository }}:{{ .Values.configServer.image.tag }}
         {{- if .Values.springArgs.overrideSpringArgs }}
         env:
           - name: spring_args
             value: {{ .Values.springArgs.value }}
-        {{- end}}
-        imagePullPolicy: {{ .Values.ConfigServer.image.pullPolicy }}
-        name: {{ .Values.ConfigServer.name }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.configServer.image.pullPolicy }}
+        name: {{ include "configServer.fullname" . }}
         ports:
         - containerPort: 8888
           protocol: TCP
@@ -40,27 +47,31 @@ spec:
               command:
               - /bin/sh
               - -c
-              - curl -X PUT "http://eureka:8761/eureka/apps/CONFIGSERVER/$HOSTNAME:configserver:8888/status?value=OUT_OF_SERVICE"
-        {{- if .Values.ConfigServer.readinessProbe.enabled }}
+              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}eureka/apps/CONFIGSERVER/$HOSTNAME:configserver:8888/status?value=OUT_OF_SERVICE"
+        
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:8888/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: {{ .Values.ConfigServer.readinessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.ConfigServer.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.ConfigServer.readinessProbe.periodSeconds }}
-          {{- end}}
+          httpGet:
+            path: /actuator/health
+            port: 8888
+          failureThreshold: {{ .Values.configServer.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.configServer.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.configServer.readinessProbe.periodSeconds }}
+          
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8888
+          failureThreshold: {{ .Values.configServer.livenessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.configServer.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.configServer.livenessProbe.periodSeconds }}
+         
         resources:
-{{ toYaml .Values.ConfigServer.resources | indent 10 }}
-      restartPolicy: {{ .Values.ConfigServer.restartPolicy }}
-      {{- if .Values.ConfigServer.serviceAccount.enabled }}
-      serviceAccountName: {{ .Values.ConfigServer.serviceAccount.name }}
-      {{- end}}
-      securityContext: {{ .Values.ConfigServer.securityContext | toYaml }}
-      terminationGracePeriodSeconds: {{ .Values.ConfigServer.terminationGracePeriodSeconds }}
-status: {}
+{{ toYaml .Values.configServer.resources | indent 10 }}
+      restartPolicy: {{ .Values.configServer.restartPolicy }}
+      {{- if .Values.configServer.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.configServer.serviceAccount.name }}
+      {{- end }}
+      securityContext: {{ .Values.configServer.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.configServer.terminationGracePeriodSeconds }}
 {{- end }}
 {{- end }}

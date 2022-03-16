@@ -21,7 +21,7 @@ spec:
         service: registry-subscription-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:RegistrySubscriptionManager_2.0.2
+      - image: scorpiobroker/scorpio:RegistrySubscriptionManager_latest
         imagePullPolicy: Always
         name: registry-subscription-manager
         ports:

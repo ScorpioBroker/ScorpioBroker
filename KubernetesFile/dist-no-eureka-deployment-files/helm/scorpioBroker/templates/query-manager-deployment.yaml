@@ -1,70 +1,83 @@
-{{- if .Values.QueryManager.enabled }}
+{{- if .Values.queryManager.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "queryManager.fullname" . }}
   labels:
-    service: {{ .Values.QueryManager.name }}
-  name: {{ .Values.QueryManager.name }}
-  namespace: {{.Values.namespace}}
+    {{ include "queryManager.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.QueryManager.replicas }}
+  replicas: {{ .Values.queryManager.replicas }}
+  strategy:
+  {{- with .Values.queryManager.updateStrategy }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
-      service: {{ .Values.QueryManager.name }}
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+      {{- include "queryManager.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        service: {{ .Values.QueryManager.name }}
+        {{ include "queryManager.labels" . | nindent 8 }}
+        {{- with .Values.queryManager.additionalLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.queryManager.additionalAnnotations -}}
+      annotations:
+        {{- with .Values.queryManager.additionalAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
     spec:
       containers:
-        {{- if eq .Values.profile "dist"}}      
-      - image: {{ .Values.QueryManager.image.repository }}:{{ .Values.QueryManager.image.tag }}
+        {{- if eq .Values.profile "dist"}}
+      - image: {{ .Values.queryManager.image.repository }}:{{ .Values.queryManager.image.tag }}
         {{ else }}
-      - image: {{ .Values.QueryManager.image.repository }}:{{ .Values.QueryManager.image.no_eureka_tag }}
-        {{ end }}  
+      - image: {{ .Values.queryManager.image.repository }}:{{ .Values.queryManager.image.no_eureka_tag }}
+        {{ end }}
         {{- if .Values.springArgs.overrideSpringArgs }}
         env:
           - name: spring_args
             value: {{ .Values.springArgs.value }}
-        {{- end}}
-        imagePullPolicy: {{ .Values.QueryManager.image.pullPolicy }}
-        name: {{ .Values.QueryManager.name }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.queryManager.image.pullPolicy }}
+        name: {{ include "queryManager.fullname" . }}
         ports:
         - containerPort: 1026
           protocol: TCP
-        {{- if eq .Values.profile "dist"}}  
+        {{- if eq .Values.profile "dist"}}
         lifecycle:
            preStop:
             exec:
               command:
               - /bin/sh
               - -c
-              - curl -X PUT "http://eureka:8761/eureka/apps/QUERY-MANAGER/$HOSTNAME:query-manager:1026/status?value=OUT_OF_SERVICE"
-        {{ end }}        
-        {{- if .Values.QueryManager.readinessProbe.enabled }}
+              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/QUERY-MANAGER/$HOSTNAME:query-manager:1026/status?value=OUT_OF_SERVICE"
+        {{ end }}
+        
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1026/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: {{ .Values.QueryManager.readinessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.QueryManager.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.QueryManager.readinessProbe.periodSeconds }}
-          {{- end}}
+          httpGet:
+            path: /actuator/health
+            port: 1026
+          failureThreshold: {{ .Values.queryManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.queryManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.queryManager.readinessProbe.periodSeconds }}
+          
+        
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 1026
+          failureThreshold: {{ .Values.queryManager.livenessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.queryManager.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.queryManager.livenessProbe.periodSeconds }}
+          
         resources:
-{{ toYaml .Values.QueryManager.resources | indent 10 }}
-      restartPolicy: {{ .Values.QueryManager.restartPolicy }}
-      {{- if .Values.QueryManager.serviceAccount.enabled }}
-      serviceAccountName: {{ .Values.QueryManager.serviceAccount.name }}
-      {{- end}}
-      securityContext: {{ .Values.QueryManager.securityContext | toYaml }}
-      terminationGracePeriodSeconds: {{ .Values.QueryManager.terminationGracePeriodSeconds }}
-status: {}
+{{ toYaml .Values.queryManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.queryManager.restartPolicy }}
+      {{- if .Values.queryManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.queryManager.serviceAccount.name }}
+      {{- end }}
+      securityContext: {{ .Values.queryManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.queryManager.terminationGracePeriodSeconds }}
 {{- end }}
+

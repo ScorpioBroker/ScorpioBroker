@@ -1,70 +1,83 @@
-{{- if .Values.RegistryManager.enabled }}
+{{- if .Values.registryManager.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: {{ include "registryManager.fullname" . }}
   labels:
-    service: {{ .Values.RegistryManager.name }}
-  name: {{ .Values.RegistryManager.name }}
-  namespace: {{.Values.namespace}}
+    {{ include "registryManager.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.RegistryManager.replicas }}
+  replicas: {{ .Values.registryManager.replicas }}
+  strategy:
+  {{- with .Values.registryManager.updateStrategy }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
-      service: {{ .Values.RegistryManager.name }}
-  strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+      {{- include "registryManager.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        service: {{ .Values.RegistryManager.name }}
+        {{ include "registryManager.labels" . | nindent 8 }}
+        {{- with .Values.registryManager.additionalLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.registryManager.additionalAnnotations -}}
+      annotations:
+        {{- with .Values.registryManager.additionalAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
     spec:
       containers:
-      {{- if eq .Values.profile "dist"}}        
-      - image: {{ .Values.RegistryManager.image.repository }}:{{ .Values.RegistryManager.image.tag }}
-      {{ else }} 
-      - image: {{ .Values.RegistryManager.image.repository }}:{{ .Values.RegistryManager.image.no_eureka_tag }}
-      {{ end }}  
+        {{- if eq .Values.profile "dist"}}
+      - image: {{ .Values.registryManager.image.repository }}:{{ .Values.registryManager.image.tag }}
+        {{ else }}
+      - image: {{ .Values.registryManager.image.repository }}:{{ .Values.registryManager.image.no_eureka_tag }}
+        {{ end }}
         {{- if .Values.springArgs.overrideSpringArgs }}
         env:
           - name: spring_args
             value: {{ .Values.springArgs.value }}
-        {{- end}}
-        imagePullPolicy: {{ .Values.RegistryManager.image.pullPolicy }}
-        name: {{ .Values.RegistryManager.name }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.registryManager.image.pullPolicy }}
+        name: {{ include "registryManager.fullname" . }}
         ports:
         - containerPort: 1030
           protocol: TCP
-        {{- if eq .Values.profile "dist"}}  
+        {{- if eq .Values.profile "dist"}}
         lifecycle:
            preStop:
             exec:
               command:
               - /bin/sh
               - -c
-              - curl -X PUT "http://eureka:8761/eureka/apps/C-SOURCES/$HOSTNAME:c-sources:1030/status?value=OUT_OF_SERVICE"
-        {{ end }}        
-        {{- if .Values.RegistryManager.readinessProbe.enabled }}
+              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/REGISTRY-MANAGER/$HOSTNAME:registry-manager:1030/status?value=OUT_OF_SERVICE"
+        {{ end }}
+        
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1030/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: {{ .Values.RegistryManager.readinessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.RegistryManager.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.RegistryManager.readinessProbe.periodSeconds }}
-          {{- end}}
+          httpGet:
+            path: /actuator/health
+            port: 1030
+          failureThreshold: {{ .Values.registryManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.registryManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.registryManager.readinessProbe.periodSeconds }}
+          
+        
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 1030
+          failureThreshold: {{ .Values.registryManager.livenessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.registryManager.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.registryManager.livenessProbe.periodSeconds }}
+            
         resources:
-{{ toYaml .Values.RegistryManager.resources | indent 10 }}
-      restartPolicy: {{ .Values.RegistryManager.restartPolicy }}
-      {{- if .Values.RegistryManager.serviceAccount.enabled }}
-      serviceAccountName: {{ .Values.RegistryManager.serviceAccount.name }}
-      {{- end}}
-      securityContext: {{ .Values.RegistryManager.securityContext | toYaml }}
-      terminationGracePeriodSeconds: {{ .Values.RegistryManager.terminationGracePeriodSeconds }}
-status: {}
+{{ toYaml .Values.registryManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.registryManager.restartPolicy }}
+      {{- if .Values.registryManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.registryManager.serviceAccount.name }}
+      {{- end }}
+      securityContext: {{ .Values.registryManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.registryManager.terminationGracePeriodSeconds }}
 {{- end }}
+
