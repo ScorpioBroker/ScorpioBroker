@@ -17,4 +17,10 @@ public class RegistrySubscriptionInfoDAO extends BaseSubscriptionInfoDAO {
 	protected StorageFunctionsInterface getStorageFunctions() {
 		return new RegistryStorageFunctions();
 	}
+
+	@Override
+	protected String getDBName() {
+		return "registry_subscriptions";
+	}
+
 }

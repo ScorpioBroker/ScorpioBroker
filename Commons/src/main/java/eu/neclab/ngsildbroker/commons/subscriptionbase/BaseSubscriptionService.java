@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Collectors;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
@@ -30,7 +32,11 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.client.RestTemplate;
+
 import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
@@ -80,18 +86,30 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private boolean sendInitialNotification;
 	private boolean sendDeleteNotification;
 
+	protected String subSyncTopic;
+
+	protected String syncIdentifier;
+
 	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	protected Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
-	private Table<String, String, TimerTask> subId2TimerTask = HashBasedTable.create();
-	private Table<String, String, List<SubscriptionRequest>> type2EntitiesSubscriptions = HashBasedTable.create();
-	private HashMap<SubscriptionRequest, Long> sub2CreationTime = new HashMap<SubscriptionRequest, Long>();
-	private Table<String, String, List<Object>> tenantId2subscriptionId2Context = HashBasedTable.create();
+	Table<String, String, TimerTask> subId2TimerTask = HashBasedTable.create();
+	Table<String, String, List<SubscriptionRequest>> type2EntitiesSubscriptions = HashBasedTable.create();
+	HashMap<SubscriptionRequest, Long> sub2CreationTime = new HashMap<SubscriptionRequest, Long>();
+	Table<String, String, List<Object>> tenantId2subscriptionId2Context = HashBasedTable.create();
 
-	private Table<String, String, Set<String>> tenant2Ids2Type;
+	Table<String, String, Set<String>> tenant2Ids2Type;
+
+	@Autowired
+	protected KafkaTemplate<String, Object> kafkaTemplate;
+	
+	@Value("${scorpio.sync.check-time:1000}")
+	int checkTime;
 
 	@PostConstruct
 	private void setup() {
+		setSyncTopic();
+		setSyncId();
 		subscriptionInfoDAO = getSubscriptionInfoDao();
 		try {
 			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
@@ -115,6 +133,15 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		loadStoredSubscriptions();
 
 	}
+	
+	@PreDestroy
+	private void destroy() throws InterruptedException {
+		Thread.sleep(checkTime);
+	}
+
+	protected abstract void setSyncId();
+
+	protected abstract void setSyncTopic();
 
 	protected abstract boolean sendDeleteNotification();
 
@@ -122,19 +149,12 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected abstract SubscriptionInfoDAOInterface getSubscriptionInfoDao();
 
-	@PreDestroy
-	protected void deconstructor() {
-		synchronized (tenant2subscriptionId2Subscription) {
-			subscriptionInfoDAO.storedSubscriptions(tenant2subscriptionId2Subscription);
-		}
-	}
-
 	private void loadStoredSubscriptions() {
 		synchronized (this.tenant2subscriptionId2Subscription) {
 			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions();
 			for (String subscriptionString : subscriptions) {
 				try {
-					subscribe(DataSerializer.getSubscriptionRequest(subscriptionString));
+					subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true);
 				} catch (ResponseException e) {
 					logger.error("Failed to load stored subscription", e);
 				}
@@ -143,10 +163,15 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	}
 
 	public String subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
+		return subscribe(subscriptionRequest, false);
+	}
+
+	String subscribe(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
 		logger.debug("Subscribe got called " + subscriptionRequest.getSubscription().toString());
 		Subscription subscription = subscriptionRequest.getSubscription();
 		if (subscription.getId() == null) {
 			subscription.setId(generateUniqueSubId(subscription));
+			subscriptionRequest.setId(subscription.getId());
 		} else {
 			synchronized (tenant2subscriptionId2Subscription) {
 				if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
@@ -210,7 +235,22 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				};
 			}.start();
 		}
+		if (!internal) {
+			createSub(subscriptionRequest);
+		}
 		return subscription.getId();
+	}
+
+	private void createSub(SubscriptionRequest subscriptionRequest) {
+		subscriptionInfoDAO.storeSubscription(subscriptionRequest);
+		subscriptionRequest.setType(AppConstants.CREATE_REQUEST);
+		kafkaTemplate.send(subSyncTopic, syncIdentifier, subscriptionRequest);
+	}
+
+	private void updateSub(SubscriptionRequest subscriptionRequest) {
+		subscriptionInfoDAO.storeSubscription(subscriptionRequest);
+		subscriptionRequest.setType(AppConstants.UPDATE_REQUEST);
+		kafkaTemplate.send(subSyncTopic, syncIdentifier, subscriptionRequest);
 	}
 
 	private void putInTable(Table<String, String, List<SubscriptionRequest>> table, String row, String colum,
@@ -238,6 +278,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	protected abstract String generateUniqueSubId(Subscription subscription);
 
 	public void unsubscribe(String id, ArrayListMultimap<String, String> headers) throws ResponseException {
+		unsubscribe(id, headers, false);
+	}
+
+	void unsubscribe(String id, ArrayListMultimap<String, String> headers, boolean internal) throws ResponseException {
 		String tenant = HttpUtils.getInternalTenant(headers);
 		SubscriptionRequest removedSub;
 		synchronized (tenant2subscriptionId2Subscription) {
@@ -273,10 +317,22 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		if (task != null) {
 			task.cancel();
 		}
-		// TODO remove remote subscription
+		if (!internal) {
+			deleteSub(removedSub);
+		}
+	}
+
+	private void deleteSub(SubscriptionRequest removedSub) {
+		subscriptionInfoDAO.deleteSubscription(removedSub);
+		removedSub.setType(AppConstants.DELETE_REQUEST);
+		kafkaTemplate.send(subSyncTopic, syncIdentifier, removedSub);
 	}
 
 	public void updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
+		updateSubscription(subscriptionRequest, false);
+	}
+
+	void updateSubscription(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		String tenant = subscriptionRequest.getTenant();
 		SubscriptionRequest oldSubRequest;
@@ -301,8 +357,17 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 			this.tenantId2subscriptionId2Context.put(tenant, oldSub.getId().toString(),
 					subscriptionRequest.getContext());
+			if (!internal) {
+				updateSub(oldSubRequest);
+			}
 		}
 
+	}
+
+	List<String> getAllSubscriptionIds() {
+		synchronized (tenant2subscriptionId2Subscription) {
+			return tenant2subscriptionId2Subscription.columnKeySet().stream().sorted().collect(Collectors.toList());
+		}
 	}
 
 	public List<SubscriptionRequest> getAllSubscriptions(ArrayListMultimap<String, String> headers) {
@@ -377,7 +442,11 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		if (subs == null) {
 			return;
 		}
-		subsToCheck.addAll(subs);
+		for (SubscriptionRequest entry : subs) {
+			if (entry.isActive()) {
+				subsToCheck.add(entry);
+			}
+		}
 	}
 
 	private void checkSubscriptions(ArrayList<SubscriptionRequest> subsToCheck, BaseRequest request, int methodType,
@@ -628,7 +697,12 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		for (String type : types) {
 			List<SubscriptionRequest> tmp = this.type2EntitiesSubscriptions.get(tenant, type);
 			if (tmp != null) {
-				subs.addAll(tmp);
+				for (SubscriptionRequest entry : tmp) {
+					if (entry.isActive()) {
+						subs.add(entry);
+					}
+				}
+
 			}
 		}
 		return subs;
@@ -659,6 +733,18 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			} catch (ResponseException e) {
 				logger.error("Failed to unsubscribed timed subscription", e);
 			}
+		}
+	}
+
+	public void activateSubs(List<String> mySubs) {
+		synchronized (tenant2subscriptionId2Subscription) {
+			tenant2subscriptionId2Subscription.values().forEach(t -> {
+				if (mySubs.contains(t.getId())) {
+					t.setActive(true);
+				} else {
+					t.setActive(false);
+				}
+			});
 		}
 	}
 }
