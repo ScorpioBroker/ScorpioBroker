@@ -1,0 +1,64 @@
+mysettings:
+  eureka:
+    host: ${eureka.host:eureka}
+spring:
+  cloud:
+    discovery:
+      enabled: true
+    gateway:
+      routes:
+      - uri: lb://AIO-RUNNER
+        id: querymanager
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/entities/**
+      - uri: lb://AIO-RUNNER
+        id: entitymanager
+        predicates:
+        - Method=POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/entities/**
+      - uri: lb://AIO-RUNNER
+        id: querymanager1
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/attributes/**
+      - uri: lb://AIO-RUNNER
+        id: querymanager2
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/types/**
+      - uri: lb://AIO-RUNNER
+        id: querymanager3
+        predicates:
+        - Method=POST
+        - Path=/ngsi-ld/v1/entityOperations/query/**
+      - uri: lb://AIO-RUNNER
+        id: entitymanager1
+        predicates:
+        - Method=POST
+        - Path=/ngsi-ld/v1/entityOperations/**
+      - uri: lb://AIO-RUNNER
+        id: subscriptionsmanager1
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/subscriptions/**
+      - uri: lb://AIO-RUNNER
+        id: csourcereg
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/csourceRegistrations/**
+      - uri: lb://AIO-RUNNER
+        id: csourcesubs
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/csourceSubscriptions/**
+      - uri: lb://AIO-RUNNER
+        id: history
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/temporal/entities/**
+      - uri: lb://AIO-RUNNER
+        id: atcontext
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/contextes/**

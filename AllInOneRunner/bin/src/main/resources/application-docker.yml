@@ -1,0 +1,23 @@
+server:
+  port: 27015
+mysettings:
+  kafka:
+    bootstrap:
+      host: ${bushost:kafka}
+  eureka:
+    protocol: ${eurekaprotocol:http}
+    host: ${eurekahost:eureka}
+    port: ${eurekaport:8761}
+  postgres:
+    host: ${dbhost:postgres}
+  gateway:
+    host: ${gateway.host:}
+eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}
+eureka:
+  client:
+    register-with-eureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: ${eurekaurl}/eureka/
+  instance:
+    preferIpAddress: true

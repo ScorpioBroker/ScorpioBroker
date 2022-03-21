@@ -1,0 +1,62 @@
+IDENTITY MANAGER-KEYROCK
+
+#PREREQUISITE
+Node.js
+Node packaged modules
+MYSQL
+
+#for install mysql
+sudo apt-get update
+sudo apt-get install mysql-server 
+
+#for install nodejs
+apt-get install curl python-software-properties -y
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+sudo apt-get install nodejs -y
+
+#The following step to need to install keyrock and running.
+Clone the repository 
+git clone https://github.com/ging/fiware-idm
+Install all required libraries using npm
+cd fiware-idm
+npm install
+To configure the keyrock you can copy the file named config.js.template to config.js.
+cp config.js.template config.js
+
+#You can edit it with corresponding with basic information.
+
+#Configure port and host:          
+config.host = "http://localhost:3000";
+config.port = 3000;
+
+#Configure database
+config.database = {
+host: “localhost” , 
+password: “root” ,
+username: “root” ,
+database: “idm” ,
+ dialect: “mysql” ,
+ port:3306
+};
+
+#For create the database
+npm run-script create_db
+npm run-script migrate_db
+npm run-script seed_db
+
+Launch the server
+npm start
+
+#open in browser 
+http://ip_addess:3000/auth/login
+
+Enter email and password
+default email and password:
+email: admin@test.com
+password: 1234
+
+#Register the application in keyrock
+application name:
+Description:
+Url: http://ip_address:9090
+Callback Url: http://ip_address:9090/login
