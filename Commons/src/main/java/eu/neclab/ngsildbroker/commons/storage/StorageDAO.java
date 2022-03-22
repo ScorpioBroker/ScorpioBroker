@@ -488,12 +488,16 @@ public abstract class StorageDAO {
 			return null;
 		try {
 			String databasename = "ngb" + tenantid;
-			List<String> data;
-			data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
-			if (data.contains(databasename)) {
+			if (tenant2Templates.containsKey(tenantid)) {
 				return databasename;
 			} else {
-			return null;
+				List<String> data;
+				data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
+				if (data.contains(databasename)) {
+					return databasename;
+				} else {
+					return null;
+				}
 			}
 		} catch (EmptyResultDataAccessException e) {
 			return null;
