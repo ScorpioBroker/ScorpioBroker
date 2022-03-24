@@ -81,6 +81,9 @@ public class EntityPostQueryParser implements PayloadQueryParamParser {
 			case NGSIConstants.NGSI_LD_QUERY:
 				params.setQ(QueryParser.parseQuery((String) getValue(entry.getValue()), context).toSql(false));
 				break;
+			case NGSIConstants.NGSI_LD_SCOPE_Q:
+				params.setScopeQ(QueryParser.parseScopeQuery((String) getValue(entry.getValue())).toSql());
+				break;
 			case NGSIConstants.JSON_LD_TYPE:
 				if (entry.getValue() instanceof List) {
 					if (((List<String>) entry.getValue()).get(0)
