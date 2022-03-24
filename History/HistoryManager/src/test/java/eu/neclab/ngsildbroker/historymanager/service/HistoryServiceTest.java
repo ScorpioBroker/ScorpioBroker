@@ -230,11 +230,7 @@ public class HistoryServiceTest {
 	public void createTemporalEntityThrowsAlreadyExistTest() throws ResponseException, Exception {
 		MockitoAnnotations.initMocks(this);
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-		when(historyDAO.getAllIds()).thenReturn(entityIds);
-		Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-		postConstruct.setAccessible(true);
-		postConstruct.invoke(historyService);
+		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");		
 		ReflectionTestUtils.setField(historyService, "directDB", true);
 		multimaparr.put("content-type", "application/json");
 		Gson gson = new Gson();
@@ -260,11 +256,7 @@ public class HistoryServiceTest {
 			UpdateResult updateResult = new UpdateResult();
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			when(historyDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");			
 			ReflectionTestUtils.setField(historyService, "directDB", true);
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(tempAppendPayload, Map.class);
@@ -289,11 +281,7 @@ public class HistoryServiceTest {
 		try {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-			when(historyDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");			
 			ReflectionTestUtils.setField(historyService, "directDB", true);
 			multimaparr.put("content-type", "application/json");
 			Gson gson = new Gson();
@@ -318,11 +306,7 @@ public class HistoryServiceTest {
 			multimaparr.put("content-type", "application/json");
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			when(historyDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");			
 			ReflectionTestUtils.setField(historyService, "directDB", true);
 			boolean result = historyService.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:1");
 			assertEquals(result, true);
@@ -340,11 +324,7 @@ public class HistoryServiceTest {
 	public void deleteAllAttributeInstanceIfEnityNotExistTest() {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-			when(historyDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");			
 			ReflectionTestUtils.setField(historyService, "directDB", true);
 			multimaparr.put("content-type", "application/json");
 			try {
@@ -366,12 +346,7 @@ public class HistoryServiceTest {
 			String tenant = null;
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			when(historyDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
-			ReflectionTestUtils.setField(historyService, "directDB", true);
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");			
 			multimaparr.put("content-type", "application/json");
 			Context context = JsonLdProcessor.getCoreContextClone();
 			Gson gson = new Gson();

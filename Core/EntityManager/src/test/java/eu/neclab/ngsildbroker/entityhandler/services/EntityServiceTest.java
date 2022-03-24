@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -8,6 +9,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.sql.DataSource;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -21,14 +23,18 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +44,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.Gson;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.DBWriteTemplates;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
@@ -45,6 +52,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityTopicMap;
 
 @TestPropertySource(properties = { "scorpio.directDB= true", })
@@ -65,8 +74,29 @@ public class EntityServiceTest {
 	HttpServletRequest request;
 	@MockBean
 	private EntityTopicMap entityTopicMap;
+
 	@Mock
 	EntityInfoDAO entityInfoDAO;
+	@Mock
+	StorageDAO storageDAO;
+
+	@Mock
+	DBWriteTemplates templates;
+
+	@Mock
+	private JdbcTemplate writerJdbcTemplate;
+
+	@Mock
+	private TransactionTemplate writerTransactionTemplate;
+
+	@Mock
+	private JdbcTemplate writerJdbcTemplateWithTransaction;
+
+	@Mock
+	private DBWriteTemplates defaultTemplates;
+
+	@Mock
+	private DataSource writerDataSource;
 
 	@InjectMocks
 	@Spy
@@ -95,6 +125,12 @@ public class EntityServiceTest {
 	@Before
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
+		writerJdbcTemplate.execute("SELECT 1"); // create connection pool and connect to database
+		DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(writerDataSource);
+		writerJdbcTemplateWithTransaction = new JdbcTemplate(transactionManager.getDataSource());
+		writerTransactionTemplate = new TransactionTemplate(transactionManager);
+		this.defaultTemplates = new DBWriteTemplates(writerJdbcTemplateWithTransaction, writerTransactionTemplate,
+				writerJdbcTemplate);
 		ObjectMapper objectMapper = new ObjectMapper();
 
 		entityPayload = "{\r\n" + "    \"http://example.org/vehicle/brandName\": [\r\n" + "      {\r\n"
@@ -188,10 +224,6 @@ public class EntityServiceTest {
 		MockitoAnnotations.initMocks(this);
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-		when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-		Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-		postConstruct.setAccessible(true);
-		postConstruct.invoke(entityService);
 		ReflectionTestUtils.setField(entityService, "directDB", true);
 		multimaparr.put("content-type", "application/json");
 		Gson gson = new Gson();
@@ -216,10 +248,6 @@ public class EntityServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			UpdateResult updateResult = new UpdateResult();
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
@@ -229,37 +257,10 @@ public class EntityServiceTest {
 			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
 			UpdateEntityRequest request = new UpdateEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
 					resolved, null);
+
 			updateResult = entityService.updateEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved);
 			Assert.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
 			verify(entityService).updateEntry(any(), any(), any());
-		} catch (Exception ex) {
-			Assert.fail();
-		}
-	}
-
-	/**
-	 * this method is use for update the entity if entity is not exist
-	 */
-	@Test
-	public void updateMessageEntityNotExistTest() throws Exception {
-		try {
-			MockitoAnnotations.initMocks(this);
-			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A104");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
-			ReflectionTestUtils.setField(entityService, "directDB", true);
-			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
-			multimaparr.put("content-type", "application/json");
-			Gson gson = new Gson();
-			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
-			try {
-				entityService.updateEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved);
-			} catch (Exception e) {
-				Assert.assertEquals("Entity Id " + "urn:ngsi-ld:Vehicle:A103" + " not found", e.getMessage());
-			}
 		} catch (Exception ex) {
 			Assert.fail();
 		}
@@ -274,10 +275,11 @@ public class EntityServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
+			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
+			// Method postConstruct =
+			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			// postConstruct.setAccessible(true);
+			// postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			UpdateResult updateResult = new UpdateResult();
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
@@ -296,35 +298,6 @@ public class EntityServiceTest {
 	}
 
 	/**
-	 * this method is use for append the field or attribute in entity if entity id
-	 * is not exist
-	 */
-	@Test
-	public void appendFieldEntityNotExistTest() {
-		try {
-			MockitoAnnotations.initMocks(this);
-			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A104");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
-			ReflectionTestUtils.setField(entityService, "directDB", true);
-			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
-			multimaparr.put("content-type", "application/json");
-			Gson gson = new Gson();
-			Map<String, Object> resolved = gson.fromJson(appendPayload, Map.class);
-			try {
-				entityService.appendToEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved, null);
-			} catch (Exception e) {
-				Assert.assertEquals("Entity Id " + "urn:ngsi-ld:Vehicle:A103" + " not found", e.getMessage());
-			}
-		} catch (Exception ex) {
-			Assert.fail();
-		}
-	}
-
-	/**
 	 * this method is use for the update partial attribute field
 	 */
 	@Test
@@ -334,10 +307,11 @@ public class EntityServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
+			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
+			// Method postConstruct =
+			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			// postConstruct.setAccessible(true);
+			// postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			UpdateResult updateResult = new UpdateResult();
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
@@ -357,37 +331,6 @@ public class EntityServiceTest {
 	}
 
 	/**
-	 * this method is use for the update partial attribute field if entity id is not
-	 * exist
-	 */
-	@Test
-	public void updatePartialAttributeFieldEntityNotExistTest() {
-		try {
-
-			MockitoAnnotations.initMocks(this);
-			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A104");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
-			ReflectionTestUtils.setField(entityService, "directDB", true);
-			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
-			multimaparr.put("content-type", "application/json");
-			Gson gson = new Gson();
-			Map<String, Object> resolved = gson.fromJson(updatePartialAttributesPayload, Map.class);
-			try {
-				entityService.partialUpdateEntity(multimaparr, "urn:ngsi-ld:Vehicle:A103",
-						"http://example.org/vehicle/speed", resolved);
-			} catch (Exception e) {
-				Assert.assertEquals("Entity Id " + "urn:ngsi-ld:Vehicle:A103" + " not found", e.getMessage());
-			}
-		} catch (Exception ex) {
-			Assert.fail();
-		}
-	}
-
-	/**
 	 * this method is use for the update partial default attribute field
 	 */
 	@Test
@@ -395,10 +338,11 @@ public class EntityServiceTest {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
+			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
+			// Method postConstruct =
+			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			// postConstruct.setAccessible(true);
+			// postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			UpdateResult updateResult = new UpdateResult();
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
@@ -418,31 +362,6 @@ public class EntityServiceTest {
 	}
 
 	/**
-	 * this method is use for the datasetId is exist in case of delete the attribute
-	 * instance
-	 */
-	@Test
-	public void deleteAttributeInstanceIfDatasetIdExistTest() {
-		try {
-			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
-			ReflectionTestUtils.setField(entityService, "directDB", true);
-			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
-			multimaparr.put("content-type", "application/json");
-			boolean result = entityService.deleteAttribute(multimaparr, "urn:ngsi-ld:Vehicle:A103",
-					"http://example.org/vehicle/speed", "urn:ngsi-ld:Property:speedometerA4567-speed", "deleteAll");
-			Assert.assertEquals(true, result);
-			verify(entityService).deleteAttribute(any(), any(), any(), any(), any());
-		} catch (Exception ex) {
-			Assert.fail();
-		}
-	}
-
-	/**
 	 * this method is use for all delete the attribute
 	 */
 	@Test
@@ -450,10 +369,11 @@ public class EntityServiceTest {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
+			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
+			// Method postConstruct =
+			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			// postConstruct.setAccessible(true);
+			// postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
 			multimaparr.put("content-type", "application/json");
@@ -474,10 +394,11 @@ public class EntityServiceTest {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A104");
-			when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(entityService);
+			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
+			// Method postConstruct =
+			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			// postConstruct.setAccessible(true);
+			// postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
 			multimaparr.put("content-type", "application/json");
