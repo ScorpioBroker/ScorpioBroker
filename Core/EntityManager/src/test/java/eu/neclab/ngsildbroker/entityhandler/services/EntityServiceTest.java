@@ -275,11 +275,6 @@ public class EntityServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			// Method postConstruct =
-			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			// postConstruct.setAccessible(true);
-			// postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			UpdateResult updateResult = new UpdateResult();
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
@@ -307,11 +302,7 @@ public class EntityServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			// Method postConstruct =
-			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			// postConstruct.setAccessible(true);
-			// postConstruct.invoke(entityService);
+
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			UpdateResult updateResult = new UpdateResult();
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
@@ -338,11 +329,6 @@ public class EntityServiceTest {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			// Method postConstruct =
-			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			// postConstruct.setAccessible(true);
-			// postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			UpdateResult updateResult = new UpdateResult();
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
@@ -369,11 +355,6 @@ public class EntityServiceTest {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			// Method postConstruct =
-			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			// postConstruct.setAccessible(true);
-			// postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
 			multimaparr.put("content-type", "application/json");
@@ -394,11 +375,6 @@ public class EntityServiceTest {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A104");
-			// when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			// Method postConstruct =
-			// EntityService.class.getDeclaredMethod("loadStoredEntitiesDetails");
-			// postConstruct.setAccessible(true);
-			// postConstruct.invoke(entityService);
 			ReflectionTestUtils.setField(entityService, "directDB", true);
 			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
 			multimaparr.put("content-type", "application/json");

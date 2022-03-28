@@ -24,6 +24,7 @@ public class SubscriptionRequest extends BaseRequest {
 	public SubscriptionRequest(Subscription subscription, List<Object> context2,
 			ArrayListMultimap<String, String> headers, int type) {
 		super(headers, subscription.getId(), null, type);
+		this.active = true;
 		this.context = context2;
 		this.subscription = subscription;
 	}
