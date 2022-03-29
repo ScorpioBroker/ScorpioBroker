@@ -1,0 +1,83 @@
+{{- if .Values.registrySubscriptionManager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "registrySubscriptionManager.fullname" . }}
+  labels:
+    {{ include "registrySubscriptionManager.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.registrySubscriptionManager.replicas }}
+  strategy:
+  {{- with .Values.registrySubscriptionManager.updateStrategy }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "registrySubscriptionManager.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{ include "registrySubscriptionManager.labels" . | nindent 8 }}
+        {{- with .Values.registrySubscriptionManager.additionalLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.registrySubscriptionManager.additionalAnnotations -}}
+      annotations:
+        {{- with .Values.registrySubscriptionManager.additionalAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+    spec:
+      containers:
+        {{- if eq .Values.profile "dist"}}
+      - image: {{ .Values.registrySubscriptionManager.image.repository }}:{{ .Values.registrySubscriptionManager.image.tag }}
+        {{ else }}
+      - image: {{ .Values.registrySubscriptionManager.image.repository }}:{{ .Values.registrySubscriptionManager.image.no_eureka_tag }}
+        {{ end }}
+        {{- if .Values.springArgs.overrideSpringArgs }}
+        env:
+          - name: spring_args
+            value: {{ .Values.springArgs.value }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.registrySubscriptionManager.image.pullPolicy }}
+        name: {{ include "registrySubscriptionManager.fullname" . }}
+        ports:
+        - containerPort: 2025
+          protocol: TCP
+        {{- if eq .Values.profile "dist"}}
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/REGISTRY-SUBSCRIPTION-MANAGER/$HOSTNAME:registry-subscription-manager:2025/status?value=OUT_OF_SERVICE"
+        {{ end }}
+
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 2025
+          failureThreshold: {{ .Values.registrySubscriptionManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.registrySubscriptionManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.registrySubscriptionManager.readinessProbe.periodSeconds }}
+
+
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 2025
+          failureThreshold: {{ .Values.registrySubscriptionManager.livenessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.registrySubscriptionManager.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.registrySubscriptionManager.livenessProbe.periodSeconds }}
+
+        resources:
+{{ toYaml .Values.registrySubscriptionManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.registrySubscriptionManager.restartPolicy }}
+      {{- if .Values.registrySubscriptionManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.registrySubscriptionManager.serviceAccount.name }}
+      {{- end }}
+      securityContext: {{ .Values.registrySubscriptionManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.registrySubscriptionManager.terminationGracePeriodSeconds }}
+{{- end }}
+

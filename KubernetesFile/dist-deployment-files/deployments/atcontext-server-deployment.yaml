@@ -22,13 +22,6 @@ spec:
         name: atcontext-server
         ports:
         - containerPort: 27015
-        lifecycle:
-           preStop:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - curl -X PUT "http://eureka:8761/eureka/apps/ATCONTEXT-SERVER/$HOSTNAME:atcontext-server:27015/status?value=OUT_OF_SERVICE"
         readinessProbe:
           exec:
             command:
@@ -39,6 +32,17 @@ spec:
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl --silent http://localhost:27015/actuator/health | grep --quiet -e
+              '^{\"status\"\:\"UP\".*}$'
+          failureThreshold: 10
+          initialDelaySeconds: 20
+          periodSeconds: 5
+  
         resources:
           limits:
             cpu: 575m
@@ -50,4 +54,5 @@ spec:
       serviceAccountName: ""
       volumes: null
 status: {}
+
 

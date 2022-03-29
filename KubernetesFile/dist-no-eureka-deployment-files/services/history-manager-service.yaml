@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: history-manager
+  name: history-manager
+  namespace: scorpio-broker
+spec:
+  ports:
+  - name: "1040"
+    port: 1040
+    targetPort: 1040
+  selector:
+    service: history-manager
+status: {}
+

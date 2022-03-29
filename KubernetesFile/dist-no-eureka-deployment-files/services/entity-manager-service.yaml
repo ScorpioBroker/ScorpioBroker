@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: entity-manager
+  name: entity-manager
+  namespace: scorpio-broker
+spec:
+  ports:
+  - name: "1025"
+    port: 1025
+    targetPort: 1025
+  selector:
+    service: entity-manager
+status: {}
+
