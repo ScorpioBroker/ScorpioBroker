@@ -440,8 +440,8 @@ public abstract class StorageDAO {
 			} else {
 				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = ?::jsonb , "
 						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = ?::jsonb , " + DBConstants.DBCOLUMN_KVDATA
-						+ " = ?::jsonb WHERE " + DBConstants.DBCOLUMN_ID + "=id";
-						n = templates.getWriterJdbcTemplate().update(sql, value, valueWithoutSysAttrs, kvValue);
+						+ " = ?::jsonb WHERE " + DBConstants.DBCOLUMN_ID + "=?";
+						n = templates.getWriterJdbcTemplate().update(sql, value, valueWithoutSysAttrs, kvValue, key);
 
 			}
 		} else {
