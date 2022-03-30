@@ -17,7 +17,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +36,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 
@@ -73,10 +74,8 @@ public class CSourceServiceTest {
 
 	@Before
 	public void setup() throws Exception {
-		MockitoAnnotations.initMocks(this);
 		ObjectMapper objectMapper = new ObjectMapper();
-		// @formatter:off
-			
+		// @formatter:off			
 		payload = "{\r\n"
 				+ "  \"https://uri.etsi.org/ngsi-ld/description\" : [ {\r\n"
 				+ "    \"@value\" : \"DescriptionExample\"\r\n"
@@ -154,6 +153,10 @@ public class CSourceServiceTest {
 		blankNode = null;
 	}
 
+	/**
+	 * this method is use for create CSource Registry
+	 */
+
 	@Test
 	public void registerCSourceTest() {
 		try {
@@ -171,13 +174,17 @@ public class CSourceServiceTest {
 		}
 	}
 
+	/**
+	 * this method is use for update CSource Registry
+	 */
+
 	@Test
 	public void updateCSourceTest() {
 		try {
-			MockitoAnnotations.initMocks(this);
+
 			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-			//when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
+			// when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
 			HashMap<String, List<String>> result = new HashMap<String, List<String>>();
 			List<String> entities = new ArrayList<String>();
 			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
@@ -203,14 +210,17 @@ public class CSourceServiceTest {
 			Assert.fail();
 		}
 	}
-	
+
+	/**
+	 * this method is use for update CSource Registry if ID is not exist
+	 */
 	@Test
 	public void updateCSourceRegIdNotExistTest() {
 		try {
-			MockitoAnnotations.initMocks(this);
+
 			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr4");
-			//when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
+			// when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
 			HashMap<String, List<String>> result = new HashMap<String, List<String>>();
 			List<String> entities = new ArrayList<String>();
 			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
@@ -237,13 +247,16 @@ public class CSourceServiceTest {
 		}
 	}
 
+	/**
+	 * this method is use for delete CSource Registry
+	 */
 	@Test
 	public void deleteCSorceTest() throws Exception {
 		try {
-			MockitoAnnotations.initMocks(this);
+
 			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-			//when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
+			// when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
 			HashMap<String, List<String>> result = new HashMap<String, List<String>>();
 			List<String> entities = new ArrayList<String>();
 			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
@@ -262,13 +275,49 @@ public class CSourceServiceTest {
 		}
 	}
 
+	/**
+	 * this method is use for delete CSource Registry if ID is not exist
+	 */
+	@Test
+	public void deleteCSorceIDNotExistTest() throws Exception {
+		try {
+
+			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
+			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
+			// when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
+			HashMap<String, List<String>> result = new HashMap<String, List<String>>();
+			List<String> entities = new ArrayList<String>();
+			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
+			when(csourceInfoDAO.getAllEntities()).thenReturn(result);
+			ReflectionTestUtils.setField(csourceService, "AUTO_REG_STATUS", "active");
+			Method postConstruct = CSourceService.class.getDeclaredMethod("loadStoredEntitiesDetails"); // methodName,parameters
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(csourceService);
+			multimaparr.put("content-type", "application/json");
+			String registrationid = "urn:ngsi-ld:ContextSourceRegistration:csr3";
+			when(csourceInfoDAO.getEntity(any(), any()))
+					.thenThrow(new ResponseException(ErrorType.NotFound, registrationid + " not found"));
+			try {
+				csourceService.deleteEntry(multimaparr, "urn:ngsi-ld:ContextSourceRegistration:csr4");
+			} catch (Exception e) {
+				Assert.assertEquals(registrationid + " not found", e.getMessage());
+			}
+
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * this method is use for get CSource Registry
+	 */
 	@Test
 	public void getCSourceRegistrationByIdTest() throws Exception {
 		try {
-			MockitoAnnotations.initMocks(this);
+
 			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-			//when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
+			// when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
 			HashMap<String, List<String>> result = new HashMap<String, List<String>>();
 			List<String> entities = new ArrayList<String>();
 			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
@@ -282,6 +331,68 @@ public class CSourceServiceTest {
 			String getresult = csourceService.getCSourceRegistrationById(null,
 					"urn:ngsi-ld:ContextSourceRegistration:csr3");
 			Assert.assertEquals(payload, getresult);
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * this method is use for get CSource Registry if ID is not exist
+	 */
+	@Test
+	public void getCSourceRegistrationByIdNotExistTest() throws Exception {
+		try {
+
+			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
+			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
+			HashMap<String, List<String>> result = new HashMap<String, List<String>>();
+			List<String> entities = new ArrayList<String>();
+			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
+			when(csourceInfoDAO.getAllEntities()).thenReturn(result);
+			ReflectionTestUtils.setField(csourceService, "AUTO_REG_STATUS", "active");
+			Method postConstruct = CSourceService.class.getDeclaredMethod("loadStoredEntitiesDetails");
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(csourceService);
+			multimaparr.put("content-type", "application/json");
+			String registrationid = "urn:ngsi-ld:ContextSourceRegistration:csr3";
+			when(csourceInfoDAO.getEntity(any(), any()))
+					.thenThrow(new ResponseException(ErrorType.NotFound, registrationid + " not found"));
+			try {
+				csourceService.getCSourceRegistrationById(null, "urn:ngsi-ld:ContextSourceRegistration:csr4");
+			} catch (Exception e) {
+				Assert.assertEquals(registrationid + " not found", e.getMessage());
+			}
+
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * this method is use for get CSource Registry
+	 */
+	@Test
+	public void getCSourceRegistrationTest() throws Exception {
+		try {
+
+			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
+			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
+			HashMap<String, List<String>> result = new HashMap<String, List<String>>();
+			List<String> entities = new ArrayList<String>();
+			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
+			when(csourceInfoDAO.getAllEntities()).thenReturn(result);
+			ReflectionTestUtils.setField(csourceService, "AUTO_REG_STATUS", "active");
+			Method postConstruct = CSourceService.class.getDeclaredMethod("loadStoredEntitiesDetails"); // methodName,parameters
+			postConstruct.setAccessible(true);
+			postConstruct.invoke(csourceService);
+			multimaparr.put("content-type", "application/json");
+			String tenantId = AppConstants.INTERNAL_NULL_KEY;
+			ReflectionTestUtils.setField(csourceService, "directDB", true);
+			List<String> csourceresult = new ArrayList<String>();
+			csourceresult.add(payload);
+			when(csourceInfoDAO.getAllRegistrations(any())).thenReturn(csourceresult);
+			List<String> getresult = csourceService.getCSourceRegistrations(tenantId);
+			Assert.assertEquals(csourceresult, getresult);
 		} catch (Exception ex) {
 			Assert.fail();
 		}

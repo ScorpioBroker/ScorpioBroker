@@ -194,11 +194,6 @@ public class SubscriptionServiceTest {
 	@Test
 	public void unsubscribeTest() throws URISyntaxException, ResponseException, IllegalAccessException,
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-		Subscription removedSub = new Subscription();
-		// Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription
-		// = HashBasedTable.create();
-		URI id = new URI("urn:ngsi-ld:Subscription:173223");
-		// when(subscriptionId2Subscription.remove(any())).thenReturn(removedSub);
 		List<Object> context = new ArrayList<>();
 		NotificationParam notifyParam = new NotificationParam();
 		EndPoint endPoint = new EndPoint();
@@ -214,25 +209,10 @@ public class SubscriptionServiceTest {
 		subscription.setType("Subscription");
 		subscription.setNotification(notifyParam);
 		multimaparr.put("content-type", "application/json");
-		ArrayList<String> result = new ArrayList<String>();
-
 		SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context, multimaparr, 0);
 		tenant2subscriptionId2Subscription.put(subRequest.getTenant(), subRequest.getId().toString(), subRequest);
 		ReflectionTestUtils.setField(baseSubscriptionService, "tenant2subscriptionId2Subscription",
 				tenant2subscriptionId2Subscription);
-
-		// PowerMockito.spy(BaseSubscriptionInfoDAO.class);
-		// PowerMockito.doReturn(result).when(subscriptionInfoDAO.getStoredSubscriptions());
-
-		// when(subscriptionInfoDAO.getStoredSubscriptions()).thenReturn(result);
-		// Method postConstruct =
-		// BaseSubscriptionService.class.getDeclaredMethod("loadStoredSubscriptions");
-		// postConstruct.setAccessible(true);
-		// postConstruct.invoke(baseSubscriptionService);
-		// multimaparr.put("content-type", "application/json");
-		// manager.unsubscribe("urn:ngsi-ld:Subscription:173223", multimaparr);
-		// verify(tenant2subscriptionId2Subscription, times(1)).get(any(), any());
-		// verify(manager, times(1)).subscribe(any());
 	}
 
 	/**
@@ -244,11 +224,6 @@ public class SubscriptionServiceTest {
 	@Test
 	public void getSubscriptionTest() throws URISyntaxException {
 		String errorMessage = null;
-		Subscription removedSub = new Subscription();
-		// Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription
-		// = HashBasedTable.create();
-		URI id = new URI("urn:ngsi-ld:Subscription:173223");
-		// when(subscriptionId2Subscription.remove(any())).thenReturn(removedSub);
 		List<Object> context = new ArrayList<>();
 		NotificationParam notifyParam = new NotificationParam();
 		EndPoint endPoint = new EndPoint();
@@ -270,11 +245,11 @@ public class SubscriptionServiceTest {
 				tenant2subscriptionId2Subscription);
 
 		try {
-			manager.getSubscription("urn:ngsi-ld:Subscription:173223", multimaparr);
+			manager.getSubscription("urn:ngsi-ld:Subscription:173224", multimaparr);
 		} catch (ResponseException e) {
 			errorMessage = e.getMessage();
 		}
-		Assert.assertEquals(errorMessage, "urn:ngsi-ld:Subscription:173223 not found");
+		Assert.assertEquals(errorMessage, "urn:ngsi-ld:Subscription:173224 not found");
 	}
 
 }
