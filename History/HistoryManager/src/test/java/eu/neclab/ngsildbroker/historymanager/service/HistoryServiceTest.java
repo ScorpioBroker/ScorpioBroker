@@ -231,7 +231,7 @@ public class HistoryServiceTest {
 		MockitoAnnotations.initMocks(this);
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-		//when(historyDAO.getAllIds()).thenReturn(entityIds);
+		//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
 		Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
 		postConstruct.setAccessible(true);
 		postConstruct.invoke(historyService);
@@ -261,7 +261,7 @@ public class HistoryServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			//when(historyDAO.getAllIds()).thenReturn(entityIds);
+			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
 			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
 			postConstruct.setAccessible(true);
 			postConstruct.invoke(historyService);
@@ -290,7 +290,7 @@ public class HistoryServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-			//when(historyDAO.getAllIds()).thenReturn(entityIds);
+			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
 			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
 			postConstruct.setAccessible(true);
 			postConstruct.invoke(historyService);
@@ -319,7 +319,7 @@ public class HistoryServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			//when(historyDAO.getAllIds()).thenReturn(entityIds);
+			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
 			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
 			postConstruct.setAccessible(true);
 			postConstruct.invoke(historyService);
@@ -341,7 +341,7 @@ public class HistoryServiceTest {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-			//when(historyDAO.getAllIds()).thenReturn(entityIds);
+			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
 			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
 			postConstruct.setAccessible(true);
 			postConstruct.invoke(historyService);
@@ -367,7 +367,7 @@ public class HistoryServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			//when(historyDAO.getAllIds()).thenReturn(entityIds);
+			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
 			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
 			postConstruct.setAccessible(true);
 			postConstruct.invoke(historyService);

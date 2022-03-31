@@ -213,8 +213,13 @@ public abstract class StorageDAO {
 		JdbcTemplate template;
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 		try {
-
 			String tenantId = qp.getTenant();
+			if (tenantId != null) {
+				String tenantDatabaseName = validateDataBaseNameByTenantId(tenantId);
+				if (tenantDatabaseName == null) {
+					throw new ResponseException(ErrorType.TenantNotFound, tenantId + " not found");
+				}
+			}
 			template = getJDBCTemplates(tenantId).getWriterJdbcTemplate();
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.TenantNotFound, "tenant was not found");
@@ -435,8 +440,8 @@ public abstract class StorageDAO {
 			} else {
 				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = ?::jsonb , "
 						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = ?::jsonb , " + DBConstants.DBCOLUMN_KVDATA
-						+ " = ?::jsonb WHERE " + DBConstants.DBCOLUMN_ID + "=id";
-						n = templates.getWriterJdbcTemplate().update(sql, value, valueWithoutSysAttrs, kvValue);
+						+ " = ?::jsonb WHERE " + DBConstants.DBCOLUMN_ID + "=?";
+						n = templates.getWriterJdbcTemplate().update(sql, value, valueWithoutSysAttrs, kvValue, key);
 
 			}
 		} else {
@@ -476,5 +481,26 @@ public abstract class StorageDAO {
 			return null;
 		}
 		return tenantId;
+	}
+	
+	private String validateDataBaseNameByTenantId(String tenantid) {
+		if (tenantid == null)
+			return null;
+		try {
+			String databasename = "ngb" + tenantid;
+			if (tenant2Templates.containsKey(tenantid)) {
+				return databasename;
+			} else {
+				List<String> data;
+				data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
+				if (data.contains(databasename)) {
+					return databasename;
+				} else {
+					return null;
+				}
+			}
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
 	}
 }

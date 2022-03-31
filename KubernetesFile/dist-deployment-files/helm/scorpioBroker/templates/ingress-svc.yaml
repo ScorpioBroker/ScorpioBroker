@@ -1,0 +1,94 @@
+{{- if ne .Values.profile "dist" }}
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway-ingress
+  namespace: scorpio-broker
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Accept-Type, Content-Type, Link"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /ngsi-ld/contextes/*
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.atContextServer.name }}
+            port:
+              number: 27015
+      - path: /ngsi-ld/v1/entities/*
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.entityManager.name }}
+            port:
+              number: 1025
+      - path: /ngsi-ld/v1/entityOperations/*
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.entityManager.name }}
+            port:
+              number: 1025
+
+      - path: /ngsi-ld/v1/temporal/entities/*
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.historyManager.name }}
+            port:
+              number: 1040
+      - path: /ngsi-ld/v1/entityOperations/*
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.queryManager.name }}
+            port:
+              number: 1026
+
+      - path: /ngsi-ld/v1/entities/*
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.queryManager.name }}
+            port:
+              number: 1026
+      - path: /ngsi-ld/v1/csourceRegistrations/*
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.registryManager.name }}
+            port:
+              number: 1030
+      - path: /ngsi-ld/v1/csourceSubscriptions/*
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.registrySubscriptionManager.name }}
+            port:
+              number: 2025
+      - path: /remotenotify/
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.subscriptionManager.name }}
+            port:
+              number: 2027
+      - path: /ngsi-ld/v1/subscriptions/
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.subscriptionManager.name }}
+            port:
+              number: 2027
+  {{- if .Values.ingress.tls }}
+  tls:
+{{ toYaml .Values.ingress.tls | indent 4 }}
+  {{- end -}}            
+  {{- end }}
+  {{- end }}

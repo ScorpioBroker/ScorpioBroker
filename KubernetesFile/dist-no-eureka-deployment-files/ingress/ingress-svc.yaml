@@ -1,0 +1,88 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway-ingress
+  namespace: scorpio-broker
+  annotations:
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "PUT, GET, POST, OPTIONS, DELETE, PATCH"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Accept, Link"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: scorpiobroker.com
+    http:
+      paths:
+      - path: /ngsi-ld/contextes/
+        pathType: Prefix
+        backend:
+          service:
+            name: atcontext-server
+            port:
+              number: 27015
+      - path: /ngsi-ld/v1/entities/
+        pathType: Prefix
+        backend:
+          service:
+            name: entity-manager
+            port:
+              number: 1025
+      - path: /ngsi-ld/v1/entityOperations/
+        pathType: Prefix
+        backend:
+          service:
+            name: entity-manager
+            port:
+              number: 1025
+
+      - path: /ngsi-ld/v1/temporal/entities/
+        pathType: Prefix
+        backend:
+          service:
+            name: history-manager
+            port:
+              number: 1040
+      - path: /ngsi-ld/v1/entityOperations/
+        pathType: Prefix
+        backend:
+          service:
+            name: query-manager
+            port:
+              number: 1026
+      - path: /ngsi-ld/v1/
+        pathType: Prefix
+        backend:
+          service:
+            name: query-manager
+            port:
+              number: 1026
+      - path: /ngsi-ld/v1/csourceRegistrations/
+        pathType: Prefix
+        backend:
+          service:
+            name: registry-manager
+            port:
+              number: 1030
+      - path: /ngsi-ld/v1/csourceSubscriptions/
+        pathType: Prefix
+        backend:
+          service:
+            name: registry-subscription-manager
+            port:
+              number: 2025
+      - path: /remotenotify/
+        pathType: Prefix
+        backend:
+          service:
+            name: subscription-manager
+            port:
+              number: 2027
+
+      - path: /ngsi-ld/v1/subscriptions/
+        pathType: Prefix
+        backend:
+          service:
+            name: subscription-manager
+            port:
+              number: 2027
