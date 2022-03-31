@@ -54,24 +54,27 @@ spring:
         cleanup:
           policy: compact
   security:
-    active: false
+    mode: deactivated
+#-------For mode header to provide Bearer Token------------------
 #    oauth2:
 #      resourceserver:
 #        jwt:
-#          issuer-uri: https://idp.example.com/auth/realms/demo
+#          jwk-set-uri: http://localhost:8080/realms/scorpio/protocol/openid-connect/certs
+#          issuer-uri: http://localhost:8080/realms/scorpio
+#-------For mode webauth to get web login------------------
 #      client:
 #        provider:
 #          keycloak:
-#            issuer-uri: https://idp.example.com/auth/realms/demo
+#            issuer-uri: http://localhost:8080/realms/scorpio
 #        registration:
 #          keycloak-client:
 #            provider: keycloak
-#            client-id: spring-security
-#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+#            client-id: scorpio1
+#            client-secret: 12SNKt2ORNXASHJRU6bZ0IkKoMu0WS5M
 #            authorization_grant_type: client_credentials
 #          keycloak:
-#            client-id: spring-security
-#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+#            client-id: scorpio1
+#            client-secret: 12SNKt2ORNXASHJRU6bZ0IkKoMu0WS5M
   datasource:
     hikari:
       connectionTimeout: 30000

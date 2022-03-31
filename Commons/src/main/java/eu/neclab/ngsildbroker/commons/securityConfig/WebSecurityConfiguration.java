@@ -10,14 +10,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
 import org.springframework.security.web.firewall.HttpFirewall;
 
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
-	@Value("${spring.security.active:false}")
-	boolean securityActive;
+	@Value("${spring.security.mode:deactivated}")
+	String securityMode;
 	@Autowired
 	Environment env;
 
@@ -37,15 +38,24 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 		// will deactivate the security because it is handled by the gateway
 		if (Arrays.stream(env.getActiveProfiles())
 				.anyMatch(profile -> (profile.equalsIgnoreCase("docker") || profile.equalsIgnoreCase("eureka")))) {
-			securityActive = false;
+			securityMode = "deactivated";
 		}
-		http.cors();
-		if (securityActive) {
+
+		switch (securityMode) {
+		case "header":
+			http.authorizeRequests().anyRequest().authenticated().and().sessionManagement()
+					.sessionCreationPolicy(SessionCreationPolicy.STATELESS).and().cors().and().csrf().disable()
+					.oauth2ResourceServer().jwt();
+			break;
+		case "webauth":
 			http.antMatcher("/**").authorizeRequests().anyRequest().authenticated().and().httpBasic().and()
-					.oauth2Client().and().oauth2Login().and().formLogin();
-		} else {
-			http.antMatcher("/**").authorizeRequests().antMatchers("/", "/webjars/**").permitAll().and().csrf()
-					.disable();
+					.oauth2Client().and().oauth2Login().and().formLogin().and().cors();
+			break;
+		case "deactivated":
+		default:
+			http.cors().and().antMatcher("/**").authorizeRequests().antMatchers("/", "/webjars/**").permitAll().and()
+					.cors().and().csrf().disable();
+			break;
 		}
 	}
 
