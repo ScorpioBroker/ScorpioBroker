@@ -54,12 +54,14 @@ spring:
         cleanup:
           policy: compact
   security:
-    mode: header
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://localhost:8080/realms/scorpio/protocol/openid-connect/certs
-          issuer-uri: http://localhost:8080/realms/scorpio
+    mode: deactivated
+#-------For mode header to provide Bearer Token------------------
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          jwk-set-uri: http://localhost:8080/realms/scorpio/protocol/openid-connect/certs
+#          issuer-uri: http://localhost:8080/realms/scorpio
+#-------For mode webauth to get web login------------------
 #      client:
 #        provider:
 #          keycloak:

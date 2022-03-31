@@ -43,7 +43,6 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 		switch (securityMode) {
 		case "header":
-			System.err.println("header mode");
 			http.authorizeRequests().anyRequest().authenticated().and().sessionManagement()
 					.sessionCreationPolicy(SessionCreationPolicy.STATELESS).and().cors().and().csrf().disable()
 					.oauth2ResourceServer().jwt();
