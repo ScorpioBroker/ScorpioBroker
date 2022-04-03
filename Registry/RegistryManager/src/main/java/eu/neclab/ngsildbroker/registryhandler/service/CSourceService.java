@@ -78,7 +78,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@Value("${scorpio.directDB}")
 	boolean directDB = true;
 
-	//private ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
+	// private ArrayListMultimap<String, String> csourceIds =
+	// ArrayListMultimap.create();
 
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
 	Timer watchDog = new Timer(true);
@@ -94,7 +95,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	@SuppressWarnings("unused")
 	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
-			//this.csourceIds = csourceInfoDAO.getAllIds();
+		// this.csourceIds = csourceInfoDAO.getAllIds();
 		if (AUTO_REG_STATUS.equals("active")) {
 			Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
 			for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
@@ -192,11 +193,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		Map<String, Object> originalRegistration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		AppendCSourceRequest request = new AppendCSourceRequest(headers, registrationId, originalRegistration, entry,
 				options);
-			TimerTask task = regId2TimerTask.get(registrationId);
-			if (task != null) {
-				task.cancel();
-			}
-			this.csourceTimerTask(headers, request.getFinalPayload());
+		TimerTask task = regId2TimerTask.get(registrationId);
+		if (task != null) {
+			task.cancel();
+		}
+		this.csourceTimerTask(headers, request.getFinalPayload());
 		pushToDB(request);
 		sendToKafka(request);
 		return request.getUpdateResult();
@@ -219,11 +220,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			id = (String) idObj;
 		}
 		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
-		/*String tenantId = HttpUtils.getInternalTenant(headers);
-			if (this.csourceIds.containsEntry(tenantId, request.getId())) {
-				throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
-			}
-			this.csourceIds.put(tenantId, request.getId());*/
+		/*
+		 * String tenantId = HttpUtils.getInternalTenant(headers); if
+		 * (this.csourceIds.containsEntry(tenantId, request.getId())) { throw new
+		 * ResponseException(ErrorType.AlreadyExists, "CSource already exists"); }
+		 * this.csourceIds.put(tenantId, request.getId());
+		 */
 		pushToDB(request);
 		sendToKafka(request);
 		return request.getId();
@@ -249,16 +251,17 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 
-			//if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
-			//	throw new ResponseException(ErrorType.NotFound, registrationId + " not found.");
-			//}
+		// if (!this.csourceIds.containsEntry(tenantId, registrationId)) {
+		// throw new ResponseException(ErrorType.NotFound, registrationId + " not
+		// found.");
+		// }
 
 		Map<String, Object> registration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId);
 		sendToKafka(requestForSub);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		pushToDB(request);
-		//this.csourceIds.remove(tenantId, registrationId);
+		// this.csourceIds.remove(tenantId, registrationId);
 		return true;
 
 	}
@@ -293,6 +296,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		String tenant = message.getTenant();
 		Map<String, Object> informationEntry = tenant2EntityId2InformationEntry.remove(tenant, id);
 		Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
+		if (ids == null) {
+			return;
+		}
 		ids.remove(id);
 		if (ids.isEmpty()) {
 			tenant2InformationEntry2EntityIds.remove(tenant, informationEntry);
@@ -453,24 +459,18 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		return null;
 	}
 
-	private void storeInternalEntry(CSourceRequest regEntry)  {
+	private void storeInternalEntry(CSourceRequest regEntry) {
+		try {
+			appendToEntry(regEntry.getHeaders(), regEntry.getId(), regEntry.getFinalPayload(), null);
+		} catch (ResponseException e) {
 			try {
-				appendToEntry(regEntry.getHeaders(), regEntry.getId(), regEntry.getFinalPayload(), null);
-			} catch (ResponseException e) {
-				try {
-					createEntry(regEntry.getHeaders(), regEntry.getFinalPayload());
-				} catch (Exception e1) {
-					logger.error("Failed to store internal regentry", e1);
-				}
-			} catch (Exception e) {
-				logger.error("Failed to store internal regentry", e);
+				createEntry(regEntry.getHeaders(), regEntry.getFinalPayload());
+			} catch (Exception e1) {
+				logger.error("Failed to store internal regentry", e1);
 			}
-			
-		
-			
-		
-			
-		
+		} catch (Exception e) {
+			logger.error("Failed to store internal regentry", e);
+		}
 
 	}
 
