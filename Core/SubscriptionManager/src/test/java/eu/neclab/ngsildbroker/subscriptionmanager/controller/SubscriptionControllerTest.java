@@ -207,34 +207,7 @@ public class SubscriptionControllerTest {
 		verify(subscriptionService, times(1)).getSubscription(any(), any());
 	}
 
-	/**
-	 * this method is used get the subscribe entity.
-	 */
 
-	@Test
-	public void getSubscriptionEntityTest() {
-		try {
-
-			SubscriptionRequest subscription = null;
-			subscription = DataSerializer.getSubscriptionRequest(subscriptionEntityPayload);
-			List<SubscriptionRequest> context = new ArrayList<>();
-			context.add(subscription);
-
-			when(subscriptionService.getAllSubscriptions(any())).thenReturn(context);
-			ResultActions resultAction = mockMvc
-					.perform(get("/ngsi-ld/v1/subscriptions/").accept(AppConstants.NGB_APPLICATION_JSON))
-					.andExpect(status().isOk());
-
-			MvcResult mvcResult = resultAction.andReturn();
-			MockHttpServletResponse response = mvcResult.getResponse();
-			int status = response.getStatus();
-			assertEquals(200, status);
-			verify(subscriptionService, times(1)).getAllSubscriptions(any());
-
-		} catch (Exception e) {
-			Assert.fail(e.getMessage());
-		}
-	}
 
 	/**
 	 * this method is use for delete subscription
