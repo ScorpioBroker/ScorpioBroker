@@ -101,6 +101,7 @@ public class EntityServiceTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	String updatePayload;
+	String updatePayloadforwrongattr;
 	String appendPayload;
 	String entityPayload;
 	String updatePartialAttributesPayload;
@@ -158,6 +159,10 @@ public class EntityServiceTest {
 				+ "    \"http://example.org/vehicle/Vehicle\"]\r\n" + "  }\r\n";
 
 		updatePayload = "{\r\n" + "	\"http://example.org/vehicle/brandName\": [{\r\n"
+				+ "		\"@type\": [\"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
+				+ "		\"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n" + "			\"@value\": \"AUDI\"\r\n"
+				+ "		}]\r\n" + "	}]\r\n" + "}";
+		updatePayloadforwrongattr = "{\r\n" + "	\"http://example.org/vehicle/brandName1\": [{\r\n"
 				+ "		\"@type\": [\"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
 				+ "		\"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n" + "			\"@value\": \"AUDI\"\r\n"
 				+ "		}]\r\n" + "	}]\r\n" + "}";
@@ -232,6 +237,56 @@ public class EntityServiceTest {
 			Assert.assertEquals(request.getId() + " already exists", e.getMessage());
 		}
 
+	}
+
+	/**
+	 * this method is use for update the entity if Attribute is not same
+	 */
+	@Test
+	public void updateMessageAttrIsNotExistTest() throws Exception {
+		try {
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
+			ReflectionTestUtils.setField(entityService, "directDB", true);
+			UpdateResult updateResult = new UpdateResult();
+			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
+			multimaparr.put("content-type", "application/json");
+			Gson gson = new Gson();
+			Map<String, Object> resolved = gson.fromJson(updatePayloadforwrongattr, Map.class);
+			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
+			UpdateEntityRequest request = new UpdateEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
+					resolved, null);
+			updateResult = entityService.updateEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved);
+			Assert.assertEquals(request.getUpdateResult().getNotUpdated(), updateResult.getNotUpdated());
+
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
+
+	/**
+	 * this method is use for update the entity if Entity id is null
+	 */
+	@Test
+	public void updateMessageEntityIDNULLTest() throws Exception {
+		try {
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
+			ReflectionTestUtils.setField(entityService, "directDB", true);
+
+			Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
+			multimaparr.put("content-type", "application/json");
+			Gson gson = new Gson();
+			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
+			try {
+				entityService.updateEntry(multimaparr, "", resolved);
+			} catch (Exception e) {
+				Assert.assertEquals("empty entity id not allowed", e.getMessage());
+			}
+
+		} catch (Exception ex) {
+			Assert.fail();
+		}
 	}
 
 	/**
