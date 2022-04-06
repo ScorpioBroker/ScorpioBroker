@@ -651,8 +651,10 @@ public final class HttpUtils {
 			acceptHeader = new ArrayList<String>();
 			acceptHeader.add("application/json");
 		}
+		
 		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
 				ldContext, context, geometryProperty);
+		headers.put("Content-Length", body.length() + "");
 		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
 	}
 
@@ -685,7 +687,16 @@ public final class HttpUtils {
 	private static HttpHeaders getHttpHeaders(ArrayListMultimap<String, String> headers) {
 		HttpHeaders result = new HttpHeaders();
 		for (String key : headers.keySet()) {
-			result.put(key, headers.get(key));
+			switch (key.toLowerCase()) {
+			case "postman-token":
+			case "accept-encoding":
+			case "user-agent":
+			case "host":
+				break;
+			default:
+				result.put(key, headers.get(key));
+			}
+
 		}
 		return result;
 	}

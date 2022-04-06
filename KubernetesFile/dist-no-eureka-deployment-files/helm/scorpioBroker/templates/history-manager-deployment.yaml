@@ -1,0 +1,83 @@
+{{- if .Values.historyManager.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "historyManager.fullname" . }}
+  labels:
+    {{ include "historyManager.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.historyManager.replicas }}
+  strategy:
+  {{- with .Values.historyManager.updateStrategy }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "historyManager.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{ include "historyManager.labels" . | nindent 8 }}
+        {{- with .Values.historyManager.additionalLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.historyManager.additionalAnnotations -}}
+      annotations:
+        {{- with .Values.historyManager.additionalAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+    spec:
+      containers:
+        {{- if eq .Values.profile "dist"  }}
+      - image: {{ .Values.historyManager.image.repository }}:{{ .Values.historyManager.image.tag }}
+        {{ else }}
+      - image: {{ .Values.historyManager.image.repository }}:{{ .Values.historyManager.image.no_eureka_tag }}
+        {{ end }}
+        {{- if .Values.springArgs.overrideSpringArgs }}
+        env:
+          - name: spring_args
+            value: {{ .Values.springArgs.value }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.historyManager.image.pullPolicy }}
+        name: {{ include "historyManager.fullname" . }}
+        ports:
+        - containerPort: 1040
+          protocol: TCP
+        {{- if eq .Values.profile "dist"  }}
+        lifecycle:
+           preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/HISTORY-MANAGER/$HOSTNAME:history-manager:1040/status?value=OUT_OF_SERVICE"
+        {{ end }}
+        
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 1040
+          failureThreshold: {{ .Values.historyManager.readinessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.historyManager.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.historyManager.readinessProbe.periodSeconds }}
+          
+        
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 1040
+          failureThreshold: {{ .Values.historyManager.livenessProbe.failureThreshold }}
+          initialDelaySeconds: {{ .Values.historyManager.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.historyManager.livenessProbe.periodSeconds }}
+          
+        resources:
+{{ toYaml .Values.historyManager.resources | indent 10 }}
+      restartPolicy: {{ .Values.historyManager.restartPolicy }}
+      {{- if .Values.historyManager.serviceAccount.enabled }}
+      serviceAccountName: {{ .Values.historyManager.serviceAccount.name }}
+      {{- end }}
+      securityContext: {{ .Values.historyManager.securityContext | toYaml }}
+      terminationGracePeriodSeconds: {{ .Values.historyManager.terminationGracePeriodSeconds }}
+{{- end }}
+

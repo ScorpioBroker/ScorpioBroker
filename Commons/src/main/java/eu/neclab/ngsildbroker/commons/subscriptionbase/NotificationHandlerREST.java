@@ -1,9 +1,12 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,6 +62,7 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
 		ResponseEntity<String> compacted;
 		compacted = notification.toCompactedJson();
+		
 		HttpEntity<String> entity = new HttpEntity<String>(compacted.getBody(), compacted.getHeaders());
 
 		int retryCount = 5;
