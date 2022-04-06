@@ -309,7 +309,7 @@ public class CSourceServiceTest {
 	}
 
 	/**
-	 * this method is use for get CSource Registry
+	 * this method is use for get CSource Registry by Id
 	 */
 	@Test
 	public void getCSourceRegistrationByIdTest() throws Exception {
@@ -369,7 +369,7 @@ public class CSourceServiceTest {
 	}
 
 	/**
-	 * this method is use for get CSource Registry
+	 * this method is use for get CSource Registry by id if tenant is null
 	 */
 	@Test
 	public void getCSourceRegistrationTest() throws Exception {

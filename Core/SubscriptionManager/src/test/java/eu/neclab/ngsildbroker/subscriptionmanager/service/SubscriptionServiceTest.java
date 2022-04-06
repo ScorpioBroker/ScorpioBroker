@@ -168,7 +168,7 @@ public class SubscriptionServiceTest {
 		try {
 			manager.updateSubscription(subRequest);
 		} catch (Exception e) {
-			verify(tenant2subscriptionId2Subscription, times(1)).get(any(), any());
+			Assert.assertEquals("urn:ngsi-ld:Subscription:173223 not found", e.getMessage());
 		}
 	}
 
@@ -243,13 +243,12 @@ public class SubscriptionServiceTest {
 		tenant2subscriptionId2Subscription.put(subRequest.getTenant(), subRequest.getId().toString(), subRequest);
 		ReflectionTestUtils.setField(baseSubscriptionService, "tenant2subscriptionId2Subscription",
 				tenant2subscriptionId2Subscription);
-
 		try {
 			manager.getSubscription("urn:ngsi-ld:Subscription:173224", multimaparr);
 		} catch (ResponseException e) {
-			errorMessage = e.getMessage();
+			Assert.assertEquals("urn:ngsi-ld:Subscription:173224 not found", e.getMessage());
 		}
-		Assert.assertEquals(errorMessage, "urn:ngsi-ld:Subscription:173224 not found");
+
 	}
 
 }
