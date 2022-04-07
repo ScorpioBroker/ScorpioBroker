@@ -75,7 +75,7 @@ public class SubscriptionRequestGsonAdapter
 				result.setSubscription(context.deserialize(value, SUB_TYPE));
 				break;
 			case CONTEXT:
-				result.setContext(context.deserialize(json, CONTEXT_TYPE));
+				result.setContext(context.deserialize(value, CONTEXT_TYPE));
 				break;
 			case ACTIVE:
 				result.setActive(value.getAsBoolean());

@@ -116,14 +116,14 @@ public abstract class BaseSubscriptionSyncManager {
 			try {
 				subscriptionService.unsubscribe(sub.getId(), sub.getHeaders(), true);
 			} catch (ResponseException e) {
-				logger.warn("Failed to forward delete request", e);
+				logger.debug("Failed to forward delete request", e);
 			}
 			break;
 		case AppConstants.UPDATE_REQUEST:
 			try {
 				subscriptionService.updateSubscription(sub, true);
 			} catch (ResponseException e) {
-				logger.warn("Failed to forward update request", e);
+				logger.debug("Failed to forward update request", e);
 			}
 			break;
 		case AppConstants.CREATE_REQUEST:
@@ -131,7 +131,7 @@ public abstract class BaseSubscriptionSyncManager {
 				sub.setActive(false);
 				subscriptionService.subscribe(sub, true);
 			} catch (ResponseException e) {
-				logger.warn("Failed to forward create request", e);
+				logger.debug("Failed to forward create request", e);
 			}
 			break;
 		default:
