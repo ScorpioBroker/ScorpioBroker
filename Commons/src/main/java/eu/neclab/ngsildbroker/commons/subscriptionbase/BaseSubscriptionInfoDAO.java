@@ -111,10 +111,14 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	@Override
 	public void storeSubscription(SubscriptionRequest sub) {
 		String tenant = sub.getTenant();
+		JdbcTemplate template;
 		if (AppConstants.INTERNAL_NULL_KEY.equals(tenant)) {
 			tenant = null;
+			template = getJDBCTemplate(tenant);
+		}else {
+			template = getJDBCTemplates(sub).getWriterJdbcTemplate();
 		}
-		JdbcTemplate template = getJDBCTemplate(tenant);
+		
 		if(sub.getId() == null) {
 			System.err.println();
 		}
