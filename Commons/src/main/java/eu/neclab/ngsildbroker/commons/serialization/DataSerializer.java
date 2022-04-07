@@ -30,6 +30,7 @@ public class DataSerializer {
 
 		builder.registerTypeAdapter(Subscription.class, new SubscriptionGsonAdapter());
 		builder.registerTypeAdapter(BatchResult.class, new BatchResultGsonAdapter());
+		builder.registerTypeAdapter(SubscriptionRequest.class, new SubscriptionRequestGsonAdapter());
 		builder.registerTypeAdapterFactory(new GeometryAdapterFactory());
 		builder.registerTypeAdapterFactory(new JtsAdapterFactory());
 	}
