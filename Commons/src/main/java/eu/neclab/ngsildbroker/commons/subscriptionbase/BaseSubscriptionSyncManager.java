@@ -41,8 +41,6 @@ public abstract class BaseSubscriptionSyncManager {
 	@Autowired
 	KafkaTemplate<String, AnnouncementMessage> kafkaTemplate;
 
-	;
-
 	@Value("${scorpio.sync.announcement-time:200}")
 	int announcementTime;
 
@@ -118,16 +116,14 @@ public abstract class BaseSubscriptionSyncManager {
 			try {
 				subscriptionService.unsubscribe(sub.getId(), sub.getHeaders(), true);
 			} catch (ResponseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.warn("Failed to forward delete request", e);
 			}
 			break;
 		case AppConstants.UPDATE_REQUEST:
 			try {
 				subscriptionService.updateSubscription(sub, true);
 			} catch (ResponseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.warn("Failed to forward update request", e);
 			}
 			break;
 		case AppConstants.CREATE_REQUEST:
@@ -135,8 +131,7 @@ public abstract class BaseSubscriptionSyncManager {
 				sub.setActive(false);
 				subscriptionService.subscribe(sub, true);
 			} catch (ResponseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.warn("Failed to forward create request", e);
 			}
 			break;
 		default:
