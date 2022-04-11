@@ -1,83 +1,64 @@
 mysettings:
   eureka:
-    host: ${eureka.host:localhost}
-query-manager:
-  request-path: /ngsi-ld/v1/entities
-  target-service: aio-runner
-  http-method: GET
-entity-manager:
-  request-path: /ngsi-ld/v1/entities
-  target-service: aio-runner
-  http-method: POST
-zuul:
-  routes:
-    entity-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/entities/**
-      serviceId: aio-runner
-      stripPrefix: false
-    query-manager_1:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/attributes/**     
-      serviceId: aio-runner
-      stripPrefix: false
-    query-manager_2:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/types/**     
-      serviceId: aio-runner
-      stripPrefix: false
-    postquery:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/entityOperations/query/**
-      serviceId: aio-runner
-      stripPrefix: false
-    subscription-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/subscriptions/**
-      serviceId: aio-runner
-      stripPrefix: false
-    context-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/csourceRegistrations/**
-      serviceId: aio-runner
-      stripPrefix: false
-    subforeg:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/csourceSubscriptions/**
-      serviceId: aio-runner
-      stripPrefix: false
-    batchoperations:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/entityOperations/**
-      serviceId: aio-runner
-      stripPrefix: false
-    history-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/temporal/entities/**
-      serviceId: aio-runner
-      stripPrefix: false
-    atcontext-server:
-      sensitiveHeaders:
-      path: /ngsi-ld/contextes/**
-      serviceId: aio-runner
-      stripPrefix: false
-    infos:
-      sensitiveHeaders:
-      path: /scorpio/v1/info/**
-      serviceId: aio-runner
-      stripPrefix: false
-    health:
-      sensitiveHeaders:
-      path: /health/**
-      serviceId: aio-runner
-      stripPrefix: false
-    corecontext:
-      sensitiveHeaders:
-      path: /corecontext/**
-      serviceId: aio-runner
-      stripPrefix: false
-    test-manager:
-      sensitiveHeaders:
-      path: /test/**
-      serviceId: testmanager
-      stripPrefix: false
+    host: ${eureka.host:eureka}
+spring:
+  cloud:
+    discovery:
+      enabled: true
+    gateway:
+      routes:
+      - uri: lb://AIO-RUNNER
+        id: querymanager
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/entities/**
+      - uri: lb://AIO-RUNNER
+        id: entitymanager
+        predicates:
+        - Method=POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/entities/**
+      - uri: lb://AIO-RUNNER
+        id: querymanager1
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/attributes/**
+      - uri: lb://AIO-RUNNER
+        id: querymanager2
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/v1/types/**
+      - uri: lb://AIO-RUNNER
+        id: querymanager3
+        predicates:
+        - Method=POST
+        - Path=/ngsi-ld/v1/entityOperations/query/**
+      - uri: lb://AIO-RUNNER
+        id: entitymanager1
+        predicates:
+        - Method=POST
+        - Path=/ngsi-ld/v1/entityOperations/**
+      - uri: lb://AIO-RUNNER
+        id: subscriptionsmanager1
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/subscriptions/**
+      - uri: lb://AIO-RUNNER
+        id: csourcereg
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/csourceRegistrations/**
+      - uri: lb://AIO-RUNNER
+        id: csourcesubs
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/csourceSubscriptions/**
+      - uri: lb://AIO-RUNNER
+        id: history
+        predicates:
+        - Method=GET,POST,PATCH,DELETE
+        - Path=/ngsi-ld/v1/temporal/entities/**
+      - uri: lb://AIO-RUNNER
+        id: atcontext
+        predicates:
+        - Method=GET
+        - Path=/ngsi-ld/contextes/**

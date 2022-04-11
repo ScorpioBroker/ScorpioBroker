@@ -5,9 +5,9 @@ mysettings:
     bootstrap:
       host: ${bushost:kafka}
   eureka:
-    protocol: ${eureka.protocol:http}
-    host: ${eureka.host:localhost}
-    port: ${eureka.port:8761}
+    protocol: ${eurekaprotocol:http}
+    host: ${eurekahost:eureka}
+    port: ${eurekaport:8761}
   postgres:
     host: ${dbhost:postgres}
   gateway:
@@ -19,3 +19,5 @@ eureka:
     fetchRegistry: true
     serviceUrl:
       defaultZone: ${eurekaurl}/eureka/
+  instance:
+    preferIpAddress: true

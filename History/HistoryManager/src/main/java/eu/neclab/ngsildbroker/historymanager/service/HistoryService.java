@@ -1,180 +1,157 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
-import java.net.URI;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.PostConstruct;
+import javax.el.MethodNotFoundException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.AppendHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.CreateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.DeleteHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.UpdateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-import eu.neclab.ngsildbroker.commons.storage.StorageWriterDAO;
-import eu.neclab.ngsildbroker.commons.stream.service.KafkaOps;
+import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
+import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.historymanager.config.ProducerChannel;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 
 @Service
-public class HistoryService {
+public class HistoryService extends BaseQueryService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryService.class);
 
 	@Autowired
-	KafkaOps kafkaOperations;
-	@Autowired
-	ParamsResolver paramsResolver;
-	@Autowired
 	HistoryDAO historyDAO;
 
 	@Autowired
-	@Qualifier("historydao")
-	StorageWriterDAO writerDAO;
-//	public static final Gson GSON = DataSerializer.GSON;
+	KafkaTemplate<String, Object> kafkaTemplate;
 
-	JsonParser parser = new JsonParser();
+	@Value("${scorpio.directdb:true}")
+	boolean directDB;
 
-	private final ProducerChannel producerChannels;
+	@Value("${scorpio.topics.temporal}")
+	private String TEMP_TOPIC;
 
-	private boolean directDB = true;
+	@Value("${scorpio.history.tokafka:false}")
+	private boolean historyToKafkaEnabled;
 
-	public HistoryService(ProducerChannel producerChannels) {
-		this.producerChannels = producerChannels;
-
+	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
+			new LinkedBlockingQueue<Runnable>());
+	
+	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+			throws ResponseException, Exception {
+		return createTemporalEntity(headers, resolved, false);
 	}
 
-	public URI createTemporalEntityFromEntity(ArrayListMultimap<String, String> headers, String payload)
-			throws ResponseException, Exception {
-		return createTemporalEntity(headers, payload, true);
-	}
+	String createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			boolean fromEntity) throws ResponseException, Exception {
 
-	public URI createTemporalEntityFromBinding(ArrayListMultimap<String, String> headers, String payload)
-			throws ResponseException, Exception {
-		return createTemporalEntity(headers, payload, false);
-	}
-
-	private URI createTemporalEntity(ArrayListMultimap<String, String> headers, String payload, boolean fromEntity)
-			throws ResponseException, Exception {
-		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, payload, fromEntity);
+		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
+		String tenantId = HttpUtils.getInternalTenant(headers);
+		historyDAO.entityExists(request.getId(), tenantId);
 		logger.trace("creating temporal entity");
-		if (directDB) {
-			pushToDB(request);
-		} else {
-			pushToKafka(request);
-		}
-
-		return request.getUriId();
+		handleRequest(request);
+		return request.getId();
 	}
 
-	private void pushToKafka(HistoryEntityRequest request) throws ResponseException {
-		try {
-			kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(),
-					UUID.randomUUID().toString().getBytes(), DataSerializer.toJson(request).getBytes());
-		} catch (ResponseException e) {
-			e.printStackTrace();
-			throw new ResponseException(ErrorType.InternalError,
-					"Failed to push entity to kafka. " + e.getLocalizedMessage());
-		}
+	private void pushToKafka(BaseRequest request) throws ResponseException {
+		if (historyToKafkaEnabled) {
+			kafkaExecutor.execute(new Runnable() {
+				@Override
+				public void run() {
+					kafkaTemplate.send(TEMP_TOPIC, request.getId(), new BaseRequest(request));
 
+				}
+			});
+		}
 	}
 
 	private void pushToDB(HistoryEntityRequest request) throws ResponseException {
 		try {
-			writerDAO.storeTemporalEntity(request);
+			historyDAO.storeTemporalEntity(request);
 		} catch (SQLException e) {
-			e.printStackTrace();
-			throw new ResponseException(e.getLocalizedMessage());
+			throw new ResponseException(ErrorType.InternalError, e.getLocalizedMessage());
 		}
 
 	}
 
-	/*
-	 * private void pushAttributeToKafka(String entityId, String entityType, String
-	 * entityCreatedAt, String entityModifiedAt, String attributeId, String
-	 * elementValue, Boolean createTemporalEntityIfNotExists, Boolean overwriteOp)
-	 * throws ResponseException { String messageKey; TemporalEntityStorageKey tesk =
-	 * new TemporalEntityStorageKey(entityId); if (createTemporalEntityIfNotExists
-	 * != null && createTemporalEntityIfNotExists) { tesk.setEntityType(entityType);
-	 * tesk.setEntityCreatedAt(entityCreatedAt);
-	 * tesk.setEntityModifiedAt(entityModifiedAt); tesk.setAttributeId(attributeId);
-	 * messageKey = DataSerializer.toJson(tesk); } else {
-	 * tesk.setEntityModifiedAt(entityModifiedAt); tesk.setAttributeId(attributeId);
-	 * tesk.setOverwriteOp(overwriteOp); messageKey = DataSerializer.toJson(tesk); }
-	 * logger.debug(" message key " + messageKey + " payload element " +
-	 * elementValue);
-	 * kafkaOperations.pushToKafka(producerChannels.temporalEntityWriteChannel(),
-	 * messageKey.getBytes(), elementValue.getBytes()); }
-	 */
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId)
+			throws ResponseException, Exception {
+		return delete(headers, entityId, null, null, null);
+	}
 
-	/*
-	 * private void pushAttributeToKafka(String id, String entityModifiedAt, String
-	 * attributeId, String elementValue) throws ResponseException {
-	 * pushAttributeToKafka(id, null, null, entityModifiedAt, attributeId,
-	 * elementValue, null, null); }
-	 */
-	public void delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
-			String instanceId, List<Object> linkHeaders) throws ResponseException, Exception {
+	public boolean delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
+			String instanceId, Context linkHeaders) throws ResponseException, Exception {
+		historyDAO.getAllIds(entityId,HttpUtils.getInternalTenant(headers));
+		//String tenantId = HttpUtils.getInternalTenant(headers);
+
+			//if (!this.entityIds.containsEntry(tenantId, entityId)) {
+				//throw new ResponseException(ErrorType.NotFound, entityId + " not found");
+			//}
+			//if (attributeId == null) {
+				//this.entityIds.remove(tenantId, entityId);
+			//}
 		logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
 
 		String resolvedAttrId = null;
 		if (attributeId != null) {
-			resolvedAttrId = paramsResolver.expandAttribute(attributeId, linkHeaders);
+			resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
 		}
 		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId,
-				entityId);
-		if (directDB) {
-			pushToDB(request);
-		} else {
-			pushToKafka(request);
-		}
+				entityId);	
+		handleRequest(request);
+		return true;
 	}
 
+	// need to be check and change
 	// endpoint "/entities/{entityId}/attrs"
-	public void addAttrib2TemporalEntity(ArrayListMultimap<String, String> headers, String entityId, String payload)
-			throws ResponseException, Exception {
-		if (!historyDAO.entityExists(entityId, HttpUtils.getTenantFromHeaders(headers))) {
-			throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
-		}
-		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, payload, entityId);
-		if (directDB) {
-			pushToDB(request);
-		} else {
-			pushToKafka(request);
-		}
+	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
+		//if (!this.entityIds.containsEntry(HttpUtils.getInternalTenant(headers), entityId)) {
+			//throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
+		//}
+		
+		historyDAO.getAllIds(entityId, HttpUtils.getInternalTenant(headers));
+		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, resolved, entityId);
+		
+		handleRequest(request);
+		return request.getUpdateResult();
 	}
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
 	public void modifyAttribInstanceTemporalEntity(ArrayListMultimap<String, String> headers, String entityId,
-			String payload, String attribId, String instanceId, List<Object> linkHeaders)
+			Map<String, Object> resolved, String attribId, String instanceId, Context linkHeaders)
 			throws ResponseException, Exception {
 
 		String resolvedAttrId = null;
 		if (attribId != null) {
-			resolvedAttrId = paramsResolver.expandAttribute(attribId, linkHeaders);
+			resolvedAttrId = ParamsResolver.expandAttribute(attribId, linkHeaders);
 		}
 
 		// check if entityId + attribId + instanceid exists. if not, throw exception
@@ -188,73 +165,39 @@ public class HistoryService {
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
 		qp.setIncludeSysAttrs(true);
+		qp.setTenant(HttpUtils.getTenantFromHeaders(headers));
 		QueryResult queryResult = historyDAO.query(qp);
-		List<String> entityList = queryResult.getActualDataString(); 
+		List<String> entityList = queryResult.getActualDataString();
 		if (entityList.size() == 0) {
-			throw new ResponseException(ErrorType.NotFound);
+			throw new ResponseException(ErrorType.NotFound, "Entity not found");
 		}
-		String oldEntry = historyDAO.getListAsJsonArray(entityList);
-		UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, payload, entityId, resolvedAttrId,
+		String oldEntry = "[" + String.join(",", entityList) + "]";
+		UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, resolved, entityId, resolvedAttrId,
 				instanceId, oldEntry);
+		handleRequest(request);
+	}
+
+	@Override
+	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry) throws ResponseException, Exception {
+		// History can't do this
+		throw new MethodNotFoundException();
+	}
+
+	void handleRequest(HistoryEntityRequest request) throws ResponseException {
 		if (directDB) {
 			pushToDB(request);
-		} else {
-			pushToKafka(request);
 		}
+		pushToKafka(request);
 	}
 
-	/*
-	
-	 */
-	@KafkaListener(topics = "${entity.create.topic}", groupId = "historyManagerCreate")
-	public void handleEntityCreate(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
-			throws Exception {
-		logger.trace("Listener handleEntityCreate...");
-		String payload = new String(message);
-		logger.debug("Received message: " + payload);
-		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(
-				DataSerializer.getEntityRequest(new String(message)));
-		if (directDB) {
-			pushToDB(request);
-		} else {
-			pushToKafka(request);
-		}
+	@Override
+	protected StorageDAO getQueryDAO() {
+		return historyDAO;
 	}
 
-	@KafkaListener(topics = "${entity.append.topic}", groupId = "historyManagerAppend")
-	public void handleEntityAppend(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
-			throws Exception {
-		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(
-				DataSerializer.getEntityRequest(new String(message)));
-		if (directDB) {
-			pushToDB(request);
-		} else {
-			pushToKafka(request);
-		}
-
+	@Override
+	protected StorageDAO getCsourceDAO() {
+		return null;
 	}
-
-	@KafkaListener(topics = "${entity.update.topic}", groupId = "historyManagerUpdate")
-	public void handleEntityUpdate(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
-			throws Exception {
-		UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(
-				DataSerializer.getEntityRequest(new String(message)));
-		if (directDB) {
-			pushToDB(request);
-		} else {
-			pushToKafka(request);
-		}
-
-	}
-
-	@KafkaListener(topics = "${entity.delete.topic}", groupId = "historyManagerDelete")
-	public void handleEntityDelete(@Payload byte[] message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key)
-			throws Exception {
-		logger.trace("Listener handleEntityDelete...");
-
-		logger.debug("Received key: " + key);
-		String payload = new String(message);
-		logger.debug("Received message: " + payload);
-	}
-
 }

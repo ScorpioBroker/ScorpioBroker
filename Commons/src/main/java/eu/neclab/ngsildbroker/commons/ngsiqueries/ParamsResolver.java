@@ -1,30 +1,19 @@
 package eu.neclab.ngsildbroker.commons.ngsiqueries;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -34,29 +23,36 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
-@Component
 public class ParamsResolver {
+	static HashSet<String> validParams = new HashSet<String>();
+	static {
+		validParams.add(NGSIConstants.QUERY_PARAMETER_TYPE);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_ID);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_ATTRS);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_QUERY);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_GEOREL);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_COORDINATES);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_OFFSET);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_LIMIT);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_QTOKEN);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_DETAILS);
+		validParams.add(NGSIConstants.COUNT_HEADER_RESULT);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_TIMEREL);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_TIME);
+		validParams.add(NGSIConstants.QUERY_PARAMETER_LAST_N);
+	}
 
 	private final static Logger logger = LogManager.getLogger(ParamsResolver.class);
 
-	@Autowired
-	ContextResolverBasic contextResolver;
-
-	@Autowired
-	ObjectMapper objectMapper;
-
-	@Autowired
-	QueryParser queryParser;
-
-	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, List<Object> linkHeaders)
-			throws ResponseException {
-		return this.getQueryParamsFromUriQuery(ngsildQueryParams, linkHeaders, false);
-	}
-
-	public List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
+//TODO REWORK THIS COMPLETELY 
+	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
 //TODO check if this can be changed now since a list of entityinfos is in queryparam
 		ArrayList<QueryParams> result = new ArrayList<QueryParams>();
 		for (EntityInfo entityInfo : subscription.getEntities()) {
@@ -105,8 +101,8 @@ public class ParamsResolver {
 				}
 				temp.setCoordinates(coordinatesString);
 			}
-			if (subscription.getLdQuery() != null && !subscription.getLdQuery().isEmpty()) {
-				temp.setQ(subscription.getLdQuery());
+			if (subscription.getLdQuery() != null && !subscription.getLdQueryString().isEmpty()) {
+				temp.setQ(subscription.getLdQueryString());
 			}
 			result.add(temp);
 		}
@@ -115,237 +111,287 @@ public class ParamsResolver {
 	}
 
 	// new simplified format
-	public QueryParams getQueryParamsFromUriQuery(Map<String, String[]> ngsildQueryParams, List<Object> linkHeaders,
-			boolean temporalEntityFormat) throws ResponseException {
-		logger.trace("call getStorageManagerJsonQuery method ::");
-		try {
-			QueryParams qp = new QueryParams();
-			Iterator<String> it = ngsildQueryParams.keySet().iterator();
-			String id = null, type = null, idPattern = null;
-			while (it.hasNext()) {
-				String queryParameter = it.next();
-				String queryValue = ngsildQueryParams.get(queryParameter)[0];
-				logger.debug("Query parameter:" + queryParameter + ", value=" + queryValue);
-				GeoqueryRel geoqueryTokens;
-				switch (queryParameter) {
-				case NGSIConstants.QUERY_PARAMETER_ID:
-					id = queryValue;
-					break;
-				case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
-					idPattern = queryValue;
-					break;
-				case NGSIConstants.QUERY_PARAMETER_TYPE:
-					queryValue = expandQueryValues(linkHeaders, queryValue);
-					type = queryValue;
-					break;
-				case NGSIConstants.QUERY_PARAMETER_ATTRS:
-					queryValue = expandQueryValues(linkHeaders, queryValue);
-					qp.setAttrs(queryValue);
-					break;
-				case NGSIConstants.QUERY_PARAMETER_GEOREL:
-					String georel = queryValue;
-					String geometry = "";
-					String coordinates = "";
-					String geoproperty = "";
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY) != null)
-						geometry = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY)[0];
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_COORDINATES) != null)
-						coordinates = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_COORDINATES)[0];
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY) != null) {
-						geoproperty = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY)[0];
-						geoproperty = expandAttribute(geoproperty, linkHeaders);
-					} else {
-						geoproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_GEOPROPERTY;
-					}
-
-					geoqueryTokens = queryParser.parseGeoRel(georel);
-					logger.debug("  Geoquery term georelOp: " + geoqueryTokens.getGeorelOp());
-
-					if (geoqueryTokens.getGeorelOp().isEmpty() || geometry.isEmpty() || coordinates.isEmpty()) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								"Georel detected but georel, geometry or coordinates are empty!");
-					}
-					if (!AppConstants.NGB_ALLOWED_GEOM_LIST.contains(geometry.toUpperCase())) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								" geometry detected, Bad geometry!" + geometry);
-					}
-					validateCoordinates(coordinates);
-					GeoqueryRel gr = new GeoqueryRel();
-					gr.setGeorelOp(geoqueryTokens.getGeorelOp());
-					gr.setDistanceType(geoqueryTokens.getDistanceType());
-					gr.setDistanceValue(geoqueryTokens.getDistanceValue());
-
-					qp.setGeorel(gr);
-					qp.setGeometry(geometry);
-					qp.setCoordinates(coordinates);
-					qp.setGeoproperty(geoproperty);
-					break;
-				case NGSIConstants.QUERY_PARAMETER_TIMEREL:
-					String timerel = queryValue;
-					String time = "";
-					String timeproperty = "";
-					String endTime = "";
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME) != null)
-						time = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIME)[0];
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY) != null) {
-						timeproperty = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY)[0];
-						timeproperty = expandAttribute(timeproperty, linkHeaders);
-					} else {
-						timeproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY;
-					}
-					if (ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_ENDTIME) != null)
-						endTime = ngsildQueryParams.get(NGSIConstants.QUERY_PARAMETER_ENDTIME)[0];
-
-					if (time.isEmpty()) {
-						throw new ResponseException(ErrorType.BadRequestData, "Time is empty");
-					}
-					if (timerel.equals(NGSIConstants.TIME_REL_BETWEEN) && endTime.isEmpty()) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								"Timerel is between but endTime is empty");
-					}
-
-					qp.setTimerel(timerel);
-					qp.setTime(time);
-					qp.setTimeproperty(timeproperty);
-					qp.setEndTime(endTime);
-					break;
-				case NGSIConstants.QUERY_PARAMETER_QUERY:
-					qp.setQ(queryParser.parseQuery(queryValue, linkHeaders).toSql(temporalEntityFormat));
-					break;
-				case NGSIConstants.QUERY_PARAMETER_OPTIONS:
-					List<String> options = Arrays.asList(queryValue.split(","));
-					qp.setIncludeSysAttrs(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS));
-					qp.setKeyValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES));
-					qp.setTemporalValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES));
-					break;
+	public static QueryParams getQueryParamsFromUriQuery(MultiValueMap<String, String> multiValueMap, Context context,
+			boolean temporalEntityFormat, boolean typeRequired, int defaultLimit, int maxLimit)
+			throws ResponseException {
+		QueryParams qp = new QueryParams();
+		Iterator<String> it = multiValueMap.keySet().iterator();
+		String id = null, type = null, idPattern = null;
+		String geometryProperty = null;
+		HashSet<String> attrs = null;
+		String timerel = null;
+		String geometry = null;
+		String coordinates = null;
+		String geoproperty = null;
+		String timeAt = null;
+		String timeproperty = null;
+		String endTimeAt = null;
+		String georel = null;
+		int limit = defaultLimit;
+		int offset = 0;
+		while (it.hasNext()) {
+			String queryParameter = it.next();
+			String queryValue = multiValueMap.getFirst(queryParameter);
+			logger.debug("Query parameter:" + queryParameter + ", value=" + queryValue);
+			switch (queryParameter) {
+			case NGSIConstants.QUERY_PARAMETER_ID:
+				id = queryValue;
+				HttpUtils.validateUri(id);
+				break;
+			case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
+				idPattern = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_TYPE:
+				type = String.join(",", expandQueryValues(context, queryValue));
+				break;
+			case NGSIConstants.QUERY_PARAMETER_ATTRS:
+				attrs = expandQueryValues(context, queryValue);
+				break;
+			case NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY:
+				geometryProperty = expandQueryValues(context, queryValue).iterator().next();
+				break;
+			case NGSIConstants.QUERY_PARAMETER_GEOREL:
+				georel = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_GEOMETRY:
+				geometry = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_COORDINATES:
+				coordinates = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_GEOPROPERTY:
+				geoproperty = expandAttribute(queryValue, context);
+				break;
+			case NGSIConstants.QUERY_PARAMETER_TIMEREL:
+				timerel = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_TIME:
+				timeAt = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY:
+				timeproperty = expandAttribute(queryValue, context);
+				break;
+			case NGSIConstants.QUERY_PARAMETER_ENDTIME:
+				endTimeAt = queryValue;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_QUERY:
+				qp.setQ(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
+				break;
+			case NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY:
+				qp.setScopeQ(QueryParser.parseScopeQuery(queryValue).toSql());
+				break;
+			case NGSIConstants.QUERY_PARAMETER_OPTIONS:
+				List<String> options = Arrays.asList(queryValue.split(","));
+				qp.setIncludeSysAttrs(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS));
+				qp.setKeyValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES));
+				qp.setTemporalValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES));
+				break;
+			case NGSIConstants.QUERY_PARAMETER_LIMIT:
+				limit = Integer.parseInt(queryValue);
+				if (limit > maxLimit) {
+					throw new ResponseException(ErrorType.TooManyResults, "Limit exceeds max limit of " + maxLimit);
 				}
+				break;
+			case NGSIConstants.QUERY_PARAMETER_OFFSET:
+				offset = Integer.parseInt(queryValue);
+				if (offset < 0) {
+					throw new ResponseException(ErrorType.InvalidRequest, "Offset can not be smaller than 0");
+				}
+				break;
+			case NGSIConstants.QUERY_PARAMETER_LAST_N:
+				qp.setLastN(Integer.parseInt(queryValue));
+				break;
+			case NGSIConstants.QUERY_PARAMETER_DETAILS:
+				// nothing to do here this is handled outside tbc!
+				break;
+			case NGSIConstants.QUERY_PARAMETER_COUNT:
+				qp.setCountResult(true);
+				break;
+			case NGSIConstants.QUERY_PARAMETER_CSF:
+				qp.setCsf(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, queryParameter + " is unknown");
 			}
-			List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
-			HashMap<String, String> temp = new HashMap<String, String>();
-			if (id != null) {
-				temp.put(NGSIConstants.JSON_LD_ID, id);
-			}
-			if (type != null) {
-				temp.put(NGSIConstants.JSON_LD_TYPE, type);
-			}
-			if (idPattern != null) {
-				temp.put(NGSIConstants.NGSI_LD_ID_PATTERN, idPattern);
-			}
-			if (id != null || idPattern != null || type != null) {
-				entities.add(temp);
-			}
-			qp.setEntities(entities);
-			return qp;
-		} catch (ResponseException e) {
-			throw e; // rethrow response exception object
+
 		}
-		// return null;
+		if (attrs != null) {
+			if (geometryProperty != null) {
+				attrs.add(geometryProperty);
+			}
+			qp.setAttrs(String.join(",", attrs));
+		}
+		qp.setLimit(limit);
+		handleGeoQuery(georel, geoproperty, coordinates, geometry, qp);
+		handleTimeQuery(timerel, timeAt, timeproperty, endTimeAt, qp);
+		List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
+		HashMap<String, String> temp = new HashMap<String, String>();
+		if (typeRequired && type == null && attrs == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "Missing mandatory minimum parameter "
+					+ NGSIConstants.QUERY_PARAMETER_TYPE + " or " + NGSIConstants.QUERY_PARAMETER_ATTRS);
+		}
+
+		if (!qp.getCountResult() && limit == 0) {
+			throw new ResponseException(ErrorType.BadRequestData, "limit can only be 0 if count is activated");
+		}
+		if (qp.getGeometry() != null && !qp.getGeometry().isEmpty()) {
+			if (!NGSIConstants.ALLOWED_GEOMETRIES.contains(qp.getGeometry())) {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid geometry provided");
+			}
+		}
+		if (qp.getGeorel() != null && qp.getGeorel().getGeorelOp() != null && !qp.getGeorel().getGeorelOp().isEmpty()) {
+			if (!NGSIConstants.ALLOWED_GEOREL.contains(qp.getGeorel().getGeorelOp())) {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel provided");
+			}
+		}
+		if (id != null) {
+			temp.put(NGSIConstants.JSON_LD_ID, id);
+		}
+		if (type != null) {
+			temp.put(NGSIConstants.JSON_LD_TYPE, type);
+		}
+		if (idPattern != null) {
+			temp.put(NGSIConstants.NGSI_LD_ID_PATTERN, idPattern);
+		}
+		if (id != null || idPattern != null || type != null) {
+			entities.add(temp);
+		}
+		qp.setEntities(entities);
+		return qp;
+
 	}
 
-	private void validateCoordinates(String coordinates) throws ResponseException {
-		if (!coordinates.matches(
-				"^\\[*(\\[\\s*[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)(,\\d)?,[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)\\],?)+\\]*$")) {
+	@SuppressWarnings("unchecked")
+	private static void validateCoordinates(List<Object> coordinateList, String type) throws ResponseException {
+		try {
+			switch (type) {
+			case NGSIConstants.GEO_TYPE_POINT:
+				if (coordinateList.size() != 2) {
+					throw new ResponseException(ErrorType.BadRequestData, "points have to be 2 entries");
+				}
+				break;
+			case NGSIConstants.GEO_TYPE_LINESTRING:
+				if (coordinateList.size() < 2) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Linestring has to be an array of at least 2 points");
+				}
+				for (Object entry : coordinateList) {
+					if (!(entry instanceof List)) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"Linestring has to be an array of at least 2 points");
+					}
+					validateCoordinates((List<Object>) entry, NGSIConstants.GEO_TYPE_POINT);
+				}
+				break;
+			case NGSIConstants.GEO_TYPE_POLYGON:
+				boolean error = false;
+				if (coordinateList.size() == 1 && (coordinateList.get(0) instanceof List)) {
+					coordinateList = (List<Object>) coordinateList.get(0);
+					if (coordinateList.size() > 1 && (coordinateList.get(0) instanceof List)) {
+						if (coordinateList.size() < 4
+								|| !coordinateList.get(0).equals(coordinateList.get(coordinateList.size() - 1))) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"Polygons have to be an array of array with at least 3 points and have to close");
+						}
+						for (Object entry : coordinateList) {
+							if (!(entry instanceof List)) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Polygons have to be an array of array with at least 3 points and have to close");
+							}
+							validateCoordinates((List<Object>) entry, NGSIConstants.GEO_TYPE_POINT);
+						}
+					} else {
+						error = true;
+					}
+				} else {
+					error = true;
+				}
+				if (error) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Polygons have to be an array of array with at least 3 points and have to close");
+				}
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, "Unsupported type");
+			}
+		} catch (Exception e) {
+			if (e instanceof ResponseException) {
+				throw e;
+			}
+			logger.error("failed to parse coordinates", e);
 			throw new ResponseException(ErrorType.BadRequestData, "coordinates are not valid");
+
 		}
 
 	}
 
-	public String expandQueryValues(List<Object> linkHeaders, String queryValue) throws ResponseException {
+	private static HashSet<String> expandQueryValues(Context context, String queryValue) throws ResponseException {
+		HashSet<String> result = new HashSet<String>();
 		String[] temp = queryValue.split(",");
-		StringBuilder builder = new StringBuilder();
 		for (String element : temp) {
-			builder.append(expandAttribute(element.trim(), linkHeaders));
-			builder.append(",");
+			result.add(expandAttribute(element.trim(), context));
 		}
-		return builder.substring(0, builder.length() - 1);
+		return result;
 	}
 
-	public String expandAttribute(String attribute, String payload, HttpServletRequest req) throws ResponseException {
-		List<Object> context;
-		if (req.getHeader(HttpHeaders.CONTENT_TYPE).equals(AppConstants.NGB_APPLICATION_JSON)) {
-			context = HttpUtils.getAtContext(req);
-		} else {
-			JsonNode json;
-			try {
-				json = objectMapper.readTree(payload);
-			} catch (IOException e) {
-				throw new ResponseException(ErrorType.BadRequestData, "Failed to read json from body");
-			}
-			context = new ArrayList<Object>();
-			if (json.has(NGSIConstants.JSON_LD_CONTEXT)) {
-				JsonNode tempContext = json.get(NGSIConstants.JSON_LD_CONTEXT);
-				try {
-					context.add(JsonUtils.fromString(tempContext.toString()));
-				} catch (IOException e) {
-					throw new ResponseException(ErrorType.BadRequestData);
-				}
-			}
-		}
-		return expandAttribute(attribute, context);
-	}
-
-	public String expandAttribute(String attribute, List<Object> context) throws ResponseException {
+	public static String expandAttribute(String attribute, Context context) throws ResponseException {
 		logger.trace("resolveQueryLdContext():: started");
-
-		// process reserved attributes
-		switch (attribute) {
-		case NGSIConstants.QUERY_PARAMETER_ID:
-			return NGSIConstants.JSON_LD_ID;
-		case NGSIConstants.QUERY_PARAMETER_TYPE:
-			return NGSIConstants.JSON_LD_TYPE;
-		case NGSIConstants.QUERY_PARAMETER_CREATED_AT:
-			return NGSIConstants.NGSI_LD_CREATED_AT;
-		case NGSIConstants.QUERY_PARAMETER_MODIFIED_AT:
-			return NGSIConstants.NGSI_LD_MODIFIED_AT;
-		case NGSIConstants.QUERY_PARAMETER_OBSERVED_AT:
-			return NGSIConstants.NGSI_LD_OBSERVED_AT;
-		case NGSIConstants.QUERY_PARAMETER_LOCATION:
-			return NGSIConstants.NGSI_LD_LOCATION;
-		case NGSIConstants.QUERY_PARAMETER_OBSERVATION_SPACE:
-			return NGSIConstants.NGSI_LD_OBSERVATION_SPACE;
-		case NGSIConstants.QUERY_PARAMETER_OPERATION_SPACE:
-			return NGSIConstants.NGSI_LD_OPERATION_SPACE;
-		}
-
-		// custom attributes
-		String attributeResolved = attribute;
-		logger.debug("link: " + context);
-		String jsonLdAttribute = getJsonLdAttribute(attribute, context);
-		logger.debug("jsonLdAttribute: " + jsonLdAttribute);
-		// LocalDateTime start = LocalDateTime.now();
-		String jsonLdAttributeResolved = contextResolver.expand(jsonLdAttribute, context, false,
-				AppConstants.INTERNAL_CALL_ID);
-		// LocalDateTime end = LocalDateTime.now();
-		logger.debug("jsonLdAttributeResolved: " + jsonLdAttributeResolved);
-		JsonParser parser = new JsonParser();
-		JsonElement jsonTree = parser.parse(jsonLdAttributeResolved);
-		if (jsonTree.isJsonObject()) {
-			JsonObject jsonObject = jsonTree.getAsJsonObject();
-			if (jsonObject.entrySet().size() > 0)
-				attributeResolved = jsonObject.entrySet().iterator().next().getKey();
-		}
-		logger.trace("resolveQueryLdContext():: completed");
-		return attributeResolved;
+		return context.expandIri(attribute, false, true, null, null);
 	}
 
-	private String getJsonLdAttribute(String attribute, List<Object> context) {
-		logger.trace("getJsonLdAttribute():: started");
-		String jsonString = null;
+	private static void handleTimeQuery(String timerel, String timeAt, String timeproperty, String endTimeAt,
+			QueryParams qp) throws ResponseException {
+		if (timerel == null && timeAt == null && timeproperty == null && endTimeAt == null) {
+			return;
+		}
+		if (timeproperty == null) {
+			timeproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_TIMEPROPERTY;
+		}
+		if (timeAt == null || timeAt.isEmpty()) {
+			throw new ResponseException(ErrorType.BadRequestData, "Time is empty");
+		}
+		if (timerel.equals(NGSIConstants.TIME_REL_BETWEEN) && (endTimeAt == null || endTimeAt.isEmpty())) {
+			throw new ResponseException(ErrorType.BadRequestData, "Timerel is between but endTime is empty");
+		}
+
+		qp.setTimerel(timerel);
+		qp.setTimeAt(timeAt);
+		qp.setTimeproperty(timeproperty);
+		qp.setEndTimeAt(endTimeAt);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void handleGeoQuery(String georel, String geoproperty, String coordinates, String geometry,
+			QueryParams qp) throws ResponseException {
+		if (georel == null && geoproperty == null && coordinates == null && geometry == null) {
+			return;
+		}
+		if (geoproperty == null) {
+			geoproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_GEOPROPERTY;
+		}
+		GeoqueryRel geoqueryTokens = QueryParser.parseGeoRel(georel);
+		logger.debug("  Geoquery term georelOp: " + geoqueryTokens.getGeorelOp());
+		if (geoqueryTokens.getGeorelOp().isEmpty() || geometry == null || geometry.isEmpty() || coordinates == null
+				|| coordinates.isEmpty()) {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"Georel detected but georel, geometry or coordinates are empty!");
+		}
+		if (!AppConstants.NGB_ALLOWED_GEOM_LIST.contains(geometry.toUpperCase())) {
+			throw new ResponseException(ErrorType.BadRequestData, " geometry detected, Bad geometry!" + geometry);
+		}
 		try {
-			JsonNode rootNode = objectMapper.createObjectNode();
-			// if (context != null) {
-			// ArrayNode contextNode = objectMapper.valueToTree(context);
-			// ((ObjectNode) rootNode).putArray("@context").addAll(contextNode);
-			// }
-			// cant be in here like that
-			((ObjectNode) rootNode).put(attribute, "");
-			jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
-		} catch (JsonProcessingException e) {
-			logger.error("Exception ::", e);
-			e.printStackTrace();
+			validateCoordinates((List<Object>) JsonUtils.fromString(coordinates), geometry);
+		} catch (IOException e) {
+			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse coordinates");
 		}
-		logger.trace("getJsonLdAttribute():: completed");
-		return jsonString;
-	}
+		GeoqueryRel gr = new GeoqueryRel();
+		gr.setGeorelOp(geoqueryTokens.getGeorelOp());
+		gr.setDistanceType(geoqueryTokens.getDistanceType());
+		gr.setDistanceValue(geoqueryTokens.getDistanceValue());
 
+		qp.setGeorel(gr);
+		qp.setGeometry(geometry);
+		qp.setCoordinates(coordinates);
+		qp.setGeoproperty(geoproperty);
+	}
 }

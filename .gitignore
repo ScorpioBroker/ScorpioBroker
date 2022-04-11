@@ -10,3 +10,5 @@ Core/QueryManager/logs/
 Storage/StorageManager/logs/
 Go/pkg/
 /*.db
+/*/bin
+/*/*/bin

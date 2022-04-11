@@ -1,9 +1,9 @@
 mysettings:
   application-name: gateway
   eureka:
-    protocol: ${eureka.protocol:http}
-    host: ${eureka.host:localhost}
-    port: ${eureka.port:8761}
+    protocol: ${eurekaprotocol:http}
+    host: ${eurekahost:localhost}
+    port: ${eurekaport:8761}
   gateway:
     port: ${gateway.port:9090}
 eurekaurl: ${mysettings.eureka.protocol}://${mysettings.eureka.host}:${mysettings.eureka.port}
@@ -24,135 +24,46 @@ ribbon:
 server:
   port: ${mysettings.gateway.port}
   tomcat:
+    relaxed-path-chars: <,>,[,\,],^,`,{,|,}
+    relaxed-query-chars: <,>,[,\,],^,`,{,|,}
     max:
-      threads:2000
-
-
-
-query-manager:
-  request-path: /ngsi-ld/v1/entities
-  target-service: QUERY-MANAGER
-  http-method: GET
-entity-manager:
-  request-path: /ngsi-ld/v1/entities
-  target-service: aio-runner
-  http-method: POST  
-spring:
-  application:
-    name: gateway
+      threads:200
 eureka:
   client:
     register-with-eureka: true
     fetchRegistry: true
     serviceUrl:
       defaultZone: ${eurekaurl}/eureka/
-
-# Configure the Authorization Server and User Info Resource Server details
-security:
-  active: false
-  oauth2:
-    client:
-    # for keycloak configure
-      #accessTokenUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/token
-      #userAuthorizationUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/auth
-      #clientId: authserver
-      #clientSecret: ae8c99a9-f98d-41e9-8fb2-d348acb987e0
-    # for ketrock configure  
-      accessTokenUri: http://172.30.64.120:3000/oauth2/token
-      userAuthorizationUri: http://172.30.64.120:3000/oauth2/authorize
-      clientId: a2034c11-d2a9-4cab-9fac-ff65425bd53f
-      clientSecret: 7364baec-6d6f-4307-8c71-d66e1e6c3afc
-    resource:
-    # for keycloak configure
-      #userInfoUri: http://10.0.4.33:8080/auth/realms/mykeycloak/protocol/openid-connect/userinfo
-    # for keycloak configure
-      userInfoUri: http://172.30.64.120:3000/user
-#Zuul routing rules for microservices.
-zuul:
-  ignored-services: '*'
-  ribbon:
-    eager-load:
-      enabled: true
-  semaphore:
-    maxSemaphores: 60000
-  host:
-    connect-timeout-millis: 60000
-    socket-timeout-millis: 60000
-  routes:
-    entity-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/entities/**
-      serviceId: ENTITY-MANAGER
-      stripPrefix: false
-    query-manager_1:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/attributes/**     
-      serviceId: QUERY-MANAGER
-      stripPrefix: false
-    query-manager_2:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/types/**     
-      serviceId: QUERY-MANAGER
-      stripPrefix: false
-    postquery:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/entityOperations/query/**
-      serviceId: QUERY-MANAGER
-      stripPrefix: false
-    batchoperations:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/entityOperations/**
-      serviceId: ENTITY-MANAGER
-      stripPrefix: false
-    subscription-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/subscriptions/**
-      serviceId: SUBSCRIPTION-MANAGER
-      stripPrefix: false
-    context-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/csourceRegistrations/**
-      serviceId: C-SOURCES
-      stripPrefix: false
-    subforeg:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/csourceSubscriptions/**
-      serviceId: C-SOURCES
-      stripPrefix: false
-    history-manager:
-      sensitiveHeaders:
-      path: /ngsi-ld/v1/temporal/entities/**
-      serviceId: HISTORY-MANAGER
-      stripPrefix: false
-    atcontext-server:
-      sensitiveHeaders:
-      path: /ngsi-ld/contextes/**
-      serviceId: ATCONTEXT-SERVER
-      stripPrefix: false
-    infos:
-      sensitiveHeaders:
-      path: /scorpio/v1/info/**
-      serviceId: STORAGE-MANAGER
-      stripPrefix: false
-    health:
-      sensitiveHeaders:
-      path: /health/**
-      serviceId: INFO-SERVER
-      stripPrefix: false
-    version:
-      sensitiveHeaders:
-      path: /version/**
-      serviceId: INFO-SERVER
-      stripPrefix: false
-    corecontext:
-      sensitiveHeaders:
-      path: /corecontext/**
-      serviceId: INFO-SERVER
-      stripPrefix: false
-    test-manager:
-      sensitiveHeaders:
-      path: /test/**
-      serviceId: testmanager
+  instance:
+    preferIpAddress: true
+spring:
+  security:
+    mode: deactivated
+#-------For mode header to provide Bearer Token------------------
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          jwk-set-uri: http://localhost:8080/realms/scorpio/protocol/openid-connect/certs
+#          issuer-uri: http://localhost:8080/realms/scorpio
+#-------For mode webauth to get web login------------------
+#      client:
+#        provider:
+#          keycloak:
+#            issuer-uri: https://idp.example.com/auth/realms/demo
+#        registration:
+#          keycloak-client:
+#            provider: keycloak
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+#            authorization_grant_type: client_credentials
+#          keycloak:
+#            client-id: spring-security
+#            client-secret: 6cea952f-10d0-4d00-ac79-cc865820dc2c
+  application:
+    name: gateway
+  main:
+    allow-bean-definition-overriding: true
+    web-application-type: reactive
 logging:
   level:
-    root: ERROR
+    root: INFO

@@ -27,7 +27,7 @@ spec:
         imagePullPolicy: Always
         name: subscription-manager
         ports:
-        - containerPort: 2025
+        - containerPort: 2027
           protocol: TCP
         lifecycle:
            preStop:
@@ -35,13 +35,13 @@ spec:
               command:
               - /bin/sh
               - -c
-              - curl -X PUT "http://eureka:8761/eureka/apps/SUBSCRIPTION-MANAGER/$HOSTNAME:subscription-manager:2025/status?value=OUT_OF_SERVICE"
+              - curl -X PUT "http://eureka:8761/eureka/apps/SUBSCRIPTION-MANAGER/$HOSTNAME:subscription-manager:2027/status?value=OUT_OF_SERVICE"
         readinessProbe:
           exec:
             command:
             - sh
             - -c
-            - curl --silent http://localhost:2025/actuator/health | grep --quiet -e
+            - curl --silent http://localhost:2027/actuator/health | grep --quiet -e
               '^{\"status\"\:\"UP\".*}$'
           failureThreshold: 10
           initialDelaySeconds: 20

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: registry-subscription-manager
+  name: registry-subscription-manager
+  namespace: scorpio-broker
+spec:
+  ports:
+  - name: "2025"
+    port: 2025
+    targetPort: 2025
+  selector:
+    service: registry-subscription-manager
+status: {}
+

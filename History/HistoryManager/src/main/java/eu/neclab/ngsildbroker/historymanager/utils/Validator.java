@@ -5,12 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class Validator {
 	/*
@@ -61,30 +56,6 @@ public class Validator {
 			}
 		}
 		return result;
-	}
-
-	public static void validateTemporalEntity(String payload) throws ResponseException, Exception {
-		JsonParser parser = new JsonParser();
-		if (payload == null) {
-			throw new ResponseException(ErrorType.UnprocessableEntity);
-		}
-		try {
-			JsonObject jsonObject = parser.parse(payload).getAsJsonObject();
-			if (jsonObject.isJsonNull()) {
-				throw new ResponseException(ErrorType.OperationNotSupported);
-			}
-			if (!jsonObject.has(NGSIConstants.QUERY_PARAMETER_ID)
-					|| !jsonObject.has(NGSIConstants.QUERY_PARAMETER_TYPE)) {
-				throw new ResponseException(ErrorType.BadRequestData);
-			}
-			//for {"id":""} case
-			if (jsonObject.get(NGSIConstants.QUERY_PARAMETER_ID).getAsString().trim().length() == 0
-					|| jsonObject.get(NGSIConstants.QUERY_PARAMETER_TYPE).getAsString().trim().length() == 0) {
-				throw new ResponseException(ErrorType.BadRequestData);
-			}
-		} catch (Exception e) {
-			throw new ResponseException(ErrorType.BadRequestData);
-		}
 	}
 
 }

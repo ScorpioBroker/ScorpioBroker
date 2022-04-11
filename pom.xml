@@ -19,7 +19,6 @@
 		<module>Commons</module>
 		<module>Core</module>
 		<module>Registry</module>
-		<module>Storage</module>
 		<module>History</module>
 	</modules>
 	<profiles>

@@ -65,6 +65,7 @@
 							<buildArgs>
 								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>
 								<JAR_FILE_RUN>${project.artifactId}.jar</JAR_FILE_RUN>
+								<SPRING_PROFILE>docker</SPRING_PROFILE>
 							</buildArgs>
 						</configuration>
 					</plugin>

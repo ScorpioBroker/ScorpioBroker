@@ -23,6 +23,10 @@ public class QueryParams {
 	@SerializedName("q")
 	@Expose
 	private String q;
+
+	@SerializedName("csf")
+	@Expose
+	private String csf;
 	@SerializedName("georel")
 	@Expose
 	private GeoqueryRel georel;
@@ -38,12 +42,12 @@ public class QueryParams {
 	@SerializedName("timerel")
 	@Expose
 	private String timerel;
-	@SerializedName("time")
+	@SerializedName("timeAt")
 	@Expose
-	private String time;
-	@SerializedName("endTime")
+	private String timeAt;
+	@SerializedName("endTimeAt")
 	@Expose
-	private String endTime;
+	private String endTimeAt;
 	@SerializedName("timeproperty")
 	@Expose
 	private String timeproperty;
@@ -60,11 +64,22 @@ public class QueryParams {
 	@SerializedName("limit")
 	@Expose
 	private int limit = -1;
-	private Boolean countResult;
+	private boolean countResult;
 	@SerializedName("offSet")
 	@Expose
-	private int offSet = -1;
+	private int offSet = 0;
 	private String check;
+	private int lastN;
+
+	private String scopeQ;
+
+	public String getScopeQ() {
+		return scopeQ;
+	}
+
+	public void setScopeQ(String scopeQ) {
+		this.scopeQ = scopeQ;
+	}
 
 	public String getCheck() {
 		return check;
@@ -178,29 +193,29 @@ public class QueryParams {
 		return this;
 	}
 
-	public String getTime() {
-		return time;
+	public String getTimeAt() {
+		return timeAt;
 	}
 
-	public void setTime(String time) {
-		this.time = time;
+	public void setTimeAt(String timeAt) {
+		this.timeAt = timeAt;
 	}
 
-	public QueryParams withTime(String time) {
-		this.time = time;
+	public QueryParams withTime(String timeAt) {
+		this.timeAt = timeAt;
 		return this;
 	}
 
-	public String getEndTime() {
-		return endTime;
+	public String getEndTimeAt() {
+		return endTimeAt;
 	}
 
-	public void setEndTime(String endTime) {
-		this.endTime = endTime;
+	public void setEndTimeAt(String endTimeAt) {
+		this.endTimeAt = endTimeAt;
 	}
 
-	public QueryParams withEndTime(String endTime) {
-		this.endTime = endTime;
+	public QueryParams withEndTime(String endTimeAt) {
+		this.endTimeAt = endTimeAt;
 		return this;
 	}
 
@@ -272,11 +287,11 @@ public class QueryParams {
 		this.offSet = offSet;
 	}
 
-	public Boolean getCountResult() {
+	public boolean getCountResult() {
 		return countResult;
 	}
 
-	public void setCountResult(Boolean countResult) {
+	public void setCountResult(boolean countResult) {
 		this.countResult = countResult;
 	}
 
@@ -298,12 +313,30 @@ public class QueryParams {
 
 	@Override
 	public String toString() {
+
 		return "QueryParams [tenant=" + tenant + ", attrs=" + attrs + ", instanceId=" + instanceId + ", entities="
 				+ entities + ", q=" + q + ", georel=" + georel + ", geometry=" + geometry + ", coordinates="
-				+ coordinates + ", geoproperty=" + geoproperty + ", timerel=" + timerel + ", time=" + time
-				+ ", endTime=" + endTime + ", timeproperty=" + timeproperty + ", includeSysAttrs=" + includeSysAttrs
+				+ coordinates + ", geoproperty=" + geoproperty + ", timerel=" + timerel + ", time=" + timeAt
+				+ ", endTimeAt=" + endTimeAt + ", timeproperty=" + timeproperty + ", includeSysAttrs=" + includeSysAttrs
 				+ ", keyValues=" + keyValues + ", temporalValues=" + temporalValues + ", limit=" + limit
 				+ ", countResult=" + countResult + ", offSet=" + offSet + ", check=" + check + "]";
+	}
+
+	public void setLastN(int lastN) {
+		this.lastN = lastN;
+
+	}
+
+	public int getLastN() {
+		return lastN;
+	}
+
+	public String getCsf() {
+		return csf;
+	}
+
+	public void setCsf(String csf) {
+		this.csf = csf;
 	}
 
 }
