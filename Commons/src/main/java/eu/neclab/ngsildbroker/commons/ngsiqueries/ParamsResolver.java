@@ -8,9 +8,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.util.MultiValueMap;
+import java.util.Map.Entry;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -24,6 +25,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.vertx.core.MultiMap;
 
 public class ParamsResolver {
 	static HashSet<String> validParams = new HashSet<String>();
@@ -49,7 +51,7 @@ public class ParamsResolver {
 		validParams.add(NGSIConstants.QUERY_PARAMETER_LAST_N);
 	}
 
-	private final static Logger logger = LogManager.getLogger(ParamsResolver.class);
+	private final static Logger logger = LoggerFactory.getLogger(ParamsResolver.class);
 
 //TODO REWORK THIS COMPLETELY 
 	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
@@ -111,11 +113,11 @@ public class ParamsResolver {
 	}
 
 	// new simplified format
-	public static QueryParams getQueryParamsFromUriQuery(MultiValueMap<String, String> multiValueMap, Context context,
+	public static QueryParams getQueryParamsFromUriQuery(MultiMap multiValueMap, Context context,
 			boolean temporalEntityFormat, boolean typeRequired, int defaultLimit, int maxLimit)
 			throws ResponseException {
 		QueryParams qp = new QueryParams();
-		Iterator<String> it = multiValueMap.keySet().iterator();
+		
 		String id = null, type = null, idPattern = null;
 		String geometryProperty = null;
 		HashSet<String> attrs = null;
@@ -129,9 +131,9 @@ public class ParamsResolver {
 		String georel = null;
 		int limit = defaultLimit;
 		int offset = 0;
-		while (it.hasNext()) {
-			String queryParameter = it.next();
-			String queryValue = multiValueMap.getFirst(queryParameter);
+		for (Entry<String, String> entry : multiValueMap.entries()) {
+			String queryParameter = entry.getKey();
+			String queryValue = entry.getValue();
 			logger.debug("Query parameter:" + queryParameter + ", value=" + queryValue);
 			switch (queryParameter) {
 			case NGSIConstants.QUERY_PARAMETER_ID:

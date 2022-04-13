@@ -47,7 +47,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.entityhandler.config.EntityTopicMap;
 
-@TestPropertySource(properties = { "scorpio.directDB= true", })
+
 
 @RunWith(PowerMockRunner.class)
 

@@ -4,23 +4,28 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>NGSILDBroker</artifactId>
+	<artifactId>ScorpioBroker</artifactId>
 	<packaging>pom</packaging>
 	<parent>
-		<artifactId>OverallParent</artifactId>
+		<artifactId>BrokerParent</artifactId>
 		<groupId>eu.neclab.ngsildbroker</groupId>
-		<version>1.1.0-SNAPSHOT</version>
-		<relativePath>./OverallParent</relativePath>
+		<version>3.0.0-SNAPSHOT</version>
+		<relativePath>./BrokerParent</relativePath>
 	</parent>
-	<version>1.1.0-SNAPSHOT</version>
 	<modules>
-		<module>OverallParent</module>
 		<module>BrokerParent</module>
 		<module>Commons</module>
-		<module>Core</module>
-		<module>Registry</module>
-		<module>History</module>
+		<module>EntityManager</module>
+		<module>QueryManager</module>
+		<module>SubscriptionManager</module>
+		<module>AtContextServer</module>
+		<module>RegistryManager</module>
+		<module>RegistrySubscriptionManager</module>
+		<module>HistoryManager</module>
+		<module>AllInOneRunner</module>
 	</modules>
+	<!--
+	Profiles need a rework once we are there 
 	<profiles>
 		<profile>
 			<id>docker-dist</id>
@@ -130,5 +135,5 @@
 				</plugins>
 			</build>
 		</profile>
-	</profiles>
+	</profiles> -->
 </project>
