@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.commons.controllers;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +23,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
@@ -30,6 +32,8 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 
 public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
@@ -415,25 +419,29 @@ public interface EntryControllerFunctions {
 		}
 	}
 
-	public static ResponseEntity<String> createEntry(EntryCRUDService entityService, HttpServletRequest request,
+	public static Uni<RestResponse<Object>> createEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int payloadType, String baseUrl, Logger logger) {
-		String result = null;
+
 		try {
 			logger.trace("create entity :: started");
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
 			if (payload == null || payload.isEmpty()) {
-				return HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload"));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload")));
 			}
 			@SuppressWarnings("unchecked")
 			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
-			result = entityService.createEntry(HttpUtils.getHeaders(request), resolved);
-			logger.trace("create entity :: completed");
-			return ResponseEntity.status(HttpStatus.CREATED).header("location", baseUrl + result).build();
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem().transform(t -> {
+				try {
+					return RestResponse.created(new URI(baseUrl + t));
+				} catch (URISyntaxException e) {
+					return HttpUtils.handleControllerExceptions(e);
+				}
+			});
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 	}
 

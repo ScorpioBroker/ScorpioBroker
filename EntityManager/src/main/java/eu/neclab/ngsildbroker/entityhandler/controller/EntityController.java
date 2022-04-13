@@ -5,8 +5,14 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,28 +42,28 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 
 /**
  * 
  * @version 1.0
  * @date 10-Jul-2018
  */
-@RestController
-@RequestMapping("/ngsi-ld/v1/entities")
+@Singleton
+@Path("/ngsi-ld/v1")
 public class EntityController {// implements EntityHandlerInterface {
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityController.class);
 
-	@Autowired
+	@Inject
 	EntityService entityService;
-	@Autowired
-	ObjectMapper objectMapper;
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
-	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 
 	@PostConstruct
@@ -74,10 +80,10 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload jsonld message
 	 * @return ResponseEntity object
 	 */
-	@PostMapping
-	public ResponseEntity<String> createEntity(HttpServletRequest request,
-			@RequestBody(required = false) String payload) {
-		return EntryControllerFunctions.createEntry(entityService, request, payload, AppConstants.ENTITY_CREATE_PAYLOAD,
+	@Path("/entities")
+	@POST
+	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, String payload) {
+		return EntryControllerFunctions.createEntry(entityService, req, payload, AppConstants.ENTITY_CREATE_PAYLOAD,
 				AppConstants.ENTITES_URL, logger);
 	}
 

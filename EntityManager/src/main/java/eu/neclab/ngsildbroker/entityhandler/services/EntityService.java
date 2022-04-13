@@ -8,8 +8,15 @@ import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -18,6 +25,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -30,23 +39,23 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
-@Service
-@EnableAutoConfiguration
-@EnableKafka
+
+@Singleton
 public class EntityService implements EntryCRUDService {
 
-	@Value("${scorpio.topics.entity}")
-	private String ENTITY_TOPIC;
-	@Value("${scorpio.directDB}")
+	
+	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
 	boolean directDB;
 	public static boolean checkEntity = false;
 
-	@Autowired
+	@Inject
 	EntityInfoDAO entityInfoDAO;
 
-	@Autowired
-	KafkaTemplate<String, Object> kafkaTemplate;
+	@Inject
+	@Channel(AppConstants.ENTITY_CHANNEL)
+	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
@@ -54,7 +63,7 @@ public class EntityService implements EntryCRUDService {
 	LocalDateTime startAt;
 	LocalDateTime endAt;
 	private ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-	private final static Logger logger = LogManager.getLogger(EntityService.class);
+	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
 
 	/**
 	 * Method to publish jsonld message to kafka topic

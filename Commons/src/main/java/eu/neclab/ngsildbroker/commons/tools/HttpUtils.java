@@ -6,9 +6,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -19,21 +16,12 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.http.HttpStatus;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
+import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.ResponseEntity.BodyBuilder;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -47,13 +35,17 @@ import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.net.HttpHeaders;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**
  * A utility class to handle HTTP Requests and Responses.
@@ -72,7 +64,12 @@ public final class HttpUtils {
 
 	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	public static boolean doPreflightCheck(HttpServletRequest req, List<Object> atContextLinks)
+	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND,
+			new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.NotFound, "Resource not found.")
+					.toJson())
+			.build();
+
+	public static boolean doPreflightCheck(HttpServerRequest req, List<Object> atContextLinks)
 			throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
 		if (contentType == null) {
@@ -95,12 +92,12 @@ public final class HttpUtils {
 
 	}
 
-	public static List<Object> getAtContext(HttpServletRequest req) {
+	public static List<Object> getAtContext(HttpServerRequest req) {
 		return parseLinkHeader(req, NGSIConstants.HEADER_REL_LDCONTEXT);
 	}
 
-	public static List<Object> parseLinkHeader(HttpServletRequest req, String headerRelLdcontext) {
-		return parseLinkHeader(Collections.list(req.getHeaders("Link")), headerRelLdcontext);
+	public static List<Object> parseLinkHeader(HttpServerRequest req, String headerRelLdcontext) {
+		return parseLinkHeader(req.headers().getAll("Link"), headerRelLdcontext);
 	}
 
 	public static List<Object> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
@@ -135,18 +132,18 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply, int endPoint)
+	public static RestResponse<Object> generateReply(HttpServerRequest request, String reply, int endPoint)
 			throws ResponseException {
 		return generateReply(request, reply, ArrayListMultimap.create(), endPoint);
 
 	}
 
-	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
+	public static RestResponse<Object> generateReply(HttpServerRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, int endPoint) throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, null, endPoint);
 	}
 
-	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
+	public static RestResponse<Object> generateReply(HttpServerRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint)
 			throws ResponseException {
 		return generateReply(request, reply, additionalHeaders, context, false, endPoint);
@@ -198,7 +195,7 @@ public final class HttpUtils {
 		}
 	}
 
-	public static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
+	public static RestResponse<Object> generateReply(HttpServerRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
 			boolean forceArrayResult, int endPoint) throws ResponseException {
 		List<Object> requestAtContext = getAtContext(request);
@@ -212,34 +209,35 @@ public final class HttpUtils {
 		return generateReply(request, reply, additionalHeaders, context, additionalContext, forceArrayResult, endPoint);
 	}
 
-	private static ResponseEntity<String> generateReply(HttpServletRequest request, String reply,
+	private static RestResponse<Object> generateReply(HttpServerRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult, int endPoint) throws ResponseException {
 		try {
 			return generateReply(request, JsonUtils.fromString(reply), additionalHeaders, ldContext, contextLinks,
 					forceArrayResult, endPoint);
 		} catch (JsonLdError | IOException e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+			return handleControllerExceptions(e);
 		}
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static ResponseEntity<String> generateReply(HttpServletRequest request, Object expanded,
+	private static RestResponse<Object> generateReply(HttpServerRequest request, Object expanded,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult, int endPoint) throws ResponseException {
 		String replyBody;
 		try {
 
-			replyBody = getReplyBody(Collections.list(request.getHeaders(HttpHeaders.ACCEPT)), endPoint,
-					additionalHeaders, expanded, forceArrayResult, ldContext, contextLinks, getGeometry(request));
+			replyBody = getReplyBody(request.headers().getAll(HttpHeaders.ACCEPT), endPoint, additionalHeaders,
+					expanded, forceArrayResult, ldContext, contextLinks, getGeometry(request));
 			boolean compress = false;
-			String options = getQueryParamMap(request).getFirst(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+
+			String options = request.params().get(NGSIConstants.QUERY_PARAMETER_OPTIONS);
 			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
 				compress = true;
 			}
 			return generateReply(replyBody, additionalHeaders, compress);
 		} catch (JsonLdError | IOException e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+			return handleControllerExceptions(e);
 		}
 
 	}
@@ -283,7 +281,7 @@ public final class HttpUtils {
 			if (contextLinks != null) {
 				for (Object entry : contextLinks) {
 					if (entry instanceof String) {
-						additionalHeaders.put(HttpHeaders.LINK, "<" + entry
+						additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
 								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 					} else {
 						additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
@@ -355,8 +353,8 @@ public final class HttpUtils {
 		return resultMap;
 	}
 
-	private static String getGeometry(HttpServletRequest request) {
-		String result = request.getParameter(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
+	private static String getGeometry(HttpServerRequest request) {
+		String result = request.params().get(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
 		if (result == null) {
 			return NGSIConstants.NGSI_LD_LOCATION_SHORT;
 		}
@@ -368,14 +366,13 @@ public final class HttpUtils {
 		return "http change this";
 	}
 
-	public static ResponseEntity<String> generateReply(String replyBody,
+	public static RestResponse<Object> generateReply(String replyBody,
 			ArrayListMultimap<String, String> additionalHeaders, boolean compress) {
-		return generateReply(replyBody, additionalHeaders, HttpStatus.OK, compress);
+		return generateReply(replyBody, additionalHeaders, HttpStatus.SC_OK, compress);
 	}
 
-	public static ResponseEntity<String> generateReply(HttpServletRequest request, QueryResult qResult,
-			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint)
-			throws ResponseException {
+	public static RestResponse<Object> generateReply(HttpServerRequest request, QueryResult qResult, boolean forceArray,
+			boolean count, Context context, List<Object> contextLinks, int endPoint) throws ResponseException {
 		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
 		if (count == true) {
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
@@ -402,26 +399,23 @@ public final class HttpUtils {
 				additionalHeaders, context, contextLinks, forceArray, endPoint);
 	}
 
-	public static ResponseEntity<String> generateReply(String replyBody,
-			ArrayListMultimap<String, String> additionalHeaders, HttpStatus status, boolean compress) {
-		BodyBuilder builder = ResponseEntity.status(status);
+	public static RestResponse<Object> generateReply(String replyBody,
+			ArrayListMultimap<String, String> additionalHeaders, int status, boolean compress) {
+		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(status);
+
 		if (additionalHeaders != null) {
-			HttpHeaders headers = new HttpHeaders();
-			for (Entry<String, Collection<String>> entry : additionalHeaders.asMap().entrySet()) {
-				headers.addAll(entry.getKey(), new ArrayList<String>(entry.getValue()));
+			for (Entry<String, String> entry : additionalHeaders.entries()) {
+				builder = builder.header(entry.getKey(), entry.getValue());
 			}
-			builder.headers(headers);
 		}
-		String body;
+		Object body;
 		if (compress) {
-			// TODO reenable zip some how
-			// body = zipResult(replyBody);
-			body = replyBody;
-			builder.header(HttpHeaders.CONTENT_TYPE, "application/zip");
+			body = zipResult(replyBody);
+			builder = builder.header(HttpHeaders.CONTENT_TYPE, "application/zip");
 		} else {
 			body = replyBody;
 		}
-		return builder.body(body);
+		return builder.entity(body).build();
 	}
 
 	private static byte[] zipResult(String replyBody) {
@@ -442,10 +436,10 @@ public final class HttpUtils {
 		return baos.toByteArray();
 	}
 
-	public static ArrayListMultimap<String, String> getHeaders(HttpServletRequest request) {
+	public static ArrayListMultimap<String, String> getHeaders(HttpServerRequest request) {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		for (String headerName : Collections.list(request.getHeaderNames())) {
-			result.putAll(headerName, Collections.list(request.getHeaders(headerName)));
+		for (Entry<String, String> entry : request.params()) {
+			result.put(entry.getKey(), entry.getValue());
 		}
 		return result;
 	}
@@ -465,7 +459,7 @@ public final class HttpUtils {
 		return tenantId;
 	}
 
-	static String generateNextLink(HttpServletRequest request, QueryResult qResult) {
+	static String generateNextLink(HttpServerRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
 			return null;
 		}
@@ -473,14 +467,11 @@ public final class HttpUtils {
 				qResult.getqToken(), "next");
 	}
 
-	public static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
+	public static String generateFollowUpLinkHeader(HttpServerRequest request, int offset, int limit, String token,
 			String rel) {
-
 		StringBuilder builder = new StringBuilder("</");
 		builder.append("?");
-
-		for (Entry<String, List<String>> entry : getQueryParamMap(request).entrySet()) {
-			List<String> values = entry.getValue();
+		for (Entry<String, String> entry : request.params().entries()) {
 			String key = entry.getKey();
 			if (key.equals("offset")) {
 				continue;
@@ -491,11 +482,7 @@ public final class HttpUtils {
 			if (key.equals("limit")) {
 				continue;
 			}
-
-			for (String value : values) {
-				builder.append(key + "=" + value + "&");
-			}
-
+			builder.append(key + "=" + entry.getValue() + "&");
 		}
 		builder.append("offset=" + offset + "&");
 		builder.append("limit=" + limit + "&");
@@ -503,7 +490,7 @@ public final class HttpUtils {
 		return builder.toString();
 	}
 
-	private static String generatePrevLink(HttpServletRequest request, QueryResult qResult) {
+	private static String generatePrevLink(HttpServerRequest request, QueryResult qResult) {
 		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
 			return null;
 		}
@@ -516,32 +503,37 @@ public final class HttpUtils {
 		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
 	}
 
-	public static ResponseEntity<String> handleControllerExceptions(Exception e) {
+	public static RestResponse<Object> handleControllerExceptions(Throwable e) {
 		if (e instanceof ResponseException) {
 			ResponseException responseException = (ResponseException) e;
 			logger.debug("Exception :: ", responseException);
-			return ResponseEntity.status(responseException.getHttpStatus())
+			return RestResponseBuilderImpl.create(responseException.getError().getCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.body(new RestResponse(responseException).toJson());
+					.entity(new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(responseException).toJson())
+					.build();
 		}
 		if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.body(new RestResponse(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
-							.toJson());
+					.entity(new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.BadRequestData,
+							"Failed to parse provided datetime field.").toJson())
+					.build();
 		}
 		if (e instanceof JsonProcessingException || e instanceof JsonLdError) {
 			logger.debug("Exception :: ", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.body(new RestResponse(ErrorType.InvalidRequest, "There is an error in the provided json document")
-							.toJson());
+					.entity(new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InvalidRequest,
+							"Failed to parse provided datetime field.").toJson())
+					.build();
 		}
 		logger.error("Exception :: ", e);
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+		return RestResponseBuilderImpl.create(HttpStatus.SC_INTERNAL_SERVER_ERROR)
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.body(new RestResponse(ErrorType.InternalError, e.getMessage()).toJson());
+				.entity(new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InternalError,
+						e.getMessage()).toJson())
+				.build();
 	}
 
 	public static String validateUri(String mapValue) throws ResponseException {
@@ -568,24 +560,12 @@ public final class HttpUtils {
 
 	}
 
-	public static MultiValueMap<String, String> getQueryParamMap(HttpServletRequest request) {
-		Map<String, String[]> paramMap = request.getParameterMap();
-		if (paramMap == null) {
-			return new LinkedMultiValueMap<String, String>();
-		}
-		LinkedMultiValueMap<String, String> result = new LinkedMultiValueMap<String, String>(paramMap.size());
-		for (Entry<String, String[]> entry : paramMap.entrySet()) {
-			result.addAll(entry.getKey(), Arrays.asList(entry.getValue()));
-		}
-		return result;
-	}
-
 	@SuppressWarnings("unchecked")
-	public static ResponseEntity<String> generateReply(HttpServletRequest request, UpdateResult update,
+	public static RestResponse<Object> generateReply(HttpServerRequest request, UpdateResult update,
 			List<Object> context, int endpoint)
 			throws JsonLdError, ResponseException, JsonGenerationException, IOException {
 		if (update.getNotUpdated().isEmpty()) {
-			return ResponseEntity.noContent().build();
+			return RestResponse.noContent();
 		}
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 		Map<String, Object> expanded = update.toJsonMap();
@@ -609,61 +589,71 @@ public final class HttpUtils {
 		} else {
 			result = compacted;
 		}
-		int sendingContentType = parseAcceptHeader(Collections.list(request.getHeaders(HttpHeaders.ACCEPT)));
-		HttpHeaders resultHeaders = new HttpHeaders();
+		int sendingContentType = parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
+		ArrayListMultimap<String, String> resultHeaders = ArrayListMultimap.create();
 		String replyBody;
 		switch (sendingContentType) {
 		case 1:
-			resultHeaders.add(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+			resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
 			((Map) result).remove(JsonLdConsts.CONTEXT);
 			replyBody = JsonUtils.toPrettyString(result);
 			for (Object entry : context) {
 				if (entry instanceof String) {
-					resultHeaders.add(HttpHeaders.LINK, "<" + entry
+					resultHeaders.put(HttpHeaders.LINK, "<" + entry
 							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 				} else {
-					resultHeaders.add(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+					resultHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
 							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 				}
 
 			}
 			break;
 		case 2:
-			resultHeaders.add(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+			resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
 			replyBody = JsonUtils.toPrettyString(result);
 			break;
 		default:
 			throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
 		}
-		return ResponseEntity.status(HttpStatus.MULTI_STATUS).headers(resultHeaders).body(replyBody);
+		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(HttpStatus.SC_MULTI_STATUS).entity(replyBody);
+		for (Entry<String, String> entry : resultHeaders.entries()) {
+			builder = builder.header(entry.getKey(), entry.getValue());
+		}
+		return builder.build();
 	}
 
-	public static ResponseEntity<String> generateNotification(ArrayListMultimap<String, String> headers,
-			Object notificationData, List<Object> context, String geometryProperty)
+	public static org.jboss.resteasy.reactive.RestResponse<String> generateNotification(
+			ArrayListMultimap<String, String> headers, Object notificationData, List<Object> context,
+			String geometryProperty)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
 		if (headers == null) {
 			headers = ArrayListMultimap.create();
 		}
-		List<String> acceptHeader = headers.get(HttpHeaders.ACCEPT.toLowerCase());
+		List<String> acceptHeader = headers.get(io.vertx.mutiny.core.http.HttpHeaders.ACCEPT.toString());
 		if (acceptHeader == null || acceptHeader.isEmpty()) {
 			acceptHeader = new ArrayList<String>();
 			acceptHeader.add("application/json");
 		}
-		
 		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
 				ldContext, context, geometryProperty);
-		headers.put("Content-Length", body.length() + "");
-		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
+		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
+		for (Entry<String, String> entry : headers.entries()) {
+			builder = builder.header(entry.getKey(), entry.getValue());
+		}
+		return builder.build();
 	}
 
 	@SuppressWarnings("unchecked")
-	public static HttpHeaders getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
+	public static MultiMap getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
 			List<String> accept) {
-		HttpHeaders result = new HttpHeaders();
+		HeadersMultiMap result = HeadersMultiMap.headers();
+
 		Context myContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
-		result.addAll(HttpHeaders.ACCEPT, accept);
+		for (String entry : accept) {
+			result.add(HttpHeaders.ACCEPT, entry);
+		}
 		Object tenant = registration.get(NGSIConstants.NGSI_LD_TENANT);
 		if (tenant != null) {
 			result.add(NGSIConstants.TENANT_HEADER, (String) myContext.compactValue(NGSIConstants.NGSI_LD_TENANT,
@@ -682,33 +672,6 @@ public final class HttpUtils {
 			}
 		}
 		return result;
-	}
-
-	private static HttpHeaders getHttpHeaders(ArrayListMultimap<String, String> headers) {
-		HttpHeaders result = new HttpHeaders();
-		for (String key : headers.keySet()) {
-			switch (key.toLowerCase()) {
-			case "postman-token":
-			case "accept-encoding":
-			case "user-agent":
-			case "host":
-				break;
-			default:
-				result.put(key, headers.get(key));
-			}
-
-		}
-		return result;
-	}
-
-	public static RestTemplate getRestTemplate() {
-		final RestTemplate restTemplate = new RestTemplate();
-		final HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
-		CloseableHttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy())
-				.build();
-		factory.setHttpClient(httpClient);
-		restTemplate.setRequestFactory(factory);
-		return restTemplate;
 	}
 
 }

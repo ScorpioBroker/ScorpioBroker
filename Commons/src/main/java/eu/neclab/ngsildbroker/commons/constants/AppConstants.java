@@ -74,6 +74,13 @@ public class AppConstants {
 	public static final int TEMP_ENTITY_UPDATE_PAYLOAD = 7;
 	public static final int TEMP_ENTITY_RETRIEVED_PAYLOAD = 8;
 	public static final int ENTITY_ATTRS_UPDATE_PAYLOAD = 9;
+	
+	public static final String REGISTRY_CHANNEL = "registry";
+	public static final String ENTITY_CHANNEL = "entity";
+	public static final String INTERNAL_SUBS_CHANNEL = "isubs";
+	public static final String INTERNAL_NOTIFICATION_CHANNEL = "inotification";
+	public static final String HISTORY_CHANNEL = "history";
+
 	public static final Pattern DATE_TIME_MATCHER = Pattern.compile(
 			"\\d\\d\\d\\d-(0[1-9]|1[0-2])-(0[0-9]|[1-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d{1,6})?Z");
 	public static final List<String> FORCE_ARRAY_FIELDS = Arrays.asList(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES,
