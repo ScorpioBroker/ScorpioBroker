@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
@@ -39,13 +38,12 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
-
 
 @Singleton
 public class EntityService implements EntryCRUDService {
 
-	
 	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
 	boolean directDB;
 	public static boolean checkEntity = false;
@@ -74,8 +72,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
-			throws ResponseException, Exception {
+	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
 		// get message channel for ENTITY_CREATE topic.
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();

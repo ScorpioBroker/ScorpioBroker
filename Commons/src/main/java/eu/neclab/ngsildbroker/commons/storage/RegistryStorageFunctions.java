@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,8 +221,8 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 				whereId += "'" + id + "',";
 				whereIdPattern += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + " ~ '" + id + "' OR ";
 			}
-			whereId = StringUtils.chomp(whereId, ",");
-			whereIdPattern = StringUtils.chomp(whereIdPattern, "OR ");
+			whereId = StringUtils.removeEnd(whereId, ",");
+			whereIdPattern = StringUtils.removeEnd(whereIdPattern, "OR ");
 			whereId += ")";
 			whereIdPattern += ")";
 

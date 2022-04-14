@@ -5,20 +5,22 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import javax.inject.Singleton;
 
-@Service
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@Singleton
 public class MicroServiceUtils {
-	private final static Logger logger = LogManager.getLogger(MicroServiceUtils.class);
+	private final static Logger logger = LoggerFactory.getLogger(MicroServiceUtils.class);
 
-	@Value("${scorpio.gatewayurl:}")
-	private String gatewayUrl;
 
-	@Value("${server.port}")
-	private int port;
+	@ConfigProperty(name = "scorpio.gatewayurl")
+	String gatewayUrl;
+
+	@ConfigProperty(name = "mysettings.gateway.port")
+	int port;
 
 	public URI getGatewayURL() {
 		logger.trace("getGatewayURL() :: started");
