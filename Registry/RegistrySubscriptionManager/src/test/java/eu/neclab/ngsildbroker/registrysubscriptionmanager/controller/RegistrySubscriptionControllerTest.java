@@ -80,7 +80,7 @@ public class RegistrySubscriptionControllerTest {
 	}
 
 	/**
-	 * this method is use for subscribe the entity
+	 * this method is use for create  Registry subscription entity
 	 */
 
 	@Test
@@ -106,7 +106,7 @@ public class RegistrySubscriptionControllerTest {
 	}
 
 	/**
-	 * this method is try to subscribe the entity having "BAD REQUEST"
+	 * this method is try to  registry subscribe the entity having "BAD REQUEST"
 	 */
 
 	@Test
@@ -131,7 +131,7 @@ public class RegistrySubscriptionControllerTest {
 	}
 
 	/**
-	 * this method is use for the subscribe entity if subscribe entity already
+	 * this method is use for the rgistry subscribe entity if subscribe entity already
 	 * exists
 	 */
 
@@ -156,6 +156,10 @@ public class RegistrySubscriptionControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use for the rgistry subscribe entity if Id Not Found 
+	 */
+
 	@Test
 	public void getRegistrySubscriptionEntityByIdNotFoundTest() throws Exception {
 		when(registrySubscriptionService.getSubscription(any(), any()))
@@ -173,7 +177,7 @@ public class RegistrySubscriptionControllerTest {
 	}
 
 	/**
-	 * this method is update the subscription
+	 * this method is update the registry  subscription entity
 	 */
 
 	@Test
@@ -200,6 +204,9 @@ public class RegistrySubscriptionControllerTest {
 		}
 	}
 
+	/**
+	 * this method is try to  delete the registry subscription entity by ID
+	 */
 	@Test
 	public void deleteSubscriptionTest() {
 		try {
@@ -220,6 +227,9 @@ public class RegistrySubscriptionControllerTest {
 		}
 	}
 
+	/**
+	 * this method is try to delete registry subscribe entity if entity  Id Not Found
+	 */
 	@Test
 	public void deleteSubscriptionNotFoundTest() {
 		try {
@@ -240,6 +250,9 @@ public class RegistrySubscriptionControllerTest {
 		}
 	}
 
+	/**
+	 * this method is try to update registry subscribe entity if entity Id Not Found
+	 */
 	@Test
 	public void updateSubscriptionNotFoundTest() {
 		try {
