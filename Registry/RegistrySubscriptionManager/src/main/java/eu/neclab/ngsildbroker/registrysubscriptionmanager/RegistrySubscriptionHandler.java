@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registry.subscriptionmanager;
+package eu.neclab.ngsildbroker.registrysubscriptionmanager;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

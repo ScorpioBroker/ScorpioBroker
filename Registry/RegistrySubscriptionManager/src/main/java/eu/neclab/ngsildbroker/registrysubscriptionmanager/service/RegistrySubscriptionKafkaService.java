@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.registrysubscriptionmanager.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
