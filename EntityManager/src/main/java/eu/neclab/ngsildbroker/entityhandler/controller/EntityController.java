@@ -3,37 +3,26 @@ package eu.neclab.ngsildbroker.entityhandler.controller;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
@@ -95,9 +84,10 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 
-	@PatchMapping("/{entityId}/attrs")
-	public ResponseEntity<String> updateEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
-			@RequestBody String payload) {
+	@PATCH
+	@Path("/{entityId}/attrs")
+	public Uni<RestResponse<Object>> updateEntity(HttpServerRequest request, @PathParam("entityId") String entityId,
+			String payload) {
 		return EntryControllerFunctions.updateEntry(entityService, request, entityId, payload,
 				AppConstants.ENTITY_UPDATE_PAYLOAD, logger);
 	}
@@ -110,9 +100,10 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return ResponseEntity object
 	 */
 
-	@PostMapping("/{entityId}/attrs")
-	public ResponseEntity<String> appendEntity(HttpServletRequest request, @PathVariable("entityId") String entityId,
-			@RequestBody String payload, @RequestParam(required = false, name = "options") String options) {
+	@POST
+	@Path("/{entityId}/attrs")
+	public Uni<RestResponse<Object>> appendEntity(HttpServerRequest request, @PathParam("entityId") String entityId,
+			String payload, @QueryParam("options") String options) {
 		return EntryControllerFunctions.appendToEntry(entityService, request, entityId, payload, options,
 				AppConstants.ENTITY_UPDATE_PAYLOAD, logger);
 	}
@@ -126,11 +117,12 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param payload
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
-	@PatchMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<String> partialUpdateEntity(HttpServletRequest request,
-			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
-			@RequestBody String payload) {
+	@SuppressWarnings({ "unchecked", "static-access" })
+	@PATCH
+	@Path("/{entityId}/attrs/{attrId}")
+	public Uni<RestResponse<Object>> partialUpdateEntity(HttpServerRequest request,
+			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
+			String payload) {
 		try {
 			Object jsonPayload = JsonUtils.fromString(payload);
 			HttpUtils.validateUri(entityId);
@@ -154,10 +146,12 @@ public class EntityController {// implements EntityHandlerInterface {
 					expandedAttrib, expandedPayload);
 			logger.trace("partial-update entity :: completed");
 			if (update.getNotUpdated().isEmpty()) {
-				return ResponseEntity.noContent().build();
+				return Uni.createFrom().item(RestResponse.noContent().ok());
+				
 			} else {
-				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, JsonUtils
-						.toPrettyString(JsonLdProcessor.compact(update.getNotUpdated().get(0), context, opts))));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, JsonUtils
+						.toPrettyString(JsonLdProcessor.compact(update.getNotUpdated().get(0), context, opts)))));
+				
 			}
 			/*
 			 * There is no 207 multi status response in the Partial Attribute Update
@@ -166,7 +160,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			 * getAppendedJsonFields()); }
 			 */
 		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
 	}
 
@@ -179,11 +173,13 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 
-	@DeleteMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<String> deleteAttribute(HttpServletRequest request, @PathVariable("entityId") String entityId,
-			@PathVariable("attrId") String attrId,
-			@RequestParam(value = "datasetId", required = false) String datasetId,
-			@RequestParam(value = "deleteAll", required = false) String deleteAll) {
+	@SuppressWarnings("static-access")
+	@DELETE
+	@Path("/{entityId}/attrs/{attrId}")
+	public Uni<RestResponse<Object>> deleteAttribute(HttpServerRequest request, @PathParam("entityId") String entityId,
+			@PathParam("attrId") String attrId,
+			@QueryParam("datasetId") String datasetId,
+			@QueryParam("deleteAll") String deleteAll) {
 		try {
 			HttpUtils.validateUri(entityId);
 			logger.trace("delete attribute :: started");
@@ -193,9 +189,9 @@ public class EntityController {// implements EntityHandlerInterface {
 			entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,
 					deleteAll);
 			logger.trace("delete attribute :: completed");
-			return ResponseEntity.noContent().build();
+			return Uni.createFrom().item(RestResponse.noContent().ok());
 		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
 	}
 
@@ -205,8 +201,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @param entityId
 	 * @return
 	 */
-	@DeleteMapping("/{entityId}")
-	public ResponseEntity<String> deleteEntity(HttpServletRequest request, @PathVariable("entityId") String entityId) {
+	@DELETE
+	@Path("/{entityId}")
+	public Uni<RestResponse<Object>> deleteEntity(HttpServerRequest request, @PathParam("entityId") String entityId) {
 		return EntryControllerFunctions.deleteEntry(entityService, request, entityId, logger);
 	}
 }

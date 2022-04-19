@@ -7,12 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -21,7 +22,6 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
@@ -39,7 +39,7 @@ public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@SuppressWarnings("unchecked")
-	public static RestResponse<Object> updateMultiple(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> updateMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int maxUpdateBatch, String options, int payloadType) {
 		String[] optionsArray = getOptionsArray(options);
 		List<Map<String, Object>> jsonPayload;
@@ -47,7 +47,7 @@ public interface EntryControllerFunctions {
 		try {
 			jsonPayload = getJsonPayload(payload);
 		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
 		BatchResult result = new BatchResult();
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
@@ -56,12 +56,12 @@ public interface EntryControllerFunctions {
 		try {
 			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
-			return HttpUtils.handleControllerExceptions(responseException);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
 		if (maxUpdateBatch != -1 && jsonPayload.size() > maxUpdateBatch) {
 			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
 					"Maximum allowed number of entities for this operation is " + maxUpdateBatch);
-			return HttpUtils.handleControllerExceptions(responseException);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
 		for (Map<String, Object> compactedEntry : jsonPayload) {
 			String entityId = "NOT AVAILABLE";
@@ -114,20 +114,20 @@ public interface EntryControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static RestResponse<Object> createMultiple(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> createMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int maxCreateBatch, int payloadType) {
 
 		List<Map<String, Object>> jsonPayload;
 		try {
 			jsonPayload = getJsonPayload(payload);
 		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
 		BatchResult result = new BatchResult();
 		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
 			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
 					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
-			return HttpUtils.handleControllerExceptions(responseException);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
@@ -135,7 +135,7 @@ public interface EntryControllerFunctions {
 		try {
 			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
-			return HttpUtils.handleControllerExceptions(responseException);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
 		for (Map<String, Object> entry : jsonPayload) {
 			Map<String, Object> resolved;
@@ -183,7 +183,7 @@ public interface EntryControllerFunctions {
 		return (List<Map<String, Object>>) jsonPayload;
 	}
 
-	private static RestResponse<Object> generateBatchResultReply(BatchResult result, int okStatus) {
+	private static Uni<RestResponse<Object>> generateBatchResultReply(BatchResult result, int okStatus) {
 		int status = HttpStatus.SC_MULTI_STATUS;
 		String body = DataSerializer.toJson(result);
 		if (result.getFails().isEmpty()) {
@@ -194,13 +194,13 @@ public interface EntryControllerFunctions {
 			status = HttpStatus.SC_BAD_REQUEST;
 		}
 		if (body == null) {
-			return RestResponse.status(status);
+			return Uni.createFrom().item(RestResponse.status(status));
 		}
-		return RestResponseBuilderImpl.create(status).entity(body).build();
+		return Uni.createFrom().item(RestResponseBuilderImpl.create(status).entity(body).build());
 	}
 
 	@SuppressWarnings("unchecked")
-	public static RestResponse<Object> deleteMultiple(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> deleteMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int payloadType) {
 		List<Object> jsonPayload;
 		boolean atContextAllowed;
@@ -209,17 +209,17 @@ public interface EntryControllerFunctions {
 
 			Object obj = JsonUtils.fromString(payload);
 			if (!(obj instanceof List)) {
-				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
-						"This interface only supports arrays of entities"));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
+						"This interface only supports arrays of entities")));
 			}
 			jsonPayload = (List<Object>) obj;
 			atContextAllowed = HttpUtils.doPreflightCheck(request, links);
 		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
 		if (jsonPayload.isEmpty()) {
-			return HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.BadRequestData, "An empty array is not allowed"));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData, "An empty array is not allowed")));
 		}
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		BatchResult result = new BatchResult();
@@ -253,20 +253,20 @@ public interface EntryControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static RestResponse<Object> upsertMultiple(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> upsertMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, String options, int maxCreateBatch, int payloadType) {
 		String[] optionsArray = getOptionsArray(options);
 		List<Map<String, Object>> jsonPayload;
 		try {
 			jsonPayload = getJsonPayload(payload);
 		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
 		BatchResult result = new BatchResult();
 		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
 			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
 					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
-			return HttpUtils.handleControllerExceptions(responseException);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
@@ -274,7 +274,7 @@ public interface EntryControllerFunctions {
 		try {
 			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
-			return HttpUtils.handleControllerExceptions(responseException);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
 		boolean insertedOneEntity = false;
 		boolean appendedOneEntity = false;
@@ -515,17 +515,16 @@ public interface EntryControllerFunctions {
 		}
 	}
 
-	public static RestResponse<Object> deleteEntry(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> deleteEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, Logger logger) {
 		try {
 			logger.trace("delete entity :: started");
 			HttpUtils.validateUri(entityId);
 			entityService.deleteEntry(HttpUtils.getHeaders(request), entityId);
 			logger.trace("delete entity :: completed");
-			return RestResponse.noContent();
+			return Uni.createFrom().item(RestResponse.noContent());
 		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
 	}
-
 }
