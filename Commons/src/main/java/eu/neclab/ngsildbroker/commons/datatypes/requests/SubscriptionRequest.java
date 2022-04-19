@@ -45,14 +45,6 @@ public class SubscriptionRequest extends BaseRequest {
 		this.subscription = subscription;
 	}
 
-	public ArrayListMultimap<String, String> getHeaders() {
-		return headers;
-	}
-
-	public void setHeaders(ArrayListMultimap<String, String> headers) {
-		this.headers = headers;
-	}
-
 	public boolean isActive() {
 		return active;
 	}

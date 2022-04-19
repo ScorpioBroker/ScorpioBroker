@@ -6,14 +6,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.serialization.MultiMapDeserializer;
+import eu.neclab.ngsildbroker.commons.serialization.MultiMapSerializer;
 
 public class BaseRequest {
 
-	ArrayListMultimap<String, String> headers;
+	@JsonDeserialize(using = MultiMapDeserializer.class)
+	@JsonSerialize(using = MultiMapSerializer.class)
+	private ArrayListMultimap<String, String> headers;
 	private String id;
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
