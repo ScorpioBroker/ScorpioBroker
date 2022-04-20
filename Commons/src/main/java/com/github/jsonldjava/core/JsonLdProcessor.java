@@ -124,7 +124,7 @@ public class JsonLdProcessor {
 					ArrayList<Object> temp = new ArrayList<Object>();
 					temp.add(context);
 					temp.add(coreContextUrl);
-
+					context = temp;
 				}
 			}
 			if ((context instanceof Map && !((Map<String, Object>) context).isEmpty())

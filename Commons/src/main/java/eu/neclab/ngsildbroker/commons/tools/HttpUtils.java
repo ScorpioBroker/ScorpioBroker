@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,10 @@ import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -638,22 +643,33 @@ public final class HttpUtils {
 		return ResponseEntity.status(HttpStatus.MULTI_STATUS).headers(resultHeaders).body(replyBody);
 	}
 
-	public static ResponseEntity<String> generateNotification(ArrayListMultimap<String, String> headers,
+	public static ResponseEntity<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
 			Object notificationData, List<Object> context, String geometryProperty)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
-		if (headers == null) {
+		ArrayListMultimap<String, String> headers;
+		if (origHeaders == null) {
 			headers = ArrayListMultimap.create();
+		} else {
+			headers = ArrayListMultimap.create(origHeaders);
 		}
+
 		List<String> acceptHeader = headers.get(HttpHeaders.ACCEPT.toLowerCase());
 		if (acceptHeader == null || acceptHeader.isEmpty()) {
 			acceptHeader = new ArrayList<String>();
 			acceptHeader.add("application/json");
 		}
-		
+
 		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
 				ldContext, context, geometryProperty);
+		// need to clean context for subscriptions. This is a bit bad practice but reply
+		// generation relies on side effects so clean up here
+		HashSet<Object> temp = Sets.newHashSet(context);
+		context.clear();
+		context.addAll(temp);
+
+		headers.removeAll("Content-Length");
 		headers.put("Content-Length", body.length() + "");
 		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
 	}
@@ -694,7 +710,7 @@ public final class HttpUtils {
 			case "host":
 				break;
 			default:
-				result.put(key, headers.get(key));
+				result.put(key, Lists.newArrayList(Sets.newHashSet(headers.get(key))));
 			}
 
 		}
