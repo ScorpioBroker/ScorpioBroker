@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -623,13 +625,16 @@ public final class HttpUtils {
 	}
 
 	public static org.jboss.resteasy.reactive.RestResponse<String> generateNotification(
-			ArrayListMultimap<String, String> headers, Object notificationData, List<Object> context,
+			ArrayListMultimap<String, String> origHeaders, Object notificationData, List<Object> context,
 			String geometryProperty)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
-		if (headers == null) {
+		ArrayListMultimap<String, String> headers;
+		if (origHeaders == null) {
 			headers = ArrayListMultimap.create();
+		} else {
+			headers = ArrayListMultimap.create(origHeaders);
 		}
 		List<String> acceptHeader = headers.get(io.vertx.mutiny.core.http.HttpHeaders.ACCEPT.toString());
 		if (acceptHeader == null || acceptHeader.isEmpty()) {
@@ -638,9 +643,27 @@ public final class HttpUtils {
 		}
 		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
 				ldContext, context, geometryProperty);
+		// need to clean context for subscriptions. This is a bit bad practice but reply
+		// generation relies on side effects so clean up here
+		HashSet<Object> temp = Sets.newHashSet(context);
+		context.clear();
+		context.addAll(temp);
+
+		headers.removeAll("Content-Length");
+		headers.put("Content-Length", body.length() + "");
 		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
-		for (Entry<String, String> entry : headers.entries()) {
-			builder = builder.header(entry.getKey(), entry.getValue());
+		for (String key : headers.keySet()) {
+			switch (key.toLowerCase()) {
+			case "postman-token":
+			case "accept-encoding":
+			case "user-agent":
+			case "host":
+				break;
+			default:
+				for (String entry : Sets.newHashSet(headers.get(key))) {
+					builder = builder.header(key, entry);
+				}
+			}
 		}
 		return builder.build();
 	}

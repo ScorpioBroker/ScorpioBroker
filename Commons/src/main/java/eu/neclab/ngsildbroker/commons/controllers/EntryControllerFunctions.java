@@ -21,6 +21,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -32,6 +33,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
@@ -89,7 +91,7 @@ public interface EntryControllerFunctions {
 			}
 			try {
 
-				UpdateResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray);
+				UpdateResult updateResult = null;// entityService.appendToEntry(headers, entityId, entry, optionsArray);
 				if (updateResult.getNotUpdated().isEmpty()) {
 					result.addSuccess(entityId);
 				} else {
@@ -114,20 +116,20 @@ public interface EntryControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static RestResponse<Object> createMultiple(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> createMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int maxCreateBatch, int payloadType) {
 
 		List<Map<String, Object>> jsonPayload;
 		try {
 			jsonPayload = getJsonPayload(payload);
 		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
 		BatchResult result = new BatchResult();
 		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
 			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
 					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
-			return HttpUtils.handleControllerExceptions(responseException);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
@@ -135,13 +137,15 @@ public interface EntryControllerFunctions {
 		try {
 			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
 		} catch (ResponseException responseException) {
-			return HttpUtils.handleControllerExceptions(responseException);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
-		for (Map<String, Object> entry : jsonPayload) {
-			Map<String, Object> resolved;
+		List<Uni<String>> unis = Lists.newArrayList();
+
+		bla = Multi.createFrom().items(jsonPayload.parallelStream()).onItem().transform(t -> {
+
 			try {
-				resolved = (Map<String, Object>) JsonLdProcessor
-						.expand(linkHeaders, entry, opts, payloadType, preFlight).get(0);
+				return (Map<String, Object>) JsonLdProcessor.expand(linkHeaders, t, opts, payloadType, preFlight)
+						.get(0);
 			} catch (JsonLdError | ResponseException e) {
 				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
 				if (e instanceof ResponseException) {
@@ -151,27 +155,26 @@ public interface EntryControllerFunctions {
 							e.getLocalizedMessage());
 				}
 				result.addFail(new BatchFailure("FAILED TO PARSE BODY", response));
-				continue;
+				// return null;
 			}
-			try {
-				// result.addSuccess(entityService.createEntry(headers, resolved));
-			} catch (Exception e) {
+			;
+		}).invoke(t -> {
+			entityService.createEntry(headers, t).onItem().invoke(t -> result.addSuccess(t)).onFailure().invoke(t -> {
 				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
-				if (e instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) e);
+				if (t instanceof ResponseException) {
+					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) t);
 				} else {
 					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InternalError,
-							e.getLocalizedMessage());
+							t.getLocalizedMessage());
 				}
 				String entityId = "NO ID PROVIDED";
 				if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
 					entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
 				}
 				result.addFail(new BatchFailure(entityId, response));
-			}
+			});
+		}).onCompletion().call(generateBatchResultReply(result, HttpStatus.SC_CREATED));
 
-		}
-		return generateBatchResultReply(result, HttpStatus.SC_CREATED);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -402,36 +405,45 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> updateEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, String payload, int payloadType, Logger logger) {
+		logger.trace("update entry :: started");
 		try {
-			logger.trace("update entry :: started");
 			HttpUtils.validateUri(entityId);
-			List<Object> contextHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-			List<Object> context = new ArrayList<Object>();
-			context.addAll(contextHeaders);
-			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
-			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(contextHeaders, body, opts, payloadType, atContextAllowed).get(0);
-			if (bodyContext instanceof List) {
-				context.addAll((List<Object>) bodyContext);
-			} else {
-				context.add(bodyContext);
-			}
-
-			return entityService.updateEntry(HttpUtils.getHeaders(request), entityId, resolved).onItem()
-					.transform(t -> {
-						logger.trace("update entry :: completed");
-						try {
-							return HttpUtils.generateReply(request, t, context, AppConstants.UPDATE_REQUEST);
-						} catch (Exception e) {
-							return HttpUtils.handleControllerExceptions(e);
-						}
-					});
-
 		} catch (Exception exception) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
+		List<Object> contextHeaders = HttpUtils.getAtContext(request);
+		boolean atContextAllowed;
+		try {
+			atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+		} catch (Exception exception) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
+		}
+		List<Object> context = new ArrayList<Object>();
+		context.addAll(contextHeaders);
+		Map<String, Object> resolved;
+		Object bodyContext;
+		try {
+			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
+			bodyContext = body.get(JsonLdConsts.CONTEXT);
+			resolved = (Map<String, Object>) JsonLdProcessor
+					.expand(contextHeaders, body, opts, payloadType, atContextAllowed).get(0);
+		} catch (Exception exception) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
+		}
+		if (bodyContext instanceof List) {
+			context.addAll((List<Object>) bodyContext);
+		} else {
+			context.add(bodyContext);
+		}
+		return entityService.updateEntry(HttpUtils.getHeaders(request), entityId, resolved).onItem().transform(t -> {
+			logger.trace("update entry :: completed");
+			try {
+				return HttpUtils.generateReply(request, t, context, AppConstants.UPDATE_REQUEST);
+			} catch (Exception e) {
+				return HttpUtils.handleControllerExceptions(e);
+			}
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 
 	@SuppressWarnings("unchecked")
@@ -463,48 +475,60 @@ public interface EntryControllerFunctions {
 			} catch (URISyntaxException e) {
 				return HttpUtils.handleControllerExceptions(e);
 			}
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> appendToEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, String payload, String options, int payloadType, Logger logger) {
+		Map<String, Object> resolved = null;
+		logger.trace("append entity :: started");
+		String[] optionsArray = getOptionsArray(options);
+		// try {
+		List<Object> contextHeaders = HttpUtils.getAtContext(request);
+		boolean atContextAllowed;
 		try {
-			logger.trace("append entity :: started");
-			String[] optionsArray = getOptionsArray(options);
-			List<Object> contextHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-			List<Object> context = new ArrayList<Object>();
-			context.addAll(contextHeaders);
-			if (payload == null || payload.isEmpty()) {
-				throw new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed");
-			}
-			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
-			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
-
-			if (bodyContext instanceof List) {
-				context.addAll((List<Object>) bodyContext);
-			} else {
-				context.add(bodyContext);
-			}
-			HttpUtils.validateUri(entityId);
-			@SuppressWarnings("unchecked")
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
-
-			return entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved, optionsArray).onItem()
-					.transform(t -> {
-						logger.trace("append entity :: completed");
-						try {
-							return HttpUtils.generateReply(request, t, context, AppConstants.UPDATE_REQUEST);
-						} catch (Exception e) {
-							return HttpUtils.handleControllerExceptions(e);
-						}
-					});
+			atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
+		List<Object> context = new ArrayList<Object>();
+		context.addAll(contextHeaders);
+		if (payload == null || payload.isEmpty()) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed")));
+		}
+		Map<String, Object> body;
+		try {
+			body = ((Map<String, Object>) JsonUtils.fromString(payload));
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		Object bodyContext = body.get(JsonLdConsts.CONTEXT);
+
+		if (bodyContext instanceof List) {
+			context.addAll((List<Object>) bodyContext);
+		} else {
+			context.add(bodyContext);
+		}
+		try {
+			HttpUtils.validateUri(entityId);
+			resolved = (Map<String, Object>) JsonLdProcessor
+					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved, optionsArray).onItem()
+				.transform(t -> {
+					logger.trace("append entity :: completed");
+					try {
+						return HttpUtils.generateReply(request, t, context, AppConstants.UPDATE_REQUEST);
+					} catch (Exception e) {
+						return HttpUtils.handleControllerExceptions(e);
+					}
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 
 	private static String[] getOptionsArray(String options) {
@@ -515,17 +539,19 @@ public interface EntryControllerFunctions {
 		}
 	}
 
-	public static RestResponse<Object> deleteEntry(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> deleteEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, Logger logger) {
 		try {
 			logger.trace("delete entity :: started");
 			HttpUtils.validateUri(entityId);
-			entityService.deleteEntry(HttpUtils.getHeaders(request), entityId);
+		} catch (Exception exception) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
+		}
+		return entityService.deleteEntry(HttpUtils.getHeaders(request), entityId).onItem().transform(t -> {
 			logger.trace("delete entity :: completed");
 			return RestResponse.noContent();
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 
 }
