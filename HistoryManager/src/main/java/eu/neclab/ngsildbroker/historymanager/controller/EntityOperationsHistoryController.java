@@ -3,16 +3,15 @@ package eu.neclab.ngsildbroker.historymanager.controller;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
 
@@ -22,28 +21,30 @@ import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryPostQueryParser;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 
-@RestController
-@RequestMapping("/ngsi-ld/v1/temporal/entityOperations")
+@Singleton
+@Path("/ngsi-ld/v1/temporal/entityOperations")
 public class EntityOperationsHistoryController {
 
-	@Autowired
+	@Inject
 	private HistoryService entityService;
 
-	@Value("${scorpio.history.batch-operations.create.max:-1}")
+	@ConfigProperty(name = "scorpio.history.batch-operations.create.max", defaultValue = "-1")
 	private int maxCreateBatch;
-	@Value("${scorpio.history.batch-operations.update.max:-1}")
+	@ConfigProperty(name = "scorpio.history.batch-operations.update.max", defaultValue = "-1")
 	private int maxUpdateBatch;
-	@Value("${scorpio.history.batch-operations.upsert.max:-1}")
+	@ConfigProperty(name = "scorpio.history.batch-operations.upsert.max", defaultValue = "-1")
 	private int maxUpsertBatch;
-	@Value("${scorpio.history.batch-operations.delete.max:-1}")
+	@ConfigProperty(name = "scorpio.history.batch-operations.delete.max", defaultValue = "-1")
 	private int maxDeleteBatch;
-	@Value("${scorpio.history.default-limit:50}")
+	@ConfigProperty(name = "scorpio.history.default-limit", defaultValue = "50")
 	private int defaultLimit;
-	@Value("${scorpio.history.default-limit:1000}")
+	@ConfigProperty(name = "scorpio.history.max-limit", defaultValue = "1000")
 	private int maxLimit;
 
-	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	private String coreContext;
 
 	private PayloadQueryParamParser paramParser = new HistoryPostQueryParser();
@@ -53,39 +54,42 @@ public class EntityOperationsHistoryController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	@PostMapping("/create")
-	public ResponseEntity<String> createMultiple(HttpServletRequest request, @RequestBody String payload) {
+	@Path("/create")
+	@POST
+	public  Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createMultiple(entityService, request, payload, maxCreateBatch,
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
 	}
 
-	@PostMapping("/upsert")
-	public ResponseEntity<String> upsertMultiple(HttpServletRequest request, @RequestBody String payload,
-			@RequestParam(required = false, name = "options") String options) {
+	@Path("/upsert")
+	@POST
+	public  Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String payload,
+			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch,
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
 	}
 
-	@PostMapping("/update")
-	public ResponseEntity<String> updateMultiple(HttpServletRequest request, @RequestBody String payload,
-			@RequestParam(required = false, name = "options") String options) {
+	@Path("/update")
+	@POST
+	public  Uni<RestResponse<Object>> updateMultiple(HttpServerRequest request, String payload,
+			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.updateMultiple(entityService, request, payload, maxUpdateBatch, options,
 				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD);
 	}
 
-	@PostMapping("/delete")
-	public ResponseEntity<String> deleteMultiple(HttpServletRequest request, @RequestBody String payload) {
+	@Path("/delete")
+	@POST
+	public  Uni<RestResponse<Object>>deleteMultiple(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.deleteMultiple(entityService, request, payload,
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
 	}
 
-	@PostMapping("/query")
-	public ResponseEntity<String> postQuery(HttpServletRequest request, @RequestBody String payload,
-			@RequestParam(value = "limit", required = false) Integer limit,
-			@RequestParam(value = "offset", required = false) Integer offset,
-			@RequestParam(value = "qtoken", required = false) String qToken,
-			@RequestParam(name = "options", required = false) List<String> options,
-			@RequestParam(value = "count", required = false, defaultValue = "false") boolean count) {
+	@Path("/query")
+	@POST
+	public RestResponse<Object> postQuery(HttpServerRequest request, String payload,
+			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") Integer offset,
+			@QueryParam(value = "qtoken") String qToken, @QueryParam(value = "options") List<String> options,
+			@QueryParam(value = "count") boolean count) {
 
 		return QueryControllerFunctions.postQuery(entityService, request, payload, limit, offset, qToken, options,
 				count, defaultLimit, maxLimit, AppConstants.QUERY_PAYLOAD, paramParser);

@@ -4,45 +4,41 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
-
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
-
-@RestController
-@RequestMapping("/remotenotify")
+import io.vertx.core.http.HttpServerRequest;
+@Singleton
+@Path("/remotenotify")
 public class NotificationController {
 
-	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
-	String coreContext;
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	private String coreContext;
 
 	@PostConstruct
 	public void init() {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	@Autowired
+	@Inject
 	SubscriptionService subscriptionManager;
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	@RequestMapping(method = RequestMethod.POST, value = "/{id}")
-	public ResponseEntity<String> notify(HttpServletRequest req, @RequestBody String payload,
-			@PathVariable(name = NGSIConstants.QUERY_PARAMETER_ID, required = false) String id) {
+	@Path("/{id}")
+	@POST
+	public RestResponse<Object> notify(HttpServerRequest req, String payload,
+			@PathParam(value = NGSIConstants.QUERY_PARAMETER_ID) String id) {
 		try {
 			List<Object> atContextLinks = HttpUtils.getAtContext(req);
 			subscriptionManager.remoteNotify(id,
@@ -52,7 +48,7 @@ public class NotificationController {
 		} catch (Exception e) {
 			return HttpUtils.handleControllerExceptions(e);
 		}
-		return ResponseEntity.ok().build();
+		return RestResponse.ok();
 
 	}
 

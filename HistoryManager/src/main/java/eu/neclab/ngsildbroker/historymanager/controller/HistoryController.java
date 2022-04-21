@@ -4,23 +4,21 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.PATCH;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -31,27 +29,29 @@ import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 
-@RestController
-@RequestMapping("/ngsi-ld/v1/temporal/entities")
+@Singleton
+@Path("/ngsi-ld/v1/temporal/entities")
 public class HistoryController {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
 
-	@Autowired
-	HistoryDAO historyDAO;
-	@Autowired
-	HistoryService historyService;
-	@Value("${atcontext.url}")
+	@Inject
+	private HistoryDAO historyDAO;
+	@Inject
+	private HistoryService historyService;
+	@ConfigProperty(name = "atcontext.url")
 	String atContextServerUrl;
-	@Value("${scorpio.history.defaultLimit:50}")
+	@ConfigProperty(name = "scorpio.history.defaultLimit", defaultValue = "50")
 	int defaultLimit;
-	@Value("${scorpio.history.maxLimit:1000}")
+	@ConfigProperty(name = "scorpio.history.maxLimit", defaultValue = "1000")
 	int maxLimit;
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 
 	@PostConstruct
@@ -59,49 +59,54 @@ public class HistoryController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	@PostMapping
-	public ResponseEntity<String> createTemporalEntity(HttpServletRequest request,
-			@RequestBody(required = false) String payload) {
+	
+	@POST
+	public Uni<RestResponse<Object>> createTemporalEntity(HttpServerRequest request,
+			String payload) {
 		return EntryControllerFunctions.createEntry(historyService, request, payload,
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, AppConstants.HISTORY_URL, logger);
 	}
 
-	@GetMapping
-	public ResponseEntity<String> retrieveTemporalEntity(HttpServletRequest request,
-			@RequestParam(value = "limit", required = false) Integer limit,
-			@RequestParam(value = "offset", required = false) Integer offset,
-			@RequestParam(value = "qtoken", required = false) String qToken,
-			@RequestParam(name = "options", required = false) List<String> options,
-			@RequestParam(value = "count", required = false, defaultValue = "false") Boolean countResult) {
+	@GET
+	public Uni<RestResponse<Object>> retrieveTemporalEntity(HttpServerRequest request,
+			@QueryParam(value = "limit") Integer limit,
+			@QueryParam(value = "offset") Integer offset,
+			@QueryParam(value = "qtoken") String qToken,
+			@QueryParam(value = "options") List<String> options,
+			@QueryParam(value = "count") Boolean countResult) {
 		return QueryControllerFunctions.queryForEntries(historyService, request, true, defaultLimit, maxLimit, true);
 	}
 
-	@GetMapping("/{entityId}")
-	public ResponseEntity<String> retrieveTemporalEntityById(HttpServletRequest request,
-			@PathVariable("entityId") String entityId) {
+	@Path("/{entityId}")
+	@GET
+	public Uni<RestResponse<Object>> retrieveTemporalEntityById(HttpServerRequest request,
+			@PathParam("entityId") String entityId) {
 		return QueryControllerFunctions.getEntity(historyService, request, null, null, entityId, true, defaultLimit,
 				maxLimit);
 
 	}
 
-	@DeleteMapping("/{entityId}")
-	public ResponseEntity<String> deleteTemporalEntityById(HttpServletRequest request,
-			@PathVariable("entityId") String entityId) {
+	@Path("/{entityId}")
+	@DELETE
+	public Uni<RestResponse<Object>> deleteTemporalEntityById(HttpServerRequest request,
+			@PathParam("entityId") String entityId) {
 			return EntryControllerFunctions.deleteEntry(historyService, request, entityId, logger);
 		
 	}
 
-	@PostMapping("/{entityId}/attrs")
-	public ResponseEntity<String> addAttrib2TemopralEntity(HttpServletRequest request,
-			@PathVariable("entityId") String entityId, @RequestBody(required = false) String payload,
-			@RequestParam(required = false, name = "options") String options) {
+	@Path("/{entityId}/attrs")
+	@POST
+	public Uni<RestResponse<Object>> addAttrib2TemopralEntity(HttpServerRequest request,
+			@PathParam("entityId") String entityId, String payload,
+			@QueryParam( value = "options") String options) {
 		return EntryControllerFunctions.appendToEntry(historyService, request, entityId, payload, options,
 				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, logger);
 	}
 
-	@DeleteMapping("/{entityId}/attrs/{attrId}")
-	public ResponseEntity<String> deleteAttrib2TemporalEntity(HttpServletRequest request,
-			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId) {
+	@Path("/{entityId}/attrs/{attrId}")
+	@DELETE
+	public RestResponse<Object> deleteAttrib2TemporalEntity(HttpServerRequest request,
+			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId) {
 		try {
 			HttpUtils.validateUri(entityId);
 			Context context = JsonLdProcessor.getCoreContextClone();
@@ -111,16 +116,17 @@ public class HistoryController {
 			logger.debug("entityId : " + entityId + " attrId : " + attrId);
 			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null, context);
 			logger.trace("deleteAttrib2TemporalEntity :: completed");
-			return ResponseEntity.noContent().build();
+			return RestResponse.noContent();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
-	@PatchMapping("/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<String> modifyAttribInstanceTemporalEntity(HttpServletRequest request,
-			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
-			@PathVariable("instanceId") String instanceId, @RequestBody(required = false) String payload) {
+	@Path("/{entityId}/attrs/{attrId}/{instanceId}")
+	@PATCH
+	public RestResponse<Object> modifyAttribInstanceTemporalEntity(HttpServerRequest request,
+			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
+			@PathParam("instanceId") String instanceId, String payload) {
 		try {
 			HttpUtils.validateUri(entityId);
 			HttpUtils.validateUri(instanceId);
@@ -141,16 +147,17 @@ public class HistoryController {
 			historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId, resolved, attrId,
 					instanceId, context);
 			logger.trace("modifyAttribInstanceTemporalEntity :: completed");
-			return ResponseEntity.noContent().build();
+			return RestResponse.noContent();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
 	}
 
-	@DeleteMapping("/{entityId}/attrs/{attrId}/{instanceId}")
-	public ResponseEntity<String> deleteAtrribInstanceTemporalEntity(HttpServletRequest request,
-			@PathVariable("entityId") String entityId, @PathVariable("attrId") String attrId,
-			@PathVariable("instanceId") String instanceId) {
+	@Path("/{entityId}/attrs/{attrId}/{instanceId}")
+	@DELETE
+	public RestResponse<Object> deleteAtrribInstanceTemporalEntity(HttpServerRequest request,
+			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
+			@PathParam("instanceId") String instanceId) {
 		try {
 			logger.trace("deleteAtrribInstanceTemporalEntity :: started");
 			HttpUtils.validateUri(entityId);
@@ -162,7 +169,7 @@ public class HistoryController {
 
 			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId, context);
 			logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
-			return ResponseEntity.noContent().build();
+			return RestResponse.noContent();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}

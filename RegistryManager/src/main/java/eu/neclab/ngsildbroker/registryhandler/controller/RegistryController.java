@@ -3,22 +3,21 @@ package eu.neclab.ngsildbroker.registryhandler.controller;
 import java.util.HashMap;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.PATCH;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
 
@@ -28,26 +27,28 @@ import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 
 /**
  * 
  * @version 1.0
  * @date 20-Jul-2018
  */
-@RestController
-@RequestMapping("/ngsi-ld/v1/csourceRegistrations")
+@Singleton
+@Path("/ngsi-ld/v1/csourceRegistrations")
 public class RegistryController {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 
-	@Autowired
+	@Inject
 	private CSourceService csourceService;
 
-	@Value("${scorpio.entity.default-limit:50}")
+	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
 	private int defaultLimit;
-	@Value("${scorpio.entity.max-limit:1000}")
+	@ConfigProperty(name = "scorpio.entity.max-limit", defaultValue = "1000")
 	private int maxLimit;
 
-	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	private String coreContext;
 
 	@PostConstruct
@@ -55,26 +56,23 @@ public class RegistryController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	@GetMapping
-	public ResponseEntity<String> discoverCSource(HttpServletRequest request,
-			@RequestParam HashMap<String, String> queryMap,
-			@RequestParam(required = false, name = "limit") Integer limit,
-			@RequestParam(value = "offset", required = false) Integer offset,
-			@RequestParam(value = "qtoken", required = false) String qToken,
-			@RequestParam(value = "count", required = false) boolean count) {
+	@GET
+	public Uni<RestResponse<Object>> discoverCSource(HttpServerRequest request, HashMap<String, String> queryMap,
+			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") Integer offset,
+			@QueryParam(value = "qtoken") String qToken, @QueryParam(value = "count") boolean count) {
 		return QueryControllerFunctions.queryForEntries(csourceService, request, false, defaultLimit, maxLimit, false);
 	}
 
-	@PostMapping
-	public ResponseEntity<String> registerCSource(HttpServletRequest request,
-			@RequestBody(required = false) String payload) {
+	@POST
+	public Uni<RestResponse<Object>> registerCSource(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createEntry(csourceService, request, payload,
 				AppConstants.CSOURCE_REG_CREATE_PAYLOAD, AppConstants.CSOURCE_URL, logger);
 	}
 
-	@GetMapping("/{registrationId}")
-	public ResponseEntity<String> getCSourceById(HttpServletRequest request,
-			@PathVariable("registrationId") String registrationId) {
+	@Path("/{registrationId}")
+	@GET
+	public RestResponse<Object> getCSourceById(HttpServerRequest request,
+			@PathParam("registrationId") String registrationId) {
 		try {
 			logger.debug("get CSource() ::" + registrationId);
 			HttpUtils.validateUri(registrationId);
@@ -86,16 +84,18 @@ public class RegistryController {
 		}
 	}
 
-	@PatchMapping("/{registrationId}")
-	public ResponseEntity<String> updateCSource(HttpServletRequest request,
-			@PathVariable("registrationId") String registrationId, @RequestBody String payload) {
+	@Path("/{registrationId}")
+	@PATCH
+	public Uni<RestResponse<Object>> updateCSource(HttpServerRequest request,
+			@PathParam("registrationId") String registrationId, String payload) {
 		return EntryControllerFunctions.appendToEntry(csourceService, request, registrationId, payload, "",
 				AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, logger);
 	}
 
-	@DeleteMapping("/{registrationId}")
-	public ResponseEntity<String> deleteCSource(HttpServletRequest request,
-			@PathVariable("registrationId") String registrationId) {
+	@Path("/{registrationId}")
+	@DELETE
+	public Uni<RestResponse<Object>> deleteCSource(HttpServerRequest request,
+			@PathParam("registrationId") String registrationId) {
 		return EntryControllerFunctions.deleteEntry(csourceService, request, registrationId, logger);
 	}
 

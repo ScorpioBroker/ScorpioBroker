@@ -3,36 +3,36 @@ package eu.neclab.ngsildbroker.queryhandler.controller;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 import com.github.jsonldjava.core.JsonLdProcessor;
-
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 
-@RestController
-@RequestMapping("/ngsi-ld/v1")
+@Singleton
+@Path("/ngsi-ld/v1")
 public class QueryController {
 
-	@Autowired
+	@Inject
 	private QueryService queryService;
 
-	@Value("${scorpio.entity.default-limit:50}")
+	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
 	private int defaultLimit;
-	@Value("${scorpio.entity.max-limit:1000}")
+
+	@ConfigProperty(name = "scorpio.entity.max-limit", defaultValue = "1000")
 	private int maxLimit;
 
-	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	private String coreContext;
 
 	@PostConstruct
@@ -49,11 +49,11 @@ public class QueryController {
 	 * @return
 	 * @throws ResponseException
 	 */
-	@GetMapping(path = "/entities/{entityId}")
-	public ResponseEntity<String> getEntity(HttpServletRequest request,
-			@RequestParam(value = "attrs", required = false) List<String> attrs,
-			@RequestParam(value = "options", required = false) List<String> options,
-			@PathVariable("entityId") String entityId) throws ResponseException {
+	@Path("/entities/{entityId}")
+	@GET
+	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request,
+			@QueryParam(value = "attrs") List<String> attrs, @QueryParam(value = "options") List<String> options,
+			@PathParam("entityId") String entityId) throws ResponseException {
 		return QueryControllerFunctions.getEntity(queryService, request, attrs, options, entityId, false, defaultLimit,
 				maxLimit);
 	}
@@ -66,35 +66,40 @@ public class QueryController {
 	 * @param type
 	 * @return ResponseEntity object
 	 */
-	@GetMapping("/entities")
-	public ResponseEntity<String> queryForEntities(HttpServletRequest request) {
+	@Path("/entities")
+	@GET
+	public Uni<RestResponse<Object>> queryForEntities(HttpServerRequest request) {
 		return QueryControllerFunctions.queryForEntries(queryService, request, false, defaultLimit, maxLimit, true);
 	}
 
-	@GetMapping(path = "/types")
-	public ResponseEntity<String> getAllTypes(HttpServletRequest request,
-			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
+	@Path("/types")
+	@GET
+	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request,
+			@QueryParam(value = "details") boolean details) {
 		return QueryControllerFunctions.getAllTypes(queryService, request, details, false, defaultLimit, maxLimit);
 	}
 
-	@GetMapping(path = "/types/{entityType}")
-	public ResponseEntity<String> getType(HttpServletRequest request, @PathVariable("entityType") String type,
-			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
+	@Path("/types/{entityType}")
+	@GET
+	public Uni<RestResponse<Object>> getType(HttpServerRequest request, @PathParam("entityType") String type,
+			@QueryParam(value = "details") boolean details) {
 		return QueryControllerFunctions.getType(queryService, request, type, details, false, defaultLimit, maxLimit);
 	}
 
-	@GetMapping(path = "/attributes")
-	public ResponseEntity<String> getAllAttributes(HttpServletRequest request,
-			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
+	@Path("/attributes")
+	@GET
+	public Uni<RestResponse<Object>> getAllAttributes(HttpServerRequest request,
+			@QueryParam(value = "details") boolean details) {
 
 		return QueryControllerFunctions.getAllAttributes(queryService, request, details, false, defaultLimit, maxLimit);
 	}
 
-	@GetMapping(path = "/attributes/{attribute}")
-	public ResponseEntity<String> getAttribute(HttpServletRequest request,
-			@PathVariable("attribute") String attribute,
-			@RequestParam(value = "details", required = false, defaultValue = "false") boolean details) {
-		return QueryControllerFunctions.getAttribute(queryService, request, attribute, details, false, defaultLimit, maxLimit);
+	@Path("/attributes/{attribute}")
+	@GET
+	public Uni<RestResponse<Object>> getAttribute(HttpServerRequest request, @PathParam("attribute") String attribute,
+			@QueryParam(value = "details") boolean details) {
+		return QueryControllerFunctions.getAttribute(queryService, request, attribute, details, false, defaultLimit,
+				maxLimit);
 	}
 
 }

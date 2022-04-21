@@ -1,44 +1,44 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.controller;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.PATCH;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.SubscriptionControllerFunctions;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
+import io.vertx.core.http.HttpServerRequest;
 
-@RestController
-@RequestMapping("/ngsi-ld/v1/csourceSubscriptions")
+@Singleton
+@Path("/ngsi-ld/v1/csourceSubscriptions")
 public class RegistrySubscriptionController {
-
+	
 	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionController.class);
 
-	@Autowired
+	@Inject
 	RegistrySubscriptionService manager;
 
-	@Value("${ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld}")
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 
-	@Value("${scorpio.subscription.default-limit:50}")
+	@ConfigProperty(name = "scorpio.subscription.default-limit", defaultValue = "50")
 	private int defaultLimit;
-	@Value("${scorpio.subscription.max-limit:1000}")
+	@ConfigProperty(name = "scorpio.subscription.max-limit", defaultValue = "1000")
 	private int maxLimit;
 
 	@PostConstruct
@@ -46,34 +46,35 @@ public class RegistrySubscriptionController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	@PostMapping
-	public ResponseEntity<String> subscribeRest(HttpServletRequest request, @RequestBody String payload) {
+	@POST
+	public RestResponse<Object> subscribeRest(HttpServerRequest request, String payload) {
 		return SubscriptionControllerFunctions.subscribeRest(manager, request, payload,
 				AppConstants.CSOURCE_SUBSCRIPTIONS_URL, logger);
 	}
 
-	@GetMapping
-	public ResponseEntity<String> getAllSubscriptions(HttpServletRequest request) {
+	@GET
+	public RestResponse<Object> getAllSubscriptions(HttpServerRequest request) {
 		return SubscriptionControllerFunctions.getAllSubscriptions(manager, request, defaultLimit, maxLimit, logger);
 	}
 
-	@GetMapping("/{id}")
-	public ResponseEntity<String> getSubscriptionById(HttpServletRequest request,
-			@PathVariable(name = "id", required = true) String id,
-			@RequestParam(required = false, name = "limit", defaultValue = "0") int limit) {
+	@Path("/{id}")
+	@GET
+	public RestResponse<Object> getSubscriptionById(HttpServerRequest request, @PathParam(value = "id") String id,
+			@QueryParam(value = "limit") int limit) {
 		return SubscriptionControllerFunctions.getSubscriptionById(manager, request, id, limit, logger);
 
 	}
 
-	@DeleteMapping("/{id}")
-	public ResponseEntity<String> deleteSubscription(HttpServletRequest request,
-			@PathVariable(name = "id", required = true) String id) {
+	@Path("/{id}")
+	@DELETE
+	public RestResponse<Object> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
 		return SubscriptionControllerFunctions.deleteSubscription(manager, request, id, logger);
 	}
 
-	@PatchMapping("/{id}")
-	public ResponseEntity<String> updateSubscription(HttpServletRequest request,
-			@PathVariable(name = "id", required = true) String id, @RequestBody String payload) {
+	@Path("/{id}")
+	@PATCH
+	public RestResponse<Object> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
+			String payload) {
 		return SubscriptionControllerFunctions.updateSubscription(manager, request, id, payload, logger);
 	}
 

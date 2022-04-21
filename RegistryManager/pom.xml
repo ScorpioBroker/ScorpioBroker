@@ -79,6 +79,12 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 		</dependency>
+		
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>Commons</artifactId>
+		</dependency>
+		
 		<dependency>
 			<groupId>org.locationtech.spatial4j</groupId>
 			<artifactId>spatial4j</artifactId>
