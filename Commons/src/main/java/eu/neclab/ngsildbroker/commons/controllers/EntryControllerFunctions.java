@@ -161,21 +161,23 @@ public interface EntryControllerFunctions {
 			}
 			;
 		}).invoke(t -> {
-			entityService.createEntry(headers, t).onItem().invoke(t -> result.addSuccess(t)).onFailure().invoke(t -> {
+			entityService.createEntry(headers, t).onItem().invoke(id -> result.addSuccess(id)).onFailure().invoke(e -> {
 				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
 				if (t instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) t);
+					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) e);
 				} else {
 					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InternalError,
-							t.getLocalizedMessage());
+							e.getLocalizedMessage());
 				}
 				String entityId = "NO ID PROVIDED";
-				if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
-					entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
+				if (t.containsKey(NGSIConstants.JSON_LD_ID)) {
+					entityId = (String) t.get(NGSIConstants.JSON_LD_ID);
 				}
 				result.addFail(new BatchFailure(entityId, response));
 			});
-		}).onCompletion().call(generateBatchResultReply(result, HttpStatus.SC_CREATED));
+		}).onCompletion().call(() -> {return null;}).; 
+		
+		//generateBatchResultReply(result, HttpStatus.SC_CREATED));
 
 	}
 

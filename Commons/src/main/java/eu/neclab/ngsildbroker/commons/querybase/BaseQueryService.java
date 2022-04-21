@@ -14,18 +14,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
 
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -42,24 +36,34 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryQueryService;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.vertx.UniHelper;
+import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.mutiny.core.http.HttpHeaders;
 
 public abstract class BaseQueryService implements EntryQueryService {
 
 	private final static Logger logger = LoggerFactory.getLogger(BaseQueryService.class);
 
-//	public static final Gson GSON = DataSerializer.GSON;
-
-	@Value("${atcontext.url}")
+	@ConfigProperty(name = "atcontext.url")
 	String atContextServerUrl;
 
 	private StorageDAO entryDAO;
 
 	private StorageDAO registryDAO;
 
-	@Value("${scorpio.directDB}")
-	boolean directDbConnection;
+	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
+	public boolean directDbConnection;
 
-	RestTemplate restTemplate = HttpUtils.getRestTemplate();
+	@Inject
+	Vertx vertx;
+
+	WebClient webClient;
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
@@ -67,6 +71,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 	private void setup() {
 		entryDAO = getQueryDAO();
 		registryDAO = getCsourceDAO();
+		webClient = WebClient.create(vertx);
 	}
 
 	/**
@@ -117,144 +122,88 @@ public abstract class BaseQueryService implements EntryQueryService {
 	 * @throws URISyntaxException
 	 * @throws Exception
 	 */
-	public QueryResult getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders,
-			ArrayListMultimap<String, String> headers, Boolean postQuery) throws ResponseException {
-
-		QueryResult result = new QueryResult(null, null, ErrorType.None, -1, true);
-
-		ExecutorService executorService = Executors.newFixedThreadPool(2);
-
-		Future<QueryResult> futureStorageManager = executorService.submit(new Callable<QueryResult>() {
-			public QueryResult call() throws Exception {
-				logger.trace("Asynchronous Callable storage manager");
-				if (directDbConnection) {
+	public Uni<QueryResult> getData(QueryParams qp, String rawQueryString, List<Object> linkHeaders,
+			ArrayListMultimap<String, String> headers, Boolean postQuery) {
+		Uni<QueryResult> entryQuery = entryDAO.query(qp);
+		Uni<List<RemoteQueryResult>> csourceQuery = Uni.createFrom().nullItem();
+		if (registryDAO != null) {
+			csourceQuery = registryDAO.query(qp).onItem().transformToUni(t -> {
+				List<Uni<RemoteQueryResult>> remoteResults = Lists.newArrayList();
+				for (String registration : t.getActualDataString()) {
+					Map<String, Object> reg;
 					try {
-						return entryDAO.query(qp);
-					} catch (Exception e) {
-						logger.error(e.getMessage());
-						throw new ResponseException(ErrorType.TenantNotFound, "Tenant not found");
+						reg = (Map<String, Object>) JsonUtils.fromString(registration);
+					} catch (IOException e1) {
+						logger.error("corruption in registry found" + registration, e1);
+						continue;
 					}
-				} else {
-					return getFromStorageManager(qp);
-				}
-			}
-		});
+					if (reg.get(NGSIConstants.JSON_LD_ID).equals(AppConstants.INTERNAL_REGISTRATION_ID)) {
+						continue;
+					}
+					String endpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
+							.get(NGSIConstants.JSON_LD_VALUE);
+					MultiMap additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
+							headers.get(HttpHeaders.ACCEPT.toString()));
+					logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
 
-		Future<RemoteQueryResult> futureContextRegistry = executorService.submit(new Callable<RemoteQueryResult>() {
-			public RemoteQueryResult call() throws Exception {
-				/*
-				 * for now we just check if the registryDAO is null to see if we call the
-				 * registry at all this is a bit dangerous because it's implicit logic which
-				 * might be overseen when thinking about the get results through kafka scenario
-				 */
-				if (registryDAO == null) {
-					return new RemoteQueryResult(null, ErrorType.None, -1, true);
-				}
-				QueryResult registrations = null;
-				if (directDbConnection) {
-					registrations = registryDAO.query(qp);
-				} else {
-					registrations = getFromContextRegistry(qp);
-				}
-				try {
-					logger.trace("Asynchronous 1 context registry");
-					if (registryDAO == null) {
-						return new RemoteQueryResult(null, ErrorType.None, -1, true);
+					Future<HttpResponse<Buffer>> exchange;
+					if (postQuery) {
+						exchange = webClient.postAbs(endpoint + "/ngsi-ld/v1/entityOperations/query")
+								.putHeaders(additionalHeaders).sendBuffer(Buffer.buffer(rawQueryString));
+					} else {
+						exchange = webClient.getAbs(endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString)
+								.putHeaders(additionalHeaders).send();
 					}
-					if (registrations.getActualDataString() == null) {
-						return new RemoteQueryResult(null, ErrorType.None, -1, true);
-					}
-					Set<Callable<RemoteQueryResult>> callablesCollection = new HashSet<Callable<RemoteQueryResult>>();
-					for (String registration : registrations.getActualDataString()) {
-						Map<String, Object> reg = (Map<String, Object>) JsonUtils.fromString(registration);
-						if (reg.get(NGSIConstants.JSON_LD_ID).equals(AppConstants.INTERNAL_REGISTRATION_ID)) {
-							continue;
+
+					remoteResults.add(UniHelper.toUni(exchange).onItem().transform(response -> {
+						RemoteQueryResult remoteResult = new RemoteQueryResult(null, ErrorType.None, -1, true);
+						int count = 0;
+						if (response.headers().contains(NGSIConstants.COUNT_HEADER_RESULT)) {
+							count = Integer.parseInt(response.headers().get(NGSIConstants.COUNT_HEADER_RESULT));
 						}
-						String endpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
-								.get(NGSIConstants.JSON_LD_VALUE);
-						HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
-								headers.get(HttpHeaders.ACCEPT.toLowerCase()));
-						logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
-						Callable<RemoteQueryResult> callable = () -> {
-							HttpEntity<String> entity;
-							String resultBody;
-							ResponseEntity<String> response;
-							int count = 0;
-							if (postQuery) {
-								entity = new HttpEntity<String>(rawQueryString, additionalHeaders);
-								response = restTemplate.exchange(endpoint + "/ngsi-ld/v1/entityOperations/query",
-										HttpMethod.POST, entity, String.class);
-								resultBody = response.getBody();
-							} else {
-								entity = new HttpEntity<String>(additionalHeaders);
-								response = restTemplate.exchange(new URI(
-										endpoint + "/ngsi-ld/v1/entities?" + encodeQuery(rawQueryString)), HttpMethod.GET,
-										entity, String.class);
-								resultBody = response.getBody();
-							}
-							if (response.getHeaders().containsKey(NGSIConstants.COUNT_HEADER_RESULT)) {
-								count = Integer
-										.parseInt(response.getHeaders().get(NGSIConstants.COUNT_HEADER_RESULT).get(0));
-							}
-							logger.debug("http call result :: ::" + resultBody);
-
-							RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, -1, true);
-							result.setCount(count);
-							result.addData(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(resultBody), opts,
+						remoteResult.setCount(count);
+						try {
+							remoteResult.addData(JsonLdProcessor.expand(linkHeaders,
+									JsonUtils.fromString(response.bodyAsString()), opts,
 									AppConstants.ENTITY_RETRIEVED_PAYLOAD,
-									HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
-							return result;
-						};
-						callablesCollection.add(callable);
-					}
-					logger.debug("csource call response :: ");
-					return getDataFromCsources(callablesCollection);
-				} catch (ResourceAccessException | UnknownHostException e) {
-					logger.error("Failed to reach an endpoint in the registry", e);
-				} catch (Exception e) {
-					logger.error(
-							"No reply from registry. Looks like you are running without a context source registry.", e);
+									HttpUtils.parseAcceptHeader(additionalHeaders.getAll(HttpHeaders.ACCEPT)) == 2));
+						} catch (JsonLdError | ResponseException | IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						return remoteResult;
+					}).onFailure().recoverWithItem(e -> {
+						logger.error("Failed to retrieve remote entries", e);
+						return new RemoteQueryResult(null, ErrorType.None, -1, true);
+					}));
 				}
-				return new RemoteQueryResult(null, ErrorType.None, -1, true);
+				if (remoteResults.isEmpty()) {
+					return Uni.createFrom().nullItem();
+				}
+				return Uni.combine().all().unis(remoteResults).combinedWith(remoteEntries -> {
+					List<RemoteQueryResult> temp = Lists.newArrayList();
+					remoteEntries.forEach(entry -> temp.add((RemoteQueryResult) entry));
+					return temp;
+				});
+			});
+		}
+		return Uni.combine().all().unis(entryQuery, csourceQuery).combinedWith((entryResult, csourceResult) -> {
+			if (csourceResult != null) {
+				RemoteQueryResult queryResult = new RemoteQueryResult(null, ErrorType.None, -1, true);
+				csourceResult.forEach(entry -> {
+					entry.getId2Data().values().forEach(valueEntry -> {
+						queryResult.addData(entry);
+					});
+					queryResult.setCount(queryResult.getCount() + entry.getCount());
+				});
+				try {
+					entryResult = mergeStorage(queryResult, entryResult);
+				} catch (IOException e) {
+					logger.error("failed to merger remote storage", e);
+				}
 			}
-
+			return entryResult;
 		});
-
-		// Csources response
-
-		executorService.shutdown();
-
-		// storage response
-		logger.trace("storage task status completed :: " + futureStorageManager.isDone());
-		QueryResult fromStorage;
-		try {
-			fromStorage = futureStorageManager.get();
-		} catch (Exception e) {
-			logger.error("Failed to get data from storage", e);
-			throw new ResponseException(ErrorType.InternalError, "Failed to get data from storage");
-		}
-		RemoteQueryResult fromCsources;
-		try {
-			fromCsources = futureContextRegistry.get();
-		} catch (Exception e) {
-			logger.error("Failed to get data from registry", e);
-			throw new ResponseException(ErrorType.InternalError, "Failed to get data from registry");
-		}
-		if (fromCsources != null) {
-			try {
-				fromStorage = mergeStorage(fromCsources, fromStorage);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		result = fromStorage;
-		// TODO redo the qtoken approach or remove it...
-//		if (data == null) {
-//			throw new ResponseException(ErrorType.BadRequestData,
-//					"The provided qtoken is not valid. Provide a valid qtoken or remove the parameter to start a new query");
-		return result;
-
 	}
 
 	private QueryResult mergeStorage(RemoteQueryResult fromCsources, QueryResult fromStorage) throws IOException {
@@ -266,45 +215,10 @@ public abstract class BaseQueryService implements EntryQueryService {
 				fromCsources.addData(entity);
 			}
 		}
-		if(fromStorage != null && fromCsources != null) {
+		if (fromStorage != null && fromCsources != null) {
 			fromCsources.setCount(fromCsources.getCount() + fromStorage.getCount());
 		}
 		return fromCsources;
-	}
-
-	/**
-	 * making http call to all discovered csources async.
-	 * 
-	 * @param endpointsList
-	 * @param query
-	 * @return List<Entity>
-	 * @throws InterruptedException
-	 * @throws ExecutionException
-	 * @throws URISyntaxException
-	 * @throws ResponseException
-	 * @throws IOException
-	 */
-	private RemoteQueryResult getDataFromCsources(Set<Callable<RemoteQueryResult>> callablesCollection)
-			throws ResponseException, Exception {
-		if (callablesCollection == null || callablesCollection.isEmpty()) {
-			return null;
-		}
-		ExecutorService executorService = Executors.newFixedThreadPool(2);
-		List<Future<RemoteQueryResult>> futures = executorService.invokeAll(callablesCollection);
-		RemoteQueryResult queryResult = new RemoteQueryResult(null, ErrorType.None, -1, true);
-		int count = 0;
-		for (Future<RemoteQueryResult> future : futures) {
-			logger.trace("future.isDone = " + future.isDone());
-			RemoteQueryResult tempResult = future.get();
-			for (Map<String, Object> entry : tempResult.getId2Data().values()) {
-				queryResult.addData(entry);
-			}
-			count += tempResult.getCount();
-		}
-		executorService.shutdown();
-		logger.trace("getDataFromCsources() completed ::");
-		queryResult.setCount(count);
-		return queryResult;
 	}
 
 	private String encodeQuery(String query) {
