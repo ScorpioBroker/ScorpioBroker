@@ -7,9 +7,10 @@
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>BrokerParent</artifactId>
-		<version>1.1.0-SNAPSHOT</version>
-		<relativePath>../../BrokerParent</relativePath>
+		<version>3.0.0-SNAPSHOT</version>
+		<relativePath>../BrokerParent</relativePath>
 	</parent>
+	<!--
 	<profiles>
 		<profile>
 			<id>docker-dist</id>
@@ -72,16 +73,5 @@
 			</build>
 		</profile>
 	</profiles>
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webflux</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-	</dependencies>
+	-->
 </project>
