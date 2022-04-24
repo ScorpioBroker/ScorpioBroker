@@ -347,7 +347,7 @@ public final class HttpUtils {
 			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE);
 			Object geometryEntry = entryMap.get(geometry);
 			if (geometryEntry != null) {
-				resultMap.put(NGSIConstants.GEOMETRY, geometryEntry);
+				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>)geometryEntry).get(NGSIConstants.VALUE));
 			}
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
 			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
