@@ -22,13 +22,16 @@ public class EntityBatchController {
 	@Inject
 	EntityService entityService;
 
-	@ConfigProperty( name = "",defaultValue = "${batchoperations.maxnumber.create:-1}")
+	@ConfigProperty(name = "batchoperations.maxnumber.create", defaultValue = "-1")
 	int maxCreateBatch;
-	@ConfigProperty( name = "",defaultValue = "${batchoperations.maxnumber.update:-1}")
+
+	@ConfigProperty(name = "batchoperations.maxnumber.update", defaultValue = "-1")
 	int maxUpdateBatch;
-	@ConfigProperty( name = "",defaultValue = "${batchoperations.maxnumber.upsert:-1}")
+
+	@ConfigProperty(name = "batchoperations.maxnumber.upsert", defaultValue = "-1")
 	int maxUpsertBatch;
-	@ConfigProperty( name = "",defaultValue = "${batchoperations.maxnumber.delete:-1}")
+
+	@ConfigProperty(name = "batchoperations.maxnumber.delete", defaultValue = "-1")
 	int maxDeleteBatch;
 
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
@@ -50,7 +53,7 @@ public class EntityBatchController {
 	@POST
 	@Path("/upsert")
 	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String payload,
-			@QueryParam("options") String options) {
+			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch,
 				AppConstants.ENTITY_CREATE_PAYLOAD);
 	}
@@ -58,7 +61,7 @@ public class EntityBatchController {
 	@POST
 	@Path("/update")
 	public Uni<RestResponse<Object>> updateMultiple(HttpServerRequest request, String payload,
-			@QueryParam("options") String options) {
+			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.updateMultiple(entityService, request, payload, maxUpdateBatch, options,
 				AppConstants.ENTITY_UPDATE_PAYLOAD);
 	}
