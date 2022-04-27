@@ -1,38 +1,42 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
-import java.util.List;
-
-import org.springframework.stereotype.Repository;
-
+import java.util.Map.Entry;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Singleton;
 import com.google.common.collect.ArrayListMultimap;
-
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.Tuple;
 
-@Repository
+@Singleton
 public class EntityInfoDAO extends StorageDAO {
-	
-	public String getEntity(String entityId, String tenantId) throws ResponseException {
+
+	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		result.putAll(AppConstants.INTERNAL_NULL_KEY,
-				getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM entity", String.class));
-		List<String> tenants = getTenants();
-		for (String tenant : tenants) {
-			result.putAll(tenant, getJDBCTemplate(tenant).queryForList("SELECT DISTINCT id FROM entity", String.class));
+		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
+			PgPool client = entry.getValue();
+			String tenant = entry.getKey();
+			client.query("SELECT DISTINCT id FROM entity").executeAndAwait().forEach(t -> {
+				result.put(tenant, t.getString(0));
+			});
 		}
-		if (!result.containsKey(tenantId)) {
-			throw new ResponseException(ErrorType.TenantNotFound, "tenant " + tenantId + " not found");
+		return result;
+	}
+
+	public String getEntity(String entityId, String tenantId) throws ResponseException {
+		String result = null;
+		RowSet<Row> rowSet = clientManager.getClient(tenantId, false)
+				.preparedQuery("SELECT data FROM entity WHERE id=$1").executeAndAwait(Tuple.of(entityId));
+		for (Row entry : rowSet) {
+			result = ((JsonObject) entry.getJson(0)).encode();
 		}
-		if (!result.containsValue(entityId)) {
-			throw new ResponseException(ErrorType.NotFound, "Entity Id " + entityId + " not found");
-		}
-		List<String> tempList = getJDBCTemplate(getTenant(tenantId))
-				.queryForList("SELECT data FROM entity WHERE id='" + entityId + "'", String.class);
-		return tempList.get(0);
+		return result;
 	}
 
 	@Override
