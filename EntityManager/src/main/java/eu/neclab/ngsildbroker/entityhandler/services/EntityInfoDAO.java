@@ -1,11 +1,12 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.util.Map.Entry;
-import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import io.vertx.core.json.JsonObject;
@@ -16,6 +17,8 @@ import io.vertx.mutiny.sqlclient.Tuple;
 
 @Singleton
 public class EntityInfoDAO extends StorageDAO {
+	@Inject
+	ClientManager clientManager;
 
 	public ArrayListMultimap<String, String> getAllIds() throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
