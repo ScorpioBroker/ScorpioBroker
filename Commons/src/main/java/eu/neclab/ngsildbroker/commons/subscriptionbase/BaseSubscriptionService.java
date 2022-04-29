@@ -36,10 +36,7 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.web.client.RestTemplate;
+
 
 import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
@@ -58,6 +55,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -113,7 +111,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	Vertx vertx;
 	
 
-	Emitter<SubscriptionRequest> kafkaSender;
+	Emitter<SyncMessage> kafkaSender;
 
 	WebClient webClient;
 
@@ -157,7 +155,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	}
 
-	protected abstract Emitter<SubscriptionRequest> getSyncChannelSender();
+	protected abstract Emitter<SyncMessage> getSyncChannelSender();
 
 	@PreDestroy
 	private void destroy() throws InterruptedException {
@@ -269,13 +267,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private void createSub(SubscriptionRequest subscriptionRequest) {
 		subscriptionInfoDAO.storeSubscription(subscriptionRequest);
 		subscriptionRequest.setType(AppConstants.CREATE_REQUEST);
-		kafkaTemplate.send(subSyncTopic, syncIdentifier, subscriptionRequest);
+		kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest));
 	}
 
 	private void updateSub(SubscriptionRequest subscriptionRequest) {
 		subscriptionInfoDAO.storeSubscription(subscriptionRequest);
 		subscriptionRequest.setType(AppConstants.UPDATE_REQUEST);
-		kafkaTemplate.send(subSyncTopic, syncIdentifier, subscriptionRequest);
+		kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest));
 	}
 
 	private void putInTable(Table<String, String, List<SubscriptionRequest>> table, String row, String colum,
@@ -350,7 +348,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private void deleteSub(SubscriptionRequest removedSub) {
 		subscriptionInfoDAO.deleteSubscription(removedSub);
 		removedSub.setType(AppConstants.DELETE_REQUEST);
-		kafkaTemplate.send(subSyncTopic, syncIdentifier, removedSub);
+		kafkaSender.send(new SyncMessage(syncIdentifier, removedSub));
 	}
 
 	public void updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
