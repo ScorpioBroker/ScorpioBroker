@@ -47,6 +47,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
@@ -67,7 +68,15 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionService.class);
 
+	private String ALL_TYPES_SUB;
+
 	private final String ALL_TYPES_TYPE = "()";
+
+	@Value("${scorpio.alltypesub.enabled:false}")
+	private boolean allowAllTypeSub;
+
+	@Value("${scorpio.alltypesub.type:4ll7yp35}")
+	private String allTypeSubType;
 
 	private NotificationHandlerREST notificationHandlerREST;
 	private IntervalNotificationHandler intervalHandlerREST;
@@ -102,7 +111,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	@Autowired
 	protected KafkaTemplate<String, Object> kafkaTemplate;
-	
+
 	@Value("${scorpio.sync.check-time:1000}")
 	int checkTime;
 
@@ -110,6 +119,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private void setup() {
 		setSyncTopic();
 		setSyncId();
+		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		subscriptionInfoDAO = getSubscriptionInfoDao();
 		try {
 			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
@@ -133,7 +143,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		loadStoredSubscriptions();
 
 	}
-	
+
 	@PreDestroy
 	private void destroy() throws InterruptedException {
 		Thread.sleep(checkTime);
@@ -414,6 +424,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			for (SubscriptionRequest sub : subs) {
 
 				for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
+					if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
+						subsToCheck.add(sub);
+						break;
+					}
 					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 						subsToCheck.add(sub);
 						break;
@@ -670,6 +684,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		if (subs != null) {
 			for (SubscriptionRequest sub : subs) {
 				for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
+					if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
+						subsToCheck.add(sub);
+						break;
+					}
 					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 						subsToCheck.add(sub);
 						break;
@@ -703,6 +721,16 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 					}
 				}
 
+			}
+			if (allowAllTypeSub) {
+				tmp = this.type2EntitiesSubscriptions.get(tenant, ALL_TYPES_SUB);
+				if (tmp != null) {
+					for (SubscriptionRequest entry : tmp) {
+						if (entry.isActive()) {
+							subs.add(entry);
+						}
+					}
+				}
 			}
 		}
 		return subs;

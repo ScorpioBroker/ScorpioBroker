@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.tools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.format.DateTimeParseException;
@@ -669,8 +670,8 @@ public final class HttpUtils {
 		context.clear();
 		context.addAll(temp);
 
-		headers.removeAll("Content-Length");
-		headers.put("Content-Length", body.length() + "");
+		
+		
 		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
 	}
 
@@ -708,6 +709,10 @@ public final class HttpUtils {
 			case "accept-encoding":
 			case "user-agent":
 			case "host":
+			case "connection":
+			case "cache-control":
+			case "content-length":
+			case "Content-Length":
 				break;
 			default:
 				result.put(key, Lists.newArrayList(Sets.newHashSet(headers.get(key))));
