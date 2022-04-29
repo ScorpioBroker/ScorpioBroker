@@ -121,9 +121,6 @@ logging:
 ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
 scorpio:
-  alltypesub:
-    enabled: true
-    type: 4ll7yp35
 #  gatewayurl: http://localhost:9090
   directDB: true
   history:
