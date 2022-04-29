@@ -22,7 +22,11 @@ import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -47,6 +51,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
@@ -62,12 +67,16 @@ import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.vertx.core.Vertx;
+import io.vertx.ext.web.client.WebClient;
 
 public abstract class BaseSubscriptionService implements SubscriptionCRUDService {
 
 	protected final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionService.class);
 
 	private final String ALL_TYPES_TYPE = "()";
+
+	private String ALL_TYPES_SUB;
 
 	private NotificationHandlerREST notificationHandlerREST;
 	private IntervalNotificationHandler intervalHandlerREST;
@@ -79,7 +88,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	// protected WebClient webClient = BeanTools.getWebClient();
 
-	protected RestTemplate restTemplate = HttpUtils.getRestTemplate();
+	// protected RestTemplate restTemplate = HttpUtils.getRestTemplate();
 
 	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
@@ -100,16 +109,30 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	Table<String, String, Set<String>> tenant2Ids2Type;
 
-	@Autowired
-	protected KafkaTemplate<String, Object> kafkaTemplate;
+	@Inject
+	Vertx vertx;
 	
-	@Value("${scorpio.sync.check-time:1000}")
+
+	Emitter<SubscriptionRequest> kafkaSender;
+
+	WebClient webClient;
+
+	@ConfigProperty(name = "scorpio.sync.check-time", defaultValue = "1000")
 	int checkTime;
+
+	@ConfigProperty(name = "scorpio.alltypesub.enabled", defaultValue = "false")
+	private boolean allowAllTypeSub;
+
+	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "4ll7yp35")
+	private String allTypeSubType;
 
 	@PostConstruct
 	private void setup() {
 		setSyncTopic();
 		setSyncId();
+		kafkaSender = getSyncChannelSender();
+		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
+		webClient = WebClient.create(vertx);
 		subscriptionInfoDAO = getSubscriptionInfoDao();
 		try {
 			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
@@ -118,7 +141,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 		sendInitialNotification = sendInitialNotification();
 		sendDeleteNotification = sendDeleteNotification();
-		notificationHandlerREST = new NotificationHandlerREST(restTemplate);
+		notificationHandlerREST = new NotificationHandlerREST(webClient);
 		Subscription temp = new Subscription();
 		temp.setId("invalid:base");
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,
@@ -133,7 +156,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		loadStoredSubscriptions();
 
 	}
-	
+
+	protected abstract Emitter<SubscriptionRequest> getSyncChannelSender();
+
 	@PreDestroy
 	private void destroy() throws InterruptedException {
 		Thread.sleep(checkTime);
@@ -414,6 +439,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			for (SubscriptionRequest sub : subs) {
 
 				for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
+					if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
+						subsToCheck.add(sub);
+						break;
+					}
 					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 						subsToCheck.add(sub);
 						break;
@@ -670,6 +699,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		if (subs != null) {
 			for (SubscriptionRequest sub : subs) {
 				for (EntityInfo entityInfo : sub.getSubscription().getEntities()) {
+					if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
+						subsToCheck.add(sub);
+						break;
+					}
 					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
 						subsToCheck.add(sub);
 						break;

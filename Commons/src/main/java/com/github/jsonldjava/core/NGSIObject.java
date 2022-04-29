@@ -602,7 +602,7 @@ class NGSIObject {
 		} else if (isArray) {
 			validateArray();
 		} else {
-			if (isLdKeyWord && !isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
+			if (isLdKeyWord && parent == null && !isProperty && !isRelationship && !isGeoProperty && !isDateTime) {
 				return;
 			}
 			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime) {

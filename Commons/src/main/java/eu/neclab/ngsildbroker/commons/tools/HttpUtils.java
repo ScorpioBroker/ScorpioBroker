@@ -649,8 +649,7 @@ public final class HttpUtils {
 		context.clear();
 		context.addAll(temp);
 
-		headers.removeAll("Content-Length");
-		headers.put("Content-Length", body.length() + "");
+
 		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
 		for (String key : headers.keySet()) {
 			switch (key.toLowerCase()) {
@@ -658,6 +657,9 @@ public final class HttpUtils {
 			case "accept-encoding":
 			case "user-agent":
 			case "host":
+			case "connection":
+			case "cache-control":
+			case "content-length":
 				break;
 			default:
 				for (String entry : Sets.newHashSet(headers.get(key))) {

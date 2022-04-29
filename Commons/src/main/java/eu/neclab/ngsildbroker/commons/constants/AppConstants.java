@@ -75,11 +75,7 @@ public class AppConstants {
 	public static final int TEMP_ENTITY_RETRIEVED_PAYLOAD = 8;
 	public static final int ENTITY_ATTRS_UPDATE_PAYLOAD = 9;
 	
-	public static final String REGISTRY_CHANNEL = "registry";
-	public static final String ENTITY_CHANNEL = "entity";
-	public static final String INTERNAL_SUBS_CHANNEL = "isubs";
-	public static final String INTERNAL_NOTIFICATION_CHANNEL = "inotification";
-	public static final String HISTORY_CHANNEL = "history";
+
 
 	public static final Pattern DATE_TIME_MATCHER = Pattern.compile(
 			"\\d\\d\\d\\d-(0[1-9]|1[0-2])-(0[0-9]|[1-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d{1,6})?Z");
@@ -103,5 +99,16 @@ public class AppConstants {
 	public static final int DELETE_ATTRIBUTE_REQUEST = 4;
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	public static final String INTERNAL_REGISTRATION_ID = "scorpio:hosted:registryentries";
+	public static final String REGISTRY_CHANNEL = "registry";
+	public static final String ENTITY_CHANNEL = "entity";
+	public static final String INTERNAL_SUBS_CHANNEL = "isubs";
+	public static final String INTERNAL_NOTIFICATION_CHANNEL = "inotification";
+	public static final String HISTORY_CHANNEL = "history";
+
+	public static final String REGISTRY_RETRIEVE_CHANNEL = "registryretrieve";
+	public static final String ENTITY_RETRIEVE_CHANNEL = "entityretrieve";
+	public static final String INTERNAL_RETRIEVE_SUBS_CHANNEL = "isubsretrieve";
+	public static final String INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL = "inotificationretrieve";
+
 
 }
