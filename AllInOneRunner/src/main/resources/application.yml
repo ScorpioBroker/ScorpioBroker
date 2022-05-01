@@ -18,11 +18,7 @@ atcontext:
 bootstrap:
   servers: ${mysettings.kafka.bootstrap.host}:${mysettings.kafka.bootstrap.port}
 jdbcurl: jdbc:postgresql://${mysettings.postgres.host}:${mysettings.postgres.port}/${mysettings.postgres.database-name}?ApplicationName=${mysettings.application-name}
-broker:
-  id: FedBroker1
-  parent:
-    location:
-      url: SELF 
+
 kafka:
   replytimeout: 10000
 management:
@@ -122,6 +118,7 @@ ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
 scorpio:
 #  gatewayurl: http://localhost:9090
+#  fedbrokers: http://remotehost:9090
   directDB: true
   history:
     autorecording: active
