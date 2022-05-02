@@ -92,6 +92,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	@Autowired
 	private MicroServiceUtils microServiceUtils;
+	
+	@Value("${scorpio.fedbrokers:#{null}}")
+	private String fedBrokers;
 
 	@SuppressWarnings("unused")
 	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
@@ -460,18 +463,68 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	private void storeInternalEntry(CSourceRequest regEntry) {
+		boolean failed = false;
 		try {
 			appendToEntry(regEntry.getHeaders(), regEntry.getId(), regEntry.getFinalPayload(), null);
 		} catch (ResponseException e) {
 			try {
 				createEntry(regEntry.getHeaders(), regEntry.getFinalPayload());
 			} catch (Exception e1) {
+				failed = true;
 				logger.error("Failed to store internal regentry", e1);
 			}
 		} catch (Exception e) {
+			failed = true;
 			logger.error("Failed to store internal regentry", e);
+		}
+		if (!failed && fedBrokers != null) {
+			new Thread() {
+				public void run() {
+					int retry = 5;
+					for (String fedBroker : fedBrokers.split(",")) {
+						while (true) {
+							try {
+
+								if (!fedBroker.endsWith("/")) {
+									fedBroker += "/";
+								}
+								HashMap<String, Object> copyToSend = Maps.newHashMap(regEntry.getFinalPayload());
+								String csourceId = microServiceUtils.getGatewayURL().toString();
+								copyToSend.put(NGSIConstants.JSON_LD_ID, csourceId);
+
+								HttpResponse resp = Request.Patch(fedBroker + "csourceRegistrations/" + csourceId)
+										.addHeader("Content-Type", "application/json")
+										.bodyByteArray(JsonUtils
+												.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts))
+												.getBytes())
+										.execute().returnResponse();
+								int returnCode = resp.getStatusLine().getStatusCode();
+								if (returnCode == ErrorType.NotFound.getCode()) {
+									resp = Request.Post(fedBroker + "csourceRegistrations/")
+											.addHeader("Content-Type", "application/json")
+											.bodyByteArray(JsonUtils
+													.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts))
+													.getBytes())
+											.execute().returnResponse();
+									returnCode = resp.getStatusLine().getStatusCode();
+								}
+								if (resp.getStatusLine().getStatusCode() >= 200
+										&& resp.getStatusLine().getStatusCode() < 300) {
+									return;
+								}
+
+							} catch (JsonLdError | IOException | ResponseException e) {
+								logger.error("Failed to register with fed broker", e);
+							}
+							retry--;
+							if (retry <= 0) {
+								return;
+							}
+						}
+					}
+				};
+			}.start();
 		}
 
 	}
-
 }

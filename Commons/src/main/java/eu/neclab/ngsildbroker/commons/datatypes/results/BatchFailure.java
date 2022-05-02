@@ -1,13 +1,13 @@
 package eu.neclab.ngsildbroker.commons.datatypes.results;
 
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
+import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
 
 public class BatchFailure {
 	private String entityId;
-	private RestResponse ProblemDetails;
+	private NGSIRestResponse ProblemDetails;
 	
 	
-	public BatchFailure(String entityId, RestResponse details) {
+	public BatchFailure(String entityId, NGSIRestResponse details) {
 		super();
 		this.entityId = entityId;
 		this.ProblemDetails = details;
@@ -18,10 +18,10 @@ public class BatchFailure {
 	public void setEntityId(String entityId) {
 		this.entityId = entityId;
 	}
-	public RestResponse getDetails() {
+	public NGSIRestResponse getDetails() {
 		return ProblemDetails;
 	}
-	public void setDetails(RestResponse details) {
+	public void setDetails(NGSIRestResponse details) {
 		this.ProblemDetails = details;
 	}
 	

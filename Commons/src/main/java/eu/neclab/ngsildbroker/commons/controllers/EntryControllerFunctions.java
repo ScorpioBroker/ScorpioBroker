@@ -74,11 +74,11 @@ public interface EntryControllerFunctions {
 				entry = (Map<String, Object>) JsonLdProcessor
 						.expand(linkHeaders, compactedEntry, opts, payloadType, preFlight).get(0);
 			} catch (JsonLdError | ResponseException e) {
-				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
+				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
 				if (e instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) e);
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse((ResponseException) e);
 				} else {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.BadRequestData,
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.BadRequestData,
 							e.getLocalizedMessage());
 				}
 				result.addFail(new BatchFailure("FAILED TO PARSE BODY", response));
@@ -87,7 +87,7 @@ public interface EntryControllerFunctions {
 			if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
 				entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
 			} else {
-				result.addFail(new BatchFailure(entityId, new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(
+				result.addFail(new BatchFailure(entityId, new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(
 						ErrorType.BadRequestData, "No Entity Id provided")));
 				continue;
 			}
@@ -98,16 +98,16 @@ public interface EntryControllerFunctions {
 					result.addSuccess(entityId);
 				} else {
 					result.addFail(new BatchFailure(entityId,
-							new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.MultiStatus,
+							new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.MultiStatus,
 									JsonUtils.toPrettyString(updateResult.getNotUpdated()) + " was not added")));
 				}
 			} catch (Exception e) {
 
-				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
+				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
 				if (e instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) e);
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse((ResponseException) e);
 				} else {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InternalError,
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError,
 							e.getLocalizedMessage());
 				}
 
@@ -149,11 +149,11 @@ public interface EntryControllerFunctions {
 				return (Map<String, Object>) JsonLdProcessor.expand(linkHeaders, t, opts, payloadType, preFlight)
 						.get(0);
 			} catch (JsonLdError | ResponseException e) {
-				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
+				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
 				if (e instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) e);
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse((ResponseException) e);
 				} else {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.BadRequestData,
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.BadRequestData,
 							e.getLocalizedMessage());
 				}
 				result.addFail(new BatchFailure("FAILED TO PARSE BODY", response));
@@ -162,11 +162,11 @@ public interface EntryControllerFunctions {
 			;
 		}).invoke(t -> {
 			entityService.createEntry(headers, t).onItem().invoke(id -> result.addSuccess(id)).onFailure().invoke(e -> {
-				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
+				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
 				if (t instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) e);
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse((ResponseException) e);
 				} else {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InternalError,
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError,
 							e.getLocalizedMessage());
 				}
 				String entityId = "NO ID PROVIDED";
@@ -244,14 +244,14 @@ public interface EntryControllerFunctions {
 					result.addSuccess(entityId);
 				} else {
 					result.addFail(new BatchFailure(entityId,
-							new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InternalError, "")));
+							new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError, "")));
 				}
 			} catch (Exception e) {
-				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
+				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
 				if (e instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) e);
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse((ResponseException) e);
 				} else {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InternalError,
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError,
 							e.getLocalizedMessage());
 				}
 				result.addFail(new BatchFailure(entityId, response));
@@ -296,11 +296,11 @@ public interface EntryControllerFunctions {
 				resolved = (Map<String, Object>) JsonLdProcessor
 						.expand(linkHeaders, entry, opts, payloadType, preFlight).get(0);
 			} catch (JsonLdError | ResponseException e) {
-				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
+				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
 				if (e instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) e);
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse((ResponseException) e);
 				} else {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.BadRequestData,
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.BadRequestData,
 							e.getLocalizedMessage());
 				}
 				String entityId = "No entity ID found";
@@ -321,11 +321,11 @@ public interface EntryControllerFunctions {
 					entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
 				} else {
 					result.addFail(new BatchFailure("NO ID PROVIDED",
-							new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.BadRequestData,
+							new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.BadRequestData,
 									"No Entity Id provided")));
 					continue;
 				}
-				eu.neclab.ngsildbroker.commons.datatypes.RestResponse response;
+				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
 				if (e instanceof ResponseException) {
 					ResponseException responseException = ((ResponseException) e);
 					if (responseException.getHttpStatus().code() == HttpStatus.SC_CONFLICT) {
@@ -336,10 +336,10 @@ public interface EntryControllerFunctions {
 								insertedOneEntity = true;
 							} catch (Exception e1) {
 								if (e1 instanceof ResponseException) {
-									response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(
+									response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(
 											(ResponseException) e1);
 								} else {
-									response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(
+									response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(
 											ErrorType.InternalError, e1.getLocalizedMessage());
 								}
 								result.addFail(new BatchFailure(entityId, response));// TODO Auto-generated catch block
@@ -354,17 +354,17 @@ public interface EntryControllerFunctions {
 									appendedOneEntity = true;
 								} else {
 									result.addFail(new BatchFailure(entityId,
-											new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(
+											new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(
 													ErrorType.MultiStatus,
 													JsonUtils.toPrettyString(updateResult.getNotUpdated())
 															+ " was not added")));
 								}
 							} catch (Exception e1) {
 								if (e1 instanceof ResponseException) {
-									response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(
+									response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(
 											(ResponseException) e1);
 								} else {
-									response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(
+									response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(
 											ErrorType.InternalError, e1.getLocalizedMessage());
 								}
 
@@ -372,12 +372,12 @@ public interface EntryControllerFunctions {
 							}
 						}
 					} else {
-						response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse((ResponseException) e);
+						response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse((ResponseException) e);
 						result.addFail(new BatchFailure(entityId, response));
 					}
 
 				} else {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InternalError,
+					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError,
 							e.getLocalizedMessage());
 					result.addFail(new BatchFailure(entityId, response));
 				}
@@ -476,7 +476,7 @@ public interface EntryControllerFunctions {
 		return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem().transform(t -> {
 			logger.trace("create entity :: completed");
 			try {
-				return RestResponse.created(new URI(baseUrl + t));
+				return NGSIRestResponse.created(new URI(baseUrl + t));
 			} catch (URISyntaxException e) {
 				return HttpUtils.handleControllerExceptions(e);
 			}
@@ -554,7 +554,7 @@ public interface EntryControllerFunctions {
 		}
 		return entityService.deleteEntry(HttpUtils.getHeaders(request), entityId).onItem().transform(t -> {
 			logger.trace("delete entity :: completed");
-			return RestResponse.noContent();
+			return NGSIRestResponse.noContent();
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 

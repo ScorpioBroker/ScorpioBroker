@@ -67,7 +67,7 @@ public final class HttpUtils {
 	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND,
-			new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.NotFound, "Resource not found.")
+			new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.NotFound, "Resource not found.")
 					.toJson())
 			.build();
 
@@ -511,14 +511,14 @@ public final class HttpUtils {
 			logger.debug("Exception :: ", responseException);
 			return RestResponseBuilderImpl.create(responseException.getError().getCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(responseException).toJson())
+					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(responseException).toJson())
 					.build();
 		}
 		if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.BadRequestData,
+					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.BadRequestData,
 							"Failed to parse provided datetime field.").toJson())
 					.build();
 		}
@@ -526,14 +526,14 @@ public final class HttpUtils {
 			logger.debug("Exception :: ", e);
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InvalidRequest,
+					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InvalidRequest,
 							"Failed to parse provided datetime field.").toJson())
 					.build();
 		}
 		logger.error("Exception :: ", e);
 		return RestResponseBuilderImpl.create(HttpStatus.SC_INTERNAL_SERVER_ERROR)
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.entity(new eu.neclab.ngsildbroker.commons.datatypes.RestResponse(ErrorType.InternalError,
+				.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError,
 						e.getMessage()).toJson())
 				.build();
 	}

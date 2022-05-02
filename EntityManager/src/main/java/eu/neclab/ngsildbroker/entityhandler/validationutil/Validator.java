@@ -12,7 +12,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
+import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 
@@ -53,7 +53,7 @@ public class Validator {
 				} else {
 					validatePayload = true;
 					result.addFail(new BatchFailure(entityId,
-							new RestResponse(ErrorType.BadRequestData, "Bad Request Data.")));
+							new NGSIRestResponse(ErrorType.BadRequestData, "Bad Request Data.")));
 					break;
 				}
 			}

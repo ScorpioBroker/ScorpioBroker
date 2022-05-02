@@ -9,19 +9,17 @@ import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
 
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
-import eu.neclab.ngsildbroker.commons.datatypes.HandingOfAnnouncement;
-import eu.neclab.ngsildbroker.commons.datatypes.TakingAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
@@ -35,20 +33,20 @@ public abstract class BaseSubscriptionSyncManager {
 	private Set<String> currentInstances = Sets.newHashSet();
 
 	private Set<String> lastInstances = Sets.newHashSet();
-	@Autowired
+	@Inject
 	BaseSubscriptionService subscriptionService;
 
-	@Autowired
-	KafkaTemplate<String, AnnouncementMessage> kafkaTemplate;
+	@Inject
+	Emitter<AnnouncementMessage> kafkaSender;
 
-	@Value("${scorpio.sync.announcement-time:200}")
+	@ConfigProperty(name = "scorpio.sync.announcement-time", defaultValue = "200")
 	int announcementTime;
 
-	@Value("${scorpio.sync.check-time:1000}")
+	@ConfigProperty(name = "scorpio.sync.check-time", defaultValue = "1000")
 	int checkTime;
 
 	protected String syncId;
-	
+
 	protected String aliveTopic;
 
 	AliveAnnouncement INSTANCE_ID;
@@ -70,7 +68,7 @@ public abstract class BaseSubscriptionSyncManager {
 		executor.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
-				kafkaTemplate.send(aliveTopic, syncId, INSTANCE_ID);
+				kafkaSender.send(INSTANCE_ID);
 			}
 		}, 0, announcementTime);
 
@@ -156,7 +154,7 @@ public abstract class BaseSubscriptionSyncManager {
 		List<String> mySubs = sortedSubs.subList(start, end);
 		subscriptionService.activateSubs(mySubs);
 	}
-	
+
 	@PreDestroy
 	private void destroy() {
 		executor.cancel();
