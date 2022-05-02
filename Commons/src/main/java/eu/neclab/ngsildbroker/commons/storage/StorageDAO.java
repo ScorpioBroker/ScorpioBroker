@@ -46,6 +46,11 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import io.agroal.api.AgroalDataSource;
+import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImplementation;
+import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
+import io.agroal.api.security.NamePrincipal;
+import io.agroal.api.security.SimplePassword;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -57,17 +62,16 @@ public abstract class StorageDAO {
 
 //	@Autowired
 //	private JdbcTemplate writerJdbcTemplate;
-	
+
 	@Inject
 	protected ClientManager clientManager;
-	
- 
-//	@Autowired
-//	private DataSource writerDataSource;
+
+	@Inject
+	AgroalDataSource writerDataSource;
 //
 //	@Autowired
 //	private HikariConfig hikariConfig;
-//	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
+	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 //	private TransactionTemplate writerTransactionTemplate;
 //	private JdbcTemplate writerJdbcTemplateWithTransaction;
 //	private DBWriteTemplates defaultTemplates;
@@ -85,11 +89,8 @@ public abstract class StorageDAO {
 //		writerTransactionTemplate = new TransactionTemplate(transactionManager);
 //		this.defaultTemplates = new DBWriteTemplates(writerJdbcTemplateWithTransaction, writerTransactionTemplate,
 //				writerJdbcTemplate);
- 		storageFunctions = getStorageFunctions();
+		storageFunctions = getStorageFunctions();
 	}
-	
-	
-	
 
 	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
 			throws SQLException {
@@ -156,7 +157,6 @@ public abstract class StorageDAO {
 			tenant = null;
 		}
 		return tenant;
-		
 
 	}
 
@@ -167,7 +167,7 @@ public abstract class StorageDAO {
 			String databasename = "ngb" + tenantidvalue;
 			List<String> data;
 			data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
- 			if (data.contains(databasename)) {
+			if (data.contains(databasename)) {
 				return databasename;
 			} else {
 				String modifydatabasename = " \"" + databasename + "\"";
@@ -199,17 +199,26 @@ public abstract class StorageDAO {
 		return tenantDataSource;
 	}
 
-	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException {
+	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException, SQLException {
 		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
 		if (tenantDatabaseName == null) {
 			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
 		}
-		HikariConfig tenantHikariConfig = new HikariConfig();
-		hikariConfig.copyStateTo(tenantHikariConfig);
-		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(hikariConfig.getJdbcUrl(), tenantDatabaseName);
-		tenantHikariConfig.setJdbcUrl(tenantJdbcURL);
-		tenantHikariConfig.setPoolName(tenantDatabaseName + "-db-pool");
-		return new HikariDataSource(tenantHikariConfig);
+		// HikariConfig tenantHikariConfig = new HikariConfig();
+		// hikariConfig.copyStateTo(tenantHikariConfig);
+		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl("jdbc:postgresql://localhost:5432/ngb",
+				tenantDatabaseName);
+		AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
+				.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
+				.connectionPoolConfiguration(cp -> cp.minSize(5).maxSize(20).initialSize(10)
+						.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
+								.connectionProviderClassName("org.postgresql.Driver").autoCommit(false)
+								.principal(new NamePrincipal("ngb")).credential(new SimplePassword("ngb"))));
+		// tenantHikariConfig.setJdbcUrl(tenantJdbcURL);
+		// tenantHikariConfig.setPoolName(tenantDatabaseName + "-db-pool");
+		// return new HikariDataSource(tenantHikariConfig);
+		AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
+		return agroaldataSource;
 	}
 
 	public Boolean flywayMigrate(DataSource tenantDataSource) {
@@ -226,7 +235,7 @@ public abstract class StorageDAO {
 	}
 
 	public QueryResult query(QueryParams qp) throws ResponseException {
-		//JdbcTemplate template;
+		// JdbcTemplate template;
 		PgPool client = clientManager.getClient(qp.getTenant(), false);
 
 		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
@@ -282,11 +291,9 @@ public abstract class StorageDAO {
 		return queryResult;
 	}
 
-	
-	public Uni<Void> storeTemporalEntity(HistoryEntityRequest request) throws SQLException{
-		
-		PgPool client = clientManager.getClient(request.getTenant(), true);
+	public Uni<Void> storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
 
+		PgPool client = clientManager.getClient(request.getTenant(), true);
 
 		if (request instanceof DeleteHistoryEntityRequest) {
 			return doTemporalSqlAttrInsert(client, "null", request.getId(), request.getType(),
@@ -295,40 +302,41 @@ public abstract class StorageDAO {
 		} else {
 			List<Uni<Void>> unis = Lists.newArrayList();
 			for (HistoryAttribInstance entry : request.getAttribs()) {
-				unis.add( doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(),
+				unis.add(doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(),
 						entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
 						entry.getEntityModifiedAt(), entry.getInstanceId(), entry.getOverwriteOp()));
 			}
 			return Uni.combine().all().unis(unis).discardItems();
 		}
-		
+
 	}
 
 	public Uni<Void> storeRegistryEntry(CSourceRequest request) throws SQLException, ResponseException {
-		PgPool  client = clientManager.getClient(request.getTenant(), true);
+		PgPool client = clientManager.getClient(request.getTenant(), true);
 		String value = request.getResultCSourceRegistrationString();
 		String sql;
-		Uni uni=null ;
+		Uni uni = null;
 		if (value != null && !value.equals("null")) {
 			if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 
 				sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-						+ ") VALUES ($1, '"+value+"'::jsonb) ON CONFLICT(id) DO NOTHING";
-			uni =	client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3).onItem()
-				.ignore().andContinueWithNull();				
-			if (uni== null) {
+						+ ") VALUES ($1, '" + value + "'::jsonb) ON CONFLICT(id) DO NOTHING";
+				uni = client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3)
+						.onItem().ignore().andContinueWithNull();
+				if (uni == null) {
 					throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
 				}
 			} else if (request.getRequestType() == AppConstants.OPERATION_APPEND_ENTITY) {
 				sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-						+ ") VALUES ($1, '"+value+"'::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
-						+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
-				uni =client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3).onItem()
-			     	.ignore().andContinueWithNull();			}
+						+ ") VALUES ($1, '" + value + "'::jsonb) ON CONFLICT(id) DO UPDATE SET "
+						+ DBConstants.DBCOLUMN_DATA + " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+				uni = client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3)
+						.onItem().ignore().andContinueWithNull();
+			}
 		} else {
 			sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = $1";
-			   uni =client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3).onItem()
-			       .ignore().andContinueWithNull();
+			uni = client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3).onItem()
+					.ignore().andContinueWithNull();
 		}
 		return uni;
 	}
@@ -361,9 +369,9 @@ public abstract class StorageDAO {
 							+ " SET modifiedat = $1::timestamp WHERE id = $2";
 					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityModifiedAt, entityId)));
 				}
-			
+
 				return Uni.combine().all().unis(unis).discardItems().onFailure().recoverWithItem(t -> {
-				
+
 					if (t instanceof SQLIntegrityConstraintViolationException) {
 
 						List<Uni<RowSet<Row>>> recoverUnis = Lists.newArrayList();
@@ -417,47 +425,48 @@ public abstract class StorageDAO {
 		}
 
 	}
-	
-public Uni<Void> storeEntity(EntityRequest request) throws SQLTransientConnectionException, ResponseException {
 
-	String sql;
-	String key = request.getId();
-	String value = request.getWithSysAttrs();
-	String valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
-	String kvValue = request.getKeyValue();
-	int n = 0;
-	Uni uni;
-	PgPool client = clientManager.getClient(request.getTenant(), true);
-	if (value != null && !value.equals("null")) {
-		if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
-			sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
-					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
-					+ ") VALUES ($1, '"+value+"'::jsonb, '"+valueWithoutSysAttrs+"'::jsonb, '"+kvValue+"'::jsonb) ON CONFLICT(id) DO NOTHING";
-			uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
-					.andContinueWithNull();
-			if (uni == null) {
-				throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
+	public Uni<Void> storeEntity(EntityRequest request) throws SQLTransientConnectionException, ResponseException {
 
+		String sql;
+		String key = request.getId();
+		String value = request.getWithSysAttrs();
+		String valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
+		String kvValue = request.getKeyValue();
+		int n = 0;
+		Uni uni;
+		PgPool client = clientManager.getClient(request.getTenant(), true);
+		if (value != null && !value.equals("null")) {
+			if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
+				sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
+						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
+						+ ") VALUES ($1, '" + value + "'::jsonb, '" + valueWithoutSysAttrs + "'::jsonb, '" + kvValue
+						+ "'::jsonb) ON CONFLICT(id) DO NOTHING";
+				uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
+						.andContinueWithNull();
+				if (uni == null) {
+					throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
+
+				}
+			} else {
+				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = '" + value
+						+ "'::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = '" + valueWithoutSysAttrs
+						+ "'::jsonb , " + DBConstants.DBCOLUMN_KVDATA + " = '" + kvValue + "'::jsonb WHERE "
+						+ DBConstants.DBCOLUMN_ID + "='" + key + "'";
+				uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
+						.andContinueWithNull();
 			}
 		} else {
-			sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = '"+value+"'::jsonb , "
-					+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = '"+valueWithoutSysAttrs+"'::jsonb , " + DBConstants.DBCOLUMN_KVDATA
-					+ " = '"+kvValue+"'::jsonb WHERE " + DBConstants.DBCOLUMN_ID + "='"+key+"'";
+
+			sql = "DELETE FROM " + DBConstants.DBTABLE_ENTITY + " WHERE id = $1";
 			uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
 					.andContinueWithNull();
 		}
-	} else {
+		logger.trace("Rows affected: " + Integer.toString(n));
+		return uni; // (n>0);
 
-		sql = "DELETE FROM " + DBConstants.DBTABLE_ENTITY + " WHERE id = $1";
-		uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
-				.andContinueWithNull();
 	}
-	logger.trace("Rows affected: " + Integer.toString(n));
-	return uni; // (n>0);
 
-}
-	
-	
 	protected JdbcTemplate getJDBCTemplate(String tenantId) {
 		return getJDBCTemplates(tenantId).getWriterJdbcTemplate();
 	}
@@ -476,8 +485,8 @@ public Uni<Void> storeEntity(EntityRequest request) throws SQLTransientConnectio
 
 		return result;
 	}
-	
-	protected String getTenant(String tenantId){
+
+	protected String getTenant(String tenantId) {
 		if (tenantId == null) {
 			return null;
 		}
@@ -486,7 +495,7 @@ public Uni<Void> storeEntity(EntityRequest request) throws SQLTransientConnectio
 		}
 		return tenantId;
 	}
-	
+
 	private String validateDataBaseNameByTenantId(String tenantid) {
 		if (tenantid == null)
 			return null;
