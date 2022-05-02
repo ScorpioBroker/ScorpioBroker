@@ -206,7 +206,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 							RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, -1, true);
 							result.setCount(count);
 							result.addData(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(resultBody), opts,
-									AppConstants.ENTITY_RETRIEVED_PAYLOAD,
+									999,
 									HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
 							return result;
 						};

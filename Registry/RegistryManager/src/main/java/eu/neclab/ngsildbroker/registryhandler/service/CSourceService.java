@@ -499,7 +499,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 								String csourceId = microServiceUtils.getGatewayURL().toString();
 								copyToSend.put(NGSIConstants.JSON_LD_ID, csourceId);
 
-								HttpResponse resp = Request.Patch(fedBroker + "csourceRegistration/" + csourceId)
+								HttpResponse resp = Request.Patch(fedBroker + "csourceRegistrations/" + csourceId)
 										.addHeader("Content-Type", "application/json")
 										.bodyByteArray(JsonUtils
 												.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts))
@@ -507,7 +507,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 										.execute().returnResponse();
 								int returnCode = resp.getStatusLine().getStatusCode();
 								if (returnCode == ErrorType.NotFound.getCode()) {
-									resp = Request.Post(fedBroker + "csourceRegistration/")
+									resp = Request.Post(fedBroker + "csourceRegistrations/")
 											.addHeader("Content-Type", "application/json")
 											.bodyByteArray(JsonUtils
 													.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts))
