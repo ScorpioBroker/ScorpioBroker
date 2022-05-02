@@ -179,6 +179,13 @@ public abstract class BaseQueryService implements EntryQueryService {
 								.get(NGSIConstants.JSON_LD_VALUE);
 						HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
 								headers.get(HttpHeaders.ACCEPT.toLowerCase()));
+						if (linkHeaders != null) {
+							for (Object entry : linkHeaders) {
+								additionalHeaders.add("Link", entry
+										+ "; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
+							}
+						}
+
 						logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
 						Callable<RemoteQueryResult> callable = () -> {
 							HttpEntity<String> entity;
@@ -192,9 +199,9 @@ public abstract class BaseQueryService implements EntryQueryService {
 								resultBody = response.getBody();
 							} else {
 								entity = new HttpEntity<String>(additionalHeaders);
-								response = restTemplate.exchange(new URI(
-										endpoint + "/ngsi-ld/v1/entities?" + encodeQuery(rawQueryString)), HttpMethod.GET,
-										entity, String.class);
+								response = restTemplate.exchange(
+										new URI(endpoint + "/ngsi-ld/v1/entities?" + encodeQuery(rawQueryString)),
+										HttpMethod.GET, entity, String.class);
 								resultBody = response.getBody();
 							}
 							if (response.getHeaders().containsKey(NGSIConstants.COUNT_HEADER_RESULT)) {
@@ -206,8 +213,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 							RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, -1, true);
 							result.setCount(count);
 							result.addData(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(resultBody), opts,
-									999,
-									HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
+									999, HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
 							return result;
 						};
 						callablesCollection.add(callable);
@@ -271,7 +277,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 				fromCsources.addData(entity);
 			}
 		}
-		if(fromStorage != null && fromCsources != null) {
+		if (fromStorage != null && fromCsources != null) {
 			fromCsources.setCount(fromCsources.getCount() + fromStorage.getCount());
 		}
 		return fromCsources;
