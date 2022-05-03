@@ -426,7 +426,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<Void> storeEntity(EntityRequest request) throws SQLTransientConnectionException, ResponseException {
+	public Uni<Void> storeEntity(EntityRequest request) {
 
 		String sql;
 		String key = request.getId();
@@ -444,10 +444,11 @@ public abstract class StorageDAO {
 						+ "'::jsonb) ON CONFLICT(id) DO NOTHING";
 				uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
 						.andContinueWithNull();
-				if (uni == null) {
+				//TODO check this failure should go up failure stream
+				/*if (uni == null) {
 					throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
 
-				}
+				}*/
 			} else {
 				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = '" + value
 						+ "'::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = '" + valueWithoutSysAttrs

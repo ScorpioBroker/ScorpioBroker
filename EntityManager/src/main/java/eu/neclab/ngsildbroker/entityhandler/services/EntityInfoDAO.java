@@ -9,6 +9,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
@@ -32,14 +33,17 @@ public class EntityInfoDAO extends StorageDAO {
 		return result;
 	}
 
-	public String getEntity(String entityId, String tenantId) throws ResponseException {
-		String result = null;
-		RowSet<Row> rowSet = clientManager.getClient(tenantId, false)
-				.preparedQuery("SELECT data FROM entity WHERE id=$1").executeAndAwait(Tuple.of(entityId));
-		for (Row entry : rowSet) {
-			result = ((JsonObject) entry.getJson(0)).encode();
-		}
-		return result;
+	public Uni<String> getEntity(String entityId, String tenantId) {
+
+		return clientManager.getClient(tenantId, false).preparedQuery("SELECT data FROM entity WHERE id=$1")
+				.execute(Tuple.of(entityId)).onItem().transform(t -> {
+					String result = "";
+					for (Row entry : t) {
+						result = ((JsonObject) entry.getJson(0)).encode();
+					}
+					return result;
+				});
+
 	}
 
 	@Override

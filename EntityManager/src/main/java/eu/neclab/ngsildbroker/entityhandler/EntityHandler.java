@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 //@Import(WebSecurityConfiguration.class)
 public class EntityHandler implements QuarkusApplication {
 	public static void main(String[] args) {
-		System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
+		//System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
 		Quarkus.run(EntityHandler.class, args);
 	}
 	@Override
