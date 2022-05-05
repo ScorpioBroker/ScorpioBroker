@@ -206,10 +206,14 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 
 			QueryParams params = queryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
 					context);
+			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+			String tenant = HttpUtils.getTenantFromHeaders(headers);
+			if (tenant != null) {
+				params.setTenant(tenant);
+			}
 
-			return HttpUtils.generateReply(request,
-					queryService.getData(params, payload, linkHeaders, HttpUtils.getHeaders(request), true), true,
-					count, context, linkHeaders, AppConstants.QUERY_ENDPOINT);
+			return HttpUtils.generateReply(request, queryService.getData(params, payload, linkHeaders, headers, true),
+					true, count, context, linkHeaders, AppConstants.QUERY_ENDPOINT);
 
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);

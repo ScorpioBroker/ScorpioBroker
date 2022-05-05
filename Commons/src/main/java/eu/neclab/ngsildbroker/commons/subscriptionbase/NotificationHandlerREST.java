@@ -5,13 +5,12 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.fluent.Request;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
+
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
@@ -62,29 +61,31 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
 		ResponseEntity<String> compacted;
 		compacted = notification.toCompactedJson();
-		
-		HttpEntity<String> entity = new HttpEntity<String>(compacted.getBody(), compacted.getHeaders());
+		Request req = Request.Post(request.getSubscription().getNotification().getEndPoint().getUri());
 
+		for (Entry<String, List<String>> entry : compacted.getHeaders().entrySet()) {
+			for (String value : entry.getValue()) {
+				req = req.addHeader(entry.getKey(), value);
+			}
+		}
+		req = req.bodyByteArray(compacted.getBody().getBytes());
 		int retryCount = 5;
 		boolean success = false;
 		ThreadLocalRandom random = ThreadLocalRandom.current();
 		while (true) {
-			try {
-				ResponseEntity<String> response = restTemplate.exchange(
-						request.getSubscription().getNotification().getEndPoint().getUri(), HttpMethod.POST, entity,
-						String.class);
-				HttpStatus returnStatus = response.getStatusCode();
-				if (returnStatus.is2xxSuccessful()) {
-					logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
-							+ notification.getId());
-					success = true;
-					break;
-				} else if (returnStatus.is3xxRedirection()) {
-					logger.info("redirect");
-					success = true;
-					break;
-				}
-			} catch (HttpServerErrorException e) {
+			HttpResponse response = req.execute().returnResponse();
+			HttpStatus returnStatus = HttpStatus.valueOf(response.getStatusLine().getStatusCode());
+			if (returnStatus.is2xxSuccessful()) {
+				logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
+						+ notification.getId());
+				success = true;
+				break;
+			} else if (returnStatus.is3xxRedirection()) {
+				logger.info("redirect");
+				success = true;
+				break;
+			} else {
+
 				if (retryCount == 0) {
 					logger.error("finally failed to send notification subscription id: "
 							+ request.getSubscription().getId() + " notification id: " + notification.getId());
@@ -92,7 +93,8 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 				}
 				int waitTime = random.nextInt(500, 5000);
 				logger.error("failed to send notification subscription id: " + request.getSubscription().getId()
-						+ " notification id: " + notification.getId(), e);
+						+ " notification id: " + notification.getId() + ". " + response.getStatusLine().getStatusCode()
+						+ " " + response.getStatusLine().getReasonPhrase() + " " + response.getEntity().toString());
 				logger.error("retrying " + retryCount + " times waiting " + waitTime + " ms");
 				Thread.sleep(waitTime);
 				retryCount--;

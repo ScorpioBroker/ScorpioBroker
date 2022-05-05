@@ -167,13 +167,25 @@ public abstract class BaseQueryService implements EntryQueryService {
 					Set<Callable<RemoteQueryResult>> callablesCollection = new HashSet<Callable<RemoteQueryResult>>();
 					for (String registration : registrations.getActualDataString()) {
 						Map<String, Object> reg = (Map<String, Object>) JsonUtils.fromString(registration);
-						if (reg.get(NGSIConstants.JSON_LD_ID).equals(AppConstants.INTERNAL_REGISTRATION_ID)) {
+						String tenant = HttpUtils.getTenantFromHeaders(headers);
+						String internalRegId = AppConstants.INTERNAL_REGISTRATION_ID;
+						if (tenant != null && !tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
+							internalRegId += ":" + tenant;
+						}
+						if (reg.get(NGSIConstants.JSON_LD_ID).equals(internalRegId)) {
 							continue;
 						}
 						String endpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
 								.get(NGSIConstants.JSON_LD_VALUE);
 						HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
 								headers.get(HttpHeaders.ACCEPT.toLowerCase()));
+						if (linkHeaders != null) {
+							for (Object entry : linkHeaders) {
+								additionalHeaders.add("Link", entry
+										+ "; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
+							}
+						}
+
 						logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
 						Callable<RemoteQueryResult> callable = () -> {
 							HttpEntity<String> entity;
@@ -187,9 +199,9 @@ public abstract class BaseQueryService implements EntryQueryService {
 								resultBody = response.getBody();
 							} else {
 								entity = new HttpEntity<String>(additionalHeaders);
-								response = restTemplate.exchange(new URI(
-										endpoint + "/ngsi-ld/v1/entities?" + encodeQuery(rawQueryString)), HttpMethod.GET,
-										entity, String.class);
+								response = restTemplate.exchange(
+										new URI(endpoint + "/ngsi-ld/v1/entities?" + encodeQuery(rawQueryString)),
+										HttpMethod.GET, entity, String.class);
 								resultBody = response.getBody();
 							}
 							if (response.getHeaders().containsKey(NGSIConstants.COUNT_HEADER_RESULT)) {
@@ -201,8 +213,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 							RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, -1, true);
 							result.setCount(count);
 							result.addData(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(resultBody), opts,
-									AppConstants.ENTITY_RETRIEVED_PAYLOAD,
-									HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
+									999, HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
 							return result;
 						};
 						callablesCollection.add(callable);
@@ -266,7 +277,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 				fromCsources.addData(entity);
 			}
 		}
-		if(fromStorage != null && fromCsources != null) {
+		if (fromStorage != null && fromCsources != null) {
 			fromCsources.setCount(fromCsources.getCount() + fromStorage.getCount());
 		}
 		return fromCsources;

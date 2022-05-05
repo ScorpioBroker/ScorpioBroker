@@ -72,10 +72,10 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		ArrayList<String> result = new ArrayList<String>();
 		try {
 			result.addAll(
-					getJDBCTemplate(null).queryForList("SELECT subscription_request FROM subscriptions", String.class));
+					getJDBCTemplate(null).queryForList("SELECT subscription_request FROM " + dbname, String.class));
 			for (String tenantId : tenants) {
 				tenantId = getTenant(tenantId);
-				result.addAll(getJDBCTemplate(tenantId).queryForList("SELECT subscription_request FROM subscriptions",
+				result.addAll(getJDBCTemplate(tenantId).queryForList("SELECT subscription_request FROM " + dbname,
 						String.class));
 			}
 		} catch (DataAccessException e) {
