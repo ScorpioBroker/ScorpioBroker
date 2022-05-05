@@ -1,13 +1,12 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
-import org.springframework.stereotype.Repository;
+import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 
-
-@Repository
+@Singleton
 public class QueryDAO extends StorageDAO {
 
 	@Override
@@ -15,5 +14,5 @@ public class QueryDAO extends StorageDAO {
 		// TODO Auto-generated method stub
 		return new EntityStorageFunctions();
 	}
-	
+
 }
