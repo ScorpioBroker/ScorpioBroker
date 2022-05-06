@@ -175,8 +175,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 						if (reg.get(NGSIConstants.JSON_LD_ID).equals(internalRegId)) {
 							continue;
 						}
-						String endpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
-								.get(NGSIConstants.JSON_LD_VALUE);
+						String tmpEndpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT))
+								.get(0).get(NGSIConstants.JSON_LD_VALUE);
 						HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
 								headers.get(HttpHeaders.ACCEPT.toLowerCase()));
 						if (linkHeaders != null) {
@@ -185,7 +185,12 @@ public abstract class BaseQueryService implements EntryQueryService {
 										+ "; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
 							}
 						}
-
+						String endpoint;
+						if (tmpEndpoint.endsWith("/")) {
+							endpoint = tmpEndpoint.substring(0, tmpEndpoint.length() - 1);
+						} else {
+							endpoint = tmpEndpoint;
+						}
 						logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
 						Callable<RemoteQueryResult> callable = () -> {
 							HttpEntity<String> entity;
