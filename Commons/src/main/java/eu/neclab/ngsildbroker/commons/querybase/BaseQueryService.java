@@ -212,8 +212,11 @@ public abstract class BaseQueryService implements EntryQueryService {
 
 							RemoteQueryResult result = new RemoteQueryResult(null, ErrorType.None, -1, true);
 							result.setCount(count);
-							result.addData(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(resultBody), opts,
-									999, HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
+							if (resultBody != null && !resultBody.isBlank()) {
+								result.addData(JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(resultBody),
+										opts, 999,
+										HttpUtils.parseAcceptHeader(additionalHeaders.get(HttpHeaders.ACCEPT)) == 2));
+							}
 							return result;
 						};
 						callablesCollection.add(callable);

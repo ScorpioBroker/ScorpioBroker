@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registry.subscriptionmanager.repository;
+package eu.neclab.ngsildbroker.registrysubscriptionmanager.repository;
 
 import org.springframework.stereotype.Repository;
 

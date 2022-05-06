@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registry.subscriptionmanager.controller;
+package eu.neclab.ngsildbroker.registrysubscriptionmanager.controller;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -22,7 +22,7 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.SubscriptionControllerFunctions;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
+import eu.neclab.ngsildbroker.registrysubscriptionmanager.service.RegistrySubscriptionService;
 
 @RestController
 @RequestMapping("/ngsi-ld/v1/csourceSubscriptions")

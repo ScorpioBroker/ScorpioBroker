@@ -8,7 +8,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,7 +32,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -126,7 +124,7 @@ public class HistoryServiceTest {
 	String tempupdatePayload;
 	String tempAppendPayload;
 	String entityPayload;
-	String entityPayload1;
+	String olddata;
 	String tempupdatePartialAttributesPayload;
 	String updatePartialDefaultAttributesPayload;
 	JsonNode updateJsonNode;
@@ -136,20 +134,9 @@ public class HistoryServiceTest {
 	JsonNode updatePartialAttributesNode;
 	JsonNode updatePartialDefaultAttributesNode;
 	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
-	// protected StorageFunctionsInterface getStorageFunctions();
 
 	@Before
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
-
-		writerJdbcTemplate.execute("SELECT 1"); // create connection pool and connect to database
-		DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(writerDataSource);
-		writerJdbcTemplateWithTransaction = new JdbcTemplate(transactionManager.getDataSource());
-		writerTransactionTemplate = new TransactionTemplate(transactionManager);
-		defaultTemplates = new DBWriteTemplates(writerJdbcTemplateWithTransaction, writerTransactionTemplate,
-				writerJdbcTemplate);
-		// storageFunctions = getStorageFunctions();
-
 		uri = new URI(AppConstants.HISTORY_URL + "urn:ngsi-ld:testunit:151");
 		ObjectMapper objectMapper = new ObjectMapper();
 
@@ -191,6 +178,27 @@ public class HistoryServiceTest {
 				+ "    \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/Property\" ],\r\n"
 				+ "    \"https://uri.etsi.org/ngsi-ld/hasValue\" : [ {\r\n" + "      \"@value\" : \"SUZUKI\"\r\n"
 				+ "    } ]\r\n" + "  } ]\r\n" + "}";
+		olddata = "{\r\n" + "   \"@id\":\"urn:ngsi-ld:Vehicle:1\",\r\n" + "   \"@type\":[\r\n"
+				+ "      \"https://uri.etsi.org/ngsi-ld/default-context/Bus\"\r\n" + "   ],\r\n"
+				+ "   \"https://uri.etsi.org/ngsi-ld/createdAt\":[\r\n" + "      {\r\n"
+				+ "         \"@type\":\"https://uri.etsi.org/ngsi-ld/DateTime\",\r\n"
+				+ "         \"@value\":\"2022-03-31T13:37:15.4903515Z\"\r\n" + "      }\r\n" + "   ],\r\n"
+				+ "   \"https://uri.etsi.org/ngsi-ld/modifiedAt\":[\r\n" + "      {\r\n"
+				+ "         \"@type\":\"https://uri.etsi.org/ngsi-ld/DateTime\",\r\n"
+				+ "         \"@value\":\"2022-03-31T13:37:15.4903515Z\"\r\n" + "      }\r\n" + "   ],\r\n"
+				+ "   \"https://uri.etsi.org/ngsi-ld/default-context/brandName\":[\r\n" + "      {\r\n"
+				+ "         \"@type\":[\r\n" + "            \"https://uri.etsi.org/ngsi-ld/Property\"\r\n"
+				+ "         ],\r\n" + "         \"https://uri.etsi.org/ngsi-ld/hasValue\":[\r\n" + "            {\r\n"
+				+ "               \"@value\":\"Mercedes\"\r\n" + "            }\r\n" + "         ],\r\n"
+				+ "         \"https://uri.etsi.org/ngsi-ld/createdAt\":[\r\n" + "            {\r\n"
+				+ "               \"@type\":\"https://uri.etsi.org/ngsi-ld/DateTime\",\r\n"
+				+ "               \"@value\":\"2022-03-31T13:37:15Z\"\r\n" + "            }\r\n" + "         ],\r\n"
+				+ "         \"https://uri.etsi.org/ngsi-ld/instanceId\":[\r\n" + "            {\r\n"
+				+ "               \"@id\":\"urn:ngsi-ld:4b156346-a89f-46d2-8716-f3f447ca4b43\"\r\n"
+				+ "            }\r\n" + "         ],\r\n" + "         \"https://uri.etsi.org/ngsi-ld/modifiedAt\":[\r\n"
+				+ "            {\r\n" + "               \"@type\":\"https://uri.etsi.org/ngsi-ld/DateTime\",\r\n"
+				+ "               \"@value\":\"2022-03-31T13:37:15Z\"\r\n" + "            }\r\n" + "         ]\r\n"
+				+ "      }\r\n" + "   ]\r\n" + "}";
 
 		updateJsonNode = objectMapper.readTree(tempupdatePayload);
 		appendJsonNode = objectMapper.readTree(tempAppendPayload);
@@ -222,7 +230,7 @@ public class HistoryServiceTest {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * this method is use for check the temporal entity is already exist
 	 */
@@ -231,10 +239,6 @@ public class HistoryServiceTest {
 		MockitoAnnotations.initMocks(this);
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-		//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-		Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-		postConstruct.setAccessible(true);
-		postConstruct.invoke(historyService);
 		ReflectionTestUtils.setField(historyService, "directDB", true);
 		multimaparr.put("content-type", "application/json");
 		Gson gson = new Gson();
@@ -249,7 +253,7 @@ public class HistoryServiceTest {
 		}
 
 	}
-	
+
 	/**
 	 * this method is use for append the field or attribute in Temporal entity
 	 */
@@ -261,10 +265,6 @@ public class HistoryServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
 			ReflectionTestUtils.setField(historyService, "directDB", true);
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(tempAppendPayload, Map.class);
@@ -279,10 +279,10 @@ public class HistoryServiceTest {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
-	 * this method is use for append the field or attribute in temporal entity if entity id
-	 * is not exist
+	 * this method is use for append the field or attribute in temporal entity if
+	 * entity id is not exist
 	 */
 	@Test
 	public void appendFieldTemporalEntityNotExistTest() {
@@ -290,10 +290,6 @@ public class HistoryServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
 			ReflectionTestUtils.setField(historyService, "directDB", true);
 			multimaparr.put("content-type", "application/json");
 			Gson gson = new Gson();
@@ -308,7 +304,7 @@ public class HistoryServiceTest {
 			Assert.fail();
 		}
 	}
-	
+
 	/**
 	 * this method is use for all delete the temporal entity
 	 */
@@ -319,10 +315,6 @@ public class HistoryServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
 			ReflectionTestUtils.setField(historyService, "directDB", true);
 			boolean result = historyService.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:1");
 			assertEquals(result, true);
@@ -332,7 +324,7 @@ public class HistoryServiceTest {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
 	 * this method is use for all delete the temporal entity if id is not exist
 	 */
@@ -341,10 +333,6 @@ public class HistoryServiceTest {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
 			ReflectionTestUtils.setField(historyService, "directDB", true);
 			multimaparr.put("content-type", "application/json");
 			try {
@@ -356,22 +344,15 @@ public class HistoryServiceTest {
 			Assert.fail();
 		}
 	}
-	
+
 	/**
 	 * this method is use for update temporal entity
 	 */
 	@Test
 	public void updateTemporalFieldTest() throws Exception {
 		try {
-			String tenant = null;
-			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			//when(entityInfoDAO.getAllIds()).thenReturn(entityIds);
-			Method postConstruct = HistoryService.class.getDeclaredMethod("loadStoredTemporalEntitiesDetails");
-			postConstruct.setAccessible(true);
-			postConstruct.invoke(historyService);
-			ReflectionTestUtils.setField(historyService, "directDB", true);
 			multimaparr.put("content-type", "application/json");
 			Context context = JsonLdProcessor.getCoreContextClone();
 			Gson gson = new Gson();
@@ -385,24 +366,53 @@ public class HistoryServiceTest {
 			qp.setAttrs("https://uri.etsi.org/ngsi-ld/default-context/brandName");
 			qp.setInstanceId("urn:ngsi-ld:9c7690ed-eba4-4d95-a28b-4584f953f8ab");
 			qp.setIncludeSysAttrs(true);
-			// qp.setTenant(tenant);
-			// StorageDAO historyDAO = new HistoryDAO();
-			// Method postConstruct1 = StorageDAO.class.getDeclaredMethod("init");
-			// postConstruct1.setAccessible(true);
-			// postConstruct1.invoke(storageDAO);
+			List<String> list = new ArrayList<String>();
+			list.add(olddata);
+			QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+			queryResult.setActualDataString(list);
+			when(historyDAO.query(any())).thenReturn(queryResult);
+			historyService.modifyAttribInstanceTemporalEntity(multimaparr, "urn:ngsi-ld:Vehicle:1", resolved,
+					"https://uri.etsi.org/ngsi-ld/default-context/brandName",
+					"urn:ngsi-ld:9c7690ed-eba4-4d95-a28b-4584f953f8ab", context);
+			verify(historyService, times(1)).handleRequest(any());
+		} catch (Exception ex) {
+			Assert.fail();
+		}
+	}
 
-			// QueryResult queryResult=historyDAO.query(qp);
+	/**
+	 * this method is use for update temporal entity if entity is not found
+	 */
+	@Test
+	public void updateTemporalFieldIfEntityNotExistTest() throws Exception {
+		try {
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
+			multimaparr.put("content-type", "application/json");
+			Context context = JsonLdProcessor.getCoreContextClone();
+			Gson gson = new Gson();
+			Map<String, Object> resolved = gson.fromJson(tempupdatePayload, Map.class);
+			QueryParams qp = new QueryParams();
+			List<Map<String, String>> temp1 = new ArrayList<Map<String, String>>();
+			HashMap<String, String> temp2 = new HashMap<String, String>();
+			temp2.put(NGSIConstants.JSON_LD_ID, "urn:ngsi-ld:Vehicle:1");
+			temp1.add(temp2);
+			qp.setEntities(temp1);
+			qp.setAttrs("https://uri.etsi.org/ngsi-ld/default-context/brandName");
+			qp.setInstanceId("urn:ngsi-ld:9c7690ed-eba4-4d95-a28b-4584f953f8ab");
+			qp.setIncludeSysAttrs(true);
+			List<String> list = new ArrayList<String>();
+			QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+			queryResult.setActualDataString(list);
+			when(historyDAO.query(any())).thenReturn(queryResult);
+			try {
+				historyService.modifyAttribInstanceTemporalEntity(multimaparr, "urn:ngsi-ld:Vehicle:1", resolved,
+						"https://uri.etsi.org/ngsi-ld/default-context/brandName",
+						"urn:ngsi-ld:9c7690ed-eba4-4d95-a28b-4584f953f8ab", context);
+			} catch (Exception e) {
+				Assert.assertEquals("Entity not found", e.getMessage());
+			}
 
-			// HistoryDAO b = PowerMockito.spy(new HistoryDAO());
-			// PowerMockito.doReturn(defaultTemplates).when(b, "getJDBCTemplates",null);
-			// when(historyDAO.query(qp)).thenReturn(queryResult);
-
-			// historyService.modifyAttribInstanceTemporalEntity(multimaparr,
-			// "urn:ngsi-ld:Vehicle:1", resolved,
-			// "https://uri.etsi.org/ngsi-ld/default-context/brandName",
-			// "urn:ngsi-ld:9c7690ed-eba4-4d95-a28b-4584f953f8ab", context);
-			// Assert.assertEquals(updateResult.getUpdated(),
-			// request.getUpdateResult().getUpdated());
 		} catch (Exception ex) {
 			Assert.fail();
 		}

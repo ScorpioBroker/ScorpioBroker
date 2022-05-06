@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import eu.neclab.ngsildbroker.entityhandler.EntityHandler;
 import eu.neclab.ngsildbroker.historymanager.HistoryHandler;
 import eu.neclab.ngsildbroker.queryhandler.QueryHandler;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.RegistrySubscriptionHandler;
+import eu.neclab.ngsildbroker.registrysubscriptionmanager.RegistrySubscriptionHandler;
 import eu.neclab.ngsildbroker.registryhandler.RegistryHandler;
 import eu.neclab.ngsildbroker.subscriptionmanager.SubscriptionHandler;
 

@@ -1,3 +1,4 @@
+package eu.neclab.ngsildbroker.registrysubscriptionmanager.service;
 //package eu.neclab.ngsildbroker.subscriptionmanager.service;
 //
 //import static org.junit.Assert.assertNotNull;
