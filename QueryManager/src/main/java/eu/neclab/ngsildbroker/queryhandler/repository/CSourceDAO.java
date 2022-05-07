@@ -1,19 +1,17 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
-import org.springframework.stereotype.Repository;
+import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.RegistryStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 
-@Repository("qmcsourcedao")
+@Singleton
 public class CSourceDAO extends StorageDAO {
 
 	@Override
 	protected StorageFunctionsInterface getStorageFunctions() {
 		return new RegistryStorageFunctions();
 	}
-
-
 
 }
