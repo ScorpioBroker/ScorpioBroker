@@ -27,6 +27,7 @@ import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
@@ -37,6 +38,8 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpServerRequest;
 
 public interface EntryControllerFunctions {
@@ -243,8 +246,9 @@ public interface EntryControllerFunctions {
 				if (entityService.deleteEntry(headers, entityId)) {
 					result.addSuccess(entityId);
 				} else {
-					result.addFail(new BatchFailure(entityId,
-							new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError, "")));
+					result.addFail(
+							new BatchFailure(entityId, new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(
+									ErrorType.InternalError, "")));
 				}
 			} catch (Exception e) {
 				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
@@ -411,75 +415,80 @@ public interface EntryControllerFunctions {
 	public static Uni<RestResponse<Object>> updateEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, String payload, int payloadType, Logger logger) {
 		logger.trace("update entry :: started");
-		try {
-			HttpUtils.validateUri(entityId);
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
-		List<Object> contextHeaders = HttpUtils.getAtContext(request);
-		boolean atContextAllowed;
-		try {
-			atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
-		List<Object> context = new ArrayList<Object>();
-		context.addAll(contextHeaders);
-		Map<String, Object> resolved;
-		Object bodyContext;
-		try {
-			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
-			bodyContext = body.get(JsonLdConsts.CONTEXT);
-			resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(contextHeaders, body, opts, payloadType, atContextAllowed).get(0);
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
-		if (bodyContext instanceof List) {
-			context.addAll((List<Object>) bodyContext);
-		} else {
-			context.add(bodyContext);
-		}
-		return entityService.updateEntry(HttpUtils.getHeaders(request), entityId, resolved).onItem().transform(t -> {
-			logger.trace("update entry :: completed");
-			try {
-				return HttpUtils.generateReply(request, t, context, AppConstants.UPDATE_REQUEST);
-			} catch (Exception e) {
-				return HttpUtils.handleControllerExceptions(e);
-			}
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
+				.onItem().transformToUni(t -> {
+					List<Object> contextHeaders = t.getItem2();
+					boolean atContextAllowed;
+					try {
+						atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+					List<Object> context = new ArrayList<Object>();
+					context.addAll(contextHeaders);
+					Object bodyContext;
+					Map<String, Object> body;
+					try {
+						body = ((Map<String, Object>) JsonUtils.fromString(payload));
+					} catch (IOException e) {
+						return Uni.createFrom().failure(e);
+					}
+					bodyContext = body.get(JsonLdConsts.CONTEXT);
+					Map<String, Object> resolvedBody;
+					try {
+						resolvedBody = (Map<String, Object>) JsonLdProcessor
+								.expand(contextHeaders, body, opts, payloadType, atContextAllowed).get(0);
+					} catch (JsonLdError | ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
 
+					if (bodyContext instanceof List) {
+						context.addAll((List<Object>) bodyContext);
+					} else {
+						context.add(bodyContext);
+					}
+					return Uni.createFrom().item(Tuple2.of(resolvedBody, context));
+				}).onItem()
+				.transformToUni(resolved -> entityService
+						.updateEntry(HttpUtils.getHeaders(request), entityId, resolved.getItem1()).onItem()
+						.transformToUni(updateResult -> {
+							logger.trace("update entry :: completed");
+							return HttpUtils.generateReply(request, updateResult, resolved.getItem2(),
+									AppConstants.UPDATE_REQUEST);
+						}))
+				.onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> createEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int payloadType, String baseUrl, Logger logger) {
 		logger.trace("create entity :: started");
-		List<Object> contextHeaders = HttpUtils.getAtContext(request);
-		boolean atContextAllowed;
-		try {
-			atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		if (payload == null || payload.isEmpty()) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload")));
-		}
-		Map<String, Object> resolved;
-		try {
-			resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem().transform(t -> {
-			logger.trace("create entity :: completed");
+		return HttpUtils.getAtContext(request).onItem().transformToUni(t -> {
+			boolean atContextAllowed;
 			try {
-				return NGSIRestResponse.created(new URI(baseUrl + t));
-			} catch (URISyntaxException e) {
-				return HttpUtils.handleControllerExceptions(e);
+				atContextAllowed = HttpUtils.doPreflightCheck(request, t);
+			} catch (ResponseException e1) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e1));
 			}
+			if (payload == null || payload.isEmpty()) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload")));
+			}
+			Map<String, Object> resolved;
+			try {
+				resolved = (Map<String, Object>) JsonLdProcessor
+						.expand(t, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+			return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem().transform(entityId -> {
+				logger.trace("create entity :: completed");
+				try {
+					return RestResponse.created(new URI(baseUrl + t));
+				} catch (URISyntaxException e) {
+					return HttpUtils.handleControllerExceptions(e);
+				}
+			});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
@@ -487,53 +496,49 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> appendToEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, String payload, String options, int payloadType, Logger logger) {
-		Map<String, Object> resolved = null;
-		logger.trace("append entity :: started");
-		String[] optionsArray = getOptionsArray(options);
-		// try {
-		List<Object> contextHeaders = HttpUtils.getAtContext(request);
-		boolean atContextAllowed;
-		try {
-			atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		List<Object> context = new ArrayList<Object>();
-		context.addAll(contextHeaders);
-		if (payload == null || payload.isEmpty()) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed")));
-		}
-		Map<String, Object> body;
-		try {
-			body = ((Map<String, Object>) JsonUtils.fromString(payload));
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		Object bodyContext = body.get(JsonLdConsts.CONTEXT);
+		return HttpUtils.getAtContext(request).onItem().transformToUni(t -> {
+			logger.trace("append entity :: started");
+			String[] optionsArray = getOptionsArray(options);
+			// try {
+			boolean atContextAllowed;
+			try {
+				atContextAllowed = HttpUtils.doPreflightCheck(request, t);
+			} catch (ResponseException e1) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e1));
+			}
+			List<Object> context = new ArrayList<Object>();
+			context.addAll(t);
+			if (payload == null || payload.isEmpty()) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed")));
+			}
+			Map<String, Object> body;
+			try {
+				body = ((Map<String, Object>) JsonUtils.fromString(payload));
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 
-		if (bodyContext instanceof List) {
-			context.addAll((List<Object>) bodyContext);
-		} else {
-			context.add(bodyContext);
-		}
-		try {
-			HttpUtils.validateUri(entityId);
-			resolved = (Map<String, Object>) JsonLdProcessor
-					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		return entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved, optionsArray).onItem()
-				.transform(t -> {
-					logger.trace("append entity :: completed");
-					try {
-						return HttpUtils.generateReply(request, t, context, AppConstants.UPDATE_REQUEST);
-					} catch (Exception e) {
-						return HttpUtils.handleControllerExceptions(e);
-					}
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+			if (bodyContext instanceof List) {
+				context.addAll((List<Object>) bodyContext);
+			} else {
+				context.add(bodyContext);
+			}
+			Map<String, Object> resolved;
+			try {
+				HttpUtils.validateUri(entityId);
+				resolved = (Map<String, Object>) JsonLdProcessor
+						.expand(t, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+			return entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved, optionsArray).onItem()
+					.transformToUni(tResult -> {
+						return HttpUtils.generateReply(request, tResult, context, AppConstants.UPDATE_REQUEST);
+					});
 
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	private static String[] getOptionsArray(String options) {
@@ -546,15 +551,11 @@ public interface EntryControllerFunctions {
 
 	public static Uni<RestResponse<Object>> deleteEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, Logger logger) {
-		try {
-			logger.trace("delete entity :: started");
-			HttpUtils.validateUri(entityId);
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
-		return entityService.deleteEntry(HttpUtils.getHeaders(request), entityId).onItem().transform(t -> {
-			logger.trace("delete entity :: completed");
-			return NGSIRestResponse.noContent();
+		return HttpUtils.validateUri(entityId).onItem().transformToUni(t -> {
+			return entityService.deleteEntry(HttpUtils.getHeaders(request), entityId).onItem().transform(t2 -> {
+				logger.trace("delete entity :: completed");
+				return RestResponse.noContent();
+			});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 

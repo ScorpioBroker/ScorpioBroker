@@ -47,6 +47,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
@@ -139,20 +140,19 @@ public final class HttpUtils {
 
 	}
 
-	public static RestResponse<Object> generateReply(HttpServerRequest request, String reply, int endPoint)
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply, int endPoint)
 			throws ResponseException {
 		return generateReply(request, reply, ArrayListMultimap.create(), endPoint);
 
 	}
 
-	public static RestResponse<Object> generateReply(HttpServerRequest request, String reply,
-			ArrayListMultimap<String, String> additionalHeaders, int endPoint) throws ResponseException {
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
+			ArrayListMultimap<String, String> additionalHeaders, int endPoint) {
 		return generateReply(request, reply, additionalHeaders, null, endPoint);
 	}
 
-	public static RestResponse<Object> generateReply(HttpServerRequest request, String reply,
-			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint)
-			throws ResponseException {
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
+			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint) {
 		return generateReply(request, reply, additionalHeaders, context, false, endPoint);
 	}
 
@@ -202,60 +202,63 @@ public final class HttpUtils {
 		}
 	}
 
-	public static RestResponse<Object> generateReply(HttpServerRequest request, String reply,
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
-			boolean forceArrayResult, int endPoint) throws ResponseException {
-		List<Object> requestAtContext = getAtContext(request);
-		if (additionalContext == null) {
-			additionalContext = new ArrayList<Object>();
-		}
-		if (requestAtContext != null) {
-			additionalContext.addAll(requestAtContext);
-		}
-		Context context = JsonLdProcessor.getCoreContextClone().parse(additionalContext, true);
-		return generateReply(request, reply, additionalHeaders, context, additionalContext, forceArrayResult, endPoint);
+			boolean forceArrayResult, int endPoint) {
+		return getAtContext(request).onItem().transform(t -> {
+			List<Object> result = Lists.newArrayList();
+			if (additionalContext == null) {
+				result.addAll(additionalContext);
+			}
+			if (t != null) {
+				result.addAll(t);
+			}
+			return result;
+		}).onItem().transformToUni(t -> {
+			Context context = JsonLdProcessor.getCoreContextClone().parse(t, true);
+			return generateReply(request, reply, additionalHeaders, context, t, forceArrayResult, endPoint);
+		});
+
 	}
 
-	private static RestResponse<Object> generateReply(HttpServerRequest request, String reply,
+	private static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint) throws ResponseException {
+			boolean forceArrayResult, int endPoint) {
 		try {
 			return generateReply(request, JsonUtils.fromString(reply), additionalHeaders, ldContext, contextLinks,
 					forceArrayResult, endPoint);
-		} catch (JsonLdError | IOException e) {
-			return handleControllerExceptions(e);
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
 		}
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static RestResponse<Object> generateReply(HttpServerRequest request, Object expanded,
+	private static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint) throws ResponseException {
-		String replyBody;
-		try {
-
-			replyBody = getReplyBody(request.headers().getAll(HttpHeaders.ACCEPT), endPoint, additionalHeaders,
-					expanded, forceArrayResult, ldContext, contextLinks, getGeometry(request));
-			boolean compress = false;
-
-			String options = request.params().get(NGSIConstants.QUERY_PARAMETER_OPTIONS);
-			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
-				compress = true;
-			}
-			return generateReply(replyBody, additionalHeaders, compress);
-		} catch (JsonLdError | IOException e) {
-			return handleControllerExceptions(e);
-		}
+			boolean forceArrayResult, int endPoint) {
+		return getReplyBody(request.headers().getAll(HttpHeaders.ACCEPT), endPoint, additionalHeaders, expanded,
+				forceArrayResult, ldContext, contextLinks, getGeometry(request)).onItem().transformToUni(t -> {
+					boolean compress = false;
+					String options = request.params().get(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+					if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
+						compress = true;
+					}
+					return generateReply(t, additionalHeaders, compress);
+				});
 
 	}
 
-	private static String getReplyBody(List<String> acceptHeader, int endPoint,
+	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
 			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
-			Context ldContext, List<Object> contextLinks, String geometryProperty)
-			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
+			Context ldContext, List<Object> contextLinks, String geometryProperty) {
 		String replyBody;
 		int sendingContentType = parseAcceptHeader(acceptHeader);
-		Map<String, Object> compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
+		Map<String, Object> compacted;
+		try {
+			compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
+		} catch (JsonLdError | ResponseException e4) {
+			return Uni.createFrom().failure(e4);
+		}
 		Object context = compacted.get(JsonLdConsts.CONTEXT);
 		Object result;
 		Object graph = compacted.get(JsonLdConsts.GRAPH);
@@ -284,7 +287,11 @@ public final class HttpUtils {
 						entry.remove(JsonLdConsts.CONTEXT);
 					}
 				}
-				replyBody = JsonUtils.toPrettyString(result);
+				try {
+					replyBody = JsonUtils.toPrettyString(result);
+				} catch (IOException e3) {
+					return Uni.createFrom().failure(e3);
+				}
 				if (contextLinks != null) {
 					for (Object entry : contextLinks) {
 						if (entry instanceof String) {
@@ -306,29 +313,41 @@ public final class HttpUtils {
 						entry.put(JsonLdConsts.CONTEXT, context);
 					}
 				}
-				replyBody = JsonUtils.toPrettyString(result);
+				try {
+					replyBody = JsonUtils.toPrettyString(result);
+				} catch (IOException e2) {
+					return Uni.createFrom().failure(e2);
+				}
 				break;
 			case 3:
 				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
+				try {
+					replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
+				} catch (JsonLdError | ResponseException e1) {
+					return Uni.createFrom().failure(e1);
+				}
 				break;
 			case 4:// geo+json
 				switch (endPoint) {
 					case AppConstants.QUERY_ENDPOINT:
 						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-						replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
+						try {
+							replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
+						} catch (IOException e) {
+							return Uni.createFrom().failure(e);
+						}
 						break;
 					default:
-						throw new ResponseException(ErrorType.NotAcceptable,
-								"Provided accept types " + acceptHeader + " are not supported");
+						return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
+								"Provided accept types " + acceptHeader + " are not supported"));
 				}
 				break;
 			case -1:
 			default:
-				throw new ResponseException(ErrorType.NotAcceptable,
-						"Provided accept types " + acceptHeader + " are not supported");
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
+						"Provided accept types " + acceptHeader + " are not supported"));
 		}
-		return replyBody;
+		return Uni.createFrom().item(replyBody);
 
 	}
 
@@ -373,13 +392,13 @@ public final class HttpUtils {
 		return "http change this";
 	}
 
-	public static RestResponse<Object> generateReply(String replyBody,
+	public static Uni<RestResponse<Object>> generateReply(String replyBody,
 			ArrayListMultimap<String, String> additionalHeaders, boolean compress) {
 		return generateReply(replyBody, additionalHeaders, HttpStatus.SC_OK, compress);
 	}
 
-	public static RestResponse<Object> generateReply(HttpServerRequest request, QueryResult qResult, boolean forceArray,
-			boolean count, Context context, List<Object> contextLinks, int endPoint) throws ResponseException {
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, QueryResult qResult,
+			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint) {
 		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
 		if (count == true) {
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
@@ -406,8 +425,9 @@ public final class HttpUtils {
 				additionalHeaders, context, contextLinks, forceArray, endPoint);
 	}
 
-	public static RestResponse<Object> generateReply(String replyBody,
+	public static Uni<RestResponse<Object>> generateReply(String replyBody,
 			ArrayListMultimap<String, String> additionalHeaders, int status, boolean compress) {
+
 		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(status);
 
 		if (additionalHeaders != null) {
@@ -422,7 +442,7 @@ public final class HttpUtils {
 		} else {
 			body = replyBody;
 		}
-		return builder.entity(body).build();
+		return Uni.createFrom().item(builder.entity(body).build());
 	}
 
 	private static byte[] zipResult(String replyBody) {
@@ -561,16 +581,19 @@ public final class HttpUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static RestResponse<Object> generateReply(HttpServerRequest request, UpdateResult update,
-			List<Object> context, int endpoint)
-			throws JsonLdError, ResponseException, JsonGenerationException, IOException {
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, UpdateResult update,
+			List<Object> context, int endpoint) {
 		if (update.getNotUpdated().isEmpty()) {
-			return RestResponse.noContent();
+			return Uni.createFrom().item(RestResponse.noContent());
 		}
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 		Map<String, Object> expanded = update.toJsonMap();
-		Map<String, Object> compacted = JsonLdProcessor.compact(expanded, context, ldContext, opts,
-				AppConstants.UPDATE_REQUEST);
+		Map<String, Object> compacted;
+		try {
+			compacted = JsonLdProcessor.compact(expanded, context, ldContext, opts, AppConstants.UPDATE_REQUEST);
+		} catch (JsonLdError | ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		Object updated = compacted.get(NGSIConstants.NGSI_LD_UPDATED_SHORT);
 		if (updated != null) {
 			List<String> result = new ArrayList<String>();
@@ -596,7 +619,11 @@ public final class HttpUtils {
 			case 1:
 				resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
 				((Map) result).remove(JsonLdConsts.CONTEXT);
-				replyBody = JsonUtils.toPrettyString(result);
+				try {
+					replyBody = JsonUtils.toPrettyString(result);
+				} catch (IOException e) {
+					return Uni.createFrom().failure(e);
+				}
 				for (Object entry : context) {
 					if (entry instanceof String) {
 						resultHeaders.put(HttpHeaders.LINK, "<" + entry
@@ -610,21 +637,25 @@ public final class HttpUtils {
 				break;
 			case 2:
 				resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-				replyBody = JsonUtils.toPrettyString(result);
+				try {
+					replyBody = JsonUtils.toPrettyString(result);
+				} catch (IOException e) {
+					return Uni.createFrom().failure(e);
+				}
 				break;
 			default:
-				throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
+				return Uni.createFrom().failure(
+						new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported"));
 		}
 		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(HttpStatus.SC_MULTI_STATUS).entity(replyBody);
 		for (Entry<String, String> entry : resultHeaders.entries()) {
 			builder = builder.header(entry.getKey(), entry.getValue());
 		}
-		return builder.build();
+		return Uni.createFrom().item(builder.build());
 	}
 
-	public static org.jboss.resteasy.reactive.RestResponse<String> generateNotification(
-			ArrayListMultimap<String, String> origHeaders, Object notificationData, List<Object> context,
-			String geometryProperty)
+	public static RestResponse<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
+			Object notificationData, List<Object> context, String geometryProperty)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
@@ -640,7 +671,7 @@ public final class HttpUtils {
 			acceptHeader.add("application/json");
 		}
 		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
-				ldContext, context, geometryProperty);
+				ldContext, context, geometryProperty).await().indefinitely();
 		// need to clean context for subscriptions. This is a bit bad practice but reply
 		// generation relies on side effects so clean up here
 		HashSet<Object> temp = Sets.newHashSet(context);
