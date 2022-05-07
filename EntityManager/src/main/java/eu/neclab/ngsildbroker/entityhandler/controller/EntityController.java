@@ -32,6 +32,10 @@ import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple;
+import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -121,47 +125,38 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PATCH
 	@Path("/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> partialUpdateEntity(HttpServerRequest request,
-			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
-			String payload) {
-		try {
-			Object jsonPayload = JsonUtils.fromString(payload);
-			HttpUtils.validateUri(entityId);
-			List<Object> atContext = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
-			logger.trace("partial-update entity :: started");
-			Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor
-					.expand(atContext, jsonPayload, opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, atContextAllowed)
-					.get(0);
-			Context context = JsonLdProcessor.getCoreContextClone();
-			context = context.parse(atContext, true);
-			if (jsonPayload instanceof Map) {
-				Object payloadContext = ((Map<String, Object>) jsonPayload).get(JsonLdConsts.CONTEXT);
-				if (payloadContext != null) {
-					context = context.parse(payloadContext, true);
-				}
-			}
-			String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
+			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId, String payload) {
 
-			UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,
-					expandedAttrib, expandedPayload);
-			logger.trace("partial-update entity :: completed");
-			if (update.getNotUpdated().isEmpty()) {
-				return Uni.createFrom().item(RestResponse.noContent().ok());
-				
-			} else {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, JsonUtils
-						.toPrettyString(JsonLdProcessor.compact(update.getNotUpdated().get(0), context, opts)))));
-				
-			}
-			/*
-			 * There is no 207 multi status response in the Partial Attribute Update
-			 * operation. Section 6.7.3.1 else { return
-			 * ResponseEntity.status(HttpStatus.MULTI_STATUS).body(update.
-			 * getAppendedJsonFields()); }
-			 */
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
+		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request))
+				.combinedWith(Unchecked.function((entityIdUri, atContext) -> {
+					boolean atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
+					Object jsonPayload = JsonUtils.fromString(payload);
+					logger.trace("partial-update entity :: started");
+					Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor.expand(atContext,
+							jsonPayload, opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, atContextAllowed).get(0);
+					Context context = JsonLdProcessor.getCoreContextClone();
+					context = context.parse(atContext, true);
+					if (jsonPayload instanceof Map) {
+						Object payloadContext = ((Map<String, Object>) jsonPayload).get(JsonLdConsts.CONTEXT);
+						if (payloadContext != null) {
+							context = context.parse(payloadContext, true);
+						}
+					}
+					String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
+					return Tuple3.of(expandedPayload, expandedAttrib, context);
+				})).onItem().transformToUni(t -> entityService.partialUpdateEntity(HttpUtils.getHeaders(request),
+						entityId, t.getItem2(), t.getItem1()).onItem().transform(u -> Tuple2.of(u, t.getItem3())))
+				.onItem().transform(Unchecked.function(t -> {
+					if (t.getItem1().getNotUpdated().isEmpty()) {
+						return RestResponse.noContent().ok();
+
+					} else {
+						throw new ResponseException(ErrorType.BadRequestData, JsonUtils
+								.toPrettyString(JsonLdProcessor.compact(t.getItem1().getNotUpdated().get(0), t.getItem2(), opts)));
+
+					}
+				})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 
 	/**
@@ -177,8 +172,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	@DELETE
 	@Path("/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> deleteAttribute(HttpServerRequest request, @PathParam("entityId") String entityId,
-			@PathParam("attrId") String attrId,
-			@QueryParam("datasetId") String datasetId,
+			@PathParam("attrId") String attrId, @QueryParam("datasetId") String datasetId,
 			@QueryParam("deleteAll") String deleteAll) {
 		try {
 			HttpUtils.validateUri(entityId);

@@ -36,6 +36,7 @@ import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 
@@ -45,6 +46,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -94,44 +97,46 @@ public final class HttpUtils {
 
 	}
 
-	public static List<Object> getAtContext(HttpServerRequest req) {
+	public static Uni<List<Object>> getAtContext(HttpServerRequest req) {
+
 		return parseLinkHeader(req, NGSIConstants.HEADER_REL_LDCONTEXT);
 	}
 
-	public static List<Object> parseLinkHeader(HttpServerRequest req, String headerRelLdcontext) {
+	public static Uni<List<Object>> parseLinkHeader(HttpServerRequest req, String headerRelLdcontext) {
 		return parseLinkHeader(req.headers().getAll("Link"), headerRelLdcontext);
 	}
 
-	public static List<Object> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
+	public static Uni<List<Object>> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
 
 		ArrayList<Object> result = new ArrayList<Object>();
-		if (rawLinks == null) {
-			return result;
-		}
-		Iterator<String> it = rawLinks.iterator();
-		while (it.hasNext()) {
-			String[] rawLinkInfos = it.next().split(";");
-			boolean isWantedRel = false;
-			for (String rawLinkInfo : rawLinkInfos) {
-				if (rawLinkInfo.trim().startsWith("rel=")) {
-					String[] relInfo = rawLinkInfo.trim().split("=");
-					if (relInfo.length == 2 && (relInfo[1].equalsIgnoreCase(headerRelLdcontext)
-							|| relInfo[1].equalsIgnoreCase("\"" + headerRelLdcontext + "\""))) {
-						isWantedRel = true;
-					}
-					break;
-				}
-			}
-			if (isWantedRel) {
-				String rawLink = rawLinkInfos[0];
-				if (rawLink.trim().startsWith("<")) {
-					rawLink = rawLink.substring(rawLink.indexOf("<") + 1, rawLink.indexOf(">"));
-				}
-				result.add(rawLink);
-			}
+		if (rawLinks != null) {
 
+			Iterator<String> it = rawLinks.iterator();
+			while (it.hasNext()) {
+				String[] rawLinkInfos = it.next().split(";");
+				boolean isWantedRel = false;
+				for (String rawLinkInfo : rawLinkInfos) {
+					if (rawLinkInfo.trim().startsWith("rel=")) {
+						String[] relInfo = rawLinkInfo.trim().split("=");
+						if (relInfo.length == 2 && (relInfo[1].equalsIgnoreCase(headerRelLdcontext)
+								|| relInfo[1].equalsIgnoreCase("\"" + headerRelLdcontext + "\""))) {
+							isWantedRel = true;
+						}
+						break;
+					}
+				}
+				if (isWantedRel) {
+					String rawLink = rawLinkInfos[0];
+					if (rawLink.trim().startsWith("<")) {
+						rawLink = rawLink.substring(rawLink.indexOf("<") + 1, rawLink.indexOf(">"));
+					}
+					result.add(rawLink);
+				}
+
+			}
 		}
-		return result;
+		return Uni.createFrom().item(result);
+
 	}
 
 	public static RestResponse<Object> generateReply(HttpServerRequest request, String reply, int endPoint)
@@ -182,18 +187,18 @@ public final class HttpUtils {
 			}
 		}
 		switch (appGroup) {
-		case 5:
-			return 2; // application/ld+json
-		case 2:
-		case 3:
-		case 4:
-			return 1; // application/json
-		case 6:
-			return 3;// application/n-quads
-		case 7:
-			return 4;// application/geo+json
-		default:
-			return -1;// error
+			case 5:
+				return 2; // application/ld+json
+			case 2:
+			case 3:
+			case 4:
+				return 1; // application/json
+			case 6:
+				return 3;// application/n-quads
+			case 7:
+				return 4;// application/geo+json
+			default:
+				return -1;// error
 		}
 	}
 
@@ -268,60 +273,60 @@ public final class HttpUtils {
 			additionalHeaders = ArrayListMultimap.create();
 		}
 		switch (sendingContentType) {
-		case 1:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-			if (result instanceof Map) {
-				((Map) result).remove(JsonLdConsts.CONTEXT);
-			}
-			if (result instanceof List) {
-				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-				for (Map<String, Object> entry : list) {
-					entry.remove(JsonLdConsts.CONTEXT);
+			case 1:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+				if (result instanceof Map) {
+					((Map) result).remove(JsonLdConsts.CONTEXT);
 				}
-			}
-			replyBody = JsonUtils.toPrettyString(result);
-			if (contextLinks != null) {
-				for (Object entry : contextLinks) {
-					if (entry instanceof String) {
-						additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					} else {
-						additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+				if (result instanceof List) {
+					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+					for (Map<String, Object> entry : list) {
+						entry.remove(JsonLdConsts.CONTEXT);
 					}
+				}
+				replyBody = JsonUtils.toPrettyString(result);
+				if (contextLinks != null) {
+					for (Object entry : contextLinks) {
+						if (entry instanceof String) {
+							additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
+									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+						} else {
+							additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+						}
 
+					}
 				}
-			}
-			break;
-		case 2:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-			if (result instanceof List) {
-				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-				for (Map<String, Object> entry : list) {
-					entry.put(JsonLdConsts.CONTEXT, context);
-				}
-			}
-			replyBody = JsonUtils.toPrettyString(result);
-			break;
-		case 3:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-			replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
-			break;
-		case 4:// geo+json
-			switch (endPoint) {
-			case AppConstants.QUERY_ENDPOINT:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-				replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
 				break;
+			case 2:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+				if (result instanceof List) {
+					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+					for (Map<String, Object> entry : list) {
+						entry.put(JsonLdConsts.CONTEXT, context);
+					}
+				}
+				replyBody = JsonUtils.toPrettyString(result);
+				break;
+			case 3:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
+				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
+				break;
+			case 4:// geo+json
+				switch (endPoint) {
+					case AppConstants.QUERY_ENDPOINT:
+						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
+						replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
+						break;
+					default:
+						throw new ResponseException(ErrorType.NotAcceptable,
+								"Provided accept types " + acceptHeader + " are not supported");
+				}
+				break;
+			case -1:
 			default:
 				throw new ResponseException(ErrorType.NotAcceptable,
 						"Provided accept types " + acceptHeader + " are not supported");
-			}
-			break;
-		case -1:
-		default:
-			throw new ResponseException(ErrorType.NotAcceptable,
-					"Provided accept types " + acceptHeader + " are not supported");
 		}
 		return replyBody;
 
@@ -347,7 +352,7 @@ public final class HttpUtils {
 			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE);
 			Object geometryEntry = entryMap.get(geometry);
 			if (geometryEntry != null) {
-				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>)geometryEntry).get(NGSIConstants.VALUE));
+				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
 			}
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
 			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
@@ -538,27 +543,20 @@ public final class HttpUtils {
 				.build();
 	}
 
-	public static String validateUri(String mapValue) throws ResponseException {
+	public static Uni<URI> validateUri(String uri) {
 		try {
-			if (!new URI(mapValue).isAbsolute()) {
-				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
-			}
-			return mapValue;
+			return validateUri(new URI(uri));
 		} catch (URISyntaxException e) {
-			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "id is not a URI"));
 		}
 
 	}
 
-	public static URI validateUri(URI mapValue) throws ResponseException {
-		try {
-			if (!mapValue.isAbsolute()) {
-				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
-			}
-			return mapValue;
-		} catch (ResponseException e) {
-			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+	public static Uni<URI> validateUri(URI uri) {
+		if (!uri.isAbsolute()) {
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "id is not a URI"));
 		}
+		return Uni.createFrom().item(uri);
 
 	}
 
@@ -595,27 +593,27 @@ public final class HttpUtils {
 		ArrayListMultimap<String, String> resultHeaders = ArrayListMultimap.create();
 		String replyBody;
 		switch (sendingContentType) {
-		case 1:
-			resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-			((Map) result).remove(JsonLdConsts.CONTEXT);
-			replyBody = JsonUtils.toPrettyString(result);
-			for (Object entry : context) {
-				if (entry instanceof String) {
-					resultHeaders.put(HttpHeaders.LINK, "<" + entry
-							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-				} else {
-					resultHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-				}
+			case 1:
+				resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+				((Map) result).remove(JsonLdConsts.CONTEXT);
+				replyBody = JsonUtils.toPrettyString(result);
+				for (Object entry : context) {
+					if (entry instanceof String) {
+						resultHeaders.put(HttpHeaders.LINK, "<" + entry
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+					} else {
+						resultHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+					}
 
-			}
-			break;
-		case 2:
-			resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-			replyBody = JsonUtils.toPrettyString(result);
-			break;
-		default:
-			throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
+				}
+				break;
+			case 2:
+				resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+				replyBody = JsonUtils.toPrettyString(result);
+				break;
+			default:
+				throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
 		}
 		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(HttpStatus.SC_MULTI_STATUS).entity(replyBody);
 		for (Entry<String, String> entry : resultHeaders.entries()) {
@@ -649,22 +647,21 @@ public final class HttpUtils {
 		context.clear();
 		context.addAll(temp);
 
-
 		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
 		for (String key : headers.keySet()) {
 			switch (key.toLowerCase()) {
-			case "postman-token":
-			case "accept-encoding":
-			case "user-agent":
-			case "host":
-			case "connection":
-			case "cache-control":
-			case "content-length":
-				break;
-			default:
-				for (String entry : Sets.newHashSet(headers.get(key))) {
-					builder = builder.header(key, entry);
-				}
+				case "postman-token":
+				case "accept-encoding":
+				case "user-agent":
+				case "host":
+				case "connection":
+				case "cache-control":
+				case "content-length":
+					break;
+				default:
+					for (String entry : Sets.newHashSet(headers.get(key))) {
+						builder = builder.header(key, entry);
+					}
 			}
 		}
 		return builder.build();

@@ -11,6 +11,7 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
@@ -175,11 +176,12 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	public Uni<UpdateResult> partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId,
-			String attrId, Map<String, Object> expandedPayload) throws ResponseException, Exception {
+			String attrId, Map<String, Object> expandedPayload) {
 		logger.trace("partialUpdateEntity() :: started");
 		// get message channel for ENTITY_APPEND topic
 		if (entityId == null) {
-			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
+			return Uni.createFrom()
+					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
