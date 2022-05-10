@@ -18,6 +18,7 @@ import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
 import eu.neclab.ngsildbroker.queryhandler.services.EntityPostQueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
@@ -45,7 +46,7 @@ public class EntityOperationQueryController {
 
 	@Path("/query")
 	@POST
-	public RestResponse<Object> postQuery(HttpServerRequest request, String payload,
+	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String payload,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") Integer offset,
 			@QueryParam(value = "qtoken") String qToken, @QueryParam(value = "options") List<String> options,
 			@QueryParam(value = "count") boolean count) {

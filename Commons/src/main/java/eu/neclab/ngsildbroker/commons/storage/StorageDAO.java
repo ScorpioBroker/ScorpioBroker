@@ -219,7 +219,7 @@ public abstract class StorageDAO {
 		return true;
 	}
 
-	public QueryResult query(QueryParams qp) throws ResponseException {
+	public Uni<QueryResult> query(QueryParams qp){
 		// JdbcTemplate template;
 		PgPool client = clientManager.getClient(qp.getTenant(), false);
 
