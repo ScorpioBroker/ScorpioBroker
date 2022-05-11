@@ -35,7 +35,7 @@ services:
     logging:
       driver: none
   scorpio:
-    image: scorpiobroker/scorpio:scorpio-aaio-no-eureka_1.1.0-SNAPSHOT
+    image: scorpiobroker/scorpio:scorpio-aaio-no-eureka_latest
     ports:
       - "9090:9090"
     depends_on:

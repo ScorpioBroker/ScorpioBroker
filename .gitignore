@@ -12,3 +12,4 @@ Go/pkg/
 /*.db
 /*/bin
 /*/*/bin
+/.idea/
