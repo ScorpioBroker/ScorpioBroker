@@ -59,20 +59,16 @@ public class HistoryController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	
 	@POST
-	public Uni<RestResponse<Object>> createTemporalEntity(HttpServerRequest request,
-			String payload) {
+	public Uni<RestResponse<Object>> createTemporalEntity(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createEntry(historyService, request, payload,
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, AppConstants.HISTORY_URL, logger);
 	}
 
 	@GET
 	public Uni<RestResponse<Object>> retrieveTemporalEntity(HttpServerRequest request,
-			@QueryParam(value = "limit") Integer limit,
-			@QueryParam(value = "offset") Integer offset,
-			@QueryParam(value = "qtoken") String qToken,
-			@QueryParam(value = "options") List<String> options,
+			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") Integer offset,
+			@QueryParam(value = "qtoken") String qToken, @QueryParam(value = "options") List<String> options,
 			@QueryParam(value = "count") Boolean countResult) {
 		return QueryControllerFunctions.queryForEntries(historyService, request, true, defaultLimit, maxLimit, true);
 	}
@@ -90,88 +86,112 @@ public class HistoryController {
 	@DELETE
 	public Uni<RestResponse<Object>> deleteTemporalEntityById(HttpServerRequest request,
 			@PathParam("entityId") String entityId) {
-			return EntryControllerFunctions.deleteEntry(historyService, request, entityId, logger);
-		
+		return EntryControllerFunctions.deleteEntry(historyService, request, entityId, logger);
+
 	}
 
 	@Path("/{entityId}/attrs")
 	@POST
 	public Uni<RestResponse<Object>> addAttrib2TemopralEntity(HttpServerRequest request,
-			@PathParam("entityId") String entityId, String payload,
-			@QueryParam( value = "options") String options) {
+			@PathParam("entityId") String entityId, String payload, @QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.appendToEntry(historyService, request, entityId, payload, options,
 				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, logger);
 	}
 
 	@Path("/{entityId}/attrs/{attrId}")
 	@DELETE
-	public RestResponse<Object> deleteAttrib2TemporalEntity(HttpServerRequest request,
+	public Uni<RestResponse<Object>> deleteAttrib2TemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId) {
-		try {
-			HttpUtils.validateUri(entityId);
-			Context context = JsonLdProcessor.getCoreContextClone();
-			List<Object> links = HttpUtils.getAtContext(request);
-			context = context.parse(links, true);
-			logger.trace("deleteAttrib2TemporalEntity :: started");
-			logger.debug("entityId : " + entityId + " attrId : " + attrId);
-			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null, context);
-			logger.trace("deleteAttrib2TemporalEntity :: completed");
-			return RestResponse.noContent();
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
+				.onItem().transformToUni(t -> {
+					Context context = JsonLdProcessor.getCoreContextClone();
+					List<Object> links = t.getItem2();
+					context = context.parse(links, true);
+
+					logger.trace("deleteAttrib2TemporalEntity :: started");
+					logger.debug("entityId : " + entityId + " attrId : " + attrId);
+
+					return historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null, context)
+							.onItem().transform(t2 -> {
+								logger.trace("deleteAttrib2TemporalEntity :: completed");
+								return RestResponse.noContent();
+							});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{entityId}/attrs/{attrId}/{instanceId}")
 	@PATCH
-	public RestResponse<Object> modifyAttribInstanceTemporalEntity(HttpServerRequest request,
+	public Uni<RestResponse<Object>> modifyAttribInstanceTemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
 			@PathParam("instanceId") String instanceId, String payload) {
-		try {
-			HttpUtils.validateUri(entityId);
-			HttpUtils.validateUri(instanceId);
-			logger.trace("modifyAttribInstanceTemporalEntity :: started");
-			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
-			Context context = JsonLdProcessor.getCoreContextClone();
+		/*
+		 * try { HttpUtils.validateUri(entityId); HttpUtils.validateUri(instanceId);
+		 * logger.trace("modifyAttribInstanceTemporalEntity :: started");
+		 * logger.debug("entityId : " + entityId + " attrId : " + attrId +
+		 * " instanceId : " + instanceId); Context context =
+		 * JsonLdProcessor.getCoreContextClone();
+		 * 
+		 * List<Object> linkHeaders = HttpUtils.getAtContext(request); boolean
+		 * atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders); context
+		 * = context.parse(linkHeaders, true);
+		 * 
+		 * @SuppressWarnings("unchecked") Map<String, Object> resolved = (Map<String,
+		 * Object>) JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
+		 * opts, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed) .get(0); //
+		 * TODO : TBD- conflict between specs and implementation <mentioned no request
+		 * // body in specs>
+		 * historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(
+		 * request), entityId, resolved, attrId, instanceId, context);
+		 * logger.trace("modifyAttribInstanceTemporalEntity :: completed"); return
+		 * RestResponse.noContent(); } catch (Exception exception) { return
+		 * HttpUtils.handleControllerExceptions(exception); }
+		 */
+		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.validateUri(instanceId),
+				HttpUtils.getAtContext(request)).asTuple().onItem().transformToUni(t -> {
 
-			List<Object> linkHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
-			context = context.parse(linkHeaders, true);
+					logger.trace("modifyAttribInstanceTemporalEntity :: started");
+					logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
+					Context context = JsonLdProcessor.getCoreContextClone();
+					List<Object> linkHeaders = t.getItem3();
+					context = context.parse(linkHeaders, true);
 
-			@SuppressWarnings("unchecked")
-			Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders,
-					JsonUtils.fromString(payload), opts, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
-					.get(0);
-			// TODO : TBD- conflict between specs and implementation <mentioned no request
-			// body in specs>
-			historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId, resolved, attrId,
-					instanceId, context);
-			logger.trace("modifyAttribInstanceTemporalEntity :: completed");
-			return RestResponse.noContent();
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+					boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+
+					@SuppressWarnings("unchecked")
+					Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+							.expand(linkHeaders, JsonUtils.fromString(payload), opts,
+									AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
+							.get(0);
+
+					return historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId,
+							resolved, attrId, instanceId, context).onItem().transform(t2 -> {
+								logger.trace("modifyAttribInstanceTemporalEntity :: completed");
+								return RestResponse.noContent();
+							});
+
+				});
 	}
 
 	@Path("/{entityId}/attrs/{attrId}/{instanceId}")
 	@DELETE
-	public RestResponse<Object> deleteAtrribInstanceTemporalEntity(HttpServerRequest request,
+	public Uni<RestResponse<Object>> deleteAtrribInstanceTemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
 			@PathParam("instanceId") String instanceId) {
-		try {
-			logger.trace("deleteAtrribInstanceTemporalEntity :: started");
-			HttpUtils.validateUri(entityId);
-			HttpUtils.validateUri(instanceId);
-			logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
-			Context context = JsonLdProcessor.getCoreContextClone();
-			List<Object> links = HttpUtils.getAtContext(request);
-			context = context.parse(links, true);
+		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.validateUri(instanceId),
+				HttpUtils.getAtContext(request)).asTuple().onItem().transformToUni(t -> {
+					logger.debug("entityId : " + entityId + " attrId : " + attrId + " instanceId : " + instanceId);
 
-			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId, context);
-			logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
-			return RestResponse.noContent();
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+					Context context = JsonLdProcessor.getCoreContextClone();
+					List<Object> links = t.getItem3();
+					context = context.parse(links, true);
+
+					return historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId, context)
+							.onItem().transform(t2 -> {
+								logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
+								return RestResponse.noContent();
+
+							});
+
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 }
