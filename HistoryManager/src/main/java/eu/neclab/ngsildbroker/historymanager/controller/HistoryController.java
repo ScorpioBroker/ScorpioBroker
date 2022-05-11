@@ -26,6 +26,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
@@ -124,28 +125,6 @@ public class HistoryController {
 	public Uni<RestResponse<Object>> modifyAttribInstanceTemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
 			@PathParam("instanceId") String instanceId, String payload) {
-		/*
-		 * try { HttpUtils.validateUri(entityId); HttpUtils.validateUri(instanceId);
-		 * logger.trace("modifyAttribInstanceTemporalEntity :: started");
-		 * logger.debug("entityId : " + entityId + " attrId : " + attrId +
-		 * " instanceId : " + instanceId); Context context =
-		 * JsonLdProcessor.getCoreContextClone();
-		 * 
-		 * List<Object> linkHeaders = HttpUtils.getAtContext(request); boolean
-		 * atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders); context
-		 * = context.parse(linkHeaders, true);
-		 * 
-		 * @SuppressWarnings("unchecked") Map<String, Object> resolved = (Map<String,
-		 * Object>) JsonLdProcessor.expand(linkHeaders, JsonUtils.fromString(payload),
-		 * opts, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed) .get(0); //
-		 * TODO : TBD- conflict between specs and implementation <mentioned no request
-		 * // body in specs>
-		 * historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(
-		 * request), entityId, resolved, attrId, instanceId, context);
-		 * logger.trace("modifyAttribInstanceTemporalEntity :: completed"); return
-		 * RestResponse.noContent(); } catch (Exception exception) { return
-		 * HttpUtils.handleControllerExceptions(exception); }
-		 */
 		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.validateUri(instanceId),
 				HttpUtils.getAtContext(request)).asTuple().onItem().transformToUni(t -> {
 
@@ -155,20 +134,21 @@ public class HistoryController {
 					List<Object> linkHeaders = t.getItem3();
 					context = context.parse(linkHeaders, true);
 
-					boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+					boolean atContextAllowed;
+					try {
+						atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+						@SuppressWarnings("unchecked")
+						Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+								.expand(linkHeaders, JsonUtils.fromString(payload), opts,
+										AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
+								.get(0);
+						historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId,
+								resolved, attrId, instanceId, context);
+						return Uni.createFrom().item(RestResponse.noContent().ok());
 
-					@SuppressWarnings("unchecked")
-					Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-							.expand(linkHeaders, JsonUtils.fromString(payload), opts,
-									AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
-							.get(0);
-
-					return historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId,
-							resolved, attrId, instanceId, context).onItem().transform(t2 -> {
-								logger.trace("modifyAttribInstanceTemporalEntity :: completed");
-								return RestResponse.noContent();
-							});
-
+					} catch (Exception exception) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
+					}
 				});
 	}
 
