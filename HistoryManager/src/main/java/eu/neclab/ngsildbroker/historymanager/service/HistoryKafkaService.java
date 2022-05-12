@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +11,6 @@ import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
@@ -17,13 +18,13 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequ
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
 
-@Service
+@Singleton
 @ConditionalOnProperty(prefix = "scorpio.history", name = "autorecording", matchIfMissing = true, havingValue = "active")
 public class HistoryKafkaService {
 
 	private static Logger logger = LoggerFactory.getLogger(HistoryKafkaService.class);
 
-	@Autowired
+	@Inject
 	HistoryService historyService;
 
 	public HistoryKafkaService() {

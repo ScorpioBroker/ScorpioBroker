@@ -232,7 +232,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 //	}
 
 	@SuppressWarnings("unchecked")
-	private UniAndGroup2<Void, Void> handleRequest(HistoryEntityRequest request) {
+	protected UniAndGroup2<Void, Void> handleRequest(HistoryEntityRequest request) {
 		try {
 			return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request),
 					kafkaSenderInterface.send(new BaseRequest(request)));
