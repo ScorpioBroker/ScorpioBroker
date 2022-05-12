@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.commons.datatypes.results;
 import java.util.List;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import io.smallrye.mutiny.Uni;
 
 /**
  * @author hebgen

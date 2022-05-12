@@ -3,7 +3,8 @@ package eu.neclab.ngsildbroker.historymanager.repository;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.stereotype.Repository;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import com.google.common.collect.ArrayListMultimap;
 
@@ -11,51 +12,65 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.storage.TemporalStorageFunctions;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.Tuple;
+import java.util.Map.Entry;
 
-@Repository
+@Singleton
 public class HistoryDAO extends StorageDAO {
+
+	@Inject
+	ClientManager clientManager;
 
 	@Override
 	protected StorageFunctionsInterface getStorageFunctions() {
 		return new TemporalStorageFunctions();
 	}
 
-	public void entityExists(String entityId, String tenantId) throws ResponseException {
-		
+	public Uni<ResponseException> entityExists(String entityId, String tenantId) {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		if (tenantId == AppConstants.INTERNAL_NULL_KEY) {
-			result.putAll(AppConstants.INTERNAL_NULL_KEY,
-					getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
-			if (result.containsValue(entityId)) {
-				throw new ResponseException(ErrorType.AlreadyExists, entityId + " already exists");
-			}
+			clientManager.getClient(null, false).query("SELECT DISTINCT id FROM temporalentity").executeAndAwait()
+					.forEach(t -> {
+						result.put(tenantId, t.getString(0));
+					});
 		} else {
-
-			result.putAll(tenantId,
-					getJDBCTemplate(tenantId).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
-			if (result.containsValue(entityId)) {
-				throw new ResponseException(ErrorType.AlreadyExists, entityId + " already exists");
-			}
-
+			clientManager.getClient(tenantId, false).query("SELECT DISTINCT id FROM temporalentity").executeAndAwait()
+					.forEach(t -> {
+						result.put(tenantId, t.getString(0));
+					});
 		}
+		if (result.containsValue(entityId)) {
+			return Uni.createFrom().item(new ResponseException(ErrorType.AlreadyExists, entityId + " already exists"));
+		}
+		return null;
 	}
+
 	
-	public void getAllIds(String entityId, String tenantId) throws ResponseException {
+	public Uni<ResponseException> getAllIds(String entityId, String tenantId) {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		result.putAll(AppConstants.INTERNAL_NULL_KEY,
-				getJDBCTemplate(null).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
-		List<String> tenants = getTenants();
-		for (String tenant : tenants) {
-			result.putAll(tenant,
-					getJDBCTemplate(tenant).queryForList("SELECT DISTINCT id FROM temporalentity", String.class));
+
+		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
+			PgPool client = entry.getValue();
+			String tenant = entry.getKey();
+			client.query("SELECT DISTINCT id FROM temporalentity").executeAndAwait().forEach(t -> {
+				result.put(tenant, t.getString(0));
+			});
 		}
 		if (!result.containsValue(entityId)) {
-			throw new ResponseException(ErrorType.NotFound, "Entity Id " + entityId + " not found");
+			return Uni.createFrom()
+					.item(new ResponseException(ErrorType.NotFound, "Entity Id " + entityId + " not found"));
 		}
 		if (!result.containsKey(tenantId)) {
-			throw new ResponseException(ErrorType.TenantNotFound, "tenant " + tenantId + " not found");
+			return Uni.createFrom()
+					.item(new ResponseException(ErrorType.TenantNotFound, "tenant " + tenantId + " not found"));
 		}
+		return null;
 	}
 }
