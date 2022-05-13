@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.historymanager.repository;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -16,11 +15,7 @@ import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.storage.TemporalStorageFunctions;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.pgclient.PgPool;
-import io.vertx.mutiny.sqlclient.Row;
-import io.vertx.mutiny.sqlclient.Tuple;
-import java.util.Map.Entry;
 
 @Singleton
 public class HistoryDAO extends StorageDAO {
@@ -33,7 +28,7 @@ public class HistoryDAO extends StorageDAO {
 		return new TemporalStorageFunctions();
 	}
 
-	public Uni<ResponseException> entityExists(String entityId, String tenantId) {
+	public Uni<Void> entityExists(String entityId, String tenantId) throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		if (tenantId == AppConstants.INTERNAL_NULL_KEY) {
 			clientManager.getClient(null, false).query("SELECT DISTINCT id FROM temporalentity").executeAndAwait()
@@ -47,13 +42,12 @@ public class HistoryDAO extends StorageDAO {
 					});
 		}
 		if (result.containsValue(entityId)) {
-			return Uni.createFrom().item(new ResponseException(ErrorType.AlreadyExists, entityId + " already exists"));
+			throw new ResponseException(ErrorType.AlreadyExists, entityId + " already exists");
 		}
-		return null;
+		return Uni.createFrom().nullItem();
 	}
 
-	
-	public Uni<ResponseException> getAllIds(String entityId, String tenantId) {
+	public Uni<Void> getAllIds(String entityId, String tenantId) throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 
 		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
@@ -64,13 +58,12 @@ public class HistoryDAO extends StorageDAO {
 			});
 		}
 		if (!result.containsValue(entityId)) {
-			return Uni.createFrom()
-					.item(new ResponseException(ErrorType.NotFound, "Entity Id " + entityId + " not found"));
+			throw new ResponseException(ErrorType.NotFound, "Entity Id " + entityId + " not found");
+
 		}
 		if (!result.containsKey(tenantId)) {
-			return Uni.createFrom()
-					.item(new ResponseException(ErrorType.TenantNotFound, "tenant " + tenantId + " not found"));
+			throw new ResponseException(ErrorType.TenantNotFound, "tenant " + tenantId + " not found");
 		}
-		return null;
+		return Uni.createFrom().nullItem();
 	}
 }

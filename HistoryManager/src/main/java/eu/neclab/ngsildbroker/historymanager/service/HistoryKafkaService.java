@@ -2,24 +2,21 @@ package eu.neclab.ngsildbroker.historymanager.service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.stereotype.Service;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.eventbus.Message;
 
 @Singleton
-@ConditionalOnProperty(prefix = "scorpio.history", name = "autorecording", matchIfMissing = true, havingValue = "active")
 public class HistoryKafkaService {
 
 	private static Logger logger = LoggerFactory.getLogger(HistoryKafkaService.class);
@@ -31,33 +28,37 @@ public class HistoryKafkaService {
 
 	}
 
-	@KafkaListener(topics = "${scorpio.topics.entity}", groupId = "history")
-	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
-			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) throws Exception {
+	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
+	public Uni<Void> handleEntity(Message<BaseRequest> message) {
 		HistoryEntityRequest request;
-		switch (message.getRequestType()) {
-		case AppConstants.APPEND_REQUEST:
-			logger.debug("Append got called: " + key);
-			request = new AppendHistoryEntityRequest(message);
-			break;
-		case AppConstants.CREATE_REQUEST:
-			logger.debug("Create got called: " + key);
-			request = new CreateHistoryEntityRequest(message);
-			break;
-		case AppConstants.UPDATE_REQUEST:
-			logger.debug("Update got called: " + key);
-			request = new UpdateHistoryEntityRequest(message);
-			break;
-		case AppConstants.DELETE_REQUEST:
-			logger.debug("Delete got called: " + key);
-			request = null;
-			break;
-		default:
-			request = null;
-			break;
+		try {
+			switch (message.body().getRequestType()) {
+			case AppConstants.APPEND_REQUEST:
+				logger.debug("Append got called: " + message.body().getId());
+				request = new AppendHistoryEntityRequest(message.body());
+				break;
+			case AppConstants.CREATE_REQUEST:
+				logger.debug("Create got called: " + message.body().getId());
+				request = new CreateHistoryEntityRequest(message.body());
+				break;
+			case AppConstants.UPDATE_REQUEST:
+				logger.debug("Update got called: " + message.body().getId());
+				request = new UpdateHistoryEntityRequest(message.body());
+				break;
+			case AppConstants.DELETE_REQUEST:
+				logger.debug("Delete got called: " + message.body().getId());
+				request = null;
+				break;
+			default:
+				request = null;
+				break;
+			}
+			if (request != null) {
+				historyService.handleRequest(request);
+			}
+		} catch (Exception e) {
+			logger.error("Internal history recording failed", e.getMessage());
 		}
-		if (request != null) {
-			historyService.handleRequest(request);
-		}
+		return Uni.createFrom().nullItem();
 	}
 }
