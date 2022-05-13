@@ -77,31 +77,20 @@ public abstract class StorageDAO {
 		storageFunctions = getStorageFunctions();
 	}
 
-	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
-			throws SQLException {
-		try {
-			String sql;
-			int n = 0;
-			if (!tenantidvalue.equals(null)) {
-				sql = "INSERT INTO " + tableName
-						+ " (tenant_id, database_name) VALUES (?, ?) ON CONFLICT(tenant_id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id";
-				synchronized (writerJdbcTemplate) {
-					n = writerJdbcTemplate.update(sql, tenantidvalue, databasename);
-				}
-			} else {
-				sql = "DELETE FROM " + tableName + " WHERE id = ?";
-				synchronized (writerJdbcTemplate) {
-					n = writerJdbcTemplate.update(sql, tenantidvalue);
-				}
-			}
-			logger.trace("Rows affected: " + Integer.toString(n));
-			return true; // (n>0);
-		} catch (Exception e) {
-			logger.error("Exception ::", e);
-			e.printStackTrace();
-		}
-		return false;
-	}
+	/*
+	 * public boolean storeTenantdata(String tableName, String columnName, String
+	 * tenantidvalue, String databasename) throws SQLException { try { String sql;
+	 * int n = 0; if (!tenantidvalue.equals(null)) { sql = "INSERT INTO " +
+	 * tableName +
+	 * " (tenant_id, database_name) VALUES (?, ?) ON CONFLICT(tenant_id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id"
+	 * ; synchronized (writerJdbcTemplate) { n = writerJdbcTemplate.update(sql,
+	 * tenantidvalue, databasename); } } else { sql = "DELETE FROM " + tableName +
+	 * " WHERE id = ?"; synchronized (writerJdbcTemplate) { n =
+	 * writerJdbcTemplate.update(sql, tenantidvalue); } }
+	 * logger.trace("Rows affected: " + Integer.toString(n)); return true; // (n>0);
+	 * } catch (Exception e) { logger.error("Exception ::", e); e.printStackTrace();
+	 * } return false; }
+	 */
 
 	protected DBWriteTemplates getJDBCTemplates(BaseRequest request) {
 		return getJDBCTemplates(getTenant(request));
@@ -132,8 +121,8 @@ public abstract class StorageDAO {
 			tenant = request.getHeaders().get(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK).get(0);
 			String databasename = "ngb" + tenant;
 			try {
-				storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT, tenant,
-						databasename);
+				clientManager.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,
+						tenant, databasename);
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -145,27 +134,24 @@ public abstract class StorageDAO {
 
 	}
 
-	public String findDataBaseNameByTenantId(String tenantidvalue) {
-		if (tenantidvalue == null)
-			return null;
-		try {
-			String databasename = "ngb" + tenantidvalue;
-			List<String> data;
-			data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
-			if (data.contains(databasename)) {
-				return databasename;
-			} else {
-				String modifydatabasename = " \"" + databasename + "\"";
-				String sql = "create database " + modifydatabasename + "";
-				writerJdbcTemplate.execute(sql);
-				return databasename;
-			}
-		} catch (EmptyResultDataAccessException e) {
-			return null;
-		}
-	}
+	/*
+	 * public String findDataBaseNameByTenantId(String tenantidvalue) { if
+	 * (tenantidvalue == null) return null; try { String databasename = "ngb" +
+	 * tenantidvalue; ArrayList<String> al1=new ArrayList<String>();
+	 * client.query("SELECT datname FROM pg_database").executeAndAwait().forEach(t
+	 * -> { al1.add(t.getString(0)); });
+	 * 
+	 * if(al1.contains(databasename)) { System.out.println("already exist"); return
+	 * databasename;
+	 * 
+	 * }else { String modifydatabasename = " \"" + databasename + "\""; String sql =
+	 * "create database " + modifydatabasename + "";
+	 * client.query(sql).execute().await().indefinitely();
+	 * System.out.println("sucessfully created"); return databasename; } } catch
+	 * (EmptyResultDataAccessException e) { return null; } }
+	 */
 
-	public DataSource determineTargetDataSource(String tenantidvalue) {
+	public DataSource determineTargetDataSource(String tenantidvalue) throws SQLException {
 
 		if (tenantidvalue == null)
 			return writerDataSource;
@@ -185,7 +171,7 @@ public abstract class StorageDAO {
 	}
 
 	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException, SQLException {
-		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
+		String tenantDatabaseName = clientManager.findDataBaseNameByTenantId(tenantidvalue);
 		if (tenantDatabaseName == null) {
 			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
 		}
@@ -219,7 +205,7 @@ public abstract class StorageDAO {
 		return true;
 	}
 
-	public Uni<QueryResult> query(QueryParams qp){
+	public Uni<QueryResult> query(QueryParams qp) {
 		// JdbcTemplate template;
 		PgPool client = clientManager.getClient(qp.getTenant(), false);
 
@@ -429,11 +415,13 @@ public abstract class StorageDAO {
 						+ "'::jsonb) ON CONFLICT(id) DO NOTHING";
 				uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
 						.andContinueWithNull();
-				//TODO check this failure should go up failure stream
-				/*if (uni == null) {
-					throw new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists");
-
-				}*/
+				// TODO check this failure should go up failure stream
+				/*
+				 * if (uni == null) { throw new ResponseException(ErrorType.AlreadyExists,
+				 * request.getId() + " already exists");
+				 * 
+				 * }
+				 */
 			} else {
 				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = '" + value
 						+ "'::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = '" + valueWithoutSysAttrs
