@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.annotation.PostConstruct;
@@ -45,6 +46,30 @@ public class ClientManager {
 
 	public HashMap<String, PgPool> getAllClients() {
 		return tenant2Client;
+	}
+
+	public String findDataBaseNameByTenantId(String tenantidvalue) {
+		if (tenantidvalue == null)
+			return null;
+
+		String databasename = "ngb" + tenantidvalue;
+		ArrayList<String> al1 = new ArrayList<String>();
+		pgClient.query("SELECT datname FROM pg_database").executeAndAwait().forEach(t -> {
+			al1.add(t.getString(0));
+		});
+
+		if (al1.contains(databasename)) {
+			System.out.println("already exist");
+			return databasename;
+
+		} else {
+			String modifydatabasename = " \"" + databasename + "\"";
+			String sql = "create database " + modifydatabasename + "";
+			pgClient.query(sql).execute().await().indefinitely();
+			System.out.println("sucessfully created");
+			return databasename;
+		}
+
 	}
 
 	public void storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
