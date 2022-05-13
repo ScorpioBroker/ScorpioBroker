@@ -941,11 +941,11 @@ public class Context extends LinkedHashMap<String, Object> {
 		return prefixes;
 	}
 
-	String compactIri(String iri, boolean relativeToVocab) {
+	public String compactIri(String iri, boolean relativeToVocab) {
 		return compactIri(iri, null, relativeToVocab, false);
 	}
 
-	String compactIri(String iri) {
+	public String compactIri(String iri) {
 		return compactIri(iri, null, false, false);
 	}
 

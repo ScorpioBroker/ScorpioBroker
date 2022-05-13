@@ -5,6 +5,8 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.collect.HashMultimap;
+
 /**
  * @author hebgen
  * @version 1.0
@@ -15,6 +17,7 @@ public class EndPoint {
 	private String accept;
 	private URI uri;
 	private Map<String, String> notifierInfo;
+	private HashMultimap<String, Object> receiverInfo;
 
 	public EndPoint() {
 
@@ -46,6 +49,9 @@ public class EndPoint {
 		if (endPoint.notifierInfo != null) {
 			this.notifierInfo = new HashMap<String, String>(endPoint.notifierInfo);
 		}
+		if (endPoint.receiverInfo != null) {
+			this.receiverInfo = HashMultimap.create(endPoint.receiverInfo);
+		}
 
 	}
 
@@ -75,6 +81,15 @@ public class EndPoint {
 
 	public void setNotifierInfo(Map<String, String> notifierInfo) {
 		this.notifierInfo = notifierInfo;
+	}
+
+	public void setReceiverInfo(HashMultimap<String, Object> receiverInfo) {
+		this.receiverInfo = receiverInfo;
+
+	}
+
+	public HashMultimap<String, Object> getReceiverInfo() {
+		return receiverInfo;
 	}
 
 }

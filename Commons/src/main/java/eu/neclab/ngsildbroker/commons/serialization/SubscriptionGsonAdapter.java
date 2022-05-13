@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.github.jsonldjava.core.JsonLdError;
+import com.google.common.collect.HashMultimap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -159,6 +160,18 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 						infoSettingNotifier.put(NGSIConstants.MQTT_QOS, mqttQos);
 						infoSettingNotifier.put(NGSIConstants.MQTT_VERSION, mqttVersion);
 						endPoint.setNotifierInfo(infoSettingNotifier);
+					}
+					if (jsonEndPoint.has(NGSIConstants.NGSI_LD_RECEIVERINFO)) {
+						HashMultimap<String, Object> receiverInfo = HashMultimap.create();
+
+						JsonArray receiverInfoArray = jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_RECEIVERINFO);
+						receiverInfoArray.forEach(t -> {
+							JsonObject tmpObj = t.getAsJsonObject();
+							tmpObj.entrySet().forEach(t2 -> {
+								receiverInfo.put(t2.getKey(), t2.getValue().getAsString());
+							});
+						});
+						endPoint.setReceiverInfo(receiverInfo);
 					}
 				} catch (URISyntaxException e) {
 					throw new JsonParseException(e);
@@ -387,12 +400,20 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 
 					notifierEndPointArray.add(notifierEndPoint);
 					endPoint.add(NGSIConstants.NGSI_LD_NOTIFIERINFO, notifierEndPointArray);
-					endPointArray.add(endPoint);
-					notificationObj.add(NGSIConstants.NGSI_LD_ENDPOINT, endPointArray);
-				} else {
-					endPointArray.add(endPoint);
-					notificationObj.add(NGSIConstants.NGSI_LD_ENDPOINT, endPointArray);
+
 				}
+				if (notification.getEndPoint().getReceiverInfo() != null) {
+					JsonArray receiverInfoArray = new JsonArray(1);
+					for (Entry<String, Object> entry : notification.getEndPoint().getReceiverInfo().entries()) {
+						JsonObject receiverInfo = new JsonObject();
+						receiverInfo.add(entry.getKey(), context.serialize(entry.getValue()));
+						receiverInfoArray.add(receiverInfo);
+					}
+					endPoint.add(NGSIConstants.NGSI_LD_RECEIVERINFO, receiverInfoArray);
+				}
+				endPointArray.add(endPoint);
+				notificationObj.add(NGSIConstants.NGSI_LD_ENDPOINT, endPointArray);
+
 			}
 			if (notification.getFormat() != null) {
 				tempArray = new JsonArray();
