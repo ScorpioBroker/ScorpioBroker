@@ -183,10 +183,19 @@ public interface EntryControllerFunctions {
 		String body = DataSerializer.toJson(result);
 		if (result.getFails().isEmpty()) {
 			status = okStatus;
-			body = null;
+			if (status.equals(HttpStatus.NO_CONTENT)) {
+				body = null;
+			} else if (status.equals(HttpStatus.CREATED)) {
+				body = DataSerializer.toJson(result.getSuccess());
+			} else {
+				body = DataSerializer.toJson(result);
+
+			}
+
 		}
 		if (result.getSuccess().isEmpty()) {
 			status = HttpStatus.BAD_REQUEST;
+			body = DataSerializer.toJson(result.getFails());
 		}
 
 		if (body == null) {
@@ -299,67 +308,72 @@ public interface EntryControllerFunctions {
 				result.addFail(new BatchFailure(entityId, response));
 				continue;
 			}
-			try {
-				result.addSuccess(entityService.createEntry(headers, resolved));
-				insertedOneEntity = true;
-			} catch (Exception e) {
-				String entityId;
-				if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
-					entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
-				} else {
-					result.addFail(new BatchFailure("NO ID PROVIDED",
-							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
-					continue;
-				}
-				RestResponse response;
-				if (e instanceof ResponseException) {
-					ResponseException responseException = ((ResponseException) e);
-					if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
-						if (replace) {
+			String entityId;
+			if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
+				entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
+			} else {
+				result.addFail(new BatchFailure("NO ID PROVIDED",
+						new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
+				continue;
+			}
+			RestResponse response;
+			if (replace) {
+				try {
+					entityService.deleteEntry(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID));
+					result.addSuccess(entityService.createEntry(headers, resolved));
+					appendedOneEntity = true;
+				} catch (Exception e1) {
+					if (e1 instanceof ResponseException) {
+						response = new RestResponse((ResponseException) e1);
+						if (response.getStatus().equals(HttpStatus.NOT_FOUND)) {
 							try {
-								entityService.deleteEntry(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID));
 								result.addSuccess(entityService.createEntry(headers, resolved));
 								insertedOneEntity = true;
-							} catch (Exception e1) {
-								if (e1 instanceof ResponseException) {
-									response = new RestResponse((ResponseException) e1);
+							} catch (Exception e) {
+								if (e instanceof ResponseException) {
+									response = new RestResponse((ResponseException) e);
 								} else {
-									response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
+									response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 								}
-								result.addFail(new BatchFailure(entityId, response));// TODO Auto-generated catch block
-							}
-						} else {
-
-							try {
-								UpdateResult updateResult = entityService.appendToEntry(headers, entityId, resolved,
-										new String[0]);
-								if (updateResult.getNotUpdated().isEmpty()) {
-									result.addSuccess(entityId);
-									appendedOneEntity = true;
-								} else {
-									result.addFail(new BatchFailure(entityId,
-											new RestResponse(ErrorType.MultiStatus,
-													JsonUtils.toPrettyString(updateResult.getNotUpdated())
-															+ " was not added")));
-								}
-							} catch (Exception e1) {
-								if (e1 instanceof ResponseException) {
-									response = new RestResponse((ResponseException) e1);
-								} else {
-									response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
-								}
-
 								result.addFail(new BatchFailure(entityId, response));
 							}
 						}
 					} else {
-						response = new RestResponse((ResponseException) e);
+						response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
+						result.addFail(new BatchFailure(entityId, response));
+					}
+				}
+			} else {
+
+				try {
+					UpdateResult updateResult = entityService.appendToEntry(headers, entityId, resolved, new String[0]);
+					if (updateResult.getNotUpdated().isEmpty()) {
+						result.addSuccess(entityId);
+						appendedOneEntity = true;
+					} else {
+						result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
+								JsonUtils.toPrettyString(updateResult.getNotUpdated()) + " was not added")));
+					}
+				} catch (Exception e1) {
+					if (e1 instanceof ResponseException) {
+						ResponseException responseException = ((ResponseException) e1);
+						if (responseException.getHttpStatus().equals(HttpStatus.NOT_FOUND)) {
+							try {
+								result.addSuccess(entityService.createEntry(headers, resolved));
+							} catch (Exception e) {
+								if (e instanceof ResponseException) {
+									response = new RestResponse((ResponseException) e);
+								} else {
+									response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+								}
+								result.addFail(new BatchFailure(entityId, response));
+							}
+						}
+					} else {
+						response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
 						result.addFail(new BatchFailure(entityId, response));
 					}
 
-				} else {
-					response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-					result.addFail(new BatchFailure(entityId, response));
 				}
 			}
 		}
