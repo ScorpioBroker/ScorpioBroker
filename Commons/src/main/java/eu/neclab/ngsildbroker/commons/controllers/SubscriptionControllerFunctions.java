@@ -23,6 +23,7 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -314,18 +315,14 @@ public interface SubscriptionControllerFunctions {
 								break;
 							case NGSIConstants.NGSI_LD_RECEIVERINFO:
 								HashMultimap<String, Object> receiverInfo = HashMultimap.create();
-								for (Map<String, List<Map<String, Object>>> headerEntry : (List<Map<String, List<Map<String, Object>>>>) endPointEntry
-										.getValue()) {
-									for (Entry<String, List<Map<String, Object>>> headerValue : headerEntry
-											.entrySet()) {
-										String key = headerValue.getKey();
-										List<Map<String, Object>> values = headerValue.getValue();
-										for (Map<String, Object> actualValue : values) {
-											receiverInfo.put(context.compactIri(key),
-													context.compactValue(key, actualValue));
-										}
+								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null,
+										context, opts, 999);
+								for (Map<String, Object> headerEntry : (List<Map<String, Object>>) compacted
+										.get(JsonLdConsts.GRAPH)) {
+									headerEntry.forEach((t, u) -> {
+										receiverInfo.put(t, u.toString());
+									});
 
-									}
 								}
 								endPoint.setReceiverInfo(receiverInfo);
 								break;
