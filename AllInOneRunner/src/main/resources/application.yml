@@ -165,9 +165,16 @@ scorpio:
         max: 1000
       query:
         max: 1000
+  sync:
+    announcement-time: 200
+    check-time: 1000
   topics:
     entity: ENTITY
     registry: REGISTRY
     temporal: TEMPORAL
     internalnotification: I_NOTIFY
     internalregsub: I_REGSUB
+    regsubsync: REG_SUB_SYNC
+    subsync: SUB_SYNC
+    regsubalive: REG_SUB_ALIVE
+    subalive: SUB_ALIVE

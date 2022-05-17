@@ -51,7 +51,7 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			String key = entry.getKey();
 			JsonElement value = entry.getValue();
 			if (key.equals(NGSIConstants.JSON_LD_ID)) {
-					result.setId(value.getAsString());
+				result.setId(value.getAsString());
 			} else if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
 				result.setType(value.getAsString());
 			} else if (key.equals(NGSIConstants.NGSI_LD_ENTITIES)) {
@@ -146,17 +146,20 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				try {
 					endPoint.setUri(new URI(jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_URI).get(0)
 							.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString()));
-					Map<String,String> infoSettingNotifier = new HashMap<String,String>();
+					Map<String, String> infoSettingNotifier = new HashMap<String, String>();
 					// add endpoint notification notifierInfo for deserialization
 					if (jsonEndPoint.has(NGSIConstants.NGSI_LD_NOTIFIERINFO)
 							&& jsonEndPoint.get(NGSIConstants.NGSI_LD_NOTIFIERINFO).isJsonArray()) {
-						JsonObject info = jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_NOTIFIERINFO).get(0).getAsJsonObject();
-						String mqttQos = info.getAsJsonArray(NGSIConstants.NGSI_LD_MQTT_QOS).get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
-						String mqttVersion = info.getAsJsonArray(NGSIConstants.NGSI_LD_MQTT_VERSION).get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
+						JsonObject info = jsonEndPoint.getAsJsonArray(NGSIConstants.NGSI_LD_NOTIFIERINFO).get(0)
+								.getAsJsonObject();
+						String mqttQos = info.getAsJsonArray(NGSIConstants.NGSI_LD_MQTT_QOS).get(0).getAsJsonObject()
+								.get(NGSIConstants.JSON_LD_VALUE).getAsString();
+						String mqttVersion = info.getAsJsonArray(NGSIConstants.NGSI_LD_MQTT_VERSION).get(0)
+								.getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString();
 						infoSettingNotifier.put(NGSIConstants.MQTT_QOS, mqttQos);
 						infoSettingNotifier.put(NGSIConstants.MQTT_VERSION, mqttVersion);
 						endPoint.setNotifierInfo(infoSettingNotifier);
-					} 
+					}
 				} catch (URISyntaxException e) {
 					throw new JsonParseException(e);
 				}
@@ -193,10 +196,21 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 				}
 				result.setNotification(notifyParam);
 
+			} else if (key.equals(NGSIConstants.NGSI_LD_SCOPE_Q)) {
+				try {
+					result.setScopeQueryString(value.getAsJsonArray().get(0).getAsJsonObject()
+							.get(NGSIConstants.JSON_LD_VALUE).getAsString());
+				} catch (JsonLdError e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ResponseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			} else if (key.equals(NGSIConstants.NGSI_LD_QUERY)) {
 				try {
-					result.setLdQueryString(
-							value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
+					result.setLdQueryString(value.getAsJsonArray().get(0).getAsJsonObject()
+							.get(NGSIConstants.JSON_LD_VALUE).getAsString());
 				} catch (JsonLdError e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -235,16 +249,17 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 						value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsString());
 
 			} else if (key.equals(NGSIConstants.NGSI_LD_IS_ACTIVE)) {
-				if (value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE).getAsBoolean() == false) {
+				if (value.getAsJsonArray().get(0).getAsJsonObject().get(NGSIConstants.JSON_LD_VALUE)
+						.getAsBoolean() == false) {
 					result.setStatus(NGSIConstants.ISACTIVE_FALSE);
 					result.setActive(false);
-				}else {
+				} else {
 					result.setStatus(NGSIConstants.ISACTIVE_TRUE);
 					result.setActive(true);
 				}
 			}
 		}
-		
+
 		// if (result.getId() == null) {
 		//
 		// }
@@ -443,6 +458,13 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			tempArray.add(tempObj);
 			top.add(NGSIConstants.NGSI_LD_QUERY, tempArray);
 		}
+		if (src.getScopeQueryString() != null) {
+			tempArray = new JsonArray();
+			tempObj = new JsonObject();
+			tempObj.add(NGSIConstants.JSON_LD_VALUE, context.serialize(src.getScopeQueryString()));
+			tempArray.add(tempObj);
+			top.add(NGSIConstants.NGSI_LD_SCOPE_Q, tempArray);
+		}
 
 		attribs = new JsonArray();
 		if (src.getAttributeNames() != null) {
@@ -462,12 +484,12 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			top.add(NGSIConstants.NGSI_LD_TIME_INTERVAL, SerializationTools.getValueArray(src.getTimeInterval()));
 		}
 		if (src.getExpiresAt() != null) {
-			//top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools
-					//.getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpiresAt()))));
+			// top.add(NGSIConstants.NGSI_LD_EXPIRES, SerializationTools
+			// .getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpiresAt()))));
 			JsonArray array = SerializationTools
-                    .getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpiresAt())));
-             array.get(0).getAsJsonObject().addProperty(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-             top.add(NGSIConstants.NGSI_LD_EXPIRES, array);
+					.getValueArray(SerializationTools.formatter.format(Instant.ofEpochMilli(src.getExpiresAt())));
+			array.get(0).getAsJsonObject().addProperty(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+			top.add(NGSIConstants.NGSI_LD_EXPIRES, array);
 		}
 		if (src.getStatus() != null) {
 			top.add(NGSIConstants.NGSI_LD_STATUS, SerializationTools.getValueArray(src.getStatus()));
@@ -476,12 +498,12 @@ public class SubscriptionGsonAdapter implements JsonDeserializer<Subscription>, 
 			top.add(NGSIConstants.NGSI_LD_DESCRIPTION, SerializationTools.getValueArray(src.getDescription()));
 		}
 		if (src.getSubscriptionName() != null) {
-			top.add(NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME, SerializationTools.getValueArray(src.getSubscriptionName()));
+			top.add(NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME,
+					SerializationTools.getValueArray(src.getSubscriptionName()));
 		}
 		if (src.isActive() != null) {
 			top.add(NGSIConstants.NGSI_LD_IS_ACTIVE, SerializationTools.getValueArray(src.isActive()));
 		}
-
 
 		return top;
 	}

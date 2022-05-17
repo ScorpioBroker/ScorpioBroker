@@ -6,7 +6,7 @@ mysettings:
       host: ${bushost:kafka}
   eureka:
     protocol: ${eurekaprotocol:http}
-    host: ${eurekahost:localhost}
+    host: ${eurekahost:eureka}
     port: ${eurekaport:8761}
   postgres:
     host: ${dbhost:postgres}

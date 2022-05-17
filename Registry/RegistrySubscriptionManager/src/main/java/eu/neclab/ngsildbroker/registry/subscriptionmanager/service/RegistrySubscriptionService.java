@@ -41,6 +41,9 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	@Value("${scorpio.topics.internalnotification}")
 	private String NOTIFICATION_TOPIC;
 
+	@Value("${scorpio.topics.regsubsync}")
+	private String REG_SUB_SYNC_TOPIC;
+
 	private NotificationHandler internalHandler;
 
 	private HashMap<String, SubscriptionRequest> id2InternalSubscriptions = new HashMap<String, SubscriptionRequest>();
@@ -102,7 +105,6 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	}
 
 	@PreDestroy
-	@Override
 	protected void deconstructor() {
 		for (Entry<String, SubscriptionRequest> entry : id2InternalSubscriptions.entrySet()) {
 			try {
@@ -111,7 +113,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 				logger.debug("Failed to subscribe internally", e);
 			}
 		}
-		super.deconstructor();
+
 	}
 
 	public void updateInternal(SubscriptionRequest request) {
@@ -189,6 +191,16 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	@Override
 	protected boolean evaluateCSF() {
 		return true;
+	}
+
+	@Override
+	protected void setSyncTopic() {
+		this.subSyncTopic = REG_SUB_SYNC_TOPIC;
+	}
+
+	@Override
+	protected void setSyncId() {
+		this.syncIdentifier = RegistrySubscriptionSyncService.SYNC_ID;
 	}
 
 }
