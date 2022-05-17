@@ -3,23 +3,37 @@ package eu.neclab.ngsildbroker.commons.storage;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.function.Function;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.sql.DataSource;
+
+import org.postgresql.ds.PGPoolingDataSource;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.DBWriteTemplates;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.sqlclient.SqlConnection;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.sqlclient.PoolOptions;
 
 @Singleton
 public class ClientManager {
 
 	@Inject
 	private PgPool pgClient;
+	
+	@Inject
+	protected StorageDAO storageDAO;
+	
 
 	protected HashMap<String, PgPool> tenant2Client = new HashMap<String, PgPool>();
 
@@ -47,7 +61,22 @@ public class ClientManager {
 	public HashMap<String, PgPool> getAllClients() {
 		return tenant2Client;
 	}
+	protected PgPool getJDBCTemplates(String tenant) throws SQLException {
+		PgPool result;
+		if (tenant == null) {
+			result = pgClient;
+		} else {
+			if (tenant2Client.containsKey(tenant)) {
+				result = tenant2Client.get(tenant);
+			} else {
+				DataSource finalDataSource = storageDAO.determineTargetDataSource(tenant);				
+				result=pgClient.connectionProvider((Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());						
+				tenant2Client.put(tenant, result);
+			}
 
+		}
+		return result;
+	}
 	public String findDataBaseNameByTenantId(String tenantidvalue) {
 		if (tenantidvalue == null)
 			return null;

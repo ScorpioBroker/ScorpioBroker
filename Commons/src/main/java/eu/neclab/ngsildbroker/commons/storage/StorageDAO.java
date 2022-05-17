@@ -96,24 +96,20 @@ public abstract class StorageDAO {
 		return getJDBCTemplates(getTenant(request));
 	}
 
-	protected DBWriteTemplates getJDBCTemplates(String tenant) {
-		DBWriteTemplates result;
-		if (tenant == null) {
-			result = defaultTemplates;
-		} else {
-			if (tenant2Templates.containsKey(tenant)) {
-				result = tenant2Templates.get(tenant);
-			} else {
-				DataSource finalDataSource = determineTargetDataSource(tenant);
-				DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(finalDataSource);
-				result = new DBWriteTemplates(new JdbcTemplate(transactionManager.getDataSource()),
-						new TransactionTemplate(transactionManager), new JdbcTemplate(finalDataSource));
-				tenant2Templates.put(tenant, result);
-			}
-
-		}
-		return result;
-	}
+	/*
+	 * protected PgPool getJDBCTemplates(String tenant) { PgPool result; if (tenant
+	 * == null) { result = clientManager.; } else { if
+	 * (clientManager.tenant2Client.containsKey(tenant)) { result =
+	 * clientManager.tenant2Client.get(tenant); } else { DataSource finalDataSource
+	 * = determineTargetDataSource(tenant); //DataSourceTransactionManager
+	 * transactionManager = new DataSourceTransactionManager(finalDataSource);
+	 * result = new DBWriteTemplates(new
+	 * JdbcTemplate(transactionManager.getDataSource()), new
+	 * TransactionTemplate(transactionManager), new JdbcTemplate(finalDataSource));
+	 * clientManager.tenant2Client.put(tenant, result); }
+	 * 
+	 * } return result; }
+	 */
 
 	private String getTenant(BaseRequest request) {
 		String tenant;
