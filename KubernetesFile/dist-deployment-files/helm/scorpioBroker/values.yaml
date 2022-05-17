@@ -130,7 +130,7 @@ gateway:
     type: NodePort
     port: 9090
     ## Provide nodePort if serviceType=NodePort
-    nodePort: 32297
+    nodePort: 30001
 ## Number of gateway instances to deploy
 ##
   replicas: 1
