@@ -18,10 +18,4 @@ public class SubscriptionInfoDAO extends BaseSubscriptionInfoDAO {
 	protected StorageFunctionsInterface getStorageFunctions() {
 		return new EntityStorageFunctions();
 	}
-
-	@Override
-	protected String getDBName() {
-		return "subscriptions";
-	}
-
 }

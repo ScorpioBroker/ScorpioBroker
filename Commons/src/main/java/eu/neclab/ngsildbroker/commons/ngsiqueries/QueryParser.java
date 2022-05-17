@@ -162,8 +162,7 @@ public class QueryParser {
 	}
 
 	public static ScopeQueryTerm parseScopeQuery(String queryString) {
-		ScopeQueryTerm result = new ScopeQueryTerm();
-		ScopeQueryTerm current = result;
+		ScopeQueryTerm current = new ScopeQueryTerm();
 		String scopeLevel = "";
 		ArrayList<String> scopeLevels = new ArrayList<String>();
 		OfInt it = queryString.chars().iterator();
@@ -175,10 +174,6 @@ public class QueryParser {
 				current = child;
 			} else if (b == ';') {
 				ScopeQueryTerm next = new ScopeQueryTerm();
-				if (!scopeLevel.equals("")) {
-					scopeLevels.add(scopeLevel);
-					scopeLevel = "";
-				}
 				current.setScopeLevels(scopeLevels.toArray(new String[0]));
 				current.setNext(next);
 				current.setNextAnd(true);
@@ -186,20 +181,12 @@ public class QueryParser {
 				scopeLevels.clear();
 			} else if (b == '|') {
 				ScopeQueryTerm next = new ScopeQueryTerm();
-				if (!scopeLevel.equals("")) {
-					scopeLevels.add(scopeLevel);
-					scopeLevel = "";
-				}
 				current.setScopeLevels(scopeLevels.toArray(new String[0]));
 				current.setNext(next);
 				current.setNextAnd(false);
 				current = next;
 				scopeLevels.clear();
 			} else if (b == ')') {
-				if (!scopeLevel.equals("")) {
-					scopeLevels.add(scopeLevel);
-					scopeLevel = "";
-				}
 				current.setScopeLevels(scopeLevels.toArray(new String[0]));
 				current = current.getParent();
 				scopeLevels.clear();
@@ -214,13 +201,8 @@ public class QueryParser {
 			}
 
 		}
-		if (!scopeLevel.isEmpty()) {
-			scopeLevels.add(scopeLevel);
-		}
-		if (!scopeLevels.isEmpty() && current != null) {
-			current.setScopeLevels(scopeLevels.toArray(new String[0]));
-		}
-		return result;
+
+		return current;
 	}
 
 }

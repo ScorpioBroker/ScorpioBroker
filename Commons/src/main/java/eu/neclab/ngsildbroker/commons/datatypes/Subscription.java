@@ -31,7 +31,6 @@ public class Subscription {
 	private List<EntityInfo> entities;
 	private Context ldContext;
 	private String ldQueryString;
-	private String scopeQueryString;
 	private String csfQueryString;
 	private LDGeoQuery ldGeoQuery;
 	private LDTemporalQuery ldTempQuery;
@@ -40,8 +39,6 @@ public class Subscription {
 	private QueryTerm ldQuery;
 	@JsonIgnore
 	private QueryTerm csfQuery;
-	@JsonIgnore
-	private ScopeQueryTerm scopeQuery;
 
 	// duplicate
 	public Subscription(Subscription subscription) {
@@ -190,14 +187,14 @@ public class Subscription {
 	}
 
 	public void addEntityInfo(EntityInfo entity) {
-		if (this.entities == null) {
+		if(this.entities == null) {
 			this.entities = new ArrayList<EntityInfo>();
 		}
 		this.entities.add(entity);
 	}
 
 	public void removeEntityInfo(EntityInfo entity) {
-		if (this.entities == null) {
+		if(this.entities == null) {
 			return;
 		}
 		this.entities.remove(entity);
@@ -302,19 +299,6 @@ public class Subscription {
 		return csfQuery;
 	}
 
-	public String getScopeQueryString() {
-		return scopeQueryString;
-	}
-
-	public void setScopeQueryString(String scopeQueryString) throws ResponseException {
-		this.scopeQueryString = scopeQueryString;
-		if (scopeQueryString != null) {
-			this.scopeQuery = QueryParser.parseScopeQuery(scopeQueryString);
-		} else {
-			this.scopeQuery = null;
-		}
-	}
-
 	public String getLdQueryString() {
 		return ldQueryString;
 	}
@@ -339,18 +323,6 @@ public class Subscription {
 		} else {
 			this.csfQuery = null;
 		}
-	}
-
-	public Boolean getIsActive() {
-		return isActive;
-	}
-
-	public QueryTerm getCsfQuery() {
-		return csfQuery;
-	}
-
-	public ScopeQueryTerm getScopeQuery() {
-		return scopeQuery;
 	}
 
 }

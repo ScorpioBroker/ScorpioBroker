@@ -230,19 +230,10 @@ public interface SubscriptionControllerFunctions {
 					subscription.setCsfQueryString(
 							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse csfQ");
+					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
 				}
 
 				break;
-			case NGSIConstants.NGSI_LD_SCOPE_Q:
-				try {
-					subscription.setScopeQueryString(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse scopeQ");
-				}
-				break;
-
 			default:
 				break;
 			}
@@ -409,7 +400,7 @@ public interface SubscriptionControllerFunctions {
 			logger.trace("getAllSubscriptions() :: completed");
 
 			return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
-					additionalHeaders, null, true, AppConstants.SUBSCRIPTION_ENDPOINT);
+					additionalHeaders, AppConstants.SUBSCRIPTION_ENDPOINT);
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}

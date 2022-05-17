@@ -1,11 +1,8 @@
 package eu.neclab.ngsildbroker.commons.querybase;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -187,9 +184,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 								resultBody = response.getBody();
 							} else {
 								entity = new HttpEntity<String>(additionalHeaders);
-								response = restTemplate.exchange(new URI(
-										endpoint + "/ngsi-ld/v1/entities?" + encodeQuery(rawQueryString)), HttpMethod.GET,
-										entity, String.class);
+								response = restTemplate.exchange(endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString,
+										HttpMethod.GET, entity, String.class);
 								resultBody = response.getBody();
 							}
 							if (response.getHeaders().containsKey(NGSIConstants.COUNT_HEADER_RESULT)) {
@@ -217,7 +213,6 @@ public abstract class BaseQueryService implements EntryQueryService {
 				}
 				return new RemoteQueryResult(null, ErrorType.None, -1, true);
 			}
-
 		});
 
 		// Csources response
@@ -259,14 +254,13 @@ public abstract class BaseQueryService implements EntryQueryService {
 
 	private QueryResult mergeStorage(RemoteQueryResult fromCsources, QueryResult fromStorage) throws IOException {
 		if (fromStorage == null || fromCsources == null) {
+			System.out.println();
 		}
 		if (fromStorage.getActualDataString() != null) {
 			for (String entry : fromStorage.getActualDataString()) {
 				Object entity = JsonUtils.fromString(entry);
 				fromCsources.addData(entity);
 			}
-		}
-		if(fromStorage != null && fromCsources != null) {
 			fromCsources.setCount(fromCsources.getCount() + fromStorage.getCount());
 		}
 		return fromCsources;
@@ -305,22 +299,5 @@ public abstract class BaseQueryService implements EntryQueryService {
 		logger.trace("getDataFromCsources() completed ::");
 		queryResult.setCount(count);
 		return queryResult;
-	}
-
-	private String encodeQuery(String query) {
-		String[] params = query.split("&");
-		StringBuilder result = new StringBuilder();
-		for (String param : params) {
-			int index = param.indexOf("=");
-			if (index == -1) {
-				result.append(param);
-			} else {
-				result.append(param.substring(0, index + 1));
-				result.append(URLEncoder.encode(param.substring(index + 1), Charset.forName("utf-8")));
-			}
-			result.append('&');
-
-		}
-		return result.substring(0, result.length() - 1);
 	}
 }

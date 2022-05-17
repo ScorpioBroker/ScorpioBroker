@@ -222,15 +222,15 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		if (fullSqlWhereProperty.length() > 0) {
 			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
 		}
-//		int limit = qp.getLimit();
-//		int offSet = qp.getOffSet();
-//
-//		if (limit > 0) {
-//			sqlQuery += "LIMIT " + limit + " ";
-//		}
-//		if (offSet > 0) {
-//			sqlQuery += "OFFSET " + offSet + " ";
-//		}
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+
+		if (limit > 0) {
+			sqlQuery += "LIMIT " + limit + " ";
+		}
+		if (offSet > 0) {
+			sqlQuery += "OFFSET " + offSet + " ";
+		}
 		// order by ?
 		return sqlQuery;
 	}

@@ -116,7 +116,7 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 			sqlWhere = qp.getScopeQ();
 			fullSqlWhere.append(sqlWhere);
 			fullSqlWhere.append(" AND ");
-
+			
 		}
 		if (qp.getCsf() != null) {
 			sqlWhere = qp.getCsf();
@@ -326,23 +326,22 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 	}
 
 	@Override
-	public String translateNgsildQueryToCountResult(QueryParams qp) {
+	public String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
 		String fullSqlWhereProperty = commonTranslateSql(qp);
 		String tableName = DBConstants.DBTABLE_CSOURCE + " c ";
-		String sqlQuery = "SELECT Count(*) FROM " + tableName + " INNER JOIN " + DBConstants.DBTABLE_CSOURCE_INFO
-				+ " ci ON (ci.csource_id = c.id) ";
+		String sqlQuery = "SELECT Count(*) FROM " + tableName + " ";
 		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " 1=1 ";
+			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
 		}
-//		int limit = qp.getLimit();
-//		int offSet = qp.getOffSet();
-//
-//		if (limit > 0) {
-//			sqlQuery += "LIMIT " + limit + " ";
-//		}
-//		if (offSet > 0) {
-//			sqlQuery += "OFFSET " + offSet + " ";
-//		}
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+
+		if (limit > 0) {
+			sqlQuery += "LIMIT " + limit + " ";
+		}
+		if (offSet > 0) {
+			sqlQuery += "OFFSET " + offSet + " ";
+		}
 		// order by ?
 		return sqlQuery;
 	}

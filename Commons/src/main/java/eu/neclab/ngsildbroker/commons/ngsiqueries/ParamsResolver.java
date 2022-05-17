@@ -191,6 +191,7 @@ public class ParamsResolver {
 				if (limit > maxLimit) {
 					throw new ResponseException(ErrorType.TooManyResults, "Limit exceeds max limit of " + maxLimit);
 				}
+				qp.setLimit(limit);
 				break;
 			case NGSIConstants.QUERY_PARAMETER_OFFSET:
 				offset = Integer.parseInt(queryValue);
@@ -221,7 +222,6 @@ public class ParamsResolver {
 			}
 			qp.setAttrs(String.join(",", attrs));
 		}
-		qp.setLimit(limit);
 		handleGeoQuery(georel, geoproperty, coordinates, geometry, qp);
 		handleTimeQuery(timerel, timeAt, timeproperty, endTimeAt, qp);
 		List<Map<String, String>> entities = new ArrayList<Map<String, String>>();

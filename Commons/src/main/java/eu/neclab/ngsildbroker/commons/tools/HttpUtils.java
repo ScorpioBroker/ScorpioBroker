@@ -669,14 +669,10 @@ public final class HttpUtils {
 		}
 		Object receiverInfo = registration.get(NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO);
 		if (receiverInfo != null) {
-			try {
-				Map<String, Object> headerMap = JsonLdProcessor.compact(receiverInfo, context, opts);
-				headerMap.remove(NGSIConstants.JSON_LD_CONTEXT);
-				for (Entry<String, Object> entry : headerMap.entrySet()) {
-					result.add(entry.getKey(), entry.getValue().toString());
-				}
-			} catch (Exception e) {
-				logger.error("Failed to read additional headers", e);
+			Map<String, String> headerMap = (Map<String, String>) myContext.compactValue(
+					NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO, ((List<Map<String, Object>>) receiverInfo).get(0));
+			for (Entry<String, String> entry : headerMap.entrySet()) {
+				result.add(entry.getKey(), entry.getValue());
 			}
 		}
 		return result;

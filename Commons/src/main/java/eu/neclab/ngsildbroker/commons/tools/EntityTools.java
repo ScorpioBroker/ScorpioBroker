@@ -158,17 +158,4 @@ public abstract class EntityTools {
 		return ((List<Map<String, String>>) instanceId).get(0).get(NGSIConstants.JSON_LD_ID);
 	}
 
-	@SuppressWarnings("unchecked")
-	public static List<String[]> getScopes(Map<String, Object> fullEntry) {
-		ArrayList<String[]> result = new ArrayList<String[]>();
-		Object scopes = fullEntry.get(NGSIConstants.NGSI_LD_SCOPE);
-		if (scopes != null && scopes instanceof List) {
-			List<Map<String, String>> list = (List<Map<String, String>>) scopes;
-			for (Map<String, String> entry : list) {
-				result.add(entry.get(NGSIConstants.JSON_LD_VALUE).substring(1).split("\\/"));
-			}
-		}
-		return result;
-	}
-
 }

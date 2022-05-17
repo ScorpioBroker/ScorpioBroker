@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
@@ -27,8 +28,6 @@ import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements SubscriptionInfoDAOInterface {
 	private final static Logger logger = LogManager.getLogger(BaseSubscriptionInfoDAO.class);
 
-	private String dbname = getDBName();
-
 	public Table<String, String, Set<String>> getIds2Type() throws ResponseException {
 		Table<String, String, Set<String>> result = HashBasedTable.create();
 		String sql = getSQLForTypes();
@@ -51,8 +50,6 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		}
 		return result;
 	}
-
-	protected abstract String getDBName();
 
 	protected abstract String getSQLForTypes();
 
@@ -84,6 +81,25 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		return result;
 	}
 
+	public void storedSubscriptions(Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription) {
+		Set<String> tenants = tenant2subscriptionId2Subscription.rowKeySet();
+		try {
+			for (String tenant : tenants) {
+				Map<String, SubscriptionRequest> row = tenant2subscriptionId2Subscription.row(tenant);
+				tenant = getTenant(tenant);
+				JdbcTemplate template = getJDBCTemplate(tenant);
+				template.execute("DELETE FROM subscriptions");
+				for (Entry<String, SubscriptionRequest> entry : row.entrySet()) {
+					template.update("INSERT INTO subscriptions (subscription_id, subscription_request) VALUES (?, ?)",
+							entry.getKey(), DataSerializer.toJson(entry.getValue()));
+				}
+			}
+		} catch (DataAccessException e) {
+			logger.error("Subscriptions could not be loaded", e);
+		}
+
+	}
+
 	@Override
 	public List<String> getEntriesFromSub(SubscriptionRequest subscriptionRequest) throws ResponseException {
 		String tenant = subscriptionRequest.getTenant();
@@ -106,31 +122,5 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 			}
 		}
 		return result;
-	}
-
-	@Override
-	public void storeSubscription(SubscriptionRequest sub) {
-		String tenant = sub.getTenant();
-		if (AppConstants.INTERNAL_NULL_KEY.equals(tenant)) {
-			tenant = null;
-		}
-		JdbcTemplate template = getJDBCTemplate(tenant);
-		if(sub.getId() == null) {
-			System.err.println();
-		}
-		template.update("INSERT INTO " + dbname
-				+ " (subscription_id, subscription_request) VALUES (?, ?) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request",
-				sub.getId(), DataSerializer.toJson(sub));
-	}
-
-	@Override
-	public void deleteSubscription(SubscriptionRequest sub) {
-		String tenant = sub.getTenant();
-		if (AppConstants.INTERNAL_NULL_KEY.equals(tenant)) {
-			tenant = null;
-		}
-		JdbcTemplate template = getJDBCTemplate(tenant);
-		template.update("DELETE FROM " + dbname + " WHERE subscription_id=?", sub.getId());
-
 	}
 }

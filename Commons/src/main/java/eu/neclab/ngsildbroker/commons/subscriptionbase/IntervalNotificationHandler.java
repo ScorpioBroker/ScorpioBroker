@@ -59,9 +59,6 @@ public class IntervalNotificationHandler {
 
 		@SuppressWarnings("unchecked")
 		public void run() {
-			if(!subscriptionRequest.isActive()) {
-				return;
-			}
 			try {
 				List<String> entries = infoDAO.getEntriesFromSub(subscriptionRequest);
 				List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();

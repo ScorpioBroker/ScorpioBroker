@@ -63,7 +63,7 @@ public class QueryParams {
 
 	@SerializedName("limit")
 	@Expose
-	private int limit = -1;
+	private int limit = 0;
 	private boolean countResult;
 	@SerializedName("offSet")
 	@Expose
