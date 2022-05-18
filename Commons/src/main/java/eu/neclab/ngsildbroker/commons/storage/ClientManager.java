@@ -43,7 +43,7 @@ public class ClientManager {
 		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, pgClient);
 	}
 
-	public PgPool getClient(String tenant, boolean create) {
+	public PgPool getClient(String tenant, boolean create) throws SQLException {
 		PgPool result = tenant2Client.get(tenant);
 		if (create) {
 			if (result == null) {
@@ -54,16 +54,7 @@ public class ClientManager {
 		return result;
 	}
 
-	private PgPool generateTenant(String tenant) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public HashMap<String, PgPool> getAllClients() {
-		return tenant2Client;
-	}
-
-	protected PgPool getJDBCTemplates(String tenant) throws SQLException {
+	private PgPool generateTenant(String tenant) throws SQLException {
 		PgPool result;
 		if (tenant == null) {
 			result = pgClient;
@@ -79,6 +70,10 @@ public class ClientManager {
 
 		}
 		return result;
+	}
+
+	public HashMap<String, PgPool> getAllClients() {
+		return tenant2Client;
 	}
 
 	public String findDataBaseNameByTenantId(String tenantidvalue) {
@@ -135,20 +130,13 @@ public class ClientManager {
 		return tenant;
 
 	}
+
 	protected List<String> getTenants() {
 		ArrayList<String> result = new ArrayList<String>();
-		List<Map<String, Object>> temp= new ArrayList<Map<String, Object>>();
-		//try {
-			pgClient.query("SELECT tenant_id FROM tenant").executeAndAwait().forEach(t -> {
-				
-			});
-		//} catch (DataAccessException e) {
-		//	throw new AssertionError("Your database setup is corrupte", e);
-		//}
-		for (Map<String, Object> entry : temp) {
-			result.add(entry.get("tenant_id").toString());
-		}
+		pgClient.query("SELECT tenant_id FROM tenant").executeAndAwait().forEach(t -> {
+			result.add(t.getString(0));
 
+		});
 		return result;
 	}
 
