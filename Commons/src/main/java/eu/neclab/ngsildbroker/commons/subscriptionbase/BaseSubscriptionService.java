@@ -37,7 +37,6 @@ import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
@@ -65,6 +64,10 @@ import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.smallrye.mutiny.unchecked.Unchecked;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 
@@ -109,9 +112,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	@Inject
 	Vertx vertx;
-	
 
-	Emitter<SyncMessage> kafkaSender;
+	MutinyEmitter<SyncMessage> kafkaSender;
 
 	WebClient webClient;
 
@@ -185,89 +187,101 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 	}
 
-	public String subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
+	public Uni<String> subscribe(SubscriptionRequest subscriptionRequest) {
 		return subscribe(subscriptionRequest, false);
 	}
 
-	String subscribe(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
-		logger.debug("Subscribe got called " + subscriptionRequest.getSubscription().toString());
-		Subscription subscription = subscriptionRequest.getSubscription();
-		if (subscription.getId() == null) {
-			subscription.setId(generateUniqueSubId(subscription));
-			subscriptionRequest.setId(subscription.getId());
-		} else {
-			synchronized (tenant2subscriptionId2Subscription) {
-				if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
-						subscription.getId().toString())) {
-					throw new ResponseException(ErrorType.AlreadyExists,
-							subscription.getId().toString() + " already exists");
-
-				}
-			}
-		}
-		synchronized (tenant2subscriptionId2Subscription) {
-			this.tenant2subscriptionId2Subscription.put(subscriptionRequest.getTenant(),
-					subscription.getId().toString(), subscriptionRequest);
-		}
-
-		String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
-		if (subscription.getTimeInterval() > 0) {
-			if (endpointProtocol.equals("mqtt")) {
-				intervalHandlerMQTT.addSub(subscriptionRequest);
+	Uni<String> subscribe(SubscriptionRequest subscriptionRequest, boolean internal) {
+		return Uni.createFrom().item(subscriptionRequest).onItem().transformToUni(t -> {
+			Subscription subscription = subscriptionRequest.getSubscription();
+			if (subscription.getId() == null) {
+				subscription.setId(generateUniqueSubId(subscription));
+				subscriptionRequest.setId(subscription.getId());
+				return Uni.createFrom().item(subscriptionRequest);
 			} else {
-				intervalHandlerREST.addSub(subscriptionRequest);
-			}
-		} else {
-			this.tenantId2subscriptionId2Context.put(subscriptionRequest.getTenant(), subscription.getId().toString(),
-					subscriptionRequest.getContext());
-			this.sub2CreationTime.put(subscriptionRequest, System.currentTimeMillis());
-			List<EntityInfo> entities = subscription.getEntities();
-			if (entities == null || entities.isEmpty()) {
-				putInTable(this.type2EntitiesSubscriptions, subscriptionRequest.getTenant(), ALL_TYPES_TYPE,
-						subscriptionRequest);
-			} else {
-				for (EntityInfo info : subscription.getEntities()) {
-					putInTable(this.type2EntitiesSubscriptions, subscriptionRequest.getTenant(), info.getType(),
-							subscriptionRequest);
+				synchronized (tenant2subscriptionId2Subscription) {
+					if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
+							subscription.getId().toString())) {
+						return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+								subscription.getId().toString() + " already exists"));
 
-				}
-
-			}
-			if (subscription.getExpiresAt() != null && subscription.getExpiresAt() > 0) {
-				TimerTask cancel = new CancelTask(subscriptionRequest);
-				subId2TimerTask.put(subscriptionRequest.getTenant(), subscription.getId().toString(), cancel);
-				watchDog.schedule(cancel, subscription.getExpiresAt() - System.currentTimeMillis());
-			}
-			new Thread() {
-				@SuppressWarnings("unchecked")
-				public void run() {
-					if (sendInitialNotification) {
-						try {
-							List<String> temp = subscriptionInfoDAO.getEntriesFromSub(subscriptionRequest);
-							if (!temp.isEmpty()) {
-								List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
-								for (String entry : temp) {
-									notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
-								}
-								sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
-							}
-						} catch (ResponseException | IOException e) {
-							logger.error("Failed to send initial notifcation", e);
-						}
 					}
-				};
-			}.start();
-		}
-		if (!internal) {
-			createSub(subscriptionRequest);
-		}
-		return subscription.getId();
+				}
+			}
+			synchronized (tenant2subscriptionId2Subscription) {
+				this.tenant2subscriptionId2Subscription.put(subscriptionRequest.getTenant(),
+						subscription.getId().toString(), subscriptionRequest);
+			}
+
+		}).runSubscriptionOn(Infrastructure.getDefaultExecutor()).onItem().transform(t -> {
+			Subscription subscription = subscriptionRequest.getSubscription();
+			String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
+			if (subscription.getTimeInterval() > 0) {
+				if (endpointProtocol.equals("mqtt")) {
+					intervalHandlerMQTT.addSub(subscriptionRequest);
+				} else {
+					intervalHandlerREST.addSub(subscriptionRequest);
+				}
+			} else {
+				this.tenantId2subscriptionId2Context.put(subscriptionRequest.getTenant(),
+						subscription.getId().toString(), subscriptionRequest.getContext());
+				this.sub2CreationTime.put(subscriptionRequest, System.currentTimeMillis());
+				List<EntityInfo> entities = subscription.getEntities();
+				if (entities == null || entities.isEmpty()) {
+					putInTable(this.type2EntitiesSubscriptions, subscriptionRequest.getTenant(), ALL_TYPES_TYPE,
+							subscriptionRequest);
+				} else {
+					for (EntityInfo info : subscription.getEntities()) {
+						putInTable(this.type2EntitiesSubscriptions, subscriptionRequest.getTenant(), info.getType(),
+								subscriptionRequest);
+
+					}
+
+				}
+				if (subscription.getExpiresAt() != null && subscription.getExpiresAt() > 0) {
+					TimerTask cancel = new CancelTask(subscriptionRequest);
+					subId2TimerTask.put(subscriptionRequest.getTenant(), subscription.getId().toString(), cancel);
+					watchDog.schedule(cancel, subscription.getExpiresAt() - System.currentTimeMillis());
+				}
+				
+				new Thread() {
+					@SuppressWarnings("unchecked")
+					public void run() {
+						if (sendInitialNotification) {
+							subscriptionInfoDAO.getEntriesFromSub(t).onItem().transform(Unchecked.function(t2 -> {
+								if (!t2.isEmpty()) {
+									List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
+									for (String entry : t) {
+										notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
+									}
+									sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
+								}
+								return null;
+							} 
+							).onFailure().recoverWithItem(e -> {
+								logger.error("Failed to send initial notifcation", e);
+								return null;
+							}).await().indefinitely();
+						}
+					};)
+				}.start();
+			}
+			return t;
+		}).onItem().transformToUni(t -> {
+			if (!internal) {
+				return createSub(t);
+			}
+			return Uni.createFrom().item(t.getSubscription());
+		}).onItem().transform(t -> t.getId());
+
 	}
 
-	private void createSub(SubscriptionRequest subscriptionRequest) {
-		subscriptionInfoDAO.storeSubscription(subscriptionRequest);
+	private Uni<Subscription> createSub(SubscriptionRequest subscriptionRequest) {
 		subscriptionRequest.setType(AppConstants.CREATE_REQUEST);
-		kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest));
+		return Uni.combine().all().unis(subscriptionInfoDAO.storeSubscription(subscriptionRequest),
+				kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest))).combinedWith((t, u) -> {
+					return subscriptionRequest.getSubscription();
+				});
 	}
 
 	private void updateSub(SubscriptionRequest subscriptionRequest) {
@@ -623,30 +637,30 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 				Shape queryShape;
 				switch (geoQuery.getGeometry()) {
-				case Point: {
-					queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
-					break;
-				}
-				case Polygon: {
-					PolygonBuilder polygonBuilder = shapeFactory.polygon();
-					for (int i = 0; i < coordinates.size(); i = i + 2) {
-						polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+					case Point: {
+						queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
+						break;
 					}
+					case Polygon: {
+						PolygonBuilder polygonBuilder = shapeFactory.polygon();
+						for (int i = 0; i < coordinates.size(); i = i + 2) {
+							polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+						}
 
-					queryShape = polygonBuilder.build();
-					break;
-				}
-				case LineString: {
-					LineStringBuilder lineStringBuilder = shapeFactory.lineString();
-					for (int i = 0; i < coordinates.size(); i = i + 2) {
-						lineStringBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+						queryShape = polygonBuilder.build();
+						break;
 					}
-					queryShape = lineStringBuilder.build();
-					break;
-				}
-				default: {
-					return false;
-				}
+					case LineString: {
+						LineStringBuilder lineStringBuilder = shapeFactory.lineString();
+						for (int i = 0; i < coordinates.size(); i = i + 2) {
+							lineStringBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+						}
+						queryShape = lineStringBuilder.build();
+						break;
+					}
+					default: {
+						return false;
+					}
 				}
 				if (GEO_REL_CONTAINS.equals(relation)) {
 					return SpatialPredicate.Contains.evaluate(entityShape, queryShape);

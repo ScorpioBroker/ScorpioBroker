@@ -5,18 +5,18 @@ import java.util.List;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.Uni;
 
 public interface SubscriptionCRUDService {
 
-	String subscribe(SubscriptionRequest subRequest) throws ResponseException;
+	Uni<String> subscribe(SubscriptionRequest subRequest);
 
-	List<SubscriptionRequest> getAllSubscriptions(ArrayListMultimap<String, String> headers);
+	Uni<List<SubscriptionRequest>> getAllSubscriptions(ArrayListMultimap<String, String> headers);
 
-	SubscriptionRequest getSubscription(String id, ArrayListMultimap<String, String> headers) throws ResponseException;
+	Uni<SubscriptionRequest> getSubscription(String id, ArrayListMultimap<String, String> headers);
 
-	void unsubscribe(String id, ArrayListMultimap<String, String> headers) throws ResponseException;
+	Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers);
 
-	void updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException;
+	Uni<Void> updateSubscription(SubscriptionRequest subscriptionRequest);
 
 }

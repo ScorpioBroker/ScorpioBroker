@@ -7,16 +7,17 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.Uni;
 
 public interface SubscriptionInfoDAOInterface {
 
-	public Table<String, String, Set<String>> getIds2Type() throws ResponseException;
+	public Uni<Table<String, String, Set<String>>> getIds2Type();
 
-	public List<String> getStoredSubscriptions();
-	
-	public void storeSubscription(SubscriptionRequest sub);
-	
-	public void deleteSubscription(SubscriptionRequest sub);
+	public Uni<List<String>> getStoredSubscriptions();
 
-	public List<String> getEntriesFromSub(SubscriptionRequest subscriptionRequest) throws ResponseException;
+	public Uni<Void> storeSubscription(SubscriptionRequest sub);
+
+	public Uni<Void> deleteSubscription(SubscriptionRequest sub);
+
+	public Uni<List<String>> getEntriesFromSub(SubscriptionRequest subscriptionRequest);
 }
