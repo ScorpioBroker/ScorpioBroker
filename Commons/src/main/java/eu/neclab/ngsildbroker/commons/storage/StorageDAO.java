@@ -397,20 +397,16 @@ public abstract class StorageDAO {
 
 	}
 
-	protected List<String> getTenants() {
-		ArrayList<String> result = new ArrayList<String>();
-		List<Map<String, Object>> temp;
-		try {
-			temp = getJDBCTemplate(null).queryForList("SELECT tenant_id FROM tenant");
-		} catch (DataAccessException e) {
-			throw new AssertionError("Your database setup is corrupte", e);
-		}
-		for (Map<String, Object> entry : temp) {
-			result.add(entry.get("tenant_id").toString());
-		}
-
-		return result;
-	}
+	/*
+	 * protected List<String> getTenants() { ArrayList<String> result = new
+	 * ArrayList<String>(); List<Map<String, Object>> temp; try { temp =
+	 * getJDBCTemplate(null).queryForList("SELECT tenant_id FROM tenant"); } catch
+	 * (DataAccessException e) { throw new
+	 * AssertionError("Your database setup is corrupte", e); } for (Map<String,
+	 * Object> entry : temp) { result.add(entry.get("tenant_id").toString()); }
+	 * 
+	 * return result; }
+	 */
 
 	protected String getTenant(String tenantId) {
 		if (tenantId == null) {
@@ -422,24 +418,14 @@ public abstract class StorageDAO {
 		return tenantId;
 	}
 
-	private String validateDataBaseNameByTenantId(String tenantid) {
-		if (tenantid == null)
-			return null;
-		try {
-			String databasename = "ngb" + tenantid;
-			if (tenant2Templates.containsKey(tenantid)) {
-				return databasename;
-			} else {
-				List<String> data;
-				data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
-				if (data.contains(databasename)) {
-					return databasename;
-				} else {
-					return null;
-				}
-			}
-		} catch (EmptyResultDataAccessException e) {
-			return null;
-		}
-	}
+	/*
+	 * private String validateDataBaseNameByTenantId(String tenantid) { if (tenantid
+	 * == null) return null; try { String databasename = "ngb" + tenantid; if
+	 * (tenant2Templates.containsKey(tenantid)) { return databasename; } else {
+	 * List<String> data; data =
+	 * writerJdbcTemplate.queryForList("SELECT datname FROM pg_database",
+	 * String.class); if (data.contains(databasename)) { return databasename; } else
+	 * { return null; } } } catch (EmptyResultDataAccessException e) { return null;
+	 * } }
+	 */
 }
