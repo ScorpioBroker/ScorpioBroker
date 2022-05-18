@@ -40,6 +40,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
+import io.smallrye.mutiny.tuples.Tuple4;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpServerRequest;
 
@@ -61,119 +62,48 @@ public interface EntryControllerFunctions {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
 
-		return HttpUtils.getAtContext(request).onItem().transformToMulti(t -> {
-			boolean preFlight;
-
-			try {
-				preFlight = HttpUtils.doPreflightCheck(request, t);
-			} catch (ResponseException e) {
-				return Multi.createFrom().failure(e);
-			}
-			Multi<Tuple3<List<Object>, Map<String, Object>, Boolean>> tmpResult = Multi.createFrom()
-					.items(jsonPayload.parallelStream()).onItem().transform(i -> Tuple3.of(t, i, preFlight));
-			return tmpResult;
-		}).onItem().transform(Unchecked.function(t -> {
-			return (Map<String, Object>) JsonLdProcessor
-					.expand(t.getItem1(), t.getItem2(), opts, payloadType, t.getItem3()).get(0);
+		return HttpUtils.getAtContext(request).onItem().transformToMulti(Unchecked.function(t -> {
+			boolean preFlight = HttpUtils.doPreflightCheck(request, t);
+			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem()
+					.transform(i -> Tuple3.of(preFlight, t, i));
+		})).onItem().transform(Unchecked.function(t -> {
+			return Tuple4.of(
+					(Map<String, Object>) JsonLdProcessor
+							.expand((List<Object>) t.getItem2(), t.getItem3(), opts, payloadType, t.getItem1()).get(0),
+					t.getItem2(), HttpUtils.getHeaders(request), getOptionsArray(options));
 		})).onItem().transformToUni(t -> {
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			entityService.appendToEntry(headers, entityId, entry, optionsArray);
-			return entityService.createEntry(headers, t).onItem()
-					.transform(i -> Tuple2.of(new BatchFailure("FAILED TO PARSE BODY", null), i)).onFailure()
-					.recoverWithItem(e -> {
-						NGSIRestResponse response;
-						if (e instanceof ResponseException) {
-							response = new NGSIRestResponse((ResponseException) e);
+			Map<String, Object> entry = t.getItem1();
+			String entityId;
+			if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
+				entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
+			} else {
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.BadRequestData, "No Entity Id provided"));
+			}
+			return entityService.appendToEntry(t.getItem3(), entityId, entry, t.getItem4()).onItem()
+					.transform(Unchecked.function(i -> {
+						if (i.getNotUpdated().isEmpty()) {
+							return Tuple2.of(new BatchFailure("", null), entityId);
 						} else {
-							response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+							return Tuple2.of(
+									new BatchFailure(entityId,
+											new NGSIRestResponse(ErrorType.MultiStatus,
+													JsonUtils.toPrettyString(i.getNotUpdated()) + " was not added")),
+									null);
 						}
-						String entityId = "NO ID PROVIDED";
-						if (t.containsKey(NGSIConstants.JSON_LD_ID)) {
-							entityId = (String) t.get(NGSIConstants.JSON_LD_ID);
-						}
-						return Tuple2.of(new BatchFailure(entityId, response), null);
-					});
+					}));
 		}).collectFailures().concatenate().collect().asList().onItem().transform(t -> {
 			BatchResult result = new BatchResult();
 			t.forEach(i -> {
 				if (i.getItem2() != null) {
-					result.addSuccess(i.getItem2());
+					result.addSuccess((String) i.getItem2());
 				} else {
 					result.addFail(i.getItem1());
 				}
 			});
-			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
+			return generateBatchResultReply(result, HttpStatus.SC_NO_CONTENT);
 		});
 
-		List<Map<String, Object>> jsonPayload;
-		String[] optionsArray = getOptionsArray(options);
-		try {
-			jsonPayload = getJsonPayload(payload);
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
-		BatchResult result = new BatchResult();
-		List<Object> linkHeaders = HttpUtils.getAtContext(request);
-		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-		boolean preFlight;
-		try {
-			preFlight = HttpUtils.doPreflightCheck(request, linkHeaders);
-		} catch (ResponseException responseException) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
-		}
-		if (maxUpdateBatch != -1 && jsonPayload.size() > maxUpdateBatch) {
-			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
-					"Maximum allowed number of entities for this operation is " + maxUpdateBatch);
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
-		}
-		for (Map<String, Object> compactedEntry : jsonPayload) {
-			String entityId = "NOT AVAILABLE";
-			Map<String, Object> entry;
-			try {
-				entry = (Map<String, Object>) JsonLdProcessor
-						.expand(linkHeaders, compactedEntry, opts, payloadType, preFlight).get(0);
-			} catch (JsonLdError | ResponseException e) {
-				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
-				if (e instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse((ResponseException) e);
-				} else {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.BadRequestData,
-							e.getLocalizedMessage());
-				}
-				result.addFail(new BatchFailure("FAILED TO PARSE BODY", response));
-				continue;
-			}
-			if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
-				entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
-			} else {
-				result.addFail(new BatchFailure(entityId, new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(
-						ErrorType.BadRequestData, "No Entity Id provided")));
-				continue;
-			}
-			try {
-
-				UpdateResult updateResult = null;// entityService.appendToEntry(headers, entityId, entry, optionsArray);
-				if (updateResult.getNotUpdated().isEmpty()) {
-					result.addSuccess(entityId);
-				} else {
-					result.addFail(new BatchFailure(entityId,
-							new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.MultiStatus,
-									JsonUtils.toPrettyString(updateResult.getNotUpdated()) + " was not added")));
-				}
-			} catch (Exception e) {
-
-				eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse response;
-				if (e instanceof ResponseException) {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse((ResponseException) e);
-				} else {
-					response = new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError,
-							e.getLocalizedMessage());
-				}
-
-				result.addFail(new BatchFailure(entityId, response));
-			}
-		}
-		return generateBatchResultReply(result, HttpStatus.SC_NO_CONTENT);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -262,7 +192,7 @@ public interface EntryControllerFunctions {
 	public static Uni<RestResponse<Object>> deleteMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int payloadType) {
 
-		return HttpUtils.getAtContext(request).onItem().transformToMulti(t -> {
+		return HttpUtils.getAtContext(request).onItem().transformToMulti(Unchecked.function(t -> {
 			Object obj = JsonUtils.fromString(payload);
 			if (!(obj instanceof List)) {
 				return Multi.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
@@ -277,7 +207,7 @@ public interface EntryControllerFunctions {
 
 			}
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem().transform(t2 -> {
+			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem().transform(Unchecked.function(t2 -> {
 				String entityId = "NO ENTITY ID FOUND";
 				if (t2 instanceof String) {
 					entityId = (String) t2;
@@ -287,8 +217,8 @@ public interface EntryControllerFunctions {
 				}
 
 				return Tuple2.of(entityId, headers);
-			});
-		}).onItem().transformToUni(t -> entityService.deleteEntry(t.getItem2(), t.getItem1()).onItem().transform(i -> {
+			}));
+		})).onItem().transformToUni(t -> entityService.deleteEntry(t.getItem2(), t.getItem1()).onItem().transform(i -> {
 			if (i) {
 				return Tuple2.of(new BatchFailure("dummy", null), t.getItem1());
 			} else {
