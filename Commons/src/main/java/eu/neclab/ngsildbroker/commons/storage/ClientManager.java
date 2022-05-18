@@ -3,6 +3,8 @@ package eu.neclab.ngsildbroker.commons.storage;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.annotation.PostConstruct;
@@ -30,10 +32,9 @@ public class ClientManager {
 
 	@Inject
 	private PgPool pgClient;
-	
+
 	@Inject
 	protected StorageDAO storageDAO;
-	
 
 	protected HashMap<String, PgPool> tenant2Client = new HashMap<String, PgPool>();
 
@@ -61,6 +62,7 @@ public class ClientManager {
 	public HashMap<String, PgPool> getAllClients() {
 		return tenant2Client;
 	}
+
 	protected PgPool getJDBCTemplates(String tenant) throws SQLException {
 		PgPool result;
 		if (tenant == null) {
@@ -69,14 +71,16 @@ public class ClientManager {
 			if (tenant2Client.containsKey(tenant)) {
 				result = tenant2Client.get(tenant);
 			} else {
-				DataSource finalDataSource = storageDAO.determineTargetDataSource(tenant);				
-				result=pgClient.connectionProvider((Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());						
+				DataSource finalDataSource = storageDAO.determineTargetDataSource(tenant);
+				result = pgClient
+						.connectionProvider((Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());
 				tenant2Client.put(tenant, result);
 			}
 
 		}
 		return result;
 	}
+
 	public String findDataBaseNameByTenantId(String tenantidvalue) {
 		if (tenantidvalue == null)
 			return null;
@@ -130,6 +134,41 @@ public class ClientManager {
 		}
 		return tenant;
 
+	}
+	protected List<String> getTenants() {
+		ArrayList<String> result = new ArrayList<String>();
+		List<Map<String, Object>> temp= new ArrayList<Map<String, Object>>();
+		//try {
+			pgClient.query("SELECT tenant_id FROM tenant").executeAndAwait().forEach(t -> {
+				
+			});
+		//} catch (DataAccessException e) {
+		//	throw new AssertionError("Your database setup is corrupte", e);
+		//}
+		for (Map<String, Object> entry : temp) {
+			result.add(entry.get("tenant_id").toString());
+		}
+
+		return result;
+	}
+
+	private String validateDataBaseNameByTenantId(String tenantid) {
+		if (tenantid == null)
+			return null;
+		String databasename = "ngb" + tenantid;
+		if (tenant2Client.containsKey(tenantid)) {
+			return databasename;
+		} else {
+			ArrayList<String> data = new ArrayList<String>();
+			pgClient.query("SELECT datname FROM pg_database").executeAndAwait().forEach(t -> {
+				data.add(t.getString(0));
+			});
+			if (data.contains(databasename)) {
+				return databasename;
+			} else {
+				return null;
+			}
+		}
 	}
 
 }
