@@ -36,6 +36,7 @@ import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImple
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
 import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
+import io.vertx.core.json.JsonObject;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -45,17 +46,12 @@ import io.vertx.mutiny.sqlclient.RowSet;
 public abstract class StorageDAO {
 	private final static Logger logger = LoggerFactory.getLogger(StorageDAO.class);
 
-//	@Autowired
-//	private JdbcTemplate writerJdbcTemplate;
 
 	@Inject
 	protected ClientManager clientManager;
 
 	@Inject
 	AgroalDataSource writerDataSource;
-//
-//	@Autowired
-//	private HikariConfig hikariConfig;
 	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 //	private TransactionTemplate writerTransactionTemplate;
 //	private JdbcTemplate writerJdbcTemplateWithTransaction;
@@ -92,10 +88,6 @@ public abstract class StorageDAO {
 	 * } return false; }
 	 */
 
-	protected DBWriteTemplates getJDBCTemplates(BaseRequest request) {
-		return getJDBCTemplates(getTenant(request));
-	}
-
 	/*
 	 * protected PgPool getJDBCTemplates(String tenant) { PgPool result; if (tenant
 	 * == null) { result = clientManager.; } else { if
@@ -109,42 +101,6 @@ public abstract class StorageDAO {
 	 * clientManager.tenant2Client.put(tenant, result); }
 	 * 
 	 * } return result; }
-	 */
-
-	private String getTenant(BaseRequest request) {
-		String tenant;
-		if (request.getHeaders().containsKey(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK)) {
-			tenant = request.getHeaders().get(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK).get(0);
-			String databasename = "ngb" + tenant;
-			try {
-				clientManager.storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT,
-						tenant, databasename);
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		} else {
-			tenant = null;
-		}
-		return tenant;
-
-	}
-
-	/*
-	 * public String findDataBaseNameByTenantId(String tenantidvalue) { if
-	 * (tenantidvalue == null) return null; try { String databasename = "ngb" +
-	 * tenantidvalue; ArrayList<String> al1=new ArrayList<String>();
-	 * client.query("SELECT datname FROM pg_database").executeAndAwait().forEach(t
-	 * -> { al1.add(t.getString(0)); });
-	 * 
-	 * if(al1.contains(databasename)) { System.out.println("already exist"); return
-	 * databasename;
-	 * 
-	 * }else { String modifydatabasename = " \"" + databasename + "\""; String sql =
-	 * "create database " + modifydatabasename + "";
-	 * client.query(sql).execute().await().indefinitely();
-	 * System.out.println("sucessfully created"); return databasename; } } catch
-	 * (EmptyResultDataAccessException e) { return null; } }
 	 */
 
 	public DataSource determineTargetDataSource(String tenantidvalue) throws SQLException {
@@ -171,8 +127,7 @@ public abstract class StorageDAO {
 		if (tenantDatabaseName == null) {
 			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
 		}
-		// HikariConfig tenantHikariConfig = new HikariConfig();
-		// hikariConfig.copyStateTo(tenantHikariConfig);
+		
 		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl("jdbc:postgresql://localhost:5432/ngb",
 				tenantDatabaseName);
 		AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
@@ -181,9 +136,6 @@ public abstract class StorageDAO {
 						.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
 								.connectionProviderClassName("org.postgresql.Driver").autoCommit(false)
 								.principal(new NamePrincipal("ngb")).credential(new SimplePassword("ngb"))));
-		// tenantHikariConfig.setJdbcUrl(tenantJdbcURL);
-		// tenantHikariConfig.setPoolName(tenantDatabaseName + "-db-pool");
-		// return new HikariDataSource(tenantHikariConfig);
 		AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
 		return agroaldataSource;
 	}
@@ -200,64 +152,72 @@ public abstract class StorageDAO {
 
 		return true;
 	}
-
+    
 	public Uni<QueryResult> query(QueryParams qp) {
-		// JdbcTemplate template;
 		PgPool client = clientManager.getClient(qp.getTenant(), false);
-
-		QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-		try {
-			String tenantId = qp.getTenant();
-			if (tenantId != null) {
-				String tenantDatabaseName = validateDataBaseNameByTenantId(tenantId);
-				if (tenantDatabaseName == null) {
-					throw new ResponseException(ErrorType.TenantNotFound, tenantId + " not found");
-				}
-			}
-			template = getJDBCTemplates(tenantId).getWriterJdbcTemplate();
-		} catch (Exception e) {
-			throw new ResponseException(ErrorType.TenantNotFound, "tenant was not found");
+		if (client == null) {
+			return Uni.createFrom()
+					.failure(new ResponseException(ErrorType.TenantNotFound, qp.getTenant() + " tenant was not found"));
 		}
-		try {
-			if (qp.getCheck() != null) {
-				String sqlQuery = storageFunctions.typesAndAttributeQuery(qp);
-				List<String> list = template.queryForList(sqlQuery, String.class);
-				queryResult.setDataString(list);
-				queryResult.setActualDataString(list);
-				return queryResult;
-			}
-			if (qp.getCountResult() == true) {
-				if (qp.getLimit() == 0) {
-					String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
-					Integer count = template.queryForObject(sqlQueryCount, Integer.class);
-					queryResult.setCount(count);
+
+		if (qp.getCheck() != null) {
+			String sqlQuery = storageFunctions.typesAndAttributeQuery(qp);
+			if (sqlQuery != null && !sqlQuery.isEmpty()) {
+				return client.query(sqlQuery).execute().onItem().transform(rows -> {
+					QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+					List<String> list = Lists.newArrayList();
+					rows.forEach(t -> {
+						list.add(((JsonObject) t.getJson(0)).encode());
+					});
+					queryResult.setDataString(list);
+					queryResult.setActualDataString(list);
 					return queryResult;
-				}
-				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
-				List<String> list = template.queryForList(sqlQuery, String.class);
-				queryResult.setDataString(list);
-				queryResult.setActualDataString(list);
-				String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
-				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
-				queryResult.setCount(count);
-				return queryResult;
-			} else {
-				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
-				List<String> list = template.queryForList(sqlQuery, String.class);
-				queryResult.setDataString(list);
-				queryResult.setActualDataString(list);
-				return queryResult;
+				});
 			}
-		} catch (DataIntegrityViolationException e) {
-			// Empty result don't worry
-			logger.debug("SQL Result Exception::", e);
-			return queryResult;
-		} catch (Exception e) {
-			logger.error("Exception ::", e);
 		}
-		return queryResult;
-	}
+		return client.withTransaction(conn -> {
+			Uni<RowSet<Row>> count = Uni.createFrom().nullItem();
+			Uni<RowSet<Row>> entries = Uni.createFrom().nullItem();
+			if (qp.getCountResult()) {
+				String sqlQueryCount = null;
+				try {
+					sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
+				} catch (ResponseException responseException) {
+					responseException.printStackTrace();
+				}
+				count = conn.preparedQuery(sqlQueryCount).execute();
+			}
+			if (qp.getLimit() != 0 || !qp.getCountResult()) {
+				String sqlQuery = null;
+				try {
+					sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
+				} catch (ResponseException responseException) {
+					responseException.printStackTrace();
+				}
+				entries = conn.preparedQuery(sqlQuery).execute();
+			}
 
+			return Uni.combine().all().unis(count, entries).combinedWith((c, e) -> {
+				QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+				if (c != null) {
+					queryResult.setCount(c.iterator().next().getInteger(0));
+				}
+				if (e != null) {
+					List<String> list = Lists.newArrayList();
+					e.forEach(t -> {
+						list.add(((JsonObject) t.getJson(0)).encode());
+					});
+					queryResult.setDataString(list);
+					queryResult.setActualDataString(list);
+				}
+
+				return queryResult;
+			});
+
+		});
+
+	}
+	
 	public Uni<Void> storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
 
 		PgPool client = clientManager.getClient(request.getTenant(), true);
@@ -435,10 +395,6 @@ public abstract class StorageDAO {
 		logger.trace("Rows affected: " + Integer.toString(n));
 		return uni; // (n>0);
 
-	}
-
-	protected JdbcTemplate getJDBCTemplate(String tenantId) {
-		return getJDBCTemplates(tenantId).getWriterJdbcTemplate();
 	}
 
 	protected List<String> getTenants() {
