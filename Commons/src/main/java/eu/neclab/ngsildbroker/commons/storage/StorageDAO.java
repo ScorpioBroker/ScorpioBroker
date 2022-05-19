@@ -352,7 +352,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<Void> storeEntity(EntityRequest request) throws SQLException {
+	public Uni<Void> storeEntity(EntityRequest request){
 
 		String sql;
 		String key = request.getId();

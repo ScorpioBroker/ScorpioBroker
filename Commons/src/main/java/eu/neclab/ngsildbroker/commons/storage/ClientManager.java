@@ -43,7 +43,7 @@ public class ClientManager {
 		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, pgClient);
 	}
 
-	public PgPool getClient(String tenant, boolean create) throws SQLException {
+	public PgPool getClient(String tenant, boolean create) {
 		PgPool result = tenant2Client.get(tenant);
 		if (create) {
 			if (result == null) {
@@ -54,18 +54,24 @@ public class ClientManager {
 		return result;
 	}
 
-	private PgPool generateTenant(String tenant) throws SQLException {
-		PgPool result;
+	private PgPool generateTenant(String tenant) {
+		PgPool result=null;
 		if (tenant == null) {
 			result = pgClient;
 		} else {
 			if (tenant2Client.containsKey(tenant)) {
 				result = tenant2Client.get(tenant);
 			} else {
-				DataSource finalDataSource = storageDAO.determineTargetDataSource(tenant);
-				result = pgClient
-						.connectionProvider((Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());
-				tenant2Client.put(tenant, result);
+				DataSource finalDataSource;
+				try {
+					finalDataSource = storageDAO.determineTargetDataSource(tenant);
+					result = pgClient
+							.connectionProvider((Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());
+					tenant2Client.put(tenant, result);
+				} catch (SQLException exception) {
+					exception.printStackTrace();
+				}
+				
 			}
 
 		}
