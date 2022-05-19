@@ -152,7 +152,7 @@ public abstract class StorageDAO {
 		return true;
 	}
 
-	public Uni<QueryResult> query(QueryParams qp) throws SQLException {
+	public Uni<QueryResult> query(QueryParams qp) {
 		PgPool client = clientManager.getClient(qp.getTenant(), false);
 		if (client == null) {
 			return Uni.createFrom()
