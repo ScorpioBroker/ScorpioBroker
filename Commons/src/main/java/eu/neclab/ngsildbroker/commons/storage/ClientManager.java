@@ -55,30 +55,31 @@ public class ClientManager {
 	}
 
 	private PgPool generateTenant(String tenant) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public HashMap<String, PgPool> getAllClients() {
-		return tenant2Client;
-	}
-
-	protected PgPool getJDBCTemplates(String tenant) throws SQLException {
-		PgPool result;
+		PgPool result=null;
 		if (tenant == null) {
 			result = pgClient;
 		} else {
 			if (tenant2Client.containsKey(tenant)) {
 				result = tenant2Client.get(tenant);
 			} else {
-				DataSource finalDataSource = storageDAO.determineTargetDataSource(tenant);
-				result = pgClient
-						.connectionProvider((Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());
-				tenant2Client.put(tenant, result);
+				DataSource finalDataSource;
+				try {
+					finalDataSource = storageDAO.determineTargetDataSource(tenant);
+					result = pgClient
+							.connectionProvider((Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());
+					tenant2Client.put(tenant, result);
+				} catch (SQLException exception) {
+					exception.printStackTrace();
+				}
+				
 			}
 
 		}
 		return result;
+	}
+
+	public HashMap<String, PgPool> getAllClients() {
+		return tenant2Client;
 	}
 
 	public String findDataBaseNameByTenantId(String tenantidvalue) {
@@ -135,20 +136,13 @@ public class ClientManager {
 		return tenant;
 
 	}
+
 	protected List<String> getTenants() {
 		ArrayList<String> result = new ArrayList<String>();
-		List<Map<String, Object>> temp= new ArrayList<Map<String, Object>>();
-		//try {
-			pgClient.query("SELECT tenant_id FROM tenant").executeAndAwait().forEach(t -> {
-				
-			});
-		//} catch (DataAccessException e) {
-		//	throw new AssertionError("Your database setup is corrupte", e);
-		//}
-		for (Map<String, Object> entry : temp) {
-			result.add(entry.get("tenant_id").toString());
-		}
+		pgClient.query("SELECT tenant_id FROM tenant").executeAndAwait().forEach(t -> {
+			result.add(t.getString(0));
 
+		});
 		return result;
 	}
 

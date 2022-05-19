@@ -46,7 +46,6 @@ import io.vertx.mutiny.sqlclient.RowSet;
 public abstract class StorageDAO {
 	private final static Logger logger = LoggerFactory.getLogger(StorageDAO.class);
 
-
 	@Inject
 	protected ClientManager clientManager;
 
@@ -127,7 +126,7 @@ public abstract class StorageDAO {
 		if (tenantDatabaseName == null) {
 			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
 		}
-		
+
 		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl("jdbc:postgresql://localhost:5432/ngb",
 				tenantDatabaseName);
 		AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
@@ -152,8 +151,8 @@ public abstract class StorageDAO {
 
 		return true;
 	}
-    
-	public Uni<QueryResult> query(QueryParams qp) {
+
+	public Uni<QueryResult> query(QueryParams qp) throws SQLException {
 		PgPool client = clientManager.getClient(qp.getTenant(), false);
 		if (client == null) {
 			return Uni.createFrom()
@@ -217,7 +216,7 @@ public abstract class StorageDAO {
 		});
 
 	}
-	
+
 	public Uni<Void> storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
 
 		PgPool client = clientManager.getClient(request.getTenant(), true);
@@ -353,7 +352,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<Void> storeEntity(EntityRequest request) {
+	public Uni<Void> storeEntity(EntityRequest request){
 
 		String sql;
 		String key = request.getId();
@@ -397,17 +396,6 @@ public abstract class StorageDAO {
 
 	}
 
-	/*
-	 * protected List<String> getTenants() { ArrayList<String> result = new
-	 * ArrayList<String>(); List<Map<String, Object>> temp; try { temp =
-	 * getJDBCTemplate(null).queryForList("SELECT tenant_id FROM tenant"); } catch
-	 * (DataAccessException e) { throw new
-	 * AssertionError("Your database setup is corrupte", e); } for (Map<String,
-	 * Object> entry : temp) { result.add(entry.get("tenant_id").toString()); }
-	 * 
-	 * return result; }
-	 */
-
 	protected String getTenant(String tenantId) {
 		if (tenantId == null) {
 			return null;
@@ -418,14 +406,4 @@ public abstract class StorageDAO {
 		return tenantId;
 	}
 
-	/*
-	 * private String validateDataBaseNameByTenantId(String tenantid) { if (tenantid
-	 * == null) return null; try { String databasename = "ngb" + tenantid; if
-	 * (tenant2Templates.containsKey(tenantid)) { return databasename; } else {
-	 * List<String> data; data =
-	 * writerJdbcTemplate.queryForList("SELECT datname FROM pg_database",
-	 * String.class); if (data.contains(databasename)) { return databasename; } else
-	 * { return null; } } } catch (EmptyResultDataAccessException e) { return null;
-	 * } }
-	 */
 }
