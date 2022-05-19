@@ -32,7 +32,7 @@ Generally speaking you can Create entities which is like the hello world program
     },
     "@context": [
         "https://schema.lab.fiware.org/ld/context",
-        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
     ]
  }
 
