@@ -134,11 +134,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		webClient = WebClient.create(vertx);
 		subscriptionInfoDAO = getSubscriptionInfoDao();
-		try {
-			this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type();
-		} catch (ResponseException e) {
-			logger.error(e.getLocalizedMessage());
-		}
+		this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type().await().indefinitely();
 		sendInitialNotification = sendInitialNotification();
 		sendDeleteNotification = sendDeleteNotification();
 		notificationHandlerREST = new NotificationHandlerREST(webClient);
@@ -157,7 +153,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	}
 
-	protected abstract Emitter<SyncMessage> getSyncChannelSender();
+	protected abstract MutinyEmitter<SyncMessage> getSyncChannelSender();
 
 	@PreDestroy
 	private void destroy() throws InterruptedException {
@@ -176,13 +172,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private void loadStoredSubscriptions() {
 		synchronized (this.tenant2subscriptionId2Subscription) {
-			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions();
+			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions().await().indefinitely();
 			for (String subscriptionString : subscriptions) {
-				try {
-					subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true);
-				} catch (ResponseException e) {
-					logger.error("Failed to load stored subscription", e);
-				}
+				subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true).onFailure()
+						.recoverWithItem(e -> {
+							logger.error("Failed to load stored subscription", e);
+							return null;
+						});
 			}
 		}
 	}
@@ -197,7 +193,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			if (subscription.getId() == null) {
 				subscription.setId(generateUniqueSubId(subscription));
 				subscriptionRequest.setId(subscription.getId());
-				return Uni.createFrom().item(subscriptionRequest);
 			} else {
 				synchronized (tenant2subscriptionId2Subscription) {
 					if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
@@ -212,6 +207,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				this.tenant2subscriptionId2Subscription.put(subscriptionRequest.getTenant(),
 						subscription.getId().toString(), subscriptionRequest);
 			}
+			return Uni.createFrom().item(subscriptionRequest);
 
 		}).runSubscriptionOn(Infrastructure.getDefaultExecutor()).onItem().transform(t -> {
 			Subscription subscription = subscriptionRequest.getSubscription();
@@ -243,7 +239,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 					subId2TimerTask.put(subscriptionRequest.getTenant(), subscription.getId().toString(), cancel);
 					watchDog.schedule(cancel, subscription.getExpiresAt() - System.currentTimeMillis());
 				}
-				
+
 				new Thread() {
 					@SuppressWarnings("unchecked")
 					public void run() {
@@ -251,19 +247,18 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 							subscriptionInfoDAO.getEntriesFromSub(t).onItem().transform(Unchecked.function(t2 -> {
 								if (!t2.isEmpty()) {
 									List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
-									for (String entry : t) {
+									for (String entry : t2) {
 										notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
 									}
 									sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
 								}
 								return null;
-							} 
-							).onFailure().recoverWithItem(e -> {
+							})).onFailure().recoverWithItem(e -> {
 								logger.error("Failed to send initial notifcation", e);
 								return null;
 							}).await().indefinitely();
 						}
-					};)
+					}
 				}.start();
 			}
 			return t;
@@ -284,10 +279,11 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				});
 	}
 
-	private void updateSub(SubscriptionRequest subscriptionRequest) {
-		subscriptionInfoDAO.storeSubscription(subscriptionRequest);
+	private Uni<Void> updateSub(SubscriptionRequest subscriptionRequest) {
+		Uni<Void> uni1 = subscriptionInfoDAO.storeSubscription(subscriptionRequest);
 		subscriptionRequest.setType(AppConstants.UPDATE_REQUEST);
-		kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest));
+		Uni<Void> uni2 = kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest));
+		return Uni.combine().all().unis(uni1, uni2).discardItems();
 	}
 
 	private void putInTable(Table<String, String, List<SubscriptionRequest>> table, String row, String colum,
@@ -314,20 +310,20 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected abstract String generateUniqueSubId(Subscription subscription);
 
-	public void unsubscribe(String id, ArrayListMultimap<String, String> headers) throws ResponseException {
-		unsubscribe(id, headers, false);
+	public Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers) {
+		return unsubscribe(id, headers, false);
 	}
 
-	void unsubscribe(String id, ArrayListMultimap<String, String> headers, boolean internal) throws ResponseException {
+	Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers, boolean internal) {
 		String tenant = HttpUtils.getInternalTenant(headers);
 		SubscriptionRequest removedSub;
 		synchronized (tenant2subscriptionId2Subscription) {
 			if (!this.tenant2subscriptionId2Subscription.contains(tenant, id)) {
-				throw new ResponseException(ErrorType.NotFound, id + " not found");
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, id + " not found"));
 			}
 			removedSub = this.tenant2subscriptionId2Subscription.get(tenant, id);
 			if (removedSub == null) {
-				throw new ResponseException(ErrorType.NotFound, id + " not found");
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, id + " not found"));
 			}
 
 			removedSub = this.tenant2subscriptionId2Subscription.remove(tenant, id);
@@ -355,28 +351,32 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			task.cancel();
 		}
 		if (!internal) {
-			deleteSub(removedSub);
+			return deleteSub(removedSub);
 		}
+		return Uni.createFrom().voidItem();
 	}
 
-	private void deleteSub(SubscriptionRequest removedSub) {
-		subscriptionInfoDAO.deleteSubscription(removedSub);
+	private Uni<Void> deleteSub(SubscriptionRequest removedSub) {
+		Uni<Void> uni1 = subscriptionInfoDAO.deleteSubscription(removedSub);
 		removedSub.setType(AppConstants.DELETE_REQUEST);
-		kafkaSender.send(new SyncMessage(syncIdentifier, removedSub));
+		Uni<Void> uni2 = kafkaSender.send(new SyncMessage(syncIdentifier, removedSub));
+		return Uni.combine().all().unis(uni1, uni2).discardItems();
+
 	}
 
-	public void updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
-		updateSubscription(subscriptionRequest, false);
+	public Uni<Void> updateSubscription(SubscriptionRequest subscriptionRequest) {
+		return updateSubscription(subscriptionRequest, false);
 	}
 
-	void updateSubscription(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
+	Uni<Void> updateSubscription(SubscriptionRequest subscriptionRequest, boolean internal) {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		String tenant = subscriptionRequest.getTenant();
 		SubscriptionRequest oldSubRequest;
 		synchronized (tenant2subscriptionId2Subscription) {
 			oldSubRequest = tenant2subscriptionId2Subscription.get(tenant, subscription.getId().toString());
 			if (oldSubRequest == null) {
-				throw new ResponseException(ErrorType.NotFound, subscription.getId().toString() + " not found");
+				return Uni.createFrom().failure(
+						new ResponseException(ErrorType.NotFound, subscription.getId().toString() + " not found"));
 			}
 			Subscription oldSub = oldSubRequest.getSubscription();
 			oldSub.update(subscription);
@@ -395,8 +395,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			this.tenantId2subscriptionId2Context.put(tenant, oldSub.getId().toString(),
 					subscriptionRequest.getContext());
 			if (!internal) {
-				updateSub(oldSubRequest);
+				return updateSub(oldSubRequest);
 			}
+			return Uni.createFrom().voidItem();
 		}
 
 	}
@@ -407,25 +408,25 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 	}
 
-	public List<SubscriptionRequest> getAllSubscriptions(ArrayListMultimap<String, String> headers) {
+	public Uni<List<SubscriptionRequest>> getAllSubscriptions(ArrayListMultimap<String, String> headers) {
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		List<SubscriptionRequest> result;
+		Uni<List<SubscriptionRequest>> result;
 		synchronized (tenant2subscriptionId2Subscription) {
-			result = new ArrayList<SubscriptionRequest>(tenant2subscriptionId2Subscription.row(tenantId).values());
+			result = Uni.createFrom().item(
+					new ArrayList<SubscriptionRequest>(tenant2subscriptionId2Subscription.row(tenantId).values()));
 		}
 		return result;
 	}
 
-	public SubscriptionRequest getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers)
-			throws ResponseException {
+	public Uni<SubscriptionRequest> getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers) {
 		SubscriptionRequest sub;
 		synchronized (tenant2subscriptionId2Subscription) {
 			sub = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers), subscriptionId);
 		}
 		if (sub == null) {
-			throw new ResponseException(ErrorType.NotFound, subscriptionId + " not found");
+			return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, subscriptionId + " not found"));
 		}
-		return sub;
+		return Uni.createFrom().item(sub);
 	}
 
 	public void checkSubscriptionsWithAbsolute(BaseRequest request, long messageTime, int messageType) {
@@ -773,11 +774,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 		@Override
 		public void run() {
-			try {
-				unsubscribe(request.getSubscription().getId(), request.getHeaders());
-			} catch (ResponseException e) {
-				logger.error("Failed to unsubscribed timed subscription", e);
-			}
+			unsubscribe(request.getSubscription().getId(), request.getHeaders()).await().indefinitely();
 		}
 	}
 

@@ -15,6 +15,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
+import io.smallrye.mutiny.unchecked.Unchecked;
 
 public class IntervalNotificationHandler {
 
@@ -59,11 +60,10 @@ public class IntervalNotificationHandler {
 
 		@SuppressWarnings("unchecked")
 		public void run() {
-			if(!subscriptionRequest.isActive()) {
+			if (!subscriptionRequest.isActive()) {
 				return;
 			}
-			try {
-				List<String> entries = infoDAO.getEntriesFromSub(subscriptionRequest);
+			infoDAO.getEntriesFromSub(subscriptionRequest).onItem().call(Unchecked.function(entries -> {
 				List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
 				for (String entry : entries) {
 					dataList.add((Map<String, Object>) JsonUtils.fromString(entry));
@@ -72,9 +72,12 @@ public class IntervalNotificationHandler {
 				baseNotification.setNotifiedAt(System.currentTimeMillis());
 				baseNotification.setData(dataList);
 				notificationHandler.notify(baseNotification, subscriptionRequest);
-			} catch (Exception e) {
-				logger.error("Failed to read database entry");
-			}
+				return null;
+			})).onFailure().call(e -> {
+				logger.error("Failed to read database entry", e);
+				return null;
+			}).await().indefinitely();
+
 		}
 
 	}

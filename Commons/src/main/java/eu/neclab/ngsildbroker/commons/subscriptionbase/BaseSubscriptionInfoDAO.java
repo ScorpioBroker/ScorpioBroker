@@ -6,13 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
@@ -25,11 +23,11 @@ import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 
 public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements SubscriptionInfoDAOInterface {
-	private final static Logger logger = LogManager.getLogger(BaseSubscriptionInfoDAO.class);
+	private final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionInfoDAO.class);
 
 	private String dbname = getDBName();
 
-	public Table<String, String, Set<String>> getIds2Type() throws ResponseException {
+	public Uni<Table<String, String, Set<String>>> getIds2Type() {
 		Table<String, String, Set<String>> result = HashBasedTable.create();
 		String sql = getSQLForTypes();
 
