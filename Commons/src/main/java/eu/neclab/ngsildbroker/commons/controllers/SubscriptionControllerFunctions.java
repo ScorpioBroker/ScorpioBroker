@@ -377,65 +377,74 @@ public interface SubscriptionControllerFunctions {
 
 	public static Uni<RestResponse<Object>> getAllSubscriptions(SubscriptionCRUDService subscriptionService,
 			HttpServerRequest request, int defaultLimit, int maxLimit, Logger logger) {
-		HttpUtils.getHeaders(request)
+
+		logger.trace("getAllSubscriptions() :: started");
+		MultiMap params = request.params();
+		QueryParams qp;
 		try {
-			logger.trace("getAllSubscriptions() :: started");
-			MultiMap params = request.params();
-			QueryParams qp = ParamsResolver.getQueryParamsFromUriQuery(params, JsonLdProcessor.getCoreContextClone(),
-					false, false, defaultLimit, maxLimit);
-			int limit = qp.getLimit();
-			int offset = qp.getOffSet();
-			if (limit > maxLimit) {
-				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
-						"provided limit exceeds the max limit of " + maxLimit));
-			}
-			if (limit == 0) {
-				limit = defaultLimit;
-			}
-			boolean count = qp.getCountResult();
-			if (limit < 0 || offset < 0) {
-				return HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData, "offset and limit can not smaller than 0"));
-			}
-			List<SubscriptionRequest> result = null;
-			result = subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request));
-			int toIndex = offset + limit;
-			ArrayList<Object> additionalLinks = new ArrayList<Object>();
-			if (limit == 0 || toIndex > result.size() - 1) {
-				toIndex = result.size();
-				if (toIndex < 0) {
-					toIndex = 0;
-				}
-
-			} else {
-				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, toIndex, limit, null, "next"));
-			}
-
-			if (offset > 0) {
-				int newOffSet = offset - limit;
-				if (newOffSet < 0) {
-					newOffSet = 0;
-				}
-				additionalLinks.add(HttpUtils.generateFollowUpLinkHeader(request, newOffSet, limit, null, "prev"));
-			}
-
-			ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
-			if (count == true) {
-				additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(result.size()));
-			}
-			if (!additionalLinks.isEmpty()) {
-				for (Object entry : additionalLinks) {
-					additionalHeaders.put(HttpHeaders.LINK, (String) entry);
-				}
-			}
-			List<SubscriptionRequest> realResult = result.subList(offset, toIndex);
-			logger.trace("getAllSubscriptions() :: completed");
-
-			return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
-					additionalHeaders, AppConstants.SUBSCRIPTION_ENDPOINT);
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
+			qp = ParamsResolver.getQueryParamsFromUriQuery(params, JsonLdProcessor.getCoreContextClone(), false, false,
+					defaultLimit, maxLimit);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
+		int limit = qp.getLimit();
+		int offset = qp.getOffSet();
+		if (limit > maxLimit) {
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
+							"provided limit exceeds the max limit of " + maxLimit)));
+		}
+		if (limit < 0 || offset < 0) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData, "offset and limit can not smaller than 0")));
+		}
+		int actualLimit;
+		if (limit == 0) {
+			actualLimit = defaultLimit;
+		} else {
+			actualLimit = limit;
+		}
+		boolean count = qp.getCountResult();
+
+		return subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request)).onItem()
+				.transformToUni(result -> {
+					int toIndex = offset + actualLimit;
+					ArrayList<Object> additionalLinks = new ArrayList<Object>();
+					if (limit == 0 || toIndex > result.size() - 1) {
+						toIndex = result.size();
+						if (toIndex < 0) {
+							toIndex = 0;
+						}
+
+					} else {
+						additionalLinks
+								.add(HttpUtils.generateFollowUpLinkHeader(request, toIndex, actualLimit, null, "next"));
+					}
+
+					if (offset > 0) {
+						int newOffSet = offset - actualLimit;
+						if (newOffSet < 0) {
+							newOffSet = 0;
+						}
+						additionalLinks.add(
+								HttpUtils.generateFollowUpLinkHeader(request, newOffSet, actualLimit, null, "prev"));
+					}
+
+					ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
+					if (count == true) {
+						additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(result.size()));
+					}
+					if (!additionalLinks.isEmpty()) {
+						for (Object entry : additionalLinks) {
+							additionalHeaders.put(HttpHeaders.LINK, (String) entry);
+						}
+					}
+					List<SubscriptionRequest> realResult = result.subList(offset, toIndex);
+					logger.trace("getAllSubscriptions() :: completed");
+
+					return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
+							additionalHeaders, AppConstants.SUBSCRIPTION_ENDPOINT);
+				});
 
 	}
 
@@ -447,19 +456,17 @@ public interface SubscriptionControllerFunctions {
 		return result;
 	}
 
-	public static RestResponse<Object> getSubscriptionById(SubscriptionCRUDService subscriptionService,
+	public static Uni<RestResponse<Object>> getSubscriptionById(SubscriptionCRUDService subscriptionService,
 			HttpServerRequest request, String id, int limit, Logger logger) {
-		try {
-			HttpUtils.validateUri(id);
+		return HttpUtils.validateUri(id).onItem().transformToUni(t -> {
 			logger.trace("call getSubscriptions() ::");
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			return HttpUtils.generateReply(request,
-					DataSerializer.toJson(subscriptionService.getSubscription(id, headers).getSubscription()),
+			return subscriptionService.getSubscription(id, headers);
+		}).onItem().transformToUni(Unchecked.function(t -> {
+			return HttpUtils.generateReply(request, DataSerializer.toJson(t.getSubscription()),
 					AppConstants.SUBSCRIPTION_ENDPOINT);
+		})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
 	}
 
 	public static RestResponse<Object> deleteSubscription(SubscriptionCRUDService subscriptionService,
@@ -475,46 +482,41 @@ public interface SubscriptionControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static RestResponse<Object> updateSubscription(SubscriptionCRUDService subscriptionService,
+	public static Uni<RestResponse<Object>> updateSubscription(SubscriptionCRUDService subscriptionService,
 			HttpServerRequest request, String id, String payload, Logger logger) {
 		logger.trace("call updateSubscription() ::");
+		return HttpUtils.validateUri(id).onItem().transformToUni(t -> HttpUtils.getAtContext(request)).onItem()
+				.transformToUni(Unchecked.function(linkHeaders -> {
+					boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+					List<Object> context = new ArrayList<Object>();
+					context.addAll(linkHeaders);
+					Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
+					Object bodyContext = body.get(JsonLdConsts.CONTEXT);
+					body = (Map<String, Object>) JsonLdProcessor
+							.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed)
+							.get(0);
+					if (bodyContext != null) {
+						if (bodyContext instanceof List) {
+							context.addAll((List<Object>) bodyContext);
+						} else {
+							context.add(bodyContext);
+						}
+					}
+					Subscription subscription = expandSubscription(body, request,
+							JsonLdProcessor.getCoreContextClone().parse(context, true), true);
+					if (subscription.getId() == null) {
+						subscription.setId(id);
+					}
+					SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, linkHeaders,
+							HttpUtils.getHeaders(request), AppConstants.UPDATE_REQUEST);
+					if (body == null || subscription == null || !id.equals(subscription.getId())) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.BadRequestData, "empty subscription body")));
+					}
+					return subscriptionService.updateSubscription(subscriptionRequest).onItem()
+							.transform(t -> RestResponse.noContent());
+				})).onFailure().recoverWithItem(t -> HttpUtils.handleControllerExceptions(t));
 
-		try {
-
-			HttpUtils.validateUri(id);
-			List<Object> linkHeaders = HttpUtils.getAtContext(request);
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
-			List<Object> context = new ArrayList<Object>();
-			context.addAll(linkHeaders);
-			Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
-			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
-			body = (Map<String, Object>) JsonLdProcessor
-					.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed).get(0);
-			if (bodyContext != null) {
-				if (bodyContext instanceof List) {
-					context.addAll((List<Object>) bodyContext);
-				} else {
-					context.add(bodyContext);
-				}
-			}
-			Subscription subscription = expandSubscription(body, request,
-					JsonLdProcessor.getCoreContextClone().parse(context, true), true);
-			if (subscription.getId() == null) {
-				subscription.setId(id);
-			}
-			SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, linkHeaders,
-					HttpUtils.getHeaders(request), AppConstants.UPDATE_REQUEST);
-
-			// expandSubscriptionAttributes(subscription, context);
-			if (body == null || subscription == null || !id.equals(subscription.getId())) {
-				return HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData, "empty subscription body"));
-			}
-			subscriptionService.updateSubscription(subscriptionRequest);
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
-		return RestResponse.noContent();
 	}
 
 	@SuppressWarnings("unchecked")
