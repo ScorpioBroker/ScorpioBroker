@@ -146,7 +146,7 @@ First, we are going to create house2:smartrooms:room1. Let's assume that at enti
 		"type": "Relationship",
 		"object": "smartcity:houses:house2"
 	  },
-	  "@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
+	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
 	}
 	EOF
 
@@ -177,7 +177,7 @@ Next, let's create house2:smartrooms:room2 in a similar way.
 		"type": "Relationship",
 		"object": "smartcity:houses:house2"
 	  },
-	  "@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
+	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
 	}
 	EOF
 
@@ -212,7 +212,7 @@ Now to complete this setup we are creating an Entity describing our house with t
 				"coordinates": [-8.50000005, 41.2]
 			}
 		},
-		"@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
+		"@context": [{"House": "urn:mytypes:house", "hasRoom": "myuniqueuri:hasRoom"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
 	}
 	EOF
 
@@ -236,12 +236,14 @@ If we want to just get the house in our example we would do a GET request like t
 	curl localhost:9090/ngsi-ld/v1/entities/smartcity%3Ahouses%3Ahouse2 -s -S -H 'Accept: application/ld+json' 
 
 Mind the url encoding here, i.e. ':' gets replaced by %3A. For consistency you should always encode your URLs. 
+
+Since we didn't provide our own @context in this request, only the parts of the core context will be replaced in the reply.
 ::
 
 	{
 		"id": "smartcity:houses:house2",
-		"type": "House",
-		"hasRoom": [{
+		"type": "urn:mytypes:house",
+		"myuniqueuri:hasRoom": [{
 			"type": "Relationship",
 			"object": "house2:smartrooms:room1",
 			"datasetId": "somethingunique1"
@@ -268,10 +270,27 @@ Mind the url encoding here, i.e. ':' gets replaced by %3A. For consistency you s
 		"@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
 	}
 
+As you can see entrance was compacted properly since it is was prefixed from the default context specified in the core context.
+
+Assuming we are hosting our own @context file on a webserver, we can provide it via the 'Link' header.
+For convience we are using pastebin in this example 
+Our context looks like this.
+::
+
+	{
+		"@context": [{
+			"House": "urn:mytypes:house",
+			"hasRoom": "myuniqueuri:hasRoom",
+			"Room": "urn:mytypes:room",
+			"temperature": "myuniqueuri:temperature",
+			"isPartOf": "myuniqueuri:isPartOf"
+		}, "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
+	}
+
 We repeat this call providing our @context via the 'Link' like this 
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/smartcity%3Ahouses%3Ahouse2 -s -S -H 'Accept: application/ld+json' -H 'Link: "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' 
+	curl localhost:9090/ngsi-ld/v1/entities/smartcity%3Ahouses%3Ahouse2 -s -S -H 'Accept: application/ld+json' -H 'Link: <https://pastebin.com/raw/NgXJLgRa>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' 
 
 The reply now looks like this.
 ::
@@ -303,14 +322,15 @@ The reply now looks like this.
 				"coordinates": [-8.50000005, 41.2]
 			}
 		},
-		"@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+		"@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	
+Since we provide the core context in our own @context it is not added to the result. From here on we will use the custom @context so we can use the short names in all of our requests.
 
 You can also request an entity with a single specified attribute, using the attrs parameter. For example, to get only the location:
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/smartcity%3Ahouses%3Ahouse2/?attrs=location -s -S -H 'Accept: application/ld+json' -H 'Link: "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' 
+	curl localhost:9090/ngsi-ld/v1/entities/smartcity%3Ahouses%3Ahouse2/?attrs=location -s -S -H 'Accept: application/ld+json' -H 'Link: <https://pastebin.com/raw/NgXJLgRa>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' 
 
 Response:
 ::
@@ -325,7 +345,7 @@ Response:
 				"coordinates": [[[-8.5, 41.2], [-8.5000001, 41.2], [-8.5000001, 41.2000001], [-8.5, 41.2000001], [-8.5, 41.2]]]
 			}
 		},
-		"@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+		"@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 
 Query
@@ -352,14 +372,14 @@ For this example we first add a new Room which belongs to another house.
 		"type": "Relationship",
 		"object": "smartcity:houses:house99"
 	  },
-	  "@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
+	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
 	}
 	EOF
 
 Let's assume we want to retrieve all the rooms in Scorpio. To do that we do a GET request like this
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room -s -S -H 'Accept: application/json' -H 'Link: "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+	curl localhost:9090/ngsi-ld/v1/entities/?type=Room -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/NgXJLgRa>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 Note that this request has the accept header application/json, i.e. the link to the @context is returned in a link header.
 The result is
@@ -428,7 +448,7 @@ Since we are only interested in our smartcity:houses:house2, we are using the 'q
 (URL encoding "smartcity:houses:house2" becomes %22smartcity%3Ahouses%3Ahouse2%22)
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22 -s -S -H 'Accept: application/json' -H 'Link: "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22 -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/NgXJLgRa>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 The results now looks like this.
 ::
@@ -474,7 +494,7 @@ The results now looks like this.
 Now an alternative way to get the same result would be using the idPattern parameter, which allows you to use regular expressions. This is possible in this case since we structured our IDs for the rooms.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&idPattern=house2%3Asmartrooms%3Aroom.%2A -s -S -H 'Accept: application/json' -H 'Link: "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&idPattern=house2%3Asmartrooms%3Aroom.%2A -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/NgXJLgRa>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 	(house2%3Asmartrooms%3Aroom.%2A == house2:smartrooms:room.*)
 
 Limit the attributes
@@ -483,7 +503,7 @@ Limit the attributes
 Additionally we now want to limit the result to only give us the temperature. This is done by using the attrs parameter. Attrs takes a comma seperated list. In our case since it's only one entry it looks like this.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22\&attrs=temperature -s -S -H 'Accept: application/json' -H 'Link: "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22\&attrs=temperature -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/NgXJLgRa>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 ::
 
@@ -523,7 +543,7 @@ KeyValues results
 Now assuming we want to limit the payload of the request even more since we are really only interested in the value of temperature and don't care about any meta information. This can be done using the keyValues option. KeyValues will return a condenced version of the Entity providing only top level attribute and their respective value or object.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22\&attrs=temperature\&options=keyValues -s -S -H 'Accept: application/json' -H 'Link: "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22\&attrs=temperature\&options=keyValues -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/NgXJLgRa>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 Response:
 ::
@@ -561,7 +581,7 @@ You can basically update every part of an entity with two exceptions. The type a
 To update our room1 we will do an HTTP POST like this.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1 -s -S -H 'Content-Type: application/json' -H 'Link: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld' -d @- <<EOF
+	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1 -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/NgXJLgRa' -d @- <<EOF
 	{
 		"temperature": {
 		"value": 25,
@@ -588,7 +608,7 @@ To take care of a single attribute update NGSI-LD provides a partial update. Thi
 In order to update the temperature we do a POST like this 
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/temperature -s -S -H 'Content-Type: application/json' -H 'Link: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld' -d @- <<EOF
+	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/temperature -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/NgXJLgRa' -d @- <<EOF
 	{
 		"value": 26,
 		"unitCode": "CEL",
@@ -607,7 +627,7 @@ In order to append a new attribute to an entity you execute an HTTP PATCH comman
 Append in NGSI-LD by default will overwrite an existing entry. If this is not desired you can add the option parameter with noOverwrite to the URL like this /entities/<entityId>/attrs?options=noOverwrite. Now if we want to add an additional entry for the humidity in room1 we do an HTTP PATCH like this. 
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs -s -S -X PATCH -H 'Content-Type: application/json' -H 'Link: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld' -d @- <<EOF
+	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs -s -S -X PATCH -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/NgXJLgRa' -d @- <<EOF
 	{
 		"humidity": {
 		"value": 34,
@@ -619,6 +639,7 @@ Append in NGSI-LD by default will overwrite an existing entry. If this is not de
 		}
 	  }
 	}
+	EOF
 	
 Add a multivalue attribute
 ##########################
@@ -626,7 +647,7 @@ Add a multivalue attribute
 NGSI-LD also allows us to add new multi value entries. We will do this by adding a unique datesetId. If a datasetId is provided in an append it will only affect the entry with the given datasetId. Adding the temperature in Fahrenheit we do a PATCH call like this.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/temperature -s -S -H 'Content-Type: application/json' -H 'Link: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld' -d @- <<EOF
+	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/temperature -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/NgXJLgRa' -d @- <<EOF
 	{
 		"value": 78,8,
 		"unitCode": "FAH",
@@ -664,7 +685,7 @@ In order to get the temperature of our rooms we will formulate a basic subscript
 			"accept": "application/json"
 		}
 	  },
-	  "@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"]
+	  "@context": ["https://pastebin.com/raw/NgXJLgRa"]
 	}
 	EOF
 
@@ -810,7 +831,7 @@ An alternative to get the same result in our setup is using the watchedAttribute
 				"accept": "application/json"
 			}
 		},
-	  "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+	  "@context": "https://pastebin.com/raw/NgXJLgRa"
 	}
 	EOF
 
@@ -833,7 +854,7 @@ You need to have at least the entities parameter (with a valid entry in the arra
 				"accept": "application/json"
 			}
 		},
-	  "@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+	  "@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	EOF
 
@@ -860,7 +881,7 @@ As we get now also the "Room" from smartcity:houses:house99 but we are only in i
 				"accept": "application/json"
 			}
 	  },
-	  "@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+	  "@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	EOF
  
@@ -886,7 +907,7 @@ Similar to our query we can also use the q filter to achieve this via the isPart
 				"accept": "application/json"
 			}
 		},
-	  "@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+	  "@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	EOF
 
@@ -912,7 +933,7 @@ Now since we still get the full Entity in our notifications we want to reduce th
 			},
 			"attributes": ["temperature"]
 	  },
-	  "@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+	  "@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	EOF
 
@@ -964,7 +985,7 @@ The attributes and the watchedAttributes parameter can very well be different. I
 			},
 			"attributes": ["isPartOf"]
 		},
-	  "@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+	  "@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	EOF
 
@@ -994,7 +1015,7 @@ An additional filter is the geoQ parameter allowing you to define a geo query. I
 			},
 			"attributes": ["isPartOf"]
 		},
-	  "@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+	  "@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	EOF
 
@@ -1021,7 +1042,7 @@ If you want to, for instance, pass on an oauth token you would do a subscription
 				"receiverInfo": [{"Authorization": "Bearer sdckqk3123ykasd723knsws"}]
 			}		
 		},
-	  "@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+	  "@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	EOF
 
@@ -1047,7 +1068,7 @@ So a subscription would generally look like this.
 				"accept": "application/json"
 			}
 		},
-	  "@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+	  "@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	EOF
 
@@ -1075,7 +1096,7 @@ Changing this to version 3.1.1 and QoS to 2 you would subscribe like this
 				"notifierInfo": [{"MQTT-Version": "mqtt3.1.1"},{"MQTT-QoS": 2}]
 			}
 		},
-	  "@context": [ "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld" ]
+	  "@context": [ "https://pastebin.com/raw/NgXJLgRa" ]
 	}
 	EOF
 
@@ -1144,7 +1165,7 @@ Assuming we want to create a few rooms for house 99 we would create the entities
 				"type": "Relationship",
 				"object": "smartcity:houses:house99"
 			},
-			"@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+			"@context": "https://pastebin.com/raw/NgXJLgRa"
 
 		},
 		{
@@ -1154,7 +1175,7 @@ Assuming we want to create a few rooms for house 99 we would create the entities
 				"type": "Relationship",
 				"object": "smartcity:houses:house99"
 			},
-			"@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+			"@context": "https://pastebin.com/raw/NgXJLgRa"
 
 		},
 		{
@@ -1164,7 +1185,7 @@ Assuming we want to create a few rooms for house 99 we would create the entities
 				"type": "Relationship",
 				"object": "smartcity:houses:house99"
 			},
-			"@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+			"@context": "https://pastebin.com/raw/NgXJLgRa"
 
 		},
 		{
@@ -1183,7 +1204,7 @@ Assuming we want to create a few rooms for house 99 we would create the entities
 				"type": "Relationship",
 				"object": "smartcity:houses:house99"
 			},
-			"@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+			"@context": "https://pastebin.com/raw/NgXJLgRa"
 
 		}
 	]
@@ -1205,7 +1226,7 @@ Now as we did only add one temperature entry we are going to upsert the temperat
 					"object": "smartbuilding:house99:sensor19970309"
 				}
 			},
-			"@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+			"@context": "https://pastebin.com/raw/NgXJLgRa"
 
 		},
 		{
@@ -1220,7 +1241,7 @@ Now as we did only add one temperature entry we are going to upsert the temperat
 					"object": "smartbuilding:house99:sensor19960913"
 				}
 			},
-			"@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+			"@context": "https://pastebin.com/raw/NgXJLgRa"
 
 		},
 		{
@@ -1235,7 +1256,7 @@ Now as we did only add one temperature entry we are going to upsert the temperat
 					"object": "smartbuilding:house99:sensor19931109"
 				}
 			},
-			"@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+			"@context": "https://pastebin.com/raw/NgXJLgRa"
 
 		},
 		{
@@ -1250,7 +1271,7 @@ Now as we did only add one temperature entry we are going to upsert the temperat
 					"object": "smartbuilding:house99:sensor20041113"
 				}
 			},
-			"@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+			"@context": "https://pastebin.com/raw/NgXJLgRa"
 
 		}
 	]
@@ -1293,7 +1314,7 @@ Assuming we have an external Context Source which provides information about ano
 	  ],
 	  "endpoint": "http://my.csource.org:1234",
 	  "location": { "type": "Polygon", "coordinates": [[[8.686752319335938,49.359122687528746],[8.742027282714844,49.3642654834877],[8.767433166503904,49.398462568451485],[8.768119812011719,49.42750021620163],[8.74305725097656,49.44781634951542],[8.669242858886719,49.43754770762113],[8.63525390625,49.41968407776289],[8.637657165527344,49.3995797187007],[8.663749694824219,49.36851347448498],[8.686752319335938,49.359122687528746]]] },
-	  "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+	  "@context": "https://pastebin.com/raw/NgXJLgRa"
 	}
 
 Now Scorpio will take the registered Context Sources which are have a matching registration into account on its queries and subscriptions.
@@ -1301,7 +1322,7 @@ You can also independently query or subscribe to the context registry entries, q
 Now if we query for all registrations which provide anything of type Room like this 
 ::
 
-	curl localhost:9090/ngsi-ld/v1/csourceRegistrations/?type=Room -s -S -H 'Accept: application/json' -H 'Link: "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' 
+	curl localhost:9090/ngsi-ld/v1/csourceRegistrations/?type=Room -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/NgXJLgRa>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"' 
 
 we will get back our original registration and everything that has been registered with the type Room.
 
