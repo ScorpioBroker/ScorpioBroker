@@ -124,11 +124,7 @@
 		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-reactive-pg-client</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-jdbc-postgresql</artifactId>
-		</dependency>
+		</dependency>		
 		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-arc</artifactId>
