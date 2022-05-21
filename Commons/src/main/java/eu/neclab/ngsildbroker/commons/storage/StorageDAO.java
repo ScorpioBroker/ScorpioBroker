@@ -2,17 +2,13 @@ package eu.neclab.ngsildbroker.commons.storage;
 
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.sql.DataSource;
 
 import com.google.common.collect.Lists;
 
-import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +24,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
-import eu.neclab.ngsildbroker.commons.tools.DBUtil;
-import io.agroal.api.AgroalDataSource;
-import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImplementation;
-import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
-import io.agroal.api.security.NamePrincipal;
-import io.agroal.api.security.SimplePassword;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.pgclient.PgPool;
@@ -47,26 +37,12 @@ public abstract class StorageDAO {
 	@Inject
 	protected ClientManager clientManager;
 
-	@Inject
-	AgroalDataSource writerDataSource;
-	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
-//	private TransactionTemplate writerTransactionTemplate;
-//	private JdbcTemplate writerJdbcTemplateWithTransaction;
-//	private DBWriteTemplates defaultTemplates;
-//	private HashMap<String, DBWriteTemplates> tenant2Templates = new HashMap<String, DBWriteTemplates>();
-
 	protected abstract StorageFunctionsInterface getStorageFunctions();
 
 	StorageFunctionsInterface storageFunctions;
 
 	@PostConstruct
 	public void init() {
-//		writerJdbcTemplate.execute("SELECT 1"); // create connection pool and connect to database
-//		DataSourceTransactionManager transactionManager = new DataSourceTransactionManager(writerDataSource);
-//		writerJdbcTemplateWithTransaction = new JdbcTemplate(transactionManager.getDataSource());
-//		writerTransactionTemplate = new TransactionTemplate(transactionManager);
-//		this.defaultTemplates = new DBWriteTemplates(writerJdbcTemplateWithTransaction, writerTransactionTemplate,
-//				writerJdbcTemplate);
 		storageFunctions = getStorageFunctions();
 	}
 
@@ -99,56 +75,6 @@ public abstract class StorageDAO {
 	 * 
 	 * } return result; }
 	 */
-
-	public DataSource determineTargetDataSource(String tenantidvalue) throws SQLException {
-
-		if (tenantidvalue == null)
-			return writerDataSource;
-
-		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
-		if (tenantDataSource == null) {
-			try {
-				tenantDataSource = createDataSourceForTenantId(tenantidvalue);
-			} catch (ResponseException e) {
-				logger.error(e.getLocalizedMessage());
-			}
-			flywayMigrate(tenantDataSource);
-			resolvedDataSources.put(tenantidvalue, tenantDataSource);
-		}
-
-		return tenantDataSource;
-	}
-
-	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException, SQLException {
-		String tenantDatabaseName = clientManager.findDataBaseNameByTenantId(tenantidvalue);
-		if (tenantDatabaseName == null) {
-			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
-		}
-
-		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl("jdbc:postgresql://localhost:5432/ngb",
-				tenantDatabaseName);
-		AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
-				.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
-				.connectionPoolConfiguration(cp -> cp.minSize(5).maxSize(20).initialSize(10)
-						.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
-								.connectionProviderClassName("org.postgresql.Driver").autoCommit(false)
-								.principal(new NamePrincipal("ngb")).credential(new SimplePassword("ngb"))));
-		AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
-		return agroaldataSource;
-	}
-
-	public Boolean flywayMigrate(DataSource tenantDataSource) {
-		try {
-			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
-					.baselineOnMigrate(true).outOfOrder(true).load();
-			flyway.repair();
-			flyway.migrate();
-		} catch (Exception e) {
-			return false;
-		}
-
-		return true;
-	}
 
 	public Uni<QueryResult> query(QueryParams qp) {
 		PgPool client = clientManager.getClient(qp.getTenant(), false);
@@ -215,7 +141,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<Void> storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
+	public Uni<Void> storeTemporalEntity(HistoryEntityRequest request) {
 
 		PgPool client = clientManager.getClient(request.getTenant(), true);
 
@@ -235,34 +161,45 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<Void> storeRegistryEntry(CSourceRequest request) throws SQLException, ResponseException {
+	public Uni<Void> storeRegistryEntry(CSourceRequest request) {
 		PgPool client = clientManager.getClient(request.getTenant(), true);
 		String value = request.getResultCSourceRegistrationString();
 		String sql;
-		Uni uni = null;
+
 		if (value != null && !value.equals("null")) {
 			if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 
 				sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-						+ ") VALUES ($1, '" + value + "'::jsonb) ON CONFLICT(id) DO NOTHING";
-				uni = client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3)
-						.onItem().ignore().andContinueWithNull();
-				if (uni == null) {
-					throw new ResponseException(ErrorType.AlreadyExists, "CSource already exists");
-				}
+						+ ") VALUES ($1, '" + value + "'::jsonb)";
+
+				return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
+					// if( whatever alreadyexists is) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.AlreadyExists, "CSource already exists"));
+					// } else {
+					// return Uni.createFrom().failure(new
+					// ResponseException(ErrorType.InternalError, e.getMessage()));
+					// }
+				}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
+
 			} else if (request.getRequestType() == AppConstants.OPERATION_APPEND_ENTITY) {
 				sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
 						+ ") VALUES ($1, '" + value + "'::jsonb) ON CONFLICT(id) DO UPDATE SET "
 						+ DBConstants.DBCOLUMN_DATA + " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
-				uni = client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3)
-						.onItem().ignore().andContinueWithNull();
+				return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+				}).onItem().ignore().andContinueWithNull();
+			} else {
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.InternalError, "was not executed unknown call"));
 			}
 		} else {
 			sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = $1";
-			uni = client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3).onItem()
-					.ignore().andContinueWithNull();
+			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+			}).onItem().ignore().andContinueWithNull();
 		}
-		return uni;
+
 	}
 
 	private Uni<Void> doTemporalSqlAttrInsert(PgPool client, String value, String entityId, String entityType,
@@ -350,7 +287,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<Void> storeEntity(EntityRequest request){
+	public Uni<Void> storeEntity(EntityRequest request) {
 
 		String sql;
 		String key = request.getId();

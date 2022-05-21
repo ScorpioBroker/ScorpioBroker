@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import javax.annotation.PostConstruct;
@@ -11,10 +12,22 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.sql.DataSource;
 
+import org.flywaydb.core.Flyway;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import io.agroal.api.AgroalDataSource;
+import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImplementation;
+import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
+import io.agroal.api.security.NamePrincipal;
+import io.agroal.api.security.SimplePassword;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.pgclient.PgPool;
@@ -24,11 +37,15 @@ import io.vertx.mutiny.sqlclient.Tuple;
 @Singleton
 public class ClientManager {
 
-	@Inject
-	private PgPool pgClient;
+	Logger logger = LoggerFactory.getLogger(ClientManager.class);
 
 	@Inject
-	protected StorageDAO storageDAO;
+	PgPool pgClient;
+
+	@Inject
+	AgroalDataSource writerDataSource;
+
+	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 
 	protected HashMap<String, PgPool> tenant2Client = new HashMap<String, PgPool>();
 
@@ -49,7 +66,7 @@ public class ClientManager {
 	}
 
 	private PgPool generateTenant(String tenant) {
-		PgPool result=null;
+		PgPool result = null;
 		if (tenant == null) {
 			result = pgClient;
 		} else {
@@ -58,18 +75,55 @@ public class ClientManager {
 			} else {
 				DataSource finalDataSource;
 				try {
-					finalDataSource = storageDAO.determineTargetDataSource(tenant);
-					result = pgClient
-							.connectionProvider((Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());
+					finalDataSource = determineTargetDataSource(tenant);
+					result = pgClient.connectionProvider(
+							(Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());
 					tenant2Client.put(tenant, result);
 				} catch (SQLException exception) {
 					exception.printStackTrace();
 				}
-				
+
 			}
 
 		}
 		return result;
+	}
+
+	public DataSource determineTargetDataSource(String tenantidvalue) throws SQLException {
+
+		if (tenantidvalue == null)
+			return writerDataSource;
+
+		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
+		if (tenantDataSource == null) {
+			try {
+				tenantDataSource = createDataSourceForTenantId(tenantidvalue);
+			} catch (ResponseException e) {
+				logger.error(e.getLocalizedMessage());
+			}
+			flywayMigrate(tenantDataSource);
+			resolvedDataSources.put(tenantidvalue, tenantDataSource);
+		}
+
+		return tenantDataSource;
+	}
+
+	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException, SQLException {
+		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
+		if (tenantDatabaseName == null) {
+			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
+		}
+
+		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl("jdbc:postgresql://localhost:5432/ngb",
+				tenantDatabaseName);
+		AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
+				.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
+				.connectionPoolConfiguration(cp -> cp.minSize(5).maxSize(20).initialSize(10)
+						.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
+								.connectionProviderClassName("org.postgresql.Driver").autoCommit(false)
+								.principal(new NamePrincipal("ngb")).credential(new SimplePassword("ngb"))));
+		AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
+		return agroaldataSource;
 	}
 
 	public HashMap<String, PgPool> getAllClients() {
@@ -157,6 +211,19 @@ public class ClientManager {
 				return null;
 			}
 		}
+	}
+
+	public Boolean flywayMigrate(DataSource tenantDataSource) {
+		try {
+			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
+					.baselineOnMigrate(true).outOfOrder(true).load();
+			flyway.repair();
+			flyway.migrate();
+		} catch (Exception e) {
+			return false;
+		}
+
+		return true;
 	}
 
 }
