@@ -1,13 +1,19 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
-import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,12 +31,14 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
+@Singleton
 public abstract class StorageDAO {
 	private final static Logger logger = LoggerFactory.getLogger(StorageDAO.class);
 
@@ -46,6 +54,60 @@ public abstract class StorageDAO {
 		storageFunctions = getStorageFunctions();
 	}
 
+	public Uni<ArrayListMultimap<String, String>> getAllIds() {
+		List<Uni<Object>> unis = Lists.newArrayList();
+		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
+			PgPool client = entry.getValue();
+			String tenant = entry.getKey();
+			unis.add(client.query(storageFunctions.getAllIdsQuery()).execute().onItem()
+					.transform(t -> Tuple2.of(t, tenant)));
+		}
+		return Uni.combine().all().unis(unis).combinedWith(t -> {
+			ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+			for (Object item : t) {
+				Tuple2<RowSet<Row>, String> tuple = (Tuple2<RowSet<Row>, String>) item;
+				tuple.getItem1().forEach(t2 -> {
+					result.put(tuple.getItem2(), t2.getString(0));
+				});
+			}
+			return result;
+		});
+
+	}
+
+	public Uni<String> getEntity(String entryId, String tenantId) {
+		return clientManager.getClient(tenantId, false).preparedQuery(storageFunctions.getEntryQuery())
+				.execute(Tuple.of(entryId)).onItem().transform(t -> {
+					String result = "";
+					for (Row entry : t) {
+						result = ((JsonObject) entry.getJson(0)).encode();
+					}
+					return result;
+				});
+
+	}
+
+	public Uni<Map<String, List<String>>> getAllEntities() {
+		List<Uni<Object>> unis = Lists.newArrayList();
+		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
+			PgPool client = entry.getValue();
+			String tenant = entry.getKey();
+			unis.add(client.query("SELECT data FROM entity").execute().onItem().transform(t -> Tuple2.of(t, tenant)));
+		}
+		return Uni.combine().all().unis(unis).combinedWith(t -> {
+			Map<String, List<String>> result = Maps.newHashMap();
+
+			for (Object item : t) {
+				Tuple2<RowSet<Row>, String> tuple = (Tuple2<RowSet<Row>, String>) item;
+				List<String> tmp = Lists.newArrayList();
+				tuple.getItem1().forEach(t2 -> {
+					tmp.add(t2.getString(0));
+				});
+				result.put(tuple.getItem2(), tmp);
+			}
+			return result;
+		});
+	}
 	/*
 	 * public boolean storeTenantdata(String tableName, String columnName, String
 	 * tenantidvalue, String databasename) throws SQLException { try { String sql;

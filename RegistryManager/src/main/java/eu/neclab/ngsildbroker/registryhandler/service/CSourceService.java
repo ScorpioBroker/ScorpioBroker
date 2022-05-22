@@ -18,13 +18,12 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.el.MethodNotFoundException;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Service;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
@@ -52,100 +51,81 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
-@Service
+@Singleton
 public class CSourceService extends BaseQueryService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 
-	@Autowired
+	@Inject
+	MicroServiceUtils microServiceUtils;
+
+	@Inject
 	CSourceDAO csourceInfoDAO;
 
-	Map<String, Object> myRegistryInformation;
-	@Value("${scorpio.registry.autoregmode:types}")
+	@Inject
+	MutinyEmitter<Object> kafkaTemplate;
+
+	@ConfigProperty(name = "scorpio.registry.autoregmode", defaultValue = "types")
 	String AUTO_REG_MODE;
 
-	@Value("${scorpio.registry.autorecording:active}")
+	@ConfigProperty(name = "scorpio.registry.autorecording", defaultValue = "active")
 	String AUTO_REG_STATUS;
 
-	@Autowired
-	KafkaTemplate<String, Object> kafkaTemplate;
-
-	@Value("${scorpio.topics.registry}")
+	@ConfigProperty(name = "scorpio.topics.registry")
 	String CSOURCE_TOPIC;
-	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
-			new LinkedBlockingQueue<Runnable>());
-	@Value("${scorpio.directDB}")
-	boolean directDB = true;
 
-	// private ArrayListMultimap<String, String> csourceIds =
-	// ArrayListMultimap.create();
+	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
+	boolean directDB;
 
+	@ConfigProperty(name = "scorpio.fedbrokers", defaultValue = "#{null}") // :}")
+	String fedBrokers;
+
+	Map<String, Object> myRegistryInformation;
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
 	Timer watchDog = new Timer(true);
 	private ArrayBlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(50000, true);
-
 	ThreadPoolExecutor executor = new ThreadPoolExecutor(20, 50, 600000, TimeUnit.MILLISECONDS, workQueue);
-
 	private Table<String, Map<String, Object>, Set<String>> tenant2InformationEntry2EntityIds = HashBasedTable.create();
 	private Table<String, String, Map<String, Object>> tenant2EntityId2InformationEntry = HashBasedTable.create();
 
-	@Autowired
-	private MicroServiceUtils microServiceUtils;
-	
-	@Value("${scorpio.fedbrokers:#{null}}")
-	private String fedBrokers;
+//	@SuppressWarnings("unused")
+//	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
+//		// this.csourceIds = csourceInfoDAO.getAllIds();
+//		if (AUTO_REG_STATUS.equals("active")) {
+//			Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
+//			for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
+//				String tenant = entry.getKey();
+//				List<String> entityList = entry.getValue();
+//				if (entityList.isEmpty()) {
+//					continue;
+//				}
+//				for (String entityString : entityList) {
+//					Map<String, Object> entity = (Map<String, Object>) JsonUtils.fromString(entityString);
+//					Map<String, Object> informationEntry = getInformationFromEntity(entity);
+//					String id = (String) entity.get(NGSIConstants.JSON_LD_ID);
+//					tenant2EntityId2InformationEntry.put(tenant, id, informationEntry);
+//					Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
+//					if (ids == null) {
+//						ids = new HashSet<String>();
+//					}
+//					ids.add(id);
+//					tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
+//				}
+//				CSourceRequest regEntry = createInternalRegEntry(tenant);
+//				try {
+//					storeInternalEntry(regEntry);
+//				} catch (Exception e) {
+//					logger.error("Failed to create initial internal reg status", e);
+//				}
+//			}
+//		}
+//	}
 
-	@SuppressWarnings("unused")
-	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
-		// this.csourceIds = csourceInfoDAO.getAllIds();
-		if (AUTO_REG_STATUS.equals("active")) {
-			Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
-			for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
-				String tenant = entry.getKey();
-				List<String> entityList = entry.getValue();
-				if (entityList.isEmpty()) {
-					continue;
-				}
-				for (String entityString : entityList) {
-					Map<String, Object> entity = (Map<String, Object>) JsonUtils.fromString(entityString);
-					Map<String, Object> informationEntry = getInformationFromEntity(entity);
-					String id = (String) entity.get(NGSIConstants.JSON_LD_ID);
-					tenant2EntityId2InformationEntry.put(tenant, id, informationEntry);
-					Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
-					if (ids == null) {
-						ids = new HashSet<String>();
-					}
-					ids.add(id);
-					tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
-				}
-				CSourceRequest regEntry = createInternalRegEntry(tenant);
-				try {
-					storeInternalEntry(regEntry);
-				} catch (Exception e) {
-					logger.error("Failed to create initial internal reg status", e);
-				}
-			}
-		}
-	}
 
-	public List<String> getCSourceRegistrations(String tenant) throws ResponseException, IOException, Exception {
-		if (directDB) {
-			return csourceInfoDAO.getAllRegistrations(tenant);
-		} else {
-			logger.trace("getAll() ::");
-			// TODO redo this completely with support of the storagemanager
-			return new ArrayList<String>();
-		}
-
-	}
-
-	public String getCSourceRegistrationById(String tenantId, String registrationId)
-			throws ResponseException, Exception {
-		return validateIdAndGetBody(registrationId, tenantId);
-	}
-
-	private void pushToDB(CSourceRequest request) throws SQLException, ResponseException {
+	private void pushToDB(CSourceRequest request)  {
 		this.csourceInfoDAO.storeRegistryEntry(request);
 	}
 
@@ -170,21 +150,18 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 	}
 
-	private String validateIdAndGetBody(String registrationid, String tenantId) throws ResponseException, Exception {
+	private Uni<String> validateIdAndGetBody(String registrationid, String tenantId) {
 		// null id check
 		if (registrationid == null) {
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid query for registration. No ID provided.");
+			return Uni.createFrom().failure(
+					new ResponseException(ErrorType.BadRequestData, "Invalid query for registration. No ID provided."));
 		}
-		String entityBody = null;
-		if (directDB) {
-			entityBody = this.csourceInfoDAO.getEntity(tenantId, registrationid);
-		}
-		return entityBody;
+		return this.csourceInfoDAO.getEntity(tenantId, registrationid);
 	}
 
 	@Override
-	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry) throws ResponseException, Exception {
+	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry) {
 		throw new MethodNotFoundException("not supported in registry");
 	}
 
@@ -430,15 +407,15 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 							HashMap<String, Object> tmp = new HashMap<String, Object>();
 							tmp.put(NGSIConstants.JSON_LD_ID, entry.getKey());
 							switch (typeString) {
-							case NGSIConstants.NGSI_LD_GEOPROPERTY:
-							case NGSIConstants.NGSI_LD_PROPERTY:
-								propertyNames.add(tmp);
-								break;
-							case NGSIConstants.NGSI_LD_RELATIONSHIP:
-								relationshipNames.add(tmp);
-								break;
-							default:
-								continue;
+								case NGSIConstants.NGSI_LD_GEOPROPERTY:
+								case NGSIConstants.NGSI_LD_PROPERTY:
+									propertyNames.add(tmp);
+									break;
+								case NGSIConstants.NGSI_LD_RELATIONSHIP:
+									relationshipNames.add(tmp);
+									break;
+								default:
+									continue;
 							}
 						}
 					}

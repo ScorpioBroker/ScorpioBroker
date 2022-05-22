@@ -79,17 +79,17 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		sqlWhere.append("( (" + sqlTestStatic + ") OR "); // temporal filters do not apply to static attributes
 
 		switch (timerel) {
-		case NGSIConstants.TIME_REL_BEFORE:
-			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " '" + time + "'::timestamp");
-			break;
-		case NGSIConstants.TIME_REL_AFTER:
-			sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " '" + time + "'::timestamp");
-			break;
-		case NGSIConstants.TIME_REL_BETWEEN:
-			sqlWhere.append(dbColumn + " BETWEEN '" + time + "'::timestamp AND '" + endTime + "'::timestamp");
-			break;
-		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);
+			case NGSIConstants.TIME_REL_BEFORE:
+				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " '" + time + "'::timestamp");
+				break;
+			case NGSIConstants.TIME_REL_AFTER:
+				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " '" + time + "'::timestamp");
+				break;
+			case NGSIConstants.TIME_REL_BETWEEN:
+				sqlWhere.append(dbColumn + " BETWEEN '" + time + "'::timestamp AND '" + endTime + "'::timestamp");
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);
 		}
 		sqlWhere.append(")");
 		return sqlWhere.toString();
@@ -117,18 +117,19 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 				fullSqlWhere.append("(");
 				for (Entry<String, String> entry : entityInfo.entrySet()) {
 					switch (entry.getKey()) {
-					case NGSIConstants.JSON_LD_ID:
-						fullSqlWhere.append(getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_ID, entry.getValue()));
-						break;
-					case NGSIConstants.JSON_LD_TYPE:
-						fullSqlWhere
-								.append(getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_TYPE, entry.getValue()));
-						break;
-					case NGSIConstants.NGSI_LD_ID_PATTERN:
-						fullSqlWhere.append("te." + DBCOLUMN_HISTORY_ENTITY_ID + " ~ '" + entry.getValue() + "'");
-						break;
-					default:
-						break;
+						case NGSIConstants.JSON_LD_ID:
+							fullSqlWhere
+									.append(getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_ID, entry.getValue()));
+							break;
+						case NGSIConstants.JSON_LD_TYPE:
+							fullSqlWhere.append(
+									getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_TYPE, entry.getValue()));
+							break;
+						case NGSIConstants.NGSI_LD_ID_PATTERN:
+							fullSqlWhere.append("te." + DBCOLUMN_HISTORY_ENTITY_ID + " ~ '" + entry.getValue() + "'");
+							break;
+						default:
+							break;
 					}
 					fullSqlWhere.append(" AND ");
 				}
@@ -284,27 +285,27 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georelOp);
 
 		switch (georelOp) {
-		case NGSIConstants.GEO_REL_NEAR:
-			if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
-				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
-					sqlWhere.append("NOT ");
-				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
-						+ "::geography, " + georel.getDistanceValue() + ", false) ");
-			} else {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"GeoQuery: Type and distance are required for near relation");
-			}
-			break;
-		case NGSIConstants.GEO_REL_WITHIN:
-		case NGSIConstants.GEO_REL_CONTAINS:
-		case NGSIConstants.GEO_REL_OVERLAPS:
-		case NGSIConstants.GEO_REL_INTERSECTS:
-		case NGSIConstants.GEO_REL_EQUALS:
-		case NGSIConstants.GEO_REL_DISJOINT:
-			sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + ", " + referenceValue + ") ");
-			break;
-		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
+			case NGSIConstants.GEO_REL_NEAR:
+				if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
+					if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
+						sqlWhere.append("NOT ");
+					sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
+							+ "::geography, " + georel.getDistanceValue() + ", false) ");
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"GeoQuery: Type and distance are required for near relation");
+				}
+				break;
+			case NGSIConstants.GEO_REL_WITHIN:
+			case NGSIConstants.GEO_REL_CONTAINS:
+			case NGSIConstants.GEO_REL_OVERLAPS:
+			case NGSIConstants.GEO_REL_INTERSECTS:
+			case NGSIConstants.GEO_REL_EQUALS:
+			case NGSIConstants.GEO_REL_DISJOINT:
+				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + ", " + referenceValue + ") ");
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
 		}
 		return sqlWhere.toString();
 	}
@@ -314,4 +315,15 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		// TODO Auto-generated method stub
 		return "";
 	}
+
+	@Override
+	public String getAllIdsQuery() {
+		return "SELECT DISTINCT id FROM entity";
+	}
+
+	@Override
+	public String getEntryQuery() {
+		return "SELECT data FROM entity WHERE id=$1";
+	}
+
 }

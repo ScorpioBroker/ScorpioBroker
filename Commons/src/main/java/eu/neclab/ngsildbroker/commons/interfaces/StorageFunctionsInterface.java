@@ -15,4 +15,8 @@ public interface StorageFunctionsInterface {
 	String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
 			String geoproperty) throws ResponseException;
 
+	String getAllIdsQuery();
+
+	String getEntryQuery();
+
 }

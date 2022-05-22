@@ -15,6 +15,9 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
 
 public class EntityStorageFunctions implements StorageFunctionsInterface {
 
@@ -89,27 +92,27 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georelOp);
 
 		switch (georelOp) {
-		case NGSIConstants.GEO_REL_NEAR:
-			if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
-				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
-					sqlWhere.append("NOT ");
-				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
-						+ "::geography, " + georel.getDistanceValue() + ") ");
-			} else {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"GeoQuery: Type and distance are required for near relation");
-			}
-			break;
-		case NGSIConstants.GEO_REL_WITHIN:
-		case NGSIConstants.GEO_REL_CONTAINS:
-		case NGSIConstants.GEO_REL_OVERLAPS:
-		case NGSIConstants.GEO_REL_INTERSECTS:
-		case NGSIConstants.GEO_REL_EQUALS:
-		case NGSIConstants.GEO_REL_DISJOINT:
-			sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + ", " + referenceValue + ") ");
-			break;
-		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
+			case NGSIConstants.GEO_REL_NEAR:
+				if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
+					if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
+						sqlWhere.append("NOT ");
+					sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
+							+ "::geography, " + georel.getDistanceValue() + ") ");
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"GeoQuery: Type and distance are required for near relation");
+				}
+				break;
+			case NGSIConstants.GEO_REL_WITHIN:
+			case NGSIConstants.GEO_REL_CONTAINS:
+			case NGSIConstants.GEO_REL_OVERLAPS:
+			case NGSIConstants.GEO_REL_INTERSECTS:
+			case NGSIConstants.GEO_REL_EQUALS:
+			case NGSIConstants.GEO_REL_DISJOINT:
+				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + ", " + referenceValue + ") ");
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
 		}
 		return sqlWhere.toString();
 	}
@@ -127,37 +130,37 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 				entitiesAdded = true;
 				for (Entry<String, String> entry : entityInfo.entrySet()) {
 					switch (entry.getKey()) {
-					case NGSIConstants.JSON_LD_ID:
-						dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
-						if (entry.getValue().indexOf(",") == -1) {
-							sqlOperator = "=";
-							sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-						} else {
-							sqlOperator = "IN";
-							sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
-									+ entry.getValue().replace(",", "','") + "')";
-						}
-						break;
-					case NGSIConstants.JSON_LD_TYPE:
-						dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
-						if (entry.getValue().indexOf(",") == -1) {
-							sqlOperator = "=";
-							sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-						} else {
-							sqlOperator = "IN";
-							sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
-									+ entry.getValue().replace(",", "','") + "')";
-						}
+						case NGSIConstants.JSON_LD_ID:
+							dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
+							if (entry.getValue().indexOf(",") == -1) {
+								sqlOperator = "=";
+								sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+							} else {
+								sqlOperator = "IN";
+								sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
+										+ entry.getValue().replace(",", "','") + "')";
+							}
+							break;
+						case NGSIConstants.JSON_LD_TYPE:
+							dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
+							if (entry.getValue().indexOf(",") == -1) {
+								sqlOperator = "=";
+								sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+							} else {
+								sqlOperator = "IN";
+								sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
+										+ entry.getValue().replace(",", "','") + "')";
+							}
 
-						break;
-					case NGSIConstants.NGSI_LD_ID_PATTERN:
-						dbColumn = DBConstants.DBCOLUMN_ID;
-						sqlOperator = "~";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-						break;
+							break;
+						case NGSIConstants.NGSI_LD_ID_PATTERN:
+							dbColumn = DBConstants.DBCOLUMN_ID;
+							sqlOperator = "~";
+							sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+							break;
 
-					default:
-						break;
+						default:
+							break;
 					}
 					fullSqlWhereProperty.append(sqlWhereProperty);
 					fullSqlWhereProperty.append(" AND ");
@@ -312,6 +315,16 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 
 		}
 		return null;
+	}
+
+	@Override
+	public String getAllIdsQuery() {
+		return "SELECT DISTINCT id FROM entity";
+	}
+
+	@Override
+	public String getEntryQuery() {
+		return "SELECT data FROM entity WHERE id=$1";
 	}
 
 }

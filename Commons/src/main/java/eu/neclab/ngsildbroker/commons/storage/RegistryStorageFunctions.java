@@ -289,38 +289,38 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 				+ coordinates + " }'), 4326)";
 
 		switch (georelOp) {
-		case NGSIConstants.GEO_REL_WITHIN:
-		case NGSIConstants.GEO_REL_CONTAINS:
-		case NGSIConstants.GEO_REL_INTERSECTS:
-		case NGSIConstants.GEO_REL_EQUALS:
-			sqlWhere.append(NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georelOp) + "( " + dbColumn + ", "
-					+ referenceValue + ") ");
-			break;
-		case NGSIConstants.GEO_REL_NEAR:
-			if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
-				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
-					sqlWhere.append("NOT " + DBConstants.POSTGIS_WITHIN + "( " + dbColumn + ", ST_Buffer("
-							+ referenceValue + "::geography, " + georel.getDistanceValue() + ")::geometry ) ");
-				else
-					sqlWhere.append(DBConstants.POSTGIS_INTERSECTS + "( " + dbColumn + ", ST_Buffer(" + referenceValue
-							+ "::geography, " + georel.getDistanceValue() + ")::geometry ) ");
-			} else {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"GeoQuery: Type and distance are required for near relation");
-			}
-			break;
-		case NGSIConstants.GEO_REL_OVERLAPS:
-			sqlWhere.append("(");
-			sqlWhere.append(DBConstants.POSTGIS_OVERLAPS + "( " + dbColumn + ", " + referenceValue + ")");
-			sqlWhere.append(" OR ");
-			sqlWhere.append(DBConstants.POSTGIS_CONTAINS + "( " + dbColumn + ", " + referenceValue + ")");
-			sqlWhere.append(")");
-			break;
-		case NGSIConstants.GEO_REL_DISJOINT:
-			sqlWhere.append("NOT " + DBConstants.POSTGIS_WITHIN + "( " + dbColumn + ", " + referenceValue + ") ");
-			break;
-		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
+			case NGSIConstants.GEO_REL_WITHIN:
+			case NGSIConstants.GEO_REL_CONTAINS:
+			case NGSIConstants.GEO_REL_INTERSECTS:
+			case NGSIConstants.GEO_REL_EQUALS:
+				sqlWhere.append(NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georelOp) + "( " + dbColumn + ", "
+						+ referenceValue + ") ");
+				break;
+			case NGSIConstants.GEO_REL_NEAR:
+				if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
+					if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
+						sqlWhere.append("NOT " + DBConstants.POSTGIS_WITHIN + "( " + dbColumn + ", ST_Buffer("
+								+ referenceValue + "::geography, " + georel.getDistanceValue() + ")::geometry ) ");
+					else
+						sqlWhere.append(DBConstants.POSTGIS_INTERSECTS + "( " + dbColumn + ", ST_Buffer("
+								+ referenceValue + "::geography, " + georel.getDistanceValue() + ")::geometry ) ");
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"GeoQuery: Type and distance are required for near relation");
+				}
+				break;
+			case NGSIConstants.GEO_REL_OVERLAPS:
+				sqlWhere.append("(");
+				sqlWhere.append(DBConstants.POSTGIS_OVERLAPS + "( " + dbColumn + ", " + referenceValue + ")");
+				sqlWhere.append(" OR ");
+				sqlWhere.append(DBConstants.POSTGIS_CONTAINS + "( " + dbColumn + ", " + referenceValue + ")");
+				sqlWhere.append(")");
+				break;
+			case NGSIConstants.GEO_REL_DISJOINT:
+				sqlWhere.append("NOT " + DBConstants.POSTGIS_WITHIN + "( " + dbColumn + ", " + referenceValue + ") ");
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
 		}
 		return sqlWhere.toString();
 	}
@@ -351,6 +351,16 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 	public String typesAndAttributeQuery(QueryParams qp) {
 		// TODO Auto-generated method stub
 		return "";
+	}
+
+	@Override
+	public String getAllIdsQuery() {
+		return "SELECT DISTINCT id FROM csource";
+	}
+
+	@Override
+	public String getEntryQuery() {
+		return "SELECT data FROM csource WHERE id=$1";
 	}
 
 }

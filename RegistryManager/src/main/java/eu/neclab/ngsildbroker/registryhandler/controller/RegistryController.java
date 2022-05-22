@@ -71,17 +71,19 @@ public class RegistryController {
 
 	@Path("/{registrationId}")
 	@GET
-	public RestResponse<Object> getCSourceById(HttpServerRequest request,
+	public Uni<RestResponse<Object>> getCSourceById(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId) {
-		try {
-			logger.debug("get CSource() ::" + registrationId);
-			HttpUtils.validateUri(registrationId);
-			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
-			return HttpUtils.generateReply(request, csourceService.getCSourceRegistrationById(tenantid, registrationId),
-					AppConstants.REGISTRY_ENDPOINT);
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
+		logger.debug("get CSource() ::" + registrationId);
+		return QueryControllerFunctions.getEntity(csourceService, request, null, null, registrationId, false, defaultLimit, maxLimit);
+//		
+//		return HttpUtils.validateUri(registrationId).onItem().transformToUni(t -> {
+//			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
+//			return csourceService.getCSourceRegistrationById(tenantid, registrationId);
+//		}).onItem().transformToUni(t -> {
+//			return HttpUtils.generateReply(request, t, AppConstants.REGISTRY_ENDPOINT);
+//		}).onFailure().recoverWithItem(e -> {
+//			return HttpUtils.handleControllerExceptions(e);
+//		});
 	}
 
 	@Path("/{registrationId}")

@@ -140,8 +140,7 @@ public final class HttpUtils {
 
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply, int endPoint)
-			throws ResponseException {
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply, int endPoint) {
 		return generateReply(request, reply, ArrayListMultimap.create(), endPoint);
 
 	}
