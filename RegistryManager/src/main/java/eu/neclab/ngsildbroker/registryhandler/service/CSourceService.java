@@ -34,10 +34,13 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -52,6 +55,8 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.groups.UniAndGroup2;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
@@ -66,7 +71,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	CSourceDAO csourceInfoDAO;
 
 	@Inject
-	MutinyEmitter<Object> kafkaTemplate;
+	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	@ConfigProperty(name = "scorpio.registry.autoregmode", defaultValue = "types")
 	String AUTO_REG_MODE;
@@ -124,8 +129,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 //		}
 //	}
 
-
-	private void pushToDB(CSourceRequest request)  {
+	private void pushToDB(CSourceRequest request) {
 		this.csourceInfoDAO.storeRegistryEntry(request);
 	}
 
@@ -167,30 +171,42 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	// need to be check and change
 	@Override
-	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		Map<String, Object> originalRegistration = validateIdAndGetBodyAsMap(registrationId, tenantId);
-		AppendCSourceRequest request = new AppendCSourceRequest(headers, registrationId, originalRegistration, entry,
-				options);
-		TimerTask task = regId2TimerTask.get(registrationId);
-		if (task != null) {
-			task.cancel();
+	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry, String[] options) {
+		logger.trace("appendMessage() :: started");
+		// get message channel for ENTITY_APPEND topic
+		// payload validation
+		if (registrationId == null) {
+			return Uni.createFrom()
+					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id is not allowed"));
 		}
-		this.csourceTimerTask(headers, request.getFinalPayload());
-		pushToDB(request);
-		sendToKafka(request);
-		return request.getUpdateResult();
-	}
 
-	@SuppressWarnings("unchecked")
-	private Map<String, Object> validateIdAndGetBodyAsMap(String registrationId, String tenantId) throws Exception {
-		return (Map<String, Object>) JsonUtils.fromString(validateIdAndGetBody(registrationId, tenantId));
+		String tenantId = HttpUtils.getInternalTenant(headers);
+		// get entity details
+		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, csourceInfoDAO).onItem()
+				.transform(
+						Unchecked.function(t -> new AppendCSourceRequest(headers, registrationId, t, entry, options)))
+				.onItem().transformToUni(t -> {
+					if (t.getUpdateResult().getUpdated().isEmpty()) {
+						return Uni.createFrom().nullItem();
+					}
+					TimerTask task = regId2TimerTask.get(registrationId);
+					if (task != null) {
+						task.cancel();
+					}
+					csourceTimerTask(headers, t.getFinalPayload());
+					return handleRequest(t).combinedWith((storage, kafka) -> {
+						logger.trace("appendMessage() :: completed");
+						return t.getUpdateResult();
+					});
+				});
 	}
 
 	@Override
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
-			throws ResponseException, Exception {
+	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+
+		logger.debug("createMessage() :: started");
+		CSourceRequest request;
 		String id;
 		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
 		if (idObj == null) {
@@ -199,27 +215,16 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		} else {
 			id = (String) idObj;
 		}
-		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
-		/*
-		 * String tenantId = HttpUtils.getInternalTenant(headers); if
-		 * (this.csourceIds.containsEntry(tenantId, request.getId())) { throw new
-		 * ResponseException(ErrorType.AlreadyExists, "CSource already exists"); }
-		 * this.csourceIds.put(tenantId, request.getId());
-		 */
-		pushToDB(request);
-		sendToKafka(request);
-		return request.getId();
-
-	}
-
-	private void sendToKafka(BaseRequest request) {
-		kafkaExecutor.execute(new Runnable() {
-			@Override
-			public void run() {
-				kafkaTemplate.send(CSOURCE_TOPIC, request.getId(), new BaseRequest(request));
-
-			}
+		try {
+			request = new CreateCSourceRequest(resolved, headers, id);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
+		return handleRequest(request).combinedWith((t, u) -> {
+			logger.debug("createMessage() :: completed");
+			return request.getId();
 		});
+
 	}
 
 	@Override
@@ -256,7 +261,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 	}
 
-	public QueryResult query(QueryParams qp) throws ResponseException {
+	public Uni<QueryResult> query(QueryParams qp) {
 		return csourceInfoDAO.query(qp);
 	}
 
@@ -503,5 +508,10 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			}.start();
 		}
 
+	}
+
+	private UniAndGroup2<Void, Void> handleRequest(CSourceRequest request) {
+		return Uni.combine().all().unis(csourceInfoDAO.storeRegistryEntry(request),
+				kafkaSenderInterface.send(new BaseRequest(request)));
 	}
 }

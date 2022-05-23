@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
+import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniAndGroup2;
@@ -89,17 +90,18 @@ public class EntityService implements EntryCRUDService {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
 		String tenantid = HttpUtils.getInternalTenant(headers);
-		return validateIdAndGetBody(entityId, tenantid).onItem().transform(Unchecked.function(t -> {
-			return new UpdateEntityRequest(headers, entityId, t, resolved, null);
-		})).onItem().transformToUni(t -> {
-			if (t.getUpdateResult().getUpdated().isEmpty()) {
-				return Uni.createFrom().nullItem();
-			}
-			return handleRequest(t).combinedWith((storage, kafka) -> {
-				logger.trace("updateMessage() :: completed");
-				return t.getUpdateResult();
-			});
-		});
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenantid, entityInfoDAO).onItem()
+				.transform(Unchecked.function(t -> {
+					return new UpdateEntityRequest(headers, entityId, t, resolved, null);
+				})).onItem().transformToUni(t -> {
+					if (t.getUpdateResult().getUpdated().isEmpty()) {
+						return Uni.createFrom().nullItem();
+					}
+					return handleRequest(t).combinedWith((storage, kafka) -> {
+						logger.trace("updateMessage() :: completed");
+						return t.getUpdateResult();
+					});
+				});
 	}
 
 	/**
@@ -123,7 +125,7 @@ public class EntityService implements EntryCRUDService {
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		// get entity details
-		return validateIdAndGetBody(entityId, tenantId).onItem()
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
 				.transform(Unchecked.function(t -> new AppendEntityRequest(headers, entityId, t, resolved, options)))
 				.onItem().transformToUni(t -> {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
@@ -137,42 +139,26 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Uni<Map<String, Object>> validateIdAndGetBody(String entityId, String tenantId) {
-		// null id check
-		if (entityId == null) {
-			return Uni.createFrom()
-					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
-		}
-		return this.entityInfoDAO.getEntity(entityId, tenantId).onItem().transform(t -> {
-			try {
-				return (Map<String, Object>) JsonUtils.fromString(t);
-			} catch (IOException e) {
-				throw new AssertionError("can't load internal json");
-			}
-		});
-
-	}
-
-	@SuppressWarnings("unchecked")
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
 		logger.trace("deleteEntity() :: started");
 		if (entityId == null) {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		return validateIdAndGetBody(entityId, tenantId).onItem().transform(Unchecked.function(t -> {
-			return new DeleteEntityRequest(entityId, headers, t);
-		})).onItem().transformToUni(t -> {
-			Uni<Void> store = entityInfoDAO.storeEntity(t);
-			BaseRequest temp = new BaseRequest(t);
-			temp.setRequestPayload(t.getOldEntity());
-			temp.setFinalPayload(t.getOldEntity());
-			Uni<Void> kafka = kafkaSenderInterface.send(temp);
-			return Uni.combine().all().unis(store, kafka).combinedWith((db, u) -> {
-				logger.trace("deleteEntity() :: completed");
-				return true;
-			});
-		});
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
+				.transform(Unchecked.function(t -> {
+					return new DeleteEntityRequest(entityId, headers, t);
+				})).onItem().transformToUni(t -> {
+					Uni<Void> store = entityInfoDAO.storeEntity(t);
+					BaseRequest temp = new BaseRequest(t);
+					temp.setRequestPayload(t.getOldEntity());
+					temp.setFinalPayload(t.getOldEntity());
+					Uni<Void> kafka = kafkaSenderInterface.send(temp);
+					return Uni.combine().all().unis(store, kafka).combinedWith((db, u) -> {
+						logger.trace("deleteEntity() :: completed");
+						return true;
+					});
+				});
 	}
 
 	public Uni<UpdateResult> partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId,
@@ -187,7 +173,7 @@ public class EntityService implements EntryCRUDService {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 
 		// get entity details
-		return validateIdAndGetBody(entityId, tenantId).onItem()
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
 				.transform(
 						Unchecked.function(t -> new UpdateEntityRequest(headers, entityId, t, expandedPayload, attrId)))
 				.onItem().transformToUni(t -> {
@@ -209,7 +195,7 @@ public class EntityService implements EntryCRUDService {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		return validateIdAndGetBody(entityId, tenantId).onItem()
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
 				.transform(Unchecked
 						.function(t -> new DeleteAttributeRequest(headers, entityId, t, attrId, datasetId, deleteAll)))
 				.onItem().transform(t -> true);
