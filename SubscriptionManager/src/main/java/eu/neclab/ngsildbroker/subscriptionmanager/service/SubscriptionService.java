@@ -10,19 +10,12 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-
-import com.github.jsonldjava.utils.JsonUtils;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -30,20 +23,25 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.ext.web.client.HttpResponse;
 
-@Service
+@Singleton
 public class SubscriptionService extends BaseSubscriptionService {
-	@Autowired
-	@Qualifier("subdao")
+	@Inject
 	SubscriptionInfoDAOInterface subService;
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
@@ -51,14 +49,13 @@ public class SubscriptionService extends BaseSubscriptionService {
 	private HashMap<String, String> internalSubId2RemoteNotifyCallbackId2 = new HashMap<String, String>();
 	private HashMap<String, String> internalSubId2ExternalEndpoint = new HashMap<String, String>();
 
-	@Value("${scorpio.topics.internalregsub}")
-	private String INTERNAL_SUBSCRIPTION_TOPIC;
+	@Inject
+	MicroServiceUtils microServiceUtils;
 
-	@Value("${scorpio.topics.subsync}")
-	private String SUB_SYNC_TOPIC;
-
-	@Autowired
-	private MicroServiceUtils microServiceUtils;
+	@Inject
+	MutinyEmitter<SubscriptionRequest> syncEmitter;
+	@Inject
+	MutinyEmitter<SyncMessage> aliveEmitter;
 
 	@Override
 	protected SubscriptionInfoDAOInterface getSubscriptionInfoDao() {
@@ -86,44 +83,38 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@PreDestroy
 	private void unsubscribeToAllRemote() {
 		for (String entry : internalSubId2ExternalEndpoint.values()) {
-			restTemplate.delete(entry);
+			webClient.deleteAbs(entry).send().succeeded();
 		}
 	}
 
 	@Override
-	public void unsubscribe(String id, ArrayListMultimap<String, String> headers) throws ResponseException {
+	public Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers) {
 		unsubscribeRemote(id);
 		SubscriptionRequest request = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers), id);
+		Uni<Void> kafkaSent = Uni.createFrom().nullItem();
 		if (request != null) {
 			// let super unsubscribe take care of further error handling
 			request.setRequestType(AppConstants.DELETE_REQUEST);
-			sendToKafka(id, request);
-
+			kafkaSent = syncEmitter.send(request);
 		}
-		super.unsubscribe(id, headers);
 
-	}
+		return Uni.combine().all().unis(super.unsubscribe(id, headers), kafkaSent).combinedWith((t, u) -> null);
 
-	private void sendToKafka(String id, SubscriptionRequest request) {
-		new Thread() {
-			@Override
-			public void run() {
-				kafkaTemplate.send(INTERNAL_SUBSCRIPTION_TOPIC, id, request);
-			}
-		}.start();
 	}
 
 	@Override
-	public String subscribe(SubscriptionRequest subscriptionRequest) throws ResponseException {
-		String result = super.subscribe(subscriptionRequest);
-		sendToKafka(subscriptionRequest.getSubscription().getId(), subscriptionRequest);
-		return result;
+	public Uni<String> subscribe(SubscriptionRequest subscriptionRequest) {
+		Uni<String> result = super.subscribe(subscriptionRequest);
+		Uni<Void> kafkaSent = syncEmitter.send(subscriptionRequest);
+
+		return Uni.combine().all().unis(result, kafkaSent).combinedWith((t, u) -> t);
 	}
 
 	@Override
-	public void updateSubscription(SubscriptionRequest subscriptionRequest) throws ResponseException {
-		super.updateSubscription(subscriptionRequest);
-		sendToKafka(subscriptionRequest.getSubscription().getId(), subscriptionRequest);
+	public Uni<Void> updateSubscription(SubscriptionRequest subscriptionRequest) {
+		Uni<Void> result = super.updateSubscription(subscriptionRequest);
+		Uni<Void> kafkaSent = syncEmitter.send(subscriptionRequest);
+		return Uni.combine().all().unis(result, kafkaSent).combinedWith((t, u) -> t);
 	}
 
 	public void subscribeToRemote(SubscriptionRequest subscriptionRequest, InternalNotification notification) {
@@ -150,8 +141,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 					throw new AssertionError();
 				}
 				for (Map<String, Object> entry : notification.getData()) {
-					HttpHeaders additionalHeaders = HttpUtils.getAdditionalHeaders(entry,
-							subscriptionRequest.getContext(),
+					MultiMap additionalHeaders = HttpUtils.getAdditionalHeaders(entry, subscriptionRequest.getContext(),
 							Arrays.asList(remoteSub.getNotification().getEndPoint().getAccept()));
 					additionalHeaders.add(HttpHeaders.CONTENT_TYPE, "application/ld+json");
 					String remoteEndpoint = getRemoteEndPoint(entry);
@@ -160,13 +150,11 @@ public class SubscriptionService extends BaseSubscriptionService {
 						temp.deleteCharAt(remoteEndpoint.length() - 1);
 					}
 					temp.append(AppConstants.SUBSCRIPTIONS_URL);
-					HttpEntity<String> entity = new HttpEntity<String>(body, additionalHeaders);
-
-					ResponseEntity<String> response = restTemplate.exchange(temp.toString(), HttpMethod.POST, entity,
-							String.class);
-					if (response.getStatusCode().is2xxSuccessful()) {
+					HttpResponse<Buffer> response = webClient.postAbs(temp.toString()).putHeaders(additionalHeaders)
+							.sendBuffer(Buffer.buffer(body)).result();
+					if (response.statusCode() >= 200 && response.statusCode() < 300) {
 						internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
-								response.getHeaders().getFirst(HttpHeaders.LOCATION));
+								response.getHeader(HttpHeaders.LOCATION.toString()));
 					}
 				}
 			}
@@ -227,7 +215,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 		String endpoint = internalSubId2ExternalEndpoint.remove(subscriptionId);
 		if (endpoint != null) {
 			remoteNotifyCallbackId2InternalSub.remove(internalSubId2RemoteNotifyCallbackId2.remove(subscriptionId));
-			restTemplate.delete(endpoint);
+			webClient.deleteAbs(endpoint).send().succeeded();
 		}
 	}
 
@@ -268,13 +256,13 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	@Override
-	protected void setSyncTopic() {
-		this.subSyncTopic = SUB_SYNC_TOPIC;
+	protected void setSyncId() {
+		this.syncIdentifier = SubscriptionSyncService.SYNC_ID;
 	}
 
 	@Override
-	protected void setSyncId() {
-		this.syncIdentifier = SubscriptionSyncService.SYNC_ID;
+	protected MutinyEmitter<SyncMessage> getSyncChannelSender() {
+		return aliveEmitter;
 	}
 
 }

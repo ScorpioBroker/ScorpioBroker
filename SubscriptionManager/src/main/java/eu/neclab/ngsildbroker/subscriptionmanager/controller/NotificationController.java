@@ -18,7 +18,10 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpServerRequest;
+
 @Singleton
 @Path("/remotenotify")
 public class NotificationController {
@@ -37,18 +40,14 @@ public class NotificationController {
 
 	@Path("/{id}")
 	@POST
-	public RestResponse<Object> notify(HttpServerRequest req, String payload,
+	public Uni<RestResponse<Object>> notify(HttpServerRequest req, String payload,
 			@PathParam(value = NGSIConstants.QUERY_PARAMETER_ID) String id) {
-		try {
-			List<Object> atContextLinks = HttpUtils.getAtContext(req);
+		return HttpUtils.getAtContext(req).onItem().transform(Unchecked.function(t -> {
 			subscriptionManager.remoteNotify(id,
-					(Map<String, Object>) JsonLdProcessor.expand(atContextLinks, JsonUtils.fromString(payload), opts,
-							AppConstants.NOTIFICAITION_RECEIVED, HttpUtils.doPreflightCheck(req, atContextLinks))
-							.get(0));
-		} catch (Exception e) {
-			return HttpUtils.handleControllerExceptions(e);
-		}
-		return RestResponse.ok();
+					(Map<String, Object>) JsonLdProcessor.expand(t, JsonUtils.fromString(payload), opts,
+							AppConstants.NOTIFICAITION_RECEIVED, HttpUtils.doPreflightCheck(req, t)).get(0));
+			return RestResponse.ok();
+		})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 

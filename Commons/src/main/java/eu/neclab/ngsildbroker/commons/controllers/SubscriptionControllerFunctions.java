@@ -44,6 +44,8 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
+
 import com.google.common.net.HttpHeaders;
 
 public interface SubscriptionControllerFunctions {
@@ -165,7 +167,7 @@ public interface SubscriptionControllerFunctions {
 				case NGSIConstants.NGSI_LD_NOTIFICATION:
 					try {
 						NotificationParam notification = getNotificationParam(
-								((List<Map<String, Object>>) mapValue).get(0));
+								((List<Map<String, Object>>) mapValue).get(0), context);
 						subscription.setNotification(notification);
 					} catch (Exception e) {
 						throw new ResponseException(ErrorType.BadRequestData,
@@ -272,7 +274,7 @@ public interface SubscriptionControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static NotificationParam getNotificationParam(Map<String, Object> map) throws Exception {
+	private static NotificationParam getNotificationParam(Map<String, Object> map, Context context) throws Exception {
 		// Default accept
 		String accept = AppConstants.NGB_APPLICATION_JSONLD;
 		Format format = Format.normalized;
@@ -328,6 +330,19 @@ public interface SubscriptionControllerFunctions {
 									}
 								}
 								endPoint.setNotifierInfo(notifierInfo);
+								break;
+							case NGSIConstants.NGSI_LD_RECEIVERINFO:
+								HeadersMultiMap receiverInfo = new HeadersMultiMap();
+								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null,
+										context, opts, 999);
+								for (Map<String, Object> headerEntry : (List<Map<String, Object>>) compacted
+										.get(JsonLdConsts.GRAPH)) {
+									headerEntry.forEach((t, u) -> {
+										receiverInfo.add(t, u.toString());
+									});
+
+								}
+								endPoint.setReceiverInfo(receiverInfo);
 								break;
 
 							default:
@@ -469,16 +484,14 @@ public interface SubscriptionControllerFunctions {
 
 	}
 
-	public static RestResponse<Object> deleteSubscription(SubscriptionCRUDService subscriptionService,
+	public static Uni<RestResponse<Object>> deleteSubscription(SubscriptionCRUDService subscriptionService,
 			HttpServerRequest request, String id, Logger logger) {
-		try {
-			logger.trace("call deleteSubscription() ::");
-			HttpUtils.validateUri(id);
-			subscriptionService.unsubscribe(id, HttpUtils.getHeaders(request));
-		} catch (Exception exception) {
-			return HttpUtils.handleControllerExceptions(exception);
-		}
-		return RestResponse.noContent();
+		logger.trace("call deleteSubscription() ::");
+		return HttpUtils.validateUri(id).onItem()
+				.transformToUni(t -> subscriptionService.unsubscribe(id, HttpUtils.getHeaders(request))).onItem()
+				.transform(t -> RestResponse.noContent()).onFailure()
+				.recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 
 	@SuppressWarnings("unchecked")

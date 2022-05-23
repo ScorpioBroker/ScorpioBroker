@@ -115,7 +115,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	MutinyEmitter<SyncMessage> kafkaSender;
 
-	WebClient webClient;
+	protected WebClient webClient;
 
 	@ConfigProperty(name = "scorpio.sync.check-time", defaultValue = "1000")
 	int checkTime;
@@ -128,7 +128,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	@PostConstruct
 	private void setup() {
-		setSyncTopic();
 		setSyncId();
 		kafkaSender = getSyncChannelSender();
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
@@ -161,8 +160,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	}
 
 	protected abstract void setSyncId();
-
-	protected abstract void setSyncTopic();
 
 	protected abstract boolean sendDeleteNotification();
 

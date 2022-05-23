@@ -32,6 +32,9 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 				httpReq = httpReq.putHeader(header.getKey(), objEntry.toString());
 			}
 		}
+		if (request.getSubscription().getNotification().getEndPoint().getReceiverInfo() != null) {
+			httpReq = httpReq.putHeaders(request.getSubscription().getNotification().getEndPoint().getReceiverInfo());
+		}
 
 		int retryCount = 5;
 		boolean success = false;

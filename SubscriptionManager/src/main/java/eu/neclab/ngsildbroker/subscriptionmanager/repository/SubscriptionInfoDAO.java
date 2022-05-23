@@ -1,12 +1,12 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.repository;
 
-import org.springframework.stereotype.Repository;
+import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionInfoDAO;
 
-@Repository("subdao")
+@Singleton
 public class SubscriptionInfoDAO extends BaseSubscriptionInfoDAO {
 
 	@Override

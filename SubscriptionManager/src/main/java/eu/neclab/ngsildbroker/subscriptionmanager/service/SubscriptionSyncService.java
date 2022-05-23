@@ -2,35 +2,33 @@ package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.stereotype.Service;
+import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
 
-@Service
+@Singleton
 public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
-	@Value("${scorpio.topics.subalive}")
+	@ConfigProperty(name = "scorpio.topics.subalive")
 	private String SUB_ALIVE_TOPIC;
 
-	@KafkaListener(topics = "${scorpio.topics.subsync}", groupId = "${random.uuid}")
-	private void listenForSubs(@Payload SubscriptionRequest message,
-			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
-		listenForSubscriptionUpdates(message, key);
+	@Incoming(AppConstants.SUB_TOPICS_CHANNEL)
+	private void listenForSubs(Message<SubscriptionRequest> message) {
+		listenForSubscriptionUpdates(message.getPayload(), message.getPayload().getId());
 	}
 
-	@KafkaListener(topics = "${scorpio.topics.subalive}", groupId = "${random.uuid}")
-	private void listenForAlive(@Payload AnnouncementMessage message,
-			@Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
-		listenForAnnouncements(message, key);
+	@Incoming(AppConstants.SUB_ALIVE_CHANNEL)
+	private void listenForAlive(Message<AnnouncementMessage> message) {
+		listenForAnnouncements(message.getPayload(), message.getPayload().getId());
 	}
 
 	@Override

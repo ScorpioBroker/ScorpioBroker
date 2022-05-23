@@ -21,8 +21,8 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.SubscriptionControllerFunctions;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
-
 
 @Path("/ngsi-ld/v1/subscriptions")
 public class SubscriptionController {
@@ -46,19 +46,19 @@ public class SubscriptionController {
 	}
 
 	@POST
-	public RestResponse<Object> subscribeRest(HttpServerRequest request, String payload) {
+	public Uni<RestResponse<Object>> subscribeRest(HttpServerRequest request, String payload) {
 		return SubscriptionControllerFunctions.subscribeRest(manager, request, payload, AppConstants.SUBSCRIPTIONS_URL,
 				logger);
 	}
 
 	@GET
-	public RestResponse<Object> getAllSubscriptions(HttpServerRequest request) {
+	public Uni<RestResponse<Object>> getAllSubscriptions(HttpServerRequest request) {
 		return SubscriptionControllerFunctions.getAllSubscriptions(manager, request, defaultLimit, maxLimit, logger);
 	}
 
 	@Path("/{id}")
 	@GET
-	public RestResponse<Object> getSubscriptionById(HttpServerRequest request, @PathParam(value = "id") String id,
+	public Uni<RestResponse<Object>> getSubscriptionById(HttpServerRequest request, @PathParam(value = "id") String id,
 			@QueryParam(value = "limit") int limit) {
 		return SubscriptionControllerFunctions.getSubscriptionById(manager, request, id, limit, logger);
 
@@ -66,13 +66,13 @@ public class SubscriptionController {
 
 	@Path("/{id}")
 	@DELETE
-	public RestResponse<Object> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
+	public Uni<RestResponse<Object>> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
 		return SubscriptionControllerFunctions.deleteSubscription(manager, request, id, logger);
 	}
 
 	@Path("/{id}")
 	@PATCH
-	public RestResponse<Object> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
+	public Uni<RestResponse<Object>> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
 			String payload) {
 		return SubscriptionControllerFunctions.updateSubscription(manager, request, id, payload, logger);
 	}

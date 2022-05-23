@@ -5,6 +5,8 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
+
 /**
  * @author hebgen
  * @version 1.0
@@ -15,6 +17,7 @@ public class EndPoint {
 	private String accept;
 	private URI uri;
 	private Map<String, String> notifierInfo;
+	private HeadersMultiMap receiverInfo;
 
 	public EndPoint() {
 
@@ -75,6 +78,14 @@ public class EndPoint {
 
 	public void setNotifierInfo(Map<String, String> notifierInfo) {
 		this.notifierInfo = notifierInfo;
+	}
+
+	public void setReceiverInfo(HeadersMultiMap receiverInfo) {
+		this.receiverInfo = receiverInfo;
+	}
+
+	public HeadersMultiMap getReceiverInfo() {
+		return receiverInfo;
 	}
 
 }
