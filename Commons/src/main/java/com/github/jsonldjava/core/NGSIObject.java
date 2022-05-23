@@ -618,7 +618,17 @@ class NGSIObject {
 			if ((isRelationship && !hasObject)) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have relationships without an object");
 			}
+			if ((isRelationship && hasValue)) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have relationships with a value");
+			}
+			if (isProperty && hasObject) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have properties with an object");
+			}
 			if (isGeoProperty) {
+				if (hasObject) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"You can't have geoproperties with an object");
+				}
 				if (!hasValue) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"You can't have geo properties without a value");
