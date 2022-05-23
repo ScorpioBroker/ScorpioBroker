@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -81,7 +80,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		});
 
 	}
-
+	
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
 		return delete(headers, entityId, null, null, null);
 	}
@@ -100,8 +99,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
 
 		} catch (ResponseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 			return Uni.createFrom().failure(e);
 		}
 		return handleRequest(request).combinedWith((t, u) -> {
@@ -176,8 +173,8 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		} catch (Exception e) {
 			return (UniAndGroup2<Void, Void>) Uni.createFrom().failure(e);
 		}
-	}
-
+	 }
+	
 	@Override
 	protected StorageDAO getQueryDAO() {
 		return historyDAO;
