@@ -113,15 +113,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 //		}
 //	}
 
-	private void pushToDB(HistoryEntityRequest request) throws ResponseException {
-		try {
-			historyDAO.storeTemporalEntity(request);
-		} catch (SQLException e) {
-			throw new ResponseException(ErrorType.InternalError, e.getLocalizedMessage());
-		}
-
-	}
-
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
 		return delete(headers, entityId, null, null, null);
 	}
@@ -140,8 +131,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
 
 		} catch (ResponseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 			return Uni.createFrom().failure(e);
 		}
 		return handleRequest(request).combinedWith((t, u) -> {
@@ -224,21 +213,10 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		throw new MethodNotFoundException();
 	}
 
-//	void handleRequest(HistoryEntityRequest request) throws ResponseException {
-//		if (directDB) {
-//			pushToDB(request);
-//		}
-//		pushToKafka(request);
-//	}
-
-	@SuppressWarnings("unchecked")
 	protected UniAndGroup2<Void, Void> handleRequest(HistoryEntityRequest request) {
-		try {
-			return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request),
-					kafkaSenderInterface.send(new BaseRequest(request)));
-		} catch (SQLException e) {
-			return (UniAndGroup2<Void, Void>) Uni.createFrom().failure(e);
-		}
+		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request),
+				kafkaSenderInterface.send(new BaseRequest(request)));
+
 	}
 
 	@Override
