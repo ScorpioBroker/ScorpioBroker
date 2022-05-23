@@ -54,7 +54,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	private boolean historyToKafkaEnabled;
 
 	@Inject
-	@Channel(AppConstants.ENTITY_CHANNEL)
+	@Channel(AppConstants.HISTORY_CHANNEL)
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
