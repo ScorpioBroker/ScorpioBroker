@@ -65,7 +65,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 	@Inject
 	Vertx vertx;
 
-	WebClient webClient;
+	protected WebClient webClient;
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
@@ -153,8 +153,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 							headers.get(HttpHeaders.ACCEPT.toString()));
 					if (linkHeaders != null) {
 						for (Object entry : linkHeaders) {
-							additionalHeaders.add("Link", entry
-									+ "; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
+							additionalHeaders.add("Link",
+									entry + "; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
 						}
 					}
 					logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
