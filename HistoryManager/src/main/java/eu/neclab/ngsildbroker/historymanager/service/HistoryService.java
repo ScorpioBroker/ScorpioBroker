@@ -1,38 +1,26 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import javax.annotation.PostConstruct;
 import javax.el.MethodNotFoundException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
@@ -57,9 +45,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Inject
 	HistoryDAO historyDAO;
 
-//	@Inject
-//	KafkaTemplate<String, Object> kafkaTemplate;
-
 	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
 	boolean directDB;
 
@@ -72,10 +57,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Inject
 	@Channel(AppConstants.ENTITY_CHANNEL)
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
-
-	// private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1,
-	// TimeUnit.MINUTES,
-	// new LinkedBlockingQueue<Runnable>());
 
 	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
 		return createTemporalEntity(headers, resolved, false);
@@ -98,27 +79,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			logger.debug("createMessage() :: completed");
 			return request.getId();
 		});
-
-	}
-
-//	private void pushToKafka(BaseRequest request) throws ResponseException {
-//		if (historyToKafkaEnabled) {
-//			kafkaExecutor.execute(new Runnable() {
-//				@Override
-//				public void run() {
-//					kafkaTemplate.send(TEMP_TOPIC, request.getId(), new BaseRequest(request));
-//
-//				}
-//			});
-//		}
-//	}
-
-	private void pushToDB(HistoryEntityRequest request) throws ResponseException {
-		try {
-			historyDAO.storeTemporalEntity(request);
-		} catch (SQLException e) {
-			throw new ResponseException(ErrorType.InternalError, e.getLocalizedMessage());
-		}
 
 	}
 
@@ -148,26 +108,10 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			logger.debug("delete Message() :: completed");
 			return true;
 		});
-		// String tenantId = HttpUtils.getInternalTenant(headers);
-
-		// if (!this.entityIds.containsEntry(tenantId, entityId)) {
-		// throw new ResponseException(ErrorType.NotFound, entityId + " not found");
-		// }
-		// if (attributeId == null) {
-		// this.entityIds.remove(tenantId, entityId);
-		// }
-
 	}
 
-	// need to be check and change
-	// endpoint "/entities/{entityId}/attrs"
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) {
-		// if (!this.entityIds.containsEntry(HttpUtils.getInternalTenant(headers),
-		// entityId)) {
-		// throw new ResponseException(ErrorType.NotFound, "You cannot create an
-		// attribute on a none existing entity");
-		// }
 		AppendHistoryEntityRequest request;
 		try {
 			historyDAO.getAllIds(entityId, HttpUtils.getInternalTenant(headers));
@@ -224,19 +168,12 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		throw new MethodNotFoundException();
 	}
 
-//	void handleRequest(HistoryEntityRequest request) throws ResponseException {
-//		if (directDB) {
-//			pushToDB(request);
-//		}
-//		pushToKafka(request);
-//	}
-
 	@SuppressWarnings("unchecked")
 	protected UniAndGroup2<Void, Void> handleRequest(HistoryEntityRequest request) {
 		try {
 			return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request),
 					kafkaSenderInterface.send(new BaseRequest(request)));
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			return (UniAndGroup2<Void, Void>) Uni.createFrom().failure(e);
 		}
 	}
