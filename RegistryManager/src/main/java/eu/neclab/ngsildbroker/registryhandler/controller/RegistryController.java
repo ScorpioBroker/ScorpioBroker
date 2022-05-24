@@ -41,15 +41,15 @@ public class RegistryController {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 
 	@Inject
-	private CSourceService csourceService;
+	CSourceService csourceService;
 
 	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
-	private int defaultLimit;
+	int defaultLimit;
 	@ConfigProperty(name = "scorpio.entity.max-limit", defaultValue = "1000")
-	private int maxLimit;
+	int maxLimit;
 
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
-	private String coreContext;
+	String coreContext;
 
 	@PostConstruct
 	public void init() {
@@ -74,7 +74,8 @@ public class RegistryController {
 	public Uni<RestResponse<Object>> getCSourceById(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId) {
 		logger.debug("get CSource() ::" + registrationId);
-		return QueryControllerFunctions.getEntity(csourceService, request, null, null, registrationId, false, defaultLimit, maxLimit);
+		return QueryControllerFunctions.getEntity(csourceService, request, null, null, registrationId, false,
+				defaultLimit, maxLimit);
 //		
 //		return HttpUtils.validateUri(registrationId).onItem().transformToUni(t -> {
 //			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);

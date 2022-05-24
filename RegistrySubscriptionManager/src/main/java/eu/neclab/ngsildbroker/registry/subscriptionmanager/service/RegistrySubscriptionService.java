@@ -14,6 +14,9 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
@@ -36,9 +39,11 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	RegistrySubscriptionInfoDAO subService;
 
 	@Inject
+	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
 	MutinyEmitter<InternalNotification> internalNotificationSender;
 
 	@Inject
+	@Channel(AppConstants.REG_SUB_SYNC_CHANNEL)
 	MutinyEmitter<SyncMessage> syncSender;
 
 	private NotificationHandler internalHandler;
@@ -46,7 +51,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	private HashMap<String, SubscriptionRequest> id2InternalSubscriptions = new HashMap<String, SubscriptionRequest>();
 
 	@PostConstruct
-	private void notificationHandlerSetup() {
+	void notificationHandlerSetup() {
 		this.internalHandler = new InternalNotificationHandler(internalNotificationSender);
 	}
 

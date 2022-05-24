@@ -113,19 +113,19 @@ public abstract class EntityTools {
 					typeString = (String) type;
 				}
 				switch (typeString) {
-				case NGSIConstants.NGSI_LD_GEOPROPERTY:
-					prop = SerializationTools.parseGeoProperty((List<Map<String, Object>>) value, key);
-					continue;
-				case NGSIConstants.NGSI_LD_RELATIONSHIP:
-					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
-					break;
-				case NGSIConstants.NGSI_LD_DATE_TIME:
-					prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
-					break;
-				case NGSIConstants.NGSI_LD_PROPERTY:
-				default:
-					prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
-					break;
+					case NGSIConstants.NGSI_LD_GEOPROPERTY:
+						prop = SerializationTools.parseGeoProperty((List<Map<String, Object>>) value, key);
+						continue;
+					case NGSIConstants.NGSI_LD_RELATIONSHIP:
+						prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
+						break;
+					case NGSIConstants.NGSI_LD_DATE_TIME:
+						prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
+						break;
+					case NGSIConstants.NGSI_LD_PROPERTY:
+					default:
+						prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
+						break;
 				}
 
 			}

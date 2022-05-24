@@ -121,13 +121,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	int checkTime;
 
 	@ConfigProperty(name = "scorpio.alltypesub.enabled", defaultValue = "false")
-	private boolean allowAllTypeSub;
+	boolean allowAllTypeSub;
 
 	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "4ll7yp35")
-	private String allTypeSubType;
+	String allTypeSubType;
 
 	@PostConstruct
-	private void setup() {
+	void setup() {
 		setSyncId();
 		kafkaSender = getSyncChannelSender();
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
@@ -155,7 +155,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	protected abstract MutinyEmitter<SyncMessage> getSyncChannelSender();
 
 	@PreDestroy
-	private void destroy() throws InterruptedException {
+	void destroy() throws InterruptedException {
 		Thread.sleep(checkTime);
 	}
 

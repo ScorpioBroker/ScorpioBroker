@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-
 /**
  * @author hebgen
  * @version 1.0
@@ -8,7 +7,7 @@ package eu.neclab.ngsildbroker.commons.datatypes;
  */
 public class LDContext {
 
-	public LDContext(){
+	public LDContext() {
 
 	}
 

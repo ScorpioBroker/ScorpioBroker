@@ -27,7 +27,7 @@ import io.vertx.core.http.HttpServerRequest;
 public class NotificationController {
 
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
-	private String coreContext;
+	String coreContext;
 
 	@PostConstruct
 	public void init() {

@@ -22,7 +22,7 @@ public class RegistrySubscriptionKafkaService {
 	@Inject
 	RegistrySubscriptionService subscriptionService;
 
-	@Incoming(AppConstants.REGISTRY_CHANNEL)
+	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	public Uni<Void> handleCsource(Message<BaseRequest> busMessage) {
 		BaseRequest message = busMessage.getPayload();
 		IncomingKafkaRecordMetadata metaData = busMessage.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
@@ -56,7 +56,7 @@ public class RegistrySubscriptionKafkaService {
 		return Uni.createFrom().nullItem();
 	}
 
-	@Incoming(AppConstants.INTERNAL_SUBS_CHANNEL)
+	@Incoming(AppConstants.INTERNAL_RETRIEVE_SUBS_CHANNEL)
 	public Uni<Void> handleSubscription(Message<SubscriptionRequest> busMessage) {
 		SubscriptionRequest message = busMessage.getPayload();
 		String key = message.getId();

@@ -18,8 +18,8 @@ public class MultiMapDeserializer extends JsonDeserializer<ArrayListMultimap<Str
 	@Override
 	public ArrayListMultimap<String, String> deserialize(JsonParser p, DeserializationContext ctxt)
 			throws IOException, JacksonException {
-		
-		JsonNode root = p.readValueAsTree();//p.getCodec().readTree(p);
+
+		JsonNode root = p.readValueAsTree();// p.getCodec().readTree(p);
 		Iterator<Entry<String, JsonNode>> it = root.fields();
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		while (it.hasNext()) {

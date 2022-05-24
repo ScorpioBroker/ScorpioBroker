@@ -105,15 +105,15 @@ public class ScopeQueryTerm {
 		for (String entry : scopeLevels) {
 			result.append("\\/");
 			switch (entry) {
-			case "+":
-				result.append(REGEX_PLUS);
-				break;
-			case "#":
-				result.append(REGEX_HASH);
-				break;
-			default:
-				result.append(entry);
-				break;
+				case "+":
+					result.append(REGEX_PLUS);
+					break;
+				case "#":
+					result.append(REGEX_HASH);
+					break;
+				default:
+					result.append(entry);
+					break;
 			}
 		}
 		result.append("$'");

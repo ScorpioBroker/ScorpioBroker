@@ -34,6 +34,7 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterf
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.core.MultiMap;
@@ -44,7 +45,7 @@ import io.vertx.ext.web.client.HttpResponse;
 @Singleton
 public class SubscriptionService extends BaseSubscriptionService {
 	@Inject
-	SubscriptionInfoDAOInterface subService;
+	SubscriptionInfoDAO subService;
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
@@ -56,10 +57,11 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Inject
 	@Channel(AppConstants.SUB_SYNC_CHANNEL)
-	MutinyEmitter<SubscriptionRequest> syncEmitter;
+	MutinyEmitter<SyncMessage> syncEmitter;
+
 	@Inject
-	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
-	MutinyEmitter<SyncMessage> aliveEmitter;
+	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
+	MutinyEmitter<SubscriptionRequest> internalSubEmitter;
 
 	@Override
 	protected SubscriptionInfoDAOInterface getSubscriptionInfoDao() {
@@ -85,7 +87,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	@PreDestroy
-	private void unsubscribeToAllRemote() {
+	void unsubscribeToAllRemote() {
 		for (String entry : internalSubId2ExternalEndpoint.values()) {
 			webClient.deleteAbs(entry).send().succeeded();
 		}
@@ -99,7 +101,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 		if (request != null) {
 			// let super unsubscribe take care of further error handling
 			request.setRequestType(AppConstants.DELETE_REQUEST);
-			kafkaSent = syncEmitter.send(request);
+			kafkaSent = internalSubEmitter.send(request);
 		}
 
 		return Uni.combine().all().unis(super.unsubscribe(id, headers), kafkaSent).combinedWith((t, u) -> null);
@@ -109,7 +111,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Override
 	public Uni<String> subscribe(SubscriptionRequest subscriptionRequest) {
 		Uni<String> result = super.subscribe(subscriptionRequest);
-		Uni<Void> kafkaSent = syncEmitter.send(subscriptionRequest);
+		Uni<Void> kafkaSent = internalSubEmitter.send(subscriptionRequest);
 
 		return Uni.combine().all().unis(result, kafkaSent).combinedWith((t, u) -> t);
 	}
@@ -117,7 +119,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 	@Override
 	public Uni<Void> updateSubscription(SubscriptionRequest subscriptionRequest) {
 		Uni<Void> result = super.updateSubscription(subscriptionRequest);
-		Uni<Void> kafkaSent = syncEmitter.send(subscriptionRequest);
+		Uni<Void> kafkaSent = internalSubEmitter.send(subscriptionRequest);
 		return Uni.combine().all().unis(result, kafkaSent).combinedWith((t, u) -> t);
 	}
 
@@ -266,7 +268,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	protected MutinyEmitter<SyncMessage> getSyncChannelSender() {
-		return aliveEmitter;
+		return syncEmitter;
 	}
 
 }

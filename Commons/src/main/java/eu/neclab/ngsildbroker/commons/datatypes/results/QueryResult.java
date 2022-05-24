@@ -12,12 +12,12 @@ import io.smallrye.mutiny.Uni;
  */
 public class QueryResult extends BaseResult {
 
-	public QueryResult(List<String> dataString, String errorMsg, ErrorType errorType, int shortErrorMsg, boolean success) {
+	public QueryResult(List<String> dataString, String errorMsg, ErrorType errorType, int shortErrorMsg,
+			boolean success) {
 		super(errorMsg, errorType, shortErrorMsg, success);
 		this.dataString = dataString;
 	}
 
-		
 	private String qToken;
 	private Integer limit;
 	private Integer offset;
@@ -26,7 +26,7 @@ public class QueryResult extends BaseResult {
 	private List<String> dataString;
 	private List<String> actualDataString;
 	private Integer count = 0;
-	
+
 	public Integer getResultsLeftBefore() {
 		return resultsLeftBefore;
 	}
@@ -67,7 +67,6 @@ public class QueryResult extends BaseResult {
 		this.offset = offset;
 	}
 
-
 	public List<String> getDataString() {
 		return dataString;
 	}
@@ -83,7 +82,7 @@ public class QueryResult extends BaseResult {
 	public void setActualDataString(List<String> actualDataString) {
 		this.actualDataString = actualDataString;
 	}
-	
+
 	public Integer getCount() {
 		return count;
 	}

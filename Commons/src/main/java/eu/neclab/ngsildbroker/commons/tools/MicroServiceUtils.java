@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 public class MicroServiceUtils {
 	private final static Logger logger = LoggerFactory.getLogger(MicroServiceUtils.class);
 
-
 	@ConfigProperty(name = "scorpio.gatewayurl")
 	String gatewayUrl;
 

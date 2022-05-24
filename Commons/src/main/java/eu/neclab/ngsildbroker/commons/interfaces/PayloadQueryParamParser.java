@@ -10,8 +10,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public interface PayloadQueryParamParser {
 
-
-
-	public QueryParams parse(Map<String, Object> payload, Integer limit, Integer offset, int defaultLimit, int maxLimit, boolean count, List<String> options, Context context)
-			throws ResponseException;
+	public QueryParams parse(Map<String, Object> payload, Integer limit, Integer offset, int defaultLimit, int maxLimit,
+			boolean count, List<String> options, Context context) throws ResponseException;
 }

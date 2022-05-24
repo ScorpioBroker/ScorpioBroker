@@ -13,7 +13,7 @@ public interface NotificationHandler {
 	/**
 	 * 
 	 * @param notification
-	 * @param ldContext 
+	 * @param ldContext
 	 */
 
 	void notify(Notification notification, SubscriptionRequest subscriptionRequest);

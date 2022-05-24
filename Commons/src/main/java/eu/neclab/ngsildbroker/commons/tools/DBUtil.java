@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-
 import java.net.URI;
 
 public class DBUtil {

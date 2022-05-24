@@ -130,33 +130,33 @@ public class QueryTerm {
 				while (it.hasNext()) {
 					BaseEntry next = (BaseEntry) it.next();
 					switch (index) {
-					case 0:
-						// NGSI_LD_CREATED_AT
-						value = next.getCreatedAt();
-						break;
-					case 1:
-						// NGSI_LD_OBSERVED_AT
-						value = next.getObservedAt();
-						break;
-					case 2:
-						// NGSI_LD_MODIFIED_AT
-						value = next.getModifiedAt();
-						break;
-					case 3:
-						// NGSI_LD_DATA_SET_ID
-						value = next.getCreatedAt();
-					case 4:
-						// NGSI_LD_UNIT_CODE
-						if (next instanceof PropertyEntry) {
-							value = ((PropertyEntry) next).getUnitCode();
-						}
-					default:
+						case 0:
+							// NGSI_LD_CREATED_AT
+							value = next.getCreatedAt();
+							break;
+						case 1:
+							// NGSI_LD_OBSERVED_AT
+							value = next.getObservedAt();
+							break;
+						case 2:
+							// NGSI_LD_MODIFIED_AT
+							value = next.getModifiedAt();
+							break;
+						case 3:
+							// NGSI_LD_DATA_SET_ID
+							value = next.getCreatedAt();
+						case 4:
+							// NGSI_LD_UNIT_CODE
+							if (next instanceof PropertyEntry) {
+								value = ((PropertyEntry) next).getUnitCode();
+							}
+						default:
 
-						value = getValue(next);
-						if (compound != null) {
-							value = getCompoundValue(value, compound);
-						}
-						break;
+							value = getValue(next);
+							if (compound != null) {
+								value = getCompoundValue(value, compound);
+							}
+							break;
 					}
 					if (value == null) {
 						break;
@@ -173,17 +173,17 @@ public class QueryTerm {
 						String[] range = operant.split("\\.\\.");
 
 						switch (operator) {
-						case "==":
+							case "==":
 
-							if (compare(range[0], value) >= 0 && compare(range[1], value) <= 0) {
-								return true;
-							}
-							break;
-						case "!=":
-							if (compare(range[0], value) <= 0 && compare(range[1], value) >= 0) {
-								return true;
-							}
-							break;
+								if (compare(range[0], value) >= 0 && compare(range[1], value) <= 0) {
+									return true;
+								}
+								break;
+							case "!=":
+								if (compare(range[0], value) <= 0 && compare(range[1], value) >= 0) {
+									return true;
+								}
+								break;
 						}
 
 						return false;
@@ -196,74 +196,74 @@ public class QueryTerm {
 						@SuppressWarnings("unchecked") // check above
 						List<Object> myList = (List<Object>) value;
 						switch (operator) {
-						case "!=":
-							for (String listOperant : listOfOperants) {
-								if (myList.contains(listOperant)) {
-									return false;
+							case "!=":
+								for (String listOperant : listOfOperants) {
+									if (myList.contains(listOperant)) {
+										return false;
+									}
 								}
-							}
-							return true;
-						case "==":
-							for (String listOperant : listOfOperants) {
-								if (myList.contains(listOperant)) {
-									return true;
+								return true;
+							case "==":
+								for (String listOperant : listOfOperants) {
+									if (myList.contains(listOperant)) {
+										return true;
+									}
 								}
-							}
-							return false;
-						default:
-							return false;
+								return false;
+							default:
+								return false;
 						}
 					} else {
 						switch (operator) {
-						case "==":
-							if (value instanceof List) {
-								return listContains((List) value, operant);
-							}
-							if (operant.equals(value.toString())) {
-								return true;
-							}
-							break;
-						case "!=":
-							finalReturnValue = true;
-							if (value instanceof List) {
-								return !listContains((List) value, operant);
-							}
-							if (operant.equals(value.toString())) {
-								return false;
-							}
-							break;
-						case ">=":
+							case "==":
+								if (value instanceof List) {
+									return listContains((List) value, operant);
+								}
+								if (operant.equals(value.toString())) {
+									return true;
+								}
+								break;
+							case "!=":
+								finalReturnValue = true;
+								if (value instanceof List) {
+									return !listContains((List) value, operant);
+								}
+								if (operant.equals(value.toString())) {
+									return false;
+								}
+								break;
+							case ">=":
 
-							if (compare(operant, value) >= 0) {
-								return true;
-							}
-							break;
-						case "<=":
-							if (compare(operant, value) <= 0) {
-								return true;
-							}
-							break;
-						case ">":
-							if (compare(operant, value) > 0) {
-								return true;
-							}
-							break;
-						case "<":
-							if (compare(operant, value) < 0) {
-								return true;
-							}
-							break;
-						case "~=":
-							if (value.toString().matches(operant)) {
-								return true;
-							}
-							break;
-						case "!~=":
-							finalReturnValue = true;
-							if (value.toString().matches(operant)) {
-								return false;
-							}
-							break;
+								if (compare(operant, value) >= 0) {
+									return true;
+								}
+								break;
+							case "<=":
+								if (compare(operant, value) <= 0) {
+									return true;
+								}
+								break;
+							case ">":
+								if (compare(operant, value) > 0) {
+									return true;
+								}
+								break;
+							case "<":
+								if (compare(operant, value) < 0) {
+									return true;
+								}
+								break;
+							case "~=":
+								if (value.toString().matches(operant)) {
+									return true;
+								}
+								break;
+							case "!~=":
+								finalReturnValue = true;
+								if (value.toString().matches(operant)) {
+									return false;
+								}
+								break;
 						}
 
 					}
@@ -765,75 +765,75 @@ public class QueryTerm {
 		}
 
 		switch (operator) {
-		case NGSIConstants.QUERY_UNEQUAL:
-		case NGSIConstants.QUERY_EQUAL:
-			if (operant.matches(LIST)) {
-				attributeFilterProperty.append(" in (");
-				for (String listItem : operant.split(",")) {
-					attributeFilterProperty.append("'" + listItem + "'::" + typecast + ",");
-				}
-				attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
-			} else if (operant.matches(RANGE)) {
-				String[] myRange = operant.split("\\.\\.");
-				attributeFilterProperty.append(
-						" between '" + myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast);
-			} else {
-				attributeFilterProperty.append(" = '" + operant + "'::" + typecast);
+			case NGSIConstants.QUERY_UNEQUAL:
+			case NGSIConstants.QUERY_EQUAL:
+				if (operant.matches(LIST)) {
+					attributeFilterProperty.append(" in (");
+					for (String listItem : operant.split(",")) {
+						attributeFilterProperty.append("'" + listItem + "'::" + typecast + ",");
+					}
+					attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
+				} else if (operant.matches(RANGE)) {
+					String[] myRange = operant.split("\\.\\.");
+					attributeFilterProperty.append(
+							" between '" + myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast);
+				} else {
+					attributeFilterProperty.append(" = '" + operant + "'::" + typecast);
 
-			}
-			useRelClause = !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME));
-			break;
-		/*
-		 * case NGSIConstants.QUERY_UNEQUAL: if (operant.matches(LIST)) {
-		 * attributeFilterProperty.append(" not in ("); for (String listItem :
-		 * operant.split(",")) { attributeFilterProperty.append("'" + listItem + "'::" +
-		 * typecast + ","); }
-		 * attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
-		 * } else if (operant.matches(RANGE)) { String[] myRange =
-		 * operant.split("\\.\\."); attributeFilterProperty.append( " not between '" +
-		 * myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast); }
-		 * else { attributeFilterProperty.append(" <> '" + operant + "'::" + typecast);
-		 * } useRelClause = !(operant.matches(DATE) || operant.matches(TIME) ||
-		 * operant.matches(DATETIME)); break;
-		 */
-		case NGSIConstants.QUERY_GREATEREQ:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater equal");
-			}
-			attributeFilterProperty.append(" >= '" + operant + "'::" + typecast);
-			break;
-		case NGSIConstants.QUERY_LESSEQ:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less equal");
-			}
-			attributeFilterProperty.append(" <= '" + operant + "'::" + typecast);
-			break;
-		case NGSIConstants.QUERY_GREATER:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater");
-			}
-			attributeFilterProperty.append(" > '" + operant + "'::" + typecast);
-			break;
-		case NGSIConstants.QUERY_LESS:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
-			}
-			attributeFilterProperty.append(" < '" + operant + "'::" + typecast);
-			break;
-		case NGSIConstants.QUERY_PATTERNOP:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
-			}
-			attributeFilterProperty.append(" ~ '" + operant + "'");
-			break;
-		case NGSIConstants.QUERY_NOTPATTERNOP:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
-			}
-			attributeFilterProperty.append(" !~ '" + operant + "'");
-			break;
-		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Bad operator in query");
+				}
+				useRelClause = !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME));
+				break;
+			/*
+			 * case NGSIConstants.QUERY_UNEQUAL: if (operant.matches(LIST)) {
+			 * attributeFilterProperty.append(" not in ("); for (String listItem :
+			 * operant.split(",")) { attributeFilterProperty.append("'" + listItem + "'::" +
+			 * typecast + ","); }
+			 * attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
+			 * } else if (operant.matches(RANGE)) { String[] myRange =
+			 * operant.split("\\.\\."); attributeFilterProperty.append( " not between '" +
+			 * myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast); }
+			 * else { attributeFilterProperty.append(" <> '" + operant + "'::" + typecast);
+			 * } useRelClause = !(operant.matches(DATE) || operant.matches(TIME) ||
+			 * operant.matches(DATETIME)); break;
+			 */
+			case NGSIConstants.QUERY_GREATEREQ:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater equal");
+				}
+				attributeFilterProperty.append(" >= '" + operant + "'::" + typecast);
+				break;
+			case NGSIConstants.QUERY_LESSEQ:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less equal");
+				}
+				attributeFilterProperty.append(" <= '" + operant + "'::" + typecast);
+				break;
+			case NGSIConstants.QUERY_GREATER:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater");
+				}
+				attributeFilterProperty.append(" > '" + operant + "'::" + typecast);
+				break;
+			case NGSIConstants.QUERY_LESS:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
+				}
+				attributeFilterProperty.append(" < '" + operant + "'::" + typecast);
+				break;
+			case NGSIConstants.QUERY_PATTERNOP:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
+				}
+				attributeFilterProperty.append(" ~ '" + operant + "'");
+				break;
+			case NGSIConstants.QUERY_NOTPATTERNOP:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
+				}
+				attributeFilterProperty.append(" !~ '" + operant + "'");
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, "Bad operator in query");
 		}
 		return useRelClause;
 	}

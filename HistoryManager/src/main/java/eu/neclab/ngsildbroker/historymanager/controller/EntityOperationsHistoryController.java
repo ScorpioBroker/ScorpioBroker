@@ -56,14 +56,14 @@ public class EntityOperationsHistoryController {
 
 	@Path("/create")
 	@POST
-	public  Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String payload) {
+	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createMultiple(entityService, request, payload, maxCreateBatch,
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
 	}
 
 	@Path("/upsert")
 	@POST
-	public  Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String payload,
+	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String payload,
 			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch,
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
@@ -71,7 +71,7 @@ public class EntityOperationsHistoryController {
 
 	@Path("/update")
 	@POST
-	public  Uni<RestResponse<Object>> updateMultiple(HttpServerRequest request, String payload,
+	public Uni<RestResponse<Object>> updateMultiple(HttpServerRequest request, String payload,
 			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.updateMultiple(entityService, request, payload, maxUpdateBatch, options,
 				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD);
@@ -79,7 +79,7 @@ public class EntityOperationsHistoryController {
 
 	@Path("/delete")
 	@POST
-	public  Uni<RestResponse<Object>>deleteMultiple(HttpServerRequest request, String payload) {
+	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.deleteMultiple(entityService, request, payload,
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
 	}

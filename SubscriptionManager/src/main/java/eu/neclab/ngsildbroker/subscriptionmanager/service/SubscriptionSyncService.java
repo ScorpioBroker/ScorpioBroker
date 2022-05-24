@@ -12,6 +12,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
+import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -22,16 +23,19 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
 	@Inject
-	@Channel(AppConstants.SUB_SYNC_CHANNEL)
-	MutinyEmitter<AnnouncementMessage> syncEmitter;
+	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
+	MutinyEmitter<AnnouncementMessage> aliveEmitter;
 
-	@Incoming(AppConstants.SUB_SYNC_CHANNEL)
+	@Inject
+	SubscriptionService subService;
+
+	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
 	private Uni<Void> listenForSubs(Message<SubscriptionRequest> message) {
 		listenForSubscriptionUpdates(message.getPayload(), message.getPayload().getId());
 		return Uni.createFrom().nullItem();
 	}
 
-	@Incoming(AppConstants.SUB_ALIVE_CHANNEL)
+	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	private Uni<Void> listenForAlive(Message<AnnouncementMessage> message) {
 		listenForAnnouncements(message.getPayload(), message.getPayload().getId());
 		return Uni.createFrom().nullItem();
@@ -43,8 +47,13 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 	}
 
 	@Override
-	protected MutinyEmitter<AnnouncementMessage> getSyncEmitter() {
-		return syncEmitter;
+	protected MutinyEmitter<AnnouncementMessage> getAliveEmitter() {
+		return aliveEmitter;
+	}
+
+	@Override
+	protected BaseSubscriptionService getSubscriptionService() {
+		return subService;
 	}
 
 }

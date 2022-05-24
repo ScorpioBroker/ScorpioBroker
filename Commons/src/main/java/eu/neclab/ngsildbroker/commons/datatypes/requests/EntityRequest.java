@@ -19,7 +19,8 @@ public class EntityRequest extends BaseRequest {
 
 	}
 
-	EntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload, int requestType) {
+	EntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
+			int requestType) {
 		super(headers, id, requestPayload, requestType);
 	}
 

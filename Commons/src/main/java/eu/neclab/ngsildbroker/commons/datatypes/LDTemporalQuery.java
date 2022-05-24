@@ -16,7 +16,7 @@ public class LDTemporalQuery {
 	private Date timeAt;
 	private String timeProperty = "observedAt";
 
-	public LDTemporalQuery(){
+	public LDTemporalQuery() {
 
 	}
 
@@ -55,6 +55,5 @@ public class LDTemporalQuery {
 	public void setTimeProperty(String timeProperty) {
 		this.timeProperty = timeProperty;
 	}
-	
 
 }

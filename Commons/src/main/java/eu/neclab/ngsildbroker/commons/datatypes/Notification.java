@@ -96,28 +96,28 @@ public class Notification {
 		notificationBody.append("\",\n\t\"data\": ");
 		notificationBody.append(dataResponse.getEntity());
 		switch (triggerReason) {
-		case AppConstants.CREATE_REQUEST:
-			notificationBody.append(",\n\t\"triggerReason\": \"");
-			notificationBody.append(TriggerReason.newlyMatching.toString());
-			notificationBody.append("\"");
-			break;
-		case AppConstants.APPEND_REQUEST:
-			notificationBody.append("\"\n\t\"triggerReason\": \"");
-			notificationBody.append(TriggerReason.updated.toString());
-			notificationBody.append("\"");
-			break;
-		case AppConstants.UPDATE_REQUEST:
-			notificationBody.append("\"\n\t\"triggerReason\": ");
-			notificationBody.append(TriggerReason.updated.toString());
-			notificationBody.append("\"");
-			break;
-		case AppConstants.DELETE_REQUEST:
-			notificationBody.append("\"\n\t\"triggerReason\": ");
-			notificationBody.append(TriggerReason.noLongerMatching.toString());
-			notificationBody.append("\"");
-			break;
-		default:
-			break;
+			case AppConstants.CREATE_REQUEST:
+				notificationBody.append(",\n\t\"triggerReason\": \"");
+				notificationBody.append(TriggerReason.newlyMatching.toString());
+				notificationBody.append("\"");
+				break;
+			case AppConstants.APPEND_REQUEST:
+				notificationBody.append("\"\n\t\"triggerReason\": \"");
+				notificationBody.append(TriggerReason.updated.toString());
+				notificationBody.append("\"");
+				break;
+			case AppConstants.UPDATE_REQUEST:
+				notificationBody.append("\"\n\t\"triggerReason\": ");
+				notificationBody.append(TriggerReason.updated.toString());
+				notificationBody.append("\"");
+				break;
+			case AppConstants.DELETE_REQUEST:
+				notificationBody.append("\"\n\t\"triggerReason\": ");
+				notificationBody.append(TriggerReason.noLongerMatching.toString());
+				notificationBody.append("\"");
+				break;
+			default:
+				break;
 		}
 		notificationBody.append("\n}");
 		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(notificationBody.toString());

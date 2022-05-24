@@ -929,42 +929,42 @@ public class JsonLdApi {
 					continue;
 				} else {
 					switch (payloadType) {
-					case AppConstants.ENTITY_CREATE_PAYLOAD:
-					case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
-					case AppConstants.ENTITY_UPDATE_PAYLOAD:
-					case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
-					case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
-					case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
-					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
-						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
-							ngsiElement.setHasAtValue(true);
-						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
-							ngsiElement.setHasAtObject(true);
-						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
-							ngsiElement.setDateTime(true);
-						}
-						break;
-					case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
-					case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
-						ngsiElement.resetSubscriptionVars();
-						if (NGSIConstants.NGSI_LD_ENTITIES.equals(expandedProperty)) {
-							ngsiElement.setEntities(true);
-						} else if (NGSIConstants.NGSI_LD_GEO_QUERY.equals(expandedProperty)) {
-							ngsiElement.setGeoQ(true);
-						} else if (NGSIConstants.NGSI_LD_NOTIFICATION.equals(expandedProperty)) {
-							ngsiElement.setNotificationEntry(true);
-						} else if (NGSIConstants.NGSI_LD_TEMPORAL_QUERY.equals(expandedProperty)) {
-							ngsiElement.setTemporalQ(true);
-						} else if (NGSIConstants.NGSI_LD_ENDPOINT.equals(expandedProperty)) {
-							ngsiElement.setEndpoint(true);
-						} else if (NGSIConstants.NGSI_LD_NOTIFIERINFO.equals(expandedProperty)) {
-							ngsiElement.setNotifierInfo(true);
-						} else if (NGSIConstants.NGSI_LD_RECEIVERINFO.equals(expandedProperty)) {
-							ngsiElement.setReceiverInfo(true);
-						}
-						break;
-					default:
-						break;
+						case AppConstants.ENTITY_CREATE_PAYLOAD:
+						case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
+						case AppConstants.ENTITY_UPDATE_PAYLOAD:
+						case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
+						case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
+						case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
+						case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
+							if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
+								ngsiElement.setHasAtValue(true);
+							} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
+								ngsiElement.setHasAtObject(true);
+							} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
+								ngsiElement.setDateTime(true);
+							}
+							break;
+						case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
+						case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
+							ngsiElement.resetSubscriptionVars();
+							if (NGSIConstants.NGSI_LD_ENTITIES.equals(expandedProperty)) {
+								ngsiElement.setEntities(true);
+							} else if (NGSIConstants.NGSI_LD_GEO_QUERY.equals(expandedProperty)) {
+								ngsiElement.setGeoQ(true);
+							} else if (NGSIConstants.NGSI_LD_NOTIFICATION.equals(expandedProperty)) {
+								ngsiElement.setNotificationEntry(true);
+							} else if (NGSIConstants.NGSI_LD_TEMPORAL_QUERY.equals(expandedProperty)) {
+								ngsiElement.setTemporalQ(true);
+							} else if (NGSIConstants.NGSI_LD_ENDPOINT.equals(expandedProperty)) {
+								ngsiElement.setEndpoint(true);
+							} else if (NGSIConstants.NGSI_LD_NOTIFIERINFO.equals(expandedProperty)) {
+								ngsiElement.setNotifierInfo(true);
+							} else if (NGSIConstants.NGSI_LD_RECEIVERINFO.equals(expandedProperty)) {
+								ngsiElement.setReceiverInfo(true);
+							}
+							break;
+						default:
+							break;
 					}
 				}
 
@@ -1809,16 +1809,16 @@ public class JsonLdApi {
 		}
 		if (value instanceof String) {
 			switch ((String) value) {
-			case "@always":
-				return Embed.ALWAYS;
-			case "@never":
-				return Embed.NEVER;
-			case "@last":
-				return Embed.LAST;
-			case "@link":
-				return Embed.LINK;
-			default:
-				throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);
+				case "@always":
+					return Embed.ALWAYS;
+				case "@never":
+					return Embed.NEVER;
+				case "@last":
+					return Embed.LAST;
+				case "@link":
+					return Embed.LINK;
+				default:
+					throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);
 			}
 		}
 		throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);

@@ -90,16 +90,16 @@ public class ParamsResolver {
 				}
 				String coordinatesString;
 				switch (temp.getGeometry().toLowerCase()) {
-				case "polygon":
-					coordinatesString = "[[" + builder.toString() + "]]";
-					break;
-				case "linestring":
-					coordinatesString = "[" + builder.toString() + "]";
-					break;
-				case "point":
-				default:
-					coordinatesString = builder.toString();
-					break;
+					case "polygon":
+						coordinatesString = "[[" + builder.toString() + "]]";
+						break;
+					case "linestring":
+						coordinatesString = "[" + builder.toString() + "]";
+						break;
+					case "point":
+					default:
+						coordinatesString = builder.toString();
+						break;
 				}
 				temp.setCoordinates(coordinatesString);
 			}
@@ -117,7 +117,7 @@ public class ParamsResolver {
 			boolean temporalEntityFormat, boolean typeRequired, int defaultLimit, int maxLimit)
 			throws ResponseException {
 		QueryParams qp = new QueryParams();
-		
+
 		String id = null, type = null, idPattern = null;
 		String geometryProperty = null;
 		HashSet<String> attrs = null;
@@ -136,84 +136,84 @@ public class ParamsResolver {
 			String queryValue = entry.getValue();
 			logger.debug("Query parameter:" + queryParameter + ", value=" + queryValue);
 			switch (queryParameter) {
-			case NGSIConstants.QUERY_PARAMETER_ID:
-				id = queryValue;
-				HttpUtils.validateUri(id);
-				break;
-			case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
-				idPattern = queryValue;
-				break;
-			case NGSIConstants.QUERY_PARAMETER_TYPE:
-				type = String.join(",", expandQueryValues(context, queryValue));
-				break;
-			case NGSIConstants.QUERY_PARAMETER_ATTRS:
-				attrs = expandQueryValues(context, queryValue);
-				break;
-			case NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY:
-				geometryProperty = expandQueryValues(context, queryValue).iterator().next();
-				break;
-			case NGSIConstants.QUERY_PARAMETER_GEOREL:
-				georel = queryValue;
-				break;
-			case NGSIConstants.QUERY_PARAMETER_GEOMETRY:
-				geometry = queryValue;
-				break;
-			case NGSIConstants.QUERY_PARAMETER_COORDINATES:
-				coordinates = queryValue;
-				break;
-			case NGSIConstants.QUERY_PARAMETER_GEOPROPERTY:
-				geoproperty = expandAttribute(queryValue, context);
-				break;
-			case NGSIConstants.QUERY_PARAMETER_TIMEREL:
-				timerel = queryValue;
-				break;
-			case NGSIConstants.QUERY_PARAMETER_TIME:
-				timeAt = queryValue;
-				break;
-			case NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY:
-				timeproperty = expandAttribute(queryValue, context);
-				break;
-			case NGSIConstants.QUERY_PARAMETER_ENDTIME:
-				endTimeAt = queryValue;
-				break;
-			case NGSIConstants.QUERY_PARAMETER_QUERY:
-				qp.setQ(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
-				break;
-			case NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY:
-				qp.setScopeQ(QueryParser.parseScopeQuery(queryValue).toSql());
-				break;
-			case NGSIConstants.QUERY_PARAMETER_OPTIONS:
-				List<String> options = Arrays.asList(queryValue.split(","));
-				qp.setIncludeSysAttrs(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS));
-				qp.setKeyValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES));
-				qp.setTemporalValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES));
-				break;
-			case NGSIConstants.QUERY_PARAMETER_LIMIT:
-				limit = Integer.parseInt(queryValue);
-				if (limit > maxLimit) {
-					throw new ResponseException(ErrorType.TooManyResults, "Limit exceeds max limit of " + maxLimit);
-				}
-				break;
-			case NGSIConstants.QUERY_PARAMETER_OFFSET:
-				offset = Integer.parseInt(queryValue);
-				if (offset < 0) {
-					throw new ResponseException(ErrorType.InvalidRequest, "Offset can not be smaller than 0");
-				}
-				break;
-			case NGSIConstants.QUERY_PARAMETER_LAST_N:
-				qp.setLastN(Integer.parseInt(queryValue));
-				break;
-			case NGSIConstants.QUERY_PARAMETER_DETAILS:
-				// nothing to do here this is handled outside tbc!
-				break;
-			case NGSIConstants.QUERY_PARAMETER_COUNT:
-				qp.setCountResult(true);
-				break;
-			case NGSIConstants.QUERY_PARAMETER_CSF:
-				qp.setCsf(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
-				break;
-			default:
-				throw new ResponseException(ErrorType.BadRequestData, queryParameter + " is unknown");
+				case NGSIConstants.QUERY_PARAMETER_ID:
+					id = queryValue;
+					HttpUtils.validateUri(id);
+					break;
+				case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
+					idPattern = queryValue;
+					break;
+				case NGSIConstants.QUERY_PARAMETER_TYPE:
+					type = String.join(",", expandQueryValues(context, queryValue));
+					break;
+				case NGSIConstants.QUERY_PARAMETER_ATTRS:
+					attrs = expandQueryValues(context, queryValue);
+					break;
+				case NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY:
+					geometryProperty = expandQueryValues(context, queryValue).iterator().next();
+					break;
+				case NGSIConstants.QUERY_PARAMETER_GEOREL:
+					georel = queryValue;
+					break;
+				case NGSIConstants.QUERY_PARAMETER_GEOMETRY:
+					geometry = queryValue;
+					break;
+				case NGSIConstants.QUERY_PARAMETER_COORDINATES:
+					coordinates = queryValue;
+					break;
+				case NGSIConstants.QUERY_PARAMETER_GEOPROPERTY:
+					geoproperty = expandAttribute(queryValue, context);
+					break;
+				case NGSIConstants.QUERY_PARAMETER_TIMEREL:
+					timerel = queryValue;
+					break;
+				case NGSIConstants.QUERY_PARAMETER_TIME:
+					timeAt = queryValue;
+					break;
+				case NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY:
+					timeproperty = expandAttribute(queryValue, context);
+					break;
+				case NGSIConstants.QUERY_PARAMETER_ENDTIME:
+					endTimeAt = queryValue;
+					break;
+				case NGSIConstants.QUERY_PARAMETER_QUERY:
+					qp.setQ(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
+					break;
+				case NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY:
+					qp.setScopeQ(QueryParser.parseScopeQuery(queryValue).toSql());
+					break;
+				case NGSIConstants.QUERY_PARAMETER_OPTIONS:
+					List<String> options = Arrays.asList(queryValue.split(","));
+					qp.setIncludeSysAttrs(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS));
+					qp.setKeyValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES));
+					qp.setTemporalValues(options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES));
+					break;
+				case NGSIConstants.QUERY_PARAMETER_LIMIT:
+					limit = Integer.parseInt(queryValue);
+					if (limit > maxLimit) {
+						throw new ResponseException(ErrorType.TooManyResults, "Limit exceeds max limit of " + maxLimit);
+					}
+					break;
+				case NGSIConstants.QUERY_PARAMETER_OFFSET:
+					offset = Integer.parseInt(queryValue);
+					if (offset < 0) {
+						throw new ResponseException(ErrorType.InvalidRequest, "Offset can not be smaller than 0");
+					}
+					break;
+				case NGSIConstants.QUERY_PARAMETER_LAST_N:
+					qp.setLastN(Integer.parseInt(queryValue));
+					break;
+				case NGSIConstants.QUERY_PARAMETER_DETAILS:
+					// nothing to do here this is handled outside tbc!
+					break;
+				case NGSIConstants.QUERY_PARAMETER_COUNT:
+					qp.setCountResult(true);
+					break;
+				case NGSIConstants.QUERY_PARAMETER_CSF:
+					qp.setCsf(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
+					break;
+				default:
+					throw new ResponseException(ErrorType.BadRequestData, queryParameter + " is unknown");
 			}
 
 		}
@@ -267,54 +267,54 @@ public class ParamsResolver {
 	private static void validateCoordinates(List<Object> coordinateList, String type) throws ResponseException {
 		try {
 			switch (type) {
-			case NGSIConstants.GEO_TYPE_POINT:
-				if (coordinateList.size() != 2) {
-					throw new ResponseException(ErrorType.BadRequestData, "points have to be 2 entries");
-				}
-				break;
-			case NGSIConstants.GEO_TYPE_LINESTRING:
-				if (coordinateList.size() < 2) {
-					throw new ResponseException(ErrorType.BadRequestData,
-							"Linestring has to be an array of at least 2 points");
-				}
-				for (Object entry : coordinateList) {
-					if (!(entry instanceof List)) {
+				case NGSIConstants.GEO_TYPE_POINT:
+					if (coordinateList.size() != 2) {
+						throw new ResponseException(ErrorType.BadRequestData, "points have to be 2 entries");
+					}
+					break;
+				case NGSIConstants.GEO_TYPE_LINESTRING:
+					if (coordinateList.size() < 2) {
 						throw new ResponseException(ErrorType.BadRequestData,
 								"Linestring has to be an array of at least 2 points");
 					}
-					validateCoordinates((List<Object>) entry, NGSIConstants.GEO_TYPE_POINT);
-				}
-				break;
-			case NGSIConstants.GEO_TYPE_POLYGON:
-				boolean error = false;
-				if (coordinateList.size() == 1 && (coordinateList.get(0) instanceof List)) {
-					coordinateList = (List<Object>) coordinateList.get(0);
-					if (coordinateList.size() > 1 && (coordinateList.get(0) instanceof List)) {
-						if (coordinateList.size() < 4
-								|| !coordinateList.get(0).equals(coordinateList.get(coordinateList.size() - 1))) {
+					for (Object entry : coordinateList) {
+						if (!(entry instanceof List)) {
 							throw new ResponseException(ErrorType.BadRequestData,
-									"Polygons have to be an array of array with at least 3 points and have to close");
+									"Linestring has to be an array of at least 2 points");
 						}
-						for (Object entry : coordinateList) {
-							if (!(entry instanceof List)) {
+						validateCoordinates((List<Object>) entry, NGSIConstants.GEO_TYPE_POINT);
+					}
+					break;
+				case NGSIConstants.GEO_TYPE_POLYGON:
+					boolean error = false;
+					if (coordinateList.size() == 1 && (coordinateList.get(0) instanceof List)) {
+						coordinateList = (List<Object>) coordinateList.get(0);
+						if (coordinateList.size() > 1 && (coordinateList.get(0) instanceof List)) {
+							if (coordinateList.size() < 4
+									|| !coordinateList.get(0).equals(coordinateList.get(coordinateList.size() - 1))) {
 								throw new ResponseException(ErrorType.BadRequestData,
 										"Polygons have to be an array of array with at least 3 points and have to close");
 							}
-							validateCoordinates((List<Object>) entry, NGSIConstants.GEO_TYPE_POINT);
+							for (Object entry : coordinateList) {
+								if (!(entry instanceof List)) {
+									throw new ResponseException(ErrorType.BadRequestData,
+											"Polygons have to be an array of array with at least 3 points and have to close");
+								}
+								validateCoordinates((List<Object>) entry, NGSIConstants.GEO_TYPE_POINT);
+							}
+						} else {
+							error = true;
 						}
 					} else {
 						error = true;
 					}
-				} else {
-					error = true;
-				}
-				if (error) {
-					throw new ResponseException(ErrorType.BadRequestData,
-							"Polygons have to be an array of array with at least 3 points and have to close");
-				}
-				break;
-			default:
-				throw new ResponseException(ErrorType.BadRequestData, "Unsupported type");
+					if (error) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"Polygons have to be an array of array with at least 3 points and have to close");
+					}
+					break;
+				default:
+					throw new ResponseException(ErrorType.BadRequestData, "Unsupported type");
 			}
 		} catch (Exception e) {
 			if (e instanceof ResponseException) {

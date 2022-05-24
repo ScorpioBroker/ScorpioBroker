@@ -63,8 +63,8 @@
 //	@MockBean
 //	private QueryParams qp;
 //
-//	@InjectMocks
-//	private SubscriptionController subscriptionController;
+//	@Inject
+// SubscriptionController subscriptionController;
 //
 //	private String subscriptionEntityPayload;
 //	private String subscriptionEntityPayload1;

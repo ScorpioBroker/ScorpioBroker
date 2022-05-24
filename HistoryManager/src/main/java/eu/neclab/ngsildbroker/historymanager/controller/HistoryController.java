@@ -40,7 +40,7 @@ public class HistoryController {
 	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
 
 	@Inject
-    HistoryDAO historyDAO;
+	HistoryDAO historyDAO;
 	@Inject
 	HistoryService historyService;
 	@ConfigProperty(name = "atcontext.url")

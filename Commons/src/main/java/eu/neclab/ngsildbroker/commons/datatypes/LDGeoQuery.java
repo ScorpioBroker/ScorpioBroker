@@ -17,7 +17,7 @@ public class LDGeoQuery {
 	private String geoProperty = NGSIConstants.NGSI_LD_LOCATION;
 	private GeoRelation geoRelation;
 
-	public LDGeoQuery(){
+	public LDGeoQuery() {
 
 	}
 
@@ -53,5 +53,4 @@ public class LDGeoQuery {
 		this.geoRelation = geoRelation;
 	}
 
-	
 }

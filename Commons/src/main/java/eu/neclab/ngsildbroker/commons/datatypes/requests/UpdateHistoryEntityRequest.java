@@ -64,7 +64,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 			jsonArray = (List<Map<String, Object>>) JsonUtils.fromString(oldEntry);
 			this.createdAt = (String) ((List<Map<String, Object>>) ((List<Map<String, Object>>) ((List<Map<String, Object>>) jsonArray)
 					.get(0).get(resolvedAttrId)).get(0).get(NGSIConstants.NGSI_LD_CREATED_AT)).get(0)
-							.get(NGSIConstants.JSON_LD_VALUE);
+					.get(NGSIConstants.JSON_LD_VALUE);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -94,7 +94,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 					} else {
 						instanceIdAdd = (String) ((List<Map<String, Object>>) ((List<Map<String, Object>>) jsonArray
 								.get(0).get(resolvedAttrId)).get(0).get(NGSIConstants.NGSI_LD_INSTANCE_ID)).get(0)
-										.get(NGSIConstants.JSON_LD_ID);
+								.get(NGSIConstants.JSON_LD_ID);
 						jsonElement = setTemporalPropertyinstanceId(jsonElement, NGSIConstants.NGSI_LD_INSTANCE_ID,
 								instanceIdAdd);
 					}

@@ -9,10 +9,9 @@ import java.util.HashMap;
  */
 public class GeoProperty extends BaseProperty {
 
-	
 	HashMap<String, GeoPropertyEntry> entries = new HashMap<String, GeoPropertyEntry>();
-	
-	public GeoProperty(){
+
+	public GeoProperty() {
 //		this.type = "GeoProperty";
 	}
 
@@ -20,9 +19,6 @@ public class GeoProperty extends BaseProperty {
 
 	}
 
-
-	
-	
 	public HashMap<String, GeoPropertyEntry> getEntries() {
 		return entries;
 	}
@@ -30,8 +26,6 @@ public class GeoProperty extends BaseProperty {
 	public void setEntries(HashMap<String, GeoPropertyEntry> entries) {
 		this.entries = entries;
 	}
-	
-	
 
 	@Override
 	public int hashCode() {
@@ -62,6 +56,5 @@ public class GeoProperty extends BaseProperty {
 	public boolean isMultiValue() {
 		return entries.size() != 1;
 	}
-	
 
 }

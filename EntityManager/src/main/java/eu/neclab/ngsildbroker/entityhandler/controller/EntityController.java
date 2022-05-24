@@ -144,15 +144,17 @@ public class EntityController {// implements EntityHandlerInterface {
 					}
 					String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
 					return Tuple3.of(expandedPayload, expandedAttrib, context);
-				})).onItem().transformToUni(t -> entityService.partialUpdateEntity(HttpUtils.getHeaders(request),
-						entityId, t.getItem2(), t.getItem1()).onItem().transform(u -> Tuple2.of(u, t.getItem3())))
+				})).onItem()
+				.transformToUni(t -> entityService
+						.partialUpdateEntity(HttpUtils.getHeaders(request), entityId, t.getItem2(), t.getItem1())
+						.onItem().transform(u -> Tuple2.of(u, t.getItem3())))
 				.onItem().transform(Unchecked.function(t -> {
 					if (t.getItem1().getNotUpdated().isEmpty()) {
 						return RestResponse.noContent().ok();
 
 					} else {
-						throw new ResponseException(ErrorType.BadRequestData, JsonUtils
-								.toPrettyString(JsonLdProcessor.compact(t.getItem1().getNotUpdated().get(0), t.getItem2(), opts)));
+						throw new ResponseException(ErrorType.BadRequestData, JsonUtils.toPrettyString(
+								JsonLdProcessor.compact(t.getItem1().getNotUpdated().get(0), t.getItem2(), opts)));
 
 					}
 				})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

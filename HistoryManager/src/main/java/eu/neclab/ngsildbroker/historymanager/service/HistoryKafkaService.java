@@ -33,25 +33,25 @@ public class HistoryKafkaService {
 		HistoryEntityRequest request;
 		try {
 			switch (message.body().getRequestType()) {
-			case AppConstants.APPEND_REQUEST:
-				logger.debug("Append got called: " + message.body().getId());
-				request = new AppendHistoryEntityRequest(message.body());
-				break;
-			case AppConstants.CREATE_REQUEST:
-				logger.debug("Create got called: " + message.body().getId());
-				request = new CreateHistoryEntityRequest(message.body());
-				break;
-			case AppConstants.UPDATE_REQUEST:
-				logger.debug("Update got called: " + message.body().getId());
-				request = new UpdateHistoryEntityRequest(message.body());
-				break;
-			case AppConstants.DELETE_REQUEST:
-				logger.debug("Delete got called: " + message.body().getId());
-				request = null;
-				break;
-			default:
-				request = null;
-				break;
+				case AppConstants.APPEND_REQUEST:
+					logger.debug("Append got called: " + message.body().getId());
+					request = new AppendHistoryEntityRequest(message.body());
+					break;
+				case AppConstants.CREATE_REQUEST:
+					logger.debug("Create got called: " + message.body().getId());
+					request = new CreateHistoryEntityRequest(message.body());
+					break;
+				case AppConstants.UPDATE_REQUEST:
+					logger.debug("Update got called: " + message.body().getId());
+					request = new UpdateHistoryEntityRequest(message.body());
+					break;
+				case AppConstants.DELETE_REQUEST:
+					logger.debug("Delete got called: " + message.body().getId());
+					request = null;
+					break;
+				default:
+					request = null;
+					break;
 			}
 			if (request != null) {
 				historyService.handleRequest(request);

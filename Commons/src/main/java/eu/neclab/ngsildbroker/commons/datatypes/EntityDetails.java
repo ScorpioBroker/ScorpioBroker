@@ -5,10 +5,10 @@ public class EntityDetails {
 	private String key;
 	private int partition;
 	private long offset;
-	
-	public EntityDetails() {}
 
-	
+	public EntityDetails() {
+	}
+
 	public EntityDetails(String key, int partition, long offset) {
 		super();
 		this.key = key;
@@ -70,12 +70,10 @@ public class EntityDetails {
 			return false;
 		return true;
 	}
-	
 
 	@Override
 	public String toString() {
 		return "EntityTopicDetails [key=" + key + ", partition=" + partition + ", offset=" + offset + "]";
 	}
-	
 
 }

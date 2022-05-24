@@ -12,16 +12,16 @@ public abstract class BaseProperty {
 	protected String id;
 	protected String type;
 
-	public BaseProperty(){
+	public BaseProperty() {
 
 	}
-
 
 	abstract public boolean isMultiValue();
 
 	public String getId() {
 		return id;
 	}
+
 	public String getIdString() {
 		return id;
 	}
@@ -30,19 +30,15 @@ public abstract class BaseProperty {
 		this.id = id;
 	}
 
-
 	public String getType() {
 		return type;
 	}
-
 
 	public void setType(String type) {
 		this.type = type;
 	}
 
- 
 	public abstract HashMap<String, ? extends BaseEntry> getEntries();
-
 
 	@Override
 	public int hashCode() {
@@ -52,7 +48,6 @@ public abstract class BaseProperty {
 		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		return result;
 	}
-
 
 	@Override
 	public boolean equals(Object obj) {
@@ -75,9 +70,5 @@ public abstract class BaseProperty {
 			return false;
 		return true;
 	}
-
-	
-	
-	
 
 }

@@ -6,16 +6,17 @@ import java.util.List;
 import java.util.Set;
 
 public class Information {
-	
+
 	private List<EntityInfo> entities;
 	private Set<String> propertyNames;
 	private Set<String> relationshipNames;
-	
+
 	public Information() {
-		this.entities=new ArrayList<EntityInfo>();
-		this.propertyNames=new HashSet<String>();
-		this.relationshipNames=new HashSet<String>();
+		this.entities = new ArrayList<EntityInfo>();
+		this.propertyNames = new HashSet<String>();
+		this.relationshipNames = new HashSet<String>();
 	}
+
 	public List<EntityInfo> getEntities() {
 		return entities;
 	}
@@ -42,8 +43,8 @@ public class Information {
 
 	@Override
 	public String toString() {
-		return "Information [entities=" + entities + ", properties=" + propertyNames + ", relationships=" + relationshipNames
-				+ "]";
+		return "Information [entities=" + entities + ", properties=" + propertyNames + ", relationships="
+				+ relationshipNames + "]";
 	}
 
 	@Override
@@ -82,5 +83,5 @@ public class Information {
 			return false;
 		return true;
 	}
-	
+
 }

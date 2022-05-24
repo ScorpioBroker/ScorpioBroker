@@ -10,10 +10,10 @@ public class TimeInterval {
 	private Long startAt;
 	private Long stop;
 
-	public TimeInterval(){
+	public TimeInterval() {
 
 	}
-	
+
 	public Long getStartAt() {
 		return startAt;
 	}
@@ -21,7 +21,7 @@ public class TimeInterval {
 	public void setStartAt(Long startAt) {
 		this.startAt = startAt;
 	}
-	
+
 	public Long getStop() {
 		return stop;
 	}

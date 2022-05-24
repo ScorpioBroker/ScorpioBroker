@@ -3,21 +3,26 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.util.List;
 
 public class GeoValue {
-	
+
 	String type;
 	List<Double> coordinates;
+
 	public String getType() {
 		return type;
 	}
+
 	public void setType(String type) {
 		this.type = type;
 	}
+
 	public List<Double> getCoordinates() {
 		return coordinates;
 	}
+
 	public void setCoordinates(List<Double> coordinates) {
 		this.coordinates = coordinates;
 	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -26,6 +31,7 @@ public class GeoValue {
 		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		return result;
 	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -47,7 +53,5 @@ public class GeoValue {
 			return false;
 		return true;
 	}
-	
-	
 
 }

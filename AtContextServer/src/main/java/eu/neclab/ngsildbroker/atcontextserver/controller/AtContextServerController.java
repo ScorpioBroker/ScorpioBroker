@@ -20,11 +20,11 @@ public class AtContextServerController {
 	/*
 	 * @Autowired AtContext atContext;
 	 */
-	
+
 	/*
 	 * @Autowired ResourceLoader resourceLoader;
 	 */
-	
+
 	/*
 	 * String coreContext;
 	 * 
@@ -35,7 +35,7 @@ public class AtContextServerController {
 	 * 
 	 * }
 	 */
-	 
+
 	/**
 	 * Method(GET) for multiple attributes separated by comma list
 	 * 
@@ -53,18 +53,18 @@ public class AtContextServerController {
 		 * ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(
 		 * coreContext); }
 		 */
-		List<Object> contextes = null;//atContext.getContextes(contextId);
+		List<Object> contextes = null;// atContext.getContextes(contextId);
 		StringBuilder body = new StringBuilder("{\"@context\": ");
 
-		//body.append(DataSerializer.toJson(contextes));
+		// body.append(DataSerializer.toJson(contextes));
 		body.append("}");
 		return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(body.toString());
 	}
 
-	@GetMapping(name="atcontextget")
+	@GetMapping(name = "atcontextget")
 	public ResponseEntity<Object> getAllContextes() {
 		StringBuilder body = new StringBuilder("{\n");
-		//Manuallly done because gson shows the actual byte values and not a string
+		// Manuallly done because gson shows the actual byte values and not a string
 //		Map<String, byte[]> contextMapping = null;//atContext.getAllContextes();
 //		for(Entry<String, byte[]> contextEntry: contextMapping.entrySet()) {
 //			body.append("    \"" + contextEntry.getKey() + "\": \"" + new String(contextEntry.getValue()) + "\",\n");

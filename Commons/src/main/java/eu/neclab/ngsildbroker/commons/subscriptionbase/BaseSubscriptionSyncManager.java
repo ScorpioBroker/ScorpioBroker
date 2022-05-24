@@ -34,9 +34,8 @@ public abstract class BaseSubscriptionSyncManager {
 	private Set<String> currentInstances = Sets.newHashSet();
 
 	private Set<String> lastInstances = Sets.newHashSet();
-	@Inject
-	BaseSubscriptionService subscriptionService;
 
+	BaseSubscriptionService subscriptionService;
 
 	private MutinyEmitter<AnnouncementMessage> kafkaSender;
 
@@ -52,13 +51,16 @@ public abstract class BaseSubscriptionSyncManager {
 
 	@PostConstruct
 	public void setup() {
-		this.kafkaSender = getSyncEmitter();
+		this.kafkaSender = getAliveEmitter();
+		this.subscriptionService = getSubscriptionService();
 		setSyncId();
 		INSTANCE_ID = new AliveAnnouncement(syncId);
 		startSyncing();
 	}
 
-	protected abstract MutinyEmitter<AnnouncementMessage> getSyncEmitter();
+	protected abstract BaseSubscriptionService getSubscriptionService();
+
+	protected abstract MutinyEmitter<AnnouncementMessage> getAliveEmitter();
 
 	protected abstract void setSyncId();
 
@@ -151,7 +153,7 @@ public abstract class BaseSubscriptionSyncManager {
 	}
 
 	@PreDestroy
-	private void destroy() {
+	void destroy() {
 		executor.cancel();
 	}
 

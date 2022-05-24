@@ -9,24 +9,22 @@ import java.util.HashMap;
  */
 public class Property extends BaseProperty {
 
-	
-	
-
 	private HashMap<String, PropertyEntry> dataSetId2value;
-	public Property(){
+
+	public Property() {
 		type = "Property";
 	}
 
 	public void finalize() throws Throwable {
 
 	}
-	
+
 	public void setSingleEntry(PropertyEntry value) {
 		HashMap<String, PropertyEntry> temp = new HashMap<String, PropertyEntry>();
 		temp.put(value.getDataSetId(), value);
 		setEntries(temp);
 	}
-	
+
 	public HashMap<String, PropertyEntry> getEntries() {
 		return dataSetId2value;
 	}
@@ -34,10 +32,6 @@ public class Property extends BaseProperty {
 	public void setEntries(HashMap<String, PropertyEntry> value) {
 		this.dataSetId2value = value;
 	}
-
-	
-	
-
 
 	@Override
 	public int hashCode() {
@@ -68,7 +62,5 @@ public class Property extends BaseProperty {
 	public boolean isMultiValue() {
 		return dataSetId2value.size() != 1;
 	}
-
-	
 
 }

@@ -552,14 +552,14 @@ public class SerializationTools {
 		List<Map<String, Object>> coordinates = (List<Map<String, Object>>) propValue
 				.get(NGSIConstants.NGSI_LD_COORDINATES);
 		switch (geometry) {
-		case NGSIConstants.NGSI_LD_POINT:
-			return new Point(getSingeLePosition(coordinates));
-		case NGSIConstants.NGSI_LD_POLYOGN:
-			return new Polygon(getAreaPositions(coordinates));
-		case NGSIConstants.NGSI_LD_LINESTRING:
-			return new LineString(getLinearPositions(coordinates));
-		default:
-			return null;
+			case NGSIConstants.NGSI_LD_POINT:
+				return new Point(getSingeLePosition(coordinates));
+			case NGSIConstants.NGSI_LD_POLYOGN:
+				return new Polygon(getAreaPositions(coordinates));
+			case NGSIConstants.NGSI_LD_LINESTRING:
+				return new LineString(getLinearPositions(coordinates));
+			default:
+				return null;
 		}
 
 	}

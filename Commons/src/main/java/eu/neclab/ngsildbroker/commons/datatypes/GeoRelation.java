@@ -24,8 +24,7 @@ public class GeoRelation {
 	public Object getMaxDistance() {
 		return maxDistance;
 	}
-	
-	
+
 	public Double getMaxDistanceAsDouble() {
 		return maxDistanceAsDouble;
 	}

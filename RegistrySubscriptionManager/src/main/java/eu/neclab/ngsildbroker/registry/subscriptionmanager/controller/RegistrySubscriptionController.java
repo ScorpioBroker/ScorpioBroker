@@ -38,9 +38,9 @@ public class RegistrySubscriptionController {
 	String coreContext;
 
 	@ConfigProperty(name = "scorpio.subscription.default-limit", defaultValue = "50")
-	private int defaultLimit;
+	int defaultLimit;
 	@ConfigProperty(name = "scorpio.subscription.max-limit", defaultValue = "1000")
-	private int maxLimit;
+	int maxLimit;
 
 	@PostConstruct
 	public void init() {

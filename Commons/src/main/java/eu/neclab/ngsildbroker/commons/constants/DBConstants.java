@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DBConstants {
-	
+
 	public final static String DBTABLE_ENTITY = "entity";
 	public final static String DBTABLE_CSOURCE = "csource";
 	public final static String DBTABLE_CSOURCE_INFO = "csourceinformation";
 	public final static String DBTABLE_TEMPORALENTITY = "temporalentity";
-	public final static String DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE= "temporalentityattrinstance";	
-	
+	public final static String DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE = "temporalentityattrinstance";
+
 	public final static String DBCOLUMN_DATA = "data";
 	public final static String DBCOLUMN_KVDATA = "kvdata";
 	public final static String DBCOLUMN_DATA_WITHOUT_SYSATTRS = "data_without_sysattrs";
@@ -34,7 +34,7 @@ public class DBConstants {
 		map.put(NGSIConstants.JSON_LD_TYPE, DBCOLUMN_TYPE);
 		map.put(NGSIConstants.NGSI_LD_CREATED_AT, DBCOLUMN_CREATED_AT);
 		map.put(NGSIConstants.NGSI_LD_MODIFIED_AT, DBCOLUMN_MODIFIED_AT);
-		// the type conversion (from geometry to geojson text) changes the format (i.e. 
+		// the type conversion (from geometry to geojson text) changes the format (i.e.
 		// remove spaces in geojson), so it is better to use the original data
 //		map.put(NGSIConstants.NGSI_LD_LOCATION, DBCOLUMN_LOCATION);
 //		map.put(NGSIConstants.NGSI_LD_OBSERVATION_SPACE, DBCOLUMN_OBSERVATION_SPACE);

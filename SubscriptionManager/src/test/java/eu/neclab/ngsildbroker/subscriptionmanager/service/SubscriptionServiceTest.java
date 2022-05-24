@@ -49,8 +49,8 @@
 //	@Mock
 //	HashMap<String, Subscription> subscriptionId2Subscription;
 //	
-//	@InjectMocks
-//	private SubscriptionService manager;
+//	@Inject
+//  SubscriptionService manager;
 //	
 //	@Mock
 //	Subscription subscriptionMock;

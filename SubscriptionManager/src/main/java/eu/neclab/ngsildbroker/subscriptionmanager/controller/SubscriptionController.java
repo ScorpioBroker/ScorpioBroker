@@ -30,15 +30,15 @@ public class SubscriptionController {
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionController.class);
 
 	@Inject
-	private SubscriptionService manager;
+	SubscriptionService manager;
 
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
-	private String coreContext;
+	String coreContext;
 
 	@ConfigProperty(name = "scorpio.subscription.default-limit", defaultValue = "50")
-	private int defaultLimit;
+	int defaultLimit;
 	@ConfigProperty(name = "scorpio.subscription.max-limit", defaultValue = "1000")
-	private int maxLimit;
+	int maxLimit;
 
 	@PostConstruct
 	public void init() {

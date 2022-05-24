@@ -71,29 +71,29 @@ public class SubscriptionRequestGsonAdapter
 			String key = entry.getKey();
 			JsonElement value = entry.getValue();
 			switch (key) {
-			case SUBSCRIPTION:
-				result.setSubscription(context.deserialize(value, SUB_TYPE));
-				break;
-			case CONTEXT:
-				result.setContext(context.deserialize(value, CONTEXT_TYPE));
-				break;
-			case ACTIVE:
-				result.setActive(value.getAsBoolean());
-				break;
-			case TYPE:
-				result.setType(value.getAsInt());
-				break;
-			case HEADERS:
-				result.setHeaders(getMultiListHeaders(value));
-				break;
-			case ID:
-				result.setId(value.getAsString());
-				break;
-			case REQUEST_TYPE:
-				result.setRequestType(value.getAsInt());
-				break;
-			default:
-				break;
+				case SUBSCRIPTION:
+					result.setSubscription(context.deserialize(value, SUB_TYPE));
+					break;
+				case CONTEXT:
+					result.setContext(context.deserialize(value, CONTEXT_TYPE));
+					break;
+				case ACTIVE:
+					result.setActive(value.getAsBoolean());
+					break;
+				case TYPE:
+					result.setType(value.getAsInt());
+					break;
+				case HEADERS:
+					result.setHeaders(getMultiListHeaders(value));
+					break;
+				case ID:
+					result.setId(value.getAsString());
+					break;
+				case REQUEST_TYPE:
+					result.setRequestType(value.getAsInt());
+					break;
+				default:
+					break;
 			}
 		}
 		return result;

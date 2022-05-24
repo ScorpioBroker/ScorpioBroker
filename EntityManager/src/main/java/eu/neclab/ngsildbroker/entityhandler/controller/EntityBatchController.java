@@ -42,7 +42,6 @@ public class EntityBatchController {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	
 	@POST
 	@Path("/create")
 	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String payload) {
@@ -69,7 +68,8 @@ public class EntityBatchController {
 	@POST
 	@Path("/delete")
 	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String payload) {
-		return EntryControllerFunctions.deleteMultiple(entityService, request, payload, AppConstants.ENTITY_CREATE_PAYLOAD);
+		return EntryControllerFunctions.deleteMultiple(entityService, request, payload,
+				AppConstants.ENTITY_CREATE_PAYLOAD);
 	}
 
 }
