@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.historymanager;
+/*package eu.neclab.ngsildbroker.historymanager;
 
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
@@ -17,4 +17,4 @@ public class HistoryHandler implements QuarkusApplication{
 		// TODO Auto-generated method stub
 		return 0;
 	}
-}
+}*/

@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.queryhandler;
+/*package eu.neclab.ngsildbroker.queryhandler;
 
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
@@ -19,4 +19,4 @@ public class QueryHandler implements QuarkusApplication {
 		return 0;
 	}
 
-}
+}*/
