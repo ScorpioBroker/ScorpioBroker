@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,39 +11,35 @@ import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Service;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
-@Service
+@Singleton
 public class RegistrySubscriptionService extends BaseSubscriptionService {
 
-	@Autowired
-	@Qualifier("regsubdao")
-	SubscriptionInfoDAOInterface subService;
+	@Inject
+	RegistrySubscriptionInfoDAO subService;
 
-	@Autowired
-	KafkaTemplate<String, Object> kafkaTemplate;
+	@Inject
+	MutinyEmitter<InternalNotification> internalNotificationSender;
 
-	@Value("${scorpio.topics.internalnotification}")
-	private String NOTIFICATION_TOPIC;
-
-	@Value("${scorpio.topics.regsubsync}")
-	private String REG_SUB_SYNC_TOPIC;
+	@Inject
+	MutinyEmitter<SyncMessage> syncSender;
 
 	private NotificationHandler internalHandler;
 
@@ -50,7 +47,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@PostConstruct
 	private void notificationHandlerSetup() {
-		this.internalHandler = new InternalNotificationHandler(kafkaTemplate, NOTIFICATION_TOPIC);
+		this.internalHandler = new InternalNotificationHandler(internalNotificationSender);
 	}
 
 	@Override
@@ -84,46 +81,36 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		return super.getNotificationHandler(endpointProtocol);
 	}
 
-	void subscribeInternal(SubscriptionRequest request) {
+	Uni<Void> subscribeInternal(SubscriptionRequest request) {
 		makeSubscriptionInternal(request);
-		try {
-			subscribe(request);
-		} catch (ResponseException e) {
+		return subscribe(request).onItem().ignore().andContinueWithNull().onFailure().call(e -> {
 			logger.debug("Failed to subscribe internally", e);
-		}
+			return null;
+		});
 	}
 
-	void unsubscribeInternal(String subId) {
+	Uni<Void> unsubscribeInternal(String subId) {
 		SubscriptionRequest request = id2InternalSubscriptions.remove(subId);
-		try {
-			if (request != null) {
-				unsubscribe(subId, request.getHeaders());
-			}
-		} catch (ResponseException e) {
-			logger.debug("Failed to subscribe internally", e);
+		if (request != null) {
+			return unsubscribe(subId, request.getHeaders());
 		}
+		return Uni.createFrom().nullItem();
 	}
 
 	@PreDestroy
 	protected void deconstructor() {
 		for (Entry<String, SubscriptionRequest> entry : id2InternalSubscriptions.entrySet()) {
-			try {
-				unsubscribe(entry.getKey(), entry.getValue().getHeaders());
-			} catch (ResponseException e) {
-				logger.debug("Failed to subscribe internally", e);
-			}
+			unsubscribe(entry.getKey(), entry.getValue().getHeaders()).await().atMost(Duration.ofMillis(500));
 		}
 
 	}
 
-	public void updateInternal(SubscriptionRequest request) {
+	public Uni<Void> updateInternal(SubscriptionRequest request) {
 		makeSubscriptionInternal(request);
-		try {
-			updateSubscription(request);
-		} catch (ResponseException e) {
+		return updateSubscription(request).onItem().ignore().andContinueWithNull().onFailure().call(e -> {
 			logger.debug("Failed to subscribe internally", e);
-		}
-
+			return null;
+		});
 	}
 
 	private void makeSubscriptionInternal(SubscriptionRequest request) {
@@ -194,13 +181,13 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	}
 
 	@Override
-	protected void setSyncTopic() {
-		this.subSyncTopic = REG_SUB_SYNC_TOPIC;
+	protected void setSyncId() {
+		this.syncIdentifier = RegistrySubscriptionSyncService.SYNC_ID;
 	}
 
 	@Override
-	protected void setSyncId() {
-		this.syncIdentifier = RegistrySubscriptionSyncService.SYNC_ID;
+	protected MutinyEmitter<SyncMessage> getSyncChannelSender() {
+		return syncSender;
 	}
 
 }

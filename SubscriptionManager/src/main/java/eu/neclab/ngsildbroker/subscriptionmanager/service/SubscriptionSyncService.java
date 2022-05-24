@@ -18,9 +18,6 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
-	@ConfigProperty(name = "scorpio.topics.subalive")
-	private String SUB_ALIVE_TOPIC;
-
 	@Incoming(AppConstants.SUB_TOPICS_CHANNEL)
 	private void listenForSubs(Message<SubscriptionRequest> message) {
 		listenForSubscriptionUpdates(message.getPayload(), message.getPayload().getId());
@@ -34,11 +31,6 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 	@Override
 	protected void setSyncId() {
 		this.syncId = SubscriptionSyncService.SYNC_ID;
-	}
-
-	@Override
-	protected void setAliveTopic() {
-		this.aliveTopic = SUB_ALIVE_TOPIC;
 	}
 
 }

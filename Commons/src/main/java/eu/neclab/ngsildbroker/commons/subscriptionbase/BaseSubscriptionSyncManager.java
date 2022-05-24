@@ -47,20 +47,14 @@ public abstract class BaseSubscriptionSyncManager {
 
 	protected String syncId;
 
-	protected String aliveTopic;
-
 	AliveAnnouncement INSTANCE_ID;
 
 	@PostConstruct
 	public void setup() {
 		setSyncId();
-		setAliveTopic();
 		INSTANCE_ID = new AliveAnnouncement(syncId);
 		startSyncing();
-		// TODO FIGURE OUT HOW TO SET RENTENTION TIME FOR THE TOPIC
 	}
-
-	protected abstract void setAliveTopic();
 
 	protected abstract void setSyncId();
 

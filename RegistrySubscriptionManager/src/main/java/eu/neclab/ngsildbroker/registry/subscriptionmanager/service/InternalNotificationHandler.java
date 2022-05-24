@@ -4,8 +4,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.kafka.core.KafkaTemplate;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
@@ -13,15 +11,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseNotificationHandler;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 public class InternalNotificationHandler extends BaseNotificationHandler {
 
-	private KafkaTemplate<String, Object> kafkaTemplate;
-	private String topic;
+	private MutinyEmitter<InternalNotification> kafkaSender;
 
-	public InternalNotificationHandler(KafkaTemplate<String, Object> kafkaTemplate, String topic) {
-		this.kafkaTemplate = kafkaTemplate;
-		this.topic = topic;
+	public InternalNotificationHandler(MutinyEmitter<InternalNotification> kafkaSender) {
+		this.kafkaSender = kafkaSender;
 	}
 
 	@Override
@@ -31,11 +28,9 @@ public class InternalNotificationHandler extends BaseNotificationHandler {
 		if (notification.getData().isEmpty()) {
 			return;
 		}
-		kafkaTemplate.send(topic, notification.getId(),
-				new InternalNotification(notification.getId(), notification.getType(), notification.getNotifiedAt(),
-						notification.getSubscriptionId(), notification.getData(), notification.getTriggerReason(),
-						notification.getContext(), request.getTenant(), request.getHeaders()));
-
+		kafkaSender.send(new InternalNotification(notification.getId(), notification.getType(),
+				notification.getNotifiedAt(), notification.getSubscriptionId(), notification.getData(),
+				notification.getTriggerReason(), notification.getContext(), request.getTenant(), request.getHeaders()));
 	}
 
 	private void cleanNotificationFromInternal(Notification notification) {

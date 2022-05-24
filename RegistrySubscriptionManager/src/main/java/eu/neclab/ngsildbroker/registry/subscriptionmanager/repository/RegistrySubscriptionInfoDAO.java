@@ -1,12 +1,12 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.repository;
 
-import org.springframework.stereotype.Repository;
+import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.RegistryStorageFunctions;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionInfoDAO;
 
-@Repository("regsubdao")
+@Singleton
 public class RegistrySubscriptionInfoDAO extends BaseSubscriptionInfoDAO {
 	@Override
 	protected String getSQLForTypes() {
