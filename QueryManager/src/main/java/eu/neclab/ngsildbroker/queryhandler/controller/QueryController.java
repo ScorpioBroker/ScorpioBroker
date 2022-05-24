@@ -24,16 +24,16 @@ import io.vertx.core.http.HttpServerRequest;
 public class QueryController {
 
 	@Inject
-	private QueryService queryService;
+     QueryService queryService;
 
 	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
-	private int defaultLimit;
+	int defaultLimit;
 
 	@ConfigProperty(name = "scorpio.entity.max-limit", defaultValue = "1000")
-	private int maxLimit;
+	int maxLimit;
 
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
-	private String coreContext;
+    String coreContext;
 
 	@PostConstruct
 	public void init() {

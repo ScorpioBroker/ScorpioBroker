@@ -26,16 +26,16 @@ import io.vertx.core.http.HttpServerRequest;
 public class EntityOperationQueryController {
 
 	@Inject
-	private QueryService queryService;
+	QueryService queryService;
 
 	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
-	private int defaultLimit;
+	int defaultLimit;
 
 	@ConfigProperty(name = "scorpio.entity.batch-operations.query.max-limit", defaultValue = "1000")
-	private int maxLimit;
+	int maxLimit;
 
 	@ConfigProperty(name = "scorpio.entity.batch-operations.query.max-limit", defaultValue = "1000")
-	private String coreContext;
+	String coreContext;
 
 	private PayloadQueryParamParser paramParser = new EntityPostQueryParser();
 
