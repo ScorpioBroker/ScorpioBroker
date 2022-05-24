@@ -29,23 +29,23 @@ import io.vertx.core.http.HttpServerRequest;
 public class EntityOperationsHistoryController {
 
 	@Inject
-	private HistoryService entityService;
+	HistoryService entityService;
 
 	@ConfigProperty(name = "scorpio.history.batch-operations.create.max", defaultValue = "-1")
-	private int maxCreateBatch;
+	int maxCreateBatch;
 	@ConfigProperty(name = "scorpio.history.batch-operations.update.max", defaultValue = "-1")
-	private int maxUpdateBatch;
+	int maxUpdateBatch;
 	@ConfigProperty(name = "scorpio.history.batch-operations.upsert.max", defaultValue = "-1")
-	private int maxUpsertBatch;
+	int maxUpsertBatch;
 	@ConfigProperty(name = "scorpio.history.batch-operations.delete.max", defaultValue = "-1")
-	private int maxDeleteBatch;
+	int maxDeleteBatch;
 	@ConfigProperty(name = "scorpio.history.default-limit", defaultValue = "50")
-	private int defaultLimit;
+	int defaultLimit;
 	@ConfigProperty(name = "scorpio.history.max-limit", defaultValue = "1000")
-	private int maxLimit;
+	int maxLimit;
 
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
-	private String coreContext;
+	String coreContext;
 
 	private PayloadQueryParamParser paramParser = new HistoryPostQueryParser();
 

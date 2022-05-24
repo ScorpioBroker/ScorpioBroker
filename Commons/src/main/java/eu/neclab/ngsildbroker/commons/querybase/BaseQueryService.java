@@ -70,7 +70,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@PostConstruct
-	private void setup() {
+	void setup() {
 		entryDAO = getQueryDAO();
 		registryDAO = getCsourceDAO();
 		webClient = WebClient.create(vertx);

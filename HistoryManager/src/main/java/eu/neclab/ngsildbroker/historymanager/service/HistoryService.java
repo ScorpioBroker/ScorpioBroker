@@ -48,10 +48,10 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	boolean directDB;
 
 	@ConfigProperty(name = "scorpio.topics.temporal")
-	private String TEMP_TOPIC;
+	String TEMP_TOPIC;
 
 	@ConfigProperty(name = "scorpio.history.tokafka", defaultValue = "false")
-	private boolean historyToKafkaEnabled;
+	boolean historyToKafkaEnabled;
 
 	@Inject
 	@Channel(AppConstants.HISTORY_CHANNEL)

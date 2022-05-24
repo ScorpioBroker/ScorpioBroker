@@ -40,9 +40,9 @@ public class HistoryController {
 	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
 
 	@Inject
-	private HistoryDAO historyDAO;
+    HistoryDAO historyDAO;
 	@Inject
-	private HistoryService historyService;
+	HistoryService historyService;
 	@ConfigProperty(name = "atcontext.url")
 	String atContextServerUrl;
 	@ConfigProperty(name = "scorpio.history.defaultLimit", defaultValue = "50")
