@@ -109,9 +109,9 @@ public class AppConstants {
 	public static final String ENTITY_RETRIEVE_CHANNEL = "entityretrieve";
 	public static final String INTERNAL_RETRIEVE_SUBS_CHANNEL = "isubsretrieve";
 	public static final String INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL = "inotificationretrieve";
-	public static final String SUB_TOPICS_CHANNEL = "subsync";
+	public static final String SUB_SYNC_CHANNEL = "subsync";
 	public static final String SUB_ALIVE_CHANNEL = "subalive";
-	public static final String REG_SUB_TOPICS_CHANNEL = "regsubsync";
+	public static final String REG_SUB_SYNC_CHANNEL = "regsubsync";
 	public static final String REG_SUB_ALIVE_CHANNEL = "regsubalive";
 	
 

@@ -26,6 +26,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +71,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	CSourceDAO csourceInfoDAO;
 
 	@Inject
+	@Channel(AppConstants.REGISTRY_CHANNEL)
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	@ConfigProperty(name = "scorpio.registry.autoregmode", defaultValue = "types")

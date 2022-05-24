@@ -23,7 +23,7 @@ public class RegistrySubscriptionKafkaService {
 	RegistrySubscriptionService subscriptionService;
 
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
-	public void handleCsource(Message<BaseRequest> busMessage) {
+	public Uni<Void> handleCsource(Message<BaseRequest> busMessage) {
 		BaseRequest message = busMessage.getPayload();
 		IncomingKafkaRecordMetadata metaData = busMessage.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
 		String key = message.getId();
@@ -53,6 +53,7 @@ public class RegistrySubscriptionKafkaService {
 			default:
 				break;
 		}
+		return Uni.createFrom().nullItem();
 	}
 
 	@Incoming(AppConstants.INTERNAL_SUBS_CHANNEL)

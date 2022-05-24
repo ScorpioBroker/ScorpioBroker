@@ -23,6 +23,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 public abstract class BaseSubscriptionSyncManager {
 
@@ -36,8 +37,8 @@ public abstract class BaseSubscriptionSyncManager {
 	@Inject
 	BaseSubscriptionService subscriptionService;
 
-	@Inject
-	Emitter<AnnouncementMessage> kafkaSender;
+
+	private MutinyEmitter<AnnouncementMessage> kafkaSender;
 
 	@ConfigProperty(name = "scorpio.sync.announcement-time", defaultValue = "200")
 	int announcementTime;
@@ -51,10 +52,13 @@ public abstract class BaseSubscriptionSyncManager {
 
 	@PostConstruct
 	public void setup() {
+		this.kafkaSender = getSyncEmitter();
 		setSyncId();
 		INSTANCE_ID = new AliveAnnouncement(syncId);
 		startSyncing();
 	}
+
+	protected abstract MutinyEmitter<AnnouncementMessage> getSyncEmitter();
 
 	protected abstract void setSyncId();
 

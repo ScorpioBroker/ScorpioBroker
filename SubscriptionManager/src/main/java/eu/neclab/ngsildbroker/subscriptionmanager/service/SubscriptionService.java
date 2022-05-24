@@ -18,6 +18,8 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
@@ -53,8 +55,10 @@ public class SubscriptionService extends BaseSubscriptionService {
 	MicroServiceUtils microServiceUtils;
 
 	@Inject
+	@Channel(AppConstants.SUB_SYNC_CHANNEL)
 	MutinyEmitter<SubscriptionRequest> syncEmitter;
 	@Inject
+	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
 	MutinyEmitter<SyncMessage> aliveEmitter;
 
 	@Override

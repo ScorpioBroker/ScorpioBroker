@@ -4,16 +4,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Singleton;
+
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.RegistryStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 
-
+@Singleton
 public class CSourceDAO extends StorageDAO {
-
-	
 
 	protected final static String DBCOLUMN_CSOURCE_INFO_ENTITY_ID = "entity_id";
 	protected final static String DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN = "entity_idpattern";
@@ -42,14 +42,10 @@ public class CSourceDAO extends StorageDAO {
 		map.put(NGSIConstants.GEO_REL_DISJOINT, null);
 		return Collections.unmodifiableMap(map);
 	}
-	
 
-	
 	@Override
 	protected StorageFunctionsInterface getStorageFunctions() {
 		return new RegistryStorageFunctions();
 	}
-
-	
 
 }
