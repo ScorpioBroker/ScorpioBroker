@@ -141,14 +141,12 @@ public class ClientManager {
 		});
 
 		if (al1.contains(databasename)) {
-			System.out.println("already exist");
 			return databasename;
 
 		} else {
 			String modifydatabasename = " \"" + databasename + "\"";
 			String sql = "create database " + modifydatabasename + "";
 			pgClient.query(sql).execute().await().indefinitely();
-			System.out.println("sucessfully created");
 			return databasename;
 		}
 
