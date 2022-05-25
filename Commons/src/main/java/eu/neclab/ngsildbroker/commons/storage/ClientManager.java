@@ -55,6 +55,9 @@ public class ClientManager {
 	}
 
 	public PgPool getClient(String tenant, boolean create) {
+		if (tenant == null) {
+			return tenant2Client.get(AppConstants.INTERNAL_NULL_KEY);
+		}
 		PgPool result = tenant2Client.get(tenant);
 		if (create) {
 			if (result == null) {

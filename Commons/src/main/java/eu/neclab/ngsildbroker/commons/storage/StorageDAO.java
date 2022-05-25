@@ -138,7 +138,7 @@ public abstract class StorageDAO {
 	 */
 
 	public Uni<QueryResult> query(QueryParams qp) {
-		PgPool client = clientManager.getClient(qp.getTenant(), true);
+		PgPool client = clientManager.getClient(qp.getTenant(), false);
 		if (client == null) {
 			return Uni.createFrom()
 					.failure(new ResponseException(ErrorType.TenantNotFound, qp.getTenant() + " tenant was not found"));
