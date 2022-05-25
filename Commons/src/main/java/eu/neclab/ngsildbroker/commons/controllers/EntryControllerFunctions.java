@@ -459,7 +459,7 @@ public interface EntryControllerFunctions {
 			return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem().transform(entityId -> {
 				logger.trace("create entity :: completed");
 				try {
-					return RestResponse.created(new URI(baseUrl + t));
+					return RestResponse.created(new URI(baseUrl + entityId));
 				} catch (URISyntaxException e) {
 					return HttpUtils.handleControllerExceptions(e);
 				}
