@@ -464,7 +464,7 @@ public final class HttpUtils {
 
 	public static ArrayListMultimap<String, String> getHeaders(HttpServerRequest request) {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		for (Entry<String, String> entry : request.params()) {
+		for (Entry<String, String> entry : request.headers()) {
 			result.put(entry.getKey(), entry.getValue());
 		}
 		return result;
