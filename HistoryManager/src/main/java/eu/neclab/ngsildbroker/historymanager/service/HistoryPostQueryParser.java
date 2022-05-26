@@ -167,10 +167,7 @@ public class HistoryPostQueryParser implements PayloadQueryParamParser {
 		Map<String, Object> compactedFull = JsonLdProcessor.compact(value, JsonLdProcessor.getCoreContextClone(), opts);
 		compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);
 		String geoType = (String) compactedFull.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
-		// This is needed because one context could map from type which wouldn't work
-		// with the used context.
-		// Used context is needed because something could map point
-		// This is not good but new geo type will come so this can go away at some time
+	
 		if (geoType == null) {
 			compactedFull = JsonLdProcessor.compact(value, JsonLdProcessor.getCoreContextClone(), opts);
 			compactedFull.remove(NGSIConstants.JSON_LD_CONTEXT);

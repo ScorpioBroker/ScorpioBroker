@@ -135,8 +135,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			resolvedAttrId = ParamsResolver.expandAttribute(attribId, linkHeaders);
 		}
 
-		// check if entityId + attribId + instanceid exists. if not, throw exception
-		// ResourceNotFound
+		
 		QueryParams qp = new QueryParams();
 		List<Map<String, String>> temp1 = new ArrayList<Map<String, String>>();
 		HashMap<String, String> temp2 = new HashMap<String, String>();
