@@ -385,7 +385,7 @@ public abstract class StorageDAO {
 				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = '" + value
 						+ "'::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = '" + valueWithoutSysAttrs
 						+ "'::jsonb , " + DBConstants.DBCOLUMN_KVDATA + " = '" + kvValue + "'::jsonb WHERE "
-						+ DBConstants.DBCOLUMN_ID + "='" + key + "'";
+						+ DBConstants.DBCOLUMN_ID + " = '$1'";
 				return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
 						.andContinueWithNull();
 			}
