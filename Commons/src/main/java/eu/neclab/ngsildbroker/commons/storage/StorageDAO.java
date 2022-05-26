@@ -77,12 +77,16 @@ public abstract class StorageDAO {
 
 	public Uni<String> getEntity(String entryId, String tenantId) {
 		return clientManager.getClient(tenantId, false).preparedQuery(storageFunctions.getEntryQuery())
-				.execute(Tuple.of(entryId)).onItem().transform(t -> {
+				.execute(Tuple.of(entryId)).onItem().transformToUni(t -> {
+					if (t.rowCount() == 0) {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.NotFound, entryId + " was not found"));
+					}
 					String result = "";
 					for (Row entry : t) {
 						result = ((JsonObject) entry.getJson(0)).encode();
 					}
-					return result;
+					return Uni.createFrom().item(result);
 				});
 
 	}

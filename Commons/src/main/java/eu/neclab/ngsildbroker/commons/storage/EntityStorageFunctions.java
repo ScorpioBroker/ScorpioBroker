@@ -324,7 +324,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 
 	@Override
 	public String getEntryQuery() {
-		return "SELECT data FROM entity WHERE id=$1";
+		return "SELECT data FROM entity WHERE id = $1";
 	}
 
 }
