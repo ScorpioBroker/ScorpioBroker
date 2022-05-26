@@ -47,8 +47,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple4;
-import io.vertx.core.Future;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -207,7 +205,7 @@ public final class HttpUtils {
 		return getAtContext(request).onItem().transform(t -> {
 			List<Object> result = Lists.newArrayList();
 			if (additionalContext == null) {
-				result.addAll(additionalContext);
+				result.add(additionalContext);
 			}
 			if (t != null) {
 				result.addAll(t);
