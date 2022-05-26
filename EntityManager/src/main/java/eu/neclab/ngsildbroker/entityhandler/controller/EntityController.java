@@ -89,7 +89,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 
 	@PATCH
-	@Path("/{entityId}/attrs")
+	@Path("/entities/{entityId}/attrs")
 	public Uni<RestResponse<Object>> updateEntity(HttpServerRequest request, @PathParam("entityId") String entityId,
 			String payload) {
 		return EntryControllerFunctions.updateEntry(entityService, request, entityId, payload,
@@ -105,7 +105,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 
 	@POST
-	@Path("/{entityId}/attrs")
+	@Path("/entities/{entityId}/attrs")
 	public Uni<RestResponse<Object>> appendEntity(HttpServerRequest request, @PathParam("entityId") String entityId,
 			String payload, @QueryParam("options") String options) {
 		return EntryControllerFunctions.appendToEntry(entityService, request, entityId, payload, options,
@@ -123,7 +123,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@SuppressWarnings({ "unchecked", "static-access" })
 	@PATCH
-	@Path("/{entityId}/attrs/{attrId}")
+	@Path("/entities/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> partialUpdateEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId, String payload) {
 
@@ -170,9 +170,8 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 
-	@SuppressWarnings("static-access")
 	@DELETE
-	@Path("/{entityId}/attrs/{attrId}")
+	@Path("/entities/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> deleteAttribute(HttpServerRequest request, @PathParam("entityId") String entityId,
 			@PathParam("attrId") String attrId, @QueryParam("datasetId") String datasetId,
 			@QueryParam("deleteAll") String deleteAll) {
@@ -185,7 +184,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,
 					deleteAll);
 			logger.trace("delete attribute :: completed");
-			return Uni.createFrom().item(RestResponse.noContent().ok());
+			return Uni.createFrom().item(RestResponse.noContent());
 		} catch (Exception exception) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 		}
@@ -198,7 +197,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * @return
 	 */
 	@DELETE
-	@Path("/{entityId}")
+	@Path("/entities/{entityId}")
 	public Uni<RestResponse<Object>> deleteEntity(HttpServerRequest request, @PathParam("entityId") String entityId) {
 		return EntryControllerFunctions.deleteEntry(entityService, request, entityId, logger);
 	}

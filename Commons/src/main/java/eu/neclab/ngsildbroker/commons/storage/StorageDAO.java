@@ -37,6 +37,7 @@ import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.pgclient.PgException;
 
 public abstract class StorageDAO {
 	private final static Logger logger = LoggerFactory.getLogger(StorageDAO.class);
@@ -355,41 +356,40 @@ public abstract class StorageDAO {
 		String value = request.getWithSysAttrs();
 		String valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
 		String kvValue = request.getKeyValue();
-		int n = 0;
-		Uni uni;
+
 		PgPool client = clientManager.getClient(request.getTenant(), true);
 		if (value != null && !value.equals("null")) {
 			if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 				sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
 						+ ") VALUES ($1, '" + value + "'::jsonb, '" + valueWithoutSysAttrs + "'::jsonb, '" + kvValue
-						+ "'::jsonb) ON CONFLICT(id) DO NOTHING";
-				uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
-						.andContinueWithNull();
-				// TODO check this failure should go up failure stream
-				/*
-				 * if (uni == null) { throw new ResponseException(ErrorType.AlreadyExists,
-				 * request.getId() + " already exists");
-				 * 
-				 * }
-				 */
+						+ "'::jsonb)";
+				return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onFailure()
+						.recoverWithUni(e -> {
+							if (e instanceof PgException) {
+								PgException pgE = (PgException) e;
+								if (pgE.getCode().equals("23505")) { // code for unique constraint
+									return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+											request.getId() + " already exists"));
+								}
+							}
+							return Uni.createFrom().failure(e);
+
+						}).onItem().ignore().andContinueWithNull();
 			} else {
 				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = '" + value
 						+ "'::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = '" + valueWithoutSysAttrs
 						+ "'::jsonb , " + DBConstants.DBCOLUMN_KVDATA + " = '" + kvValue + "'::jsonb WHERE "
 						+ DBConstants.DBCOLUMN_ID + "='" + key + "'";
-				uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
+				return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
 						.andContinueWithNull();
 			}
 		} else {
 
 			sql = "DELETE FROM " + DBConstants.DBTABLE_ENTITY + " WHERE id = $1";
-			uni = client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
+			return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
 					.andContinueWithNull();
 		}
-		logger.trace("Rows affected: " + Integer.toString(n));
-		return uni; // (n>0);
-
 	}
 
 	protected String getTenant(String tenantId) {

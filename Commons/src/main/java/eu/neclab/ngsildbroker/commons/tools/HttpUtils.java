@@ -206,7 +206,7 @@ public final class HttpUtils {
 			boolean forceArrayResult, int endPoint) {
 		return getAtContext(request).onItem().transform(t -> {
 			List<Object> result = Lists.newArrayList();
-			if (additionalContext == null) {
+			if (additionalContext != null) {
 				result.addAll(additionalContext);
 			}
 			if (t != null) {
