@@ -53,7 +53,7 @@ public class QueryController {
 	@GET
 	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request,
 			@QueryParam(value = "attrs") List<String> attrs, @QueryParam(value = "options") List<String> options,
-			@PathParam("entityId") String entityId) throws ResponseException {
+			@PathParam("entityId") String entityId) {
 		return QueryControllerFunctions.getEntity(queryService, request, attrs, options, entityId, false, defaultLimit,
 				maxLimit);
 	}
