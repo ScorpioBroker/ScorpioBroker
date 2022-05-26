@@ -235,13 +235,14 @@ public abstract class StorageDAO {
 						+ ") VALUES ($1, '" + value + "'::jsonb)";
 
 				return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
-					// if( whatever alreadyexists is) {
-					return Uni.createFrom()
-							.failure(new ResponseException(ErrorType.AlreadyExists, "CSource already exists"));
-					// } else {
-					// return Uni.createFrom().failure(new
-					// ResponseException(ErrorType.InternalError, e.getMessage()));
-					// }
+					if (e instanceof PgException) {
+						PgException pgE = (PgException) e;
+						if (pgE.getCode().equals("23505")) { // code for unique constraint
+							return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+									request.getId() + " already exists"));
+						}
+					}
+					return Uni.createFrom().failure(e);
 				}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 
 			} else if (request.getRequestType() == AppConstants.OPERATION_APPEND_ENTITY) {
