@@ -8,7 +8,6 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEA
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,21 +20,7 @@ import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.locationtech.spatial4j.SpatialPredicate;
-import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
-import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
-import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
@@ -45,6 +30,17 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.locationtech.spatial4j.SpatialPredicate;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
+import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -154,9 +150,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected abstract MutinyEmitter<SyncMessage> getSyncChannelSender();
 
-	@PreDestroy
-	void destroy() throws InterruptedException {
-		Thread.sleep(checkTime);
+	
+	protected void destroy() {
+		try {
+			Thread.sleep(checkTime);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	protected abstract void setSyncId();

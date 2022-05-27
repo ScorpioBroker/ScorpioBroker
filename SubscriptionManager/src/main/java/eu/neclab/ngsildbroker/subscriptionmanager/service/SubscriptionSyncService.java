@@ -30,13 +30,13 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 	SubscriptionService subService;
 
 	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
-	private Uni<Void> listenForSubs(Message<SubscriptionRequest> message) {
+	Uni<Void> listenForSubs(Message<SubscriptionRequest> message) {
 		listenForSubscriptionUpdates(message.getPayload(), message.getPayload().getId());
 		return Uni.createFrom().nullItem();
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
-	private Uni<Void> listenForAlive(Message<AnnouncementMessage> message) {
+	Uni<Void> listenForAlive(Message<AnnouncementMessage> message) {
 		listenForAnnouncements(message.getPayload(), message.getPayload().getId());
 		return Uni.createFrom().nullItem();
 	}

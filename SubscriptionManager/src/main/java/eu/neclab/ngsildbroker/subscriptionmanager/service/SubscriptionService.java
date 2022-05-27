@@ -86,8 +86,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 		return false;
 	}
 
-	@PreDestroy
+	//@PreDestroy
 	void unsubscribeToAllRemote() {
+		destroy();
 		for (String entry : internalSubId2ExternalEndpoint.values()) {
 			webClient.deleteAbs(entry).send().succeeded();
 		}

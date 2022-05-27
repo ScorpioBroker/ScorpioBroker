@@ -9,11 +9,11 @@
 	<artifactId>AllInOneRunner</artifactId>
 
 	<dependencies>
-		<dependency>
+		<!-- <dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>Commons</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>EntityManager</artifactId>

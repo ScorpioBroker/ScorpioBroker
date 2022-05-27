@@ -152,7 +152,7 @@ public abstract class BaseSubscriptionSyncManager {
 		subscriptionService.activateSubs(mySubs);
 	}
 
-	@PreDestroy
+	//@PreDestroy
 	void destroy() {
 		executor.cancel();
 	}
