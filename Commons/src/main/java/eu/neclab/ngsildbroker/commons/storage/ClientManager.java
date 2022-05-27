@@ -12,6 +12,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.sql.DataSource;
 
+import com.google.common.collect.Lists;
+
 import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,20 +138,16 @@ public class ClientManager {
 	public String findDataBaseNameByTenantId(String tenantidvalue) {
 		if (tenantidvalue == null)
 			return null;
-
 		String databasename = "ngb" + tenantidvalue;
-		ArrayList<String> al1 = new ArrayList<String>();
-		pgClient.query("SELECT datname FROM pg_database").executeAndAwait().forEach(t -> {
-			al1.add(t.getString(0));
-		});
-
-		if (al1.contains(databasename)) {
+		List<Uni<Object>> unis = Lists.newArrayList();
+		unis.add(pgClient.query("SELECT datname FROM pg_database").execute().onItem()
+				.transform(pgRowSet -> pgRowSet.iterator().next()));
+		if (unis.contains(databasename)) {
 			return databasename;
-
 		} else {
 			String modifydatabasename = " \"" + databasename + "\"";
 			String sql = "create database " + modifydatabasename + "";
-			pgClient.query(sql).execute().await().indefinitely();
+			pgClient.preparedQuery(sql).executeAndForget();			
 			return databasename;
 		}
 
