@@ -63,13 +63,12 @@ public class EntityService implements EntryCRUDService {
 
 		logger.debug("createMessage() :: started");
 		EntityRequest request;
-		String tenantid = HttpUtils.getInternalTenant(headers);
 		try {
 			request = new CreateEntityRequest(resolved, headers);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		return handleRequest(request,tenantid).combinedWith((t, u) -> {
+		return handleRequest(request).combinedWith((t, u) -> {
 			logger.debug("createMessage() :: completed");
 			return request.getId();
 		});
@@ -98,7 +97,7 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().nullItem();
 					}
-					return handleRequest(t,tenantid).combinedWith((storage, kafka) -> {
+					return handleRequest(t).combinedWith((storage, kafka) -> {
 						logger.trace("updateMessage() :: completed");
 						return t.getUpdateResult();
 					});
@@ -132,7 +131,7 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().nullItem();
 					}
-					return handleRequest(t,tenantId).combinedWith((storage, kafka) -> {
+					return handleRequest(t).combinedWith((storage, kafka) -> {
 						logger.trace("appendMessage() :: completed");
 						return t.getUpdateResult();
 					});
@@ -150,7 +149,7 @@ public class EntityService implements EntryCRUDService {
 				.transform(Unchecked.function(t -> {
 					return new DeleteEntityRequest(entityId, headers, t);
 				})).onItem().transformToUni(t -> {
-					Uni<Void> store = entityInfoDAO.storeEntity(t,tenantId);
+					Uni<Void> store = entityInfoDAO.storeEntity(t);
 					BaseRequest temp = new BaseRequest(t);
 					temp.setRequestPayload(t.getOldEntity());
 					temp.setFinalPayload(t.getOldEntity());
@@ -181,7 +180,7 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().nullItem();
 					}
-					return handleRequest(t,tenantId).combinedWith((storage, kafka) -> {
+					return handleRequest(t).combinedWith((storage, kafka) -> {
 						logger.trace("partialUpdateEntity() :: completed");
 						return t.getUpdateResult();
 					});
@@ -202,8 +201,8 @@ public class EntityService implements EntryCRUDService {
 				.onItem().transform(t -> true);
 	}
 
-	private UniAndGroup2<Void, Void> handleRequest(EntityRequest request,String tenant) {
-		return Uni.combine().all().unis(entityInfoDAO.storeEntity(request,tenant),
+	private UniAndGroup2<Void, Void> handleRequest(EntityRequest request) {
+		return Uni.combine().all().unis(entityInfoDAO.storeEntity(request),
 				kafkaSenderInterface.send(new BaseRequest(request)));
 	}
 
