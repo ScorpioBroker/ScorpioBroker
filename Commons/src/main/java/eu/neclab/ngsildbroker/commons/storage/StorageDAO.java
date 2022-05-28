@@ -354,7 +354,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<Void> storeEntity(EntityRequest request) {
+	public Uni<Void> storeEntity(EntityRequest request, String tenant) {
 
 		String sql;
 		String key = request.getId();
@@ -362,7 +362,7 @@ public abstract class StorageDAO {
 		String valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
 		String kvValue = request.getKeyValue();
 
-		PgPool client = clientManager.getClient(request.getTenant(), true);
+		PgPool client = clientManager.getClient(tenant, true);
 		if (value != null && !value.equals("null")) {
 			if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 				sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
