@@ -320,7 +320,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		ArrayListMultimap<String, String> headers = ArrayListMultimap.create();
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
 			id += ":" + tenant;
-			headers.put(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK, tenant);
+			headers.put(NGSIConstants.TENANT_HEADER, tenant);
 		}
 		Map<String, Object> resolved = new HashMap<String, Object>();
 		resolved.put(NGSIConstants.JSON_LD_ID, id);

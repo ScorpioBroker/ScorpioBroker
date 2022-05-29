@@ -469,8 +469,8 @@ public final class HttpUtils {
 	}
 
 	public static String getTenantFromHeaders(ArrayListMultimap<String, String> headers) {
-		if (headers.containsKey(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK)) {
-			return headers.get(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK).get(0);
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
 		}
 		return null;
 	}

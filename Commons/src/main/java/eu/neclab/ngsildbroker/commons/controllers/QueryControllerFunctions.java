@@ -149,7 +149,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest, "Empty query parameters"));
 		}
 		return HttpUtils.getAtContext(request).onItem().transformToUni(t -> {
-			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
+			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			Context context = JsonLdProcessor.getCoreContextClone().parse(t, true);
 			QueryParams qp;
