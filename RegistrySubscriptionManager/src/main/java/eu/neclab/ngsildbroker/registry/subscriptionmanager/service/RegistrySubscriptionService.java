@@ -102,9 +102,8 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		return Uni.createFrom().nullItem();
 	}
 
-	
-	//@PreDestroy
-	void deconstructor() {
+	@PreDestroy
+	public void deconstructor() {
 		destroy();
 		for (Entry<String, SubscriptionRequest> entry : id2InternalSubscriptions.entrySet()) {
 			unsubscribe(entry.getKey(), entry.getValue().getHeaders()).await().atMost(Duration.ofMillis(500));
