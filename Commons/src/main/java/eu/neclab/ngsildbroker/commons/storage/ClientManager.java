@@ -13,6 +13,7 @@ import javax.inject.Singleton;
 import javax.sql.DataSource;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplie
 import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.SqlConnection;
@@ -47,112 +49,95 @@ public class ClientManager {
 	@Inject
 	AgroalDataSource writerDataSource;
 
-	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
+	// private Map<Object, DataSource> resolvedDataSources = Maps.newHashMap();
 
-	protected HashMap<String, PgPool> tenant2Client = new HashMap<String, PgPool>();
+	protected HashMap<String, Uni<PgPool>> tenant2Client = Maps.newHashMap();
 
 	@PostConstruct
 	void loadTenantClients() {
-		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, pgClient);
+		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, Uni.createFrom().item(pgClient));
 	}
 
-	public PgPool getClient(String tenant, boolean create) {
+	public Uni<PgPool> getClient(String tenant, boolean create) {
 		if (tenant == null) {
 			return tenant2Client.get(AppConstants.INTERNAL_NULL_KEY);
 		}
-		PgPool result = tenant2Client.get(tenant);
-		if (create) {
-			if (result == null) {
-				result = generateTenant(tenant);
-				tenant2Client.put(tenant, result);
-			}
+		Uni<PgPool> result = tenant2Client.get(tenant);
+		if (result == null) {
+			result = getTenant(tenant, create);
+			tenant2Client.put(tenant, result);
 		}
 		return result;
 	}
 
-	private PgPool generateTenant(String tenant) {
-		PgPool result = null;
-		if (tenant == null) {
-			result = pgClient;
-		} else {
-			if (tenant2Client.containsKey(tenant)) {
-				result = tenant2Client.get(tenant);
-			} else {
-				DataSource finalDataSource;
-				try {
-					finalDataSource = determineTargetDataSource(tenant);
-					result = pgClient.connectionProvider(
-							(Function<Context, Uni<SqlConnection>>) finalDataSource.getConnection());
+	private Uni<PgPool> getTenant(String tenant, boolean createDB) {
+		return determineTargetDataSource(tenant, createDB).onItem()
+				.transformToUni(Unchecked.function(finalDataSource -> {
+
+					Uni<PgPool> result = Uni.createFrom().item(pgClient.connectionProvider(t -> {
+						try {
+							return Uni.createFrom().item((SqlConnection) finalDataSource.getConnection());
+						} catch (SQLException e) {
+							return Uni.createFrom().failure(e);
+						}
+					}));
 					tenant2Client.put(tenant, result);
-				} catch (SQLException exception) {
-					exception.printStackTrace();
-				}
-
-			}
-
-		}
-		return result;
+					return result;
+				}));
 	}
 
-	public DataSource determineTargetDataSource(String tenantidvalue) throws SQLException {
-
-		if (tenantidvalue == null)
-			return writerDataSource;
-
-		DataSource tenantDataSource = resolvedDataSources.get(tenantidvalue);
-		if (tenantDataSource == null) {
-			try {
-				tenantDataSource = createDataSourceForTenantId(tenantidvalue);
-			} catch (ResponseException e) {
-				logger.error(e.getLocalizedMessage());
-			}
+	public Uni<DataSource> determineTargetDataSource(String tenantidvalue, boolean createDB) {
+		return createDataSourceForTenantId(tenantidvalue, createDB).onItem().transform(tenantDataSource -> {
 			flywayMigrate(tenantDataSource);
-			resolvedDataSources.put(tenantidvalue, tenantDataSource);
-		}
-
-		return tenantDataSource;
+			return tenantDataSource;
+		});
 	}
 
-	private DataSource createDataSourceForTenantId(String tenantidvalue) throws ResponseException, SQLException {
-		String tenantDatabaseName = findDataBaseNameByTenantId(tenantidvalue);
-		if (tenantDatabaseName == null) {
-			throw new ResponseException(ErrorType.TenantNotFound, tenantidvalue + " not found");
-		}
+	private Uni<DataSource> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
+		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
+				.transform(Unchecked.function(tenantDatabaseName -> {
+					// TODO this needs to be from the config not hardcoded!!!
+					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl("jdbc:postgresql://localhost:5432/ngb",
+							tenantDatabaseName);
+					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
+							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
+							.connectionPoolConfiguration(cp -> cp.minSize(5).maxSize(20).initialSize(10)
+									.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
+											.connectionProviderClassName("org.postgresql.Driver").autoCommit(false)
+											.principal(new NamePrincipal("ngb"))
+											.credential(new SimplePassword("ngb"))));
+					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
+					return agroaldataSource;
+				}));
 
-		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl("jdbc:postgresql://localhost:5432/ngb",
-				tenantDatabaseName);
-		AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
-				.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
-				.connectionPoolConfiguration(cp -> cp.minSize(5).maxSize(20).initialSize(10)
-						.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
-								.connectionProviderClassName("org.postgresql.Driver").autoCommit(false)
-								.principal(new NamePrincipal("ngb")).credential(new SimplePassword("ngb"))));
-		AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
-		return agroaldataSource;
 	}
 
-	public HashMap<String, PgPool> getAllClients() {
+	public HashMap<String, Uni<PgPool>> getAllClients() {
 		return tenant2Client;
 	}
 
-	public String findDataBaseNameByTenantId(String tenantidvalue) {
-		if (tenantidvalue == null)
-			return null;
-		String databasename = "ngb" + tenantidvalue;
-		List<Uni<Object>> unis = Lists.newArrayList();
-		unis.add(pgClient.query("SELECT datname FROM pg_database").execute().onItem()
-				.transform(pgRowSet -> pgRowSet.iterator().next()));
-		if (unis.contains(databasename)) {
-			return databasename;
-		} else {
-			String modifydatabasename = " \"" + databasename + "\"";
-			String sql = "create database " + modifydatabasename + "";
-			pgClient.preparedQuery(sql).executeAndForget();			
-			return databasename;
-		}
+	public Uni<String> findDataBaseNameByTenantId(String tenant, boolean create) {
+		String databasename = "ngb" + tenant;
+		return pgClient.preparedQuery("SELECT datname FROM pg_database where datname = $1")
+				.execute(Tuple.of(databasename)).onItem().transformToUni(pgRowSet -> {
+					if (pgRowSet.size() == 0) {
+						if (create) {
+							return pgClient.preparedQuery("create database \"" + databasename + "\"").execute().onItem()
+									.transform(t -> databasename);
+						} else {
+							return Uni.createFrom().failure(
+									new ResponseException(ErrorType.TenantNotFound, tenant + " tenant was not found"));
 
+						}
+					} else {
+						return Uni.createFrom().item(databasename);
+					}
+
+				});
 	}
 
+	// TODO check not called by anyone... is there a good reason to record tenants
+	// like this instead of just getting the databases?
 	public void storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
 			throws SQLException {
 		String sql;
@@ -163,35 +148,6 @@ public class ClientManager {
 		} else {
 			sql = "DELETE FROM " + tableName + " WHERE id = $1";
 			pgClient.preparedQuery(sql).executeAndForget(Tuple.of(tenantidvalue));
-		}
-	}
-
-
-	protected List<String> getTenants() {
-		ArrayList<String> result = new ArrayList<String>();
-		pgClient.query("SELECT tenant_id FROM tenant").executeAndAwait().forEach(t -> {
-			result.add(t.getString(0));
-
-		});
-		return result;
-	}
-
-	private String validateDataBaseNameByTenantId(String tenantid) {
-		if (tenantid == null)
-			return null;
-		String databasename = "ngb" + tenantid;
-		if (tenant2Client.containsKey(tenantid)) {
-			return databasename;
-		} else {
-			ArrayList<String> data = new ArrayList<String>();
-			pgClient.query("SELECT datname FROM pg_database").executeAndAwait().forEach(t -> {
-				data.add(t.getString(0));
-			});
-			if (data.contains(databasename)) {
-				return databasename;
-			} else {
-				return null;
-			}
 		}
 	}
 

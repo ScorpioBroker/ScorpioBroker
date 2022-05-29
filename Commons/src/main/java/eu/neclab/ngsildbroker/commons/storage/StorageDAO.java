@@ -1,15 +1,12 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
 import java.sql.SQLIntegrityConstraintViolationException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
@@ -56,11 +53,11 @@ public abstract class StorageDAO {
 
 	public Uni<ArrayListMultimap<String, String>> getAllIds() {
 		List<Uni<Object>> unis = Lists.newArrayList();
-		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
-			PgPool client = entry.getValue();
+		for (Entry<String, Uni<PgPool>> entry : clientManager.getAllClients().entrySet()) {
+			Uni<PgPool> clientUni = entry.getValue();
 			String tenant = entry.getKey();
-			unis.add(client.query(storageFunctions.getAllIdsQuery()).execute().onItem()
-					.transform(t -> Tuple2.of(t, tenant)));
+			unis.add(clientUni.onItem().transformToUni(client -> client.query(storageFunctions.getAllIdsQuery())
+					.execute().onItem().transform(t -> Tuple2.of(t, tenant))));
 		}
 		return Uni.combine().all().unis(unis).combinedWith(t -> {
 			ArrayListMultimap<String, String> result = ArrayListMultimap.create();
@@ -76,27 +73,30 @@ public abstract class StorageDAO {
 	}
 
 	public Uni<String> getEntity(String entryId, String tenantId) {
-		return clientManager.getClient(tenantId, false).preparedQuery(storageFunctions.getEntryQuery())
-				.execute(Tuple.of(entryId)).onItem().transformToUni(t -> {
-					if (t.rowCount() == 0) {
-						return Uni.createFrom()
-								.failure(new ResponseException(ErrorType.NotFound, entryId + " was not found"));
-					}
-					String result = "";
-					for (Row entry : t) {
-						result = ((JsonObject) entry.getJson(0)).encode();
-					}
-					return Uni.createFrom().item(result);
-				});
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(storageFunctions.getEntryQuery()).execute(Tuple.of(entryId)).onItem()
+					.transformToUni(t -> {
+						if (t.rowCount() == 0) {
+							return Uni.createFrom()
+									.failure(new ResponseException(ErrorType.NotFound, entryId + " was not found"));
+						}
+						String result = "";
+						for (Row entry : t) {
+							result = ((JsonObject) entry.getJson(0)).encode();
+						}
+						return Uni.createFrom().item(result);
+					});
+		});
 
 	}
 
 	public Uni<Map<String, List<String>>> getAllEntities() {
 		List<Uni<Object>> unis = Lists.newArrayList();
-		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
-			PgPool client = entry.getValue();
+		for (Entry<String, Uni<PgPool>> entry : clientManager.getAllClients().entrySet()) {
+			Uni<PgPool> clientUni = entry.getValue();
 			String tenant = entry.getKey();
-			unis.add(client.query("SELECT data FROM entity").execute().onItem().transform(t -> Tuple2.of(t, tenant)));
+			unis.add(clientUni.onItem().transformToUni(client -> client.query("SELECT data FROM entity").execute()
+					.onItem().transform(t -> Tuple2.of(t, tenant))));
 		}
 		return Uni.combine().all().unis(unis).combinedWith(t -> {
 			Map<String, List<String>> result = Maps.newHashMap();
@@ -143,129 +143,129 @@ public abstract class StorageDAO {
 	 */
 
 	public Uni<QueryResult> query(QueryParams qp) {
-		PgPool client = clientManager.getClient(qp.getTenant(), false);
-		if (client == null) {
-			return Uni.createFrom()
-					.failure(new ResponseException(ErrorType.TenantNotFound, qp.getTenant() + " tenant was not found"));
-		}
+		return clientManager.getClient(qp.getTenant(), false).onItem().transformToUni(client -> {
 
-		if (qp.getCheck() != null) {
-			String sqlQuery = storageFunctions.typesAndAttributeQuery(qp);
-			if (sqlQuery != null && !sqlQuery.isEmpty()) {
-				return client.query(sqlQuery).execute().onItem().transform(rows -> {
-					QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-					List<String> list = Lists.newArrayList();
-					rows.forEach(t -> {
-						list.add(((JsonObject) t.getJson(0)).encode());
+			if (qp.getCheck() != null) {
+				String sqlQuery = storageFunctions.typesAndAttributeQuery(qp);
+				if (sqlQuery != null && !sqlQuery.isEmpty()) {
+					return client.query(sqlQuery).execute().onItem().transform(rows -> {
+						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+						List<String> list = Lists.newArrayList();
+						rows.forEach(t -> {
+							list.add(((JsonObject) t.getJson(0)).encode());
+						});
+						queryResult.setDataString(list);
+						queryResult.setActualDataString(list);
+						return queryResult;
 					});
-					queryResult.setDataString(list);
-					queryResult.setActualDataString(list);
+				}
+			}
+			return client.withTransaction(conn -> {
+				Uni<RowSet<Row>> count = Uni.createFrom().nullItem();
+				Uni<RowSet<Row>> entries = Uni.createFrom().nullItem();
+				if (qp.getCountResult()) {
+					String sqlQueryCount = null;
+					try {
+						sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
+					} catch (ResponseException responseException) {
+						responseException.printStackTrace();
+					}
+					count = conn.preparedQuery(sqlQueryCount).execute();
+				}
+				if (qp.getLimit() != 0 || !qp.getCountResult()) {
+					String sqlQuery = null;
+					try {
+						sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
+					} catch (ResponseException responseException) {
+						responseException.printStackTrace();
+					}
+					entries = conn.preparedQuery(sqlQuery).execute();
+				}
+
+				return Uni.combine().all().unis(count, entries).combinedWith((c, e) -> {
+					QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+					if (c != null) {
+						queryResult.setCount(c.iterator().next().getInteger(0));
+					}
+					if (e != null) {
+						List<String> list = Lists.newArrayList();
+						e.forEach(t -> {
+							list.add(((JsonObject) t.getJson(0)).encode());
+						});
+						queryResult.setDataString(list);
+						queryResult.setActualDataString(list);
+					}
+
 					return queryResult;
 				});
-			}
-		}
-		return client.withTransaction(conn -> {
-			Uni<RowSet<Row>> count = Uni.createFrom().nullItem();
-			Uni<RowSet<Row>> entries = Uni.createFrom().nullItem();
-			if (qp.getCountResult()) {
-				String sqlQueryCount = null;
-				try {
-					sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
-				} catch (ResponseException responseException) {
-					responseException.printStackTrace();
-				}
-				count = conn.preparedQuery(sqlQueryCount).execute();
-			}
-			if (qp.getLimit() != 0 || !qp.getCountResult()) {
-				String sqlQuery = null;
-				try {
-					sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
-				} catch (ResponseException responseException) {
-					responseException.printStackTrace();
-				}
-				entries = conn.preparedQuery(sqlQuery).execute();
-			}
 
-			return Uni.combine().all().unis(count, entries).combinedWith((c, e) -> {
-				QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-				if (c != null) {
-					queryResult.setCount(c.iterator().next().getInteger(0));
-				}
-				if (e != null) {
-					List<String> list = Lists.newArrayList();
-					e.forEach(t -> {
-						list.add(((JsonObject) t.getJson(0)).encode());
-					});
-					queryResult.setDataString(list);
-					queryResult.setActualDataString(list);
-				}
-
-				return queryResult;
 			});
+		});
+	}
 
+	public Uni<Void> storeTemporalEntity(HistoryEntityRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+
+			if (request instanceof DeleteHistoryEntityRequest) {
+				return doTemporalSqlAttrInsert(client, "null", request.getId(), request.getType(),
+						((DeleteHistoryEntityRequest) request).getResolvedAttrId(), request.getCreatedAt(),
+						request.getModifiedAt(), ((DeleteHistoryEntityRequest) request).getInstanceId(), null);
+			} else {
+				List<Uni<Void>> unis = Lists.newArrayList();
+				for (HistoryAttribInstance entry : request.getAttribs()) {
+					unis.add(doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(),
+							entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
+							entry.getEntityModifiedAt(), entry.getInstanceId(), entry.getOverwriteOp()));
+				}
+				return Uni.combine().all().unis(unis).discardItems();
+			}
 		});
 
 	}
 
-	public Uni<Void> storeTemporalEntity(HistoryEntityRequest request) {
-
-		PgPool client = clientManager.getClient(request.getTenant(), true);
-
-		if (request instanceof DeleteHistoryEntityRequest) {
-			return doTemporalSqlAttrInsert(client, "null", request.getId(), request.getType(),
-					((DeleteHistoryEntityRequest) request).getResolvedAttrId(), request.getCreatedAt(),
-					request.getModifiedAt(), ((DeleteHistoryEntityRequest) request).getInstanceId(), null);
-		} else {
-			List<Uni<Void>> unis = Lists.newArrayList();
-			for (HistoryAttribInstance entry : request.getAttribs()) {
-				unis.add(doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(),
-						entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
-						entry.getEntityModifiedAt(), entry.getInstanceId(), entry.getOverwriteOp()));
-			}
-			return Uni.combine().all().unis(unis).discardItems();
-		}
-
-	}
-
 	public Uni<Void> storeRegistryEntry(CSourceRequest request) {
-		PgPool client = clientManager.getClient(request.getTenant(), true);
-		String value = request.getResultCSourceRegistrationString();
-		String sql;
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			String value = request.getResultCSourceRegistrationString();
+			String sql;
 
-		if (value != null && !value.equals("null")) {
-			if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
+			if (value != null && !value.equals("null")) {
+				if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 
-				sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-						+ ") VALUES ($1, '" + value + "'::jsonb)";
+					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
+							+ ") VALUES ($1, '" + value + "'::jsonb)";
 
-				return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
-					if (e instanceof PgException) {
-						PgException pgE = (PgException) e;
-						if (pgE.getCode().equals("23505")) { // code for unique constraint
-							return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
-									request.getId() + " already exists"));
-						}
-					}
-					return Uni.createFrom().failure(e);
-				}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
+					return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure()
+							.recoverWithUni(e -> {
+								if (e instanceof PgException) {
+									PgException pgE = (PgException) e;
+									if (pgE.getCode().equals("23505")) { // code for unique constraint
+										return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+												request.getId() + " already exists"));
+									}
+								}
+								return Uni.createFrom().failure(e);
+							}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 
-			} else if (request.getRequestType() == AppConstants.OPERATION_APPEND_ENTITY) {
-				sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-						+ ") VALUES ($1, '" + value + "'::jsonb) ON CONFLICT(id) DO UPDATE SET "
-						+ DBConstants.DBCOLUMN_DATA + " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+				} else if (request.getRequestType() == AppConstants.OPERATION_APPEND_ENTITY) {
+					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
+							+ ") VALUES ($1, '" + value + "'::jsonb) ON CONFLICT(id) DO UPDATE SET "
+							+ DBConstants.DBCOLUMN_DATA + " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+					return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure()
+							.recoverWithUni(e -> {
+								return Uni.createFrom()
+										.failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+							}).onItem().ignore().andContinueWithNull();
+				} else {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.InternalError, "was not executed unknown call"));
+				}
+			} else {
+				sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = $1";
 				return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
 				}).onItem().ignore().andContinueWithNull();
-			} else {
-				return Uni.createFrom()
-						.failure(new ResponseException(ErrorType.InternalError, "was not executed unknown call"));
 			}
-		} else {
-			sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = $1";
-			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
-				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
-			}).onItem().ignore().andContinueWithNull();
-		}
+		});
 
 	}
 
@@ -355,59 +355,48 @@ public abstract class StorageDAO {
 	}
 
 	public Uni<Void> storeEntity(EntityRequest request) {
-
-		String sql;
-		String key = request.getId();
-		String value = request.getWithSysAttrs();
-		String valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
-		String kvValue = request.getKeyValue();
-
-		PgPool client = clientManager.getClient(request.getTenant(), true);
-		if (value != null && !value.equals("null")) {
-			if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
-				sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
-						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
-						+ ") VALUES ($1, '" + value + "'::jsonb, '" + valueWithoutSysAttrs + "'::jsonb, '" + kvValue
-						+ "'::jsonb)";
-				return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onFailure()
-						.recoverWithUni(e -> {
-							if (e instanceof PgException) {
-								PgException pgE = (PgException) e;
-								if (pgE.getCode().equals("23505")) { // code for unique constraint
-									return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
-											request.getId() + " already exists"));
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			String sql;
+			String key = request.getId();
+			String value = request.getWithSysAttrs();
+			String valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
+			String kvValue = request.getKeyValue();
+			if (value != null && !value.equals("null")) {
+				if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
+					sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
+							+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
+							+ ") VALUES ($1, '" + value + "'::jsonb, '" + valueWithoutSysAttrs + "'::jsonb, '" + kvValue
+							+ "'::jsonb)";
+					return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onFailure()
+							.recoverWithUni(e -> {
+								if (e instanceof PgException) {
+									PgException pgE = (PgException) e;
+									if (pgE.getCode().equals("23505")) { // code for unique constraint
+										return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+												request.getId() + " already exists"));
+									}
 								}
-							}
-							return Uni.createFrom().failure(e);
+								return Uni.createFrom().failure(e);
 
-						}).onItem().ignore().andContinueWithNull();
+							}).onItem().ignore().andContinueWithNull();
+				} else {
+					sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = '" + value
+							+ "'::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = '" + valueWithoutSysAttrs
+							+ "'::jsonb , " + DBConstants.DBCOLUMN_KVDATA + " = '" + kvValue + "'::jsonb WHERE "
+							+ DBConstants.DBCOLUMN_ID + " = $1";
+					return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem()
+							.ignore().andContinueWithNull();
+				}
 			} else {
-				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = '" + value
-						+ "'::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = '" + valueWithoutSysAttrs
-						+ "'::jsonb , " + DBConstants.DBCOLUMN_KVDATA + " = '" + kvValue + "'::jsonb WHERE "
-						+ DBConstants.DBCOLUMN_ID + " = $1";
-				return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem().ignore()
-						.andContinueWithNull();
+
+				sql = "DELETE FROM " + DBConstants.DBTABLE_ENTITY + " WHERE id = $1";
+				return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem()
+						.transformToUni(t -> {
+							// if(t.)
+							return Uni.createFrom().nullItem();
+						});
 			}
-		} else {
-
-			sql = "DELETE FROM " + DBConstants.DBTABLE_ENTITY + " WHERE id = $1";
-			return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem()
-					.transformToUni(t -> {
-						// if(t.)
-						return Uni.createFrom().nullItem();
-					});
-		}
-	}
-
-	protected String getTenant(String tenantId) {
-		if (tenantId == null) {
-			return null;
-		}
-		if (AppConstants.INTERNAL_NULL_KEY.equals(tenantId)) {
-			return null;
-		}
-		return tenantId;
+		});
 	}
 
 }

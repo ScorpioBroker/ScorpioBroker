@@ -36,9 +36,10 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	public Uni<Table<String, String, Set<String>>> getIds2Type() {
 		String sql = getSQLForTypes();
 		List<Uni<Tuple2<RowSet<Row>, String>>> unis = Lists.newArrayList();
-		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
-			PgPool client = entry.getValue();
-			unis.add(client.preparedQuery(sql).execute().onItem().transform(t -> Tuple2.of(t, entry.getKey())));
+		for (Entry<String, Uni<PgPool>> entry : clientManager.getAllClients().entrySet()) {
+			Uni<PgPool> clientUni = entry.getValue();
+			unis.add(clientUni.onItem().transformToUni(client -> client.preparedQuery(sql).execute().onItem()
+					.transform(t -> Tuple2.of(t, entry.getKey()))));
 		}
 		return Uni.combine().all().unis(unis).combinedWith(t -> {
 			Table<String, String, Set<String>> result = HashBasedTable.create();
@@ -70,9 +71,10 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 
 	public Uni<List<String>> getStoredSubscriptions() {
 		List<Uni<RowSet<Row>>> unis = Lists.newArrayList();
-		for (Entry<String, PgPool> entry : clientManager.getAllClients().entrySet()) {
-			PgPool client = entry.getValue();
-			unis.add(client.preparedQuery("SELECT subscription_request FROM " + dbname).execute());
+		for (Entry<String, Uni<PgPool>> entry : clientManager.getAllClients().entrySet()) {
+			Uni<PgPool> clientUni = entry.getValue();
+			unis.add(clientUni.onItem().transformToUni(
+					client -> client.preparedQuery("SELECT subscription_request FROM " + dbname).execute()));
 		}
 		return Uni.combine().all().unis(unis).combinedWith(t -> {
 			List<String> result = Lists.newArrayList();
@@ -117,17 +119,19 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	@Override
 	public Uni<Void> storeSubscription(SubscriptionRequest sub) {
 		String tenant = sub.getTenant();
-		PgPool client = clientManager.getClient(tenant, false);
-		return client.preparedQuery("INSERT INTO " + dbname
-				+ " (subscription_id, subscription_request) VALUES (?, ?) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request")
-				.execute(Tuple.of(sub.getId(), DataSerializer.toJson(sub))).onItem().ignore().andContinueWithNull();
+		return clientManager.getClient(tenant, false).onItem()
+				.transformToUni(client -> client.preparedQuery("INSERT INTO " + dbname
+						+ " (subscription_id, subscription_request) VALUES (?, ?) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request")
+						.execute(Tuple.of(sub.getId(), DataSerializer.toJson(sub))).onItem().ignore()
+						.andContinueWithNull());
 	}
 
 	@Override
 	public Uni<Void> deleteSubscription(SubscriptionRequest sub) {
 		String tenant = sub.getTenant();
-		PgPool client = clientManager.getClient(tenant, false);
-		return client.preparedQuery("DELETE FROM " + dbname + " WHERE subscription_id=?").execute(Tuple.of(sub.getId()))
-				.onItem().ignore().andContinueWithNull();
+
+		return clientManager.getClient(tenant, false).onItem()
+				.transformToUni(client -> client.preparedQuery("DELETE FROM " + dbname + " WHERE subscription_id=?")
+						.execute(Tuple.of(sub.getId())).onItem().ignore().andContinueWithNull());
 	}
 }
