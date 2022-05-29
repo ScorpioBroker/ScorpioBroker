@@ -166,23 +166,6 @@ public class ClientManager {
 		}
 	}
 
-	private String getTenant(BaseRequest request) {
-		String tenant;
-		if (request.getHeaders().containsKey(NGSIConstants.TENANT_HEADER)) {
-			tenant = request.getHeaders().get(NGSIConstants.TENANT_HEADER).get(0);
-			String databasename = "ngb" + tenant;
-			try {
-				storeTenantdata(DBConstants.DBTABLE_CSOURCE_TENANT, DBConstants.DBCOLUMN_DATA_TENANT, tenant,
-						databasename);
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		} else {
-			tenant = null;
-		}
-		return tenant;
-
-	}
 
 	protected List<String> getTenants() {
 		ArrayList<String> result = new ArrayList<String>();
@@ -219,6 +202,7 @@ public class ClientManager {
 			flyway.repair();
 			flyway.migrate();
 		} catch (Exception e) {
+			logger.error("failed to create tenant database", e);
 			return false;
 		}
 
