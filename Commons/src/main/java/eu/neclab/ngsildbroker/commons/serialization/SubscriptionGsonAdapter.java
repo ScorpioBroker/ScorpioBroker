@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.github.jsonldjava.core.JsonLdError;
-import com.google.common.collect.HashMultimap;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;

@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -13,6 +12,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
+import io.vertx.core.json.JsonObject;
 
 public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 
@@ -30,7 +30,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	}
 
 	@SuppressWarnings("unchecked")
-	public UpdateHistoryEntityRequest(BaseRequest entityRequest) throws IOException {
+	public UpdateHistoryEntityRequest(BaseRequest entityRequest) {
 		setHeaders(entityRequest.getHeaders());
 		Map<String, Object> jsonObject = entityRequest.getRequestPayload();// (Map<String, Object>)
 																			// JsonUtils.fromString(entityRequest.getWithSysAttrs());
@@ -47,8 +47,8 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 				List<Map<String, Object>> valueArray = (List<Map<String, Object>>) entry.getValue();
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now);
-					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload,
-							JsonUtils.toPrettyString(jsonElement), EntityTools.getInstanceId(jsonElement), false);
+					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload, JsonObject.mapFrom(jsonElement),
+							EntityTools.getInstanceId(jsonElement), false);
 				}
 			}
 		}
@@ -100,12 +100,9 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 					}
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
 					jsonElement = setTemporalProperty(jsonElement, NGSIConstants.NGSI_LD_MODIFIED_AT, now);
-					try {
-						storeEntry(getId(), null, null, now, attribIdPayload, JsonUtils.toPrettyString(jsonElement),
-								EntityTools.getInstanceId(jsonElement), false);
-					} catch (IOException e) {
-						// Should never happen
-					}
+					storeEntry(getId(), null, null, now, attribIdPayload, JsonObject.mapFrom(jsonElement),
+							EntityTools.getInstanceId(jsonElement), false);
+
 				}
 			}
 		}

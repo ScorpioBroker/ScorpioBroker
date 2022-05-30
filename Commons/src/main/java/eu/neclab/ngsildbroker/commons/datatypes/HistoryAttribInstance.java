@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import io.vertx.core.json.JsonObject;
+
 public class HistoryAttribInstance {
 
 	private String entityId;
@@ -7,12 +9,12 @@ public class HistoryAttribInstance {
 	private String entityCreatedAt;
 	private String entityModifiedAt;
 	private String attributeId;
-	private String elementValue;
+	private JsonObject elementValue;
 	private Boolean overwriteOp;
 	private String instanceId;
 
 	public HistoryAttribInstance(String entityId, String entityType, String entityCreatedAt, String entityModifiedAt,
-			String attributeId, String elementValue, String instanceId, Boolean overwriteOp) {
+			String attributeId, JsonObject elementValue, String instanceId, Boolean overwriteOp) {
 		super();
 		this.entityId = entityId;
 		this.entityType = entityType;
@@ -64,12 +66,8 @@ public class HistoryAttribInstance {
 		this.attributeId = attributeId;
 	}
 
-	public String getElementValue() {
+	public JsonObject getElementValue() {
 		return elementValue;
-	}
-
-	public void setElementValue(String elementValue) {
-		this.elementValue = elementValue;
 	}
 
 	public Boolean getOverwriteOp() {

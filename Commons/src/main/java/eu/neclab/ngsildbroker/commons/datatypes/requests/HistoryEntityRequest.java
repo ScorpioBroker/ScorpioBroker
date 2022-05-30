@@ -11,6 +11,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.json.JsonObject;
 
 public class HistoryEntityRequest extends BaseRequest {
 
@@ -66,7 +67,7 @@ public class HistoryEntityRequest extends BaseRequest {
 	}
 
 	protected void storeEntry(String entityId, String entityType, String entityCreatedAt, String entityModifiedAt,
-			String attributeId, String elementValue, String instanceId, Boolean overwriteOp) {
+			String attributeId, JsonObject elementValue, String instanceId, Boolean overwriteOp) {
 		attribs.add(new HistoryAttribInstance(entityId, entityType, entityCreatedAt, entityModifiedAt, attributeId,
 				elementValue, instanceId, overwriteOp));
 	}

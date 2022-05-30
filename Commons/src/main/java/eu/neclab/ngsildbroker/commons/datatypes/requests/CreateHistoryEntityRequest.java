@@ -2,17 +2,18 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
+import io.vertx.core.json.JsonObject;
 
 public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 
@@ -65,7 +66,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void createTemporalEntity(Map<String, Object> resolved, boolean fromEntity) throws Exception {
+	private void createTemporalEntity(Map<String, Object> resolved, boolean fromEntity) {
 		this.attributeCount = 0;
 		resolved = setCommonDateProperties(resolved, now);
 		this.type = ((List<String>) resolved.get(NGSIConstants.JSON_LD_TYPE)).get(0);
@@ -91,14 +92,18 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 				// TODO check if changes in the array are reflect in the object
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now);
-					storeEntry(getId(), type, createdAt, modifiedAt, attribId, JsonUtils.toPrettyString(jsonElement),
+					storeEntry(getId(), type, createdAt, modifiedAt, attribId, JsonObject.mapFrom(jsonElement),
 							EntityTools.getInstanceId(jsonElement), false);
 
 				}
 			}
 			attributeCount++;
 		}
-		this.uriId = new URI(AppConstants.HISTORY_URL + getId());
+		try {
+			this.uriId = new URI(AppConstants.HISTORY_URL + getId());
+		} catch (URISyntaxException e) {
+			//should never happen
+		}
 	}
 
 }

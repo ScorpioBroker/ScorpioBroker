@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -13,6 +12,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
+import io.vertx.core.json.JsonObject;
 
 public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 
@@ -46,17 +46,9 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 				Integer instanceCount = 0;
 				for (Map<String, Object> jsonElement : valueArray) {
 					jsonElement = setCommonTemporalProperties(jsonElement, now);
-					//
-					// Boolean overwriteOp = (instanceCount == 0); // if it's the first one, send
-					// the overwrite op to
-					// delete current values
-					try {
-						storeEntry(getId(), null, null, now, attribId, JsonUtils.toPrettyString(jsonElement),
-								EntityTools.getInstanceId(jsonElement), false);
-					} catch (IOException e) {
-						e.printStackTrace();
-						// should never happen
-					}
+					storeEntry(getId(), null, null, now, attribId, JsonObject.mapFrom(jsonElement),
+							EntityTools.getInstanceId(jsonElement), false);
+
 					updateResult.addToUpdated(getId());
 					instanceCount++;
 				}

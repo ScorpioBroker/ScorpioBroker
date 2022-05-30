@@ -6,7 +6,6 @@ import java.util.Set;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
 
 public interface SubscriptionInfoDAOInterface {

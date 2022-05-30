@@ -1,15 +1,12 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.vertx.core.json.JsonObject;

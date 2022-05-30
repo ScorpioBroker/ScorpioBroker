@@ -1,21 +1,14 @@
 package eu.neclab.ngsildbroker.historymanager.repository;
 
-import java.util.Map.Entry;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.google.common.collect.ArrayListMultimap;
-
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.storage.TemporalStorageFunctions;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.pgclient.PgPool;
 
 @Singleton
 public class HistoryDAO extends StorageDAO {

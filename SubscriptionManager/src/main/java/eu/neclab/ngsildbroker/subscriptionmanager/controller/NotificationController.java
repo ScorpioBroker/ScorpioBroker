@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;

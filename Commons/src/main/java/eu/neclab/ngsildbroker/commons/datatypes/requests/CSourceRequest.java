@@ -1,8 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.io.IOException;
 import java.util.Map;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import io.vertx.core.json.JsonObject;

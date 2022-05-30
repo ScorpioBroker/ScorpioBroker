@@ -203,7 +203,7 @@ public abstract class StorageDAO {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 
 			if (request instanceof DeleteHistoryEntityRequest) {
-				return doTemporalSqlAttrInsert(client, "null", request.getId(), request.getType(),
+				return doTemporalSqlAttrInsert(client, JsonObject.mapFrom(null), request.getId(), request.getType(),
 						((DeleteHistoryEntityRequest) request).getResolvedAttrId(), request.getCreatedAt(),
 						request.getModifiedAt(), ((DeleteHistoryEntityRequest) request).getInstanceId(), null);
 			} else {
@@ -224,7 +224,7 @@ public abstract class StorageDAO {
 			JsonObject value = request.getResultCSourceRegistrationString();
 			String sql;
 
-			if (value != null && !value.equals("null")) {
+			if (value != null) {
 				if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 
 					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
@@ -265,10 +265,10 @@ public abstract class StorageDAO {
 
 	}
 
-	private Uni<Void> doTemporalSqlAttrInsert(PgPool client, String value, String entityId, String entityType,
+	private Uni<Void> doTemporalSqlAttrInsert(PgPool client, JsonObject value, String entityId, String entityType,
 			String attributeId, String entityCreatedAt, String entityModifiedAt, String instanceId,
 			Boolean overwriteOp) {
-		if (!value.equals("null")) {
+		if (value != null) {
 			return client.withTransaction(conn -> {
 				String sql;
 				List<Uni<RowSet<Row>>> unis = Lists.newArrayList();
@@ -357,13 +357,12 @@ public abstract class StorageDAO {
 			JsonObject value = request.getWithSysAttrs();
 			JsonObject valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
 			JsonObject kvValue = request.getKeyValue();
-			if (value != null && !value.equals("null")) {
+			if (value != null) {
 				if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 					sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 							+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
 							+ ") VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb)";
-					return client.preparedQuery(sql)
-							.execute(Tuple.of(key, value, valueWithoutSysAttrs, kvValue))
+					return client.preparedQuery(sql).execute(Tuple.of(key, value, valueWithoutSysAttrs, kvValue))
 							.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> {
 								if (e instanceof PgException) {
 									PgException pgE = (PgException) e;
