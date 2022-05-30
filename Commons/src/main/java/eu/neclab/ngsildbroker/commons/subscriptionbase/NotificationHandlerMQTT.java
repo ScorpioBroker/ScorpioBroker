@@ -45,6 +45,8 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		}
 		String payload = getPayload(notification, headers);
 		if (client instanceof MqttClient) {
+			// resources are closed in predestroy
+			@SuppressWarnings("resource")
 			MqttClient client3 = (MqttClient) client;
 			client3.publish(callback.getPath().substring(1), payload.getBytes(), qos, false);
 		} else {

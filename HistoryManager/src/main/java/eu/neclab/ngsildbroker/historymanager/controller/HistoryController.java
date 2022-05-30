@@ -142,7 +142,7 @@ public class HistoryController {
 								.get(0);
 						historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId,
 								resolved, attrId, instanceId, context);
-						return Uni.createFrom().item(RestResponse.noContent().ok());
+						return Uni.createFrom().item(RestResponse.noContent());
 
 					} catch (Exception exception) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));

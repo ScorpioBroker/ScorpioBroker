@@ -63,16 +63,12 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	Uni<String> createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			boolean fromEntity) {
-
+		logger.trace("creating temporal entity");
 		CreateHistoryEntityRequest request;
 		try {
 			request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
-			String tenantId = HttpUtils.getInternalTenant(headers);
-			historyDAO.entityExists(request.getId(), tenantId);
-			logger.trace("creating temporal entity");
 		} catch (Exception e) {
 			return Uni.createFrom().failure(e);
-
 		}
 		return handleRequest(request).combinedWith((t, u) -> {
 			logger.debug("createMessage() :: completed");
@@ -89,15 +85,12 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			String instanceId, Context linkHeaders) {
 		DeleteHistoryEntityRequest request;
 		try {
-			historyDAO.getAllIds(entityId, HttpUtils.getInternalTenant(headers));
 			logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
-
 			String resolvedAttrId = null;
 			if (attributeId != null) {
 				resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
 			}
 			request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
-
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
@@ -111,7 +104,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			Map<String, Object> resolved, String[] options) {
 		AppendHistoryEntityRequest request;
 		try {
-			historyDAO.getAllIds(entityId, HttpUtils.getInternalTenant(headers));
 			request = new AppendHistoryEntityRequest(headers, resolved, entityId);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
@@ -135,7 +127,6 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			resolvedAttrId = ParamsResolver.expandAttribute(attribId, linkHeaders);
 		}
 
-		
 		QueryParams qp = new QueryParams();
 		List<Map<String, String>> temp1 = new ArrayList<Map<String, String>>();
 		HashMap<String, String> temp2 = new HashMap<String, String>();
