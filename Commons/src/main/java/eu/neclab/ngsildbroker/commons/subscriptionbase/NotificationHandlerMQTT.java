@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.PreDestroy;
+
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
@@ -115,6 +117,24 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 
 		}
 		return result;
+	}
+
+	@PreDestroy
+	public void destroy() {
+		for (Object client : uri2client.values()) {
+			try {
+				if (client instanceof MqttClient) {
+					MqttClient client3 = (MqttClient) client;
+					client3.close(true);
+				} else {
+					org.eclipse.paho.mqttv5.client.MqttClient client5 = (org.eclipse.paho.mqttv5.client.MqttClient) client;
+					client5.close(true);
+				}
+			} catch (Exception e) {
+				logger.debug("Failed to close mqtt client", e);
+			}
+		}
+
 	}
 
 }
