@@ -9,11 +9,12 @@ import java.util.Map.Entry;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import io.vertx.core.json.JsonObject;
 
 public class EntityRequest extends BaseRequest {
-	protected String withSysAttrs;
-	protected String entityWithoutSysAttrs;
-	protected String keyValue;
+	protected JsonObject withSysAttrs;
+	protected JsonObject entityWithoutSysAttrs;
+	protected JsonObject keyValue;
 
 	public EntityRequest() {
 
@@ -24,28 +25,16 @@ public class EntityRequest extends BaseRequest {
 		super(headers, id, requestPayload, requestType);
 	}
 
-	public String getWithSysAttrs() {
+	public JsonObject getWithSysAttrs() {
 		return withSysAttrs;
 	}
 
-	public void setWithSysAttrs(String withSysAttrs) {
-		this.withSysAttrs = withSysAttrs;
-	}
-
-	public String getEntityWithoutSysAttrs() {
+	public JsonObject getEntityWithoutSysAttrs() {
 		return entityWithoutSysAttrs;
 	}
 
-	public void setEntityWithoutSysAttrs(String entityWithoutSysAttrs) {
-		this.entityWithoutSysAttrs = entityWithoutSysAttrs;
-	}
-
-	public String getKeyValue() {
+	public JsonObject getKeyValue() {
 		return keyValue;
-	}
-
-	public void setKeyValue(String keyValue) {
-		this.keyValue = keyValue;
 	}
 
 	@SuppressWarnings("unchecked")

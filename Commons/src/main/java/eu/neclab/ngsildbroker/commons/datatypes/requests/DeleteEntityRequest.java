@@ -6,6 +6,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.vertx.core.json.JsonObject;
 
 public class DeleteEntityRequest extends EntityRequest {
 	private Map<String, Object> oldEntity;
@@ -17,9 +18,9 @@ public class DeleteEntityRequest extends EntityRequest {
 			Map<String, Object> oldEntity) throws ResponseException {
 		super(headers, entityId, null, AppConstants.DELETE_REQUEST);
 		setFinalPayload(null);
-		this.keyValue = "null";
-		this.entityWithoutSysAttrs = "null";
-		this.withSysAttrs = "null";
+		this.keyValue = JsonObject.mapFrom(null);
+		this.entityWithoutSysAttrs = JsonObject.mapFrom(null);
+		this.withSysAttrs = JsonObject.mapFrom(null);
 		this.oldEntity = oldEntity;
 	}
 

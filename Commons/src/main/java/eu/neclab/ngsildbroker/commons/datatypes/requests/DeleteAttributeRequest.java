@@ -5,13 +5,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.vertx.core.json.JsonObject;
 
 public class DeleteAttributeRequest extends EntityRequest {
 
@@ -27,10 +27,10 @@ public class DeleteAttributeRequest extends EntityRequest {
 		try {
 			Map<String, Object> finalJson = deleteFields(entityBody, attrId, datasetId, deleteAll);
 			setFinalPayload(finalJson);
-			this.withSysAttrs = JsonUtils.toPrettyString(finalJson);
+			this.withSysAttrs = JsonObject.mapFrom(finalJson);
 			removeTemporalProperties(finalJson);
-			this.entityWithoutSysAttrs = JsonUtils.toPrettyString(finalJson);
-			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(finalJson));
+			this.entityWithoutSysAttrs = JsonObject.mapFrom(finalJson);
+			this.keyValue = JsonObject.mapFrom(getKeyValueEntity(finalJson));
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.NotFound, e.getMessage());
 		}

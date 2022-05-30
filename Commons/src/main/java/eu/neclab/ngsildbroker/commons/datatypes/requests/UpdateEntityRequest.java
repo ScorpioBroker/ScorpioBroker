@@ -15,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.json.JsonObject;
 
 public class UpdateEntityRequest extends EntityRequest {
 
@@ -129,10 +130,10 @@ public class UpdateEntityRequest extends EntityRequest {
 
 		}
 		setFinalPayload(entityBody);
-		this.withSysAttrs = JsonUtils.toPrettyString(entityBody);
+		this.withSysAttrs = JsonObject.mapFrom(entityBody);
 		removeTemporalProperties(entityBody);
-		this.entityWithoutSysAttrs = JsonUtils.toPrettyString(entityBody);
-		this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(entityBody));
+		this.entityWithoutSysAttrs = JsonObject.mapFrom(entityBody);
+		this.keyValue = JsonObject.mapFrom(getKeyValueEntity(entityBody));
 		return updateResult;
 	}
 

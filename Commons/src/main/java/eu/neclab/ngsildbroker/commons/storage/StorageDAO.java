@@ -221,16 +221,16 @@ public abstract class StorageDAO {
 
 	public Uni<Void> storeRegistryEntry(CSourceRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String value = request.getResultCSourceRegistrationString();
+			JsonObject value = request.getResultCSourceRegistrationString();
 			String sql;
 
 			if (value != null && !value.equals("null")) {
 				if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 
 					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-							+ ") VALUES ($1, '" + value + "'::jsonb)";
+							+ ") VALUES ($1, $2::jsonb)";
 
-					return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure()
+					return client.preparedQuery(sql).execute(Tuple.of(request.getId(), value)).onFailure()
 							.recoverWithUni(e -> {
 								if (e instanceof PgException) {
 									PgException pgE = (PgException) e;
@@ -244,9 +244,9 @@ public abstract class StorageDAO {
 
 				} else if (request.getRequestType() == AppConstants.OPERATION_APPEND_ENTITY) {
 					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-							+ ") VALUES ($1, '" + value + "'::jsonb) ON CONFLICT(id) DO UPDATE SET "
-							+ DBConstants.DBCOLUMN_DATA + " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
-					return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure()
+							+ ") VALUES ($1, $2::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
+							+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+					return client.preparedQuery(sql).execute(Tuple.of(request.getId(), value)).onFailure()
 							.recoverWithUni(e -> {
 								return Uni.createFrom()
 										.failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
@@ -354,17 +354,17 @@ public abstract class StorageDAO {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String sql;
 			String key = request.getId();
-			String value = request.getWithSysAttrs();
-			String valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
-			String kvValue = request.getKeyValue();
+			JsonObject value = request.getWithSysAttrs();
+			JsonObject valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
+			JsonObject kvValue = request.getKeyValue();
 			if (value != null && !value.equals("null")) {
 				if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
 					sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 							+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
-							+ ") VALUES ($1, '" + value + "'::jsonb, '" + valueWithoutSysAttrs + "'::jsonb, '" + kvValue
-							+ "'::jsonb)";
-					return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onFailure()
-							.recoverWithUni(e -> {
+							+ ") VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb)";
+					return client.preparedQuery(sql)
+							.execute(Tuple.of(key, value, valueWithoutSysAttrs, kvValue))
+							.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> {
 								if (e instanceof PgException) {
 									PgException pgE = (PgException) e;
 									if (pgE.getCode().equals("23505")) { // code for unique constraint
@@ -376,12 +376,11 @@ public abstract class StorageDAO {
 
 							}).onItem().ignore().andContinueWithNull();
 				} else {
-					sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = '" + value
-							+ "'::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = '" + valueWithoutSysAttrs
-							+ "'::jsonb , " + DBConstants.DBCOLUMN_KVDATA + " = '" + kvValue + "'::jsonb WHERE "
-							+ DBConstants.DBCOLUMN_ID + " = $1";
-					return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem()
-							.ignore().andContinueWithNull();
+					sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA
+							+ " = $1::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = $2::jsonb , "
+							+ DBConstants.DBCOLUMN_KVDATA + " = $3::jsonb WHERE " + DBConstants.DBCOLUMN_ID + " = $4";
+					return client.preparedQuery(sql).execute(Tuple.of(value, valueWithoutSysAttrs, kvValue, key))
+							.onFailure().retry().atMost(3).onItem().ignore().andContinueWithNull();
 				}
 			} else {
 

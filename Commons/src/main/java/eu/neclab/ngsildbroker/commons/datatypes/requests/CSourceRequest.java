@@ -5,6 +5,8 @@ import java.util.Map;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
+import io.vertx.core.json.JsonObject;
+
 public class CSourceRequest extends BaseRequest {
 	CSourceRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
 			int requestType) {
@@ -14,28 +16,20 @@ public class CSourceRequest extends BaseRequest {
 	public CSourceRequest() {
 	}
 
-	public String getResultCSourceRegistrationString() {
+	public JsonObject getResultCSourceRegistrationString() {
 		if (finalPayload == null) {
-			return null;
+			return JsonObject.mapFrom(null);
 		}
-		try {
-			return JsonUtils.toString(finalPayload);
-		} catch (IOException e) {
-			// should never happen
-			return null;
-		}
+		return JsonObject.mapFrom(finalPayload);
+
 	}
 
-	public String getOperationCSourceRegistrationString() {
+	public JsonObject getOperationCSourceRegistrationString() {
 		if (requestPayload == null) {
-			return null;
+			return JsonObject.mapFrom(null);
 		}
-		try {
-			return JsonUtils.toString(requestPayload);
-		} catch (IOException e) {
-			// should never happen
-			return null;
-		}
+		return JsonObject.mapFrom(requestPayload);
+
 	}
 
 }

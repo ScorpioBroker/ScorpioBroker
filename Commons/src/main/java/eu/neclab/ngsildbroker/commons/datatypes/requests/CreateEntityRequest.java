@@ -12,6 +12,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.json.JsonObject;
 
 public class CreateEntityRequest extends EntityRequest {
 
@@ -32,26 +33,10 @@ public class CreateEntityRequest extends EntityRequest {
 		String now = SerializationTools.formatter.format(Instant.now());
 		setTemporalProperties(payload, now, now, false);
 		setFinalPayload(payload);
-		try {
-			this.withSysAttrs = JsonUtils.toString(payload);
-		} catch (IOException e) {
-			// should never happen error checks are done before hand
-			throw new ResponseException(ErrorType.UnprocessableEntity, "Failed to parse entity");
-		}
+		this.withSysAttrs = JsonObject.mapFrom(payload);
 		removeTemporalProperties(payload); // remove createdAt/modifiedAt fields informed by the user
-		try {
-			this.entityWithoutSysAttrs = JsonUtils.toString(payload);
-		} catch (IOException e) {
-			// should never happen error checks are done before hand
-			throw new ResponseException(ErrorType.UnprocessableEntity, "Failed to parse entity");
-		}
-
-		try {
-			this.keyValue = JsonUtils.toPrettyString(getKeyValueEntity(payload));
-		} catch (IOException e) {
-			// should never happen error checks are done before hand
-			throw new ResponseException(ErrorType.UnprocessableEntity, "Failed to parse entity");
-		}
+		this.entityWithoutSysAttrs = JsonObject.mapFrom(payload);
+		this.keyValue = JsonObject.mapFrom(getKeyValueEntity(payload));
 
 	}
 
