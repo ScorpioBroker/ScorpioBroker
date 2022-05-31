@@ -274,9 +274,10 @@ public abstract class StorageDAO {
 				List<Uni<RowSet<Row>>> unis = Lists.newArrayList();
 				if (entityId != null && entityType != null && entityCreatedAt != null && entityModifiedAt != null) {
 					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-							+ " (id, type, createdat, modifiedat) VALUES ($1, $2, $3::timestamp, $4::timestamp) ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat";
-					unis.add(conn.preparedQuery(sql)
-							.execute(Tuple.of(entityId, entityType, entityCreatedAt, entityModifiedAt)));
+							+ " (id, type, createdat, modifiedat) VALUES($1, '" + entityType + "', '"
+							+ (entityCreatedAt) + "'::timestamp, '" + (entityModifiedAt)
+							+ "'::timestamp) ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat";
+					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId)));
 				}
 				if (entityId != null && attributeId != null) {
 					if (overwriteOp != null && overwriteOp) {
