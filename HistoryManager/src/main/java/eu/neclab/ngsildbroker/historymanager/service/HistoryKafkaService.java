@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -24,12 +25,14 @@ public class HistoryKafkaService {
 	@Inject
 	HistoryService historyService;
 
-	public HistoryKafkaService() {
-
+	@PostConstruct
+	public void bla() {
+		System.out.println("kafkaservice history started");
 	}
 
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	public Uni<Void> handleEntity(Message<BaseRequest> message) {
+		System.out.println("received message");
 		HistoryEntityRequest request;
 		try {
 			switch (message.body().getRequestType()) {
