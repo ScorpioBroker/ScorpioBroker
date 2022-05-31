@@ -86,7 +86,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
 	boolean directDB;
 
-	@ConfigProperty(name = "scorpio.fedbrokers", defaultValue = "#{null}") // :}")
+	@ConfigProperty(name = "scorpio.fedbrokers", defaultValue = AppConstants.INTERNAL_NULL_KEY)
 	String fedBrokers;
 
 	Map<String, Object> myRegistryInformation;
@@ -439,7 +439,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 					logger.error("Failed to store internal regentry", e);
 					return false;
 				}).onItem().transformToUni(Unchecked.function(t -> {
-					if (t && fedBrokers != null) {
+					if (t && !fedBrokers.equals(AppConstants.INTERNAL_NULL_KEY) && !fedBrokers.isBlank()) {
 						List<Uni<Object>> unis = Lists.newArrayList();
 						for (String fedBroker : fedBrokers.split(",")) {
 							String finalFedBroker;
