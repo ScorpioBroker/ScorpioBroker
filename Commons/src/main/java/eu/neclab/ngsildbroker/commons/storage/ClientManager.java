@@ -52,11 +52,19 @@ public class ClientManager {
 	String reactiveBaseUrl;
 	@ConfigProperty(name = "quarkus.datasource.jdbc.url")
 	String jdbcBaseUrl;
+	@ConfigProperty(name = "quarkus.datasource.jdbc.driver")
+	String jdbcDriver;
 	@ConfigProperty(name = "quarkus.datasource.username")
 	String username;
 	@ConfigProperty(name = "quarkus.datasource.password")
 	String password;
-
+	@ConfigProperty(name = "pool.minsize")
+	int minsize;
+	@ConfigProperty(name = "pool.maxsize")
+	int maxsize;
+	@ConfigProperty(name = "pool.initialSize")
+	int initialSize;
+	
 	protected HashMap<String, Uni<PgPool>> tenant2Client = Maps.newHashMap();
 
 	@PostConstruct
@@ -89,6 +97,7 @@ public class ClientManager {
 
 	public Uni<String> determineTargetDataSource(String tenantidvalue, boolean createDB) {
 		return createDataSourceForTenantId(tenantidvalue, createDB).onItem().transform(tenantDataSource -> {
+			
 			flywayMigrate(tenantDataSource.getItem1());
 			return tenantDataSource.getItem2();
 		});
@@ -98,15 +107,15 @@ public class ClientManager {
 		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
 				.transform(Unchecked.function(tenantDatabaseName -> {
 					// TODO this needs to be from the config not hardcoded!!!
-					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl("jdbc:postgresql://localhost:5432/ngb",
+					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl,
 							tenantDatabaseName);
 					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
 							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
-							.connectionPoolConfiguration(cp -> cp.minSize(5).maxSize(20).initialSize(10)
+							.connectionPoolConfiguration(cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
 									.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
-											.connectionProviderClassName("org.postgresql.Driver").autoCommit(false)
-											.principal(new NamePrincipal("ngb"))
-											.credential(new SimplePassword("ngb"))));
+											.connectionProviderClassName(jdbcDriver).autoCommit(false)
+											.principal(new NamePrincipal(username))
+											.credential(new SimplePassword(password))));
 					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
 					return Tuple2.of(agroaldataSource, tenantDatabaseName);
 				}));
