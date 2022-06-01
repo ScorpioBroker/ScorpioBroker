@@ -91,8 +91,9 @@ public class EntityService implements EntryCRUDService {
 				.transform(Unchecked.function(t -> {
 					return new UpdateEntityRequest(headers, entityId, t, resolved, null);
 				})).onItem().transformToUni(t -> {
+					// if nothing changed just return the result and no publish.
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
-						return Uni.createFrom().nullItem();
+						return Uni.createFrom().item(t.getUpdateResult());
 					}
 					return handleRequest(t).combinedWith((storage, kafka) -> {
 						logger.trace("updateMessage() :: completed");
@@ -126,7 +127,7 @@ public class EntityService implements EntryCRUDService {
 				.transform(Unchecked.function(t -> new AppendEntityRequest(headers, entityId, t, resolved, options)))
 				.onItem().transformToUni(t -> {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
-						return Uni.createFrom().nullItem();
+						return Uni.createFrom().item(t.getUpdateResult());
 					}
 					return handleRequest(t).combinedWith((storage, kafka) -> {
 						logger.trace("appendMessage() :: completed");
@@ -175,7 +176,7 @@ public class EntityService implements EntryCRUDService {
 						Unchecked.function(t -> new UpdateEntityRequest(headers, entityId, t, expandedPayload, attrId)))
 				.onItem().transformToUni(t -> {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
-						return Uni.createFrom().nullItem();
+						return Uni.createFrom().item(t.getUpdateResult());
 					}
 					return handleRequest(t).combinedWith((storage, kafka) -> {
 						logger.trace("partialUpdateEntity() :: completed");
