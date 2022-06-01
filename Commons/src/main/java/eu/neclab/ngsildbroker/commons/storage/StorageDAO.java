@@ -225,7 +225,7 @@ public abstract class StorageDAO {
 			String sql;
 
 			if (value != null) {
-				if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
+				if (request.getRequestType() == AppConstants.CREATE_REQUEST) {
 
 					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
 							+ ") VALUES ($1, $2::jsonb)";
@@ -242,7 +242,7 @@ public abstract class StorageDAO {
 								return Uni.createFrom().failure(e);
 							}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 
-				} else if (request.getRequestType() == AppConstants.OPERATION_APPEND_ENTITY) {
+				} else if (request.getRequestType() == AppConstants.APPEND_REQUEST) {
 					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
 							+ ") VALUES ($1, $2::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
 							+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;

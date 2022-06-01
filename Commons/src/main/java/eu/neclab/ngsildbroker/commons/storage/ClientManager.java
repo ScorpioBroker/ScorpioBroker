@@ -2,18 +2,20 @@ package eu.neclab.ngsildbroker.commons.storage;
 
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.sql.SQLException;
 import java.util.HashMap;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.sql.DataSource;
 
+import com.google.common.collect.Maps;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.google.common.collect.Maps;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -28,8 +30,6 @@ import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.pgclient.PgPool;
-import io.vertx.mutiny.sqlclient.Pool;
-import io.vertx.mutiny.sqlclient.SqlConnection;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.PoolOptions;
@@ -47,7 +47,7 @@ public class ClientManager {
 
 	@Inject
 	Vertx vertx;
-	// private Map<Object, DataSource> resolvedDataSources = Maps.newHashMap();
+
 	@ConfigProperty(name = "quarkus.datasource.reactive.url")
 	String reactiveBaseUrl;
 	@ConfigProperty(name = "quarkus.datasource.jdbc.url")
@@ -64,7 +64,7 @@ public class ClientManager {
 	int maxsize;
 	@ConfigProperty(name = "pool.initialSize")
 	int initialSize;
-	
+
 	protected HashMap<String, Uni<PgPool>> tenant2Client = Maps.newHashMap();
 
 	@PostConstruct
@@ -97,7 +97,7 @@ public class ClientManager {
 
 	public Uni<String> determineTargetDataSource(String tenantidvalue, boolean createDB) {
 		return createDataSourceForTenantId(tenantidvalue, createDB).onItem().transform(tenantDataSource -> {
-			
+
 			flywayMigrate(tenantDataSource.getItem1());
 			return tenantDataSource.getItem2();
 		});
@@ -107,15 +107,15 @@ public class ClientManager {
 		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
 				.transform(Unchecked.function(tenantDatabaseName -> {
 					// TODO this needs to be from the config not hardcoded!!!
-					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl,
-							tenantDatabaseName);
+					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
 					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
 							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
-							.connectionPoolConfiguration(cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
-									.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
-											.connectionProviderClassName(jdbcDriver).autoCommit(false)
-											.principal(new NamePrincipal(username))
-											.credential(new SimplePassword(password))));
+							.connectionPoolConfiguration(
+									cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
+											.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
+													.connectionProviderClassName(jdbcDriver).autoCommit(false)
+													.principal(new NamePrincipal(username))
+													.credential(new SimplePassword(password))));
 					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
 					return Tuple2.of(agroaldataSource, tenantDatabaseName);
 				}));
@@ -131,9 +131,7 @@ public class ClientManager {
 		return pgClient.preparedQuery("SELECT datname FROM pg_database where datname = $1")
 				.execute(Tuple.of(databasename)).onItem().transformToUni(pgRowSet -> {
 					if (pgRowSet.size() == 0) {
-
 						if (create) {
-
 							return pgClient.preparedQuery("create database \"" + databasename + "\"").execute().onItem()
 									.transformToUni(t -> {
 										return storeTenantdata(tenant, databasename).onItem()
@@ -142,12 +140,10 @@ public class ClientManager {
 						} else {
 							return Uni.createFrom().failure(
 									new ResponseException(ErrorType.TenantNotFound, tenant + " tenant was not found"));
-
 						}
 					} else {
 						return Uni.createFrom().item(databasename);
 					}
-
 				});
 	}
 
