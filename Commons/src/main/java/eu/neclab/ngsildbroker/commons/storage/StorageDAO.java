@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,6 +24,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.json.JsonObject;
@@ -274,10 +276,10 @@ public abstract class StorageDAO {
 				List<Uni<RowSet<Row>>> unis = Lists.newArrayList();
 				if (entityId != null && entityType != null && entityCreatedAt != null && entityModifiedAt != null) {
 					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-							+ " (id, type, createdat, modifiedat) VALUES($1, '" + entityType + "', '"
-							+ (entityCreatedAt) + "'::timestamp, '" + (entityModifiedAt)
-							+ "'::timestamp) ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat";
-					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId)));
+							+ " (id, type, createdat, modifiedat) VALUES($1, $2, $3::timestamp, $4::timestamp) "
+							+ "ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat";
+                    Tuple tValue = Tuple.of(entityId, entityType, localDateTimeFormatter(entityCreatedAt), localDateTimeFormatter(entityModifiedAt));
+					unis.add(conn.preparedQuery(sql).execute(tValue));
 				}
 				if (entityId != null && attributeId != null) {
 					if (overwriteOp != null && overwriteOp) {
@@ -392,6 +394,10 @@ public abstract class StorageDAO {
 						});
 			}
 		});
+	}
+	
+	private LocalDateTime localDateTimeFormatter(String dateTimeValue) {	
+		return LocalDateTime.parse(dateTimeValue, SerializationTools.informatter);
 	}
 
 }
