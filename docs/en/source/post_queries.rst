@@ -2,20 +2,20 @@
 POST QUERIES
 ************
 
-The reason to provide a way to query NGSI_LD entities via POST, is using GET:
+The reason to provide a way to query NGSI_LD entities via POST, is that using GET has the following issue:
 
 1. We end up assembling very long URLs,due to URI parameters for 'id', 'attrs', etc, being included in the URL.
 2. By using POST, there is no need of long URLs.
 
-So, the difference lies in that instead of passing the inputs as URI parameters, we in POST Query service passes all the query items in the payload body.
+So, the difference lies in that instead of passing the inputs as URI parameters, in a POST Query, we pass all the query items in the payload body.
 
 DESIGN
 ######
 
-We created a novel **/entityOperations/query** endpoint in the API
+We created a new **/entityOperations/query** endpoint in the API
 As we can see this new POST query operation has just one single query as input.
 
- - It is not allowed to send multiple queries in a single request as it is not consideres as a "BATCH Operation"
+ - It is not allowed to send multiple queries in a single request as it is not considered as a "BATCH Operation"
 
 
 Data Type of the Request Payload Body
@@ -70,7 +70,7 @@ Data Type of the Request Payload Body
 POST Query Example
 ##################
 
-Here is an example of Request URL and Payload data that how we can pass the query in the Payload.
+Here is an example of Request URL and Payload data that shows how we can pass the query in the Payload.
 
 POST  **http://localhost:9090/ngsi-ld/v1/entityOperations/query** :
 ::
