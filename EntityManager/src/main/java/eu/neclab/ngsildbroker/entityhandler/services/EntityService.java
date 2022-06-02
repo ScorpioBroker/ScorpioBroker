@@ -201,10 +201,7 @@ public class EntityService implements EntryCRUDService {
 
 	private UniAndGroup2<Void, Void> handleRequest(EntityRequest request) {
 		return Uni.combine().all().unis(entityInfoDAO.storeEntity(request),
-				kafkaSenderInterface.send(new BaseRequest(request)).onItem().transform(t -> {
-					System.out.println("SEND VIA KAFKA");
-					return t;
-				}));
+				kafkaSenderInterface.send(new BaseRequest(request)));
 	}
 
 }
