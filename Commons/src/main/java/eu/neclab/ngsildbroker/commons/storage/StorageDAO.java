@@ -288,19 +288,16 @@ public abstract class StorageDAO {
 						unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)));
 					}
 					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, '" + value
-							+ "'::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
-					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)));
+							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
+					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId, value)));
 					// update modifiedat field in temporalentity
 					sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 							+ " SET modifiedat = $1::timestamp WHERE id = $2";
-					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityModifiedAt, entityId)));
+					unis.add(conn.preparedQuery(sql).execute(Tuple.of(localDateTimeFormatter(entityModifiedAt), entityId)));
 				}
 
 				return Uni.combine().all().unis(unis).discardItems().onFailure().recoverWithItem(t -> {
-
 					if (t instanceof SQLIntegrityConstraintViolationException) {
-
 						List<Uni<RowSet<Row>>> recoverUnis = Lists.newArrayList();
 						logger.info("Failed to create attribute instance because of data inconsistency");
 						logger.info("Attempting recovery");
