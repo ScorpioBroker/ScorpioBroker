@@ -1,26 +1,36 @@
-package eu.neclab.ngsildbroker.registryhandler.service;
+package eu.neclab.ngsildbroker.registryhandler.service.messaging;
+
+import java.io.IOException;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-import org.eclipse.microprofile.reactive.messaging.Incoming;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.github.jsonldjava.utils.JsonUtils;
+
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 import io.smallrye.mutiny.Uni;
 
-@Singleton
-public class CSourceKafkaService {
-	private static final Logger logger = LoggerFactory.getLogger(CSourceKafkaService.class);
+public abstract class CSourceMessagingBase {
 
 	@Inject
 	CSourceService cSourceService;
 
-	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
-	public Uni<Void> handleEntity(Message<BaseRequest> mutinyMessage) {
+	private static final Logger logger = LoggerFactory.getLogger(CSourceMessagingKafka.class);
+
+	public Uni<Void> baseHandleEntity(Message<BaseRequest> mutinyMessage) {
+
+		try {
+			logger.debug("received message in csource from entity channel"
+					+ JsonUtils.toString(mutinyMessage.getPayload().getFinalPayload()));
+		} catch (Exception e) {
+			logger.error("failed to output debug", e);
+		}
 		BaseRequest message = mutinyMessage.getPayload();
 		new Thread() {
 			public void run() {
@@ -40,7 +50,6 @@ public class CSourceKafkaService {
 			};
 		}.start();
 		return Uni.createFrom().nullItem();
-
 	}
 
 }

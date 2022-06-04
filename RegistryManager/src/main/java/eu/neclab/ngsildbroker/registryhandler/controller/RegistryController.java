@@ -13,15 +13,14 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
@@ -78,10 +77,9 @@ public class RegistryController {
 		logger.debug("get CSource() ::" + registrationId);
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		String tenant = HttpUtils.getTenantFromHeaders(headers);
-		return csourceService.getRegistrationById(registrationId, tenant).onItem()
-				.transformToUni(Unchecked.function(t -> {
-					return HttpUtils.generateReply(request, JsonUtils.toString(t), AppConstants.CSOURCE_URL_ID);
-				}));
+		return csourceService.getRegistrationById(registrationId, tenant).onItem().transformToUni(t -> {
+			return HttpUtils.generateReply(request, t, AppConstants.CSOURCE_URL_ID);
+		});
 	}
 
 	@Path("/{registrationId}")

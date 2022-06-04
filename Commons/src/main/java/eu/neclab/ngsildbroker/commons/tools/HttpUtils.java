@@ -137,17 +137,17 @@ public final class HttpUtils {
 
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply, int endPoint) {
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply, int endPoint) {
 		return generateReply(request, reply, ArrayListMultimap.create(), endPoint);
 
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
 			ArrayListMultimap<String, String> additionalHeaders, int endPoint) {
 		return generateReply(request, reply, additionalHeaders, null, endPoint);
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint) {
 		return generateReply(request, reply, additionalHeaders, context, false, endPoint);
 	}
@@ -198,7 +198,7 @@ public final class HttpUtils {
 		}
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
 			boolean forceArrayResult, int endPoint) {
 		return getAtContext(request).onItem().transform(t -> {
