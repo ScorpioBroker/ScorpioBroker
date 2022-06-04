@@ -65,8 +65,8 @@ public class IntervalNotificationHandler {
 			}
 			infoDAO.getEntriesFromSub(subscriptionRequest).onItem().call(Unchecked.function(entries -> {
 				List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
-				for (String entry : entries) {
-					dataList.add((Map<String, Object>) JsonUtils.fromString(entry));
+				for (Map<String, Object> entry : entries) {
+					dataList.add(entry);
 				}
 				baseNotification.setSubscriptionId(subscriptionRequest.getSubscription().getId());
 				baseNotification.setNotifiedAt(System.currentTimeMillis());

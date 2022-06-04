@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -87,14 +88,14 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	}
 
 	@Override
-	public Uni<List<String>> getEntriesFromSub(SubscriptionRequest subscriptionRequest) {
+	public Uni<List<Map<String, Object>>> getEntriesFromSub(SubscriptionRequest subscriptionRequest) {
 		String tenant = subscriptionRequest.getTenant();
 		Subscription subscription = subscriptionRequest.getSubscription();
 		List<QueryParams> qps = ParamsResolver.getQueryParamsFromSubscription(subscription);
 		return query(qps, tenant);
 	}
 
-	private Uni<List<String>> query(List<QueryParams> qps, String tenant) {
+	private Uni<List<Map<String, Object>>> query(List<QueryParams> qps, String tenant) {
 		List<Uni<QueryResult>> unis = Lists.newArrayList();
 		for (QueryParams qp : qps) {
 			qp.setTenant(tenant);
@@ -102,10 +103,10 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 			unis.add(qr);
 		}
 		return Uni.combine().all().unis(unis).combinedWith(t -> {
-			List<String> result = Lists.newArrayList();
+			List<Map<String, Object>> result = Lists.newArrayList();
 			for (Object entry : t) {
 				QueryResult qr = (QueryResult) entry;
-				List<String> resultString = qr.getActualDataString();
+				List<Map<String, Object>> resultString = qr.getData();
 				if (resultString != null) {
 					result.addAll(resultString);
 				}

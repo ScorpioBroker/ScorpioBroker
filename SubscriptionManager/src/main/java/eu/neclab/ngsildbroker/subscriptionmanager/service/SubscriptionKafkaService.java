@@ -31,7 +31,8 @@ public class SubscriptionKafkaService {
 
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	public Uni<Void> handleEntity(Message<BaseRequest> message) {
-		IncomingKafkaRecordMetadata metaData = message.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
+		IncomingKafkaRecordMetadata<String, Object> metaData = message.getMetadata(IncomingKafkaRecordMetadata.class)
+				.orElse(null);
 		final long timestamp;
 		if (metaData != null) {
 			timestamp = metaData.getTimestamp().toEpochMilli();

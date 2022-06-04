@@ -150,7 +150,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected abstract MutinyEmitter<SyncMessage> getSyncChannelSender();
 
-	
 	protected void destroy() {
 		try {
 			Thread.sleep(checkTime);
@@ -245,8 +244,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 							subscriptionInfoDAO.getEntriesFromSub(t).onItem().transform(Unchecked.function(t2 -> {
 								if (!t2.isEmpty()) {
 									List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
-									for (String entry : t2) {
-										notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
+									for (Map<String, Object> entry : t2) {
+										notifcation.add(entry);
 									}
 									sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
 								}

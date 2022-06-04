@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.Table;
@@ -18,5 +19,5 @@ public interface SubscriptionInfoDAOInterface {
 
 	public Uni<Void> deleteSubscription(SubscriptionRequest sub);
 
-	public Uni<List<String>> getEntriesFromSub(SubscriptionRequest subscriptionRequest);
+	public Uni<List<Map<String, Object>>> getEntriesFromSub(SubscriptionRequest subscriptionRequest);
 }

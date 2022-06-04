@@ -25,7 +25,8 @@ public class RegistrySubscriptionKafkaService {
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	public Uni<Void> handleCsource(Message<BaseRequest> busMessage) {
 		BaseRequest message = busMessage.getPayload();
-		IncomingKafkaRecordMetadata metaData = busMessage.getMetadata(IncomingKafkaRecordMetadata.class).orElse(null);
+		IncomingKafkaRecordMetadata<String, Object> metaData = busMessage.getMetadata(IncomingKafkaRecordMetadata.class)
+				.orElse(null);
 		String key = message.getId();
 		final long timestamp;
 		if (metaData != null) {
