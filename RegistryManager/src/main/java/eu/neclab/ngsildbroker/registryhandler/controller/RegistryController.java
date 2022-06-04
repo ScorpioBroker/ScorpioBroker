@@ -58,7 +58,7 @@ public class RegistryController {
 	}
 
 	@GET
-	public Uni<RestResponse<Object>> discoverCSource(HttpServerRequest request, HashMap<String, String> queryMap,
+	public Uni<RestResponse<Object>> discoverCSource(HttpServerRequest request,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") Integer offset,
 			@QueryParam(value = "qtoken") String qToken, @QueryParam(value = "count") boolean count) {
 		return QueryControllerFunctions.queryForEntries(csourceService, request, false, defaultLimit, maxLimit, false);
