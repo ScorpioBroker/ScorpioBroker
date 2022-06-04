@@ -401,7 +401,8 @@ public final class HttpUtils {
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 		}
 		if (qResult == null || qResult.getData() == null || qResult.getData().size() == 0) {
-			return HttpUtils.generateReply(request, "[]", additionalHeaders, AppConstants.HISTORY_ENDPOINT);
+			return HttpUtils.generateReply(request, Lists.newArrayList(), additionalHeaders,
+					AppConstants.HISTORY_ENDPOINT);
 		}
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
