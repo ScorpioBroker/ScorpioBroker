@@ -1,9 +1,7 @@
-package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,20 +9,20 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 
-@Singleton
-public class RegistrySubscriptionKafkaService {
+public abstract class RegistrySubscriptionMessagingBase {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionService.class);
 
 	@Inject
 	RegistrySubscriptionService subscriptionService;
 
-	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
-	public Uni<Void> handleCsource(Message<BaseRequest> busMessage) {
+	public Uni<Void> baseHandleCsource(Message<BaseRequest> busMessage) {
 		BaseRequest message = busMessage.getPayload();
+		@SuppressWarnings("unchecked")
 		IncomingKafkaRecordMetadata<String, Object> metaData = busMessage.getMetadata(IncomingKafkaRecordMetadata.class)
 				.orElse(null);
 		String key = message.getId();
@@ -57,8 +55,7 @@ public class RegistrySubscriptionKafkaService {
 		return Uni.createFrom().nullItem();
 	}
 
-	@Incoming(AppConstants.INTERNAL_RETRIEVE_SUBS_CHANNEL)
-	public Uni<Void> handleSubscription(Message<SubscriptionRequest> busMessage) {
+	public Uni<Void> baseHandleSubscription(Message<SubscriptionRequest> busMessage) {
 		SubscriptionRequest message = busMessage.getPayload();
 		String key = message.getId();
 		switch (message.getRequestType()) {

@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registryhandler.service.messaging;
+package eu.neclab.ngsildbroker.registryhandler.messaging;
 
 import java.io.IOException;
 

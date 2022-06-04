@@ -30,6 +30,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniAndGroup2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 
 @Singleton
 public class EntityService implements EntryCRUDService {
@@ -43,6 +44,7 @@ public class EntityService implements EntryCRUDService {
 
 	@Inject
 	@Channel(AppConstants.ENTITY_CHANNEL)
+	@Broadcast
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);

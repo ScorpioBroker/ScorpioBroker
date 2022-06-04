@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registryhandler.service.messaging;
+package eu.neclab.ngsildbroker.historymanager.messaging;
 
 import javax.inject.Singleton;
 
@@ -11,11 +11,12 @@ import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
-@IfBuildProfile("in-memory")
-public class CSourceMessagingInMemory extends CSourceMessagingBase {
-	@Incoming(AppConstants.ENTITY_CHANNEL)
-	public Uni<Void> handleEntity(Message<BaseRequest> mutinyMessage) {
-		return baseHandleEntity(mutinyMessage);
+@IfBuildProfile("kafka")
+public class HistoryMessagingKafka extends HistoryMessagingBase {
 
+	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
+	@IfBuildProfile("kafka")
+	public Uni<Void> handleEntity(Message<BaseRequest> message) {
+		return baseHandleEntity(message);
 	}
 }

@@ -1,10 +1,9 @@
-package eu.neclab.ngsildbroker.historymanager.service;
+package eu.neclab.ngsildbroker.historymanager.messaging;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-import org.eclipse.microprofile.reactive.messaging.Incoming;
+import com.github.jsonldjava.utils.JsonUtils;
+
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,24 +14,22 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
 import io.smallrye.mutiny.Uni;
 
-@Singleton
-public class HistoryKafkaService {
-
-	private static Logger logger = LoggerFactory.getLogger(HistoryKafkaService.class);
+public abstract class HistoryMessagingBase {
+	private static Logger logger = LoggerFactory.getLogger(HistoryMessagingKafka.class);
 
 	@Inject
 	HistoryService historyService;
 
-	@PostConstruct
-	public void bla() {
-		System.out.println("kafkaservice history started");
-	}
-
-	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
-	public Uni<Void> handleEntity(Message<BaseRequest> message) {
-		System.out.println("received message");
+	public Uni<Void> baseHandleEntity(Message<BaseRequest> message) {
+		try {
+			logger.debug("received message in history from entity channel"
+					+ JsonUtils.toString(message.getPayload().getFinalPayload()));
+		} catch (Exception e) {
+			logger.error("failed to output debug", e);
+		}
 		HistoryEntityRequest request;
 		try {
 			switch (message.getPayload().getRequestType()) {
@@ -64,4 +61,5 @@ public class HistoryKafkaService {
 		}
 		return Uni.createFrom().nullItem();
 	}
+
 }

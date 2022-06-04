@@ -34,9 +34,11 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterf
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SubscriptionSyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
@@ -61,6 +63,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Inject
 	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
+	@Broadcast
 	MutinyEmitter<SubscriptionRequest> internalSubEmitter;
 
 	@Override

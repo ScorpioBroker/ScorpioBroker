@@ -28,9 +28,11 @@ import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.RegistrySubscriptionSyncService;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 
 @Singleton
 public class RegistrySubscriptionService extends BaseSubscriptionService {
@@ -40,6 +42,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@Inject
 	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
+	@Broadcast
 	MutinyEmitter<InternalNotification> internalNotificationSender;
 
 	@Inject
@@ -86,7 +89,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		return super.getNotificationHandler(endpointProtocol);
 	}
 
-	Uni<Void> subscribeInternal(SubscriptionRequest request) {
+	public Uni<Void> subscribeInternal(SubscriptionRequest request) {
 		makeSubscriptionInternal(request);
 		return subscribe(request).onItem().ignore().andContinueWithNull().onFailure().call(e -> {
 			logger.debug("Failed to subscribe internally", e);
@@ -94,7 +97,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		});
 	}
 
-	Uni<Void> unsubscribeInternal(String subId) {
+	public Uni<Void> unsubscribeInternal(String subId) {
 		SubscriptionRequest request = id2InternalSubscriptions.remove(subId);
 		if (request != null) {
 			return unsubscribe(subId, request.getHeaders());

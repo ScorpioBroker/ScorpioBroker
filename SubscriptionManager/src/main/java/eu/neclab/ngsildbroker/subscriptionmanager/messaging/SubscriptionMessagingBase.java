@@ -1,13 +1,11 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +13,12 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 
-@Singleton
-public class SubscriptionKafkaService {
-	private static final Logger logger = LoggerFactory.getLogger(SubscriptionKafkaService.class);
+public abstract class SubscriptionMessagingBase {
+	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessagingKafka.class);
 	private ThreadPoolExecutor entityExecutor = new ThreadPoolExecutor(10, 50, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
 	private ThreadPoolExecutor notificationExecutor = new ThreadPoolExecutor(10, 50, 1, TimeUnit.MINUTES,
@@ -29,8 +27,8 @@ public class SubscriptionKafkaService {
 	@Inject
 	SubscriptionService subscriptionService;
 
-	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
-	public Uni<Void> handleEntity(Message<BaseRequest> message) {
+	public Uni<Void> baseHandleEntity(Message<BaseRequest> message) {
+		@SuppressWarnings("unchecked")
 		IncomingKafkaRecordMetadata<String, Object> metaData = message.getMetadata(IncomingKafkaRecordMetadata.class)
 				.orElse(null);
 		final long timestamp;
@@ -49,8 +47,7 @@ public class SubscriptionKafkaService {
 		return Uni.createFrom().nullItem();
 	}
 
-	@Incoming(AppConstants.INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL)
-	public Uni<Void> handleInternalNotification(Message<InternalNotification> message) {
+	public Uni<Void> baseHandleInternalNotification(Message<InternalNotification> message) {
 		notificationExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -90,4 +87,5 @@ public class SubscriptionKafkaService {
 	private void handleBaseRequestInternalNotification(InternalNotification message) {
 		subscriptionService.handleRegistryNotification(message);
 	}
+
 }

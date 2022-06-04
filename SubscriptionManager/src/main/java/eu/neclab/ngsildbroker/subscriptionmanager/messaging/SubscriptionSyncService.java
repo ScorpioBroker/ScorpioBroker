@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
 import java.util.UUID;
 
@@ -14,10 +14,13 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
+import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
+@IfBuildProfile("kafka")
 public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();

@@ -57,6 +57,7 @@ import io.smallrye.mutiny.groups.UniAndGroup2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.mutiny.vertx.UniHelper;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.buffer.Buffer;
 
 @Singleton
@@ -72,6 +73,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	@Inject
 	@Channel(AppConstants.REGISTRY_CHANNEL)
+	@Broadcast
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	@ConfigProperty(name = "scorpio.registry.autoregmode", defaultValue = "types")

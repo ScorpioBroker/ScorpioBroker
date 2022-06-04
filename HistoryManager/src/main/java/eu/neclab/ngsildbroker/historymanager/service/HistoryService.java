@@ -158,7 +158,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		throw new MethodNotFoundException();
 	}
 
-	protected UniAndGroup2<Void, Void> handleRequest(HistoryEntityRequest request) {
+	public UniAndGroup2<Void, Void> handleRequest(HistoryEntityRequest request) {
 		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request),
 				kafkaSenderInterface.send(new BaseRequest(request)));
 	}
