@@ -1,9 +1,7 @@
 package eu.neclab.ngsildbroker.commons.interfaces;
 
-import java.io.IOException;
 import java.util.Map;
 
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
@@ -29,13 +27,7 @@ public interface EntryCRUDService {
 			return Uni.createFrom()
 					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
-		return dao.getEntity(entityId, tenantId).onItem().transform(t -> {
-			try {
-				return (Map<String, Object>) JsonUtils.fromString(t);
-			} catch (IOException e) {
-				throw new AssertionError("can't load internal json");
-			}
-		});
+		return dao.getEntity(entityId, tenantId);
 	}
 
 }

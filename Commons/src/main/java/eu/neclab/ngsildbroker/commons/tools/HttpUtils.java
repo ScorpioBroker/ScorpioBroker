@@ -400,7 +400,7 @@ public final class HttpUtils {
 		if (count == true) {
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 		}
-		if (qResult == null || qResult.getActualDataString() == null || qResult.getActualDataString().size() == 0) {
+		if (qResult == null || qResult.getData() == null || qResult.getData().size() == 0) {
 			return HttpUtils.generateReply(request, "[]", additionalHeaders, AppConstants.HISTORY_ENDPOINT);
 		}
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
@@ -418,8 +418,8 @@ public final class HttpUtils {
 				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
 			}
 		}
-		return HttpUtils.generateReply(request, "[" + String.join(",", qResult.getDataString()) + "]",
-				additionalHeaders, context, contextLinks, forceArray, endPoint);
+		return HttpUtils.generateReply(request, qResult.getData(), additionalHeaders, context, contextLinks, forceArray,
+				endPoint);
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(String replyBody,

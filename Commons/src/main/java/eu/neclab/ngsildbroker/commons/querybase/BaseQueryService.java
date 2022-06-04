@@ -124,14 +124,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 		if (registryDAO != null) {
 			csourceQuery = registryDAO.query(qp).onItem().transformToUni(t -> {
 				List<Uni<RemoteQueryResult>> remoteResults = Lists.newArrayList();
-				for (String registration : t.getActualDataString()) {
-					Map<String, Object> reg;
-					try {
-						reg = (Map<String, Object>) JsonUtils.fromString(registration);
-					} catch (IOException e1) {
-						logger.error("corruption in registry found" + registration, e1);
-						continue;
-					}
+				for (Map<String, Object> reg : t.getData()) {
 					String tenant = HttpUtils.getTenantFromHeaders(headers);
 					String internalRegId = AppConstants.INTERNAL_REGISTRATION_ID;
 					if (tenant != null && !tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
@@ -215,10 +208,9 @@ public abstract class BaseQueryService implements EntryQueryService {
 	private QueryResult mergeStorage(RemoteQueryResult fromCsources, QueryResult fromStorage) throws IOException {
 		if (fromStorage == null || fromCsources == null) {
 		}
-		if (fromStorage.getActualDataString() != null) {
-			for (String entry : fromStorage.getActualDataString()) {
-				Object entity = JsonUtils.fromString(entry);
-				fromCsources.addData(entity);
+		if (fromStorage.getData() != null) {
+			for (Map<String, Object> entry : fromStorage.getData()) {
+				fromCsources.addData(entry);
 			}
 		}
 		if (fromStorage != null && fromCsources != null) {

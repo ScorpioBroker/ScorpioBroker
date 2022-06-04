@@ -16,12 +16,13 @@ import io.vertx.core.json.JsonObject;
 
 public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 
-	private String oldEntry;
+	private List<Map<String, Object>> oldEntry;
 	private String instanceId;
 	private String resolvedAttrId;
 
 	public UpdateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			String entityId, String resolvedAttrId, String instanceId, String oldEntry) throws ResponseException {
+			String entityId, String resolvedAttrId, String instanceId, List<Map<String, Object>> oldEntry)
+			throws ResponseException {
 		super(headers, resolved, entityId, AppConstants.UPDATE_REQUEST);
 		this.oldEntry = oldEntry;
 		this.resolvedAttrId = resolvedAttrId;
@@ -59,15 +60,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	private void createUpdate() throws ResponseException {
 		this.createdAt = now;
 		String instanceIdAdd = null;
-		List<Map<String, Object>> jsonArray = null;
-		try {
-			jsonArray = (List<Map<String, Object>>) JsonUtils.fromString(oldEntry);
-			this.createdAt = (String) ((List<Map<String, Object>>) ((List<Map<String, Object>>) ((List<Map<String, Object>>) jsonArray)
-					.get(0).get(resolvedAttrId)).get(0).get(NGSIConstants.NGSI_LD_CREATED_AT)).get(0)
-					.get(NGSIConstants.JSON_LD_VALUE);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		List<Map<String, Object>> jsonArray = oldEntry;
 		for (Entry<String, Object> entry : getRequestPayload().entrySet()) {
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)

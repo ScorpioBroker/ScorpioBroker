@@ -70,7 +70,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<String> getEntity(String entryId, String tenantId) {
+	public Uni<Map<String, Object>> getEntity(String entryId, String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(storageFunctions.getEntryQuery()).execute(Tuple.of(entryId)).onItem()
 					.transformToUni(t -> {
@@ -78,17 +78,13 @@ public abstract class StorageDAO {
 							return Uni.createFrom()
 									.failure(new ResponseException(ErrorType.NotFound, entryId + " was not found"));
 						}
-						String result = "";
-						for (Row entry : t) {
-							result = ((JsonObject) entry.getJson(0)).encode();
-						}
-						return Uni.createFrom().item(result);
+						return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
 					});
 		});
 
 	}
 
-	public Uni<Map<String, List<String>>> getAllEntities() {
+	public Uni<Map<String, List<Map<String, Object>>>> getAllEntities() {
 		List<Uni<Object>> unis = Lists.newArrayList();
 		for (Entry<String, Uni<PgPool>> entry : clientManager.getAllClients().entrySet()) {
 			Uni<PgPool> clientUni = entry.getValue();
@@ -97,13 +93,13 @@ public abstract class StorageDAO {
 					.onItem().transform(t -> Tuple2.of(t, tenant))));
 		}
 		return Uni.combine().all().unis(unis).combinedWith(t -> {
-			Map<String, List<String>> result = Maps.newHashMap();
+			Map<String, List<Map<String, Object>>> result = Maps.newHashMap();
 
 			for (Object item : t) {
 				Tuple2<RowSet<Row>, String> tuple = (Tuple2<RowSet<Row>, String>) item;
-				List<String> tmp = Lists.newArrayList();
+				List<Map<String, Object>> tmp = Lists.newArrayList();
 				tuple.getItem1().forEach(t2 -> {
-					tmp.add(t2.getString(0));
+					tmp.add(t2.getJsonObject(0).getMap());
 				});
 				result.put(tuple.getItem2(), tmp);
 			}
@@ -148,12 +144,12 @@ public abstract class StorageDAO {
 				if (sqlQuery != null && !sqlQuery.isEmpty()) {
 					return client.query(sqlQuery).execute().onItem().transform(rows -> {
 						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-						List<String> list = Lists.newArrayList();
+						List<Map<String, Object>> list = Lists.newArrayList();
 						rows.forEach(t -> {
-							list.add(((JsonObject) t.getJson(0)).encode());
+							list.add(t.getJsonObject(0).getMap());
 						});
-						queryResult.setDataString(list);
-						queryResult.setActualDataString(list);
+						queryResult.setData(list);
+
 						return queryResult;
 					});
 				}
@@ -186,12 +182,12 @@ public abstract class StorageDAO {
 						queryResult.setCount(c.iterator().next().getInteger(0));
 					}
 					if (e != null) {
-						List<String> list = Lists.newArrayList();
+						List<Map<String, Object>> list = Lists.newArrayList();
 						e.forEach(t -> {
-							list.add(((JsonObject) t.getJson(0)).encode());
+							list.add(t.getJsonObject(0).getMap());
 						});
-						queryResult.setDataString(list);
-						queryResult.setActualDataString(list);
+						queryResult.setData(list);
+
 					}
 
 					return queryResult;
@@ -278,7 +274,8 @@ public abstract class StorageDAO {
 					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
 							+ " (id, type, createdat, modifiedat) VALUES($1, $2, $3::timestamp, $4::timestamp) "
 							+ "ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat";
-                    Tuple tValue = Tuple.of(entityId, entityType, localDateTimeFormatter(entityCreatedAt), localDateTimeFormatter(entityModifiedAt));
+					Tuple tValue = Tuple.of(entityId, entityType, localDateTimeFormatter(entityCreatedAt),
+							localDateTimeFormatter(entityModifiedAt));
 					unis.add(conn.preparedQuery(sql).execute(tValue));
 				}
 				if (entityId != null && attributeId != null) {
@@ -293,7 +290,8 @@ public abstract class StorageDAO {
 					// update modifiedat field in temporalentity
 					sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 							+ " SET modifiedat = $1::timestamp WHERE id = $2";
-					unis.add(conn.preparedQuery(sql).execute(Tuple.of(localDateTimeFormatter(entityModifiedAt), entityId)));
+					unis.add(conn.preparedQuery(sql)
+							.execute(Tuple.of(localDateTimeFormatter(entityModifiedAt), entityId)));
 				}
 
 				return Uni.combine().all().unis(unis).discardItems().onFailure().recoverWithItem(t -> {
@@ -392,8 +390,8 @@ public abstract class StorageDAO {
 			}
 		});
 	}
-	
-	private LocalDateTime localDateTimeFormatter(String dateTimeValue) {	
+
+	private LocalDateTime localDateTimeFormatter(String dateTimeValue) {
 		return LocalDateTime.parse(dateTimeValue, SerializationTools.informatter);
 	}
 

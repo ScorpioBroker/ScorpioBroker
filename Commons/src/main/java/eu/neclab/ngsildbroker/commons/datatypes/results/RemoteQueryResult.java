@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes.results;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -8,10 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -23,7 +19,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
  */
 public class RemoteQueryResult extends QueryResult {
 
-	private static final Logger logger = LoggerFactory.getLogger(RemoteQueryResult.class);
 	private HashMap<String, Map<String, Object>> id2Data = new HashMap<String, Map<String, Object>>();
 
 	private ArrayList<String> DO_NOT_MERGE = new ArrayList<String>();
@@ -181,21 +176,8 @@ public class RemoteQueryResult extends QueryResult {
 	}
 
 	@Override
-	public List<String> getActualDataString() {
-		ArrayList<String> result = new ArrayList<String>();
-		for (Map<String, Object> entry : id2Data.values()) {
-			try {
-				result.add(JsonUtils.toPrettyString(entry));
-			} catch (IOException e) {
-				logger.error("Failed to generate data output");
-			}
-		}
-		return result;
-	}
-
-	@Override
-	public List<String> getDataString() {
-		return this.getActualDataString();
+	public List<Map<String, Object>> getData() {
+		return Lists.newArrayList(id2Data.values());
 	}
 
 	public void finalize() throws Throwable {

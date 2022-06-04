@@ -34,6 +34,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniAndGroup2;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
@@ -118,15 +119,15 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	}
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
-	public void modifyAttribInstanceTemporalEntity(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String attribId, String instanceId, Context linkHeaders)
-			throws ResponseException, Exception {
+	public Uni<Void> modifyAttribInstanceTemporalEntity(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved, String attribId, String instanceId, Context linkHeaders) {
 
-		String resolvedAttrId = null;
-		if (attribId != null) {
+		String resolvedAttrId;
+		try {
 			resolvedAttrId = ParamsResolver.expandAttribute(attribId, linkHeaders);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
 		}
-
 		QueryParams qp = new QueryParams();
 		List<Map<String, String>> temp1 = new ArrayList<Map<String, String>>();
 		HashMap<String, String> temp2 = new HashMap<String, String>();
@@ -137,15 +138,17 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		qp.setInstanceId(instanceId);
 		qp.setIncludeSysAttrs(true);
 		qp.setTenant(HttpUtils.getTenantFromHeaders(headers));
-		Uni<QueryResult> queryResult = historyDAO.query(qp);
-		List<String> entityList = ((QueryResult) queryResult).getActualDataString();
-		if (entityList.size() == 0) {
-			throw new ResponseException(ErrorType.NotFound, "Entity not found");
-		}
-		String oldEntry = "[" + String.join(",", entityList) + "]";
-		UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, resolved, entityId, resolvedAttrId,
-				instanceId, oldEntry);
-		handleRequest(request);
+
+		return historyDAO.query(qp).onItem().transformToUni(Unchecked.function(queryResult -> {
+			List<Map<String, Object>> entityList = ((QueryResult) queryResult).getData();
+			if (entityList.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Entity not found"));
+			}
+			UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, resolved, entityId,
+					resolvedAttrId, instanceId, entityList);
+			return handleRequest(request).combinedWith(t -> null);
+		}));
+
 	}
 
 	@Override
