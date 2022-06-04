@@ -230,7 +230,7 @@ public final class HttpUtils {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult, int endPoint) {
 		return getReplyBody(request.headers().getAll(HttpHeaders.ACCEPT), endPoint, additionalHeaders, expanded,

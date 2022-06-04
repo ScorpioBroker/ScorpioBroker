@@ -330,8 +330,7 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 		String fullSqlWhereProperty = commonTranslateSql(qp);
 		String tableName = DBConstants.DBTABLE_CSOURCE + " c ";
 		String sqlQuery = "SELECT Count(*) FROM " + tableName + " INNER JOIN " + DBConstants.DBTABLE_CSOURCE_INFO
-				+ " ci ON (ci.csource_id = c.id) ";
-		if (fullSqlWhereProperty.length() > 0) {
+				+ " ci ON (ci.csource_id = c.id) ";		if (fullSqlWhereProperty.length() > 0) {
 			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " 1=1 ";
 		}
 //		int limit = qp.getLimit();

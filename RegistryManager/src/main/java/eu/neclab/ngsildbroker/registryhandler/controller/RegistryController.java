@@ -18,13 +18,18 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -71,17 +76,12 @@ public class RegistryController {
 	public Uni<RestResponse<Object>> getCSourceById(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId) {
 		logger.debug("get CSource() ::" + registrationId);
-		return QueryControllerFunctions.getEntity(csourceService, request, null, null, registrationId, false,
-				defaultLimit, maxLimit);
-//		
-//		return HttpUtils.validateUri(registrationId).onItem().transformToUni(t -> {
-//			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK);
-//			return csourceService.getCSourceRegistrationById(tenantid, registrationId);
-//		}).onItem().transformToUni(t -> {
-//			return HttpUtils.generateReply(request, t, AppConstants.REGISTRY_ENDPOINT);
-//		}).onFailure().recoverWithItem(e -> {
-//			return HttpUtils.handleControllerExceptions(e);
-//		});
+		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+		String tenant = HttpUtils.getTenantFromHeaders(headers);
+		return csourceService.getRegistrationById(registrationId, tenant).onItem()
+				.transformToUni(Unchecked.function(t -> {
+					return HttpUtils.generateReply(request, JsonUtils.toString(t), AppConstants.CSOURCE_URL_ID);
+				}));
 	}
 
 	@Path("/{registrationId}")

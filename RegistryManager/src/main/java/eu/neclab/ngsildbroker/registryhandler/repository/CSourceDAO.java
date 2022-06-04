@@ -8,9 +8,13 @@ import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.RegistryStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.sqlclient.Tuple;
 
 @Singleton
 public class CSourceDAO extends StorageDAO {
@@ -46,6 +50,20 @@ public class CSourceDAO extends StorageDAO {
 	@Override
 	protected StorageFunctionsInterface getStorageFunctions() {
 		return new RegistryStorageFunctions();
+	}
+
+	public Uni<Map<String, Object>> getRegistrationById(String id, String tenant) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("SELECT data FROM csource WHERE id = $1").execute(Tuple.of(id)).onItem()
+					.transformToUni(rowSet -> {
+						if (rowSet.size() == 0) {
+							return Uni.createFrom()
+									.failure(new ResponseException(ErrorType.NotFound, id + "was not found"));
+						}
+						return Uni.createFrom().item(rowSet.iterator().next().getJsonObject(0).getMap());
+					});
+		});
+
 	}
 
 }

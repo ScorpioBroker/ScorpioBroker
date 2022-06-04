@@ -68,7 +68,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	MicroServiceUtils microServiceUtils;
 
 	@Inject
-	CSourceDAO csourceInfoDAO;
+	CSourceDAO cSourceInfoDAO;
 
 	@Inject
 	@Channel(AppConstants.REGISTRY_CHANNEL)
@@ -171,7 +171,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		// get entity details
-		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, csourceInfoDAO).onItem()
+		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
 				.transform(
 						Unchecked.function(t -> new AppendCSourceRequest(headers, registrationId, t, entry, options)))
 				.onItem().transformToUni(t -> {
@@ -223,11 +223,15 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 					"Invalid delete for registration. No ID provided."));
 		}
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, csourceInfoDAO).onItem()
+		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
 				.transform(Unchecked.function(t -> {
 					return new DeleteCSourceRequest(t, headers, registrationId);
-				})).onItem().transformToUni(t -> csourceInfoDAO.storeRegistryEntry(t).onItem().transform(i -> true));
+				})).onItem().transformToUni(t -> cSourceInfoDAO.storeRegistryEntry(t).onItem().transform(i -> true));
 
+	}
+
+	public Uni<Map<String, Object>> getRegistrationById(String id, String tenant) {
+		return cSourceInfoDAO.getRegistrationById(id, tenant);
 	}
 
 	private long getMillisFromDateTime(Object expiresAt) {
@@ -240,13 +244,13 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 	}
 
-	public Uni<QueryResult> query(QueryParams qp) {
-		return csourceInfoDAO.query(qp);
-	}
+//	public Uni<QueryResult> query(QueryParams qp) {
+//		return csourceInfoDAO.query(qp);
+//	}
 
 	@Override
 	protected StorageDAO getQueryDAO() {
-		return csourceInfoDAO;
+		return cSourceInfoDAO;
 	}
 
 	@Override
@@ -488,7 +492,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	private UniAndGroup2<Void, Void> handleRequest(CSourceRequest request) {
-		return Uni.combine().all().unis(csourceInfoDAO.storeRegistryEntry(request),
+		return Uni.combine().all().unis(cSourceInfoDAO.storeRegistryEntry(request),
 				kafkaSenderInterface.send(new BaseRequest(request)));
 	}
 }
