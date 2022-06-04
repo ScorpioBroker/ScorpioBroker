@@ -91,7 +91,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 					} else {
 						return t;
 					}
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	public static Uni<RestResponse<Object>> getType(EntryQueryService queryService, HttpServerRequest request,
@@ -106,7 +106,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 					} else {
 						return t;
 					}
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	public static Uni<RestResponse<Object>> getAllAttributes(EntryQueryService queryService, HttpServerRequest request,
@@ -123,7 +123,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 					} else {
 						return t;
 					}
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	public static Uni<RestResponse<Object>> getAttribute(EntryQueryService queryService, HttpServerRequest request,
@@ -138,7 +138,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 					} else {
 						return t;
 					}
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	private static Uni<RestResponse<Object>> getQueryData(EntryQueryService queryService, HttpServerRequest request,
