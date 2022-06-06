@@ -1,6 +1,9 @@
 package eu.neclab.ngsildbroker.registryhandler.messaging;
 
 import java.io.IOException;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
@@ -23,6 +26,9 @@ public abstract class CSourceMessagingBase {
 
 	private static final Logger logger = LoggerFactory.getLogger(CSourceMessagingKafka.class);
 
+	private ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 50, 1, TimeUnit.MINUTES,
+			new LinkedBlockingQueue<Runnable>());
+
 	public Uni<Void> baseHandleEntity(Message<BaseRequest> mutinyMessage) {
 
 		try {
@@ -32,7 +38,9 @@ public abstract class CSourceMessagingBase {
 			logger.error("failed to output debug", e);
 		}
 		BaseRequest message = mutinyMessage.getPayload();
-		new Thread() {
+		executor.execute(new Runnable() {
+
+			@Override
 			public void run() {
 				switch (message.getRequestType()) {
 					case AppConstants.DELETE_REQUEST:
@@ -48,7 +56,7 @@ public abstract class CSourceMessagingBase {
 						break;
 				}
 			};
-		}.start();
+		});
 		return Uni.createFrom().nullItem();
 	}
 

@@ -275,7 +275,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			try {
 				CSourceRequest regEntry = createInternalRegEntry(tenant);
 				if (regEntry.getFinalPayload() == null) {
-					deleteEntry(regEntry.getHeaders(), regEntry.getId());
+					deleteEntry(regEntry.getHeaders(), regEntry.getId()).await().indefinitely();
 				} else {
 					storeInternalEntry(regEntry);
 				}
@@ -310,7 +310,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			try {
 				CSourceRequest regEntry = createInternalRegEntry(tenant);
 				if (regEntry.getFinalPayload() == null) {
-					deleteEntry(regEntry.getHeaders(), regEntry.getId());
+					deleteEntry(regEntry.getHeaders(), regEntry.getId()).await().indefinitely();
 				} else {
 					storeInternalEntry(regEntry);
 				}

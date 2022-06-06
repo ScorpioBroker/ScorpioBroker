@@ -6,12 +6,12 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.google.common.collect.ArrayListMultimap;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
@@ -27,7 +27,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.groups.UniAndGroup2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
@@ -67,7 +66,7 @@ public class EntityService implements EntryCRUDService {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		return handleRequest(request).combinedWith((t, u) -> {
+		return handleRequest(request).onItem().transform(v -> {
 			logger.debug("createMessage() :: completed");
 			return request.getId();
 		});
@@ -97,8 +96,8 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().item(t.getUpdateResult());
 					}
-					return handleRequest(t).combinedWith((storage, kafka) -> {
-						logger.trace("updateMessage() :: completed");
+					return handleRequest(t).onItem().transform(v -> {
+						logger.trace("partialUpdateEntity() :: completed");
 						return t.getUpdateResult();
 					});
 				});
@@ -131,8 +130,8 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().item(t.getUpdateResult());
 					}
-					return handleRequest(t).combinedWith((storage, kafka) -> {
-						logger.trace("appendMessage() :: completed");
+					return handleRequest(t).onItem().transform(v -> {
+						logger.trace("partialUpdateEntity() :: completed");
 						return t.getUpdateResult();
 					});
 				});
@@ -154,10 +153,10 @@ public class EntityService implements EntryCRUDService {
 					temp.setRequestPayload(t.getOldEntity());
 					temp.setFinalPayload(t.getOldEntity());
 					Uni<Void> kafka = kafkaSenderInterface.send(temp);
-					return Uni.combine().all().unis(store, kafka).combinedWith((db, u) -> {
-						logger.trace("deleteEntity() :: completed");
-						return true;
+					return store.onItem().transformToUni(v -> {
+						return kafka.onItem().transform(v2 -> true);
 					});
+
 				});
 	}
 
@@ -180,7 +179,7 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().item(t.getUpdateResult());
 					}
-					return handleRequest(t).combinedWith((storage, kafka) -> {
+					return handleRequest(t).onItem().transform(v -> {
 						logger.trace("partialUpdateEntity() :: completed");
 						return t.getUpdateResult();
 					});
@@ -198,12 +197,13 @@ public class EntityService implements EntryCRUDService {
 		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
 				.transform(Unchecked
 						.function(t -> new DeleteAttributeRequest(headers, entityId, t, attrId, datasetId, deleteAll)))
-				.onItem().transform(t -> true);
+				.onItem().transformToUni(t -> handleRequest(t)).onItem().transform(t -> true);
 	}
 
-	private UniAndGroup2<Void, Void> handleRequest(EntityRequest request) {
-		return Uni.combine().all().unis(entityInfoDAO.storeEntity(request),
-				kafkaSenderInterface.send(new BaseRequest(request)));
+	private Uni<Void> handleRequest(EntityRequest request) {
+		return entityInfoDAO.storeEntity(request).onItem()
+				.transformToUni(t -> kafkaSenderInterface.send(new BaseRequest(request)));
+
 	}
 
 }

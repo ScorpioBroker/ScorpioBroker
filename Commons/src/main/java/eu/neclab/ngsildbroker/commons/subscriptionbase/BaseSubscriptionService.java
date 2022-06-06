@@ -168,16 +168,26 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	protected abstract SubscriptionInfoDAOInterface getSubscriptionInfoDao();
 
 	private void loadStoredSubscriptions() {
-		synchronized (this.tenant2subscriptionId2Subscription) {
+		//synchronized (this.tenant2subscriptionId2Subscription) {
+			logger.debug("loading stored subscriptions");
 			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions().await().indefinitely();
+			logger.debug("loaded stored subscriptions from database");
 			for (String subscriptionString : subscriptions) {
+				logger.debug("subscribing with " + subscriptionString);
 				subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true).onFailure()
 						.recoverWithItem(e -> {
 							logger.error("Failed to load stored subscription", e);
 							return null;
-						});
+						}).onItem().transform(t -> {
+							if (t != null) {
+								logger.debug("subscribed to " + subscriptionString);
+							}
+							return t;
+						}).await().indefinitely();
+
 			}
-		}
+		//}
+		logger.debug("done loading stored subscribtipns");
 	}
 
 	public Uni<String> subscribe(SubscriptionRequest subscriptionRequest) {

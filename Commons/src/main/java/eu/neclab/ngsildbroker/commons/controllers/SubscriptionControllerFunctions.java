@@ -422,7 +422,7 @@ public interface SubscriptionControllerFunctions {
 		boolean count = qp.getCountResult();
 
 		return subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request)).onItem()
-				.transformToUni(result -> {
+				.transformToUni(Unchecked.function(result -> {
 					int toIndex = offset + actualLimit;
 					ArrayList<Object> additionalLinks = new ArrayList<Object>();
 					if (limit == 0 || toIndex > result.size() - 1) {
@@ -457,9 +457,10 @@ public interface SubscriptionControllerFunctions {
 					List<SubscriptionRequest> realResult = result.subList(offset, toIndex);
 					logger.trace("getAllSubscriptions() :: completed");
 
-					return HttpUtils.generateReply(request, DataSerializer.toJson(getSubscriptions(realResult)),
+					return HttpUtils.generateReply(request,
+							JsonUtils.fromString(DataSerializer.toJson(getSubscriptions(realResult))),
 							additionalHeaders, AppConstants.SUBSCRIPTION_ENDPOINT);
-				});
+				}));
 
 	}
 
@@ -478,7 +479,7 @@ public interface SubscriptionControllerFunctions {
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return subscriptionService.getSubscription(id, headers);
 		}).onItem().transformToUni(Unchecked.function(t -> {
-			return HttpUtils.generateReply(request, DataSerializer.toJson(t.getSubscription()),
+			return HttpUtils.generateReply(request, JsonUtils.fromString(DataSerializer.toJson(t.getSubscription())),
 					AppConstants.SUBSCRIPTION_ENDPOINT);
 		})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 

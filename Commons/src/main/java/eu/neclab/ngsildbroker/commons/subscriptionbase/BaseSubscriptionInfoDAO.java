@@ -28,7 +28,6 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements SubscriptionInfoDAOInterface {
-	private final static Logger logger = LoggerFactory.getLogger(BaseSubscriptionInfoDAO.class);
 
 	private String dbname = getDBName();
 
@@ -120,7 +119,7 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		String tenant = sub.getTenant();
 		return clientManager.getClient(tenant, false).onItem()
 				.transformToUni(client -> client.preparedQuery("INSERT INTO " + dbname
-						+ " (subscription_id, subscription_request) VALUES (?, ?) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request")
+						+ " (subscription_id, subscription_request) VALUES ($1, $2) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request")
 						.execute(Tuple.of(sub.getId(), DataSerializer.toJson(sub))).onItem().ignore()
 						.andContinueWithNull());
 	}
@@ -130,7 +129,7 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		String tenant = sub.getTenant();
 
 		return clientManager.getClient(tenant, false).onItem()
-				.transformToUni(client -> client.preparedQuery("DELETE FROM " + dbname + " WHERE subscription_id=?")
+				.transformToUni(client -> client.preparedQuery("DELETE FROM " + dbname + " WHERE subscription_id = $1")
 						.execute(Tuple.of(sub.getId())).onItem().ignore().andContinueWithNull());
 	}
 }

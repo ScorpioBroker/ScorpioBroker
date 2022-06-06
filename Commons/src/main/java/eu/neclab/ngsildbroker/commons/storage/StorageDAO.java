@@ -106,35 +106,6 @@ public abstract class StorageDAO {
 			return result;
 		});
 	}
-	/*
-	 * public boolean storeTenantdata(String tableName, String columnName, String
-	 * tenantidvalue, String databasename) throws SQLException { try { String sql;
-	 * int n = 0; if (!tenantidvalue.equals(null)) { sql = "INSERT INTO " +
-	 * tableName +
-	 * " (tenant_id, database_name) VALUES (?, ?) ON CONFLICT(tenant_id) DO UPDATE SET tenant_id = EXCLUDED.tenant_id"
-	 * ; synchronized (writerJdbcTemplate) { n = writerJdbcTemplate.update(sql,
-	 * tenantidvalue, databasename); } } else { sql = "DELETE FROM " + tableName +
-	 * " WHERE id = ?"; synchronized (writerJdbcTemplate) { n =
-	 * writerJdbcTemplate.update(sql, tenantidvalue); } }
-	 * logger.trace("Rows affected: " + Integer.toString(n)); return true; // (n>0);
-	 * } catch (Exception e) { logger.error("Exception ::", e); e.printStackTrace();
-	 * } return false; }
-	 */
-
-	/*
-	 * protected PgPool getJDBCTemplates(String tenant) { PgPool result; if (tenant
-	 * == null) { result = clientManager.; } else { if
-	 * (clientManager.tenant2Client.containsKey(tenant)) { result =
-	 * clientManager.tenant2Client.get(tenant); } else { DataSource finalDataSource
-	 * = determineTargetDataSource(tenant); //DataSourceTransactionManager
-	 * transactionManager = new DataSourceTransactionManager(finalDataSource);
-	 * result = new DBWriteTemplates(new
-	 * JdbcTemplate(transactionManager.getDataSource()), new
-	 * TransactionTemplate(transactionManager), new JdbcTemplate(finalDataSource));
-	 * clientManager.tenant2Client.put(tenant, result); }
-	 * 
-	 * } return result; }
-	 */
 
 	public Uni<QueryResult> query(QueryParams qp) {
 		return clientManager.getClient(qp.getTenant(), false).onItem().transformToUni(client -> {
