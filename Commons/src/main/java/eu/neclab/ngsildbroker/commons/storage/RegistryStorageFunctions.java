@@ -235,12 +235,14 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 
 	private String getSqlWhereByIdPattern(String typeValue, String idPatternValue) {
 		String sqlWhere = "( ";
+		if(typeValue!=null) {
 		if (typeValue.indexOf(",") == -1) {
 			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = '" + typeValue + "' AND ";
 		} else {
 			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN ('" + typeValue.replace(",", "','")
 					+ "') AND ";
 		}
+	  }
 		sqlWhere += "(" + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_ID + " ~ '" + idPatternValue + "' OR " + "ci."
 				+ DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + " ~ '" + idPatternValue + "')";
 		sqlWhere += " )";

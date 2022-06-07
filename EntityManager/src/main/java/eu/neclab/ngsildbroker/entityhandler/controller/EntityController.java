@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -145,7 +146,7 @@ public class EntityController {// implements EntityHandlerInterface {
 						.onItem().transform(u -> Tuple2.of(u, t.getItem3())))
 				.onItem().transform(Unchecked.function(t -> {
 					if (t.getItem1().getNotUpdated().isEmpty()) {
-						return RestResponse.noContent().ok();
+						return RestResponse.noContent();
 
 					} else {
 						throw new ResponseException(ErrorType.BadRequestData, JsonUtils.toPrettyString(
@@ -170,19 +171,28 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> deleteAttribute(HttpServerRequest request, @PathParam("entityId") String entityId,
 			@PathParam("attrId") String attrId, @QueryParam("datasetId") String datasetId,
 			@QueryParam("deleteAll") String deleteAll) {
-		try {
-			HttpUtils.validateUri(entityId);
-			logger.trace("delete attribute :: started");
-			Context context = JsonLdProcessor.getCoreContextClone();
-			context = context.parse(HttpUtils.getAtContext(request), true);
-			String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
-			entityService.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId,
-					deleteAll);
-			logger.trace("delete attribute :: completed");
-			return Uni.createFrom().item(RestResponse.noContent());
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
+		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
+				.onItem().transformToUni(t -> {
+					logger.trace("delete attribute :: started");
+					Context context = JsonLdProcessor.getCoreContextClone();
+					List<Object> links = t.getItem2();
+					context = context.parse(links, true);
+					String expandedAttrib = "";
+					try {
+						expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
+					} catch (ResponseException responseException) {
+						responseException.printStackTrace();
+					}
+					return entityService
+							.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, null, deleteAll)
+							.onItem().transform(t2 -> {
+								logger.trace("delete attribute :: completed");
+								return RestResponse.noContent();
+
+							});
+
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 
 	/**
