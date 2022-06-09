@@ -57,7 +57,7 @@ public class RestResponse {
 	}
 
 	public String toJson() {
-		String result = "{\n\t\"type\":\"" + type + "\",\n\t\"title\":\"" + title + "\",\n\t\"details\":\"" + details
+		String result = "{\n\t\"type\":\"" + type + "\",\n\t\"title\":\"" + title + "\",\n\t\"detail\":\"" + details
 				+ "\"\n}";
 		return result;
 	}
