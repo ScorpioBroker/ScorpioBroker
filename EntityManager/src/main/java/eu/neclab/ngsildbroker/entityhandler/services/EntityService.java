@@ -196,8 +196,13 @@ public class EntityService implements EntryCRUDService {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
 				.transform(Unchecked
-						.function(t -> new DeleteAttributeRequest(headers, entityId, t, attrId, datasetId, deleteAll)))
-				.onItem().transformToUni(t -> handleRequest(t)).onItem().transform(t -> true);
+						.function(t -> {return new DeleteAttributeRequest(headers, entityId, t, attrId, datasetId, deleteAll); }))
+				.onItem().transformToUni(t -> handleRequest(t)).onItem().transform(t -> true).onFailure()
+				.transform(t -> {
+					if (t.getMessage().equals("Attribute is not present"))
+						return new ResponseException(ErrorType.NotFound, t.getMessage());
+					else return t;
+				});
 	}
 
 	private Uni<Void> handleRequest(EntityRequest request) {
