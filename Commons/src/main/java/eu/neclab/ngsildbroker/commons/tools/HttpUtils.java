@@ -725,4 +725,12 @@ public final class HttpUtils {
 		return result;
 	}
 
+	public static MultiMap getQueryParamMap(HttpServerRequest request) {
+			MultiMap mMap = MultiMap.caseInsensitiveMultiMap();
+			String[] params = request.query().split("&");
+	    	for(String param:params) {
+				mMap.add(param.split("=",2)[0],param.split("=",2)[1] );
+	    	}
+	return mMap;
+	}
 }

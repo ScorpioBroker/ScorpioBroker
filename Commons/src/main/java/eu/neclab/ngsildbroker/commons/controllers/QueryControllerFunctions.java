@@ -74,8 +74,9 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 */
 	public static Uni<RestResponse<Object>> queryForEntries(EntryQueryService queryService, HttpServerRequest request,
 			boolean temporal, int defaultLimit, int maxLimit, boolean typeRequired) {
-		return getQueryData(queryService, request, request.query(), request.params(), typeRequired, true, temporal,
-				defaultLimit, maxLimit, null).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		return getQueryData(queryService, request, request.query(), HttpUtils.getQueryParamMap(request), typeRequired,
+				true, temporal, defaultLimit, maxLimit, null).onFailure()
+				.recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	public static Uni<RestResponse<Object>> getAllTypes(EntryQueryService queryService, HttpServerRequest request,
