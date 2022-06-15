@@ -227,7 +227,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
 				.transform(Unchecked.function(t -> {
-					return new DeleteCSourceRequest(t, headers, registrationId);
+					return new DeleteCSourceRequest(null, headers, registrationId);
 				})).onItem().transformToUni(t -> cSourceInfoDAO.storeRegistryEntry(t).onItem().transform(i -> true));
 
 	}
