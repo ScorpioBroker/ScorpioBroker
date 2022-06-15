@@ -19,6 +19,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
@@ -84,20 +85,23 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public Uni<Boolean> delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
 			String instanceId, Context linkHeaders) {
-		DeleteHistoryEntityRequest request;
-		try {
-			logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
+		if (entityId == null) {
+			return Uni.createFrom()
+					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
+		}
+		String tenantId = HttpUtils.getInternalTenant(headers);
+		
+		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transform(Unchecked.function(t -> {
 			String resolvedAttrId = null;
 			if (attributeId != null) {
 				resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
 			}
-			request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
-		} catch (ResponseException e) {
-			return Uni.createFrom().failure(e);
-		}
-		return handleRequest(request).combinedWith((t, u) -> {
-			logger.debug("delete Message() :: completed");
-			return true;
+			return new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
+		})).onItem().transformToUni(t2 -> {
+			return handleRequest(t2).combinedWith((t, u) -> {
+				logger.debug("delete Message() :: completed");
+				return true;
+			});
 		});
 	}
 
