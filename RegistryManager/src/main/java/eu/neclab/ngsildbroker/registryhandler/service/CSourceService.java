@@ -54,6 +54,7 @@ import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniAndGroup2;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.mutiny.vertx.UniHelper;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -185,7 +186,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 						task.cancel();
 					}
 					csourceTimerTask(headers, t.getFinalPayload());
-					return handleRequest(t).combinedWith((storage, kafka) -> {
+					return handleRequest(t).onItem().transform(t2 -> {
 						logger.trace("appendMessage() :: completed");
 						return t.getUpdateResult();
 					});
@@ -210,7 +211,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		return handleRequest(request).combinedWith((t, u) -> {
+		return handleRequest(request).onItem().transform(t -> {
 			logger.debug("createMessage() :: completed");
 			return request.getId();
 		});
@@ -227,8 +228,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
 				.transform(Unchecked.function(t -> {
-					return new DeleteCSourceRequest(null, headers, registrationId);
-				})).onItem().transformToUni(t -> cSourceInfoDAO.storeRegistryEntry(t).onItem().transform(i -> true));
+					return Tuple2.of(new DeleteCSourceRequest(null, headers, registrationId),
+							new DeleteCSourceRequest(t, headers, registrationId));
+				})).onItem()
+				.transformToUni(t -> cSourceInfoDAO.storeRegistryEntry(t.getItem1()).onItem().transformToUni(
+						i -> kafkaSenderInterface.send(new BaseRequest(t.getItem2())).onItem().transform(k -> true)));
 
 	}
 
@@ -493,8 +497,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	}
 
-	private UniAndGroup2<Void, Void> handleRequest(CSourceRequest request) {
-		return Uni.combine().all().unis(cSourceInfoDAO.storeRegistryEntry(request),
-				kafkaSenderInterface.send(new BaseRequest(request)));
+	private Uni<Void> handleRequest(CSourceRequest request) {
+		return cSourceInfoDAO.storeRegistryEntry(request).onItem()
+				.transformToUni(t -> kafkaSenderInterface.send(new BaseRequest(request)));
 	}
 }
