@@ -95,6 +95,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			String resolvedAttrId = null;
 			if (attributeId != null) {
 				resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
+				
 			}
 			return new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
 		})).onItem().transformToUni(t2 -> {
@@ -107,19 +108,15 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) {
-		AppendHistoryEntityRequest request;
-		try {
-			request = new AppendHistoryEntityRequest(headers, resolved, entityId);
-		} catch (ResponseException e) {
-			return Uni.createFrom().failure(e);
-
-		}
-
-		return handleRequest(request).combinedWith((t, u) -> {
-			logger.debug("appendToEntry() :: completed");
-			return request.getUpdateResult();
+		String tenantId = HttpUtils.getInternalTenant(headers);
+		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transform(Unchecked.function(t -> {
+			return new AppendHistoryEntityRequest(headers, resolved, entityId);
+		})).onItem().transformToUni(t2 -> {
+			return handleRequest(t2).combinedWith((t, u) -> {
+				logger.debug("appendToEntry() :: completed");
+				return t2.getUpdateResult();
+			});
 		});
-
 	}
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
