@@ -69,7 +69,8 @@ public final class HttpUtils {
 
 	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND)
+			.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 			.entity(new NGSIRestResponse(ErrorType.NotFound, "Resource not found.").toJson()).build();
 
 	public static boolean doPreflightCheck(HttpServerRequest req, List<Object> atContextLinks)
