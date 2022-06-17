@@ -63,7 +63,8 @@ public abstract class EntityTools {
 		if (attrNames == null || attrNames.isEmpty()) {
 			return fullEntry;
 		}
-		if(subscription.getSubscription().getNotification().getAttributeNames() == null || subscription.getSubscription().getNotification().getAttributeNames().isEmpty()) {
+		List<String> notifucationAttrs = subscription.getSubscription().getNotification().getAttributeNames();
+		if(notifucationAttrs == null || notifucationAttrs.isEmpty()) {
 			return fullEntry;
 		}
 		Set<String> allNames = new HashSet<String>(fullEntry.keySet());
