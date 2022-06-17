@@ -63,6 +63,9 @@ public abstract class EntityTools {
 		if (attrNames == null || attrNames.isEmpty()) {
 			return fullEntry;
 		}
+		if(subscription.getSubscription().getNotification().getAttributeNames() == null || subscription.getSubscription().getNotification().getAttributeNames().isEmpty()) {
+			return fullEntry;
+		}
 		Set<String> allNames = new HashSet<String>(fullEntry.keySet());
 		allNames.remove(NGSIConstants.JSON_LD_ID);
 		allNames.remove(NGSIConstants.JSON_LD_TYPE);
