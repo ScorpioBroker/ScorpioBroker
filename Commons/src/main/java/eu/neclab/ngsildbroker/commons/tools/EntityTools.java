@@ -63,6 +63,10 @@ public abstract class EntityTools {
 		if (attrNames == null || attrNames.isEmpty()) {
 			return fullEntry;
 		}
+		List<String> notifucationAttrs = subscription.getSubscription().getNotification().getAttributeNames();
+		if(notifucationAttrs == null || notifucationAttrs.isEmpty()) {
+			return fullEntry;
+		}
 		Set<String> allNames = new HashSet<String>(fullEntry.keySet());
 		allNames.remove(NGSIConstants.JSON_LD_ID);
 		allNames.remove(NGSIConstants.JSON_LD_TYPE);
