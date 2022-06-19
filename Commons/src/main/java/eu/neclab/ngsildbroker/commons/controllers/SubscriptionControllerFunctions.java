@@ -274,7 +274,7 @@ public interface SubscriptionControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static NotificationParam getNotificationParam(Map<String, Object> map, Context context) throws Exception {
+	public static NotificationParam getNotificationParam(Map<String, Object> map, Context context) throws Exception {
 		// Default accept
 		String accept = AppConstants.NGB_APPLICATION_JSONLD;
 		Format format = Format.normalized;
@@ -534,7 +534,7 @@ public interface SubscriptionControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static LDGeoQuery getGeoQuery(Map<String, Object> map, Context context) throws Exception {
+	public static LDGeoQuery getGeoQuery(Map<String, Object> map, Context context) throws Exception {
 		LDGeoQuery geoQuery = new LDGeoQuery();
 		Object geoProperty = map.get(NGSIConstants.NGSI_LD_GEOPROPERTY_GEOQ_ATTRIB);
 		if (geoProperty != null) {
@@ -611,7 +611,7 @@ public interface SubscriptionControllerFunctions {
 		return result;
 	}
 
-	private static List<String> getAttribs(List<Map<String, Object>> entry) throws ResponseException {
+	public static List<String> getAttribs(List<Map<String, Object>> entry) throws ResponseException {
 		ArrayList<String> watchedAttribs = new ArrayList<String>();
 		for (Map<String, Object> attribEntry : entry) {
 			String temp = (String) attribEntry.get(NGSIConstants.JSON_LD_ID);

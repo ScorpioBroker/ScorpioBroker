@@ -111,7 +111,9 @@ public abstract class StorageDAO {
 		return clientManager.getClient(qp.getTenant(), false).onItem().transformToUni(client -> {
 
 			if (qp.getCheck() != null) {
+				logger.debug("Query for types or attributes got called");
 				String sqlQuery = storageFunctions.typesAndAttributeQuery(qp);
+				logger.debug("SQL Query for type or attributes: " + sqlQuery);
 				if (sqlQuery != null && !sqlQuery.isEmpty()) {
 					return client.query(sqlQuery).execute().onItem().transform(rows -> {
 						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
@@ -130,20 +132,24 @@ public abstract class StorageDAO {
 				Uni<RowSet<Row>> entries = Uni.createFrom().nullItem();
 				if (qp.getCountResult()) {
 					String sqlQueryCount = null;
+					logger.debug("Query for count got called");
 					try {
 						sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
 					} catch (ResponseException responseException) {
-						responseException.printStackTrace();
+						return Uni.createFrom().failure(responseException);
 					}
+					logger.debug("SQL Query for count: " + sqlQueryCount);
 					count = conn.preparedQuery(sqlQueryCount).execute();
 				}
 				if (qp.getLimit() != 0 || !qp.getCountResult()) {
 					String sqlQuery = null;
+					logger.debug("Query got called");
 					try {
 						sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
 					} catch (ResponseException responseException) {
-						responseException.printStackTrace();
+						return Uni.createFrom().failure(responseException);
 					}
+					logger.debug("SQL Query: " + sqlQuery);
 					entries = conn.preparedQuery(sqlQuery).execute();
 				}
 

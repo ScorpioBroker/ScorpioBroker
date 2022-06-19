@@ -46,7 +46,7 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 
 	@Override
 	protected void setSyncId() {
-		this.syncId = SubscriptionSyncService.SYNC_ID;
+		this.syncId = SYNC_ID;
 	}
 
 	@Override
