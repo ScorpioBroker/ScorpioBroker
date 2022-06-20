@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.ngsiqueries;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.regex.Pattern;
@@ -80,6 +82,11 @@ public class QueryParser {
 		String attribName = "";
 		String operator = "";
 		String operant = "";
+		try {
+			input = URLDecoder.decode(input, "utf-8");
+		} catch (UnsupportedEncodingException e) {
+			throw new ResponseException(ErrorType.InternalError, e.getMessage());
+		}
 		OfInt it = input.chars().iterator();
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();

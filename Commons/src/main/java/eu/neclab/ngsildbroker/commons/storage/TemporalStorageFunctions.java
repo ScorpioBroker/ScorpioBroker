@@ -1,10 +1,13 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.google.common.collect.Lists;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +19,13 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple3;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.SqlConnection;
+import io.vertx.mutiny.sqlclient.Tuple;
+import static eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface.getSQLList;
 
 public class TemporalStorageFunctions implements StorageFunctionsInterface {
 	protected final static Logger logger = LoggerFactory.getLogger(TemporalStorageFunctions.class);
@@ -36,41 +46,60 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 	}
 
 	@Override
-	public String translateNgsildQueryToSql(QueryParams qp) throws ResponseException {
+	public Uni<RowSet<Row>> translateNgsildQueryToSql(QueryParams qp, SqlConnection conn) {
 
-		String fullSqlWhereProperty = commonTranslateSql(qp);
+		Tuple3<String, ArrayList<Object>, Integer> fullSqlWhereProperty;
+		try {
+			fullSqlWhereProperty = commonTranslateSql(qp, 1);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();
+		String query = fullSqlWhereProperty.getItem1();
 		if (limit > 0) {
-			fullSqlWhereProperty += "LIMIT " + limit + " ";
+			query += "LIMIT " + limit + " ";
 		}
 		if (offSet > 0) {
-			fullSqlWhereProperty += "OFFSET " + offSet + " ";
+			query += "OFFSET " + offSet + " ";
 		}
-		return fullSqlWhereProperty;
+		return conn.preparedQuery(query).execute(Tuple.from(fullSqlWhereProperty.getItem2()));
 	}
 
-	private String getSqlWhereForField(String dbColumn, String value) {
+	private Tuple3<String, ArrayList<Object>, Integer> getSqlWhereForField(String dbColumn, String value,
+			int currentCount) {
 		String sqlWhere = "";
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
 		if (value.indexOf(",") == -1) {
-			sqlWhere = dbColumn + "='" + value + "'";
+			sqlWhere = dbColumn + " = $" + newCount;
+			replacements.add(value);
+			newCount++;
+
 		} else {
-			sqlWhere = dbColumn + " IN ('" + value.replace(",", "','") + "')";
+			Tuple3<String, ArrayList<Object>, Integer> tmp = getSQLList(value, newCount);
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+			sqlWhere = dbColumn + " IN (" + tmp.getItem1() + ")";
 		}
-		return sqlWhere;
+		return Tuple3.of(sqlWhere, replacements, newCount);
 	}
 
-	protected String translateNgsildTimequeryToSql(String timerel, String time, String timeproperty, String endTime,
-			String dbPrefix) throws ResponseException {
+	protected Tuple3<String, ArrayList<Object>, Integer> translateNgsildTimequeryToSql(String timerel, String time,
+			String timeproperty, String endTime, String dbPrefix, int currentCount) throws ResponseException {
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
 		StringBuilder sqlWhere = new StringBuilder(50);
 
 		String sqlTestStatic = dbPrefix + "static = true AND ";
 
 		String dbColumn = NGSILD_TO_SQL_RESERVED_PROPERTIES_MAPPING_TIME.get(timeproperty);
 		if (dbColumn == null) {
-			sqlTestStatic += "data?'" + timeproperty + "' = false";
-			dbColumn = "(" + dbPrefix + "data#>>'{" + timeproperty + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE
+			sqlTestStatic += "data ? $" + newCount + " = false";
+			dbColumn = "(" + dbPrefix + "data#>>'{$" + newCount + ",0," + NGSIConstants.NGSI_LD_HAS_VALUE
 					+ ",0,@value}')::timestamp ";
+			newCount++;
+			replacements.add(timeproperty);
 		} else {
 			dbColumn = dbPrefix + dbColumn;
 			sqlTestStatic += dbColumn + " IS NULL";
@@ -80,37 +109,55 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 
 		switch (timerel) {
 			case NGSIConstants.TIME_REL_BEFORE:
-				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " '" + time + "'::timestamp");
+				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " $" + newCount + "::timestamp");
+				newCount++;
+				replacements.add(time);
 				break;
 			case NGSIConstants.TIME_REL_AFTER:
-				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " '" + time + "'::timestamp");
+				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " $" + newCount + "::timestamp");
+				newCount++;
+				replacements.add(time);
 				break;
 			case NGSIConstants.TIME_REL_BETWEEN:
-				sqlWhere.append(dbColumn + " BETWEEN '" + time + "'::timestamp AND '" + endTime + "'::timestamp");
+				sqlWhere.append(dbColumn + " BETWEEN $" + newCount + "::timestamp AND $");
+				newCount++;
+				replacements.add(time);
+				sqlWhere.append(newCount + "'::timestamp");
+				newCount++;
+				replacements.add(endTime);
 				break;
 			default:
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);
 		}
 		sqlWhere.append(")");
-		return sqlWhere.toString();
+		return Tuple3.of(sqlWhere.toString(), replacements, newCount);
 	}
 
 	@Override
-	public String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
+	public Uni<RowSet<Row>> translateNgsildQueryToCountResult(QueryParams qp, SqlConnection conn) {
 
-		String fullSqlWhereProperty = commonTranslateSql(qp);
-		String sqlQuery = "SELECT Count(*) FROM ";
-		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "( " + fullSqlWhereProperty.toString() + " )AS foo";
+		Tuple3<String, ArrayList<Object>, Integer> fullSqlWhereProperty;
+		try {
+			fullSqlWhereProperty = commonTranslateSql(qp, 1);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
 		}
-		return sqlQuery;
+		String sqlQuery = "SELECT Count(*) FROM ";
+		if (fullSqlWhereProperty.getItem1().length() > 0) {
+			sqlQuery += "( " + fullSqlWhereProperty.getItem1() + " )AS foo";
+		}
+		return conn.preparedQuery(sqlQuery).execute(Tuple.from(fullSqlWhereProperty.getItem2()));
 	}
 
-	protected String commonTranslateSql(QueryParams qp) throws ResponseException {
+	protected Tuple3<String, ArrayList<Object>, Integer> commonTranslateSql(QueryParams qp, int currentCount)
+			throws ResponseException {
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
 		StringBuilder fullSqlWhere = new StringBuilder(70);
 		String sqlWhereGeoquery = "";
 		String sqlWhere = "";
 		String sqlQuery = "";
+		Tuple3<String, ArrayList<Object>, Integer> tmp;
 		List<Map<String, String>> entities = qp.getEntities();
 		if (entities != null && entities.size() > 0) {
 			for (Map<String, String> entityInfo : entities) {
@@ -118,15 +165,22 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 				for (Entry<String, String> entry : entityInfo.entrySet()) {
 					switch (entry.getKey()) {
 						case NGSIConstants.JSON_LD_ID:
-							fullSqlWhere
-									.append(getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_ID, entry.getValue()));
+							tmp = getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_ID, entry.getValue(), newCount);
+							newCount = tmp.getItem3();
+							replacements.addAll(tmp.getItem2());
+							fullSqlWhere.append(tmp.getItem1());
 							break;
 						case NGSIConstants.JSON_LD_TYPE:
-							fullSqlWhere.append(
-									getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_TYPE, entry.getValue()));
+							tmp = getSqlWhereForField("te." + DBCOLUMN_HISTORY_ENTITY_TYPE, entry.getValue(), newCount);
+							newCount = tmp.getItem3();
+							replacements.addAll(tmp.getItem2());
+							fullSqlWhere.append(tmp.getItem1());
+
 							break;
 						case NGSIConstants.NGSI_LD_ID_PATTERN:
-							fullSqlWhere.append("te." + DBCOLUMN_HISTORY_ENTITY_ID + " ~ '" + entry.getValue() + "'");
+							fullSqlWhere.append("te." + DBCOLUMN_HISTORY_ENTITY_ID + " ~ $" + newCount);
+							newCount++;
+							replacements.add(entry.getValue());
 							break;
 						default:
 							break;
@@ -141,12 +195,16 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		}
 
 		if (qp.getAttrs() != null) {
-			sqlWhere = getSqlWhereForField("teai." + DBCOLUMN_HISTORY_ATTRIBUTE_ID, qp.getAttrs());
-			fullSqlWhere.append(sqlWhere + " AND ");
+			tmp = getSqlWhereForField("teai." + DBCOLUMN_HISTORY_ATTRIBUTE_ID, qp.getAttrs(), newCount);
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+			fullSqlWhere.append(tmp.getItem1() + " AND ");
 		}
 		if (qp.getInstanceId() != null) {
-			sqlWhere = getSqlWhereForField("teai." + DBCOLUMN_HISTORY_INSTANCE_ID, qp.getInstanceId());
-			fullSqlWhere.append(sqlWhere + " AND ");
+			tmp = getSqlWhereForField("teai." + DBCOLUMN_HISTORY_INSTANCE_ID, qp.getInstanceId(), newCount);
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+			fullSqlWhere.append(tmp.getItem1() + " AND ");
 		}
 		if (qp.getScopeQ() != null) {
 			sqlWhere = qp.getScopeQ();
@@ -156,8 +214,11 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		}
 		// temporal query
 		if (qp.getTimerel() != null) {
-			sqlWhere = translateNgsildTimequeryToSql(qp.getTimerel(), qp.getTimeAt(), qp.getTimeproperty(),
-					qp.getEndTimeAt(), "teai.");
+			tmp = translateNgsildTimequeryToSql(qp.getTimerel(), qp.getTimeAt(), qp.getTimeproperty(),
+					qp.getEndTimeAt(), "teai.", newCount);
+			sqlWhere = tmp.getItem1();
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
 			fullSqlWhere.append(sqlWhere + " AND ");
 		}
 
@@ -165,15 +226,22 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		if (qp.getGeorel() != null) {
 			GeoqueryRel gqr = qp.getGeorel();
 			logger.debug("Georel value " + gqr.getGeorelOp());
-			sqlWhere = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
-					qp.getGeoproperty());
+			tmp = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(), qp.getGeoproperty(),
+					newCount);
+			sqlWhere = tmp.getItem1();
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
 			if (!sqlWhere.isEmpty()) {
-				String sqlWhereTemporal = translateNgsildTimequeryToSql(qp.getTimerel(), qp.getTimeAt(),
-						qp.getTimeproperty(), qp.getEndTimeAt(), "");
+				tmp = translateNgsildTimequeryToSql(qp.getTimerel(), qp.getTimeAt(), qp.getTimeproperty(),
+						qp.getEndTimeAt(), "", newCount);
+				newCount = tmp.getItem3();
+				replacements.addAll(tmp.getItem2());
 				sqlWhereGeoquery = "where exists (" + "  select 1 " + "  from temporalentityattrinstance "
-						+ "  where temporalentity_id = r.id and " + "        attributeid = '" + qp.getGeoproperty()
-						+ "' and " + "        attributetype = '" + NGSIConstants.NGSI_LD_GEOPROPERTY + "' and "
-						+ sqlWhereTemporal + " and " + sqlWhere + ") ";
+						+ "  where temporalentity_id = r.id and " + "        attributeid = $" + newCount + " and "
+						+ "        attributetype = '" + NGSIConstants.NGSI_LD_GEOPROPERTY + "' and " + tmp.getItem1()
+						+ " and " + sqlWhere + ") ";
+				newCount++;
+				replacements.add(qp.getGeoproperty());
 			}
 		}
 		if (qp.getLastN() > 0) {
@@ -199,35 +267,21 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 					+ "  where ";
 		}
 		sqlQuery += fullSqlWhere.substring(0, fullSqlWhere.length() - 5); // remove the last AND
-		sqlQuery += "  group by te.id, te.type, te.createdat, te.modifiedat, teai.attributeid "
-				+ "  order by te.id, teai.attributeid " + ") "
-				+ "select tedata || case when attrdata <> '{\"\": [null]}'::jsonb then attrdata else tedata end as data from ( "
-				+ "  select id, ('{\"" + NGSIConstants.JSON_LD_ID + "\":\"' || id || '\"}')::jsonb || "
-				+ "          ('{\"" + NGSIConstants.JSON_LD_TYPE + "\":[\"' || type || '\"]}')::jsonb ";
+		sqlQuery += " group by te.id, te.type, te.createdat, te.modifiedat, teai.attributeid order by te.id, teai.attributeid ) select tedata || case when attrdata <> '{\"\": [null]}'::jsonb then attrdata else tedata end as data from ( select id, ('{\""
+				+ NGSIConstants.JSON_LD_ID + "\":\"' || id || '\"}')::jsonb || ('{\"" + NGSIConstants.JSON_LD_TYPE
+				+ "\":[\"' || type || '\"]}')::jsonb ";
 		if (qp.getIncludeSysAttrs()) {
-			sqlQuery += "         || ('{\"" + NGSIConstants.NGSI_LD_CREATED_AT + "\":";
-			// if (!qp.getTemporalValues()) {
+			sqlQuery += "|| ('{\"" + NGSIConstants.NGSI_LD_CREATED_AT + "\":";
 			sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \""
 					+ NGSIConstants.JSON_LD_VALUE + "\": \"' ";
-			// } else {
-			// sqlQuery += "\"'";
-			// }
 			sqlQuery += "|| to_char(createdat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\"";
-			// if (!qp.getTemporalValues()) {
 			sqlQuery += "}]";
-			// }
 			sqlQuery += "}')::jsonb || ";
 			sqlQuery += " ('{\"" + NGSIConstants.NGSI_LD_MODIFIED_AT + "\":";
-			// if (!qp.getTemporalValues()) {
 			sqlQuery += "[ { \"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \""
 					+ NGSIConstants.JSON_LD_VALUE + "\": \"' ";
-			// } else {
-			// sqlQuery += "\"'";
-			// }
 			sqlQuery += "|| to_char(modifiedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.ssssss\"Z\"') || '\"";
-			// if (!qp.getTemporalValues()) {
 			sqlQuery += "}]";
-			// }
 			sqlQuery += "}')::jsonb";
 		}
 		sqlQuery += "  as tedata, " + "jsonb_object_agg(attributeid,";
@@ -268,13 +322,13 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		if (qp.getQ() != null) {
 			sqlQuery += " where " + qp.getQ() + " ";
 		}
-		return sqlQuery;
+		return Tuple3.of(sqlQuery, replacements, newCount);
 
 	}
 
 	@Override
-	public String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
-			String geoproperty) throws ResponseException {
+	public Tuple3<String, ArrayList<Object>, Integer> translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel,
+			String geometry, String coordinates, String geoproperty, int currentCount) throws ResponseException {
 		StringBuilder sqlWhere = new StringBuilder(50);
 
 		String georelOp = georel.getGeorelOp();
@@ -307,13 +361,12 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 			default:
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
 		}
-		return sqlWhere.toString();
+		return Tuple3.of(sqlWhere.toString(), Lists.newArrayList(), currentCount);
 	}
 
 	@Override
-	public String typesAndAttributeQuery(QueryParams qp) {
-		// TODO Auto-generated method stub
-		return "";
+	public Uni<RowSet<Row>> typesAndAttributeQuery(QueryParams qp, SqlConnection conn) {
+		return Uni.createFrom().nullItem();
 	}
 
 	@Override

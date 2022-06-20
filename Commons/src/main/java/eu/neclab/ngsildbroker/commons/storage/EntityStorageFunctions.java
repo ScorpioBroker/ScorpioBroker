@@ -1,9 +1,13 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
+import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Map.Entry;
+import java.util.Random;
+
+import com.google.common.collect.Lists;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,14 +19,31 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple3;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.SqlConnection;
+import io.vertx.mutiny.sqlclient.Tuple;
+import static eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface.getSQLList;
 
 public class EntityStorageFunctions implements StorageFunctionsInterface {
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityStorageFunctions.class);
 	private Random random = new Random();
 
-	public String translateNgsildQueryToSql(QueryParams qp) throws ResponseException {
-		String fullSqlWhereProperty = commonTranslateSql(qp);
+	@Override
+	public Uni<RowSet<Row>> translateNgsildQueryToSql(QueryParams qp, SqlConnection conn) {
+		int currentCount = 1;
+		ArrayList<Object> replacements = Lists.newArrayList();
+		Tuple3<String, ArrayList<Object>, Integer> fullSqlWhereProperty;
+		try {
+			fullSqlWhereProperty = commonTranslateSql(qp, currentCount);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
+		currentCount = fullSqlWhereProperty.getItem3();
+		replacements.addAll(fullSqlWhereProperty.getItem2());
 		String tableDataColumn;
 		if (qp.getKeyValues()) {
 			if (qp.getIncludeSysAttrs()) {
@@ -41,8 +62,11 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 
 		String dataColumn = tableDataColumn;
 		if (qp.getAttrs() != null) {
-			String expandedAttributeList = "'" + NGSIConstants.JSON_LD_ID + "','" + NGSIConstants.JSON_LD_TYPE + "','"
-					+ qp.getAttrs().replace(",", "','") + "'";
+			Tuple3<String, ArrayList<Object>, Integer> qpAttrs = getSQLList(qp.getAttrs(), currentCount);
+			currentCount = qpAttrs.getItem3();
+			replacements.addAll(qpAttrs.getItem2());
+			String expandedAttributeList = "'" + NGSIConstants.JSON_LD_ID + "','" + NGSIConstants.JSON_LD_TYPE + "',"
+					+ qpAttrs.getItem1();
 			if (qp.getIncludeSysAttrs()) {
 				expandedAttributeList += ",'" + NGSIConstants.NGSI_LD_CREATED_AT + "','"
 						+ NGSIConstants.NGSI_LD_MODIFIED_AT + "'";
@@ -51,12 +75,11 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ expandedAttributeList + "))";
 		}
 		String sqlQuery = "SELECT DISTINCT " + dataColumn + " as data FROM " + DBConstants.DBTABLE_ENTITY + " ";
-		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhereProperty + " ";
+		if (fullSqlWhereProperty.getItem1().length() > 0) {
+			sqlQuery += "WHERE " + fullSqlWhereProperty.getItem1() + " ";
 		}
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();
-
 		if (limit > 0) {
 			sqlQuery += "LIMIT " + limit + " ";
 		}
@@ -64,16 +87,16 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			sqlQuery += "OFFSET " + offSet + " ";
 		}
 		// order by ?
-
-		return sqlQuery;
+		logger.debug("SQL Query: " + sqlQuery);
+		return conn.preparedQuery(sqlQuery).execute(Tuple.from(replacements));
 	}
 
 	// TODO: SQL input sanitization
 	// TODO: property of property
 	// [SPEC] spec is not clear on how to define a "property of property" in
 	// the geoproperty field. (probably using dots)
-	public String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
-			String geoproperty) throws ResponseException {
+	public Tuple3<String, ArrayList<Object>, Integer> translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel,
+			String geometry, String coordinates, String geoproperty, int currentCount) throws ResponseException {
 		StringBuilder sqlWhere = new StringBuilder(50);
 		String georelOp = georel.getGeorelOp();
 		logger.trace("  Geoquery term georelOp: " + georelOp);
@@ -111,15 +134,18 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			default:
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
 		}
-		return sqlWhere.toString();
+		return Tuple3.of(sqlWhere.toString(), Lists.newArrayList(), currentCount);
 	}
 
-	private String commonTranslateSql(QueryParams qp) {
+	private Tuple3<String, ArrayList<Object>, Integer> commonTranslateSql(QueryParams qp, int currentCount)
+			throws ResponseException {
 		StringBuilder fullSqlWhereProperty = new StringBuilder(70);
-		String dbColumn, sqlOperator;
+		String dbColumn;
 		String sqlWhereProperty = null;
 		List<Map<String, String>> entities = qp.getEntities();
 		boolean entitiesAdded = false;
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
 		fullSqlWhereProperty.append("(");
 		if (entities != null) {
 			for (Map<String, String> entityInfo : entities) {
@@ -130,30 +156,38 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 						case NGSIConstants.JSON_LD_ID:
 							dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
 							if (entry.getValue().indexOf(",") == -1) {
-								sqlOperator = "=";
-								sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+
+								sqlWhereProperty = dbColumn + " = $" + currentCount;
+								currentCount++;
+								replacements.add(entry.getValue());
 							} else {
-								sqlOperator = "IN";
-								sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
-										+ entry.getValue().replace(",", "','") + "')";
+								Tuple3<String, ArrayList<Object>, Integer> tmp = getSQLList(entry.getValue(),
+										currentCount);
+								currentCount = tmp.getItem3();
+								replacements.addAll(tmp.getItem2());
+								sqlWhereProperty = dbColumn + " IN (" + tmp.getItem1() + ")";
 							}
 							break;
 						case NGSIConstants.JSON_LD_TYPE:
 							dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
 							if (entry.getValue().indexOf(",") == -1) {
-								sqlOperator = "=";
-								sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+								sqlWhereProperty = dbColumn + " = $" + currentCount;
+								currentCount++;
+								replacements.add(entry.getValue());
 							} else {
-								sqlOperator = "IN";
-								sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
-										+ entry.getValue().replace(",", "','") + "')";
+								Tuple3<String, ArrayList<Object>, Integer> tmp = getSQLList(entry.getValue(),
+										currentCount);
+								currentCount = tmp.getItem3();
+								replacements.addAll(tmp.getItem2());
+								sqlWhereProperty = dbColumn + " IN (" + tmp.getItem1() + ")";
 							}
 
 							break;
 						case NGSIConstants.NGSI_LD_ID_PATTERN:
 							dbColumn = DBConstants.DBCOLUMN_ID;
-							sqlOperator = "~";
-							sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+							sqlWhereProperty = dbColumn + " ~ $" + currentCount;
+							currentCount++;
+							replacements.add(entry.getValue());
 							break;
 
 						default:
@@ -176,12 +210,16 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			String queryValue;
 			queryValue = qp.getAttrs();
 			dbColumn = "data";
-			sqlOperator = "?";
 			if (queryValue.indexOf(",") == -1) {
-				sqlWhereProperty = dbColumn + " " + sqlOperator + "'" + queryValue + "'";
+				sqlWhereProperty = dbColumn + " ? $" + currentCount;
+				currentCount++;
+				replacements.add(queryValue);
 			} else {
-				sqlWhereProperty = "(" + dbColumn + " " + sqlOperator + " '"
-						+ queryValue.replace(",", "' OR " + dbColumn + " " + sqlOperator + "'") + "')";
+				Tuple3<String, ArrayList<Object>, Integer> qpAttrs = getSQLList(queryValue, currentCount);
+				currentCount = qpAttrs.getItem3();
+				replacements.addAll(qpAttrs.getItem2());
+				sqlWhereProperty = "(" + dbColumn + " ? " + qpAttrs.getItem1().replace(",", " OR " + dbColumn + " ? ")
+						+ ")";
 			}
 			if (entitiesAdded) {
 				fullSqlWhereProperty.append(" AND ");
@@ -197,46 +235,45 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		if (qp.getGeorel() != null) {
 			GeoqueryRel gqr = qp.getGeorel();
 			logger.trace("Georel value " + gqr.getGeorelOp());
-			try {
-				sqlWhereProperty = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
-						qp.getGeoproperty());
-			} catch (ResponseException e) {
-				e.printStackTrace();
-			}
+
+			Tuple3<String, ArrayList<Object>, Integer> tmp = translateNgsildGeoqueryToPostgisQuery(gqr,
+					qp.getGeometry(), qp.getCoordinates(), qp.getGeoproperty(), newCount);
+			sqlWhereProperty = tmp.getItem1();
+			currentCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+
 			fullSqlWhereProperty.append(" AND ");
 			fullSqlWhereProperty.append(sqlWhereProperty);
 
 		}
 		if (qp.getQ() != null) {
+			// TODO SQL escape q;
 			sqlWhereProperty = qp.getQ();
 			fullSqlWhereProperty.append(" AND ");
 			fullSqlWhereProperty.append(sqlWhereProperty);
 		}
-		return fullSqlWhereProperty.toString();
-	}
-
-	public String translateNgsildQueryToCountResult(QueryParams qp) throws ResponseException {
-		String fullSqlWhereProperty = commonTranslateSql(qp);
-		String tableName = DBConstants.DBTABLE_ENTITY;
-		String sqlQuery = "SELECT Count(*) FROM " + tableName + " ";
-		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
-		}
-//		int limit = qp.getLimit();
-//		int offSet = qp.getOffSet();
-//
-//		if (limit > 0) {
-//			sqlQuery += "LIMIT " + limit + " ";
-//		}
-//		if (offSet > 0) {
-//			sqlQuery += "OFFSET " + offSet + " ";
-//		}
-		// order by ?
-		return sqlQuery;
+		return Tuple3.of(fullSqlWhereProperty.toString(), replacements, currentCount);
 	}
 
 	@Override
-	public String typesAndAttributeQuery(QueryParams qp) {
+	public Uni<RowSet<Row>> translateNgsildQueryToCountResult(QueryParams qp, SqlConnection conn) {
+		Tuple3<String, ArrayList<Object>, Integer> fullSqlWhereProperty;
+		try {
+			fullSqlWhereProperty = commonTranslateSql(qp, 1);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
+		String tableName = DBConstants.DBTABLE_ENTITY;
+		String sqlQuery = "SELECT Count(*) FROM " + tableName + " ";
+		if (fullSqlWhereProperty.getItem1().length() > 0) {
+			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " ";
+		}
+		logger.debug("SQL Query for count: " + sqlQuery);
+		return conn.preparedQuery(sqlQuery).execute(Tuple.from(fullSqlWhereProperty.getItem2()));
+	}
+
+	@Override
+	public Uni<RowSet<Row>> typesAndAttributeQuery(QueryParams qp, SqlConnection conn) {
 		String query = "";
 		if (qp.getCheck() == "NonDeatilsType" && qp.getAttrs() == null) {
 			int number = random.nextInt(999999);
@@ -244,7 +281,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ "','" + NGSIConstants.JSON_LD_TYPE + "', jsonb_build_array('" + NGSIConstants.NGSI_LD_ENTITY_LIST
 					+ "'), '" + NGSIConstants.NGSI_LD_TYPE_LIST + "',json_agg(distinct jsonb_build_object('"
 					+ NGSIConstants.JSON_LD_ID + "', type)::jsonb)) from entity;";
-			return query;
+			return conn.preparedQuery(query).execute();
 		} else if (qp.getCheck() == "deatilsType" && qp.getAttrs() == null) {
 			query = "select distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "',type,'"
 					+ NGSIConstants.JSON_LD_TYPE + "', jsonb_build_array('" + NGSIConstants.NGSI_LD_ENTITY_TYPE
@@ -253,26 +290,24 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ "', jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
 					+ "', attribute.key))) from entity, jsonb_each(data_without_sysattrs - '" + NGSIConstants.JSON_LD_ID
 					+ "' - '" + NGSIConstants.JSON_LD_TYPE + "') attribute group by id;";
-			return query;
+			return conn.preparedQuery(query).execute();
 		} else if (qp.getCheck() == "type" && qp.getAttrs() != null) {
-			String type = qp.getAttrs();
 			query = "with r as (select distinct attribute.key as mykey, jsonb_agg(distinct jsonb_build_object('"
 					+ NGSIConstants.JSON_LD_ID
 					+ "', attribute.value#>>'{0,@type,0}')) as mytype from entity, jsonb_each(data_without_sysattrs - '"
-					+ NGSIConstants.JSON_LD_ID + "' - '" + NGSIConstants.JSON_LD_TYPE + "') attribute where type='"
-					+ type + "'" + " group by attribute.key)select jsonb_build_object('" + NGSIConstants.JSON_LD_ID
-					+ "',type,'" + NGSIConstants.JSON_LD_TYPE + "', jsonb_build_array('"
-					+ NGSIConstants.NGSI_LD_ENTITY_TYPE_INFO + "'), '" + NGSIConstants.NGSI_LD_TYPE_NAME
-					+ "', jsonb_build_array(jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', type)),'"
-					+ NGSIConstants.NGSI_LD_ENTITY_COUNT + "', jsonb_build_array(jsonb_build_object('"
-					+ NGSIConstants.JSON_LD_VALUE + "', count(Distinct id))), '"
-					+ NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS + "', jsonb_agg(distinct jsonb_build_object('"
-					+ NGSIConstants.NGSI_LD_ATTRIBUTE_NAME + "',jsonb_build_array(jsonb_build_object('"
-					+ NGSIConstants.JSON_LD_ID + "', mykey)), '" + NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES
-					+ "', mytype, '" + NGSIConstants.JSON_LD_ID + "', mykey, '" + NGSIConstants.JSON_LD_TYPE
-					+ "',jsonb_build_array('" + NGSIConstants.NGSI_LD_ATTRIBUTE
-					+ "')))) from entity, r attribute where type='" + type + "' group by type;";
-			return query;
+					+ NGSIConstants.JSON_LD_ID + "' - '" + NGSIConstants.JSON_LD_TYPE + "') attribute where type=$1"
+					+ " group by attribute.key)select jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "',type,'"
+					+ NGSIConstants.JSON_LD_TYPE + "', jsonb_build_array('" + NGSIConstants.NGSI_LD_ENTITY_TYPE_INFO
+					+ "'), '" + NGSIConstants.NGSI_LD_TYPE_NAME + "', jsonb_build_array(jsonb_build_object('"
+					+ NGSIConstants.JSON_LD_ID + "', type)),'" + NGSIConstants.NGSI_LD_ENTITY_COUNT
+					+ "', jsonb_build_array(jsonb_build_object('" + NGSIConstants.JSON_LD_VALUE
+					+ "', count(Distinct id))), '" + NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS
+					+ "', jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.NGSI_LD_ATTRIBUTE_NAME
+					+ "',jsonb_build_array(jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', mykey)), '"
+					+ NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES + "', mytype, '" + NGSIConstants.JSON_LD_ID + "', mykey, '"
+					+ NGSIConstants.JSON_LD_TYPE + "',jsonb_build_array('" + NGSIConstants.NGSI_LD_ATTRIBUTE
+					+ "')))) from entity, r attribute where type = $1 group by type;";
+			return conn.preparedQuery(query).execute(Tuple.of(qp.getAttrs()));
 		} else if (qp.getCheck() == "NonDeatilsAttributes" && qp.getAttrs() == null) {
 			int number = random.nextInt(999999);
 			query = "select jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "','urn:ngsi-ld:AttributeList:" + number
@@ -281,7 +316,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ "',json_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
 					+ "', attribute.key)::jsonb)) from entity,jsonb_each(data_without_sysattrs-'"
 					+ NGSIConstants.JSON_LD_ID + "'-'" + NGSIConstants.JSON_LD_TYPE + "') attribute;";
-			return query;
+			return conn.preparedQuery(query).execute();
 
 		} else if (qp.getCheck() == "deatilsAttributes" && qp.getAttrs() == null) {
 			query = "select jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', attribute.key,'"
@@ -291,27 +326,25 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ "',jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
 					+ "', type))) from entity,jsonb_each(data_without_sysattrs-'" + NGSIConstants.JSON_LD_ID + "'-'"
 					+ NGSIConstants.JSON_LD_TYPE + "') attribute group by attribute.key;";
-			return query;
+			return conn.preparedQuery(query).execute();
 
 		} else if (qp.getCheck() == "Attribute" && qp.getAttrs() != null) {
-			String type = qp.getAttrs();
-			query = "with r as(select count(data_without_sysattrs->'" + type
-					+ "') as mycount  from entity), y as(select  jsonb_agg(distinct jsonb_build_object('"
+			query = "with r as(select count(data_without_sysattrs->$1) as mycount  from entity), y as(select  jsonb_agg(distinct jsonb_build_object('"
 					+ NGSIConstants.JSON_LD_ID + "',type)) as mytype,jsonb_build_array(jsonb_build_object('"
 					+ NGSIConstants.JSON_LD_VALUE + "',mycount)) as finalcount, jsonb_agg(distinct jsonb_build_object('"
 					+ NGSIConstants.JSON_LD_ID
 					+ "',attribute.value#>>'{0,@type,0}')) as mydata from r,entity,jsonb_each(data_without_sysattrs-'"
 					+ NGSIConstants.JSON_LD_ID + "'-'" + NGSIConstants.JSON_LD_TYPE
-					+ "') attribute where attribute.key='" + type + "' group by mycount) select jsonb_build_object('"
-					+ NGSIConstants.JSON_LD_ID + "','" + type + "','" + NGSIConstants.JSON_LD_TYPE + "','"
+					+ "') attribute where attribute.key = $1 group by mycount) select jsonb_build_object('"
+					+ NGSIConstants.JSON_LD_ID + "',$1,'" + NGSIConstants.JSON_LD_TYPE + "','"
 					+ NGSIConstants.NGSI_LD_ATTRIBUTE + "','" + NGSIConstants.NGSI_LD_ATTRIBUTE_NAME
-					+ "',jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "','" + type + "'),'"
-					+ NGSIConstants.NGSI_LD_TYPE_NAMES + "',mytype,'" + NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT
-					+ "',finalcount,'" + NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES + "',mydata) from y,r;";
-			return query;
+					+ "',jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "',$1),'" + NGSIConstants.NGSI_LD_TYPE_NAMES
+					+ "',mytype,'" + NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT + "',finalcount,'"
+					+ NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES + "',mydata) from y,r;";
+			return conn.preparedQuery(query).execute(Tuple.of(qp.getAttrs()));
 
 		}
-		return null;
+		return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, "Unknown operation"));
 	}
 
 	@Override

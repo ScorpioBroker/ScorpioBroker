@@ -1,9 +1,12 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.google.common.collect.Lists;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -16,6 +19,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple3;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.SqlConnection;
+import io.vertx.mutiny.sqlclient.Tuple;
+
+import static eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface.getSQLList;
 
 public class RegistryStorageFunctions implements StorageFunctionsInterface {
 
@@ -48,10 +59,12 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 		return Collections.unmodifiableMap(map);
 	}
 
-	private String commonTranslateSql(QueryParams qp) {
+	private Tuple3<String, ArrayList<Object>, Integer> commonTranslateSql(QueryParams qp, int currentCount)
+			throws ResponseException {
 		StringBuilder fullSqlWhere = new StringBuilder(70);
 		String sqlWhere = "";
-
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
 		// if (externalCsourcesOnly) {
 		// fullSqlWhere.append("(c.internal = false) AND ");
 		// }
@@ -77,14 +90,25 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 				// query by type + (id, idPattern) + attrs
 				if (qp.getAttrs() != null) {
 					String attrsValue = qp.getAttrs();
-					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
+					Tuple3<String, ArrayList<Object>, Integer> tmp = getCommonSqlWhereForTypeIdIdPattern(typeValue,
+							idValue, idPatternValue, newCount);
+					newCount = tmp.getItem3();
+					replacements.addAll(tmp.getItem2());
+					sqlWhere += tmp.getItem1();
 					sqlWhere += " AND ";
-					sqlWhere += getSqlWhereByAttrsInTypeFiltering(attrsValue);
+					tmp = getSqlWhereByAttrsInTypeFiltering(attrsValue, newCount);
+					newCount = tmp.getItem3();
+					replacements.addAll(tmp.getItem2());
+					sqlWhere += tmp.getItem1();
 
 				} else { // query by type + (id, idPattern) only (no attrs)
 
 					sqlWhere += "(c.has_registrationinfo_with_attrs_only) OR ";
-					sqlWhere += getCommonSqlWhereForTypeIdIdPattern(typeValue, idValue, idPatternValue);
+					Tuple3<String, ArrayList<Object>, Integer> tmp = getCommonSqlWhereForTypeIdIdPattern(typeValue,
+							idValue, idPatternValue, newCount);
+					newCount = tmp.getItem3();
+					replacements.addAll(tmp.getItem2());
+					sqlWhere += tmp.getItem1();
 
 				}
 				fullSqlWhere.append(sqlWhere + ") AND ");
@@ -97,12 +121,16 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 		} else if (qp.getAttrs() != null) {
 			String attrsValue = qp.getAttrs();
 			if (attrsValue.indexOf(",") == -1) {
-				sqlWhere = "ci." + DBCOLUMN_CSOURCE_INFO_PROPERTY_ID + " = '" + attrsValue + "' OR " + "ci."
-						+ DBCOLUMN_CSOURCE_INFO_RELATIONSHIP_ID + " = '" + attrsValue + "'";
+				sqlWhere = "ci." + DBCOLUMN_CSOURCE_INFO_PROPERTY_ID + " = $" + newCount + " OR " + "ci."
+						+ DBCOLUMN_CSOURCE_INFO_RELATIONSHIP_ID + " = $" + newCount;
+				newCount++;
+				replacements.add(attrsValue);
 			} else {
+				Tuple3<String, ArrayList<Object>, Integer> tmp = getSQLList(attrsValue, newCount);
+				newCount = tmp.getItem3();
+				replacements.addAll(tmp.getItem2());
 				sqlWhere = "ci." + DBCOLUMN_CSOURCE_INFO_PROPERTY_ID + " IN ('" + attrsValue.replace(",", "','")
-						+ "') OR " + "ci." + DBCOLUMN_CSOURCE_INFO_RELATIONSHIP_ID + " IN ('"
-						+ attrsValue.replace(",", "','") + "')";
+						+ "') OR " + "ci." + DBCOLUMN_CSOURCE_INFO_RELATIONSHIP_ID + " IN (" + tmp.getItem1() + ")";
 			}
 			fullSqlWhere.append("(" + sqlWhere + ") AND ");
 
@@ -113,12 +141,14 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 			logger.debug("'q' filter is not supported in csource discovery!");
 		}
 		if (qp.getScopeQ() != null) {
+			// TODO escape
 			sqlWhere = qp.getScopeQ();
 			fullSqlWhere.append(sqlWhere);
 			fullSqlWhere.append(" AND ");
 
 		}
 		if (qp.getCsf() != null) {
+			// TODO escape
 			sqlWhere = qp.getCsf();
 			fullSqlWhere.append(sqlWhere);
 			fullSqlWhere.append(" AND ");
@@ -128,27 +158,31 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 		if (qp.getGeorel() != null) {
 			GeoqueryRel gqr = qp.getGeorel();
 			logger.debug("Georel value " + gqr.getGeorelOp());
-			try {
-				sqlWhere = translateNgsildGeoqueryToPostgisQuery(gqr, qp.getGeometry(), qp.getCoordinates(),
-						qp.getGeoproperty());
-			} catch (ResponseException e) {
-				e.printStackTrace();
-			}
+
+			Tuple3<String, ArrayList<Object>, Integer> tmp = translateNgsildGeoqueryToPostgisQuery(gqr,
+					qp.getGeometry(), qp.getCoordinates(), qp.getGeoproperty(), newCount);
+			sqlWhere = tmp.getItem1();
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+
 			fullSqlWhere.append(sqlWhere + " AND ");
 		}
-		return fullSqlWhere.toString();
+		return Tuple3.of(fullSqlWhere.toString(), replacements, currentCount);
 	}
 
 	@Override
-	public String translateNgsildQueryToSql(QueryParams qp) {
-
-		String fullSqlWhere = commonTranslateSql(qp);
+	public Uni<RowSet<Row>> translateNgsildQueryToSql(QueryParams qp, SqlConnection conn) {
+		Tuple3<String, ArrayList<Object>, Integer> fullSqlWhere;
+		try {
+			fullSqlWhere = commonTranslateSql(qp, 1);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		String sqlQuery = "SELECT DISTINCT c.data " + "FROM " + DBConstants.DBTABLE_CSOURCE + " c ";
-
 		sqlQuery += "INNER JOIN " + DBConstants.DBTABLE_CSOURCE_INFO + " ci ON (ci.csource_id = c.id) ";
 
-		if (fullSqlWhere.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhere + " 1=1 ";
+		if (fullSqlWhere.getItem1().length() > 0) {
+			sqlQuery += "WHERE " + fullSqlWhere.getItem1() + " 1=1 ";
 		}
 		int limit = qp.getLimit();
 		int offSet = qp.getOffSet();
@@ -159,67 +193,108 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 			sqlQuery += "OFFSET " + offSet + " ";
 		}
 		// order by ?
-		return sqlQuery;
+		return conn.preparedQuery(sqlQuery).execute(Tuple.from(fullSqlWhere.getItem2()));
 	}
 
-	private String getCommonSqlWhereForTypeIdIdPattern(String typeValue, String idValue, String idPatternValue) {
+	private Tuple3<String, ArrayList<Object>, Integer> getCommonSqlWhereForTypeIdIdPattern(String typeValue,
+			String idValue, String idPatternValue, int currentCount) {
 		String sqlWhere = "";
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
+		Tuple3<String, ArrayList<Object>, Integer> tmp;
 		if (idValue.isEmpty() && idPatternValue.isEmpty()) { // case 1: type only
-			sqlWhere += getSqlWhereByType(typeValue, false);
+			tmp = getSqlWhereByType(typeValue, true, newCount);
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+			sqlWhere += tmp.getItem1();
 		} else if (!idValue.isEmpty() && idPatternValue.isEmpty()) { // case 2: type+id
 			sqlWhere += "(";
 			if (typeValue != null) {
-				sqlWhere += getSqlWhereByType(typeValue, true);
+				tmp = getSqlWhereByType(typeValue, true, newCount);
+				newCount = tmp.getItem3();
+				replacements.addAll(tmp.getItem2());
+				sqlWhere += tmp.getItem1();
 				sqlWhere += " OR ";
 			}
-			sqlWhere += getSqlWhereById(typeValue, idValue);
+			tmp = getSqlWhereById(typeValue, idValue, newCount);
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+			sqlWhere += tmp.getItem1();
 			sqlWhere += ")";
 		} else if (idValue.isEmpty() && !idPatternValue.isEmpty()) { // case 3: type+idPattern
 			sqlWhere += "(";
 			if (typeValue != null) {
-				sqlWhere += getSqlWhereByType(typeValue, true);
+				tmp = getSqlWhereByType(typeValue, true, newCount);
+				newCount = tmp.getItem3();
+				replacements.addAll(tmp.getItem2());
+				sqlWhere += tmp.getItem1();
 				sqlWhere += " OR ";
 			}
-			sqlWhere += getSqlWhereByIdPattern(typeValue, idPatternValue);
+			tmp = getSqlWhereByIdPattern(typeValue, idPatternValue, newCount);
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+			sqlWhere += tmp.getItem1();
 			sqlWhere += ")";
 		}
-		return sqlWhere;
+		return Tuple3.of(sqlWhere, replacements, newCount);
 	}
 
-	private String getSqlWhereByType(String typeValue, boolean includeIdAndIdPatternNullTest) {
+	private Tuple3<String, ArrayList<Object>, Integer> getSqlWhereByType(String typeValue,
+			boolean includeIdAndIdPatternNullTest, int currentCount) {
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
+
 		String sqlWhere = "(";
 		if (typeValue.indexOf(",") == -1) {
-			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = '" + typeValue + "' ";
+			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = $" + newCount + " ";
+			newCount++;
+			replacements.add(typeValue);
 		} else {
-			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN ('" + typeValue.replace(",", "','") + "') ";
+			Tuple3<String, ArrayList<Object>, Integer> tmp = getSQLList(typeValue, newCount);
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN (" + tmp.getItem1() + ") ";
 		}
-		if (includeIdAndIdPatternNullTest)
+		if (includeIdAndIdPatternNullTest) {
 			sqlWhere += "AND ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_ID + " IS NULL AND " + "ci."
 					+ DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + " IS NULL";
+		}
 		sqlWhere += ")";
-		return sqlWhere;
+		return Tuple3.of(sqlWhere, replacements, newCount);
 	}
 
-	private String getSqlWhereById(String typeValue, String idValue) {
+	private Tuple3<String, ArrayList<Object>, Integer> getSqlWhereById(String typeValue, String idValue,
+			int currentCount) {
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
 		String sqlWhere = "( ";
 		if (typeValue != null) {
 			if (typeValue.indexOf(",") == -1) {
-				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = '" + typeValue + "' AND ";
+				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = $" + newCount + " AND ";
+				replacements.add(typeValue);
+				newCount++;
 			} else {
-				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN ('" + typeValue.replace(",", "','")
-						+ "') AND ";
+				Tuple3<String, ArrayList<Object>, Integer> tmp = getSQLList(typeValue, newCount);
+				newCount = tmp.getItem3();
+				replacements.addAll(tmp.getItem2());
+
+				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN (" + tmp.getItem1() + ") AND ";
 			}
 		}
 		if (idValue.indexOf(",") == -1) {
-			sqlWhere += "(" + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_ID + " = '" + idValue + "' OR " + "'" + idValue
-					+ "' ~ " + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + ")";
+			sqlWhere += "(" + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_ID + " = $" + newCount + " OR " + "$" + newCount
+					+ " ~ " + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + ")";
+			replacements.add(idValue);
+			newCount++;
 		} else {
 			String[] ids = idValue.split(",");
 			String whereId = "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_ID + " IN ( ";
 			String whereIdPattern = "(";
 			for (String id : ids) {
-				whereId += "'" + id + "',";
-				whereIdPattern += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + " ~ '" + id + "' OR ";
+				whereId += "$" + newCount + ",";
+				whereIdPattern += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + " ~ $" + newCount + " OR ";
+				newCount++;
+				replacements.add(id);
 			}
 			whereId = StringUtils.removeEnd(whereId, ",");
 			whereIdPattern = StringUtils.removeEnd(whereIdPattern, "OR ");
@@ -230,44 +305,58 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 		}
 
 		sqlWhere += " )";
-		return sqlWhere;
+		return Tuple3.of(sqlWhere, replacements, newCount);
 	}
 
-	private String getSqlWhereByIdPattern(String typeValue, String idPatternValue) {
+	private Tuple3<String, ArrayList<Object>, Integer> getSqlWhereByIdPattern(String typeValue, String idPatternValue,
+			int currentCount) {
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
 		String sqlWhere = "( ";
-		if(typeValue!=null) {
-		if (typeValue.indexOf(",") == -1) {
-			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = '" + typeValue + "' AND ";
-		} else {
-			sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN ('" + typeValue.replace(",", "','")
-					+ "') AND ";
+		if (typeValue != null) {
+			if (typeValue.indexOf(",") == -1) {
+				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " = $" + newCount + " AND ";
+				replacements.add(typeValue);
+				newCount++;
+			} else {
+				Tuple3<String, ArrayList<Object>, Integer> tmp = getSQLList(typeValue, newCount);
+				newCount = tmp.getItem3();
+				replacements.addAll(tmp.getItem2());
+				sqlWhere += "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_TYPE + " IN (" + tmp.getItem1() + ") AND ";
+			}
 		}
-	  }
-		sqlWhere += "(" + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_ID + " ~ '" + idPatternValue + "' OR " + "ci."
-				+ DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + " ~ '" + idPatternValue + "')";
+		sqlWhere += "(" + "ci." + DBCOLUMN_CSOURCE_INFO_ENTITY_ID + " ~ $" + newCount + " OR " + "ci."
+				+ DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN + " ~ $" + newCount + ")";
+		newCount++;
+		replacements.add(idPatternValue);
 		sqlWhere += " )";
-		return sqlWhere;
+		return Tuple3.of(sqlWhere, replacements, newCount);
 	}
 
-	private String getSqlWhereByAttrsInTypeFiltering(String attrsValue) {
+	private Tuple3<String, ArrayList<Object>, Integer> getSqlWhereByAttrsInTypeFiltering(String attrsValue,
+			int currentCount) {
 		String sqlWhere;
-		sqlWhere = "( " + "NOT EXISTS (SELECT 1 FROM csourceinformation ci2 "
-				+ "	          WHERE ci2.group_id = ci.group_id AND "
-				+ "	                (ci2.property_id IS NOT NULL OR ci2.relationship_id IS NOT NULL)) " + "OR "
-				+ "EXISTS (SELECT 1 FROM csourceinformation ci3 " + "        WHERE ci3.group_id = ci.group_id AND ";
+		int newCount = currentCount;
+		ArrayList<Object> replacements = Lists.newArrayList();
+		sqlWhere = "( NOT EXISTS (SELECT 1 FROM csourceinformation ci2  WHERE ci2.group_id = ci.group_id AND  (ci2.property_id IS NOT NULL OR ci2.relationship_id IS NOT NULL)) OR EXISTS (SELECT 1 FROM csourceinformation ci3 WHERE ci3.group_id = ci.group_id AND ";
 		if (attrsValue.indexOf(",") == -1) {
-			sqlWhere += "(ci3.property_id = '" + attrsValue + "' OR " + " ci3.relationship_id = '" + attrsValue + "') ";
+			sqlWhere += "(ci3.property_id = $" + newCount + " OR " + " ci3.relationship_id = $" + newCount + ") ";
+			replacements.add(attrsValue);
+			newCount++;
 		} else {
-			sqlWhere += "(ci3.property_id IN ('" + attrsValue.replace(",", "','") + "') OR "
-					+ " ci3.relationship_id IN ('" + attrsValue.replace(",", "','") + "') ) ";
+			Tuple3<String, ArrayList<Object>, Integer> tmp = getSQLList(attrsValue, newCount);
+			newCount = tmp.getItem3();
+			replacements.addAll(tmp.getItem2());
+			sqlWhere += "(ci3.property_id IN (" + tmp.getItem1() + ") OR " + " ci3.relationship_id IN ("
+					+ tmp.getItem1() + ") ) ";
 		}
 		sqlWhere += ") )";
-		return sqlWhere;
+		return Tuple3.of(sqlWhere, replacements, newCount);
 	}
 
 	@Override
-	public String translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel, String geometry, String coordinates,
-			String geoproperty) throws ResponseException {
+	public Tuple3<String, ArrayList<Object>, Integer> translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel,
+			String geometry, String coordinates, String geoproperty, int currentCount) throws ResponseException {
 		if (georel.getGeorelOp().isEmpty() || geometry == null || coordinates == null || geometry.isEmpty()
 				|| coordinates.isEmpty()) {
 			logger.error("georel, geometry and coordinates are empty or invalid!");
@@ -324,34 +413,29 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 			default:
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
 		}
-		return sqlWhere.toString();
+		return Tuple3.of(sqlWhere.toString(), Lists.newArrayList(), currentCount);
 	}
 
 	@Override
-	public String translateNgsildQueryToCountResult(QueryParams qp) {
-		String fullSqlWhereProperty = commonTranslateSql(qp);
+	public Uni<RowSet<Row>> translateNgsildQueryToCountResult(QueryParams qp, SqlConnection conn) {
+		Tuple3<String, ArrayList<Object>, Integer> fullSqlWhereProperty;
+		try {
+			fullSqlWhereProperty = commonTranslateSql(qp, 1);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		String tableName = DBConstants.DBTABLE_CSOURCE + " c ";
 		String sqlQuery = "SELECT Count(*) FROM " + tableName + " INNER JOIN " + DBConstants.DBTABLE_CSOURCE_INFO
-				+ " ci ON (ci.csource_id = c.id) ";		if (fullSqlWhereProperty.length() > 0) {
-			sqlQuery += "WHERE " + fullSqlWhereProperty.toString() + " 1=1 ";
+				+ " ci ON (ci.csource_id = c.id) ";
+		if (fullSqlWhereProperty.getItem1().length() > 0) {
+			sqlQuery += "WHERE " + fullSqlWhereProperty.getItem1() + " 1=1 ";
 		}
-//		int limit = qp.getLimit();
-//		int offSet = qp.getOffSet();
-//
-//		if (limit > 0) {
-//			sqlQuery += "LIMIT " + limit + " ";
-//		}
-//		if (offSet > 0) {
-//			sqlQuery += "OFFSET " + offSet + " ";
-//		}
-		// order by ?
-		return sqlQuery;
+		return conn.preparedQuery(sqlQuery).execute(Tuple.from(fullSqlWhereProperty.getItem2()));
 	}
 
 	@Override
-	public String typesAndAttributeQuery(QueryParams qp) {
-		// TODO Auto-generated method stub
-		return "";
+	public Uni<RowSet<Row>> typesAndAttributeQuery(QueryParams qp, SqlConnection conn) {
+		return Uni.createFrom().nullItem();
 	}
 
 	@Override

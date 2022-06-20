@@ -112,45 +112,29 @@ public abstract class StorageDAO {
 
 			if (qp.getCheck() != null) {
 				logger.debug("Query for types or attributes got called");
-				String sqlQuery = storageFunctions.typesAndAttributeQuery(qp);
-				logger.debug("SQL Query for type or attributes: " + sqlQuery);
-				if (sqlQuery != null && !sqlQuery.isEmpty()) {
-					return client.query(sqlQuery).execute().onItem().transform(rows -> {
-						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-						List<Map<String, Object>> list = Lists.newArrayList();
-						rows.forEach(t -> {
-							list.add(t.getJsonObject(0).getMap());
-						});
-						queryResult.setData(list);
-
-						return queryResult;
+				return client.getConnection().onItem().transformToUni(conn -> {
+					return storageFunctions.typesAndAttributeQuery(qp, conn);
+				}).onItem().transform(rows -> {
+					QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+					List<Map<String, Object>> list = Lists.newArrayList();
+					rows.forEach(t -> {
+						list.add(t.getJsonObject(0).getMap());
 					});
-				}
+					queryResult.setData(list);
+
+					return queryResult;
+				});
 			}
 			return client.withTransaction(conn -> {
 				Uni<RowSet<Row>> count = Uni.createFrom().nullItem();
 				Uni<RowSet<Row>> entries = Uni.createFrom().nullItem();
 				if (qp.getCountResult()) {
-					String sqlQueryCount = null;
 					logger.debug("Query for count got called");
-					try {
-						sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
-					} catch (ResponseException responseException) {
-						return Uni.createFrom().failure(responseException);
-					}
-					logger.debug("SQL Query for count: " + sqlQueryCount);
-					count = conn.preparedQuery(sqlQueryCount).execute();
+					count = storageFunctions.translateNgsildQueryToCountResult(qp, conn);
 				}
 				if (qp.getLimit() != 0 || !qp.getCountResult()) {
-					String sqlQuery = null;
 					logger.debug("Query got called");
-					try {
-						sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
-					} catch (ResponseException responseException) {
-						return Uni.createFrom().failure(responseException);
-					}
-					logger.debug("SQL Query: " + sqlQuery);
-					entries = conn.preparedQuery(sqlQuery).execute();
+					entries = storageFunctions.translateNgsildQueryToSql(qp, conn);
 				}
 
 				return Uni.combine().all().unis(count, entries).combinedWith((c, e) -> {
