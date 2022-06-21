@@ -140,9 +140,10 @@ public class HistoryController {
 								.expand(linkHeaders, JsonUtils.fromString(payload), opts,
 										AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
 								.get(0);
-						historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId,
-								resolved, attrId, instanceId, context);
-						return Uni.createFrom().item(RestResponse.noContent());
+						return historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId,
+								resolved, attrId, instanceId, context).onItem().transform(t2 -> {
+									return RestResponse.noContent();
+								}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 					} catch (Exception exception) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
