@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -54,7 +55,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (ResponseException exception) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.body(new RestResponse(ErrorType.BadRequestData, "id is not a URI").toJson());
 		}
 		String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
@@ -63,7 +64,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		ResponseEntity<String> result = getQueryData(queryService, request, originalQuery, paramMap, false, false,
 				temporal, defaultLimit, maxLimit, null);
 		if (result.getBody().equals(emptyResult1) || result.getBody().equals(emptyResult2)) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND)
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.body(new RestResponse(ErrorType.NotFound, "Resource not found.").toJson());
 		}
 		return result;
