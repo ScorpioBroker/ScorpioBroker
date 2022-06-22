@@ -7,7 +7,7 @@
 
 set -e
 
-SCORPIO="http://172.30.48.45:9090/scorpio/v1/info/"
+SCORPIO="http://scorpio:9090/scorpio/v1/info/"
 IOT_AGENT="http://iot-agent:4041/version"
 CONTEXT="https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
 
