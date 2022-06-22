@@ -2,10 +2,12 @@ package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,9 +42,10 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.MultiMap;
-import io.vertx.core.buffer.Buffer;
+import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 
 @Singleton
 public class SubscriptionService extends BaseSubscriptionService {
@@ -93,7 +96,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 	public void unsubscribeToAllRemote() {
 		destroy();
 		for (String entry : internalSubId2ExternalEndpoint.values()) {
-			webClient.deleteAbs(entry).send().succeeded();
+			webClient.deleteAbs(entry).sendAndForget();
 		}
 	}
 
@@ -160,12 +163,23 @@ public class SubscriptionService extends BaseSubscriptionService {
 						temp.deleteCharAt(remoteEndpoint.length() - 1);
 					}
 					temp.append(AppConstants.SUBSCRIPTIONS_URL);
-					HttpResponse<Buffer> response = webClient.postAbs(temp.toString()).putHeaders(additionalHeaders)
-							.sendBuffer(Buffer.buffer(body)).result();
-					if (response.statusCode() >= 200 && response.statusCode() < 300) {
-						internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
-								response.getHeader(HttpHeaders.LOCATION.toString()));
+
+					HttpRequest<Buffer> req = webClient.postAbs(temp.toString());
+					for (Entry<String, String> headersEntry : additionalHeaders.entries()) {
+						req = req.putHeader(headersEntry.getKey(), headersEntry.getValue());
 					}
+					req.sendBuffer(Buffer.buffer(body)).onFailure().retry().withBackOff(Duration.ofSeconds(5)).atMost(5)
+							.onItem().transform(response -> {
+								if (response.statusCode() >= 200 && response.statusCode() < 300) {
+									internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
+											response.getHeader(HttpHeaders.LOCATION.toString()));
+								}
+								return null;
+							}).onFailure().call(t -> {
+								logger.error("Failed to subscribe to remote host " + temp.toString(), t);
+								return null;
+							}).await().atMost(Duration.ofSeconds(60));
+
 				}
 			}
 		}.start();
@@ -225,7 +239,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 		String endpoint = internalSubId2ExternalEndpoint.remove(subscriptionId);
 		if (endpoint != null) {
 			remoteNotifyCallbackId2InternalSub.remove(internalSubId2RemoteNotifyCallbackId2.remove(subscriptionId));
-			webClient.deleteAbs(endpoint).send().succeeded();
+			webClient.deleteAbs(endpoint).sendAndForget();
 		}
 	}
 
