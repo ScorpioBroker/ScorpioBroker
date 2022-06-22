@@ -8,6 +8,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.smallrye.mutiny.Uni;
 
@@ -18,7 +19,7 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 	@Incoming(AppConstants.ENTITY_CHANNEL)
 	@UnlessBuildProfile("kafka")
 	public Uni<Void> handleEntity(Message<BaseRequest> message) {
-		return baseHandleEntity(message);
+		return baseHandleEntity(MicroServiceUtils.deepCopyMessage(message));
 	}
 
 	@Incoming(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)

@@ -8,6 +8,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.smallrye.mutiny.Uni;
 
@@ -18,7 +19,7 @@ public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionM
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	@UnlessBuildProfile("kafka")
 	public Uni<Void> handleCsource(Message<BaseRequest> busMessage) {
-		return baseHandleCsource(busMessage);
+		return baseHandleCsource(MicroServiceUtils.deepCopyMessage(busMessage));
 	}
 
 	@Incoming(AppConstants.INTERNAL_SUBS_CHANNEL)

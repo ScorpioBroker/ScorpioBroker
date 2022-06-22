@@ -6,6 +6,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
+import com.github.jsonldjava.utils.JsonUtils;
+
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +39,8 @@ public abstract class SubscriptionMessagingBase {
 		} else {
 			timestamp = System.currentTimeMillis();
 		}
-		BaseRequest payload = message.getPayload();
+
+		BaseRequest payload = new BaseRequest(message.getPayload());
 		entityExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -58,6 +61,12 @@ public abstract class SubscriptionMessagingBase {
 	}
 
 	private void handleBaseRequestEntity(BaseRequest message, String key, long timeStamp) {
+		try {
+			logger.debug(JsonUtils.toPrettyString(message.getFinalPayload()));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		switch (message.getRequestType()) {
 			case AppConstants.APPEND_REQUEST:
 				logger.debug("Append got called: " + key);

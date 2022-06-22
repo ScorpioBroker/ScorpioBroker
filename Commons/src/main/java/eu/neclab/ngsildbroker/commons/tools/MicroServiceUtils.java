@@ -4,12 +4,23 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 
 @Singleton
 public class MicroServiceUtils {
@@ -40,6 +51,73 @@ public class MicroServiceUtils {
 							+ url,
 					e);
 		}
+	}
+
+	public static Message<BaseRequest> deepCopyMessage(Message<BaseRequest> original) {
+		BaseRequest originalPayload = original.getPayload();
+		Message<BaseRequest> result = new Message<BaseRequest>() {
+			@Override
+			public BaseRequest getPayload() {
+				BaseRequest result = new BaseRequest(originalPayload);
+				result.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
+				result.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
+				result.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+				return result;
+			}
+
+		};
+		return result;
+
+	}
+
+	private static Map<String, Object> deepCopyMap(Map<String, Object> original) {
+		Map<String, Object> result = Maps.newHashMap();
+		for (Entry<String, Object> entry : original.entrySet()) {
+			Object copiedValue;
+			Object originalValue = entry.getValue();
+			if (originalValue instanceof List) {
+				copiedValue = deppCopyList((List<Object>) originalValue);
+			} else if (originalValue instanceof Map) {
+				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
+			} else if (originalValue instanceof Integer) {
+				copiedValue = ((Integer) originalValue).intValue();
+			} else if (originalValue instanceof Double) {
+				copiedValue = ((Double) originalValue).doubleValue();
+			} else if (originalValue instanceof Float) {
+				copiedValue = ((Float) originalValue).floatValue();
+			} else if (originalValue instanceof Boolean) {
+				copiedValue = ((Boolean) originalValue).booleanValue();
+			} else {
+				copiedValue = originalValue.toString();
+			}
+			result.put(entry.getKey(), copiedValue);
+		}
+
+		return result;
+	}
+
+	private static List<Object> deppCopyList(List<Object> original) {
+		List<Object> result = Lists.newArrayList();
+		for (Object originalValue : original) {
+			Object copiedValue;
+			if (originalValue instanceof List) {
+				copiedValue = deppCopyList((List<Object>) originalValue);
+			} else if (originalValue instanceof Map) {
+				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
+			} else if (originalValue instanceof Integer) {
+				copiedValue = ((Integer) originalValue).intValue();
+			} else if (originalValue instanceof Double) {
+				copiedValue = ((Double) originalValue).doubleValue();
+			} else if (originalValue instanceof Float) {
+				copiedValue = ((Float) originalValue).floatValue();
+			} else if (originalValue instanceof Boolean) {
+				copiedValue = ((Boolean) originalValue).booleanValue();
+			} else {
+				copiedValue = originalValue.toString();
+			}
+			result.add(copiedValue);
+		}
+		return result;
 	}
 
 }

@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -34,7 +35,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	public UpdateHistoryEntityRequest(BaseRequest entityRequest) {
 		setHeaders(entityRequest.getHeaders());
 		Map<String, Object> jsonObject = entityRequest.getRequestPayload();// (Map<String, Object>)
-																			// JsonUtils.fromString(entityRequest.getWithSysAttrs());
+		// JsonUtils.fromString(entityRequest.getWithSysAttrs());
 		for (Entry<String, Object> entry : jsonObject.entrySet()) {
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)

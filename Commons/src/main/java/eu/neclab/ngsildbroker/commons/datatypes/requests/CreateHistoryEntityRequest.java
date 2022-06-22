@@ -9,6 +9,8 @@ import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -102,7 +104,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 		try {
 			this.uriId = new URI(AppConstants.HISTORY_URL + getId());
 		} catch (URISyntaxException e) {
-			//should never happen
+			// should never happen
 		}
 	}
 
