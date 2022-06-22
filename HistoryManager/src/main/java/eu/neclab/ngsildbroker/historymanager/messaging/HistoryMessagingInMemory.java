@@ -21,6 +21,6 @@ public class HistoryMessagingInMemory extends HistoryMessagingBase {
 	@UnlessBuildProfile("kafka")
 	public Uni<Void> handleEntity(Message<BaseRequest> message) {
 		// need to make a real copy of the message
-		return baseHandleEntity(MicroServiceUtils.deepCopyMessage(message));
+		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message));
 	}
 }

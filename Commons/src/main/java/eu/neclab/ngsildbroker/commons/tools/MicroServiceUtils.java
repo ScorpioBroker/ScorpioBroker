@@ -20,7 +20,9 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
 @Singleton
 public class MicroServiceUtils {
@@ -53,7 +55,7 @@ public class MicroServiceUtils {
 		}
 	}
 
-	public static Message<BaseRequest> deepCopyMessage(Message<BaseRequest> original) {
+	public static Message<BaseRequest> deepCopyRequestMessage(Message<BaseRequest> original) {
 		BaseRequest originalPayload = original.getPayload();
 		Message<BaseRequest> result = new Message<BaseRequest>() {
 			@Override
@@ -117,6 +119,28 @@ public class MicroServiceUtils {
 			}
 			result.add(copiedValue);
 		}
+		return result;
+	}
+
+	public static Message<SubscriptionRequest> deepCopySubscriptionMessage(Message<SubscriptionRequest> busMessage) {
+		SubscriptionRequest originalPayload = busMessage.getPayload();
+		Message<SubscriptionRequest> result = new Message<SubscriptionRequest>() {
+
+			@Override
+			public SubscriptionRequest getPayload() {
+				SubscriptionRequest tmp = new SubscriptionRequest();
+				tmp.setActive(originalPayload.isActive());
+				tmp.setContext(deppCopyList(originalPayload.getContext()));
+				tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
+				tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+				tmp.setId(originalPayload.getId());
+				tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
+				tmp.setType(originalPayload.getRequestType());
+				tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
+				return tmp;
+			}
+
+		};
 		return result;
 	}
 

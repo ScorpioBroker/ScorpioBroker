@@ -19,12 +19,12 @@ public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionM
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	@UnlessBuildProfile("kafka")
 	public Uni<Void> handleCsource(Message<BaseRequest> busMessage) {
-		return baseHandleCsource(MicroServiceUtils.deepCopyMessage(busMessage));
+		return baseHandleCsource(MicroServiceUtils.deepCopyRequestMessage(busMessage));
 	}
 
 	@Incoming(AppConstants.INTERNAL_SUBS_CHANNEL)
 	@UnlessBuildProfile("kafka")
 	public Uni<Void> handleSubscription(Message<SubscriptionRequest> busMessage) {
-		return baseHandleSubscription(busMessage);
+		return baseHandleSubscription(MicroServiceUtils.deepCopySubscriptionMessage(busMessage));
 	}
 }

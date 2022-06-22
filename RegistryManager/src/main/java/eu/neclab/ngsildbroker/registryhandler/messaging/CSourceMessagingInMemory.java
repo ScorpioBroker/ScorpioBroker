@@ -18,7 +18,7 @@ public class CSourceMessagingInMemory extends CSourceMessagingBase {
 	@Incoming(AppConstants.ENTITY_CHANNEL)
 	@UnlessBuildProfile("kafka")
 	public Uni<Void> handleEntity(Message<BaseRequest> mutinyMessage) {
-		return baseHandleEntity(MicroServiceUtils.deepCopyMessage(mutinyMessage));
+		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(mutinyMessage));
 
 	}
 }
