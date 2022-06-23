@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.historymanager.repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +24,7 @@ public class HistoryDAO extends StorageDAO {
 	}
 
 	public void entityExists(String entityId, String tenantId) throws ResponseException {
-		
+
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		if (tenantId == AppConstants.INTERNAL_NULL_KEY) {
 			result.putAll(AppConstants.INTERNAL_NULL_KEY,
@@ -41,7 +42,29 @@ public class HistoryDAO extends StorageDAO {
 
 		}
 	}
-	
+
+	public void attributeExists(String entityId, String tenantId, String resolvedAttrId) throws ResponseException {
+
+		List<String> result;
+		if (tenantId == AppConstants.INTERNAL_NULL_KEY) {
+			result = getJDBCTemplate(null).queryForList(
+					"select attributeid from temporalentityattrinstance WHERE temporalentity_id='" + entityId + "'",
+					String.class);
+			if (!result.contains(resolvedAttrId)) {
+				throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
+			}
+		} else {
+
+			result = getJDBCTemplate(tenantId).queryForList(
+					"select attributeid from temporalentityattrinstance WHERE temporalentity_id='" + entityId + "'",
+					String.class);
+			if (!result.contains(resolvedAttrId)) {
+				throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
+			}
+
+		}
+	}
+
 	public void getAllIds(String entityId, String tenantId) throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		result.putAll(AppConstants.INTERNAL_NULL_KEY,
