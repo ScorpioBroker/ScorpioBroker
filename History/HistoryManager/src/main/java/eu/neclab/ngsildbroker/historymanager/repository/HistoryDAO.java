@@ -43,25 +43,44 @@ public class HistoryDAO extends StorageDAO {
 		}
 	}
 
-	public void attributeExists(String entityId, String tenantId, String resolvedAttrId) throws ResponseException {
-
+	public void attributeExists(String entityId, String tenantId, String resolvedAttrId, String instanceId)
+			throws ResponseException {
 		List<String> result;
+		List<String> instanceattrresult;
 		if (tenantId == AppConstants.INTERNAL_NULL_KEY) {
 			result = getJDBCTemplate(null).queryForList(
 					"select attributeid from temporalentityattrinstance WHERE temporalentity_id='" + entityId + "'",
 					String.class);
 			if (!result.contains(resolvedAttrId)) {
 				throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
+			} else {
+				if (instanceId != null) {
+					instanceattrresult = getJDBCTemplate(null)
+							.queryForList("select attributeid from temporalentityattrinstance WHERE temporalentity_id='"
+									+ entityId + "' and instanceid='" + instanceId + "'", String.class);
+					if (!instanceattrresult.contains(resolvedAttrId)) {
+						throw new ResponseException(ErrorType.NotFound, instanceId + " not found");
+					}
+				}
 			}
 		} else {
-
-			result = getJDBCTemplate(tenantId).queryForList(
-					"select attributeid from temporalentityattrinstance WHERE temporalentity_id='" + entityId + "'",
-					String.class);
-			if (!result.contains(resolvedAttrId)) {
-				throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
+			if (instanceId == null) {
+				result = getJDBCTemplate(tenantId).queryForList(
+						"select attributeid from temporalentityattrinstance WHERE temporalentity_id='" + entityId + "'",
+						String.class);
+				if (!result.contains(resolvedAttrId)) {
+					throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
+				}
+			} else {
+				if (instanceId != null) {
+					instanceattrresult = getJDBCTemplate(null)
+							.queryForList("select attributeid from temporalentityattrinstance WHERE temporalentity_id='"
+									+ entityId + "' and instanceid='" + instanceId + "'", String.class);
+					if (!instanceattrresult.contains(resolvedAttrId)) {
+						throw new ResponseException(ErrorType.NotFound, instanceId + " not found");
+					}
+				}
 			}
-
 		}
 	}
 

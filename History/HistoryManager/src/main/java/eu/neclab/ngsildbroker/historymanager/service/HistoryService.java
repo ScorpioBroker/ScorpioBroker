@@ -122,7 +122,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		String resolvedAttrId = null;
 		if (attributeId != null) {
 			resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
-			historyDAO.attributeExists(entityId, instanceId, resolvedAttrId);
+			historyDAO.attributeExists(entityId, HttpUtils.getInternalTenant(headers), resolvedAttrId, instanceId);
 		}
 		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId,
 				entityId);
