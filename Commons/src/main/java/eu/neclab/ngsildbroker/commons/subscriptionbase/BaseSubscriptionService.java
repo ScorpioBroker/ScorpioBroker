@@ -220,7 +220,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			Subscription subscription = subscriptionRequest.getSubscription();
 			String endpointProtocol = subscription.getNotification().getEndPoint().getUri().getScheme();
 			if (subscription.getTimeInterval() > 0) {
-				if (endpointProtocol.equals("mqtt")) {
+				if (endpointProtocol.equals("mqtt") || endpointProtocol.equals("tcp")) {
 					intervalHandlerMQTT.addSub(subscriptionRequest);
 				} else {
 					intervalHandlerREST.addSub(subscriptionRequest);
@@ -533,7 +533,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	}
 
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {
-		if (endpointProtocol.equals("mqtt")) {
+		if (endpointProtocol.equals("mqtt") || endpointProtocol.equals("tcp") ) {
 			return notificationHandlerMQTT;
 		} else {
 			return notificationHandlerREST;
