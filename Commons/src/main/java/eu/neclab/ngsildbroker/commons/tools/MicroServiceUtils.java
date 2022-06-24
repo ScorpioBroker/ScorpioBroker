@@ -73,6 +73,9 @@ public class MicroServiceUtils {
 	}
 
 	private static Map<String, Object> deepCopyMap(Map<String, Object> original) {
+		if (original == null) {
+			return null;
+		}
 		Map<String, Object> result = Maps.newHashMap();
 		for (Entry<String, Object> entry : original.entrySet()) {
 			Object copiedValue;
@@ -99,6 +102,9 @@ public class MicroServiceUtils {
 	}
 
 	private static List<Object> deppCopyList(List<Object> original) {
+		if (original == null) {
+			return null;
+		}
 		List<Object> result = Lists.newArrayList();
 		for (Object originalValue : original) {
 			Object copiedValue;

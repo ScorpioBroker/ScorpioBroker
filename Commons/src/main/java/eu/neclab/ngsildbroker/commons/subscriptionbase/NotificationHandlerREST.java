@@ -9,6 +9,8 @@ import org.jboss.resteasy.reactive.RestResponse;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -26,21 +28,27 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 		HttpRequest<Buffer> httpReq = webClient
 				.postAbs(request.getSubscription().getNotification().getEndPoint().getUri().toString())
 				.followRedirects(true);
-		;
 		for (Entry<String, List<Object>> header : compacted.getHeaders().entrySet()) {
 			for (Object objEntry : header.getValue()) {
 				httpReq = httpReq.putHeader(header.getKey(), objEntry.toString());
 			}
 		}
 		if (request.getSubscription().getNotification().getEndPoint().getReceiverInfo() != null) {
-			for (Entry<String, String> entry : request.getSubscription().getNotification().getEndPoint()
-					.getReceiverInfo().entries()) {
-				httpReq = httpReq.putHeader(entry.getKey(), entry.getValue());
+			MultiMap headers = httpReq.headers();
+			HeadersMultiMap receiverInfo = request.getSubscription().getNotification().getEndPoint().getReceiverInfo();
+			for (String headerName : receiverInfo.names()) {
+				List<String> value = receiverInfo.getAll(headerName);
+				if (value.size() == 1) {
+					headers.set(headerName, value.get(0));
+				} else {
+					headers.set(headerName, value);
+				}
 			}
 
 		}
 		logger.debug("should send notification now");
 		logger.debug(httpReq.toString());
+		logger.debug("Content length: " + compacted.getEntity().length());
 		int retryCount = 5;
 		httpReq.sendBuffer(Buffer.buffer(compacted.getEntity())).onFailure().retry()
 				.withBackOff(Duration.ofSeconds(5), Duration.ofSeconds(60)).atMost(retryCount).onItem()
@@ -52,13 +60,15 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 						logger.info("success subscription id: " + request.getSubscription().getId()
 								+ " notification id: " + notification.getId());
 						request.getSubscription().getNotification()
-								.setLastFailedNotification(new Date(System.currentTimeMillis()));
+								.setLastSuccessfulNotification(new Date(System.currentTimeMillis()));
 					} else {
-						logger.error("Failed to send notification subscription id: "
-								+ request.getSubscription().getId() + " notification id: " + notification.getId());
+						logger.error("Failed to send notification subscription id: " + request.getSubscription().getId()
+								+ " notification id: " + notification.getId());
 						logger.error("Status code: " + statusCode);
 						logger.error("Status message: " + result.statusMessage());
 						logger.error("Response: " + result.bodyAsString());
+						request.getSubscription().getNotification()
+								.setLastFailedNotification(new Date(System.currentTimeMillis()));
 					}
 					return null;
 				}).onFailure().call(t -> {
