@@ -30,6 +30,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		URI callback = request.getSubscription().getNotification().getEndPoint().getUri();
 		Map<String, String> clientSettings = request.getSubscription().getNotification().getEndPoint()
 				.getNotifierInfo();
+		
 		ArrayListMultimap<String, String> headers = request.getHeaders();
 		Object client = getClient(callback, clientSettings);
 		String qosString = null;
@@ -53,7 +54,8 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 			org.eclipse.paho.mqttv5.client.MqttClient client5 = (org.eclipse.paho.mqttv5.client.MqttClient) client;
 			MqttMessage message = new MqttMessage(payload.getBytes());
 			message.setQos(qos);
-			message.getProperties().setContentType(headers.get(HttpHeaders.CONTENT_TYPE.toString()).get(0));
+			if (message.getProperties() != null)
+				message.getProperties().setContentType(headers.get(HttpHeaders.CONTENT_TYPE.toString()).get(0));
 			client5.publish(callback.getPath().substring(1), message);
 		}
 
@@ -109,10 +111,10 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 				port = 1883;
 			}
 			if (mqttVersion == null || mqttVersion.equals(NGSIConstants.MQTT_VERSION_5)) {
-				result = new org.eclipse.paho.mqttv5.client.MqttClient(callback.toString(), CLIENT_ID);
+				result = new org.eclipse.paho.mqttv5.client.MqttClient(baseURI.toString(), CLIENT_ID);
 				((org.eclipse.paho.mqttv5.client.MqttClient) result).connect();
 			} else if (mqttVersion.equals(NGSIConstants.MQTT_VERSION_3)) {
-				result = new MqttClient(callback.toString(), CLIENT_ID);
+				result = new MqttClient(baseURI.toString(), CLIENT_ID);
 				((MqttClient) result).connect();
 			}
 			uri2client.put(baseURI, result);

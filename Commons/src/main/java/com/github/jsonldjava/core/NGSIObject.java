@@ -480,6 +480,9 @@ class NGSIObject {
 				if (this.parent.isTemporalQ && this.parent.parent == null) {
 					return;
 				}
+				if (this.parent.isNotifierInfo && this.parent.parent != null) {
+					return;
+				}
 				if (this.parent.parent != null
 						&& (this.parent.parent.isNotifierInfo || this.parent.parent.isReceiverInfo)
 						&& this.parent.parent.parent != null && parent.parent.parent.isEndpoint) {
