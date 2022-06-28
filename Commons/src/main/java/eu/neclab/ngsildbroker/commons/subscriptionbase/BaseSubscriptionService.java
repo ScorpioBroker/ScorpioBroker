@@ -29,6 +29,7 @@ import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -170,24 +171,26 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private void loadStoredSubscriptions() {
 		// synchronized (this.tenant2subscriptionId2Subscription) {
 		logger.debug("loading stored subscriptions");
-		List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions().await().indefinitely();
-		logger.debug("loaded stored subscriptions from database");
-		for (String subscriptionString : subscriptions) {
-			logger.debug("subscribing with " + subscriptionString);
-			subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true).onFailure()
-					.recoverWithItem(e -> {
-						logger.error("Failed to load stored subscription", e);
-						return null;
-					}).onItem().transform(t -> {
-						if (t != null) {
-							logger.debug("subscribed to " + subscriptionString);
-						}
-						return t;
-					}).await().indefinitely();
 
-		}
-		// }
-		logger.debug("done loading stored subscribtipns");
+		subscriptionInfoDAO.getStoredSubscriptions().onItem().transformToUni(subscriptions -> {
+			logger.debug("loaded stored subscriptions from database");
+			List<Uni<String>> unis = Lists.newArrayList();
+			for (String subscriptionString : subscriptions) {
+				logger.debug("subscribing with " + subscriptionString);
+				unis.add(subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true).onFailure()
+						.recoverWithItem(e -> {
+							logger.error("Failed to load stored subscription", e);
+							return null;
+						}).onItem().transform(t -> {
+							if (t != null) {
+								logger.debug("subscribed to " + subscriptionString);
+							}
+							return t;
+						}));
+			}
+			logger.debug("done loading stored subscribtipns");
+			return Uni.combine().all().unis(unis).combinedWith(l -> null);
+		}).await().indefinitely();
 	}
 
 	public Uni<String> subscribe(SubscriptionRequest subscriptionRequest) {
@@ -533,7 +536,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	}
 
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {
-		if (endpointProtocol.equals("mqtt") || endpointProtocol.equals("tcp") ) {
+		if (endpointProtocol.equals("mqtt") || endpointProtocol.equals("tcp")) {
 			return notificationHandlerMQTT;
 		} else {
 			return notificationHandlerREST;

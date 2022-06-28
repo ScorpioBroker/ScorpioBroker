@@ -123,7 +123,9 @@ public class Notification {
 		notificationBody.append("\n}");
 		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(notificationBody.toString());
 		for (Entry<String, List<Object>> entry : dataResponse.getHeaders().entrySet()) {
-			builder = builder.header(entry.getKey(), entry.getValue());
+			for (Object value : entry.getValue()) {
+				builder = builder.header(entry.getKey(), value);
+			}
 		}
 		return builder.build();
 	}
