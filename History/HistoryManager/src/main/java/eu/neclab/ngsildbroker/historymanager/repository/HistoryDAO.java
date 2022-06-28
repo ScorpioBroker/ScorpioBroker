@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.historymanager.repository;
 
+import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,43 +47,44 @@ public class HistoryDAO extends StorageDAO {
 
 	public void attributeExists(String entityId, String tenantId, String resolvedAttrId, String instanceId)
 			throws ResponseException {
-		List<String> result;
-		List<String> instanceattrresult;
+		Map<String, String> results = new HashMap<>();
 		if (tenantId == AppConstants.INTERNAL_NULL_KEY) {
-			result = getJDBCTemplate(null).queryForList(
-					"select attributeid from temporalentityattrinstance WHERE temporalentity_id='" + entityId + "'",
-					String.class);
-			if (!result.contains(resolvedAttrId)) {
+			getJDBCTemplate(null)
+					.query("select attributeid, instanceid from temporalentityattrinstance WHERE temporalentity_id='"
+							+ entityId + "' and attributeid='" + resolvedAttrId + "'", (ResultSet rs) -> {
+								while (rs.next()) {
+									results.put(rs.getString("instanceid"), rs.getString("attributeid"));
+								}
+								return true;
+							});
+			if (results.isEmpty()) {
 				throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
-			} else {
-				if (instanceId != null) {
-					instanceattrresult = getJDBCTemplate(null)
-							.queryForList("select attributeid from temporalentityattrinstance WHERE temporalentity_id='"
-									+ entityId + "' and instanceid='" + instanceId + "'", String.class);
-					if (!instanceattrresult.contains(resolvedAttrId)) {
-						throw new ResponseException(ErrorType.NotFound, instanceId + " not found");
-					}
+			}
+			if (instanceId != null) {
+				if (!results.containsKey(instanceId)) {
+					throw new ResponseException(ErrorType.NotFound, instanceId + " not found");
 				}
 			}
 		} else {
-			if (instanceId == null) {
-				result = getJDBCTemplate(tenantId).queryForList(
-						"select attributeid from temporalentityattrinstance WHERE temporalentity_id='" + entityId + "'",
-						String.class);
-				if (!result.contains(resolvedAttrId)) {
-					throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
-				}
-			} else {
-				if (instanceId != null) {
-					instanceattrresult = getJDBCTemplate(null)
-							.queryForList("select attributeid from temporalentityattrinstance WHERE temporalentity_id='"
-									+ entityId + "' and instanceid='" + instanceId + "'", String.class);
-					if (!instanceattrresult.contains(resolvedAttrId)) {
-						throw new ResponseException(ErrorType.NotFound, instanceId + " not found");
-					}
+			getJDBCTemplate(tenantId)
+					.query("select attributeid, instanceid from temporalentityattrinstance WHERE temporalentity_id='"
+							+ entityId + "' and attributeid='" + resolvedAttrId + "'", (ResultSet rs) -> {
+								while (rs.next()) {
+									results.put(rs.getString("instanceid"), rs.getString("attributeid"));
+								}
+								return true;
+							});
+			if (results.isEmpty()) {
+				throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
+			}
+			if (instanceId != null) {
+				if (!results.containsKey(instanceId)) {
+					throw new ResponseException(ErrorType.NotFound, instanceId + " not found");
 				}
 			}
+
 		}
+
 	}
 
 	public void getAllIds(String entityId, String tenantId) throws ResponseException {
