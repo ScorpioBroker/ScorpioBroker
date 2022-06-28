@@ -223,6 +223,7 @@ public class ParamsResolver {
 			qp.setAttrs(String.join(",", attrs));
 		}
 		qp.setLimit(limit);
+		qp.setOffSet(offset);
 		handleGeoQuery(georel, geoproperty, coordinates, geometry, qp);
 		handleTimeQuery(timerel, timeAt, timeproperty, endTimeAt, qp);
 		List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
