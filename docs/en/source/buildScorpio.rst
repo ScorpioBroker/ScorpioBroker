@@ -226,15 +226,9 @@ Scorpio has been tested and developed with Postgres 10.
 
 The default username and password which Scorpio uses is "ngb". If you
 want to use a different username or password you need to provide them as
-parameter when starting the StorageManager and the RegistryManager.
+parameter when starting the RegistryManager.
 
 e.g.
-
-.. code:: console
-
-    java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword
-
-OR
 
 .. code:: console
 
@@ -385,7 +379,7 @@ the root dir
 
 -  ``BUILD_DIR_EMG = Core/EntityManager``
 
--  ``BUILD_DIR_STRMG = Storage/StorageManager``
+-  ``BUILD_DIR_RSUBMG = Registry/RegistrySubscriptionManager``
 
 -  ``BUILD_DIR_SUBMG = Core/SubscriptionManager``
 
@@ -405,7 +399,7 @@ the root dir
 
 -  ``JAR_FILE_BUILD_EMG = EntityManager-${project.version}.jar``
 
--  ``JAR_FILE_BUILD_STRMG = StorageManager-${project.version}.jar``
+-  ``JAR_FILE_BUILD_RSUBMG = RegistrySubscriptionManager-${project.version}.jar``
 
 -  ``JAR_FILE_BUILD_SUBMG = SubscriptionManager-${project.version}.jar``
 
@@ -425,7 +419,7 @@ the root dir
 
 -  ``JAR_FILE_RUN_EMG = EntityManager.jar``
 
--  ``JAR_FILE_RUN_STRMG = StorageManager.jar``
+-  ``JAR_FILE_RUN_RSUBMG = RegistrySubscriptionManager.jar``
 
 -  ``JAR_FILE_RUN_SUBMG = SubscriptionManager.jar``
 
@@ -446,7 +440,7 @@ Start the broker components
 
 .. code:: console
 
-    java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar
+    java -jar Registry/RegistrySubscriptionManager/target/RegistrySubscriptionManager-<VERSIONNUMBER>-SNAPSHOT.jar
     java -jar Core/QueryManager/target/QueryManager-<VERSIONNUMBER>-SNAPSHOT.jar
     java -jar Registry/RegistryManager/target/RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar
     java -jar Core/EntityManager/target/EntityManager-<VERSIONNUMBER>-SNAPSHOT.jar
@@ -464,7 +458,7 @@ before the build or you can override configs by add
 
 .. code:: console
 
-    java -jar Storage/StorageManager/target/StorageManager-<VERSIONNUMBER>-SNAPSHOT.jar --reader.datasource.username=funkyusername --reader.datasource.password=funkypassword`
+    java -jar Registry/RegistryManager/target/RegistryManager-<VERSIONNUMBER>-SNAPSHOT.jar --spring.datasource.username=funkyusername --spring.datasource.password=funkypassword
 
 Enable CORS support
 -------------------
