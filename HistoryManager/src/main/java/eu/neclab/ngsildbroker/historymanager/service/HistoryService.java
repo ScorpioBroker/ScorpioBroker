@@ -90,20 +90,28 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		
-		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transform(Unchecked.function(t -> {
-			String resolvedAttrId = null;
-			if (attributeId != null) {
-				resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
-				
-			}
-			return new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
-		})).onItem().transformToUni(t2 -> {
-			return handleRequest(t2).combinedWith((t, u) -> {
-				logger.debug("delete Message() :: completed");
-				return true;
-			});
-		});
+		return Uni.combine().all()
+				.unis(historyDAO.getTemporalEntity(entityId, tenantId), historyDAO
+						.temporalEntityAttrInstanceExist(entityId, tenantId, attributeId, instanceId, linkHeaders))
+				.asTuple().onItem().transform(t -> {
+					String resolvedAttrId = null;
+					try {
+						if (attributeId != null) {
+							resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
+						}
+						return new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
+					} catch (ResponseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						return null;
+					}
+
+				}).onItem().transformToUni(t2 -> {
+					return handleRequest(t2).combinedWith((t, u) -> {
+						logger.debug("delete Message() :: completed");
+						return true;
+					});
+				});
 	}
 
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
