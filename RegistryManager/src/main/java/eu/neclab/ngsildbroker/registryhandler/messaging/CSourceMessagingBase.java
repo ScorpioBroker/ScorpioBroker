@@ -1,13 +1,11 @@
 package eu.neclab.ngsildbroker.registryhandler.messaging;
 
-import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.utils.JsonUtils;
 
 import org.eclipse.microprofile.reactive.messaging.Message;

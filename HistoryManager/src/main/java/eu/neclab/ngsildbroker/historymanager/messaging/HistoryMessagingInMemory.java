@@ -2,8 +2,6 @@ package eu.neclab.ngsildbroker.historymanager.messaging;
 
 import javax.inject.Singleton;
 
-import com.google.common.collect.Maps;
-
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 

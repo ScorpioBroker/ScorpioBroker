@@ -30,7 +30,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -45,7 +44,6 @@ import io.vertx.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
-import io.vertx.mutiny.ext.web.client.HttpResponse;
 
 @Singleton
 public class SubscriptionService extends BaseSubscriptionService {
@@ -144,8 +142,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 				remoteSub.getNotification().getEndPoint().setUri(prepareNotificationServlet(subscriptionRequest));
 				String body;
 				try {
-					Map<String, Object> expandedBody = (Map<String, Object>) JsonUtils
-							.fromString(DataSerializer.toJson(remoteSub));
+					Map<String, Object> expandedBody = remoteSub.toJson();
 					expandedBody.remove(NGSIConstants.NGSI_LD_STATUS);
 					expandedBody.remove(NGSIConstants.JSON_LD_ID);
 					body = JsonUtils.toPrettyString(

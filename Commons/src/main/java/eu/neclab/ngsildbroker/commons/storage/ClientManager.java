@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 
 import javax.annotation.PostConstruct;

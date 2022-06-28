@@ -137,7 +137,6 @@ public class EntityService implements EntryCRUDService {
 				});
 	}
 
-	@SuppressWarnings("unchecked")
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
 		logger.trace("deleteEntity() :: started");
 		if (entityId == null) {

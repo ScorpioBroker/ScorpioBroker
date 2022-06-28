@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
-import java.util.HashMap;
-
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -14,7 +12,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -28,7 +25,6 @@ import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpServerRequest;
 
 /**

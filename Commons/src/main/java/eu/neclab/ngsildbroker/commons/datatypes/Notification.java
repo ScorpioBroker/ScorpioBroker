@@ -32,7 +32,6 @@ public class Notification {
 	private List<Object> context;
 	private String type;
 	private ArrayListMultimap<String, String> headers;
-	private static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	public Notification() {
 		// for serialization

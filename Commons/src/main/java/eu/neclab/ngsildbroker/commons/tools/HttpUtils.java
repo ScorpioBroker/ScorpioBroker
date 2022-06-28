@@ -230,7 +230,6 @@ public final class HttpUtils {
 		}
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult, int endPoint) {
@@ -727,11 +726,11 @@ public final class HttpUtils {
 	}
 
 	public static MultiMap getQueryParamMap(HttpServerRequest request) {
-			MultiMap mMap = MultiMap.caseInsensitiveMultiMap();
-			String[] params = request.query().split("&");
-	    	for(String param:params) {
-				mMap.add(param.split("=",2)[0],param.split("=",2)[1] );
-	    	}
-	return mMap;
+		MultiMap mMap = MultiMap.caseInsensitiveMultiMap();
+		String[] params = request.query().split("&");
+		for (String param : params) {
+			mMap.add(param.split("=", 2)[0], param.split("=", 2)[1]);
+		}
+		return mMap;
 	}
 }

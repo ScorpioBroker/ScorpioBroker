@@ -28,7 +28,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.smallrye.mutiny.Multi;
@@ -169,7 +168,7 @@ public interface EntryControllerFunctions {
 
 	private static RestResponse<Object> generateBatchResultReply(BatchResult result, int okStatus) {
 		int status = HttpStatus.SC_MULTI_STATUS;
-		String body = DataSerializer.toJson(result);
+		String body = result.toJsonString();
 		if (result.getFails().isEmpty()) {
 			status = okStatus;
 			body = null;

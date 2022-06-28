@@ -10,15 +10,11 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -120,7 +116,7 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		return clientManager.getClient(tenant, false).onItem()
 				.transformToUni(client -> client.preparedQuery("INSERT INTO " + dbname
 						+ " (subscription_id, subscription_request) VALUES ($1, $2) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request")
-						.execute(Tuple.of(sub.getId(), DataSerializer.toJson(sub))).onItem().ignore()
+						.execute(Tuple.of(sub.getId(), sub.toJsonString())).onItem().ignore()
 						.andContinueWithNull());
 	}
 

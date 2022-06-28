@@ -1,6 +1,9 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -55,9 +58,13 @@ public class NGSIRestResponse {
 		return details;
 	}
 
-	public String toJson() {
-		String result = "{\n\t\"type\":\"" + type + "\",\n\t\"title\":\"" + title + "\",\n\t\"detail\":\"" + details
-				+ "\"\n}";
+	public Map<String, Object> toJson() {
+		Map<String, Object> result = Maps.newHashMap();
+		result.put("type", type);
+		result.put("title", title);
+		result.put("detail", details);
+//		String result = "{\n\t\"type\":\"" + type + "\",\n\t\"title\":\"" + title + "\",\n\t\"detail\":\"" + details
+//				+ "\"\n}";
 		return result;
 	}
 

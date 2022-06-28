@@ -1,5 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes.results;
 
+import java.util.Map;
+
+import com.google.common.collect.Maps;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
 
 public class BatchFailure {
@@ -26,6 +31,14 @@ public class BatchFailure {
 
 	public void setDetails(NGSIRestResponse details) {
 		this.ProblemDetails = details;
+	}
+
+	public Map<String, Object> toJson() {
+		Map<String, Object> result = Maps.newHashMap();
+		result.put(NGSIConstants.JSON_LD_ID, entityId);
+		//TODO replace with constant
+		result.put("ProblemDetails", ProblemDetails.toJson());
+		return result;
 	}
 
 }

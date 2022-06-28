@@ -8,6 +8,7 @@ import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_NEA
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_OVERLAPS;
 import static eu.neclab.ngsildbroker.commons.constants.NGSIConstants.GEO_REL_WITHIN;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,7 +27,6 @@ import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
@@ -58,7 +58,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
@@ -169,24 +168,28 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	protected abstract SubscriptionInfoDAOInterface getSubscriptionInfoDao();
 
 	private void loadStoredSubscriptions() {
-		// synchronized (this.tenant2subscriptionId2Subscription) {
 		logger.debug("loading stored subscriptions");
-
 		subscriptionInfoDAO.getStoredSubscriptions().onItem().transformToUni(subscriptions -> {
 			logger.debug("loaded stored subscriptions from database");
 			List<Uni<String>> unis = Lists.newArrayList();
 			for (String subscriptionString : subscriptions) {
 				logger.debug("subscribing with " + subscriptionString);
-				unis.add(subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true).onFailure()
-						.recoverWithItem(e -> {
-							logger.error("Failed to load stored subscription", e);
-							return null;
-						}).onItem().transform(t -> {
-							if (t != null) {
-								logger.debug("subscribed to " + subscriptionString);
-							}
-							return t;
-						}));
+				SubscriptionRequest request;
+				try {
+					request = SubscriptionRequest.fromJsonString(subscriptionString, false);
+				} catch (IOException | ResponseException e) {
+					logger.error("Failed to load stored subscription", e);
+					continue;
+				}
+				unis.add(subscribe(request, true).onFailure().recoverWithItem(e -> {
+					logger.error("Failed to load stored subscription", e);
+					return null;
+				}).onItem().transform(t -> {
+					if (t != null) {
+						logger.debug("subscribed to " + subscriptionString);
+					}
+					return t;
+				}));
 			}
 			logger.debug("done loading stored subscribtipns");
 			return Uni.combine().all().unis(unis).combinedWith(l -> null);
@@ -251,7 +254,6 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 
 				new Thread() {
-					@SuppressWarnings("unchecked")
 					public void run() {
 						if (sendInitialNotification) {
 							subscriptionInfoDAO.getEntriesFromSub(t).onItem().transform(Unchecked.function(t2 -> {

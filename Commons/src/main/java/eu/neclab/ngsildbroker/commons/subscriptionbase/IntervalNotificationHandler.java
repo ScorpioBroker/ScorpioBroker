@@ -10,8 +10,6 @@ import java.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.jsonldjava.utils.JsonUtils;
-
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
@@ -58,7 +56,6 @@ public class IntervalNotificationHandler {
 			this.subscriptionRequest = subscriptionRequest;
 		}
 
-		@SuppressWarnings("unchecked")
 		public void run() {
 			if (!subscriptionRequest.isActive()) {
 				return;
