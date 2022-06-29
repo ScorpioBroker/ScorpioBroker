@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 
-import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
+//import com.github.filosganga.geogson.gson.GeometryAdapterFactory;
 import com.github.filosganga.geogson.model.Coordinates;
 import com.github.filosganga.geogson.model.Geometry;
 import com.github.filosganga.geogson.model.LineString;
@@ -25,14 +25,7 @@ import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
@@ -52,8 +45,8 @@ public class SerializationTools {
 //	public static SimpleDateFormat forgivingFormatter = new SimpleDateFormat(
 //			NGSIConstants.DEFAULT_FORGIVING_DATE_FORMAT);
 
-	public static Gson geojsonGson = new GsonBuilder().registerTypeAdapterFactory(new GeometryAdapterFactory())
-			.create();
+//	public static Gson geojsonGson = new GsonBuilder().registerTypeAdapterFactory(new GeometryAdapterFactory())
+//			.create();
 
 	@SuppressWarnings("unchecked")
 	public static Property parseProperty(List<Map<String, Object>> topLevelArray, String key) {
@@ -307,136 +300,6 @@ public class SerializationTools {
 		return (String) value.get(0).get(NGSIConstants.JSON_LD_ID);
 	}
 
-	/**
-	 * 
-	 * @param timestamp
-	 * @param context
-	 * @param type      - to indicate which type of serialization is required For ex
-	 *                  (in Entity payload).
-	 * 
-	 *                  createdAt must be serialized as :
-	 *                  "https://uri.etsi.org/ngsi-ld/createdAt": [{ "@type":
-	 *                  ["https://uri.etsi.org/ngsi-ld/Property"],
-	 *                  "https://uri.etsi.org/ngsi-ld/hasValue": [{ "@value":
-	 *                  "2017-07-29T12:00:04" }] }]
-	 *
-	 *                  whereas observedAt must be serialized as : "http:
-	 *                  //uri.etsi.org/ngsi-ld/observedAt": [{
-	 * @value: "2017-07-29T12:00:04",
-	 * @type: "https://uri.etsi.org/ngsi-ld/DateTime" }]
-	 *
-	 *        although both are same(Long/Timestamp) but they need to serialize
-	 *        differently. serializaton mst be of type :
-	 *
-	 * @return JsonElement
-	 */
-	// TODO : How type will be decided from Entity class variables.
-
-	public static JsonElement getJson(Property property, JsonSerializationContext context) {
-		JsonArray result = new JsonArray();
-		HashMap<String, PropertyEntry> entries = property.getEntries();
-		for (PropertyEntry entry : entries.values()) {
-			JsonObject top = new JsonObject();
-			JsonArray type = new JsonArray();
-			type.add(new JsonPrimitive(entry.getType()));
-			top.add(NGSIConstants.JSON_LD_TYPE, type);
-
-			top.add(NGSIConstants.NGSI_LD_HAS_VALUE, getJson(entry.getValue(), context));
-			if (entry.getObservedAt() > 0) {
-				top.add(NGSIConstants.NGSI_LD_OBSERVED_AT, getJson(entry.getObservedAt(), context));
-			}
-			if (entry.getCreatedAt() > 0) {
-				top.add(NGSIConstants.NGSI_LD_CREATED_AT, getJson(entry.getCreatedAt(), context));
-			}
-			if (entry.getModifiedAt() > 0) {
-				top.add(NGSIConstants.NGSI_LD_MODIFIED_AT, getJson(entry.getModifiedAt(), context));
-			}
-			if (entry.getUnitCode() != null && !entry.getUnitCode().isEmpty()) {
-				top.add(NGSIConstants.NGSI_LD_UNIT_CODE, getJson(entry.getUnitCode(), context));
-			}
-			for (Property propOfProp : entry.getProperties()) {
-				top.add(propOfProp.getId().toString(), getJson(propOfProp, context));
-			}
-			for (Relationship relaOfProp : entry.getRelationships()) {
-				top.add(relaOfProp.getId().toString(), getJson(relaOfProp, context));
-			}
-			result.add(top);
-		}
-
-		return result;
-	}
-
-	@SuppressWarnings("unchecked")
-	private static JsonElement getJson(Object value, JsonSerializationContext context) {
-		JsonElement result;
-		if (value instanceof Map) {
-			return getComplexValue((Map<String, List<Object>>) value, context);
-		} else if (value instanceof List) {
-			List<Object> myList = (List<Object>) value;
-			JsonArray myArray = new JsonArray();
-			for (Object object : myList) {
-				myArray.add(getJson(object, context));
-			}
-			result = myArray;
-		} else {
-
-			if (value instanceof TypedValue) {
-				return context.serialize(value);
-			}
-			result = new JsonObject();
-			((JsonObject) result).add(NGSIConstants.JSON_LD_VALUE, context.serialize(value));
-
-		}
-
-		return result;
-	}
-
-	private static JsonObject getComplexValue(Map<String, List<Object>> value, JsonSerializationContext context) {
-		JsonObject top = new JsonObject();
-		for (Entry<String, List<Object>> entry : value.entrySet()) {
-			top.add(entry.getKey(), getJson(entry.getValue(), context));
-		}
-		return top;
-	}
-
-	public static JsonElement getJson(Relationship relationship, JsonSerializationContext context) {
-		JsonArray result = new JsonArray();
-
-		for (RelationshipEntry entry : relationship.getEntries().values()) {
-			JsonObject top = new JsonObject();
-			JsonArray type = new JsonArray();
-			type.add(new JsonPrimitive(entry.getType()));
-			top.add(NGSIConstants.JSON_LD_TYPE, type);
-			JsonArray value = new JsonArray();
-			JsonObject objValue = new JsonObject();
-			objValue.add(NGSIConstants.JSON_LD_ID, context.serialize(entry.getObject()));
-			value.add(objValue);
-			top.add(NGSIConstants.NGSI_LD_HAS_OBJECT, value);
-			JsonArray datasetIdvalue = new JsonArray();
-			JsonObject datasetobjValue = new JsonObject();
-			datasetobjValue.add(NGSIConstants.JSON_LD_ID, context.serialize(entry.getDataSetId()));
-			datasetIdvalue.add(datasetobjValue);
-			top.add(NGSIConstants.NGSI_LD_DATA_SET_ID, datasetIdvalue);
-			if (entry.getObservedAt() > 0) {
-				top.add(NGSIConstants.NGSI_LD_OBSERVED_AT, getJson(entry.getObservedAt(), context));
-			}
-			if (entry.getCreatedAt() > 0) {
-				top.add(NGSIConstants.NGSI_LD_CREATED_AT, getJson(entry.getCreatedAt(), context));
-			}
-			if (entry.getModifiedAt() > 0) {
-				top.add(NGSIConstants.NGSI_LD_MODIFIED_AT, getJson(entry.getModifiedAt(), context));
-			}
-			for (Property propOfProp : entry.getProperties()) {
-				top.add(propOfProp.getId().toString(), getJson(propOfProp, context));
-			}
-			for (Relationship relaOfProp : entry.getRelationships()) {
-				top.add(relaOfProp.getId().toString(), getJson(relaOfProp, context));
-			}
-			result.add(top);
-
-		}
-		return result;
-	}
 
 	@SuppressWarnings("unchecked")
 	public static GeoProperty parseGeoProperty(List<Map<String, Object>> topLevelArray, String key) {
