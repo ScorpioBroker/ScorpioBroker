@@ -68,7 +68,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		CreateHistoryEntityRequest request;
 		try {
 			request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
-		} catch (Exception e) {
+		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
 		return handleRequest(request).combinedWith((t, u) -> {

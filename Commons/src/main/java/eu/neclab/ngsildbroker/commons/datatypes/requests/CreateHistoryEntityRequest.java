@@ -54,12 +54,12 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 	 * @throws IOException
 	 * @throws JsonParseException
 	 */
-	public CreateHistoryEntityRequest(BaseRequest entityRequest) throws Exception {
+	public CreateHistoryEntityRequest(BaseRequest entityRequest) throws ResponseException {
 		this(entityRequest.getHeaders(), entityRequest.getFinalPayload(), true);
 	}
 
 	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			boolean fromEntity) throws Exception {
+			boolean fromEntity) throws ResponseException {
 		super(headers, resolved, (String) resolved.get(NGSIConstants.JSON_LD_ID), AppConstants.CREATE_REQUEST);
 		this.fromEntity = fromEntity;
 		createTemporalEntity(resolved, fromEntity);
