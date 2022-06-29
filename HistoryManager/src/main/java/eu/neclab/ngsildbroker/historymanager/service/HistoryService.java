@@ -92,20 +92,14 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		return Uni.combine().all()
 				.unis(historyDAO.getTemporalEntity(entityId, tenantId), historyDAO
 						.temporalEntityAttrInstanceExist(entityId, tenantId, attributeId, instanceId, linkHeaders))
-				.asTuple().onItem().transform(t -> {
+				.asTuple().onItem().transform(Unchecked.function(t -> {
 					String resolvedAttrId = null;
-					try {
-						if (attributeId != null) {
-							resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
-						}
-						return new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
-					} catch (ResponseException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						return null;
+					if (attributeId != null) {
+						resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
 					}
+					return new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
 
-				}).onItem().transformToUni(t2 -> {
+				})).onItem().transformToUni(t2 -> {
 					return handleRequest(t2).combinedWith((t, u) -> {
 						logger.debug("delete Message() :: completed");
 						return true;
