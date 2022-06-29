@@ -53,7 +53,7 @@ The following list shows all the vars and their intended value if you run docker
  
  - BUILD_DIR_EMG = Core/EntityManager
  
- - BUILD_DIR_STRMG = Storage/StorageManager
+ - BUILD_DIR_RSUBMG = Registry/RegistrySubscriptionManager
  
  - BUILD_DIR_SUBMG = Core/SubscriptionManager
 
@@ -73,7 +73,7 @@ The following list shows all the vars and their intended value if you run docker
  
  - JAR_FILE_BUILD_EMG = EntityManager-${project.version}.jar
  
- - JAR_FILE_BUILD_STRMG = StorageManager-${project.version}.jar
+ - JAR_FILE_BUILD_RSUBMG = RegistrySubscriptionManager-${project.version}.jar
  
  - JAR_FILE_BUILD_SUBMG = SubscriptionManager-${project.version}.jar
 
@@ -93,6 +93,6 @@ The following list shows all the vars and their intended value if you run docker
  
  - JAR_FILE_RUN_EMG = EntityManager.jar
  
- - JAR_FILE_RUN_STRMG = StorageManager.jar
+ - JAR_FILE_RUN_RSUBMG = RegistrySubscriptionManager.jar
  
  - JAR_FILE_RUN_SUBMG = SubscriptionManager.jar
