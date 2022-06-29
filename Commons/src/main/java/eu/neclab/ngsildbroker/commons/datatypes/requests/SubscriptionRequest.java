@@ -129,13 +129,13 @@ public class SubscriptionRequest extends BaseRequest {
 		SubscriptionRequest result = new SubscriptionRequest();
 
 		Map<String, Object> top = (Map<String, Object>) JsonUtils.fromString(jsonString);
-		String subString = null;
+		Map<String, Object> sub = null;
 		for (Entry<String, Object> entry : top.entrySet()) {
 			String key = entry.getKey();
 			Object value = entry.getValue();
 			switch (key) {
 				case SUBSCRIPTION:
-					subString = (String) value;
+					sub = (Map<String, Object>) value;
 					break;
 				case CONTEXT:
 					result.setContext((List<Object>) value);
@@ -160,7 +160,7 @@ public class SubscriptionRequest extends BaseRequest {
 			}
 		}
 		try {
-			result.setSubscription(Subscription.fromJsonString(subString,
+			result.setSubscription(Subscription.expandSubscription(sub,
 					JsonLdProcessor.getCoreContextClone().parse(getAtContext(result.getHeaders()), true), update));
 		} catch (JsonLdError e) {
 			throw new ResponseException(ErrorType.InvalidRequest, "failed to parse at context");
@@ -169,8 +169,8 @@ public class SubscriptionRequest extends BaseRequest {
 	}
 
 	private static List<Object> getAtContext(ArrayListMultimap<String, String> headers) {
-		return HttpUtils.parseLinkHeader(headers.get(NGSIConstants.LINK_HEADER), NGSIConstants.HEADER_REL_LDCONTEXT)
-				.await().indefinitely();
+		return HttpUtils.parseLinkHeaderNoUni(headers.get(NGSIConstants.LINK_HEADER),
+				NGSIConstants.HEADER_REL_LDCONTEXT);
 	}
 
 	private static ArrayListMultimap<String, String> getMultiListHeaders(Map<String, List<String>> value) {

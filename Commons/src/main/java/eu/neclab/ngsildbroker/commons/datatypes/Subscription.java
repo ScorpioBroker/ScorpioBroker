@@ -368,7 +368,7 @@ public class Subscription {
 		if (getId() != null) {
 			top.put(NGSIConstants.JSON_LD_ID, getId());
 		}
-		top.put(NGSIConstants.JSON_LD_TYPE, getType());
+		top.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(getType()));
 		List<Object> temp = Lists.newArrayList();
 		if (getEntities() != null) {
 			for (EntityInfo info : getEntities()) {

@@ -105,8 +105,7 @@ public final class HttpUtils {
 		return parseLinkHeader(req.headers().getAll("Link"), headerRelLdcontext);
 	}
 
-	public static Uni<List<Object>> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
-
+	public static List<Object> parseLinkHeaderNoUni(List<String> rawLinks, String headerRelLdcontext) {
 		ArrayList<Object> result = new ArrayList<Object>();
 		if (rawLinks != null) {
 
@@ -134,7 +133,11 @@ public final class HttpUtils {
 
 			}
 		}
-		return Uni.createFrom().item(result);
+		return result;
+	}
+
+	public static Uni<List<Object>> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
+		return Uni.createFrom().item(parseLinkHeaderNoUni(rawLinks, headerRelLdcontext));
 
 	}
 

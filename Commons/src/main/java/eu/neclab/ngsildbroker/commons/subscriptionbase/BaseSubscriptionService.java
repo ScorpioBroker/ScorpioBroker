@@ -27,6 +27,7 @@ import com.github.filosganga.geogson.model.LineString;
 import com.github.filosganga.geogson.model.Point;
 import com.github.filosganga.geogson.model.Polygon;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
+import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
@@ -122,8 +123,12 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "4ll7yp35")
 	String allTypeSubType;
 
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	String coreContext;
+
 	@PostConstruct
 	void setup() {
+		JsonLdProcessor.init(coreContext);
 		setSyncId();
 		kafkaSender = getSyncChannelSender();
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
@@ -192,6 +197,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}));
 			}
 			logger.debug("done loading stored subscribtipns");
+			if (unis.isEmpty()) {
+				return Uni.createFrom().nullItem();
+			}
 			return Uni.combine().all().unis(unis).combinedWith(l -> null);
 		}).await().indefinitely();
 	}
