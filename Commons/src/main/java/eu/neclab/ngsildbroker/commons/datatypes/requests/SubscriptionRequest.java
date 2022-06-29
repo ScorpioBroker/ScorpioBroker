@@ -94,6 +94,7 @@ public class SubscriptionRequest extends BaseRequest {
 		try {
 			return JsonUtils.toPrettyString(toJson());
 		} catch (IOException e) {
+			e.printStackTrace();
 			return "";
 		}
 	}
