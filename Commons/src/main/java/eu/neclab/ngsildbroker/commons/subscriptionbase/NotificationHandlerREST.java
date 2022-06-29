@@ -75,7 +75,7 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 					logger.error("finally failed to send notification subscription id: "
 							+ request.getSubscription().getId() + " notification id: " + notification.getId());
 					return null;
-				}).await().atMost(Duration.ofMinutes(3));
+				}).subscribe();
 	}
 
 }

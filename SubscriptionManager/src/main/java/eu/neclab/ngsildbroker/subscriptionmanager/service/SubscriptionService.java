@@ -175,7 +175,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 							}).onFailure().call(t -> {
 								logger.error("Failed to subscribe to remote host " + temp.toString(), t);
 								return null;
-							}).await().atMost(Duration.ofSeconds(60));
+							}).subscribe();
 
 				}
 			}
