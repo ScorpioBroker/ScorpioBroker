@@ -212,7 +212,7 @@ Body:
             }
         ],
         "@context": [
-            "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+            "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
         ]
     },
     {
@@ -251,7 +251,7 @@ Body:
             }
         ],
         "@context": [
-            "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+            "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
         ]
     }
  ]
@@ -300,16 +300,24 @@ This change affects existing NGSI-LD data. There are some parameter changes in t
      - CSourceRegistration, Subscription
 
    * - "geometry":“ngsi-ld:geometry"
-     - 	"geometry": "geojson:geometry"
+     - "geometry": "geojson:geometry"
      - GeoQuery(Subscription)
+
+   * - ""
+     - "properties": "geojson:properties"
+     - New: GeoJSON Representation
 
    * - "properties": {"@id": "ngsi-ld:properties","@type": "@vocab"}
      - "propertyNames ": {"@id": "ngsi-ld:propertyNames","@type": "@vocab"}
      - RegistrationInfo (CSourceRegistration)
 
    * - "relationships": {"@id": "ngsi-ld:relationships","@type": "@vocab" }
-     - 	"relationshipNames": {"@id": "ngsi-ld:relationshipNames","@type":"@vocab"}
+     - "relationshipNames": {"@id": "ngsi-ld:relationshipNames","@type":"@vocab"}
      - RegistrationInfo (CSourceRegistration)
+
+   * - ""
+     - "subscriptionName": "ngsi-ld:subscriptionName"
+     - Subscription
 
    * - "start": {"@id": "ngsi-ld:start","@type": "DateTime“}
      - "startAt": {"@id": "ngsi-ld:startAt","@type": "DateTime"}
@@ -318,6 +326,10 @@ This change affects existing NGSI-LD data. There are some parameter changes in t
    * - "time": {"@id": "ngsi-ld:time","@type": "DateTime“}
      - "timeAt": {"@id": "ngsi-ld:timeAt","@type": "DateTime"}
      - TemporalQuery (also query parameter!)
+
+   * - "coordinates": "ngsi-ld:coordinates"
+     - "coordinates": {"@container": "@list", "@id": "geojson:coordinates"}
+     - All using GeoProperties! (e.g. Create, Update, Append, Retrieve, Query, Notify); GeoQuery(Subscription)
 
    * - "title": "ngsi-ld:title"
      - "title": "http://purl.org/dc/terms/title"

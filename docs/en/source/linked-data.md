@@ -223,7 +223,7 @@ the root dir
 - BUILD\_DIR\_QMG = Core/QueryManager 
 - BUILD\_DIR\_RMG =Registry/RegistryManager 
 - BUILD\_DIR\_EMG = Core/EntityManager 
-- BUILD\_DIR\_STRMG = Storage/StorageManager 
+- BUILD\_DIR\_RSUBMG = Registry/RegistrySubscriptionManager 
 - BUILD\_DIR\_SUBMG =Core/SubscriptionManager
 - JAR\_FILE\_BUILD\_ACS = AtContextServer-\${project.version}.jar 
 - JAR\_FILE\_BUILD\_SCS = config-server-\${project.version}.jar 
@@ -233,7 +233,7 @@ the root dir
 - JAR\_FILE\_BUILD\_QMG = QueryManager-\${project.version}.jar 
 - JAR\_FILE\_BUILD\_RMG = RegistryManager-\${project.version}.jar
 - JAR\_FILE\_BUILD\_EMG = EntityManager-\${project.version}.jar 
-- JAR\_FILE\_BUILD\_STRMG = StorageManager-\${project.version}.jar 
+- JAR\_FILE\_BUILD\_RSUBMG = RegistrySubscriptionManager-\${project.version}.jar 
 - JAR\_FILE\_BUILD\_SUBMG = SubscriptionManager-\${project.version}.jar
 - JAR\_FILE\_RUN\_ACS = AtContextServer.jar 
 - JAR\_FILE\_RUN\_SCS =config-server.jar 
@@ -243,7 +243,7 @@ the root dir
 - JAR\_FILE\_RUN\_QMG = QueryManager.jar 
 - JAR\_FILE\_RUN\_RMG = RegistryManager.jar 
 - JAR\_FILE\_RUN\_EMG =EntityManager.jar 
-- JAR\_FILE\_RUN\_STRMG = StorageManager.jar 
+- JAR\_FILE\_RUN\_RSUBMG = RegistrySubscriptionManager.jar 
 - JAR\_FILE\_RUN\_SUBMG = SubscriptionManager.jar
 ```
 
@@ -270,14 +270,14 @@ the following `@context` would be required
     ...  other data attributes
     "@context": [
         "https://fiware.github.io/data-models/context.jsonld",
-        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
     ]
 }
 ```
 
 ### Core Context
 
-[https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld](https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld)
+[https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld](https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld)
 refers to the Core `@context` of NGSI-LD, this defines element such as `id` and `type` which are common to all NGSI
 entities, as well as defining terms such as `Property` and `Relationship`. The core context is so fundamental to
 NGSI-LD, that it is added by default to any `@context` sent to a request.
@@ -349,7 +349,7 @@ curl -iX POST \
     },
     "@context": [
         "https://fiware.github.io/data-models/context.jsonld",
-        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
     ]
 }'
 ```
@@ -405,7 +405,7 @@ curl -iX POST \
     },
     "@context": [
         "https://fiware.github.io/data-models/context.jsonld",
-        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
     ]
 }'
 ```
@@ -469,7 +469,7 @@ curl -G -X GET \
 
 #### Response:
 
-The response returns the Core `@context` by default (`https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld`) and
+The response returns the Core `@context` by default (`https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld`) and
 all attributes are expanded whenever possible.
 
 -   `id`, `type`, `location` and `name` are defined in the core context and are not expanded.
@@ -512,7 +512,7 @@ Note that if an attribute has not been not associated to an FQN when the entity 
                 "coordinates": [13.3986, 52.5547]
             }
         },
-        "@context": "https://uri.etsi.org/ngsi-lv1/ngsi-ld-core-context.jsonld"
+        "@context": "https://uri.etsi.org/ngsi-lv1/ngsi-ld-core-context-v1.3.jsonld"
     },
     {
         "id": "urn:ngsi-ld:Building:store002",
@@ -545,7 +545,7 @@ Note that if an attribute has not been not associated to an FQN when the entity 
                 "coordinates": [13.3903, 52.5075]
             }
         },
-        "@context": "https://uri.etsi.org/ngsi-lv1/ngsi-ld-core-context.jsonld"
+        "@context": "https://uri.etsi.org/ngsi-lv1/ngsi-ld-core-context-v1.3.jsonld"
     }
 ]
 ```
@@ -564,7 +564,7 @@ curl -G -X GET \
 
 #### Response:
 
-The response returns the Core `@context` by default (`https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld`) and
+The response returns the Core `@context` by default (`https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld`) and
 all attributes are expanded whenever possible.
 
 ```json
@@ -599,7 +599,7 @@ all attributes are expanded whenever possible.
             "coordinates": [13.3986, 52.5547]
         }
     },
-    "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+    "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
 }
 ```
 
@@ -703,7 +703,7 @@ The `Link` header `https://fiware.github.io/data-models/context.jsonld` holds an
 {
     "@context": [
         "https://fiware.github.io/data-models/context.jsonld",
-        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
     ]
 }
 ```

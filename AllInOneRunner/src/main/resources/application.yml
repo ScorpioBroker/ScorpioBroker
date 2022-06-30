@@ -119,6 +119,9 @@ ngsild:
 scorpio:
 #  gatewayurl: http://localhost:9090
 #  fedbrokers: http://remotehost:9090
+  cors: 
+    enable: true
+    allowall: true
   directDB: true
   history:
     autorecording: active
