@@ -59,18 +59,14 @@ public abstract class EntityTools {
 	}
 
 	public static Map<String, Object> clearBaseProps(Map<String, Object> fullEntry, SubscriptionRequest subscription) {
-		List<String> attrNames = subscription.getSubscription().getAttributeNames();
-		if (attrNames == null || attrNames.isEmpty()) {
-			return fullEntry;
-		}
-		List<String> notifucationAttrs = subscription.getSubscription().getNotification().getAttributeNames();
-		if(notifucationAttrs == null || notifucationAttrs.isEmpty()) {
+		List<String> notificationAttrs = subscription.getSubscription().getNotification().getAttributeNames();
+		if(notificationAttrs == null || notificationAttrs.isEmpty()) {
 			return fullEntry;
 		}
 		Set<String> allNames = new HashSet<String>(fullEntry.keySet());
 		allNames.remove(NGSIConstants.JSON_LD_ID);
 		allNames.remove(NGSIConstants.JSON_LD_TYPE);
-		allNames.removeAll(attrNames);
+		allNames.removeAll(notificationAttrs);
 		for (String name : allNames) {
 			fullEntry.remove(name);
 		}
