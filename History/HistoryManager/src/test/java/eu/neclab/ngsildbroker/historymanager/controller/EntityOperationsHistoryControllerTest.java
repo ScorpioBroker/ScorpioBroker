@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -118,7 +119,8 @@ public class EntityOperationsHistoryControllerTest {
 	@Test
 	public void createMultipleEntityTest() {
 		try {
-			when(historyService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
+			when(historyService.createEntry(any(), any()))
+					.thenReturn(new CreateResult("urn:ngsi-ld:Vehicle:A101", true));
 			ResultActions resultAction = mockMvc.perform(
 					post("/ngsi-ld/v1/temporal/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
@@ -144,7 +146,8 @@ public class EntityOperationsHistoryControllerTest {
 	@Test
 	public void createMultipleEntityIfEntityNotExistTest() {
 		try {
-			when(historyService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101")
+			when(historyService.createEntry(any(), any()))
+					.thenReturn(new CreateResult("urn:ngsi-ld:Vehicle:A101", true))
 					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
 			ResultActions resultAction = mockMvc.perform(
 					post("/ngsi-ld/v1/temporal/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
@@ -274,7 +277,8 @@ public class EntityOperationsHistoryControllerTest {
 	@Test
 	public void upsertMultipleEntityTest() {
 		try {
-			when(historyService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
+			when(historyService.createEntry(any(), any()))
+					.thenReturn(new CreateResult("urn:ngsi-ld:Vehicle:A101", true));
 			ResultActions resultAction = mockMvc.perform(
 					post("/ngsi-ld/v1/temporal/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
@@ -297,7 +301,8 @@ public class EntityOperationsHistoryControllerTest {
 	@Test
 	public void upsertMultipleEntityIfEntityNotExistTest() {
 		try {
-			when(historyService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101")
+			when(historyService.createEntry(any(), any()))
+					.thenReturn(new CreateResult("urn:ngsi-ld:Vehicle:A101", true))
 					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
 			ResultActions resultAction = mockMvc.perform(
 					post("/ngsi-ld/v1/temporal/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
@@ -386,13 +391,12 @@ public class EntityOperationsHistoryControllerTest {
 			e.printStackTrace();
 		}
 	}
-	
-	
+
 	@Test
 	public void postQueryTest() {
 		try {
-		   QueryResult resutl = mock(QueryResult.class);
-		   when(historyService.getData(any(), any(), any(), any(), any())).thenReturn(resutl);
+			QueryResult resutl = mock(QueryResult.class);
+			when(historyService.getData(any(), any(), any(), any(), any())).thenReturn(resutl);
 			ResultActions resultAction = mockMvc.perform(
 					post("/ngsi-ld/v1/temporal/entityOperations/query").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(qPayload))
@@ -407,12 +411,13 @@ public class EntityOperationsHistoryControllerTest {
 			e.printStackTrace();
 		}
 	}
-	
+
 	@Test
 	public void postQueryBadRequestTest() {
 		try {
-		   QueryResult resutl = mock(QueryResult.class);
-		   when(historyService.getData(any(), any(), any(), any(), any())).thenThrow(new ResponseException(ErrorType.BadRequestData,""));
+			QueryResult resutl = mock(QueryResult.class);
+			when(historyService.getData(any(), any(), any(), any(), any()))
+					.thenThrow(new ResponseException(ErrorType.BadRequestData, ""));
 			ResultActions resultAction = mockMvc.perform(
 					post("/ngsi-ld/v1/temporal/entityOperations/query").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(qPayload))

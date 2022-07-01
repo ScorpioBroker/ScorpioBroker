@@ -39,6 +39,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -140,7 +141,7 @@ public class EntityControllerTest {
 	public void createEntityTest() {
 
 		try {
-			when(entityService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
+			when(entityService.createEntry(any(), any())).thenReturn(new CreateResult("urn:ngsi-ld:Vehicle:A101", true));
 
 			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
