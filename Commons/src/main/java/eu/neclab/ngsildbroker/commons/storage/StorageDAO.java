@@ -24,6 +24,7 @@ import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -232,26 +233,55 @@ public abstract class StorageDAO {
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
-			if (qp.getCountResult() == true) {
+			if (qp.getCountResult()) {
 				if (qp.getLimit() == 0) {
 					String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
-					Integer count = template.queryForObject(sqlQueryCount, Integer.class);
+					Long count = template.queryForObject(sqlQueryCount, Long.class);
 					queryResult.setCount(count);
 					return queryResult;
 				}
+
 				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
-				List<String> list = template.queryForList(sqlQuery, String.class);
+				List<Map<String, Object>> result = template.queryForList(sqlQuery);
+				List<String> list = Lists.newArrayList();
+				Long count = (Long) result.get(0).get("count");
+				for (Map<String, Object> entry : result) {
+					list.add((String) entry.get("data").toString());
+				}
+
 				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
-				String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
-				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
 				queryResult.setCount(count);
+				queryResult.setOffset(qp.getOffSet());
+				queryResult.setLimit(qp.getLimit());
+				long after = count - qp.getOffSet() - qp.getLimit();
+				if (after < 0) {
+					after = 0;
+				}
+				queryResult.setResultsLeftAfter(after);
+				long before = count - qp.getOffSet();
+				if (before < 0) {
+					before = 0;
+				}
+				queryResult.setResultsLeftBefore(before);
 				return queryResult;
 			} else {
 				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
 				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
+				queryResult.setOffset(qp.getOffSet());
+				queryResult.setLimit(qp.getLimit());
+				long after;
+				if (list.size() < qp.getLimit()) {
+					after = 0;
+				} else {
+					after = qp.getLimit() + 1;
+				}
+				long before = qp.getOffSet();
+
+				queryResult.setResultsLeftAfter(after);
+				queryResult.setResultsLeftBefore(before);
 				return queryResult;
 			}
 		} catch (DataIntegrityViolationException e) {
@@ -264,7 +294,7 @@ public abstract class StorageDAO {
 		return queryResult;
 	}
 
-	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException{
+	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
 		boolean result = true;
 		DBWriteTemplates templates = getJDBCTemplates(request);
 
@@ -308,12 +338,13 @@ public abstract class StorageDAO {
 		}
 		return n > 0;
 	}
+
 	private boolean doTemporalSqlAttrInsert(DBWriteTemplates templates, String value, String entityId,
 			String entityType, String attributeId, String entityCreatedAt, String entityModifiedAt, String instanceId,
 			Boolean overwriteOp) {
 		try {
 			Integer n = 0;
-			
+
 			if (!value.equals("null")) {
 				// https://gist.github.com/mdellabitta/1444003
 				try {
@@ -329,7 +360,7 @@ public abstract class StorageDAO {
 								tn = templates.getWriterJdbcTemplateWithTransaction().update(sql, entityId, entityType,
 										entityCreatedAt, entityModifiedAt);
 							}
-                     
+
 							if (entityId != null && attributeId != null) {
 								if (overwriteOp != null && overwriteOp) {
 									sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
@@ -352,8 +383,7 @@ public abstract class StorageDAO {
 
 						}
 					});
-				}
-				catch (DataIntegrityViolationException e) {
+				} catch (DataIntegrityViolationException e) {
 					logger.info("Failed to create attribute instance because of data inconsistency");
 					logger.info("Attempting recovery");
 					try {
@@ -441,7 +471,7 @@ public abstract class StorageDAO {
 				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = ?::jsonb , "
 						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = ?::jsonb , " + DBConstants.DBCOLUMN_KVDATA
 						+ " = ?::jsonb WHERE " + DBConstants.DBCOLUMN_ID + "=?";
-						n = templates.getWriterJdbcTemplate().update(sql, value, valueWithoutSysAttrs, kvValue, key);
+				n = templates.getWriterJdbcTemplate().update(sql, value, valueWithoutSysAttrs, kvValue, key);
 
 			}
 		} else {
@@ -472,8 +502,8 @@ public abstract class StorageDAO {
 
 		return result;
 	}
-	
-	protected String getTenant(String tenantId){
+
+	protected String getTenant(String tenantId) {
 		if (tenantId == null) {
 			return null;
 		}
@@ -482,7 +512,7 @@ public abstract class StorageDAO {
 		}
 		return tenantId;
 	}
-	
+
 	private String validateDataBaseNameByTenantId(String tenantid) {
 		if (tenantid == null)
 			return null;
