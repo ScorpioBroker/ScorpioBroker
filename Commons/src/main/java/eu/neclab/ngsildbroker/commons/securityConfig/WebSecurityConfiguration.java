@@ -4,10 +4,8 @@ import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -52,50 +50,21 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 		final CorsConfiguration config = new CorsConfiguration();
 		if (allowAllCors) {
 			config.applyPermitDefaultValues();
-
-			// config.setAllowCredentials(true);
-
-			// config.addAllowedOrigin("*");
-			// config.addAllowedHeader("*");
-			// config.addAllowedOriginPattern("*");
 			config.setAllowedMethods(Arrays.asList("*"));
-			// config.addExposedHeader("*");
-
-//			config.addAllowedMethod(HttpMethod.DELETE);
-//			config.addAllowedMethod(HttpMethod.POST);
-//			config.addAllowedMethod(HttpMethod.GET);
-//			config.addAllowedMethod(HttpMethod.OPTIONS);
-//			config.addAllowedMethod(HttpMethod.PATCH);
-//			config.addAllowedMethod(HttpMethod.PUT);
-//			config.addAllowedMethod(HttpMethod.HEAD);
-//			config.addAllowedMethod(HttpMethod.TRACE);
-
 		} else {
 			if (allowedOrigin != null) {
 				for (String origin : allowedOrigin.split(",")) {
 					config.addAllowedOrigin(origin);
 				}
-
 			}
 			if (allowedHeader != null) {
-				for (String header : allowedHeader.split(",")) {
-					config.addAllowedHeader(header);
-				}
+				config.setAllowedHeaders(Arrays.asList(allowedHeader.split(",")));
 			}
 			if (allowAllCorsMethods) {
-				config.addAllowedMethod(HttpMethod.DELETE);
-				config.addAllowedMethod(HttpMethod.POST);
-				config.addAllowedMethod(HttpMethod.GET);
-				config.addAllowedMethod(HttpMethod.OPTIONS);
-				config.addAllowedMethod(HttpMethod.PATCH);
-				config.addAllowedMethod(HttpMethod.PUT);
-				config.addAllowedMethod(HttpMethod.HEAD);
-				config.addAllowedMethod(HttpMethod.TRACE);
+				config.setAllowedMethods(Arrays.asList("*"));
 			} else {
 				if (allowedMethods != null) {
-					for (String method : allowedMethods.split(",")) {
-						config.addAllowedMethod(method);
-					}
+					config.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
 				}
 			}
 		}
@@ -121,7 +90,8 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 				.anyMatch(profile -> (profile.equalsIgnoreCase("docker") || profile.equalsIgnoreCase("eureka")))) {
 			securityMode = "deactivated";
 		}
-		//CORS has to be first otherwise the access-control-allow-origin header gets stripped
+		// CORS has to be first otherwise the access-control-allow-origin header gets
+		// stripped
 		switch (securityMode) {
 			case "header":
 				http.cors().configurationSource(corsConfiguration()).and().authorizeRequests().anyRequest()
