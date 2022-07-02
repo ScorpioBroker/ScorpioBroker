@@ -246,17 +246,19 @@ public abstract class StorageDAO {
 				List<String> list = Lists.newArrayList();
 				if (result.size() > 0) {
 					Long count = (Long) result.get(0).get("count");
-					queryResult.setCount(count);
-					long after = count - qp.getOffSet() - qp.getLimit();
-					if (after < 0) {
-						after = 0;
+					if (count != null) {
+						queryResult.setCount(count);
+						long after = count - qp.getOffSet() - qp.getLimit();
+						if (after < 0) {
+							after = 0;
+						}
+						queryResult.setResultsLeftAfter(after);
+						long before = count - qp.getOffSet();
+						if (before < 0) {
+							before = 0;
+						}
+						queryResult.setResultsLeftBefore(before);
 					}
-					queryResult.setResultsLeftAfter(after);
-					long before = count - qp.getOffSet();
-					if (before < 0) {
-						before = 0;
-					}
-					queryResult.setResultsLeftBefore(before);
 				}
 				for (Map<String, Object> entry : result) {
 					list.add((String) entry.get("data").toString());
