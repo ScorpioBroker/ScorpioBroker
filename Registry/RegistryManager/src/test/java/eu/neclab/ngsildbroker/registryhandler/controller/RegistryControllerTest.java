@@ -36,6 +36,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -126,7 +127,7 @@ public class RegistryControllerTest {
 	public void registerCSourceTest() {
 		try {
 			when(csourceService.createEntry(any(), any()))
-					.thenReturn("urn:ngsi-ld:ContextSourceRegistration:csr1a3458");
+					.thenReturn(new CreateResult("urn:ngsi-ld:ContextSourceRegistration:csr1a3458", true));
 			ResultActions resultAction = mockMvc
 					.perform(post("/ngsi-ld/v1/csourceRegistrations/")
 							.contentType(AppConstants.NGB_APPLICATION_JSONLD).content(payload))

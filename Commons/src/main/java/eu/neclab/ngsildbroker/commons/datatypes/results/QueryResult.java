@@ -11,34 +11,34 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
  */
 public class QueryResult extends BaseResult {
 
-	public QueryResult(List<String> dataString, String errorMsg, ErrorType errorType, int shortErrorMsg, boolean success) {
+	public QueryResult(List<String> dataString, String errorMsg, ErrorType errorType, int shortErrorMsg,
+			boolean success) {
 		super(errorMsg, errorType, shortErrorMsg, success);
 		this.dataString = dataString;
 	}
 
-		
 	private String qToken;
 	private Integer limit;
 	private Integer offset;
-	private Integer resultsLeftAfter;
-	private Integer resultsLeftBefore;
+	private Long resultsLeftAfter;
+	private Long resultsLeftBefore;
 	private List<String> dataString;
 	private List<String> actualDataString;
-	private Integer count = 0;
-	
-	public Integer getResultsLeftBefore() {
+	private Long count = 0l;
+
+	public Long getResultsLeftBefore() {
 		return resultsLeftBefore;
 	}
 
-	public void setResultsLeftBefore(Integer resultsLeftBefore) {
+	public void setResultsLeftBefore(Long resultsLeftBefore) {
 		this.resultsLeftBefore = resultsLeftBefore;
 	}
 
-	public Integer getResultsLeftAfter() {
+	public Long getResultsLeftAfter() {
 		return resultsLeftAfter;
 	}
 
-	public void setResultsLeftAfter(Integer resultsLeft) {
+	public void setResultsLeftAfter(Long resultsLeft) {
 		this.resultsLeftAfter = resultsLeft;
 	}
 
@@ -66,7 +66,6 @@ public class QueryResult extends BaseResult {
 		this.offset = offset;
 	}
 
-
 	public List<String> getDataString() {
 		return dataString;
 	}
@@ -82,12 +81,12 @@ public class QueryResult extends BaseResult {
 	public void setActualDataString(List<String> actualDataString) {
 		this.actualDataString = actualDataString;
 	}
-	
-	public Integer getCount() {
+
+	public Long getCount() {
 		return count;
 	}
 
-	public void setCount(Integer count) {
+	public void setCount(Long count) {
 		this.count = count;
 	}
 

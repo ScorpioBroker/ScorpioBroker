@@ -25,6 +25,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -65,7 +66,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		// get message channel for ENTITY_CREATE topic.
 		logger.debug("createMessage() :: started");
@@ -73,9 +74,8 @@ public class EntityService implements EntryCRUDService {
 		EntityRequest request = new CreateEntityRequest(resolved, headers);
 		pushToDB(request);
 		sendToKafka(request);
-
 		logger.debug("createMessage() :: completed");
-		return request.getId();
+		return new CreateResult(request.getId(), true);
 	}
 
 	private void sendToKafka(BaseRequest request) {

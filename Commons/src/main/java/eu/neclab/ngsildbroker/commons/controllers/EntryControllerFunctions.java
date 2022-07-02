@@ -24,12 +24,15 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
@@ -150,7 +153,7 @@ public interface EntryControllerFunctions {
 				continue;
 			}
 			try {
-				result.addSuccess(entityService.createEntry(headers, resolved));
+				result.addSuccess(entityService.createEntry(headers, resolved).getEntityId());
 			} catch (Exception e) {
 				RestResponse response;
 				if (e instanceof ResponseException) {
@@ -320,14 +323,14 @@ public interface EntryControllerFunctions {
 			if (replace) {
 				try {
 					entityService.deleteEntry(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID));
-					result.addSuccess(entityService.createEntry(headers, resolved));
+					result.addSuccess(entityService.createEntry(headers, resolved).getEntityId());
 					appendedOneEntity = true;
 				} catch (Exception e1) {
 					if (e1 instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e1);
 						if (response.getStatus().equals(HttpStatus.NOT_FOUND)) {
 							try {
-								result.addSuccess(entityService.createEntry(headers, resolved));
+								result.addSuccess(entityService.createEntry(headers, resolved).getEntityId());
 								insertedOneEntity = true;
 							} catch (Exception e) {
 								if (e instanceof ResponseException) {
@@ -359,7 +362,7 @@ public interface EntryControllerFunctions {
 						ResponseException responseException = ((ResponseException) e1);
 						if (responseException.getHttpStatus().equals(HttpStatus.NOT_FOUND)) {
 							try {
-								result.addSuccess(entityService.createEntry(headers, resolved));
+								result.addSuccess(entityService.createEntry(headers, resolved).getEntityId());
 							} catch (Exception e) {
 								if (e instanceof ResponseException) {
 									response = new RestResponse((ResponseException) e);
@@ -431,7 +434,7 @@ public interface EntryControllerFunctions {
 
 	public static ResponseEntity<String> createEntry(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, int payloadType, String baseUrl, Logger logger) {
-		String result = null;
+		CreateResult result = null;
 		try {
 			logger.trace("create entity :: started");
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
@@ -445,7 +448,13 @@ public interface EntryControllerFunctions {
 					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
 			result = entityService.createEntry(HttpUtils.getHeaders(request), resolved);
 			logger.trace("create entity :: completed");
-			return ResponseEntity.status(HttpStatus.CREATED).header("location", baseUrl + result).build();
+			HttpStatus status;
+			if (result.isCreatedOrUpdated()) {
+				status = HttpStatus.CREATED;
+			} else {
+				status = HttpStatus.NO_CONTENT;
+			}
+			return ResponseEntity.status(status).header("location", baseUrl + result.getEntityId()).build();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}

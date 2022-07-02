@@ -50,12 +50,17 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each(" + tableDataColumn + ") WHERE key IN ( "
 					+ expandedAttributeList + "))";
 		}
-		String sqlQuery = "SELECT DISTINCT " + dataColumn + " as data FROM " + DBConstants.DBTABLE_ENTITY + " ";
+		String sqlQuery = "SELECT DISTINCT " + dataColumn + " as data";
+		int limit = qp.getLimit();
+		int offSet = qp.getOffSet();
+		if (qp.getCountResult()) {
+			sqlQuery += ", count(*) OVER() AS count";
+		}
+
+		sqlQuery += " FROM " + DBConstants.DBTABLE_ENTITY + " ";
 		if (fullSqlWhereProperty.length() > 0) {
 			sqlQuery += "WHERE " + fullSqlWhereProperty + " ";
 		}
-		int limit = qp.getLimit();
-		int offSet = qp.getOffSet();
 
 		if (limit > 0) {
 			sqlQuery += "LIMIT " + limit + " ";
@@ -89,27 +94,27 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georelOp);
 
 		switch (georelOp) {
-		case NGSIConstants.GEO_REL_NEAR:
-			if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
-				if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
-					sqlWhere.append("NOT ");
-				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
-						+ "::geography, " + georel.getDistanceValue() + ") ");
-			} else {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"GeoQuery: Type and distance are required for near relation");
-			}
-			break;
-		case NGSIConstants.GEO_REL_WITHIN:
-		case NGSIConstants.GEO_REL_CONTAINS:
-		case NGSIConstants.GEO_REL_OVERLAPS:
-		case NGSIConstants.GEO_REL_INTERSECTS:
-		case NGSIConstants.GEO_REL_EQUALS:
-		case NGSIConstants.GEO_REL_DISJOINT:
-			sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + ", " + referenceValue + ") ");
-			break;
-		default:
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
+			case NGSIConstants.GEO_REL_NEAR:
+				if (georel.getDistanceType() != null && georel.getDistanceValue() != null) {
+					if (georel.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
+						sqlWhere.append("NOT ");
+					sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + "::geography, " + referenceValue
+							+ "::geography, " + georel.getDistanceValue() + ") ");
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"GeoQuery: Type and distance are required for near relation");
+				}
+				break;
+			case NGSIConstants.GEO_REL_WITHIN:
+			case NGSIConstants.GEO_REL_CONTAINS:
+			case NGSIConstants.GEO_REL_OVERLAPS:
+			case NGSIConstants.GEO_REL_INTERSECTS:
+			case NGSIConstants.GEO_REL_EQUALS:
+			case NGSIConstants.GEO_REL_DISJOINT:
+				sqlWhere.append(sqlPostgisFunction + "( " + dbColumn + ", " + referenceValue + ") ");
+				break;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georelOp);
 		}
 		return sqlWhere.toString();
 	}
@@ -127,37 +132,37 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 				entitiesAdded = true;
 				for (Entry<String, String> entry : entityInfo.entrySet()) {
 					switch (entry.getKey()) {
-					case NGSIConstants.JSON_LD_ID:
-						dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
-						if (entry.getValue().indexOf(",") == -1) {
-							sqlOperator = "=";
-							sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-						} else {
-							sqlOperator = "IN";
-							sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
-									+ entry.getValue().replace(",", "','") + "')";
-						}
-						break;
-					case NGSIConstants.JSON_LD_TYPE:
-						dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
-						if (entry.getValue().indexOf(",") == -1) {
-							sqlOperator = "=";
-							sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-						} else {
-							sqlOperator = "IN";
-							sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
-									+ entry.getValue().replace(",", "','") + "')";
-						}
+						case NGSIConstants.JSON_LD_ID:
+							dbColumn = NGSIConstants.QUERY_PARAMETER_ID;
+							if (entry.getValue().indexOf(",") == -1) {
+								sqlOperator = "=";
+								sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+							} else {
+								sqlOperator = "IN";
+								sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
+										+ entry.getValue().replace(",", "','") + "')";
+							}
+							break;
+						case NGSIConstants.JSON_LD_TYPE:
+							dbColumn = NGSIConstants.QUERY_PARAMETER_TYPE;
+							if (entry.getValue().indexOf(",") == -1) {
+								sqlOperator = "=";
+								sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+							} else {
+								sqlOperator = "IN";
+								sqlWhereProperty = dbColumn + " " + sqlOperator + " ('"
+										+ entry.getValue().replace(",", "','") + "')";
+							}
 
-						break;
-					case NGSIConstants.NGSI_LD_ID_PATTERN:
-						dbColumn = DBConstants.DBCOLUMN_ID;
-						sqlOperator = "~";
-						sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
-						break;
+							break;
+						case NGSIConstants.NGSI_LD_ID_PATTERN:
+							dbColumn = DBConstants.DBCOLUMN_ID;
+							sqlOperator = "~";
+							sqlWhereProperty = dbColumn + " " + sqlOperator + " '" + entry.getValue() + "'";
+							break;
 
-					default:
-						break;
+						default:
+							break;
 					}
 					fullSqlWhereProperty.append(sqlWhereProperty);
 					fullSqlWhereProperty.append(" AND ");

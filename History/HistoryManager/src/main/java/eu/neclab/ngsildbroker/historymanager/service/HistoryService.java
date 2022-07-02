@@ -30,6 +30,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequ
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -63,21 +64,26 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
-	
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		return createTemporalEntity(headers, resolved, false);
 	}
 
-	String createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	CreateResult createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			boolean fromEntity) throws ResponseException, Exception {
 
 		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		historyDAO.entityExists(request.getId(), tenantId);
+		boolean created = true;
+		try {
+			historyDAO.entityExists(request.getId(), tenantId);
+		} catch (ResponseException e) {
+			created = false;
+		}
 		logger.trace("creating temporal entity");
 		handleRequest(request);
-		return request.getId();
+		return new CreateResult(request.getId(), created);
 	}
 
 	private void pushToKafka(BaseRequest request) throws ResponseException {
@@ -108,15 +114,15 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public boolean delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
 			String instanceId, Context linkHeaders) throws ResponseException, Exception {
-		historyDAO.getAllIds(entityId,HttpUtils.getInternalTenant(headers));
-		//String tenantId = HttpUtils.getInternalTenant(headers);
+		historyDAO.getAllIds(entityId, HttpUtils.getInternalTenant(headers));
+		// String tenantId = HttpUtils.getInternalTenant(headers);
 
-			//if (!this.entityIds.containsEntry(tenantId, entityId)) {
-				//throw new ResponseException(ErrorType.NotFound, entityId + " not found");
-			//}
-			//if (attributeId == null) {
-				//this.entityIds.remove(tenantId, entityId);
-			//}
+		// if (!this.entityIds.containsEntry(tenantId, entityId)) {
+		// throw new ResponseException(ErrorType.NotFound, entityId + " not found");
+		// }
+		// if (attributeId == null) {
+		// this.entityIds.remove(tenantId, entityId);
+		// }
 		logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
 
 		String resolvedAttrId = null;
@@ -124,7 +130,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
 		}
 		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId,
-				entityId);	
+				entityId);
 		handleRequest(request);
 		return true;
 	}
@@ -133,13 +139,15 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	// endpoint "/entities/{entityId}/attrs"
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
-		//if (!this.entityIds.containsEntry(HttpUtils.getInternalTenant(headers), entityId)) {
-			//throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
-		//}
-		
+		// if (!this.entityIds.containsEntry(HttpUtils.getInternalTenant(headers),
+		// entityId)) {
+		// throw new ResponseException(ErrorType.NotFound, "You cannot create an
+		// attribute on a none existing entity");
+		// }
+
 		historyDAO.getAllIds(entityId, HttpUtils.getInternalTenant(headers));
 		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, resolved, entityId);
-		
+
 		handleRequest(request);
 		return request.getUpdateResult();
 	}
