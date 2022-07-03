@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -17,7 +18,7 @@ public interface EntryCRUDService {
 	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry, String[] options);
 
-	Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved);
+	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved);
 
 	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId);
 

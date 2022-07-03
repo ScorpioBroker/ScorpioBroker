@@ -156,9 +156,9 @@ public abstract class BaseQueryService implements EntryQueryService {
 
 					remoteResults.add(UniHelper.toUni(exchange).onItem().transform(response -> {
 						RemoteQueryResult remoteResult = new RemoteQueryResult(null, ErrorType.None, -1, true);
-						int count = 0;
+						long count = 0;
 						if (response.headers().contains(NGSIConstants.COUNT_HEADER_RESULT)) {
-							count = Integer.parseInt(response.headers().get(NGSIConstants.COUNT_HEADER_RESULT));
+							count = Long.parseLong(response.headers().get(NGSIConstants.COUNT_HEADER_RESULT));
 						}
 						remoteResult.setCount(count);
 						try {

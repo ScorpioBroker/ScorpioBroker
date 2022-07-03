@@ -22,6 +22,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequ
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -58,11 +59,11 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Channel(AppConstants.HISTORY_CHANNEL)
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
-	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
 		return createTemporalEntity(headers, resolved, false);
 	}
 
-	Uni<String> createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	Uni<CreateResult> createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			boolean fromEntity) {
 		logger.trace("creating temporal entity");
 		CreateHistoryEntityRequest request;
@@ -73,7 +74,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		}
 		return handleRequest(request).combinedWith((t, u) -> {
 			logger.debug("createMessage() :: completed");
-			return request.getId();
+			return t;
 		});
 
 	}
@@ -160,7 +161,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		throw new MethodNotFoundException();
 	}
 
-	public UniAndGroup2<Void, Void> handleRequest(HistoryEntityRequest request) {
+	public UniAndGroup2<CreateResult, Void> handleRequest(HistoryEntityRequest request) {
 		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request),
 				kafkaSenderInterface.send(new BaseRequest(request)));
 	}

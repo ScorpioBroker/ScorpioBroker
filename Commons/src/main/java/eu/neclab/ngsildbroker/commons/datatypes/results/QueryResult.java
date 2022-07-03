@@ -15,10 +15,10 @@ public class QueryResult extends BaseResult {
 	private String qToken;
 	private Integer limit;
 	private Integer offset;
-	private Integer resultsLeftAfter;
-	private Integer resultsLeftBefore;
+	private Long resultsLeftAfter;
+	private Long resultsLeftBefore;
 	private List<Map<String, Object>> data;
-	private Integer count = 0;
+	private Long count = 0l;
 
 	public QueryResult(List<Map<String, Object>> data, String errorMsg, ErrorType errorType, int shortErrorMsg,
 			boolean success) {
@@ -26,19 +26,19 @@ public class QueryResult extends BaseResult {
 		this.data = data;
 	}
 
-	public Integer getResultsLeftBefore() {
+	public Long getResultsLeftBefore() {
 		return resultsLeftBefore;
 	}
 
-	public void setResultsLeftBefore(Integer resultsLeftBefore) {
+	public void setResultsLeftBefore(Long resultsLeftBefore) {
 		this.resultsLeftBefore = resultsLeftBefore;
 	}
 
-	public Integer getResultsLeftAfter() {
+	public Long getResultsLeftAfter() {
 		return resultsLeftAfter;
 	}
 
-	public void setResultsLeftAfter(Integer resultsLeft) {
+	public void setResultsLeftAfter(Long resultsLeft) {
 		this.resultsLeftAfter = resultsLeft;
 	}
 
@@ -74,11 +74,11 @@ public class QueryResult extends BaseResult {
 		this.data = data;
 	}
 
-	public Integer getCount() {
+	public Long getCount() {
 		return count;
 	}
 
-	public void setCount(Integer count) {
+	public void setCount(Long count) {
 		this.count = count;
 	}
 

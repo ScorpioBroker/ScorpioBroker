@@ -178,7 +178,11 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		String sqlQuery = "SELECT DISTINCT c.data " + "FROM " + DBConstants.DBTABLE_CSOURCE + " c ";
+		String sqlQuery = "SELECT DISTINCT c.data as data";
+		if (qp.getCountResult()) {
+			sqlQuery += ", count(*) OVER() AS count";
+		}
+		sqlQuery += " FROM " + DBConstants.DBTABLE_CSOURCE + " c ";
 		sqlQuery += "INNER JOIN " + DBConstants.DBTABLE_CSOURCE_INFO + " ci ON (ci.csource_id = c.id) ";
 
 		if (fullSqlWhere.getItem1().length() > 0) {

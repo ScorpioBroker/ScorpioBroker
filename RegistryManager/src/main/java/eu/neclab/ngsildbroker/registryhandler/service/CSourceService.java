@@ -37,6 +37,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -191,7 +192,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
 
 		logger.debug("createMessage() :: started");
 		CSourceRequest request;
@@ -210,7 +211,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 		return handleRequest(request).onItem().transform(t -> {
 			logger.debug("createMessage() :: completed");
-			return request.getId();
+			return new CreateResult(request.getId(), true);
 		});
 
 	}

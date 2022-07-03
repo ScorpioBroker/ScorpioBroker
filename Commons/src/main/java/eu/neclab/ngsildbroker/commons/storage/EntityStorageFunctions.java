@@ -74,7 +74,11 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each(" + tableDataColumn + ") WHERE key IN ( "
 					+ expandedAttributeList + "))";
 		}
-		String sqlQuery = "SELECT DISTINCT " + dataColumn + " as data FROM " + DBConstants.DBTABLE_ENTITY + " ";
+		String sqlQuery = "SELECT DISTINCT " + dataColumn + " as data";
+		if (qp.getCountResult()) {
+			sqlQuery += ", count(*) OVER() AS count";
+		}
+		sqlQuery += " FROM " + DBConstants.DBTABLE_ENTITY + " ";
 		if (fullSqlWhereProperty.getItem1().length() > 0) {
 			sqlQuery += "WHERE " + fullSqlWhereProperty.getItem1() + " ";
 		}

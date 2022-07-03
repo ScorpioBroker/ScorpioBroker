@@ -21,6 +21,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -57,8 +58,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public Uni<String> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
-
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
 		logger.debug("createMessage() :: started");
 		EntityRequest request;
 		try {
@@ -68,9 +68,8 @@ public class EntityService implements EntryCRUDService {
 		}
 		return handleRequest(request).onItem().transform(v -> {
 			logger.debug("createMessage() :: completed");
-			return request.getId();
+			return new CreateResult(request.getId(), true);
 		});
-
 	}
 
 	/**
@@ -194,13 +193,14 @@ public class EntityService implements EntryCRUDService {
 		}
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
-				.transform(Unchecked
-						.function(t -> {return new DeleteAttributeRequest(headers, entityId, t, attrId, datasetId, deleteAll); }))
-				.onItem().transformToUni(t -> handleRequest(t)).onItem().transform(t -> true).onFailure()
+				.transform(Unchecked.function(t -> {
+					return new DeleteAttributeRequest(headers, entityId, t, attrId, datasetId, deleteAll);
+				})).onItem().transformToUni(t -> handleRequest(t)).onItem().transform(t -> true).onFailure()
 				.transform(t -> {
 					if (t.getMessage().equals("Attribute is not present"))
 						return new ResponseException(ErrorType.NotFound, t.getMessage());
-					else return t;
+					else
+						return t;
 				});
 	}
 

@@ -148,7 +148,7 @@ public interface EntryControllerFunctions {
 			BatchResult result = new BatchResult();
 			t.forEach(i -> {
 				if (i.getItem2() != null) {
-					result.addSuccess(i.getItem2());
+					result.addSuccess(i.getItem2().getEntityId());
 				} else {
 					result.addFail(i.getItem1());
 				}
@@ -455,14 +455,20 @@ public interface EntryControllerFunctions {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem().transform(entityId -> {
-				logger.trace("create entity :: completed");
-				try {
-					return RestResponse.created(new URI(baseUrl + entityId));
-				} catch (URISyntaxException e) {
-					return HttpUtils.handleControllerExceptions(e);
-				}
-			});
+			return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem()
+					.transform(createResult -> {
+						logger.trace("create entity :: completed");
+						String entityId = createResult.getEntityId();
+						try {
+							if (createResult.isCreatedOrUpdated()) {
+								return RestResponse.created(new URI(baseUrl + entityId));
+							} else {
+								return RestResponse.noContent();
+							}
+						} catch (URISyntaxException e) {
+							return HttpUtils.handleControllerExceptions(e);
+						}
+					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
