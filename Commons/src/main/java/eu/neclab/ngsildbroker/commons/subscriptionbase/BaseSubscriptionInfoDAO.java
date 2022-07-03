@@ -113,7 +113,7 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	@Override
 	public Uni<Void> storeSubscription(SubscriptionRequest sub) {
 		String tenant = sub.getTenant();
-		return clientManager.getClient(tenant, false).onItem()
+		return clientManager.getClient(tenant, true).onItem()
 				.transformToUni(client -> client.preparedQuery("INSERT INTO " + dbname
 						+ " (subscription_id, subscription_request) VALUES ($1, $2) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request")
 						.execute(Tuple.of(sub.getId(), sub.toJsonString())).onItem().ignore()
