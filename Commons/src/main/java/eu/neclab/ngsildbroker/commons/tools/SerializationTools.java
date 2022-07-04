@@ -254,7 +254,7 @@ public class SerializationTools {
 			String name = null;
 			for (Entry<String, Object> entry : next.entrySet()) {
 				String propKey = entry.getKey();
-				Object value = entry;
+				Object value = entry.getValue();
 
 				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 					if (((List<Object>) value).size() != 1) {
