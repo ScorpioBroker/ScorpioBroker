@@ -913,6 +913,14 @@ public class Subscription {
 						format = Format.keyValues;
 					}
 					break;
+				case NGSIConstants.NGSI_LD_TIMES_SEND:
+					notifyParam.setTimesSent(
+							((List<Map<String, Integer>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					break;
+				case NGSIConstants.NGSI_LD_LAST_FAILURE:
+				case NGSIConstants.NGSI_LD_LAST_SUCCESS:
+				case NGSIConstants.NGSI_LD_LAST_NOTIFICATION:
+					break;
 				default:
 					throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for notification");
 			}
