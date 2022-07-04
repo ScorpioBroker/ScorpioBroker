@@ -643,7 +643,11 @@ public class Subscription {
 					subscription.setId((String) mapValue);
 					break;
 				case NGSIConstants.JSON_LD_TYPE:
-					subscription.setType(((List<String>) mapValue).get(0));
+					if (mapValue instanceof String) {
+						subscription.setType((String) mapValue);
+					} else if (mapValue instanceof List) {
+						subscription.setType(((List<String>) mapValue).get(0));
+					}
 					break;
 				case NGSIConstants.NGSI_LD_ENTITIES:
 					List<EntityInfo> entities = new ArrayList<EntityInfo>();
