@@ -225,7 +225,7 @@ public class SerializationTools {
 			String name = null;
 			for (Entry<String, Object> entry : next.entrySet()) {
 				String propKey = entry.getKey();
-				Object value = entry;
+				Object value = entry.getValue();
 
 				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 					if (((List<Object>) value).size() != 1) {
@@ -299,7 +299,6 @@ public class SerializationTools {
 	private static String getDataSetId(List<Map<String, Object>> value) {
 		return (String) value.get(0).get(NGSIConstants.JSON_LD_ID);
 	}
-
 
 	@SuppressWarnings("unchecked")
 	public static GeoProperty parseGeoProperty(List<Map<String, Object>> topLevelArray, String key) {
