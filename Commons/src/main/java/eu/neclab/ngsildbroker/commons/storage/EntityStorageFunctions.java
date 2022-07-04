@@ -285,6 +285,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ "','" + NGSIConstants.JSON_LD_TYPE + "', jsonb_build_array('" + NGSIConstants.NGSI_LD_ENTITY_LIST
 					+ "'), '" + NGSIConstants.NGSI_LD_TYPE_LIST + "',json_agg(distinct jsonb_build_object('"
 					+ NGSIConstants.JSON_LD_ID + "', type)::jsonb)) from entity;";
+			logger.debug("SQL Query: " + query);
 			return conn.preparedQuery(query).execute();
 		} else if (qp.getCheck() == "deatilsType" && qp.getAttrs() == null) {
 			query = "select distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "',type,'"
@@ -294,6 +295,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ "', jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
 					+ "', attribute.key))) from entity, jsonb_each(data_without_sysattrs - '" + NGSIConstants.JSON_LD_ID
 					+ "' - '" + NGSIConstants.JSON_LD_TYPE + "') attribute group by id;";
+			logger.debug("SQL Query: " + query);
 			return conn.preparedQuery(query).execute();
 		} else if (qp.getCheck() == "type" && qp.getAttrs() != null) {
 			query = "with r as (select distinct attribute.key as mykey, jsonb_agg(distinct jsonb_build_object('"
@@ -311,6 +313,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES + "', mytype, '" + NGSIConstants.JSON_LD_ID + "', mykey, '"
 					+ NGSIConstants.JSON_LD_TYPE + "',jsonb_build_array('" + NGSIConstants.NGSI_LD_ATTRIBUTE
 					+ "')))) from entity, r attribute where type = $1 group by type;";
+			logger.debug("SQL Query: " + query);
 			return conn.preparedQuery(query).execute(Tuple.of(qp.getAttrs()));
 		} else if (qp.getCheck() == "NonDeatilsAttributes" && qp.getAttrs() == null) {
 			int number = random.nextInt(999999);
@@ -320,6 +323,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ "',json_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
 					+ "', attribute.key)::jsonb)) from entity,jsonb_each(data_without_sysattrs-'"
 					+ NGSIConstants.JSON_LD_ID + "'-'" + NGSIConstants.JSON_LD_TYPE + "') attribute;";
+			logger.debug("SQL Query: " + query);
 			return conn.preparedQuery(query).execute();
 
 		} else if (qp.getCheck() == "deatilsAttributes" && qp.getAttrs() == null) {
@@ -330,6 +334,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ "',jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
 					+ "', type))) from entity,jsonb_each(data_without_sysattrs-'" + NGSIConstants.JSON_LD_ID + "'-'"
 					+ NGSIConstants.JSON_LD_TYPE + "') attribute group by attribute.key;";
+			logger.debug("SQL Query: " + query);
 			return conn.preparedQuery(query).execute();
 
 		} else if (qp.getCheck() == "Attribute" && qp.getAttrs() != null) {
@@ -345,6 +350,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 					+ "',jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "',$1),'" + NGSIConstants.NGSI_LD_TYPE_NAMES
 					+ "',mytype,'" + NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT + "',finalcount,'"
 					+ NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES + "',mydata) from y,r;";
+			logger.debug("SQL Query: " + query);
 			return conn.preparedQuery(query).execute(Tuple.of(qp.getAttrs()));
 
 		}

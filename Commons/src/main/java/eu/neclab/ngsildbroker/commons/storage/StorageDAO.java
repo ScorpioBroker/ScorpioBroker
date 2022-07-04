@@ -118,9 +118,11 @@ public abstract class StorageDAO {
 				}).onItem().transform(rows -> {
 					QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 					List<Map<String, Object>> list = Lists.newArrayList();
-					rows.forEach(t -> {
-						list.add(t.getJsonObject(0).getMap());
-					});
+					if (rows != null) {
+						rows.forEach(t -> {
+							list.add(t.getJsonObject(0).getMap());
+						});
+					}
 					queryResult.setData(list);
 
 					return queryResult;
