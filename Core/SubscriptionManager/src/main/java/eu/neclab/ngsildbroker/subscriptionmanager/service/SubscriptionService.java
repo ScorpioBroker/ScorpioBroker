@@ -33,7 +33,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -140,8 +139,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 				remoteSub.getNotification().getEndPoint().setUri(prepareNotificationServlet(subscriptionRequest));
 				String body;
 				try {
-					Map<String, Object> expandedBody = (Map<String, Object>) JsonUtils
-							.fromString(DataSerializer.toJson(remoteSub));
+					Map<String, Object> expandedBody = remoteSub.toJson();
 					expandedBody.remove(NGSIConstants.NGSI_LD_STATUS);
 					expandedBody.remove(NGSIConstants.JSON_LD_ID);
 					body = JsonUtils.toPrettyString(

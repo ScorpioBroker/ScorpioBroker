@@ -17,7 +17,7 @@ public class EndPoint {
 	private String accept;
 	private URI uri;
 	private Map<String, String> notifierInfo;
-	private HashMultimap<String, Object> receiverInfo;
+	private HashMultimap<String,String> receiverInfo;
 
 	public EndPoint() {
 
@@ -83,12 +83,12 @@ public class EndPoint {
 		this.notifierInfo = notifierInfo;
 	}
 
-	public void setReceiverInfo(HashMultimap<String, Object> receiverInfo) {
+	public void setReceiverInfo(HashMultimap<String, String> receiverInfo) {
 		this.receiverInfo = receiverInfo;
 
 	}
 
-	public HashMultimap<String, Object> getReceiverInfo() {
+	public HashMultimap<String, String> getReceiverInfo() {
 		return receiverInfo;
 	}
 
