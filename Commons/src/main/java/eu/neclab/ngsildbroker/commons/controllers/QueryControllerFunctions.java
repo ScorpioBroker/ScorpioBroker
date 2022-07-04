@@ -146,7 +146,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			String originalQueryParams, MultiMap paramMap, boolean typeRequired, boolean forceArray, boolean temporal,
 			int defaultLimit, int maxLimit, String check) {
 		logger.trace("getAllEntity() ::");
-		if (originalQueryParams == null || originalQueryParams.isEmpty()) {
+		if (check == null && (originalQueryParams == null || originalQueryParams.isEmpty())) {
 			return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest, "Empty query parameters"));
 		}
 		return HttpUtils.getAtContext(request).onItem().transformToUni(t -> {
