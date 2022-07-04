@@ -60,7 +60,7 @@ public class BatchResult {
 			result.add(fail.toJson());
 
 		}
-		return null;
+		return result;
 	}
 
 }
