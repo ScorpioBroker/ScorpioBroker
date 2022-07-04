@@ -908,8 +908,13 @@ public class Subscription {
 						format = Format.keyValues;
 					}
 					break;
+				case NGSIConstants.NGSI_LD_TIMES_SEND:
+					notifyParam.setTimesSent(
+							((List<Map<String, Integer>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					break;
 				default:
-					throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for notification");
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Unkown entry for notification " + entry.getKey());
 			}
 
 		}
