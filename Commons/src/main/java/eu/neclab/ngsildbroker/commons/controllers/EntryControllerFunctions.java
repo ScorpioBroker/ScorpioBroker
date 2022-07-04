@@ -25,6 +25,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
@@ -125,12 +126,32 @@ public interface EntryControllerFunctions {
 			Multi<Tuple3<List<Object>, Map<String, Object>, Boolean>> tmpResult = Multi.createFrom()
 					.items(jsonPayload.parallelStream()).onItem().transform(i -> Tuple3.of(t, i, preFlight));
 			return tmpResult;
-		}).onItem().transform(Unchecked.function(t -> {
-			return (Map<String, Object>) JsonLdProcessor
-					.expand(t.getItem1(), t.getItem2(), opts, payloadType, t.getItem3()).get(0);
-		})).onItem().transformToUni(t -> {
+		}).onItem().transformToUni(itemTuple -> {
+			Map<String, Object> expanded;
+			String entityId;
+			if (itemTuple.getItem2().containsKey(NGSIConstants.JSON_LD_ID)) {
+				entityId = (String) itemTuple.getItem2().get(NGSIConstants.JSON_LD_ID);
+			} else if (itemTuple.getItem2().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
+				entityId = (String) itemTuple.getItem2().get(NGSIConstants.QUERY_PARAMETER_ID);
+			} else {
+				entityId = "NO ID PROVIDED";
+			}
+			try {
+				expanded = (Map<String, Object>) JsonLdProcessor
+						.expand(itemTuple.getItem1(), itemTuple.getItem2(), opts, payloadType, itemTuple.getItem3())
+						.get(0);
+			} catch (Exception e1) {
+				NGSIRestResponse response;
+				if (e1 instanceof ResponseException) {
+					response = new NGSIRestResponse((ResponseException) e1);
+				} else {
+					response = new NGSIRestResponse(ErrorType.InvalidRequest,
+							"failed to expand payload because: " + e1.getCause().getLocalizedMessage());
+				}
+				return Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null));
+			}
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			return entityService.createEntry(headers, t).onItem()
+			return entityService.createEntry(headers, expanded).onItem()
 					.transform(i -> Tuple2.of(new BatchFailure("dummy", null), i)).onFailure().recoverWithItem(e -> {
 						NGSIRestResponse response;
 						if (e instanceof ResponseException) {
@@ -138,23 +159,33 @@ public interface EntryControllerFunctions {
 						} else {
 							response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 						}
-						String entityId = "NO ID PROVIDED";
-						if (t.containsKey(NGSIConstants.JSON_LD_ID)) {
-							entityId = (String) t.get(NGSIConstants.JSON_LD_ID);
-						}
+
 						return Tuple2.of(new BatchFailure(entityId, response), null);
 					});
-		}).collectFailures().concatenate().collect().asList().onItem().transform(t -> {
+		}).collectFailures().concatenate().collect().asList().onItemOrFailure().transform((results, fails) -> {
 			BatchResult result = new BatchResult();
-			t.forEach(i -> {
+			results.forEach(i -> {
 				if (i.getItem2() != null) {
-					result.addSuccess(i.getItem2().getEntityId());
+					result.addSuccess(((CreateResult) i.getItem2()).getEntityId());
 				} else {
 					result.addFail(i.getItem1());
 				}
 			});
+			System.out.println(fails);
 			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
 		});
+
+//				t -> {
+//			BatchResult result = new BatchResult();
+//			t.forEach(i -> {
+//				if (i.getItem2() != null) {
+//					result.addSuccess(i.getItem2().getEntityId());
+//				} else {
+//					result.addFail(i.getItem1());
+//				}
+//			});
+//			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
+//		});
 	}
 
 	@SuppressWarnings("unchecked")

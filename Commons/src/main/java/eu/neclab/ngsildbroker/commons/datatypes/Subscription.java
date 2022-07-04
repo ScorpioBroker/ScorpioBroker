@@ -898,7 +898,8 @@ public class Subscription {
 								break;
 
 							default:
-								throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for endpoint");
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Unkown entry for endpoint: " + entry.getKey());
 						}
 					}
 					endPoint.setAccept(accept);
