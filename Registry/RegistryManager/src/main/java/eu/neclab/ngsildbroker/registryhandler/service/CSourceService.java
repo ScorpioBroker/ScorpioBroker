@@ -46,6 +46,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -219,7 +220,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		String id;
 		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
@@ -238,7 +239,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		 */
 		pushToDB(request);
 		sendToKafka(request);
-		return request.getId();
+		return new CreateResult(request.getId(), true);
 
 	}
 
@@ -437,15 +438,15 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 							HashMap<String, Object> tmp = new HashMap<String, Object>();
 							tmp.put(NGSIConstants.JSON_LD_ID, entry.getKey());
 							switch (typeString) {
-							case NGSIConstants.NGSI_LD_GEOPROPERTY:
-							case NGSIConstants.NGSI_LD_PROPERTY:
-								propertyNames.add(tmp);
-								break;
-							case NGSIConstants.NGSI_LD_RELATIONSHIP:
-								relationshipNames.add(tmp);
-								break;
-							default:
-								continue;
+								case NGSIConstants.NGSI_LD_GEOPROPERTY:
+								case NGSIConstants.NGSI_LD_PROPERTY:
+									propertyNames.add(tmp);
+									break;
+								case NGSIConstants.NGSI_LD_RELATIONSHIP:
+									relationshipNames.add(tmp);
+									break;
+								default:
+									continue;
 							}
 						}
 					}

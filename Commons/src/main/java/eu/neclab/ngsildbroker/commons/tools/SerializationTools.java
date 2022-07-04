@@ -23,6 +23,8 @@ import com.github.filosganga.geogson.model.positions.AreaPositions;
 import com.github.filosganga.geogson.model.positions.LinearPositions;
 import com.github.filosganga.geogson.model.positions.SinglePosition;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -195,34 +197,10 @@ public class SerializationTools {
 
 	}
 
-	public static JsonArray getValueArray(Integer value) {
-		return getValueArray(new JsonPrimitive(value));
-	}
-
-	public static JsonArray getValueArray(String value) {
-		return getValueArray(new JsonPrimitive(value));
-	}
-
-	public static JsonArray getValueArray(Long value) {
-		return getValueArray(new JsonPrimitive(value));
-	}
-
-	public static JsonArray getValueArray(Double value) {
-		return getValueArray(new JsonPrimitive(value));
-	}
-
-	public static JsonArray getValueArray(Float value) {
-		return getValueArray(new JsonPrimitive(value));
-	}
-
-	public static JsonArray getValueArray(Boolean value) {
-		return getValueArray(new JsonPrimitive(value));
-	}
-
-	private static JsonArray getValueArray(JsonElement value) {
-		JsonArray result = new JsonArray();
-		JsonObject temp = new JsonObject();
-		temp.add(NGSIConstants.JSON_LD_VALUE, value);
+	public static List<Object> getValueArray(Object value) {
+		List<Object> result = Lists.newArrayList();
+		Map<String, Object> temp = Maps.newHashMap();
+		temp.put(NGSIConstants.JSON_LD_VALUE, value);
 		result.add(temp);
 		return result;
 	}
@@ -254,7 +232,7 @@ public class SerializationTools {
 			String name = null;
 			for (Entry<String, Object> entry : next.entrySet()) {
 				String propKey = entry.getKey();
-				Object value = entry;
+				Object value = entry.getValue();
 
 				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 					if (((List<Object>) value).size() != 1) {
@@ -552,14 +530,14 @@ public class SerializationTools {
 		List<Map<String, Object>> coordinates = (List<Map<String, Object>>) propValue
 				.get(NGSIConstants.NGSI_LD_COORDINATES);
 		switch (geometry) {
-		case NGSIConstants.NGSI_LD_POINT:
-			return new Point(getSingeLePosition(coordinates));
-		case NGSIConstants.NGSI_LD_POLYOGN:
-			return new Polygon(getAreaPositions(coordinates));
-		case NGSIConstants.NGSI_LD_LINESTRING:
-			return new LineString(getLinearPositions(coordinates));
-		default:
-			return null;
+			case NGSIConstants.NGSI_LD_POINT:
+				return new Point(getSingeLePosition(coordinates));
+			case NGSIConstants.NGSI_LD_POLYOGN:
+				return new Polygon(getAreaPositions(coordinates));
+			case NGSIConstants.NGSI_LD_LINESTRING:
+				return new LineString(getLinearPositions(coordinates));
+			default:
+				return null;
 		}
 
 	}

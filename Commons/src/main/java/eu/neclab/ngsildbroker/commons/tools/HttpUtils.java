@@ -189,18 +189,18 @@ public final class HttpUtils {
 			}
 		}
 		switch (appGroup) {
-		case 5:
-			return 2; // application/ld+json
-		case 2:
-		case 3:
-		case 4:
-			return 1; // application/json
-		case 6:
-			return 3;// application/n-quads
-		case 7:
-			return 4;// application/geo+json
-		default:
-			return -1;// error
+			case 5:
+				return 2; // application/ld+json
+			case 2:
+			case 3:
+			case 4:
+				return 1; // application/json
+			case 6:
+				return 3;// application/n-quads
+			case 7:
+				return 4;// application/geo+json
+			default:
+				return -1;// error
 		}
 	}
 
@@ -274,60 +274,60 @@ public final class HttpUtils {
 			additionalHeaders = ArrayListMultimap.create();
 		}
 		switch (sendingContentType) {
-		case 1:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-			if (result instanceof Map) {
-				((Map) result).remove(JsonLdConsts.CONTEXT);
-			}
-			if (result instanceof List) {
-				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-				for (Map<String, Object> entry : list) {
-					entry.remove(JsonLdConsts.CONTEXT);
+			case 1:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+				if (result instanceof Map) {
+					((Map) result).remove(JsonLdConsts.CONTEXT);
 				}
-			}
-			replyBody = JsonUtils.toPrettyString(result);
-			if (contextLinks != null) {
-				for (Object entry : contextLinks) {
-					if (entry instanceof String) {
-						additionalHeaders.put(HttpHeaders.LINK, "<" + entry
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					} else {
-						additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+				if (result instanceof List) {
+					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+					for (Map<String, Object> entry : list) {
+						entry.remove(JsonLdConsts.CONTEXT);
 					}
+				}
+				replyBody = JsonUtils.toPrettyString(result);
+				if (contextLinks != null) {
+					for (Object entry : contextLinks) {
+						if (entry instanceof String) {
+							additionalHeaders.put(HttpHeaders.LINK, "<" + entry
+									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+						} else {
+							additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+						}
 
+					}
 				}
-			}
-			break;
-		case 2:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-			if (result instanceof List) {
-				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-				for (Map<String, Object> entry : list) {
-					entry.put(JsonLdConsts.CONTEXT, context);
-				}
-			}
-			replyBody = JsonUtils.toPrettyString(result);
-			break;
-		case 3:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-			replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
-			break;
-		case 4:// geo+json
-			switch (endPoint) {
-			case AppConstants.QUERY_ENDPOINT:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-				replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
 				break;
+			case 2:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+				if (result instanceof List) {
+					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+					for (Map<String, Object> entry : list) {
+						entry.put(JsonLdConsts.CONTEXT, context);
+					}
+				}
+				replyBody = JsonUtils.toPrettyString(result);
+				break;
+			case 3:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
+				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
+				break;
+			case 4:// geo+json
+				switch (endPoint) {
+					case AppConstants.QUERY_ENDPOINT:
+						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
+						replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
+						break;
+					default:
+						throw new ResponseException(ErrorType.NotAcceptable,
+								"Provided accept types " + acceptHeader + " are not supported");
+				}
+				break;
+			case -1:
 			default:
 				throw new ResponseException(ErrorType.NotAcceptable,
 						"Provided accept types " + acceptHeader + " are not supported");
-			}
-			break;
-		case -1:
-		default:
-			throw new ResponseException(ErrorType.NotAcceptable,
-					"Provided accept types " + acceptHeader + " are not supported");
 		}
 		return replyBody;
 
@@ -353,7 +353,7 @@ public final class HttpUtils {
 			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE);
 			Object geometryEntry = entryMap.get(geometry);
 			if (geometryEntry != null) {
-				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>)geometryEntry).get(NGSIConstants.VALUE));
+				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
 			}
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
 			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
@@ -482,7 +482,7 @@ public final class HttpUtils {
 	public static String generateFollowUpLinkHeader(HttpServletRequest request, int offset, int limit, String token,
 			String rel) {
 
-		StringBuilder builder = new StringBuilder("</");
+		StringBuilder builder = new StringBuilder("<" + request.getRequestURL().toString());
 		builder.append("?");
 
 		for (Entry<String, List<String>> entry : getQueryParamMap(request).entrySet()) {
@@ -504,8 +504,10 @@ public final class HttpUtils {
 
 		}
 		builder.append("offset=" + offset + "&");
-		builder.append("limit=" + limit + "&");
-		builder.append("qtoken=" + token + ">;rel=\"" + rel + "\"");
+		builder.append("limit=" + limit);
+		// Not yet implemented ... we might look into views on sql level
+		// builder.append("&qtoken=" + token);
+		builder.append(">;rel=\"" + rel + "\"");
 		return builder.toString();
 	}
 
@@ -619,27 +621,27 @@ public final class HttpUtils {
 		HttpHeaders resultHeaders = new HttpHeaders();
 		String replyBody;
 		switch (sendingContentType) {
-		case 1:
-			resultHeaders.add(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-			((Map) result).remove(JsonLdConsts.CONTEXT);
-			replyBody = JsonUtils.toPrettyString(result);
-			for (Object entry : context) {
-				if (entry instanceof String) {
-					resultHeaders.add(HttpHeaders.LINK, "<" + entry
-							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-				} else {
-					resultHeaders.add(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-				}
+			case 1:
+				resultHeaders.add(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+				((Map) result).remove(JsonLdConsts.CONTEXT);
+				replyBody = JsonUtils.toPrettyString(result);
+				for (Object entry : context) {
+					if (entry instanceof String) {
+						resultHeaders.add(HttpHeaders.LINK, "<" + entry
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+					} else {
+						resultHeaders.add(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+					}
 
-			}
-			break;
-		case 2:
-			resultHeaders.add(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-			replyBody = JsonUtils.toPrettyString(result);
-			break;
-		default:
-			throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
+				}
+				break;
+			case 2:
+				resultHeaders.add(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+				replyBody = JsonUtils.toPrettyString(result);
+				break;
+			default:
+				throw new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported");
 		}
 		return ResponseEntity.status(HttpStatus.MULTI_STATUS).headers(resultHeaders).body(replyBody);
 	}
@@ -670,8 +672,6 @@ public final class HttpUtils {
 		context.clear();
 		context.addAll(temp);
 
-		
-		
 		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
 	}
 
@@ -705,17 +705,17 @@ public final class HttpUtils {
 		HttpHeaders result = new HttpHeaders();
 		for (String key : headers.keySet()) {
 			switch (key.toLowerCase()) {
-			case "postman-token":
-			case "accept-encoding":
-			case "user-agent":
-			case "host":
-			case "connection":
-			case "cache-control":
-			case "content-length":
-			case "Content-Length":
-				break;
-			default:
-				result.put(key, Lists.newArrayList(Sets.newHashSet(headers.get(key))));
+				case "postman-token":
+				case "accept-encoding":
+				case "user-agent":
+				case "host":
+				case "connection":
+				case "cache-control":
+				case "content-length":
+				case "Content-Length":
+					break;
+				default:
+					result.put(key, Lists.newArrayList(Sets.newHashSet(headers.get(key))));
 			}
 
 		}

@@ -207,7 +207,7 @@ public class EntityServiceTest {
 			multimaparr.put("content-type", "application/json");
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(entityPayload, Map.class);
-			String id = entityService.createEntry(multimaparr, resolved);
+			String id = entityService.createEntry(multimaparr, resolved).getEntityId();
 			Assert.assertEquals("urn:ngsi-ld:Vehicle:A103", id);
 			verify(entityService).createEntry(any(), any());
 		} catch (Exception ex) {
