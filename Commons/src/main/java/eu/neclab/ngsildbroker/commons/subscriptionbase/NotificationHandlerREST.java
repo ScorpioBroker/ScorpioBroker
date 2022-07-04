@@ -68,8 +68,9 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 				req = req.addHeader(entry.getKey(), value);
 			}
 		}
-		if(request.getSubscription().getNotification().getEndPoint().getReceiverInfo() != null) {
-			for(Entry<String, Object> entry: request.getSubscription().getNotification().getEndPoint().getReceiverInfo().entries()) {
+		if (request.getSubscription().getNotification().getEndPoint().getReceiverInfo() != null) {
+			for (Entry<String, String> entry : request.getSubscription().getNotification().getEndPoint()
+					.getReceiverInfo().entries()) {
 				req = req.addHeader(entry.getKey(), entry.getValue().toString());
 			}
 		}

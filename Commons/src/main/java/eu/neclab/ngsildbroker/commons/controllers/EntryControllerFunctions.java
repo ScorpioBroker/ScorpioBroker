@@ -7,17 +7,17 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.slf4j.Logger;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+
+import org.apache.commons.lang.ArrayUtils;
+import org.slf4j.Logger;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -29,10 +29,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
@@ -183,24 +180,14 @@ public interface EntryControllerFunctions {
 
 	private static ResponseEntity<String> generateBatchResultReply(BatchResult result, HttpStatus okStatus) {
 		HttpStatus status = HttpStatus.MULTI_STATUS;
-		String body = DataSerializer.toJson(result);
+		String body = result.toJsonString();
 		if (result.getFails().isEmpty()) {
 			status = okStatus;
-			if (status.equals(HttpStatus.NO_CONTENT)) {
-				body = null;
-			} else if (status.equals(HttpStatus.CREATED)) {
-				body = DataSerializer.toJson(result.getSuccess());
-			} else {
-				body = DataSerializer.toJson(result);
-
-			}
-
+			body = null;
 		}
 		if (result.getSuccess().isEmpty()) {
 			status = HttpStatus.BAD_REQUEST;
-			body = DataSerializer.toJson(result.getFails());
 		}
-
 		if (body == null) {
 			return ResponseEntity.status(status).build();
 		}

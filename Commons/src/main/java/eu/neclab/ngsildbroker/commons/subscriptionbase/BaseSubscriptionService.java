@@ -23,6 +23,15 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import com.github.filosganga.geogson.model.LineString;
+import com.github.filosganga.geogson.model.Point;
+import com.github.filosganga.geogson.model.Polygon;
+import com.github.filosganga.geogson.model.positions.SinglePosition;
+import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -36,15 +45,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.client.RestTemplate;
-
-import com.github.filosganga.geogson.model.LineString;
-import com.github.filosganga.geogson.model.Point;
-import com.github.filosganga.geogson.model.Polygon;
-import com.github.filosganga.geogson.model.positions.SinglePosition;
-import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -60,7 +60,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
@@ -164,8 +163,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions();
 			for (String subscriptionString : subscriptions) {
 				try {
-					subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true);
-				} catch (ResponseException e) {
+					subscribe(SubscriptionRequest.fromJsonString(subscriptionString, false), true);
+				} catch (Exception e) {
 					logger.error("Failed to load stored subscription", e);
 				}
 			}
@@ -494,6 +493,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			int triggerReason) {
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
+		if (handler != null) {
+			logger.debug("Failed to send notification for protocol: " + endpointProtocol);
+		}
 		handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
 	}
 
@@ -610,30 +612,30 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 				Shape queryShape;
 				switch (geoQuery.getGeometry()) {
-				case Point: {
-					queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
-					break;
-				}
-				case Polygon: {
-					PolygonBuilder polygonBuilder = shapeFactory.polygon();
-					for (int i = 0; i < coordinates.size(); i = i + 2) {
-						polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+					case Point: {
+						queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
+						break;
 					}
+					case Polygon: {
+						PolygonBuilder polygonBuilder = shapeFactory.polygon();
+						for (int i = 0; i < coordinates.size(); i = i + 2) {
+							polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+						}
 
-					queryShape = polygonBuilder.build();
-					break;
-				}
-				case LineString: {
-					LineStringBuilder lineStringBuilder = shapeFactory.lineString();
-					for (int i = 0; i < coordinates.size(); i = i + 2) {
-						lineStringBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+						queryShape = polygonBuilder.build();
+						break;
 					}
-					queryShape = lineStringBuilder.build();
-					break;
-				}
-				default: {
-					return false;
-				}
+					case LineString: {
+						LineStringBuilder lineStringBuilder = shapeFactory.lineString();
+						for (int i = 0; i < coordinates.size(); i = i + 2) {
+							lineStringBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+						}
+						queryShape = lineStringBuilder.build();
+						break;
+					}
+					default: {
+						return false;
+					}
 				}
 				if (GEO_REL_CONTAINS.equals(relation)) {
 					return SpatialPredicate.Contains.evaluate(entityShape, queryShape);
