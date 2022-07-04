@@ -61,22 +61,36 @@ public interface EntryControllerFunctions {
 			boolean preFlight = HttpUtils.doPreflightCheck(request, t);
 			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem()
 					.transform(i -> Tuple3.of(preFlight, t, i));
-		})).onItem().transform(Unchecked.function(t -> {
-			return Tuple4.of(
-					(Map<String, Object>) JsonLdProcessor
-							.expand((List<Object>) t.getItem2(), t.getItem3(), opts, payloadType, t.getItem1()).get(0),
-					t.getItem2(), HttpUtils.getHeaders(request), getOptionsArray(options));
-		})).onItem().transformToUni(t -> {
-			Map<String, Object> entry = t.getItem1();
+		})).onItem().transformToUni(tupleItem -> {
 			String entityId;
-			if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
-				entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
+			if (tupleItem.getItem3().containsKey(NGSIConstants.JSON_LD_ID)) {
+				entityId = (String) tupleItem.getItem3().get(NGSIConstants.JSON_LD_ID);
+			} else if (tupleItem.getItem3().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
+				entityId = (String) tupleItem.getItem3().get(NGSIConstants.QUERY_PARAMETER_ID);
 			} else {
-				return Uni.createFrom()
-						.failure(new ResponseException(ErrorType.BadRequestData, "No Entity Id provided"));
+				return Uni.createFrom().item(Tuple2.of(
+						new BatchFailure("NO ID PROVIDED",
+								new NGSIRestResponse(
+										new ResponseException(ErrorType.BadRequestData, "No Entity Id provided"))),
+						null));
 			}
-			return entityService.appendToEntry(t.getItem3(), entityId, entry, t.getItem4()).onItem()
-					.transform(Unchecked.function(i -> {
+			Map<String, Object> entry;
+			try {
+				entry = (Map<String, Object>) JsonLdProcessor.expand((List<Object>) tupleItem.getItem2(),
+						tupleItem.getItem3(), opts, payloadType, tupleItem.getItem1()).get(0);
+			} catch (Exception e1) {
+				NGSIRestResponse response;
+				if (e1 instanceof ResponseException) {
+					response = new NGSIRestResponse((ResponseException) e1);
+				} else {
+					response = new NGSIRestResponse(ErrorType.InvalidRequest,
+							"failed to expand payload because: " + e1.getCause().getLocalizedMessage());
+				}
+				return Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null));
+			}
+
+			return entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, entry, getOptionsArray(options))
+					.onItem().transform(Unchecked.function(i -> {
 						if (i.getNotUpdated().isEmpty()) {
 							return Tuple2.of(new BatchFailure("", null), entityId);
 						} else {
@@ -97,7 +111,7 @@ public interface EntryControllerFunctions {
 				}
 			});
 			return generateBatchResultReply(result, HttpStatus.SC_NO_CONTENT);
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
