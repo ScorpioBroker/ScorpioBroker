@@ -268,8 +268,8 @@ public interface EntryControllerFunctions {
 					result.addFail(i.getItem1());
 				}
 			});
-			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
-		});
+			return generateBatchResultReply(result, HttpStatus.SC_NO_CONTENT);
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@SuppressWarnings("unchecked")
