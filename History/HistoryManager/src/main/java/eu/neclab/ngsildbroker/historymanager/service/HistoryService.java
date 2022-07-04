@@ -8,20 +8,15 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.PostConstruct;
 import javax.el.MethodNotFoundException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
@@ -114,20 +109,12 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public boolean delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
 			String instanceId, Context linkHeaders) throws ResponseException, Exception {
-		historyDAO.getAllIds(entityId, HttpUtils.getInternalTenant(headers));
-		// String tenantId = HttpUtils.getInternalTenant(headers);
-
-		// if (!this.entityIds.containsEntry(tenantId, entityId)) {
-		// throw new ResponseException(ErrorType.NotFound, entityId + " not found");
-		// }
-		// if (attributeId == null) {
-		// this.entityIds.remove(tenantId, entityId);
-		// }
 		logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
 
 		String resolvedAttrId = null;
 		if (attributeId != null) {
 			resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
+			historyDAO.attributeExists(entityId, HttpUtils.getInternalTenant(headers), resolvedAttrId, instanceId);
 		}
 		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId,
 				entityId);
