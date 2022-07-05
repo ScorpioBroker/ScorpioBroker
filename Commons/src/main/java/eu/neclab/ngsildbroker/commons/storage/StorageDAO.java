@@ -113,19 +113,18 @@ public abstract class StorageDAO {
 
 			if (qp.getCheck() != null) {
 				logger.debug("Query for types or attributes got called");
-				return client.getConnection().onItem().transformToUni(conn -> {
-					return storageFunctions.typesAndAttributeQuery(qp, conn);
-				}).onItem().transform(rows -> {
-					QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
-					List<Map<String, Object>> list = Lists.newArrayList();
-					if (rows != null) {
-						rows.forEach(t -> {
-							list.add(t.getJsonObject(0).getMap());
-						});
-					}
-					queryResult.setData(list);
-
-					return queryResult;
+				return client.withTransaction(conn -> {
+					return storageFunctions.typesAndAttributeQuery(qp, conn).onItem().transform(rows -> {
+						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
+						List<Map<String, Object>> list = Lists.newArrayList();
+						if (rows != null) {
+							rows.forEach(t -> {
+								list.add(t.getJsonObject(0).getMap());
+							});
+						}
+						queryResult.setData(list);
+						return queryResult;
+					});
 				});
 			}
 			return client.withTransaction(conn -> {
