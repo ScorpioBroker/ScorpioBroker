@@ -274,8 +274,9 @@ public abstract class StorageDAO {
 					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
 							+ " (id, type, createdat, modifiedat) VALUES($1, $2, $3::timestamp, $4::timestamp) "
 							+ "ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat RETURNING id";
-					Tuple tValue = Tuple.of(entityId, entityType, localDateTimeFormatter(entityCreatedAt),
-							localDateTimeFormatter(entityModifiedAt));
+					Tuple tValue = Tuple.of(entityId, entityType,
+							SerializationTools.localDateTimeFormatter(entityCreatedAt),
+							SerializationTools.localDateTimeFormatter(entityModifiedAt));
 					unis.add(conn.preparedQuery(sql).execute(tValue).onItem().transform(tmp -> {
 						if (tmp.size() == 0) {
 							return false;
@@ -298,8 +299,8 @@ public abstract class StorageDAO {
 					sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 							+ " SET modifiedat = $1::timestamp WHERE id = $2";
 					unis.add(conn.preparedQuery(sql)
-							.execute(Tuple.of(localDateTimeFormatter(entityModifiedAt), entityId)).onItem()
-							.transform(t -> false));
+							.execute(Tuple.of(SerializationTools.localDateTimeFormatter(entityModifiedAt), entityId))
+							.onItem().transform(t -> false));
 				}
 
 				return Uni.combine().all().unis(unis).combinedWith(list -> {
@@ -423,10 +424,6 @@ public abstract class StorageDAO {
 						});
 			}
 		});
-	}
-
-	private LocalDateTime localDateTimeFormatter(String dateTimeValue) {
-		return LocalDateTime.parse(dateTimeValue, SerializationTools.informatter);
 	}
 
 }

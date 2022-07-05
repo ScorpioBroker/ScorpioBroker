@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.commons.tools;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -47,6 +48,10 @@ public class SerializationTools {
 
 //	public static Gson geojsonGson = new GsonBuilder().registerTypeAdapterFactory(new GeometryAdapterFactory())
 //			.create();
+
+	public static LocalDateTime localDateTimeFormatter(String dateTimeValue) {
+		return LocalDateTime.parse(dateTimeValue, SerializationTools.informatter);
+	}
 
 	@SuppressWarnings("unchecked")
 	public static Property parseProperty(List<Map<String, Object>> topLevelArray, String key) {

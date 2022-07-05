@@ -19,6 +19,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.sqlclient.Row;
@@ -111,20 +112,20 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 			case NGSIConstants.TIME_REL_BEFORE:
 				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " $" + newCount + "::timestamp");
 				newCount++;
-				replacements.add(time);
+				replacements.add(SerializationTools.localDateTimeFormatter(time));
 				break;
 			case NGSIConstants.TIME_REL_AFTER:
 				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " $" + newCount + "::timestamp");
 				newCount++;
-				replacements.add(time);
+				replacements.add(SerializationTools.localDateTimeFormatter(time));
 				break;
 			case NGSIConstants.TIME_REL_BETWEEN:
 				sqlWhere.append(dbColumn + " BETWEEN $" + newCount + "::timestamp AND $");
 				newCount++;
-				replacements.add(time);
+				replacements.add(SerializationTools.localDateTimeFormatter(time));
 				sqlWhere.append(newCount + "'::timestamp");
 				newCount++;
-				replacements.add(endTime);
+				replacements.add(SerializationTools.localDateTimeFormatter(endTime));
 				break;
 			default:
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);
