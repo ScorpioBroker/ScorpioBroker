@@ -493,10 +493,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			int triggerReason) {
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
-		if (handler != null) {
-			logger.debug("Failed to send notification for protocol: " + endpointProtocol);
+		if (handler == null) {
+			logger.info("Failed to send notification for protocol: " + endpointProtocol);
+			logger.info(subscription.getSubscription().getNotification().getEndPoint().getUri().toString());
+		} else {
+			handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
 		}
-		handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+
 	}
 
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {

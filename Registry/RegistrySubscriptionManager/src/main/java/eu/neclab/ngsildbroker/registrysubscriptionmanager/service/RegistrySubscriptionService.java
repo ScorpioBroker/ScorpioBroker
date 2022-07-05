@@ -48,10 +48,10 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	private HashMap<String, SubscriptionRequest> id2InternalSubscriptions = new HashMap<String, SubscriptionRequest>();
 
-	@PostConstruct
-	private void notificationHandlerSetup() {
-		this.internalHandler = new InternalNotificationHandler(kafkaTemplate, NOTIFICATION_TOPIC);
-	}
+//	@PostConstruct
+//	private void notificationHandlerSetup() {
+//		this.internalHandler = new InternalNotificationHandler(kafkaTemplate, NOTIFICATION_TOPIC);
+//	}
 
 	@Override
 	protected SubscriptionInfoDAOInterface getSubscriptionInfoDao() {
@@ -78,7 +78,11 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {
+
 		if (endpointProtocol.equals("internal")) {
+			if (internalHandler == null) {
+				internalHandler = new InternalNotificationHandler(kafkaTemplate, NOTIFICATION_TOPIC);
+			}
 			return internalHandler;
 		}
 		return super.getNotificationHandler(endpointProtocol);
