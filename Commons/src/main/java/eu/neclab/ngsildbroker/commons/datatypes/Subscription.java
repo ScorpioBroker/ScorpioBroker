@@ -511,13 +511,14 @@ public class Subscription {
 				notificationObj.put(NGSIConstants.NGSI_LD_FORMAT, tempArray);
 			}
 			if (notification.getLastFailedNotification() != null) {
-				tempArray = Lists.newArrayList();
-				tempObj = Maps.newHashMap();
-				tempObj.put(NGSIConstants.JSON_LD_VALUE,
+//				tempArray = Lists.newArrayList();
+//				tempObj = Maps.newHashMap();
+//				tempObj.put(NGSIConstants.JSON_LD_VALUE,
+//						SerializationTools.formatter.format(notification.getLastFailedNotification().toInstant()));
+//				tempObj.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+//				tempArray.add(tempObj);
+				notificationObj.put(NGSIConstants.NGSI_LD_LAST_FAILURE,
 						SerializationTools.formatter.format(notification.getLastFailedNotification().toInstant()));
-				tempObj.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
-				tempArray.add(tempObj);
-				notificationObj.put(NGSIConstants.NGSI_LD_LAST_FAILURE, tempArray);
 			}
 			if (notification.getLastNotification() != null) {
 				tempArray = Lists.newArrayList();
@@ -926,10 +927,16 @@ public class Subscription {
 							((List<Map<String, Integer>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
 					break;
 				case NGSIConstants.NGSI_LD_LAST_FAILURE:
-					notifyParam.setLastFailedNotification(Date.from(LocalDateTime
-							.parse(((List<Map<String, String>>) entry.getValue()).get(0)
-									.get(NGSIConstants.JSON_LD_VALUE), SerializationTools.informatter)
-							.toInstant(ZoneOffset.UTC)));
+					if (entry.getValue() instanceof List) {
+						notifyParam.setLastFailedNotification(Date.from(LocalDateTime
+								.parse(((List<Map<String, String>>) entry.getValue()).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE), SerializationTools.informatter)
+								.toInstant(ZoneOffset.UTC)));
+					} else {
+						notifyParam.setLastFailedNotification(
+								Date.from(LocalDateTime.parse((String) entry.getValue(), SerializationTools.informatter)
+										.toInstant(ZoneOffset.UTC)));
+					}
 					break;
 				case NGSIConstants.NGSI_LD_LAST_SUCCESS:
 					notifyParam.setLastSuccessfulNotification(Date.from(LocalDateTime
