@@ -24,6 +24,11 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 	private HashMap<String, Long> subId2LastReport = new HashMap<String, Long>();
 	private ArrayListMultimap<String, Notification> subId2Notifications = ArrayListMultimap.create();
 	private Timer executor = new Timer(true);
+	private SubscriptionInfoDAOInterface baseSubscriptionInfoDAO;
+
+	public BaseNotificationHandler(SubscriptionInfoDAOInterface baseSubscriptionInfoDAO) {
+		this.baseSubscriptionInfoDAO = baseSubscriptionInfoDAO;
+	}
 
 	@Override
 	public void notify(Notification notification, SubscriptionRequest subscriptionRequest) {
@@ -59,8 +64,11 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 								logger.trace("Sending notification");
 								sendReply(sendOutNotification, subscriptionRequest);
 								reportSuccessfulNotification(subscription, now);
+								baseSubscriptionInfoDAO.storeSubscription(subscriptionRequest);
 							} catch (Exception e) {
 								logger.error("Exception ::", e);
+								reportFailedNotification(subscription, now);
+								baseSubscriptionInfoDAO.storeSubscription(subscriptionRequest);
 							}
 						}
 					}
@@ -68,11 +76,14 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			}
 		} else {
 			try {
+				reportNotification(subscription, now);
 				sendReply(notification, subscriptionRequest);
 				reportSuccessfulNotification(subscription, now);
+				baseSubscriptionInfoDAO.storeSubscription(subscriptionRequest);
 			} catch (Exception e) {
 				logger.error("Exception ::", e);
 				reportFailedNotification(subscription, now);
+				baseSubscriptionInfoDAO.storeSubscription(subscriptionRequest);
 			}
 		}
 

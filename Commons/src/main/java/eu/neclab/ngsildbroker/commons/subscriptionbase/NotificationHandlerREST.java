@@ -53,7 +53,8 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 
 	private RestTemplate restTemplate;
 
-	NotificationHandlerREST(RestTemplate restTemplate) {
+	NotificationHandlerREST(SubscriptionInfoDAOInterface baseSubscriptionInfoDAO, RestTemplate restTemplate) {
+		super(baseSubscriptionInfoDAO);
 		this.restTemplate = restTemplate;
 	}
 

@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -923,8 +926,21 @@ public class Subscription {
 							((List<Map<String, Integer>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
 					break;
 				case NGSIConstants.NGSI_LD_LAST_FAILURE:
+					notifyParam.setLastFailedNotification(Date.from(LocalDateTime
+							.parse(((List<Map<String, String>>) entry.getValue()).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE), SerializationTools.informatter)
+							.toInstant(ZoneOffset.UTC)));
+					break;
 				case NGSIConstants.NGSI_LD_LAST_SUCCESS:
+					notifyParam.setLastSuccessfulNotification(Date.from(LocalDateTime
+							.parse(((List<Map<String, String>>) entry.getValue()).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE), SerializationTools.informatter)
+							.toInstant(ZoneOffset.UTC)));
 				case NGSIConstants.NGSI_LD_LAST_NOTIFICATION:
+					notifyParam.setLastNotification(Date.from(LocalDateTime
+							.parse(((List<Map<String, String>>) entry.getValue()).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE), SerializationTools.informatter)
+							.toInstant(ZoneOffset.UTC)));
 					break;
 				default:
 					throw new ResponseException(ErrorType.BadRequestData,

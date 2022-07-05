@@ -23,6 +23,10 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
 class NotificationHandlerMQTT extends BaseNotificationHandler {
 
+	public NotificationHandlerMQTT(SubscriptionInfoDAOInterface baseSubscriptionInfoDAO) {
+		super(baseSubscriptionInfoDAO);
+	}
+
 	private final String CLIENT_ID = "ScorpioMqttNotifier";
 	private HashMap<URI, MqttClient> uri2client = new HashMap<URI, MqttClient>();
 

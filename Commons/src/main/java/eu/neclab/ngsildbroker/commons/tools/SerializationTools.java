@@ -45,7 +45,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.TypedValue;
 
 public class SerializationTools {
 //	public static SimpleDateFormat formatter = new SimpleDateFormat(NGSIConstants.DEFAULT_DATE_FORMAT);
-	private static DateTimeFormatter informatter = DateTimeFormatter
+	public static DateTimeFormatter informatter = DateTimeFormatter
 			.ofPattern(NGSIConstants.ALLOWED_IN_DEFAULT_DATE_FORMAT).withZone(ZoneId.of("Z"));// .withZone(ZoneId.systemDefault());
 	public static DateTimeFormatter formatter = DateTimeFormatter
 			.ofPattern(NGSIConstants.ALLOWED_OUT_DEFAULT_DATE_FORMAT).withZone(ZoneId.of("Z"));// systemDefault());

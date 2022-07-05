@@ -13,13 +13,16 @@ import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseNotificationHandler;
+import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 
 public class InternalNotificationHandler extends BaseNotificationHandler {
 
 	private KafkaTemplate<String, Object> kafkaTemplate;
 	private String topic;
 
-	public InternalNotificationHandler(KafkaTemplate<String, Object> kafkaTemplate, String topic) {
+	public InternalNotificationHandler(SubscriptionInfoDAOInterface subscriptionInfoDAO,
+			KafkaTemplate<String, Object> kafkaTemplate, String topic) {
+		super(subscriptionInfoDAO);
 		this.kafkaTemplate = kafkaTemplate;
 		this.topic = topic;
 	}

@@ -89,7 +89,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected RestTemplate restTemplate = HttpUtils.getRestTemplate();
 
-	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
+	protected SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
 	private boolean sendInitialNotification;
 	private boolean sendDeleteNotification;
@@ -127,14 +127,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 		sendInitialNotification = sendInitialNotification();
 		sendDeleteNotification = sendDeleteNotification();
-		notificationHandlerREST = new NotificationHandlerREST(restTemplate);
+		notificationHandlerREST = new NotificationHandlerREST(subscriptionInfoDAO, restTemplate);
 		Subscription temp = new Subscription();
 		temp.setId("invalid:base");
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
 						AppConstants.UPDATE_REQUEST));
 
-		notificationHandlerMQTT = new NotificationHandlerMQTT();
+		notificationHandlerMQTT = new NotificationHandlerMQTT(subscriptionInfoDAO);
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
 						AppConstants.UPDATE_REQUEST));
@@ -175,7 +175,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		return subscribe(subscriptionRequest, false);
 	}
 
-	String subscribe(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
+	public String subscribe(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
 		logger.debug("Subscribe got called " + subscriptionRequest.getSubscription().toString());
 		Subscription subscription = subscriptionRequest.getSubscription();
 		if (subscription.getId() == null) {
@@ -183,8 +183,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			subscriptionRequest.setId(subscription.getId());
 		} else {
 			synchronized (tenant2subscriptionId2Subscription) {
-				if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
-						subscription.getId().toString())) {
+				if (this.tenant2subscriptionId2Subscription.containsColumn(subscription.getId().toString())) {
 					throw new ResponseException(ErrorType.AlreadyExists,
 							subscription.getId().toString() + " already exists");
 
@@ -290,7 +289,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		unsubscribe(id, headers, false);
 	}
 
-	void unsubscribe(String id, ArrayListMultimap<String, String> headers, boolean internal) throws ResponseException {
+	public void unsubscribe(String id, ArrayListMultimap<String, String> headers, boolean internal)
+			throws ResponseException {
 		String tenant = HttpUtils.getInternalTenant(headers);
 		SubscriptionRequest removedSub;
 		synchronized (tenant2subscriptionId2Subscription) {
@@ -341,7 +341,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		updateSubscription(subscriptionRequest, false);
 	}
 
-	void updateSubscription(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
+	public void updateSubscription(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		String tenant = subscriptionRequest.getTenant();
 		SubscriptionRequest oldSubRequest;
