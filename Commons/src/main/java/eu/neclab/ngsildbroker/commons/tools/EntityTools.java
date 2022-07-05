@@ -42,7 +42,7 @@ public abstract class EntityTools {
 		}
 		return new Notification(data.get(0).getId(), data.get(0).getType(), System.currentTimeMillis(),
 				data.get(0).getSubscriptionId(), newData, data.get(0).getTriggerReason(),
-				new ArrayList<Object>(context), data.get(0).getHeaders());
+				new ArrayList<Object>(context), data.get(0).getHeaders(), data.get(0).getContentType());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -60,7 +60,7 @@ public abstract class EntityTools {
 
 	public static Map<String, Object> clearBaseProps(Map<String, Object> fullEntry, SubscriptionRequest subscription) {
 		List<String> notificationAttrs = subscription.getSubscription().getNotification().getAttributeNames();
-		if(notificationAttrs == null || notificationAttrs.isEmpty()) {
+		if (notificationAttrs == null || notificationAttrs.isEmpty()) {
 			return fullEntry;
 		}
 		Set<String> allNames = new HashSet<String>(fullEntry.keySet());
@@ -113,19 +113,19 @@ public abstract class EntityTools {
 					typeString = (String) type;
 				}
 				switch (typeString) {
-				case NGSIConstants.NGSI_LD_GEOPROPERTY:
-					prop = SerializationTools.parseGeoProperty((List<Map<String, Object>>) value, key);
-					continue;
-				case NGSIConstants.NGSI_LD_RELATIONSHIP:
-					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
-					break;
-				case NGSIConstants.NGSI_LD_DATE_TIME:
-					prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
-					break;
-				case NGSIConstants.NGSI_LD_PROPERTY:
-				default:
-					prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
-					break;
+					case NGSIConstants.NGSI_LD_GEOPROPERTY:
+						prop = SerializationTools.parseGeoProperty((List<Map<String, Object>>) value, key);
+						continue;
+					case NGSIConstants.NGSI_LD_RELATIONSHIP:
+						prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
+						break;
+					case NGSIConstants.NGSI_LD_DATE_TIME:
+						prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
+						break;
+					case NGSIConstants.NGSI_LD_PROPERTY:
+					default:
+						prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
+						break;
 				}
 
 			}

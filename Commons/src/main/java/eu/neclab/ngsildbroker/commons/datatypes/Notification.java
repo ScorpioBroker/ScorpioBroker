@@ -3,11 +3,15 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseEntity.BodyBuilder;
 
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
@@ -28,6 +32,7 @@ public class Notification {
 	private List<Object> context;
 	private String type;
 	private ArrayListMultimap<String, String> headers;
+	private String contentType;
 	private static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	public Notification() {
@@ -35,7 +40,7 @@ public class Notification {
 	}
 
 	public Notification(String id, String type, Long notifiedAt, String subscriptionId, List<Map<String, Object>> data,
-			int triggerReason, List<Object> context, ArrayListMultimap<String, String> headers) {
+			int triggerReason, List<Object> context, ArrayListMultimap<String, String> headers, String contentType) {
 		super();
 		this.id = id;
 		this.notifiedAt = notifiedAt;
@@ -43,8 +48,21 @@ public class Notification {
 		this.data = data;
 		this.triggerReason = triggerReason;
 		this.type = type;
-		this.context = context;
+		if (context != null) {
+			this.context = Lists.newArrayList(Sets.newHashSet(context.toArray()).toArray());
+		} else {
+			this.context = null;
+		}
 		this.headers = headers;
+		this.contentType = contentType;
+	}
+
+	public String getContentType() {
+		return contentType;
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
 	}
 
 	public String getId() {
@@ -80,7 +98,8 @@ public class Notification {
 	}
 
 	public ResponseEntity<String> toCompactedJson() throws Exception {
-		ResponseEntity<String> dataResponse = HttpUtils.generateNotification(headers, data, context, "location");
+		ResponseEntity<String> dataResponse = HttpUtils.generateNotification(headers, data, context, "location",
+				contentType);
 		StringBuilder notificationBody = new StringBuilder();
 		notificationBody.append("{\n\t\"id\": \"");
 		notificationBody.append(id);
@@ -93,31 +112,52 @@ public class Notification {
 		notificationBody.append("\",\n\t\"data\": ");
 		notificationBody.append(dataResponse.getBody());
 		switch (triggerReason) {
-		case AppConstants.CREATE_REQUEST:
-			notificationBody.append(",\n\t\"triggerReason\": \"");
-			notificationBody.append(TriggerReason.newlyMatching.toString());
-			notificationBody.append("\"");
-			break;
-		case AppConstants.APPEND_REQUEST:
-			notificationBody.append("\"\n\t\"triggerReason\": \"");
-			notificationBody.append(TriggerReason.updated.toString());
-			notificationBody.append("\"");
-			break;
-		case AppConstants.UPDATE_REQUEST:
-			notificationBody.append("\"\n\t\"triggerReason\": ");
-			notificationBody.append(TriggerReason.updated.toString());
-			notificationBody.append("\"");
-			break;
-		case AppConstants.DELETE_REQUEST:
-			notificationBody.append("\"\n\t\"triggerReason\": ");
-			notificationBody.append(TriggerReason.noLongerMatching.toString());
-			notificationBody.append("\"");
-			break;
-		default:
-			break;
+			case AppConstants.CREATE_REQUEST:
+				notificationBody.append(",\n\t\"triggerReason\": \"");
+				notificationBody.append(TriggerReason.newlyMatching.toString());
+				notificationBody.append("\"");
+				break;
+			case AppConstants.APPEND_REQUEST:
+				notificationBody.append("\"\n\t\"triggerReason\": \"");
+				notificationBody.append(TriggerReason.updated.toString());
+				notificationBody.append("\"");
+				break;
+			case AppConstants.UPDATE_REQUEST:
+				notificationBody.append("\"\n\t\"triggerReason\": ");
+				notificationBody.append(TriggerReason.updated.toString());
+				notificationBody.append("\"");
+				break;
+			case AppConstants.DELETE_REQUEST:
+				notificationBody.append("\"\n\t\"triggerReason\": ");
+				notificationBody.append(TriggerReason.noLongerMatching.toString());
+				notificationBody.append("\"");
+				break;
+			default:
+				break;
 		}
 		notificationBody.append("\n}");
-		return ResponseEntity.ok().headers(dataResponse.getHeaders()).body(notificationBody.toString());
+
+		BodyBuilder tmp = ResponseEntity.ok();
+		for (Entry<String, List<String>> header : dataResponse.getHeaders().entrySet()) {
+			String key = header.getKey();
+			if (key.equalsIgnoreCase("Content-Type")) {
+				continue;
+			}
+			if (key.equalsIgnoreCase("Content-Length")) {
+				continue;
+			}
+			for (String value : header.getValue()) {
+				tmp = tmp.header(key, value);
+			}
+
+		}
+		if (contentType == null || contentType.isBlank()) {
+			tmp = tmp.header("Content-Type", "application/json");
+		} else {
+			tmp = tmp.header("Content-Type", contentType);
+		}
+		// tmp.header("Content-Length", notificationBody.length() + "");
+		return tmp.body(notificationBody.toString());
 	}
 
 	public int getTriggerReason() {
@@ -133,7 +173,11 @@ public class Notification {
 	}
 
 	public void setContext(List<Object> context) {
-		this.context = context;
+		if (context != null) {
+			this.context = Lists.newArrayList(Sets.newHashSet(context.toArray()).toArray());
+		} else {
+			this.context = null;
+		}
 	}
 
 	public String getType() {

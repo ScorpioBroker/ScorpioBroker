@@ -74,7 +74,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 			int triggerReason) {
 		return new Notification(EntityTools.getRandomID("notification:"), NGSIConstants.NOTIFICATION,
 				System.currentTimeMillis(), request.getSubscription().getId(), dataList, -1, request.getContext(),
-				request.getHeaders());
+				request.getHeaders(), request.getSubscription().getNotification().getEndPoint().getAccept());
 	}
 
 	@Override

@@ -48,11 +48,13 @@ import org.springframework.web.client.RestTemplate;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
+import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
@@ -130,6 +132,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		notificationHandlerREST = new NotificationHandlerREST(subscriptionInfoDAO, restTemplate);
 		Subscription temp = new Subscription();
 		temp.setId("invalid:base");
+		NotificationParam temp2 = new NotificationParam();
+		EndPoint temp3 = new EndPoint();
+		temp2.setEndPoint(temp3);
+		temp.setNotification(temp2);
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
 						AppConstants.UPDATE_REQUEST));

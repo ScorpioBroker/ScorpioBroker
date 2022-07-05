@@ -647,7 +647,7 @@ public final class HttpUtils {
 	}
 
 	public static ResponseEntity<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
-			Object notificationData, List<Object> context, String geometryProperty)
+			Object notificationData, List<Object> context, String geometryProperty, String contentType)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
@@ -658,10 +658,12 @@ public final class HttpUtils {
 			headers = ArrayListMultimap.create(origHeaders);
 		}
 
-		List<String> acceptHeader = headers.get(HttpHeaders.ACCEPT.toLowerCase());
-		if (acceptHeader == null || acceptHeader.isEmpty()) {
-			acceptHeader = new ArrayList<String>();
+		List<String> acceptHeader;
+		if (contentType == null || contentType.isEmpty()) {
+			acceptHeader = Lists.newArrayList();
 			acceptHeader.add("application/json");
+		} else {
+			acceptHeader = Lists.newArrayList(contentType);
 		}
 
 		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
@@ -712,7 +714,6 @@ public final class HttpUtils {
 				case "connection":
 				case "cache-control":
 				case "content-length":
-				case "Content-Length":
 					break;
 				default:
 					result.put(key, Lists.newArrayList(Sets.newHashSet(headers.get(key))));
