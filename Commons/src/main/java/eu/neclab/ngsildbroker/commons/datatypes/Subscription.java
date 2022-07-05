@@ -330,6 +330,9 @@ public class Subscription {
 	}
 
 	public void setLdQueryString(String ldQueryString, Context ldContext) throws ResponseException {
+		if (ldQueryString.strip().isBlank()) {
+			ldQueryString = null;
+		}
 		this.ldQueryString = ldQueryString;
 		if (ldQueryString != null) {
 			this.ldQuery = QueryParser.parseQuery(ldQueryString, ldContext);
@@ -343,6 +346,9 @@ public class Subscription {
 	}
 
 	public void setCsfQueryString(String csfQueryString, Context ldContext) throws ResponseException {
+		if (csfQueryString.strip().isBlank()) {
+			csfQueryString = null;
+		}
 		this.csfQueryString = csfQueryString;
 		if (csfQueryString != null) {
 			this.csfQuery = QueryParser.parseQuery(csfQueryString, ldContext);
