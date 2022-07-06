@@ -197,7 +197,12 @@ public interface SubscriptionControllerFunctions {
 		logger.trace("call updateSubscription() ::");
 		return HttpUtils.validateUri(id).onItem().transformToUni(t -> HttpUtils.getAtContext(request)).onItem()
 				.transformToUni(Unchecked.function(linkHeaders -> {
-					boolean atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+					boolean atContextAllowed;
+					try {
+						atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
 					List<Object> context = new ArrayList<Object>();
 					context.addAll(linkHeaders);
 					Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
