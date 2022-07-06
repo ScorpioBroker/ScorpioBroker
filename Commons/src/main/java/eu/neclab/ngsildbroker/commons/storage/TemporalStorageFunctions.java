@@ -115,20 +115,20 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 			case NGSIConstants.TIME_REL_BEFORE:
 				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " $" + newCount + "::timestamp");
 				newCount++;
-				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.encodeFormatter(time)));
+				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.utfDecoder(time)));
 				break;
 			case NGSIConstants.TIME_REL_AFTER:
 				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " $" + newCount + "::timestamp");
 				newCount++;
-				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.encodeFormatter(time)));
+				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.utfDecoder(time)));
 				break;
 			case NGSIConstants.TIME_REL_BETWEEN:
 				sqlWhere.append(dbColumn + " BETWEEN $" + newCount + "::timestamp AND $");
 				newCount++;
-				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.encodeFormatter(time)));
+				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.utfDecoder(time)));
 				sqlWhere.append(newCount + "'::timestamp");
 				newCount++;
-				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.encodeFormatter(endTime)));
+				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.utfDecoder(endTime)));
 				break;
 			default:
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);

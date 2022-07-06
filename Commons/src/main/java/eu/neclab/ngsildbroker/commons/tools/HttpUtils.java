@@ -740,7 +740,7 @@ public final class HttpUtils {
 		return mMap;
 	}
 	
-	public static String encodeFormatter(String data) {
+	public static String utfDecoder(String data) {
 		try {
 			return URLDecoder.decode(data, NGSIConstants.ENCODE_FORMAT);
 		} catch (UnsupportedEncodingException e) {
