@@ -132,7 +132,7 @@ public class ParamsResolver {
 		int offset = 0;
 		for (Entry<String, String> entry : multiValueMap.entries()) {
 			String queryParameter = entry.getKey();
-			String queryValue = entry.getValue();
+			String queryValue = HttpUtils.utfDecoder(entry.getValue());
 			logger.debug("Query parameter:" + queryParameter + ", value=" + queryValue);
 			switch (queryParameter) {
 				case NGSIConstants.QUERY_PARAMETER_ID:
