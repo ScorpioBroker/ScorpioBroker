@@ -1,17 +1,20 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
 import java.sql.SQLIntegrityConstraintViolationException;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
@@ -367,16 +370,33 @@ public abstract class StorageDAO {
 				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 						+ " WHERE temporalentity_id = $1 AND attributeid = $2 AND instanceid = $3";
 				return client.preparedQuery(sql).execute(Tuple.of(entityId, attributeId, instanceId)).onItem()
-						.transform(t -> new CreateResult(entityId, false));
+						.transformToUni(t -> {
+							if (t.rowCount() == 0) {
+								return Uni.createFrom().failure(
+										new ResponseException(ErrorType.NotFound, instanceId + " was not found"));
+							}
+							return Uni.createFrom().nullItem();
+						});
+
 			} else if (entityId != null && attributeId != null) {
 				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 						+ " WHERE temporalentity_id = $1 AND attributeid = $2";
-				return client.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)).onItem()
-						.transform(t -> new CreateResult(entityId, false));
+				return client.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)).onItem().transformToUni(t -> {
+					if (t.rowCount() == 0) {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.NotFound, attributeId + " was not found"));
+					}
+					return Uni.createFrom().nullItem();
+				});
 			} else if (entityId != null) {
 				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1";
-				return client.preparedQuery(sql).execute(Tuple.of(entityId)).onItem()
-						.transform(t -> new CreateResult(entityId, false));
+				return client.preparedQuery(sql).execute(Tuple.of(entityId)).onItem().transformToUni(t -> {
+					if (t.rowCount() == 0) {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
+					}
+					return Uni.createFrom().nullItem();
+				});
 			}
 			return Uni.createFrom().nullItem();
 		}
