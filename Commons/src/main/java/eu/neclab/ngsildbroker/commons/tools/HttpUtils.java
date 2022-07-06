@@ -2,8 +2,10 @@ package eu.neclab.ngsildbroker.commons.tools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -737,4 +739,15 @@ public final class HttpUtils {
 		}
 		return mMap;
 	}
+	
+	public static String encodeFormatter(String data) {
+		try {
+			return URLDecoder.decode(data, NGSIConstants.ENCODE_FORMAT);
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+		
+	} 
 }

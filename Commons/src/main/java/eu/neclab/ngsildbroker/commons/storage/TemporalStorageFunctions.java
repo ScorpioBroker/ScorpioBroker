@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,6 +21,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -112,20 +115,20 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 			case NGSIConstants.TIME_REL_BEFORE:
 				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_LESSEQ + " $" + newCount + "::timestamp");
 				newCount++;
-				replacements.add(SerializationTools.localDateTimeFormatter(time));
+				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.encodeFormatter(time)));
 				break;
 			case NGSIConstants.TIME_REL_AFTER:
 				sqlWhere.append(dbColumn + DBConstants.SQLQUERY_GREATEREQ + " $" + newCount + "::timestamp");
 				newCount++;
-				replacements.add(SerializationTools.localDateTimeFormatter(time));
+				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.encodeFormatter(time)));
 				break;
 			case NGSIConstants.TIME_REL_BETWEEN:
 				sqlWhere.append(dbColumn + " BETWEEN $" + newCount + "::timestamp AND $");
 				newCount++;
-				replacements.add(SerializationTools.localDateTimeFormatter(time));
+				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.encodeFormatter(time)));
 				sqlWhere.append(newCount + "'::timestamp");
 				newCount++;
-				replacements.add(SerializationTools.localDateTimeFormatter(endTime));
+				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.encodeFormatter(endTime)));
 				break;
 			default:
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + timerel);
@@ -133,7 +136,8 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		sqlWhere.append(")");
 		return Tuple3.of(sqlWhere.toString(), replacements, newCount);
 	}
-
+    
+	
 	@Override
 	public Uni<RowSet<Row>> translateNgsildQueryToCountResult(QueryParams qp, SqlConnection conn) {
 
