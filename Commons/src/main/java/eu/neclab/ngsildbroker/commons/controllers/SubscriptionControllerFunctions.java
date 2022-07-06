@@ -157,7 +157,7 @@ public interface SubscriptionControllerFunctions {
 
 					return HttpUtils.generateReply(request, getSubscriptions(realResult), additionalHeaders,
 							AppConstants.SUBSCRIPTION_ENDPOINT);
-				}));
+				})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
