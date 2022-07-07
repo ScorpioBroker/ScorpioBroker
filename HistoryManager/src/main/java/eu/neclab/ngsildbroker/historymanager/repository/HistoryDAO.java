@@ -78,4 +78,16 @@ public class HistoryDAO extends StorageDAO {
 		});
 	}
 
+	public Uni<Object> isTempEntityExist(String entityId, String tenantId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("SELECT DISTINCT id FROM temporalentity WHERE id = $1")
+					.execute(Tuple.of(entityId)).onItem().transformToUni(t -> {
+						if (t.rowCount() == 0) {
+							return Uni.createFrom().item(true);
+						}
+						return Uni.createFrom().item(false);
+					});
+		});
+	}
+
 }

@@ -72,11 +72,15 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		return handleRequest(request).combinedWith((t, u) -> {
-			logger.debug("createMessage() :: completed");
+		return historyDAO.isTempEntityExist(request.getId(), HttpUtils.getInternalTenant(headers)
+				).onItem().transform(Unchecked.function(t -> {
 			return t;
+		})).onItem().transformToUni(t2 -> {
+			return handleRequest(request).combinedWith((t, u) -> {
+				logger.debug("createMessage() :: completed");
+				return  new CreateResult(request.getId(), Boolean.parseBoolean(t2.toString()));
+			});
 		});
-
 	}
 
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
