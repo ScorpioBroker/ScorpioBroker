@@ -24,6 +24,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.MultiMap;
 
 public class ParamsResolver {
@@ -134,11 +136,14 @@ public class ParamsResolver {
 			String queryParameter = entry.getKey();
 			String queryValue = HttpUtils.utfDecoder(entry.getValue());
 			logger.debug("Query parameter:" + queryParameter + ", value=" + queryValue);
+			
 			switch (queryParameter) {
 				case NGSIConstants.QUERY_PARAMETER_ID:
 					id = queryValue;
-					HttpUtils.validateUri(id);
-					break;
+                    if(HttpUtils.validateUri(queryValue).getClass().getName().contains("UniCreateFromKnownFailure")) {
+                    	throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+                    }
+                	 break;
 				case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
 					idPattern = queryValue;
 					break;
