@@ -1,0 +1,3710 @@
+{
+	"info": {
+		"_postman_id": "66fa8757-2de0-4734-83f5-d8eb2e8a24bd",
+		"name": "NGSI-LD API Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Function tests",
+			"item": [
+				{
+					"name": "Entity Create Tests",
+					"item": [
+						{
+							"name": "Entity No Context",
+							"item": [
+								{
+									"name": "Create Simple Entity No Context",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Created Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"created\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Entity Context In Body",
+							"item": [
+								{
+									"name": "Create Simple Entity With @context in body",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"]);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Created Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"created\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Entity Context in Link",
+							"item": [
+								{
+									"name": "Create Simple Entity With @context in link",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"link\", pm.request.headers.get(\"Link\"));\r",
+													"\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Created Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"created\");\r",
+													"var expectedLink = pm.collectionVariables.get(\"link\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													"pm.test(\"Validate Link header\", function () {\r",
+													"    var linkHeader = pm.response.headers.get(\"Link\");\r",
+													"    pm.expect(linkHeader).to.eql(expectedLink);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Entity Update Tests",
+					"item": [
+						{
+							"name": "Update Complete Entity with no context",
+							"item": [
+								{
+									"name": "Create Simple Entity No Context",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update all fields of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"updated\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "",
+												"value": "",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Partial Update Entity with no context",
+							"item": [
+								{
+									"name": "Create Simple Entity No Context",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update string test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"stringproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"type\": \"Property\", \"value\": \"teststringupdated\"}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/stringproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"stringproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate String Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "",
+												"value": "",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update int test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"intproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"type\": \"Property\", \"value\": 1234567}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/intproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"intproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate Int Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "",
+												"value": "",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update float test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"floatproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"type\": \"Property\", \"value\": 1234567.89}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/floatproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"floatproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate Float Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "",
+												"value": "",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update complexproperty test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"complexproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/complexproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"complexproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and ValidateComplex Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "",
+												"value": "",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update relationship test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/testrelationship",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"testrelationship"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate Relationship Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "",
+												"value": "",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Update Complete Entity with context in body",
+							"item": [
+								{
+									"name": "Create Simple Entity With @context in body",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"]);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update all fields of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": {{@context}}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"updated\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Partial Update Entity with context in body",
+							"item": [
+								{
+									"name": "Create Simple Entity With @context in body",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"]);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update string test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"stringproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"@context\": {{@context}}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/stringproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"stringproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate String Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update int test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"intproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"intproperty\":{\"type\": \"Property\", \"value\": 1234567},\r\n    \"@context\": {{@context}}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/intproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"intproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate Int Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update float test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"floatproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"floatproperty\": {\"type\": \"Property\", \"value\": 1234567.89},\r\n    \"@context\": {{@context}}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/floatproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"floatproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate Float Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update complexproperty test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"complexproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"complexproperty\":{\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"@context\": {{@context}}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/complexproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"complexproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and ValidateComplex Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update relationship test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"testrelationship\":{\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": {{@context}}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/testrelationship",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"testrelationship"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate Relationship Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Update Complete Entity with context in Link",
+							"item": [
+								{
+									"name": "Create Simple Entity With @context in link",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"link\", pm.request.headers.get(\"Link\"));\r",
+													"\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update all fields of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"updated\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Partial Update Entity with context in Link",
+							"item": [
+								{
+									"name": "Create Simple Entity With @context in link",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"link\", pm.request.headers.get(\"Link\"));\r",
+													"\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "<https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update string test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"stringproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/stringproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"stringproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate String Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update int test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"intproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"intproperty\":{\"type\": \"Property\", \"value\": 1234567}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/intproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"intproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate Int Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update float test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"floatproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"floatproperty\": {\"type\": \"Property\", \"value\": 1234567.89}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/floatproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"floatproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate Float Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update complexproperty test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"complexproperty\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"complexproperty\":{\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/complexproperty",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"complexproperty"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and ValidateComplex Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update relationship test field of the entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\"testrelationship\":{\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/testrelationship",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs",
+												"testrelationship"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate Relationship Entry",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+													"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/ld+json",
+												"type": "default"
+											},
+											{
+												"key": "Link",
+												"value": "{{link}}",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Entity Append Tests",
+					"item": [
+						{
+							"name": "Append new property to entity no context",
+							"item": [
+								{
+									"name": "Create Simple Entity No Context",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Append new field",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"updatedKey\", \"newtestproperty\")\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"newtestproperty\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"created\");\r",
+													"var addedEntry = pm.collectionVariables.get(\"updated\")\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData).to.contain(expected);\r",
+													"    pm.expect(jsonData).to.contain(addedEntry);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "",
+												"value": "",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Change existing property with append no context",
+							"item": [
+								{
+									"name": "Create Simple Entity No Context",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update field with append",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+													"pm.collectionVariables.set(\"updatedKey\", \"stringproperty\")\r",
+													"pm.collectionVariables.set(\"updatedValue\", payloadBody[\"stringproperty\"]);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"stringproperty\": {\"type\": \"Relationship\", \"value\": \"updated\"}\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}",
+												"attrs"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Updated Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"created\");\r",
+													"var addedKey = pm.collectionVariables.get(\"updatedKey\");\r",
+													"var addedValue = pm.collectionVariables.get(\"updatedValue\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"pm.test(\"Validate content\", function () {\r",
+													"    var jsonData = pm.response.json();\r",
+													"    pm.expect(jsonData[addedKey]).to.eql(addedValue);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "",
+												"value": "",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+											"host": [
+												"{{BrokerHost}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"{{entityId}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Append new relationship to entity no context",
+							"item": []
+						},
+						{
+							"name": "Change existing relationship with append no context",
+							"item": []
+						}
+					]
+				},
+				{
+					"name": "Entity Delete Tests",
+					"item": [
+						{
+							"name": "Delete Entity",
+							"item": []
+						},
+						{
+							"name": "Delete Attribute",
+							"item": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Error Tests",
+			"item": [
+				{
+					"name": "Entity Delete Tests Copy",
+					"item": []
+				},
+				{
+					"name": "Entity Create Tests Copy",
+					"item": []
+				},
+				{
+					"name": "Entity Append Tests Copy",
+					"item": []
+				},
+				{
+					"name": "Entity Update Tests Copy",
+					"item": []
+				}
+			]
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
+		}
+	]
+}
