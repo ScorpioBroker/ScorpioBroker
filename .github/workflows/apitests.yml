@@ -29,7 +29,7 @@ jobs:
         run: |
           mvn clean package -DskipTests -Dcitest -Paaio-no-eureka -B
           java -Dspring.profiles.active=test -jar ./AllInOneRunner/target/AllInOneRunner.jar &
-          COUNTER = 10
+          COUNTER=10
           while [ `curl -s -o /dev/null -w "%{http_code}" http://localhost:9090/actuator/health` -ne 200 ] || [ COUNTER -ne 0 ]; do sleep 2; let COUNTER-=1; done
       - name: newman action
         uses: matt-ball/newman-action@master
