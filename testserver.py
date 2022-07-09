@@ -19,6 +19,10 @@ class S(BaseHTTPRequestHandler):
     def do_GET(self):
         subId = self.path[1:]
         self._set_response()
+        if subId == "deleteAll":
+          self.receivedNotifications = {}
+          self.wfile.write(json.dumps([]).encode("UTF-8"))
+          return
         if subId in self.receivedNotifications:
           self.wfile.write(json.dumps(self.receivedNotifications[subId]).encode("UTF-8"))
         else:
