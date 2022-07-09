@@ -3764,15 +3764,20 @@
 																	"        var value = response.json();\r",
 																	"        console.log(value);\r",
 																	"        pm.expect(value.length).to.eql(1);\r",
-																	"        notification = value[1].body;\r",
-																	"        headers = value[1].headers;\r",
+																	"        notification = value[0].body;\r",
+																	"        headers = value[0].headers;\r",
 																	"        pm.expect(notification.type).to.eql(\"Notification\");\r",
-																	"        pm.expect(notification).to.have(\"notificationId\");\r",
-																	"        pm.expect(notification.data).to.eql(payloadBody);\r",
-																	"        \r",
+																	"        pm.expect(notification).to.have.property(\"id\");\r",
+																	"        pm.expect(notification.data.length).to.eql(1);\r",
+																	"        var notificationData = notification.data[0];\r",
+																	"        delete notificationData[\"createdAt\"];\r",
+																	"        delete notificationData[\"modifiedAt\"];\r",
+																	"        pm.expect(notificationData).to.eql(payloadBody);\r",
 																	"    });\r",
 																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"    pm.sendRequest(\"http://localhost:8080/deleteAll\", function(err, response){});\r",
 																	"    }, 1000);\r",
+																	"    \r",
 																	"});\r",
 																	""
 																],
@@ -3822,6 +3827,72 @@
 																"ngsi-ld",
 																"v1",
 																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Subcription",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
 															]
 														}
 													},
@@ -3902,6 +3973,10 @@
 		},
 		{
 			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "subId",
 			"value": ""
 		}
 	]

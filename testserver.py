@@ -20,7 +20,8 @@ class S(BaseHTTPRequestHandler):
         subId = self.path[1:]
         self._set_response()
         if subId == "deleteAll":
-          self.receivedNotifications = {}
+          print("delete all called")
+          self.receivedNotifications.clear()
           self.wfile.write(json.dumps([]).encode("UTF-8"))
           return
         if subId in self.receivedNotifications:
