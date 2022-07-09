@@ -3759,7 +3759,7 @@
 																	"});\r",
 																	"\r",
 																	"pm.test(\"Check for notification\", function () {\r",
-																	"    await new Promise(r => setTimeout(r, 1000));\r",
+																	"    setTimeout(function(){\r",
 																	"    pm.sendRequest(\"http://localhost:8080/\" + subId, function (err, response) {\r",
 																	"        var value = response.json();\r",
 																	"        console.log(value);\r",
@@ -3772,6 +3772,7 @@
 																	"        \r",
 																	"    });\r",
 																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"    }, 1000);\r",
 																	"});\r",
 																	""
 																],
