@@ -16,15 +16,25 @@ jobs:
           postgresql db: ngb
           postgresql user: ngb
           postgresql password: ngb
-      - name: Start Bitname Kafka
-        uses: bbcCorp/kafka-actions@v1
-        env:
-          KAFKA_ADVERTISED_HOST_NAME: kafka
-          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-          KAFKA_ADVERTISED_PORT: 9092
-          KAFKA_LOG_RETENTION_MS: 10000
-          KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
-          ALLOW_PLAINTEXT_LISTENER: "yes"
+#      - name: Start Bitname Kafka
+#        uses: bbcCorp/kafka-actions@v1
+#        env:
+#          KAFKA_ADVERTISED_HOST_NAME: kafka
+#          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+#          KAFKA_ADVERTISED_PORT: 9092
+#          KAFKA_LOG_RETENTION_MS: 10000
+#          KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
+#          ALLOW_PLAINTEXT_LISTENER: "yes"
+      - name: installation of kafka and zookeeper
+        run: |        
+         mkdir kafka
+         cd kafka
+         wget https://archive.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
+         tar -xzf kafka_2.12-2.2.0.tgz
+         kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties > /dev/null 2>&1 &
+         sleep 12
+         kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties > /dev/null 2>&1 &
+         sleep 2
       - name: Building Scorpio Components
         run: |
           mvn clean package -DskipTests -Dcitest -Paaio-no-eureka -B
