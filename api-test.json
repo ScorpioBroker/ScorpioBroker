@@ -2602,7 +2602,7 @@
 														"header": [
 															{
 																"key": "Content-Type",
-																"value": "application/ld+json",
+																"value": "application/json",
 																"type": "default"
 															},
 															{
@@ -2613,7 +2613,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"}\r\n}",
+															"raw": "{\"type\": \"Property\", \"value\": \"teststringupdated\"}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -2714,7 +2714,7 @@
 														"header": [
 															{
 																"key": "Content-Type",
-																"value": "application/ld+json",
+																"value": "application/json",
 																"type": "default"
 															},
 															{
@@ -2725,7 +2725,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"intproperty\":{\"type\": \"Property\", \"value\": 1234567}\r\n}",
+															"raw": "{\"type\": \"Property\", \"value\": 1234567}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -2826,7 +2826,7 @@
 														"header": [
 															{
 																"key": "Content-Type",
-																"value": "application/ld+json",
+																"value": "application/json",
 																"type": "default"
 															},
 															{
@@ -2837,7 +2837,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"floatproperty\": {\"type\": \"Property\", \"value\": 1234567.89}\r\n}",
+															"raw": "{\"type\": \"Property\", \"value\": 1234567.89}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -2938,7 +2938,7 @@
 														"header": [
 															{
 																"key": "Content-Type",
-																"value": "application/ld+json",
+																"value": "application/json",
 																"type": "default"
 															},
 															{
@@ -2949,7 +2949,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"complexproperty\":{\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}}\r\n}",
+															"raw": "{\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -3050,7 +3050,7 @@
 														"header": [
 															{
 																"key": "Content-Type",
-																"value": "application/ld+json",
+																"value": "application/json",
 																"type": "default"
 															},
 															{
@@ -3061,7 +3061,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"testrelationship\":{\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}\r\n}",
+															"raw": "{\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -3506,7 +3506,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"stringproperty\": {\"type\": \"Relationship\", \"object\": \"urn:updated\"}\r\n}",
+															"raw": "{\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"updated\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -3738,7 +3738,10 @@
 																	"    setTimeout(function(){\r",
 																	"    pm.sendRequest(\"http://localhost:8080/\" + subId, function (err, response) {\r",
 																	"        var value = response.json();\r",
+																	"        console.log(\"http://localhost:8080/\" + subId)\r",
 																	"        console.log(value);\r",
+																	"        console.log(value.length);\r",
+																	"        console.log(\"===================\");\r",
 																	"        pm.expect(value.length).to.eql(1);\r",
 																	"        notification = value[0].body;\r",
 																	"        headers = value[0].headers;\r",
@@ -4087,6 +4090,36 @@
 					"item": []
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "link",
+			"value": ""
+		},
+		{
+			"key": "updated",
+			"value": ""
+		},
+		{
+			"key": "updatedAttrib",
+			"value": ""
+		},
+		{
+			"key": "updatedKey",
+			"value": ""
+		},
+		{
+			"key": "updatedValue",
+			"value": ""
 		}
 	]
 }
