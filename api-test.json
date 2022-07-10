@@ -3262,6 +3262,7 @@
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"updatedKey\", \"newtestproperty\")\r",
+																	"pm.collectionVariables.set(\"updatedValue\", payloadBody[\"newtestproperty\"]);\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
 																	"});\r",
@@ -3316,14 +3317,13 @@
 															"script": {
 																"exec": [
 																	"var expected = pm.collectionVariables.get(\"created\");\r",
-																	"var addedEntry = pm.collectionVariables.get(\"updated\")\r",
+																	"var addedEntry = pm.collectionVariables.get(\"updated\");\r",
 																	"pm.test(\"Status code is 200\", function () {\r",
 																	"    pm.response.to.have.status(200);\r",
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    pm.expect(jsonData).to.contain(expected);\r",
-																	"    pm.expect(jsonData).to.contain(addedEntry);\r",
+																	"    pm.expect(jsonData[addedKey]).to.eql(addedValue);\r",
 																	"});"
 																],
 																"type": "text/javascript"
