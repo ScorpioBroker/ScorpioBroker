@@ -2,4 +2,5 @@ server:
   port: 9090
 logging:
   level:
-    root: INFO
+    root: DEBUG
+    eu.neclab.ngsildbroker: DEBUG
