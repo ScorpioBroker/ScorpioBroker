@@ -107,6 +107,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    console.log(\"Expected: \" + expected);\r",
+																	"    console.log(\"Received: \" + jsonData);\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
 																	"});"
 																],
@@ -264,6 +266,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    console.log(\"Expected: \" + expected);\r",
+																	"    console.log(\"Received: \" + jsonData);\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
 																	"});"
 																],
@@ -276,7 +280,7 @@
 														"header": [
 															{
 																"key": "Accept",
-																"value": "application/json",
+																"value": "application/ld+json",
 																"type": "default"
 															},
 															{
@@ -812,10 +816,8 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
+																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"stringproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -923,10 +925,8 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
+																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"intproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -1034,10 +1034,8 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
+																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"floatproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -1145,10 +1143,8 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
+																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"complexproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -1256,10 +1252,8 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
+																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -3977,6 +3971,14 @@
 		},
 		{
 			"key": "subId",
+			"value": ""
+		},
+		{
+			"key": "updated",
+			"value": ""
+		},
+		{
+			"key": "updatedAttrib",
 			"value": ""
 		}
 	]
