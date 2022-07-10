@@ -39,7 +39,9 @@ jobs:
         run: |
           mvn clean package -DskipTests -Pdocker-aaio-no-eureka -B
       - name: Running Scorpio 
-        run: docker-compose -f docker-compose-aaio-dev.yml up
+        run: |
+           docker-compose -f docker-compose-aaio-dev.yml up -d
+           sleep 15
       - name: Set up Python
         uses: actions/setup-python@v1
       - name: Start notification server
@@ -51,7 +53,7 @@ jobs:
           collection: api-test.json
           environment: api-test-environment.json
       - name: Stopping Scorpio 
-        run: docker-compose -f docker-compose-aaio-dev.yml down
+        run: docker-compose -f docker-compose-aaio-dev.yml down -d
       
       
          
