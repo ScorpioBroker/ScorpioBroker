@@ -1704,7 +1704,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"updated\", payloadBody[\"stringproperty\"]);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"stringproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -1811,7 +1811,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"updated\", payloadBody[\"intproperty\"]);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"intproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -1918,7 +1918,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"updated\", payloadBody[\"floatproperty\"]);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"floatproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -2025,7 +2025,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"updated\", payloadBody[\"complexproperty\"]);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"complexproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -2132,7 +2132,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"updated\", payloadBody[\"testrelationship\"]);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -3916,8 +3916,134 @@
 			"name": "Error Tests",
 			"item": [
 				{
-					"name": "Entity Create Tests Copy",
-					"item": []
+					"name": "No Tenant",
+					"item": [
+						{
+							"name": "/entities",
+							"item": [
+								{
+									"name": "Entity Create Tests",
+									"item": [
+										{
+											"name": "Reject entity create application/ld+json with no @context in body",
+											"item": [
+												{
+													"name": "Create Simple Entity With no @context in body",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 400\", function () {\r",
+																	"    pm.response.to.have.status(400);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/ld+json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Validate that entity was not created",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										}
+									]
+								}
+							]
+						}
+					]
 				},
 				{
 					"name": "Entity Delete Tests Copy",
