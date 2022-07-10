@@ -3317,7 +3317,9 @@
 															"script": {
 																"exec": [
 																	"var expected = pm.collectionVariables.get(\"created\");\r",
-																	"var addedEntry = pm.collectionVariables.get(\"updated\");\r",
+																	"var addedKey = pm.collectionVariables.get(\"updatedKey\");\r",
+																	"var addedValue = pm.collectionVariables.get(\"updatedValue\");\r",
+																	"\r",
 																	"pm.test(\"Status code is 200\", function () {\r",
 																	"    pm.response.to.have.status(200);\r",
 																	"});\r",
