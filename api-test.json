@@ -149,7 +149,8 @@
 																"exec": [
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
-																	"});"
+																	"});\r",
+																	"pm.collectionVariables.clear();"
 																],
 																"type": "text/javascript"
 															}
@@ -313,7 +314,8 @@
 																"exec": [
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
-																	"});"
+																	"});\r",
+																	"pm.collectionVariables.clear();"
 																],
 																"type": "text/javascript"
 															}
@@ -488,7 +490,8 @@
 																"exec": [
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
-																	"});"
+																	"});\r",
+																	"pm.collectionVariables.clear();"
 																],
 																"type": "text/javascript"
 															}
@@ -713,7 +716,8 @@
 																"exec": [
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
-																	"});"
+																	"});\r",
+																	"pm.collectionVariables.clear();"
 																],
 																"type": "text/javascript"
 															}
@@ -1370,7 +1374,8 @@
 																"exec": [
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
-																	"});"
+																	"});\r",
+																	"pm.collectionVariables.clear();"
 																],
 																"type": "text/javascript"
 															}
@@ -1592,7 +1597,8 @@
 																"exec": [
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
-																	"});"
+																	"});\r",
+																	"pm.collectionVariables.clear();"
 																],
 																"type": "text/javascript"
 															}
@@ -1943,7 +1949,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"floatproperty\": {\"type\": \"Property\", \"value\": 1234567.89},\r\n    \"@context\": {{@context}}\r\n}",
+															"raw": "{\"floatproperty\": {\"type\": \"Property\", \"value\": 1234567.89},\r\n    \"@context\": \"{{@context}}\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -2050,7 +2056,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"complexproperty\":{\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"@context\": {{@context}}\r\n}",
+															"raw": "{\"complexproperty\":{\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"@context\": \"{{@context}}\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -2157,7 +2163,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"testrelationship\":{\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": {{@context}}\r\n}",
+															"raw": "{\"testrelationship\":{\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": \"{{@context}}\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -2240,7 +2246,8 @@
 																"exec": [
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
-																	"});"
+																	"});\r",
+																	"pm.collectionVariables.clear();"
 																],
 																"type": "text/javascript"
 															}
@@ -2371,7 +2378,7 @@
 														"header": [
 															{
 																"key": "Content-Type",
-																"value": "application/ld+json",
+																"value": "application/json",
 																"type": "default"
 															},
 															{
@@ -2430,7 +2437,7 @@
 														"header": [
 															{
 																"key": "Accept",
-																"value": "application/ld+json",
+																"value": "application/json",
 																"type": "default"
 															},
 															{
@@ -2463,7 +2470,8 @@
 																"exec": [
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
-																	"});"
+																	"});\r",
+																	"pm.collectionVariables.clear();"
 																],
 																"type": "text/javascript"
 															}
@@ -3662,10 +3670,10 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
+																	"console.log(\"send: \" + pm.request.body.raw);\r",
+																	"console.log(\"received: \" + pm.response.body);\r",
 																	"var subId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"subId\", subId);\r",
-																	"\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
 																	"});\r",
@@ -3842,7 +3850,8 @@
 																"exec": [
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
-																	"});"
+																	"});\r",
+																	"pm.collectionVariables.clear();"
 																],
 																"type": "text/javascript"
 															}
