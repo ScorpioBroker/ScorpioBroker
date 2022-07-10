@@ -190,7 +190,7 @@
 																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
-																	"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"]);\r",
+																	"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"][0]);\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
 																	"});\r",
@@ -232,7 +232,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\"\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -266,8 +266,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    console.log(\"Expected: \" + expected);\r",
-																	"    console.log(\"Received: \" + jsonData);\r",
+																	"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
 																	"});"
 																],
@@ -434,8 +434,16 @@
 																	"    pm.expect(jsonData).to.eql(expected);\r",
 																	"});\r",
 																	"pm.test(\"Validate Link header\", function () {\r",
-																	"    var linkHeader = pm.response.headers.get(\"Link\");\r",
-																	"    pm.expect(linkHeader).to.eql(expectedLink);\r",
+																	"    var headers = pm.response.headers.all();\r",
+																	"    var links = []\r",
+																	"    headers.forEach(function(itm, idx){\r",
+																	"        if(itm.key == \"Link\"){\r",
+																	"            links.push(itm.value);\r",
+																	"        }\r",
+																	"    });\r",
+																	"    console.log(\"expected Link: \" + expectedLink);\r",
+																	"    console.log(\"received Links: \" + links);\r",
+																	"    pm.expect(links).to.include(expectedLink);\r",
 																	"});"
 																],
 																"type": "text/javascript"
@@ -1395,15 +1403,6 @@
 													"name": "Create Simple Entity With @context in body",
 													"event": [
 														{
-															"listen": "prerequest",
-															"script": {
-																"exec": [
-																	""
-																],
-																"type": "text/javascript"
-															}
-														},
-														{
 															"listen": "test",
 															"script": {
 																"exec": [
@@ -1412,7 +1411,7 @@
 																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
-																	"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"]);\r",
+																	"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"][0]);\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
 																	"});\r",
@@ -1422,6 +1421,15 @@
 																	"});\r",
 																	"\r",
 																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
 																	""
 																],
 																"type": "text/javascript"
@@ -1445,7 +1453,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json\"\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1501,7 +1509,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": {{@context}}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1537,6 +1545,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
 																	"});"
 																],
@@ -1694,10 +1704,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"stringproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -1722,7 +1729,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"@context\": {{@context}}\r\n}",
+															"raw": "{\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"@context\": \"{{@context}}\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1730,7 +1737,7 @@
 															}
 														},
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/stringproperty",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}/attrs/",
 															"host": [
 																"{{BrokerHost}}"
 															],
@@ -1740,7 +1747,7 @@
 																"entities",
 																"{{entityId}}",
 																"attrs",
-																"stringproperty"
+																""
 															]
 														}
 													},
@@ -1804,10 +1811,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"intproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -1832,7 +1836,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"intproperty\":{\"type\": \"Property\", \"value\": 1234567},\r\n    \"@context\": {{@context}}\r\n}",
+															"raw": "{\"intproperty\":{\"type\": \"Property\", \"value\": 1234567},\r\n    \"@context\": \"{{@context}}\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1914,10 +1918,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"floatproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -2024,10 +2025,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"complexproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -2134,10 +2132,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -2580,10 +2575,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"stringproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -2695,10 +2687,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"intproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -2810,10 +2799,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"floatproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -2925,10 +2911,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"complexproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -3040,10 +3023,7 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
@@ -3272,11 +3252,8 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"updatedKey\", \"newtestproperty\")\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
 																	"});\r",
@@ -3495,12 +3472,9 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"updatedKey\", \"stringproperty\")\r",
 																	"pm.collectionVariables.set(\"updatedValue\", payloadBody[\"stringproperty\"]);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
 																	"});\r",
@@ -3942,11 +3916,11 @@
 			"name": "Error Tests",
 			"item": [
 				{
-					"name": "Entity Delete Tests Copy",
+					"name": "Entity Create Tests Copy",
 					"item": []
 				},
 				{
-					"name": "Entity Create Tests Copy",
+					"name": "Entity Delete Tests Copy",
 					"item": []
 				},
 				{
@@ -3979,6 +3953,14 @@
 		},
 		{
 			"key": "updatedAttrib",
+			"value": ""
+		},
+		{
+			"key": "@context",
+			"value": ""
+		},
+		{
+			"key": "link",
 			"value": ""
 		}
 	]
