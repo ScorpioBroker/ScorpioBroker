@@ -230,7 +230,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json\"\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -386,7 +386,7 @@
 															},
 															{
 																"key": "Link",
-																"value": "<https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																"value": "<https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
 																"type": "default"
 															}
 														],
@@ -1671,7 +1671,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json\"\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -2328,7 +2328,7 @@
 															},
 															{
 																"key": "Link",
-																"value": "<https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																"value": "<https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
 																"type": "default"
 															}
 														],
@@ -2551,7 +2551,7 @@
 															},
 															{
 																"key": "Link",
-																"value": "<https://raw.githubusercontent.com/ScorpioBroker/TestSuite/master/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																"value": "<https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
 																"type": "default"
 															}
 														],
