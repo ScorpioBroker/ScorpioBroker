@@ -462,7 +462,7 @@
 															},
 															{
 																"key": "Link",
-																"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+																"value": "{{link}}",
 																"type": "default"
 															}
 														],
@@ -3506,7 +3506,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"stringproperty\": {\"type\": \"Relationship\", \"value\": \"updated\"}\r\n}",
+															"raw": "{\r\n    \"stringproperty\": {\"type\": \"Relationship\", \"object\": \"urn:updated\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -3919,6 +3919,26 @@
 					"name": "Tenant",
 					"item": []
 				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
 			]
 		},
 		{
@@ -4067,36 +4087,6 @@
 					"item": []
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
-		},
-		{
-			"key": "subId",
-			"value": ""
-		},
-		{
-			"key": "updated",
-			"value": ""
-		},
-		{
-			"key": "updatedAttrib",
-			"value": ""
-		},
-		{
-			"key": "@context",
-			"value": ""
-		},
-		{
-			"key": "link",
-			"value": ""
 		}
 	]
 }
