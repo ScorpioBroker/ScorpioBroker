@@ -1,5 +1,5 @@
 {
-	"@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld",
+	"@context": 
 		{
 			"stringproperty": "http://testdom.com/stringproperty",
 			"intproperty": "http://testdom.com/intproperty",
@@ -8,5 +8,5 @@
 			"testrelationship": "http://testdom.com/testrelationship",
 			"TestType": "http://testdom.com/TestType"
 		}
-	]
+	
 }
