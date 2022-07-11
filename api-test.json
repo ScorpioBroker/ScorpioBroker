@@ -3633,11 +3633,248 @@
 									"item": [
 										{
 											"name": "Delete Entity",
-											"item": []
+											"item": [
+												{
+													"name": "Create Simple Entity No Context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Validate deletion of entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
 										},
 										{
 											"name": "Delete Attribute",
 											"item": []
+										}
+									]
+								},
+								{
+									"name": "Query Tests",
+									"item": [
+										{
+											"name": "Query for Type",
+											"item": []
+										},
+										{
+											"name": "Query for Type and Id",
+											"item": []
+										},
+										{
+											"name": "Query for Type and IdPattern",
+											"item": []
+										},
+										{
+											"name": "Query for Type with Q Filter",
+											"item": [
+												{
+													"name": "Property equal",
+													"item": []
+												},
+												{
+													"name": "Property smaller than",
+													"item": []
+												},
+												{
+													"name": "Property greater than",
+													"item": []
+												},
+												{
+													"name": "Property smaller equals than",
+													"item": []
+												},
+												{
+													"name": "Property greater equals than",
+													"item": []
+												},
+												{
+													"name": "Property regex",
+													"item": []
+												},
+												{
+													"name": "Relationship equal",
+													"item": []
+												},
+												{
+													"name": "Relationship regex",
+													"item": []
+												}
+											]
+										},
+										{
+											"name": "Query for Type with GeoQuery",
+											"item": [
+												{
+													"name": "Near",
+													"item": []
+												},
+												{
+													"name": "Within",
+													"item": []
+												},
+												{
+													"name": "Contains",
+													"item": []
+												},
+												{
+													"name": "Overlaps",
+													"item": []
+												},
+												{
+													"name": "Intersects",
+													"item": []
+												},
+												{
+													"name": "Equals",
+													"item": []
+												},
+												{
+													"name": "Disjoint",
+													"item": []
+												}
+											]
 										}
 									]
 								}
@@ -4279,8 +4516,9 @@
 															"script": {
 																"exec": [
 																	"\r",
-																	"pm.test(\"Status code is 404\", function () {\r",
-																	"    pm.response.to.have.status(404);\r",
+																	"pm.test(\"Status code is 400\", function () {\r",
+																	"    //is 400 because no uri is a bad request\r",
+																	"    pm.response.to.have.status(400);\r",
 																	"});\r",
 																	""
 																],
