@@ -3740,14 +3740,12 @@
 																	"        pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
 																	"            pm.test(\"Check for notification\", function () {\r",
 																	"            var value = response.json();\r",
+																	"            console.log(\"Retrieving notifications from testserver\")\r",
 																	"            console.log(notificationServer + \"/\" + subId)\r",
 																	"            console.log(value);\r",
-																	"            console.log(value.length);\r",
-																	"            console.log(\"===================\");\r",
 																	"            pm.expect(value.length).to.eql(1);\r",
 																	"            notification = value[0].body;\r",
 																	"            headers = value[0].headers;\r",
-																	"            pm.expect(notification.type).to.eql(\"SHOULD FAIL\");\r",
 																	"            pm.expect(notification.type).to.eql(\"Notification\");\r",
 																	"            pm.expect(notification).to.have.property(\"id\");\r",
 																	"            pm.expect(notification.data.length).to.eql(1);\r",
@@ -4122,11 +4120,379 @@
 																"value": "application/json",
 																"type": "default",
 																"disabled": true
+															},
+															{
+																"key": "Link",
+																"value": "<https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																"type": "default"
 															}
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\"\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Validate that entity was not created",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Reject entity create with none URI id",
+											"item": [
+												{
+													"name": "Create Simple Entity With invalid id",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 400\", function () {\r",
+																	"    pm.response.to.have.status(400);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/ld+json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															},
+															{
+																"key": "",
+																"value": "",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"notauri\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\"\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Validate that entity was not created",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Reject entity create with property which has no value",
+											"item": [
+												{
+													"name": "Create Simple Entity With invalid property",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 400\", function () {\r",
+																	"    pm.response.to.have.status(400);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/ld+json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															},
+															{
+																"key": "",
+																"value": "",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:mytest:1\",\r\n    \"type\": \"TestType\",\r\n    \"invalidproperty\": {\"type\": \"Property\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\"\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Validate that entity was not created",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Reject entity create with relationship which has no object",
+											"item": [
+												{
+													"name": "Create Simple Entity With invalid property",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 400\", function () {\r",
+																	"    pm.response.to.have.status(400);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/ld+json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															},
+															{
+																"key": "",
+																"value": "",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:mytest:1\",\r\n    \"type\": \"TestType\",\r\n    \"invalidrelationship\": {\"type\": \"Relationship\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -4195,18 +4561,6 @@
 							]
 						}
 					]
-				},
-				{
-					"name": "Entity Delete Tests Copy",
-					"item": []
-				},
-				{
-					"name": "Entity Append Tests Copy",
-					"item": []
-				},
-				{
-					"name": "Entity Update Tests Copy",
-					"item": []
 				}
 			]
 		}
