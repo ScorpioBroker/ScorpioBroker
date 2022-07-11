@@ -6913,7 +6913,513 @@
 						},
 						{
 							"name": "/csourceRegistrations",
-							"item": []
+							"item": [
+								{
+									"name": "Registration Create Tests",
+									"item": [
+										{
+											"name": "No Context",
+											"item": [
+												{
+													"name": "Create Simple Registry Entry No Context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var cSourceId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistration"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get created registration and validate content",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    console.log(\"Expected: \" + expected);\r",
+																	"    console.log(\"Received: \" + jsonData);\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistration",
+																"{{cSourceId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete registration",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistration",
+																"{{cSourceId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Context In Body",
+											"item": [
+												{
+													"name": "Create simple registration with @context in body",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var cSourceId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"cSourceId\", entityId);\r",
+																	"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"][0]);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/ld+json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistration"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get created registration and validate",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															},
+															{
+																"key": "Link",
+																"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistration",
+																"{{cSourceId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete registration",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistration",
+																"{{cSourceId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Context in Link",
+											"item": [
+												{
+													"name": "Create Simple Regisration With @context in link",
+													"event": [
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var cSourceId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
+																	"pm.collectionVariables.set(\"link\", pm.request.headers.get(\"Link\"));\r",
+																	"\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Link",
+																"value": "<https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistration"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Entity and Validate content",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"var expectedLink = pm.collectionVariables.get(\"link\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});\r",
+																	"pm.test(\"Validate Link header\", function () {\r",
+																	"    var headers = pm.response.headers.all();\r",
+																	"    var links = []\r",
+																	"    headers.forEach(function(itm, idx){\r",
+																	"        if(itm.key == \"Link\"){\r",
+																	"            links.push(itm.value);\r",
+																	"        }\r",
+																	"    });\r",
+																	"    console.log(\"expected Link: \" + expectedLink);\r",
+																	"    console.log(\"received Links: \" + links);\r",
+																	"    pm.expect(links).to.include(expectedLink);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Link",
+																"value": "{{link}}",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistration",
+																"{{cSourceId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistration",
+																"{{cSourceId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										}
+									]
+								}
+							]
 						},
 						{
 							"name": "/csourceSubscriptions",
