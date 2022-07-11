@@ -6981,14 +6981,14 @@
 															}
 														},
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"csourceRegistration"
+																"csourceRegistrations"
 															]
 														}
 													},
@@ -7026,14 +7026,14 @@
 															}
 														],
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations/{{cSourceId}}",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"csourceRegistration",
+																"csourceRegistrations",
 																"{{cSourceId}}"
 															]
 														}
@@ -7060,14 +7060,14 @@
 														"method": "DELETE",
 														"header": [],
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations/{{cSourceId}}",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"csourceRegistration",
+																"csourceRegistrations",
 																"{{cSourceId}}"
 															]
 														}
@@ -7141,14 +7141,14 @@
 															}
 														},
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"csourceRegistration"
+																"csourceRegistrations"
 															]
 														}
 													},
@@ -7191,14 +7191,14 @@
 															}
 														],
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations/{{cSourceId}}",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"csourceRegistration",
+																"csourceRegistrations",
 																"{{cSourceId}}"
 															]
 														}
@@ -7225,14 +7225,14 @@
 														"method": "DELETE",
 														"header": [],
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations/{{cSourceId}}",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"csourceRegistration",
+																"csourceRegistrations",
 																"{{cSourceId}}"
 															]
 														}
@@ -7306,21 +7306,21 @@
 															}
 														},
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"csourceRegistration"
+																"csourceRegistrations"
 															]
 														}
 													},
 													"response": []
 												},
 												{
-													"name": "Get Created Entity and Validate content",
+													"name": "Get Created Registration and Validate content",
 													"event": [
 														{
 															"listen": "test",
@@ -7367,14 +7367,14 @@
 															}
 														],
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations/{{cSourceId}}",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"csourceRegistration",
+																"csourceRegistrations",
 																"{{cSourceId}}"
 															]
 														}
@@ -7401,14 +7401,14 @@
 														"method": "DELETE",
 														"header": [],
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistration/{{cSourceId}}",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations/{{cSourceId}}",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"csourceRegistration",
+																"csourceRegistrations",
 																"{{cSourceId}}"
 															]
 														}
