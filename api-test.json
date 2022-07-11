@@ -3672,8 +3672,6 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(\"send: \" + pm.request.body.raw);\r",
-																	"console.log(\"received: \" + pm.response.body);\r",
 																	"var subId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"subId\", subId);\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
@@ -3700,7 +3698,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest1\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest1\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 														},
 														"url": {
 															"raw": "{{BrokerHost}}/ngsi-ld/v1/subscriptions",
@@ -3738,9 +3736,10 @@
 																	"\r",
 																	"pm.test(\"Check for notification\", function () {\r",
 																	"    setTimeout(function(){\r",
-																	"    pm.sendRequest(\"http://localhost:8080/\" + subId, function (err, response) {\r",
+																	"        var notificationServer = pm.globals.get(\"notificationserver\");\r",
+																	"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
 																	"        var value = response.json();\r",
-																	"        console.log(\"http://localhost:8080/\" + subId)\r",
+																	"        console.log(notificationServer + \"/\" + subId)\r",
 																	"        console.log(value);\r",
 																	"        console.log(value.length);\r",
 																	"        console.log(\"===================\");\r",
@@ -3756,10 +3755,11 @@
 																	"        pm.expect(notificationData).to.eql(payloadBody);\r",
 																	"    });\r",
 																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
-																	"    pm.sendRequest(\"http://localhost:8080/deleteAll\", function(err, response){});\r",
+																	"    pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																	"    }, 1000);\r",
 																	"    \r",
 																	"});\r",
+																	"\r",
 																	""
 																],
 																"type": "text/javascript"

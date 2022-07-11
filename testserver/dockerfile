@@ -1,0 +1,5 @@
+FROM python:3
+ENV PYTHONUNBUFFERED=1
+WORKDIR /
+COPY testserver.py .
+CMD python testserver.py

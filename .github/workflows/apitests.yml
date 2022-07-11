@@ -9,44 +9,17 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.17
-#      - name: Setup PostgreSQL with Postgis 
-#        uses: huaxk/postgis-action@v1.0.0
-#        with:
-#          postgresql version: 11
-#          postgresql db: ngb
-#          postgresql user: ngb
-#          postgresql password: ngb
-#      - name: Start Bitname Kafka
-#        uses: bbcCorp/kafka-actions@v1
-#        env:
-#          KAFKA_ADVERTISED_HOST_NAME: kafka
-#          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-#          KAFKA_ADVERTISED_PORT: 9092
-#          KAFKA_LOG_RETENTION_MS: 10000
-#          KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
-#          ALLOW_PLAINTEXT_LISTENER: "yes"
-#      - name: installation of kafka and zookeeper
-#        run: |        
-#         mkdir kafka
-#         cd kafka
-#         wget https://archive.apache.org/dist/kafka/2.2.0/kafka_2.12-2.2.0.tgz
-#         tar -xzf kafka_2.12-2.2.0.tgz
-#         kafka_2.12-2.2.0/bin/zookeeper-server-start.sh kafka_2.12-2.2.0/config/zookeeper.properties &
-#         sleep 12
-#         kafka_2.12-2.2.0/bin/kafka-server-start.sh kafka_2.12-2.2.0/config/server.properties &
-#         sleep 2
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
       - name: Building Scorpio Components
         run: |
           mvn clean package -DskipTests -Pdocker-aaio-no-eureka -B
       - name: Running Scorpio 
         run: |
-           docker-compose -f docker-compose-aaio-dev.yml up -d
+           docker-compose -f docker-compose-test.yml up -d
            sleep 15
-      - name: Set up Python
-        uses: actions/setup-python@v1
-      - name: Start notification server
-        run: |
-          python testserver.py &
       - name: newman action
         uses: matt-ball/newman-action@master
         with:
