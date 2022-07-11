@@ -9,8 +9,6 @@ services:
     image: zookeeper
     ports:
       - "2181"
-    logging:
-      driver: none
   kafka:
     image: bitnami/kafka
     ports:
@@ -26,8 +24,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - zookeeper
-    logging:
-      driver: none
   postgres:
     image: postgis/postgis
     ports:
@@ -36,8 +32,6 @@ services:
       POSTGRES_USER: ngb
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
-    logging:
-      driver: none
   scorpio:
     image: scorpiobroker/scorpio:scorpio-aaio-no-eureka_1.1.0-SNAPSHOT
     ports:
