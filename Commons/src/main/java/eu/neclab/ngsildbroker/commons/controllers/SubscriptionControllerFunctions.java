@@ -207,9 +207,13 @@ public interface SubscriptionControllerFunctions {
 					context.addAll(linkHeaders);
 					Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
 					Object bodyContext = body.get(JsonLdConsts.CONTEXT);
-					body = (Map<String, Object>) JsonLdProcessor
-							.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed)
-							.get(0);
+					try {
+						body = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders, body, opts,
+								AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed).get(0);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+
 					if (bodyContext != null) {
 						if (bodyContext instanceof List) {
 							context.addAll((List<Object>) bodyContext);
