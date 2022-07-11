@@ -5480,7 +5480,7 @@
 																	}
 																],
 																"url": {
-																	"raw": "{{BrokerHost}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&q=intproperty<123",
+																	"raw": "{{BrokerHost}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&q=intproperty<223",
 																	"host": [
 																		"{{BrokerHost}}"
 																	],
@@ -5496,7 +5496,7 @@
 																		},
 																		{
 																			"key": "q",
-																			"value": "intproperty<123"
+																			"value": "intproperty<223"
 																		}
 																	]
 																}
@@ -6766,7 +6766,7 @@
 																	"            pm.expect(notification.data.length).to.eql(1);\r",
 																	"            var notificationData = notification.data[0];\r",
 																	"            delete notificationData[\"createdAt\"];\r",
-																	"            delete notificationData/[\"modifiedAt\"];\r",
+																	"            delete notificationData[\"modifiedAt\"];\r",
 																	"            console.log(\"expected notification: \" + JSON.stringify(payloadBody));\r",
 																	"            console.log(\"received notification: \" + JSON.stringify(notificationData));\r",
 																	"            pm.expect(notificationData).to.eql(payloadBody);\r",
