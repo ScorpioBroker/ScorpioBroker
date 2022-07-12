@@ -11035,7 +11035,7 @@
 																	"            });\r",
 																	"        });\r",
 																	"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
-																	"}, 1000);\r",
+																	"}, 2000);\r",
 																	"    \r",
 																	"\r",
 																	"\r",
