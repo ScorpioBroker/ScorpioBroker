@@ -732,6 +732,7 @@ public final class HttpUtils {
 	}
 
 	public static MultiMap getQueryParamMap(HttpServerRequest request) {
+		if (request.query() == null) return null;
 		MultiMap mMap = MultiMap.caseInsensitiveMultiMap();
 		String[] params = request.query().split("&");
 		for (String param : params) {

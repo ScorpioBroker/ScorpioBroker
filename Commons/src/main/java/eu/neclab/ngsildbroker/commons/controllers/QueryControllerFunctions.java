@@ -147,7 +147,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			int defaultLimit, int maxLimit, String check) {
 		logger.trace("getAllEntity() ::");
 		if (check == null && (originalQueryParams == null || originalQueryParams.isEmpty())) {
-			return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest, "Empty query parameters"));
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "Empty query parameters"));
 		}
 		return HttpUtils.getAtContext(request).onItem().transformToUni(t -> {
 			String tenantid = request.getHeader(NGSIConstants.TENANT_HEADER);
