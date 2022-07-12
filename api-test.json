@@ -7385,7 +7385,7 @@
 																	}
 																],
 																"url": {
-																	"raw": "{{BrokerHost}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=equal&geometry=Point&coordinates=[80,80.0005]",
+																	"raw": "{{BrokerHost}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=equals&geometry=Point&coordinates=[80,80.0005]",
 																	"host": [
 																		"{{BrokerHost}}"
 																	],
@@ -7405,7 +7405,7 @@
 																		},
 																		{
 																			"key": "georel",
-																			"value": "equal"
+																			"value": "equals"
 																		},
 																		{
 																			"key": "geometry",
@@ -7702,294 +7702,6 @@
 																		{
 																			"key": "coordinates",
 																			"value": "[80,80.0005]"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Delete Entity TBF",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 204\", function () {\r",
-																			"    pm.response.to.have.status(204);\r",
-																			"});"
-																		],
-																		"type": "text/javascript"
-																	}
-																}
-															],
-															"request": {
-																"method": "DELETE",
-																"header": [],
-																"url": {
-																	"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
-																	"host": [
-																		"{{BrokerHost}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities",
-																		"{{entityIdTBF}}"
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Delete Entity TBNF",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 204\", function () {\r",
-																			"    pm.response.to.have.status(204);\r",
-																			"});\r",
-																			"pm.collectionVariables.clear();"
-																		],
-																		"type": "text/javascript"
-																	}
-																}
-															],
-															"request": {
-																"method": "DELETE",
-																"header": [],
-																"url": {
-																	"raw": "{{BrokerHost}}/ngsi-ld/v1/entities/{{entityIdTBNF}}",
-																	"host": [
-																		"{{BrokerHost}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities",
-																		"{{entityIdTBNF}}"
-																	]
-																}
-															},
-															"response": []
-														}
-													]
-												},
-												{
-													"name": "Overlaps",
-													"item": [
-														{
-															"name": "Create Simple Entity to be found",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																			"console.log(payloadBody.id);\r",
-																			"var entityId = payloadBody.id;\r",
-																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
-																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
-																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
-																			"pm.test(\"Status code is 201\", function () {\r",
-																			"    pm.response.to.have.status(201);\r",
-																			"});\r",
-																			"pm.test(\"Check location header\", function () {\r",
-																			"    pm.response.to.have.header(\"Location\");\r",
-																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
-																			"});\r",
-																			"\r",
-																			"\r",
-																			""
-																		],
-																		"type": "text/javascript"
-																	}
-																},
-																{
-																	"listen": "prerequest",
-																	"script": {
-																		"exec": [
-																			""
-																		],
-																		"type": "text/javascript"
-																	}
-																}
-															],
-															"request": {
-																"method": "POST",
-																"header": [
-																	{
-																		"key": "Content-Type",
-																		"value": "application/json",
-																		"type": "default"
-																	},
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default",
-																		"disabled": true
-																	}
-																],
-																"body": {
-																	"mode": "raw",
-																	"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:test3\",\r\n   \t\"type\": \"TestType\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Polygon\", \r\n        \t\"coordinates\": [[[79,79],[81,79],[81,81],[79,81],[79,79]]]\r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"MERCEDES\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 60\r\n   \t},\r\n    \"owner\": {\"type\": \"Relationship\", \"object\": \"urn:testref\"}\r\n\r\n}",
-																	"options": {
-																		"raw": {
-																			"language": "json"
-																		}
-																	}
-																},
-																"url": {
-																	"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
-																	"host": [
-																		"{{BrokerHost}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Create Simple Entity to be not found",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																			"console.log(payloadBody.id);\r",
-																			"var entityId = payloadBody.id;\r",
-																			"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
-																			"pm.collectionVariables.set(\"entityIdTBNF\", entityId);\r",
-																			"pm.test(\"Status code is 201\", function () {\r",
-																			"    pm.response.to.have.status(201);\r",
-																			"});\r",
-																			"pm.test(\"Check location header\", function () {\r",
-																			"    pm.response.to.have.header(\"Location\");\r",
-																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
-																			"});\r",
-																			"\r",
-																			"\r",
-																			""
-																		],
-																		"type": "text/javascript"
-																	}
-																},
-																{
-																	"listen": "prerequest",
-																	"script": {
-																		"exec": [
-																			""
-																		],
-																		"type": "text/javascript"
-																	}
-																}
-															],
-															"request": {
-																"method": "POST",
-																"header": [
-																	{
-																		"key": "Content-Type",
-																		"value": "application/json",
-																		"type": "default"
-																	},
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default",
-																		"disabled": true
-																	}
-																],
-																"body": {
-																	"mode": "raw",
-																	"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:test4\",\r\n   \t\"type\": \"TestType\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Polygon\", \r\n        \t\"coordinates\": [[[49,49],[51,49],[51,51],[49,51],[49,49]]]\r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"MERCEDES\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 60\r\n   \t},\r\n    \"owner\": {\"type\": \"Relationship\", \"object\": \"urn:testref\"}\r\n\r\n}",
-																	"options": {
-																		"raw": {
-																			"language": "json"
-																		}
-																	}
-																},
-																"url": {
-																	"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
-																	"host": [
-																		"{{BrokerHost}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Query for entity tbf",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
-																			"    pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
-																			"});"
-																		],
-																		"type": "text/javascript"
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{BrokerHost}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=overlaps&geometry=Polygon&coordinates=[[[79,79],[81,79],[81,81],[79,81],[79,79]]]",
-																	"host": [
-																		"{{BrokerHost}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "{{entityTypeTBF}}"
-																		},
-																		{
-																			"key": "geoproperty",
-																			"value": "location"
-																		},
-																		{
-																			"key": "georel",
-																			"value": "overlaps"
-																		},
-																		{
-																			"key": "geometry",
-																			"value": "Polygon"
-																		},
-																		{
-																			"key": "coordinates",
-																			"value": "[[[79,79],[81,79],[81,81],[79,81],[79,79]]]"
 																		}
 																	]
 																}
@@ -11603,6 +11315,283 @@
 											]
 										}
 									]
+								},
+								{
+									"name": "Registration Queries",
+									"item": [
+										{
+											"name": "Type",
+											"item": [
+												{
+													"name": "Create Simple Registry Entry TBF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var cSourceId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"cSourceIdTBF\", cSourceId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Simple Registry Entry TBNF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var cSourceId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"cSourceIdTBNF\", cSourceId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test3\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get created registration and validate content",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Validate that result on contains registry to be found\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData.length).to.eql(1);\r",
+																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
+																	"    pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations?type=Test2",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "Test2"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete registration TBF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations/{{cSourceIdTBF}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations",
+																"{{cSourceIdTBF}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete registration TBNF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/csourceRegistrations/{{cSourceIdTBNF}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations",
+																"{{cSourceIdTBNF}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										}
+									]
 								}
 							]
 						},
@@ -12276,15 +12265,23 @@
 	],
 	"variable": [
 		{
-			"key": "created",
+			"key": "createdTBF",
 			"value": ""
 		},
 		{
-			"key": "subId",
+			"key": "entityIdTBF",
 			"value": ""
 		},
 		{
-			"key": "link",
+			"key": "entityTypeTBF",
+			"value": ""
+		},
+		{
+			"key": "createdTBNF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBNF",
 			"value": ""
 		}
 	]
