@@ -12080,7 +12080,431 @@
 						},
 						{
 							"name": "/temporal/entities",
-							"item": []
+							"item": [
+								{
+									"name": "Queries",
+									"item": [
+										{
+											"name": "After",
+											"item": [
+												{
+													"name": "Create Temporal Entity 1",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"pm.collectionVariables.set(\"entityId1\", payloadBody.id);\r",
+																	"pm.collectionVariables.set(\"created1\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"keys1\", Object.keys(payloadBody));\r",
+																	"\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"type": "text",
+																"value": "application/json"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:temptest1\",\r\n   \t\"type\": \"TempTest2\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Point\", \r\n        \t\"coordinates\": [57.5522, -20.3484] \r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"6-Stars\",\r\n        \"observedAt\": \"2020-02-05T14:12:04.000Z\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 80,\r\n        \"observedAt\": \"2020-02-05T14:12:04.000Z\"\r\n   \t}\r\n\r\n}"
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Temporal Entity 2",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"pm.collectionVariables.set(\"entityId2\", payloadBody.id);\r",
+																	"pm.collectionVariables.set(\"created2\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"keys2\", Object.keys(payloadBody));\r",
+																	"\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"type": "text",
+																"value": "application/json"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:temptest2\",\r\n   \t\"type\": \"TempTest2\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Point\", \r\n        \t\"coordinates\": [57.5522, -20.3484] \r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"6-Stars\",\r\n        \"observedAt\": \"2020-10-05T14:12:04.000Z\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 60,\r\n        \"observedAt\": \"2020-10-05T14:12:04.000Z\"\r\n   \t}\r\n\r\n}"
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Temporal Entity 3",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"pm.collectionVariables.set(\"entityId3\", payloadBody.id);\r",
+																	"pm.collectionVariables.set(\"created3\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"keys3\", Object.keys(payloadBody));\r",
+																	"\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"type": "text",
+																"value": "application/json"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:temptest3\",\r\n   \t\"type\": \"TempTest2\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Point\", \r\n        \t\"coordinates\": [57.5522, -20.3484] \r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"6-Stars\",\r\n        \"observedAt\": \"2020-11-05T14:12:04.000Z\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 60,\r\n        \"observedAt\": \"2020-11-05T14:12:04.000Z\"\r\n   \t}\r\n\r\n}"
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Temporal Entity 4",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"pm.collectionVariables.set(\"entityId4\", payloadBody.id);\r",
+																	"pm.collectionVariables.set(\"created4\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"keys4\", Object.keys(payloadBody));\r",
+																	"\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"type": "text",
+																"value": "application/json"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:temptest4\",\r\n   \t\"type\": \"TempTest2\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Point\", \r\n        \t\"coordinates\": [57.5522, -20.3484] \r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"6-Stars\",\r\n        \"observedAt\": \"2020-12-05T14:12:04.000Z\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 70,\r\n        \"observedAt\": \"2020-12-05T14:12:04.000Z\"\r\n   \t}\r\n\r\n}"
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Temporal query by after",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"test valid entities return\", function() {\r",
+																	"    var expected = [pm.collectionVariables.get(\"entityId3\"),pm.collectionVariables.get(\"entityId4\")];\r",
+																	"    var received = [];\r",
+																	"    pm.response.json().forEach(function(itm, idx){\r",
+																	"        received.push(itm.id);\r",
+																	"    });\r",
+																	"    console.log(\"Expected: \" + expected);\r",
+																	"    console.log(\"Received: \" + received);\r",
+																	"    pm.expect(received).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"type": "text",
+																"value": "application/json"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities?type=TempTest2&timerel=after&timeAt=2020-11-01T14:12:04.000Z",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "TempTest2"
+																},
+																{
+																	"key": "timerel",
+																	"value": "after"
+																},
+																{
+																	"key": "timeAt",
+																	"value": "2020-11-01T14:12:04.000Z"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete entity1",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities/{{entityId1}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities",
+																"{{entityId1}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete entity2",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities/{{entityId2}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities",
+																"{{entityId2}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete entity3",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities/{{entityId3}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities",
+																"{{entityId3}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete entity4",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities/{{entityId4}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities",
+																"{{entityId4}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Before",
+											"item": []
+										},
+										{
+											"name": "Between",
+											"item": []
+										},
+										{
+											"name": "Q",
+											"item": []
+										},
+										{
+											"name": "GeoQ",
+											"item": []
+										},
+										{
+											"name": "Attrs",
+											"item": []
+										}
+									]
+								}
+							]
 						},
 						{
 							"name": "/entityOperations",
@@ -12790,10 +13214,7 @@
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
 																	"});\r",
-																	"pm.test(\"Check location header\", function () {\r",
-																	"    pm.response.to.have.header(\"Location\");\r",
-																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
-																	"});\r",
+																	"\r",
 																	"\r",
 																	"\r",
 																	""
@@ -13813,6 +14234,30 @@
 		},
 		{
 			"key": "entityId3",
+			"value": ""
+		},
+		{
+			"key": "keys1",
+			"value": ""
+		},
+		{
+			"key": "keys2",
+			"value": ""
+		},
+		{
+			"key": "keys3",
+			"value": ""
+		},
+		{
+			"key": "entityId4",
+			"value": ""
+		},
+		{
+			"key": "created4",
+			"value": ""
+		},
+		{
+			"key": "keys4",
 			"value": ""
 		}
 	]
