@@ -12486,14 +12486,15 @@
 															}
 														},
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entityOperations/create",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"entities"
+																"entityOperations",
+																"create"
 															]
 														}
 													},
@@ -12825,14 +12826,15 @@
 															}
 														},
 														"url": {
-															"raw": "{{BrokerHost}}/ngsi-ld/v1/entities",
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/entityOperations/create",
 															"host": [
 																"{{BrokerHost}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"entities"
+																"entityOperations",
+																"create"
 															]
 														}
 													},
