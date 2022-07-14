@@ -15255,6 +15255,500 @@
 											]
 										}
 									]
+								},
+								{
+									"name": "Entity Create",
+									"item": [
+										{
+											"name": "Entity No Context",
+											"item": [
+												{
+													"name": "Create Simple Entity No Context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"pm.collectionVariables.set(\"entityId\", payloadBody.id);\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"keys\", Object.keys(payloadBody));\r",
+																	"\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:temptest1\",\r\n   \t\"type\": \"TempTest2\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Point\", \r\n        \t\"coordinates\": [57.5522, -20.3484] \r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"6-Stars\",\r\n        \"observedAt\": \"2020-02-05T14:12:04.000Z\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 80,\r\n        \"observedAt\": \"2020-02-05T14:12:04.000Z\"\r\n   \t},\r\n    \"testrel\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:mytest1\"\r\n    }\r\n\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Entity and Validate content",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
+																	"var created = pm.collectionVariables.get(\"created\");\r",
+																	"var keys = pm.collectionVariables.get(\"keys\");\r",
+																	"\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
+																	"    var receivedKeys = Object.keys(jsonData);\r",
+																	"    receivedKeys.sort();\r",
+																	"    keys.sort();\r",
+																	"    console.log(\"Received keys: \" + JSON.stringify(receivedKeys));\r",
+																	"    console.log(\"Expected keys: \" + JSON.stringify(keys));\r",
+																	"    pm.expect(receivedKeys).to.eql(keys);\r",
+																	"    receivedKeys.forEach(function(itm, idx) {\r",
+																	"        var entry = jsonData[itm];\r",
+																	"        console.log(itm);\r",
+																	"        if(itm != \"id\" && itm != \"type\"){\r",
+																	"            pm.expect(entry).to.have.property(\"instanceId\");\r",
+																	"            if(entry.type == \"Relationship\"){\r",
+																	"                pm.expect(entry.object).to.eql(created[itm].object);\r",
+																	"            }else{\r",
+																	"                pm.expect(entry.value).to.eql(created[itm].value);\r",
+																	"            }\r",
+																	"        }else{\r",
+																	"            pm.expect(entry).to.eql(created[itm]);\r",
+																	"        }\r",
+																	"        \r",
+																	"    });\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Simple Entity No Context Again",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"pm.collectionVariables.set(\"entityId\", payloadBody.id);\r",
+																	"pm.collectionVariables.set(\"created2\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"keys\", Object.keys(payloadBody));\r",
+																	"\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:temptest1\",\r\n   \t\"type\": \"TempTest2\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Point\", \r\n        \t\"coordinates\": [57.5522, -20.3484] \r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"6-Stars\",\r\n        \"observedAt\": \"2020-02-05T15:12:04.000Z\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 86,\r\n        \"observedAt\": \"2020-02-05T15:12:04.000Z\"\r\n   \t},\r\n    \"testrel\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:mytestupdated1\"\r\n    }\r\n\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Entity and validate content of both create",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
+																	"var created = pm.collectionVariables.get(\"created\");\r",
+																	"var created2 = pm.collectionVariables.get(\"created2\");\r",
+																	"var keys = pm.collectionVariables.get(\"keys\");\r",
+																	"\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
+																	"    var receivedKeys = Object.keys(jsonData);\r",
+																	"    receivedKeys.sort();\r",
+																	"    keys.sort();\r",
+																	"    console.log(\"Received keys: \" + JSON.stringify(receivedKeys));\r",
+																	"    console.log(\"Expected keys: \" + JSON.stringify(keys));\r",
+																	"    pm.expect(receivedKeys).to.eql(keys);\r",
+																	"    receivedKeys.forEach(function(itm, idx) {\r",
+																	"        var entry = jsonData[itm];\r",
+																	"        console.log(itm);\r",
+																	"        if(itm != \"id\" && itm != \"type\"){\r",
+																	"            pm.expect(entry.length).to.eql(2);\r",
+																	"            pm.expect(entry[0]).to.have.property(\"instanceId\");\r",
+																	"            pm.expect(entry[1]).to.have.property(\"instanceId\");\r",
+																	"            if(entry[0].type == \"Relationship\"){\r",
+																	"                pm.expect(entry[0].object).to.eql(created2[itm].object);\r",
+																	"            }else{\r",
+																	"                pm.expect(entry[0].value).to.eql(created2[itm].value);\r",
+																	"            }\r",
+																	"            if(entry[1].type == \"Relationship\"){\r",
+																	"                pm.expect(entry[1].object).to.eql(created[itm].object);\r",
+																	"            }else{\r",
+																	"                pm.expect(entry[1].value).to.eql(created[itm].value);\r",
+																	"            }\r",
+																	"        }else{\r",
+																	"            pm.expect(entry).to.eql(created[itm]);\r",
+																	"        }\r",
+																	"        \r",
+																	"    });\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities/{{entityId}}",
+															"host": [
+																"{{BrokerHost}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										}
+									]
+								},
+								{
+									"name": "Entity Update",
+									"item": [
+										{
+											"name": "Update whole entity",
+											"item": []
+										},
+										{
+											"name": "Update attribute instance",
+											"item": []
+										}
+									]
+								},
+								{
+									"name": "Entity Delete",
+									"item": [
+										{
+											"name": "Create Simple Entity No Context",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"pm.collectionVariables.set(\"entityId\", payloadBody.id);\r",
+															"pm.collectionVariables.set(\"created\", payloadBody);\r",
+															"pm.collectionVariables.set(\"keys\", Object.keys(payloadBody));\r",
+															"\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "default"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:temptest1\",\r\n   \t\"type\": \"TempTest2\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Point\", \r\n        \t\"coordinates\": [57.5522, -20.3484] \r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"6-Stars\",\r\n        \"observedAt\": \"2020-02-05T14:12:04.000Z\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 80,\r\n        \"observedAt\": \"2020-02-05T14:12:04.000Z\"\r\n   \t},\r\n    \"testrel\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:mytest1\"\r\n    }\r\n\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities",
+													"host": [
+														"{{BrokerHost}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"temporal",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities/{{entityId}}",
+													"host": [
+														"{{BrokerHost}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"temporal",
+														"entities",
+														"{{entityId}}"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"\r",
+															"pm.test(\"Status code is 404\", function () {\r",
+															"    pm.response.to.have.status(404);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{BrokerHost}}/ngsi-ld/v1/temporal/entities/{{entityId}}",
+													"host": [
+														"{{BrokerHost}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"temporal",
+														"entities",
+														"{{entityId}}"
+													]
+												}
+											},
+											"response": []
+										}
+									]
 								}
 							]
 						},
@@ -16961,56 +17455,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "entityId1",
-			"value": ""
-		},
-		{
-			"key": "created1",
-			"value": ""
-		},
-		{
-			"key": "keys1",
-			"value": ""
-		},
-		{
-			"key": "entityId2",
-			"value": ""
-		},
-		{
-			"key": "created2",
-			"value": ""
-		},
-		{
-			"key": "keys2",
-			"value": ""
-		},
-		{
-			"key": "entityId3",
-			"value": ""
-		},
-		{
-			"key": "created3",
-			"value": ""
-		},
-		{
-			"key": "keys3",
-			"value": ""
-		},
-		{
-			"key": "entityId4",
-			"value": ""
-		},
-		{
-			"key": "created4",
-			"value": ""
-		},
-		{
-			"key": "keys4",
-			"value": ""
 		}
 	]
 }
