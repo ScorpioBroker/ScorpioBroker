@@ -170,18 +170,23 @@ public class EntityService implements EntryCRUDService {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 
 		// get entity details
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
-				.transform(
-						Unchecked.function(t -> new UpdateEntityRequest(headers, entityId, t, expandedPayload, attrId)))
-				.onItem().transformToUni(t -> {
-					if (t.getUpdateResult().getUpdated().isEmpty()) {
-						return Uni.createFrom().item(t.getUpdateResult());
-					}
-					return handleRequest(t).onItem().transform(v -> {
-						logger.trace("partialUpdateEntity() :: completed");
-						return t.getUpdateResult();
-					});
-				});
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem().transformToUni(t2 -> {
+			UpdateEntityRequest updateEntityRequest;
+			try {
+				updateEntityRequest = new UpdateEntityRequest(headers, entityId, t2, expandedPayload, attrId);
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+
+			}
+			if (updateEntityRequest.getUpdateResult().getUpdated().isEmpty()) {
+				return Uni.createFrom().item(updateEntityRequest.getUpdateResult());
+			}
+			return handleRequest(updateEntityRequest).onItem().transform(v -> {
+
+				logger.trace("partialUpdateEntity() :: completed");
+				return updateEntityRequest.getUpdateResult();
+			});
+		});
 	}
 
 	public Uni<Boolean> deleteAttribute(ArrayListMultimap<String, String> headers, String entityId, String attrId,
