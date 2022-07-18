@@ -58,7 +58,7 @@ public class CSourceDAO extends StorageDAO {
 					.transformToUni(rowSet -> {
 						if (rowSet.size() == 0) {
 							return Uni.createFrom()
-									.failure(new ResponseException(ErrorType.BadRequestData , id + "was not found"));
+									.failure(new ResponseException(ErrorType.NotFound , id + "was not found"));
 						}
 						return Uni.createFrom().item(rowSet.iterator().next().getJsonObject(0).getMap());
 					});
