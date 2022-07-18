@@ -126,7 +126,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 				sqlWhere.append(dbColumn + " BETWEEN $" + newCount + "::timestamp AND $");
 				newCount++;
 				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.utfDecoder(time)));
-				sqlWhere.append(newCount + "'::timestamp");
+				sqlWhere.append(newCount + "::timestamp");
 				newCount++;
 				replacements.add(SerializationTools.localDateTimeFormatter(HttpUtils.utfDecoder(endTime)));
 				break;
