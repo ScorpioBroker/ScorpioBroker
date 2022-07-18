@@ -148,7 +148,7 @@ public class HistoryController {
 					} catch (Exception exception) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
 					}
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{entityId}/attrs/{attrId}/{instanceId}")
