@@ -10,6 +10,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,7 @@ public class EntityService implements EntryCRUDService {
 	@Inject
 	@Channel(AppConstants.ENTITY_CHANNEL)
 	@Broadcast
-	MutinyEmitter<BaseRequest> kafkaSenderInterface;
+	Emitter<BaseRequest> kafkaSenderInterface;
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
 
@@ -210,8 +211,16 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	private Uni<Void> handleRequest(EntityRequest request) {
-		return entityInfoDAO.storeEntity(request).onItem()
-				.transformToUni(t -> kafkaSenderInterface.send(new BaseRequest(request)));
+		return entityInfoDAO.storeEntity(request).onItem().transform(t -> {
+			new Thread() {
+				@Override
+				public void run() {
+					kafkaSenderInterface.send(new BaseRequest(request));
+				}
+
+			}.start();
+			return null;
+		});
 
 	}
 
