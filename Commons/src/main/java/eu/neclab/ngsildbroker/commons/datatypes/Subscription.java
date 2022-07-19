@@ -608,9 +608,9 @@ public class Subscription {
 		if (getSubscriptionName() != null) {
 			top.put(NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME, SerializationTools.getValueArray(getSubscriptionName()));
 		}
-		if (isActive() != null) {
-			top.put(NGSIConstants.NGSI_LD_IS_ACTIVE, SerializationTools.getValueArray(isActive()));
-		}
+		//if (isActive() != null) {
+			//top.put(NGSIConstants.NGSI_LD_IS_ACTIVE, SerializationTools.getValueArray(isActive()));
+		//}
 
 		return top;
 
