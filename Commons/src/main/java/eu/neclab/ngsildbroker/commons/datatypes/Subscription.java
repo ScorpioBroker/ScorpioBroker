@@ -507,7 +507,7 @@ public class Subscription {
 				tempArray.add(tempObj);
 				notificationObj.put(NGSIConstants.NGSI_LD_FORMAT, tempArray);
 			}
-			if (notification.getLastFailedNotification() != null) {
+			/*if (notification.getLastFailedNotification() != null) {
 				tempArray = Lists.newArrayList();
 				tempObj = Maps.newHashMap();
 				tempObj.put(NGSIConstants.JSON_LD_VALUE,
@@ -515,7 +515,7 @@ public class Subscription {
 				tempObj.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
 				tempArray.add(tempObj);
 				notificationObj.put(NGSIConstants.NGSI_LD_LAST_FAILURE, tempArray);
-			}
+			}*/
 			if (notification.getLastNotification() != null) {
 				tempArray = Lists.newArrayList();
 				tempObj = Maps.newHashMap();
