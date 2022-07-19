@@ -138,6 +138,10 @@ public final class HttpUtils {
 		return result;
 	}
 
+	public static List<Object> getAtContextNoUni(HttpServerRequest request) {
+		return parseLinkHeaderNoUni(request.headers().getAll("Link"), NGSIConstants.HEADER_REL_LDCONTEXT);
+	}
+
 	public static Uni<List<Object>> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
 		return Uni.createFrom().item(parseLinkHeaderNoUni(rawLinks, headerRelLdcontext));
 
@@ -732,7 +736,8 @@ public final class HttpUtils {
 	}
 
 	public static MultiMap getQueryParamMap(HttpServerRequest request) {
-		if (request.query() == null) return null;
+		if (request.query() == null)
+			return null;
 		MultiMap mMap = MultiMap.caseInsensitiveMultiMap();
 		String[] params = request.query().split("&");
 		for (String param : params) {
@@ -740,7 +745,7 @@ public final class HttpUtils {
 		}
 		return mMap;
 	}
-	
+
 	public static String utfDecoder(String data) {
 		try {
 			return URLDecoder.decode(data, NGSIConstants.ENCODE_FORMAT);
@@ -749,6 +754,6 @@ public final class HttpUtils {
 			e.printStackTrace();
 		}
 		return null;
-		
-	} 
+
+	}
 }

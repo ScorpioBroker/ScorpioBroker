@@ -151,9 +151,16 @@ public class EntityService implements EntryCRUDService {
 					BaseRequest temp = new BaseRequest(t);
 					temp.setRequestPayload(t.getOldEntity());
 					temp.setFinalPayload(t.getOldEntity());
-					Uni<Void> kafka = kafkaSenderInterface.send(temp);
-					return store.onItem().transformToUni(v -> {
-						return kafka.onItem().transform(v2 -> true);
+
+					return store.onItem().transform(v -> {
+						new Thread() {
+							@Override
+							public void run() {
+								kafkaSenderInterface.send(temp);
+							}
+						}.start();
+
+						return true;
 					});
 
 				});
