@@ -72,9 +72,11 @@ public class RegistryController {
 			@PathParam("registrationId") String registrationId) {
 		logger.debug("get CSource() ::" + registrationId);
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-		String tenant = HttpUtils.getTenantFromHeaders(headers);
-		return csourceService.getRegistrationById(registrationId, tenant).onItem().transformToUni(t -> {
-			return HttpUtils.generateReply(request, t, AppConstants.CSOURCE_URL_ID);
+		return HttpUtils.validateUri(registrationId).onItem().transformToUni(t1 -> {
+			String tenant = HttpUtils.getTenantFromHeaders(headers);
+			return csourceService.getRegistrationById(registrationId, tenant).onItem().transformToUni(t -> {
+				return HttpUtils.generateReply(request, t, AppConstants.CSOURCE_URL_ID);
+			});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
