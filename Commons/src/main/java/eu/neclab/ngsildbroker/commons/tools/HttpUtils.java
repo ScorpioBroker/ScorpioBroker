@@ -560,7 +560,7 @@ public final class HttpUtils {
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InvalidRequest,
-							"Failed to parse provided datetime field.").toJson())
+							"There is an error in the provided json document").toJson())
 					.build();
 		}
 		logger.error("Exception :: ", e);
