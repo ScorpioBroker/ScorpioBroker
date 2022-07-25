@@ -11,7 +11,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 
 public abstract class RegistrySubscriptionMessagingBase {
 
@@ -20,18 +19,9 @@ public abstract class RegistrySubscriptionMessagingBase {
 	@Inject
 	RegistrySubscriptionService subscriptionService;
 
-	public Uni<Void> baseHandleCsource(Message<BaseRequest> busMessage) {
+	public Uni<Void> baseHandleCsource(Message<BaseRequest> busMessage, long timestamp) {
 		BaseRequest message = busMessage.getPayload();
-		@SuppressWarnings("unchecked")
-		IncomingKafkaRecordMetadata<String, Object> metaData = busMessage.getMetadata(IncomingKafkaRecordMetadata.class)
-				.orElse(null);
 		String key = message.getId();
-		final long timestamp;
-		if (metaData != null) {
-			timestamp = metaData.getTimestamp().toEpochMilli();
-		} else {
-			timestamp = System.currentTimeMillis();
-		}
 		switch (message.getRequestType()) {
 			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 			case AppConstants.APPEND_REQUEST:

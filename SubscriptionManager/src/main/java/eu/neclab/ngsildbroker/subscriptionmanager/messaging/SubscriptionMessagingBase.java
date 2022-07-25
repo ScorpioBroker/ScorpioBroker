@@ -17,10 +17,10 @@ import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
+
 
 public abstract class SubscriptionMessagingBase {
-	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessagingKafka.class);
+	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessagingBase.class);
 	private ThreadPoolExecutor entityExecutor = new ThreadPoolExecutor(10, 50, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
 	private ThreadPoolExecutor notificationExecutor = new ThreadPoolExecutor(10, 50, 1, TimeUnit.MINUTES,
@@ -29,16 +29,8 @@ public abstract class SubscriptionMessagingBase {
 	@Inject
 	SubscriptionService subscriptionService;
 
-	public Uni<Void> baseHandleEntity(Message<BaseRequest> message) {
-		@SuppressWarnings("unchecked")
-		IncomingKafkaRecordMetadata<String, Object> metaData = message.getMetadata(IncomingKafkaRecordMetadata.class)
-				.orElse(null);
-		final long timestamp;
-		if (metaData != null) {
-			timestamp = metaData.getTimestamp().toEpochMilli();
-		} else {
-			timestamp = System.currentTimeMillis();
-		}
+	public Uni<Void> baseHandleEntity(Message<BaseRequest> message, long timestamp) {
+		
 
 		BaseRequest payload = new BaseRequest(message.getPayload());
 		entityExecutor.execute(new Runnable() {

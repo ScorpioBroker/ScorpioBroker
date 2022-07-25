@@ -19,7 +19,7 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 	@Incoming(AppConstants.ENTITY_CHANNEL)
 	@UnlessBuildProfile("kafka")
 	public Uni<Void> handleEntity(Message<BaseRequest> message) {
-		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message));
+		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message), System.currentTimeMillis());
 	}
 
 	@Incoming(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)

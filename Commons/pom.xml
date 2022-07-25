@@ -65,4 +65,27 @@
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
 	</dependencies>
+	<profiles>
+		<profile>
+			<id>kafka</id>
+			<activation>
+				<property>
+					<name>kafka</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>eu/neclab/ngsildbroker/commons/serialization/**</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
