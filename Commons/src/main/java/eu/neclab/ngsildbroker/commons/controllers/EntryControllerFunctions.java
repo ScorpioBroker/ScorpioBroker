@@ -230,7 +230,12 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> deleteMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int payloadType) {
-
+		
+		try {
+			getJsonPayload(payload);
+		} catch (Exception exception) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
+		}
 		return HttpUtils.getAtContext(request).onItem().transformToMulti(Unchecked.function(t -> {
 			Object obj = JsonUtils.fromString(payload);
 			if (!(obj instanceof List)) {
@@ -239,12 +244,18 @@ public interface EntryControllerFunctions {
 
 			}
 			List<Object> jsonPayload = (List<Object>) obj;
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, t);
+			boolean atContextAllowed;
+			try {
+				atContextAllowed = HttpUtils.doPreflightCheck(request, t);
+			} catch (ResponseException e) {
+				return Multi.createFrom().failure(e);
+			}
 			if (jsonPayload.isEmpty()) {
 				return Multi.createFrom()
 						.failure(new ResponseException(ErrorType.BadRequestData, "An empty array is not allowed"));
 
 			}
+			
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem().transform(Unchecked.function(t2 -> {
 				String entityId = "NO ENTITY ID FOUND";
