@@ -485,7 +485,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			failed = true;
 			logger.error("Failed to store internal regentry", e);
 		}
-		if (!failed && fedBrokers != null) {
+		if (!failed && fedBrokers != null && !fedBrokers.isBlank()) {
 			new Thread() {
 				public void run() {
 					int retry = 5;
@@ -500,16 +500,17 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 								String csourceId = microServiceUtils.getGatewayURL().toString();
 								copyToSend.put(NGSIConstants.JSON_LD_ID, csourceId);
 
-								HttpResponse resp = Request.Patch(fedBroker + "csourceRegistrations/" + csourceId)
-										.addHeader("Content-Type", "application/json")
+								HttpResponse resp = Request
+										.Patch(fedBroker + "ngsi-ld/v1/csourceRegistrations/" + csourceId)
+										.addHeader("Content-Type", "application/ld+json")
 										.bodyByteArray(JsonUtils
 												.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts))
 												.getBytes())
 										.execute().returnResponse();
 								int returnCode = resp.getStatusLine().getStatusCode();
 								if (returnCode == ErrorType.NotFound.getCode()) {
-									resp = Request.Post(fedBroker + "csourceRegistrations/")
-											.addHeader("Content-Type", "application/json")
+									resp = Request.Post(fedBroker + "ngsi-ld/v1/csourceRegistrations/")
+											.addHeader("Content-Type", "application/ld+json")
 											.bodyByteArray(JsonUtils
 													.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts))
 													.getBytes())
