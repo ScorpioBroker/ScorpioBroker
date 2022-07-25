@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.PrimitiveIterator.OfInt;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.github.jsonldjava.core.Context;
@@ -75,6 +76,11 @@ public class QueryParser {
 //		if (!matcher.matches()) {
 //			throw new BadRequestException();
 //		}
+		Matcher matcher = p.matcher(input);
+		if (!matcher.matches()) {
+			throw new ResponseException(ErrorType.BadRequestData, "");
+		}
+
 		// TODO: regex doesn't validate brackets queries for some reason
 		QueryTerm root = new QueryTerm(context);
 		QueryTerm current = root;
