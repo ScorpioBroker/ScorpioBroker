@@ -123,38 +123,45 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> partialUpdateEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId, String payload) {
 
-		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request))
-				.combinedWith(Unchecked.function((entityIdUri, atContext) -> {
-					boolean atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
-					Object jsonPayload = JsonUtils.fromString(payload);
-					logger.trace("partial-update entity :: started");
-					Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor.expand(atContext,
-							jsonPayload, opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, atContextAllowed).get(0);
-					Context context = JsonLdProcessor.getCoreContextClone();
-					context = context.parse(atContext, true);
-					if (jsonPayload instanceof Map) {
-						Object payloadContext = ((Map<String, Object>) jsonPayload).get(JsonLdConsts.CONTEXT);
-						if (payloadContext != null) {
-							context = context.parse(payloadContext, true);
+		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
+				.onItem().transformToUni(n -> {
+					List<Object> atContext = n.getItem2();
+					boolean atContextAllowed;
+					try {
+						atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
+
+						Object jsonPayload = JsonUtils.fromString(payload);
+						logger.trace("partial-update entity :: started");
+						Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor.expand(atContext,
+								jsonPayload, opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, atContextAllowed).get(0);
+						Context context = JsonLdProcessor.getCoreContextClone();
+						context = context.parse(atContext, true);
+						if (jsonPayload instanceof Map) {
+							Object payloadContext = ((Map<String, Object>) jsonPayload).get(JsonLdConsts.CONTEXT);
+							if (payloadContext != null) {
+								context = context.parse(payloadContext, true);
+							}
 						}
+						String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
+						Tuple3<Map<String, Object>, String, Context> t = Tuple3.of(expandedPayload, expandedAttrib,
+								context);
+						return entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId, t.getItem2(),
+								t.getItem1()).onItem().transform(u -> {
+									return Tuple2.of(u, t.getItem3());
+								}).onItem().transform(Unchecked.function(t1 -> {
+									if (t1.getItem1().getNotUpdated().isEmpty()) {
+										return RestResponse.noContent();
+									} else {
+										throw new ResponseException(ErrorType.BadRequestData,
+												JsonUtils.toPrettyString(JsonLdProcessor.compact(
+														t1.getItem1().getNotUpdated().get(0), t1.getItem2(), opts)));
+
+									}
+								})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+					} catch (Exception e) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}
-					String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
-					return Tuple3.of(expandedPayload, expandedAttrib, context);
-				})).onItem()
-				.transformToUni(t -> entityService
-						.partialUpdateEntity(HttpUtils.getHeaders(request), entityId, t.getItem2(), t.getItem1())
-						.onItem().transform(u -> Tuple2.of(u, t.getItem3())))
-				.onItem().transform(Unchecked.function(t -> {
-					if (t.getItem1().getNotUpdated().isEmpty()) {
-						return RestResponse.noContent();
-
-					} else {
-						throw new ResponseException(ErrorType.BadRequestData, JsonUtils.toPrettyString(
-								JsonLdProcessor.compact(t.getItem1().getNotUpdated().get(0), t.getItem2(), opts)));
-
-					}
-				})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
