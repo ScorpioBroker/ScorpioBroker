@@ -1,0 +1,389 @@
+name: RELEASE PUBLISH
+on: 
+  push:
+    branches: "release/**"
+jobs:
+  build-windows-kafka-eureka:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: build-native-windows-with-eureka-with-kafka
+        run: |
+          mvn clean package -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=windows-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=windows
+      - name: start docker aaio 
+        run: |
+          docker-compose -f docker-compose-windows-aaio-eureka-kafka.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-windows-aaio-eureka-kafka.yml down -d
+      - name: start docker dist 
+        run: |
+          docker-compose -f docker-compose-windows-dist-eureka-kafka.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-windows-dist-eureka-kafka.yml down -d
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker tag scorpiobroker/HistoryManager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/HistoryManager:windows-kafka-eureka-latest
+          docker tag scorpiobroker/RegistrySubscriptionManager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/RegistrySubscriptionManager:windows-kafka-eureka-latest
+          docker tag scorpiobroker/RegistryManager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/RegistryManager:windows-kafka-eureka-latest
+          docker tag scorpiobroker/SubscriptionManager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/SubscriptionManager:windows-kafka-eureka-latest
+          docker tag scorpiobroker/QueryManager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/QueryManager:windows-kafka-eureka-latest
+          docker tag scorpiobroker/EntityManager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/EntityManager:windows-kafka-eureka-latest
+          docker tag scorpiobroker/AllInOneRunner::windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/AllInOneRunner::windows-kafka-eureka-latest
+          docker push scorpiobroker/HistoryManager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/RegistrySubscriptionManager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/RegistryManager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/SubscriptionManager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/QueryManager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/EntityManager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/AllInOneRunner::windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/HistoryManager:windows-kafka-eureka-latest
+          docker push scorpiobroker/RegistrySubscriptionManager:windows-kafka-eureka-latest
+          docker push scorpiobroker/RegistryManager:windows-kafka-eureka-latest
+          docker push scorpiobroker/SubscriptionManager:windows-kafka-eureka-latest
+          docker push scorpiobroker/QueryManager:windows-kafka-eureka-latest
+          docker push scorpiobroker/EntityManager:windows-kafka-eureka-latest
+          docker push scorpiobroker/AllInOneRunner::windows-kafka-eureka-latest
+  build-windows-kafka:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: build-native-windows-with-kafka
+        run: |
+          mvn clean package -Dnative -Dkafka -Ddocker -Ddocker-tag=windows-kafka-${{steps.get-id.outputs.id}} -Dos=windows
+      - name: start docker aaio 
+        run: |
+          docker-compose -f docker-compose-windows-aaio-kafka.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-windows-aaio-kafka.yml down -d
+      - name: start docker dist 
+        run: |
+          docker-compose -f docker-compose-windows-dist-kafka.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-windows-dist-kafka.yml down -d
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker tag scorpiobroker/HistoryManager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/HistoryManager:windows-kafka-latest
+          docker tag scorpiobroker/RegistrySubscriptionManager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/RegistrySubscriptionManager:windows-kafka-latest
+          docker tag scorpiobroker/RegistryManager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/RegistryManager:windows-kafka-latest
+          docker tag scorpiobroker/SubscriptionManager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/SubscriptionManager:windows-kafka-latest
+          docker tag scorpiobroker/QueryManager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/QueryManager:windows-kafka-latest
+          docker tag scorpiobroker/EntityManager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/EntityManager:windows-kafka-latest
+          docker tag scorpiobroker/AllInOneRunner::windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/AllInOneRunner::windows-kafka-latest
+          docker push scorpiobroker/HistoryManager:windows-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/RegistrySubscriptionManager:windows-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/RegistryManager:windows-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/SubscriptionManager:windows-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/QueryManager:windows-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/EntityManager:windows-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/AllInOneRunner::windows-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/HistoryManager:windows-kafka-latest
+          docker push scorpiobroker/RegistrySubscriptionManager:windows-kafka-latest
+          docker push scorpiobroker/RegistryManager:windows-kafka-latest
+          docker push scorpiobroker/SubscriptionManager:windows-kafka-latest
+          docker push scorpiobroker/QueryManager:windows-kafka-latest
+          docker push scorpiobroker/EntityManager:windows-kafka-latest
+          docker push scorpiobroker/AllInOneRunner::windows-kafka-latest
+  build-windows-aaio:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: build-native-windows
+        run: |
+          mvn clean package -Dnative -Ddocker -Ddocker-tag=windows-${{steps.get-id.outputs.id}} -Dos=windows
+      - name: start docker aaio 
+        run: |
+          docker-compose -f docker-compose-windows-aaio.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-windows-aaio.yml down -d
+      - name: start docker dist 
+        run: |
+          docker-compose -f docker-compose-windows-dist.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-windows-dist.yml down -d
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker tag scorpiobroker/AllInOneRunner::windows-${{steps.get-id.outputs.id}} scorpiobroker/AllInOneRunner::windows-latest
+          docker push scorpiobroker/AllInOneRunner::windows-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/AllInOneRunner::windows-latest
+  build-ubuntu-kafka-eureka:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: build-native-ubuntu-with-eureka-with-kafka
+        run: |
+          mvn clean package -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=ubuntu
+      - name: start docker aaio 
+        run: |
+          docker-compose -f docker-compose-ubuntu-aaio-eureka-kafka.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-ubuntu-aaio-eureka-kafka.yml down -d
+      - name: start docker dist 
+        run: |
+          docker-compose -f docker-compose-ubuntu-dist-eureka-kafka.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-ubuntu-dist-eureka-kafka.yml down -d
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker tag scorpiobroker/HistoryManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/HistoryManager:ubuntu-kafka-eureka-latest
+          docker tag scorpiobroker/RegistrySubscriptionManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/RegistrySubscriptionManager:ubuntu-kafka-eureka-latest
+          docker tag scorpiobroker/RegistryManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/RegistryManager:ubuntu-kafka-eureka-latest
+          docker tag scorpiobroker/SubscriptionManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/SubscriptionManager:ubuntu-kafka-eureka-latest
+          docker tag scorpiobroker/QueryManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/QueryManager:ubuntu-kafka-eureka-latest
+          docker tag scorpiobroker/EntityManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/EntityManager:ubuntu-kafka-eureka-latest
+          docker tag scorpiobroker/AllInOneRunner::ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/AllInOneRunner::ubuntu-kafka-eureka-latest
+          docker push scorpiobroker/HistoryManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/RegistrySubscriptionManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/RegistryManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/SubscriptionManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/QueryManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/EntityManager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/AllInOneRunner::ubuntu-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/HistoryManager:ubuntu-kafka-eureka-latest
+          docker push scorpiobroker/RegistrySubscriptionManager:ubuntu-kafka-eureka-latest
+          docker push scorpiobroker/RegistryManager:ubuntu-kafka-eureka-latest
+          docker push scorpiobroker/SubscriptionManager:ubuntu-kafka-eureka-latest
+          docker push scorpiobroker/QueryManager:ubuntu-kafka-eureka-latest
+          docker push scorpiobroker/EntityManager:ubuntu-kafka-eureka-latest
+          docker push scorpiobroker/AllInOneRunner::ubuntu-kafka-eureka-latest
+  build-ubuntu-kafka:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: build-native-ubuntu-with-kafka
+        run: |
+          mvn clean package -Dnative -Dkafka -Ddocker -Ddocker-tag=ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=ubuntu
+      - name: start docker aaio 
+        run: |
+          docker-compose -f docker-compose-ubuntu-aaio-kafka.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-ubuntu-aaio-kafka.yml down -d
+      - name: start docker dist 
+        run: |
+          docker-compose -f docker-compose-ubuntu-dist-kafka.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-ubuntu-dist-kafka.yml down -d
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker tag scorpiobroker/HistoryManager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/HistoryManager:ubuntu-kafka-latest
+          docker tag scorpiobroker/RegistrySubscriptionManager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/RegistrySubscriptionManager:ubuntu-kafka-latest
+          docker tag scorpiobroker/RegistryManager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/RegistryManager:ubuntu-kafka-latest
+          docker tag scorpiobroker/SubscriptionManager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/SubscriptionManager:ubuntu-kafka-latest
+          docker tag scorpiobroker/QueryManager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/QueryManager:ubuntu-kafka-latest
+          docker tag scorpiobroker/EntityManager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/EntityManager:ubuntu-kafka-latest
+          docker tag scorpiobroker/AllInOneRunner::ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/AllInOneRunner::ubuntu-kafka-latest
+          docker push scorpiobroker/HistoryManager:ubuntu-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/RegistrySubscriptionManager:ubuntu-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/RegistryManager:ubuntu-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/SubscriptionManager:ubuntu-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/QueryManager:ubuntu-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/EntityManager:ubuntu-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/AllInOneRunner::ubuntu-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/HistoryManager:ubuntu-kafka-latest
+          docker push scorpiobroker/RegistrySubscriptionManager:ubuntu-kafka-latest
+          docker push scorpiobroker/RegistryManager:ubuntu-kafka-latest
+          docker push scorpiobroker/SubscriptionManager:ubuntu-kafka-latest
+          docker push scorpiobroker/QueryManager:ubuntu-kafka-latest
+          docker push scorpiobroker/EntityManager:ubuntu-kafka-latest
+          docker push scorpiobroker/AllInOneRunner::ubuntu-kafka-latest
+  build-ubuntu-aaio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: build-native-ubuntu
+        run: |
+          mvn clean package -Dnative -Ddocker -Ddocker-tag=ubuntu-${{steps.get-id.outputs.id}} -Dos=ubuntu
+      - name: start docker aaio 
+        run: |
+          docker-compose -f docker-compose-ubuntu-aaio.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-ubuntu-aaio.yml down -d
+      - name: start docker dist 
+        run: |
+          docker-compose -f docker-compose-ubuntu-dist.yml up -d
+          sleep 30
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f docker-compose-ubuntu-dist.yml down -d
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker tag scorpiobroker/AllInOneRunner::ubuntu-${{steps.get-id.outputs.id}} scorpiobroker/AllInOneRunner::ubuntu-latest
+          docker push scorpiobroker/AllInOneRunner::ubuntu-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/AllInOneRunner::ubuntu-latest
