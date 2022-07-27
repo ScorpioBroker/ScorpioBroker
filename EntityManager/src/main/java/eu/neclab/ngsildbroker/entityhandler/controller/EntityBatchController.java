@@ -11,6 +11,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -46,7 +47,7 @@ public class EntityBatchController {
 	@Path("/create")
 	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createMultiple(entityService, request, payload, maxCreateBatch,
-				AppConstants.ENTITY_CREATE_PAYLOAD);
+				AppConstants.ENTITY_CREATE_PAYLOAD).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@POST

@@ -177,6 +177,9 @@ public interface EntryControllerFunctions {
 						return Tuple2.of(new BatchFailure(entityId, response), null);
 					});
 		}).collectFailures().concatenate().collect().asList().onItemOrFailure().transform((results, fails) -> {
+			if (results == null) {
+				return HttpUtils.handleControllerExceptions(fails);
+			}
 			BatchResult result = new BatchResult();
 			results.forEach(i -> {
 				if (i.getItem2() != null) {
