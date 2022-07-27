@@ -1,7 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>eu.neclab.ngsildbroker</groupId>
-	<artifactId>BrokerParent</artifactId>
+	<artifactId>broker-parent</artifactId>
+	<name>BrokerParent</name>
 	<version>3.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
@@ -80,7 +81,7 @@
 			</dependency>
 			<dependency>
 				<groupId>eu.neclab.ngsildbroker</groupId>
-				<artifactId>Commons</artifactId>
+				<artifactId>commons</artifactId>
 				<version>3.0.0-SNAPSHOT</version>
 			</dependency>
 		</dependencies>
@@ -230,6 +231,20 @@
 				</property>
 			</activation>
 			<dependencies>
+				<dependency>
+					<groupId>io.smallrye.reactive</groupId>
+					<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>dev</id>
+			<dependencies>
+				<dependency>
+					<groupId>io.quarkus</groupId>
+					<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+				</dependency>
+
 				<dependency>
 					<groupId>io.smallrye.reactive</groupId>
 					<artifactId>smallrye-reactive-messaging-in-memory</artifactId>

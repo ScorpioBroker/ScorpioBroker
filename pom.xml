@@ -7,7 +7,7 @@
 	<artifactId>ScorpioBroker</artifactId>
 	<packaging>pom</packaging>
 	<parent>
-		<artifactId>BrokerParent</artifactId>
+		<artifactId>broker-parent</artifactId>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<version>3.0.0-SNAPSHOT</version>
 		<relativePath>./BrokerParent</relativePath>
@@ -24,116 +24,4 @@
 		<module>HistoryManager</module>
 		<module>AllInOneRunner</module>
 	</modules>
-	<!--
-	Profiles need a rework once we are there 
-	<profiles>
-		<profile>
-			<id>docker-dist</id>
-			<modules>
-				<module>SpringCloudParent</module>
-				<module>SpringCloudModules</module>
-			</modules>
-		</profile>
-		<profile>
-			<id>dist</id>
-			<modules>
-				<module>SpringCloudParent</module>
-				<module>SpringCloudModules</module>
-			</modules>
-		</profile>
-		<profile>
-			<id>aaio</id>
-			<modules>
-				<module>AllInOneRunner</module>
-				<module>SpringCloudParent</module>
-				<module>SpringCloudModules</module>
-			</modules>
-		</profile>
-		<profile>
-			<id>aaio-no-eureka</id>
-			<modules>
-				<module>AllInOneRunner</module>
-			</modules>
-		</profile>
-
-		<profile>
-			<id>docker-aaio</id>
-			<modules>
-				<module>AllInOneRunner</module>
-				<module>SpringCloudParent</module>
-				<module>SpringCloudModules</module>
-			</modules>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>com.spotify</groupId>
-						<artifactId>dockerfile-maven-plugin</artifactId>
-						<version>1.4.12</version>
-						<executions>
-							<execution>
-								<id>default</id>
-								<goals>
-									<goal>build</goal>
-									<goal>push</goal>
-								</goals>
-							</execution>
-						</executions>
-						<configuration>
-							<dockerfile>dockerfile4maven</dockerfile>
-							<repository>scorpiobroker/scorpio</repository>
-							<tag>scorpio-aaio_${project.version}</tag>
-							<buildArgs>
-								<BUILD_DIR_SCS>SpringCloudModules/config-server</BUILD_DIR_SCS>
-								<BUILD_DIR_SES>SpringCloudModules/eureka</BUILD_DIR_SES>
-								<BUILD_DIR_SGW>SpringCloudModules/gateway</BUILD_DIR_SGW>
-								<BUILD_DIR_SCR>AllInOneRunner</BUILD_DIR_SCR>
-								<JAR_FILE_BUILD_SCS>config-server-${project.version}.jar</JAR_FILE_BUILD_SCS>
-								<JAR_FILE_BUILD_SES>eureka-server-${project.version}.jar</JAR_FILE_BUILD_SES>
-								<JAR_FILE_BUILD_SGW>gateway-${project.version}.jar</JAR_FILE_BUILD_SGW>
-								<JAR_FILE_BUILD_SCR>AllInOneRunner-${project.version}.jar</JAR_FILE_BUILD_SCR>
-								<JAR_FILE_RUN_SCS>config-server.jar</JAR_FILE_RUN_SCS>
-								<JAR_FILE_RUN_SES>eureka-server.jar</JAR_FILE_RUN_SES>
-								<JAR_FILE_RUN_SGW>gateway.jar</JAR_FILE_RUN_SGW>
-								<JAR_FILE_RUN_SCR>runner.jar</JAR_FILE_RUN_SCR>
-							</buildArgs>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>docker-aaio-no-eureka</id>
-			<modules>
-				<module>AllInOneRunner</module>
-			</modules>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>com.spotify</groupId>
-						<artifactId>dockerfile-maven-plugin</artifactId>
-						<version>1.4.12</version>
-						<executions>
-							<execution>
-								<id>default</id>
-								<goals>
-									<goal>build</goal>
-									<goal>push</goal>
-								</goals>
-							</execution>
-						</executions>
-						<configuration>
-							<dockerfile>dockerfile4maven_no_eureka</dockerfile>
-							<repository>scorpiobroker/scorpio</repository>
-							<tag>scorpio-aaio-no-eureka_${project.version}</tag>
-							<buildArgs>
-								<BUILD_DIR_SCR>AllInOneRunner</BUILD_DIR_SCR>
-								<JAR_FILE_BUILD_SCR>AllInOneRunner-${project.version}.jar</JAR_FILE_BUILD_SCR>
-								<JAR_FILE_RUN_SCR>runner.jar</JAR_FILE_RUN_SCR>
-							</buildArgs>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles> -->
 </project>
