@@ -67,14 +67,14 @@ jobs:
           docker push scorpiobroker/subscription-manager:java-kafka-eureka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/query-manager:java-kafka-eureka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/entity-manager:java-kafka-eureka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/all-in-one-runner::java-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:java-kafka-eureka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/history-manager:java-kafka-eureka-latest
           docker push scorpiobroker/registry-subscription-manager:java-kafka-eureka-latest
           docker push scorpiobroker/registry-manager:java-kafka-eureka-latest
           docker push scorpiobroker/subscription-manager:java-kafka-eureka-latest
           docker push scorpiobroker/query-manager:java-kafka-eureka-latest
           docker push scorpiobroker/entity-manager:java-kafka-eureka-latest
-          docker push scorpiobroker/all-in-one-runner::java-kafka-eureka-latest
+          docker push scorpiobroker/all-in-one-runner:java-kafka-eureka-latest
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -210,6 +210,15 @@ jobs:
       - name: build-native-java-with-kafka
         run: |
           mvn clean package -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
+      - name: docker tag 
+        run: |
+          docker tag scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-latest
+          docker tag scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:java-kafka-latest
+          docker tag scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:java-kafka-latest
+          docker tag scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:java-kafka-latest
+          docker tag scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-kafka-latest
+          docker tag scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-kafka-latest
+          docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-latest
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up -d
@@ -228,27 +237,20 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: docker tag and push
         run: |
-          docker tag scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-latest
-          docker tag scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:java-kafka-latest
-          docker tag scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:java-kafka-latest
-          docker tag scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:java-kafka-latest
-          docker tag scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-kafka-latest
-          docker tag scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-kafka-latest
-          docker tag scorpiobroker/all-in-one-runner::java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner::java-kafka-latest
           docker push scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/all-in-one-runner::java-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/history-manager:java-kafka-latest
           docker push scorpiobroker/registry-subscription-manager:java-kafka-latest
           docker push scorpiobroker/registry-manager:java-kafka-latest
           docker push scorpiobroker/subscription-manager:java-kafka-latest
           docker push scorpiobroker/query-manager:java-kafka-latest
           docker push scorpiobroker/entity-manager:java-kafka-latest
-          docker push scorpiobroker/all-in-one-runner::java-kafka-latest
+          docker push scorpiobroker/all-in-one-runner:java-kafka-latest
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -383,10 +385,10 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-native-java
         run: |
-          mvn clean package -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java 
+          mvn clean package -Din-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java 
       - name: docker tag
         run: |
-          docker tag scorpiobroker/all-in-one-runner::java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner::java-latest
+          docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml up -d
@@ -405,8 +407,8 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: docker push
         run: |
-          docker push scorpiobroker/all-in-one-runner::java-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/all-in-one-runner::java-latest
+          docker push scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:java-latest
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
