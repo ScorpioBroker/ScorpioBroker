@@ -35,7 +35,7 @@ jobs:
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-eureka-test.yml up &
-          sleep 30
+          sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
         with:
@@ -46,7 +46,7 @@ jobs:
       - name: start docker dist 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-dist-kafka-eureka-test.yml up &
-          sleep 30
+          sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
         with:
@@ -223,7 +223,7 @@ jobs:
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up &
-          sleep 30
+          sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
         with:
@@ -394,7 +394,7 @@ jobs:
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml up &
-          sleep 30
+          sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
         with:
