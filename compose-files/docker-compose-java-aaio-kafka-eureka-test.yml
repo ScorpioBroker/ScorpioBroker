@@ -43,7 +43,7 @@ services:
     depends_on:
       - eureka
   scorpio:
-    image: scorpiobroker/all-in-one-runner:java-kafka-euereka-latest
+    image: scorpiobroker/all-in-one-runner:java-kafka-eureka-latest
     ports:
       - "27015"
     environment:
