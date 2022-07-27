@@ -9,11 +9,6 @@
 	<artifactId>AllInOneRunner</artifactId>
 
 	<dependencies>
-		<!-- <dependency>
-			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>Commons</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
-		</dependency>-->
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>EntityManager</artifactId>
@@ -45,5 +40,41 @@
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
-
+	<profiles>
+		<profile>
+			<id>docker</id>
+			<activation>
+				<property>
+					<name>docker</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.12</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+									<goal>push</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<dockerfile>src/main/resources/dockerfiles/dockerfile-${os}</dockerfile>
+							<repository>scorpiobroker/${project.artifactId}</repository>
+							<tag>${docker-tag}</tag>
+							<buildArgs>
+								<FILE_BUILD>${project.build.finalName}.jar</FILE_BUILD>
+								<FILE_RUN>${project.artifactId}.jar</FILE_RUN>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

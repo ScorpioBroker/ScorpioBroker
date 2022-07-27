@@ -91,9 +91,5 @@
 				</plugins>
 			</build>
 		</profile>
-		<!-- overrid docker profile in commons no need to build -->
-		<profile>
-			<id>docker</id>
-		</profile>
 	</profiles>
 </project>
