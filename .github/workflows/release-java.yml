@@ -22,7 +22,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-eureka-with-kafka
         run: |
-          mvn clean package -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java
+          mvn clean package -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
       - name: docker tag
         run: |
           docker tag scorpiobroker/history-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-eureka-latest
@@ -209,7 +209,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-native-java-with-kafka
         run: |
-          mvn clean package -Dnative -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java
+          mvn clean package -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up -d
@@ -383,7 +383,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-native-java
         run: |
-          mvn clean package -Dnative -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java
+          mvn clean package -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner::java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner::java-latest
