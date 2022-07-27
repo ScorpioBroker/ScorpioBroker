@@ -1,0 +1,12 @@
+{
+	"@context": 
+		{
+			"stringproperty": "http://testdom.com/stringproperty",
+			"intproperty": "http://testdom.com/intproperty",
+			"floatproperty": "http://testdom.com/floatproperty",
+			"complexproperty": "http://testdom.com/complexproperty",
+			"testrelationship": "http://testdom.com/testrelationship",
+			"TestType": "http://testdom.com/TestType"
+		}
+	
+}
