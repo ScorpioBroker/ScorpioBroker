@@ -209,7 +209,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-native-java-with-kafka
         run: |
-          mvn clean package -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
+          mvn clean package -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up -d
@@ -383,7 +383,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-native-java
         run: |
-          mvn clean package -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
+          mvn clean package -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java 
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner::java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner::java-latest
