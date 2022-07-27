@@ -157,21 +157,6 @@
 			<artifactId>quarkus-logging-manager</artifactId>
 			<version>2.1.3</version>
 		</dependency>
-		<dependency>
-			<groupId>io.smallrye.reactive</groupId>
-			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>io.smallrye.reactive</groupId>
-			<artifactId>smallrye-reactive-messaging-kafka</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
-			<optional>true</optional>
-		</dependency>
 	</dependencies>
 	<profiles>
 		<profile>
@@ -232,14 +217,8 @@
 			</activation>
 			<dependencies>
 				<dependency>
-					<groupId>io.smallrye.reactive</groupId>
-					<artifactId>smallrye-reactive-messaging-kafka</artifactId>
-					<optional>false</optional>
-				</dependency>
-				<dependency>
 					<groupId>io.quarkus</groupId>
 					<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
-					<optional>false</optional>
 				</dependency>
 			</dependencies>
 		</profile>
@@ -254,9 +233,43 @@
 				<dependency>
 					<groupId>io.smallrye.reactive</groupId>
 					<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
-					<optional>false</optional>
 				</dependency>
 			</dependencies>
+		</profile>
+		<profile>
+			<id>docker</id>
+			<activation>
+				<property>
+					<name>docker</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.12</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+									<goal>push</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<dockerfile>src/main/resources/dockerfiles/dockerfile-${os}</dockerfile>
+							<repository>scorpiobroker/${project.artifactId}</repository>
+							<tag>${docker-tag}</tag>
+							<buildArgs>
+								<FILE_BUILD>${project.build.finalName}.jar</FILE_BUILD>
+								<FILE_RUN>${project.artifactId}.jar</FILE_RUN>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 	</profiles>
 </project>
