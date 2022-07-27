@@ -230,12 +230,12 @@
 					<name>in-memory</name>
 				</property>
 			</activation>
-			<dependencies>
+			<!--<dependencies>
 				<dependency>
 					<groupId>io.smallrye.reactive</groupId>
 					<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
 				</dependency>
-			</dependencies>
+			</dependencies>-->
 		</profile>
 		<profile>
 			<id>dev</id>
@@ -245,10 +245,10 @@
 					<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
 				</dependency>
 
-				<dependency>
+				<!--<dependency>
 					<groupId>io.smallrye.reactive</groupId>
 					<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
-				</dependency>
+				</dependency>-->
 			</dependencies>
 		</profile>
 	</profiles>
