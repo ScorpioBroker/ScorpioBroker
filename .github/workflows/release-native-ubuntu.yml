@@ -10,7 +10,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          version: 'latest'
+          version: '22.1.0'
           java-version: '17'
           components: 'native-image'
       - name: Build testserver
@@ -158,7 +158,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          version: 'latest'
+          version: '22.1.0'
           java-version: '17'
           components: 'native-image'
       - name: Build testserver
@@ -295,7 +295,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          version: 'latest'
+          version: '22.1.0'
           java-version: '17'
           components: 'native-image'
       - name: Build testserver
