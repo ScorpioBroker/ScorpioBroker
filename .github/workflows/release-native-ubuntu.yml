@@ -11,7 +11,7 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         with:
           version: 'latest'
-          ubuntu-version: '17'
+          java-version: '17'
           components: 'native-image'
       - name: Build testserver
         run: |
@@ -155,10 +155,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
-      - name: Set up JDK 1.17
-        uses: actions/setup-java@v1
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
         with:
-          ubuntu-version: 1.17
+          version: 'latest'
+          java-version: '17'
+          components: 'native-image'
       - name: Build testserver
         run: |
           cd testserver
@@ -290,10 +292,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
-      - name: Set up JDK 1.17
-        uses: actions/setup-java@v1
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
         with:
-          ubuntu-version: 1.17
+          version: 'latest'
+          java-version: '17'
+          components: 'native-image'
       - name: Build testserver
         run: |
           cd testserver
