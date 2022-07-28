@@ -17,7 +17,7 @@
 		<surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
 		<java.version>17</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
-		<maven.compiler.target>${java.version}</maven.compiler.target>
+		<maven.compiler.target>${java.version}</maven.compiler.target>	
 		<nativeext></nativeext>
 	</properties>
 	<build>
@@ -251,6 +251,17 @@
 					<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
 				</dependency>
 			</dependencies>
+		</profile>
+		<profile>
+			<id>windowsext</id>
+			<activation>
+        		<os>
+        			<family>windows</family>
+        		</os>
+    		</activation>
+    		<properties>	
+				<nativeext>.exe</nativeext>
+			</properties>
 		</profile>
 	</profiles>
 </project>
