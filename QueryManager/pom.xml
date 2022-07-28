@@ -37,7 +37,8 @@
 							<repository>scorpiobroker/${project.artifactId}</repository>
 							<tag>${docker-tag}</tag>
 							<buildArgs>
-								<FILE_BUILD>scorpio-${project.artifactId}${nativeext}</FILE_BUILD>
+								<FILE_BUILD>${project.build.finalName}-runner${nativeext}</FILE_BUILD>
+								<FILE_RUN>scorpio-${project.artifactId}${nativeext}</FILE_RUN>
 							</buildArgs>
 						</configuration>
 					</plugin>
