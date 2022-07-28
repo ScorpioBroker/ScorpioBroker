@@ -19,8 +19,9 @@ jobs:
           docker build -t testserver .
       - name: Get release number
         id: get-id
+        shell: pwsh
         run: |
-          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          id=$(${{github.ref_name}}.split('/')[1])
           echo "::set-output name=id::$id"
       - name: build-windows-with-eureka-with-kafka
         run: |
