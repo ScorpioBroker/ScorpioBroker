@@ -57,7 +57,7 @@ jobs:
       - name: docker-login
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
+          username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: docker push
         run: |
@@ -75,14 +75,14 @@ jobs:
           docker push scorpiobroker/query-manager:java-kafka-eureka-latest
           docker push scorpiobroker/entity-manager:java-kafka-eureka-latest
           docker push scorpiobroker/all-in-one-runner:java-kafka-eureka-latest
-      - name: Create Release
+      - name: Create Release ${{steps.get-id.outputs.id}}-java-kafka-eureka
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{steps.get-id.outputs.id}}-java-kafka-eureka
-          release_name: Release ${{steps.get-id.outputs.id}}-java-kafka-eureka
+          tag_name: ${{steps.get-id.outputs.id}}-java-kafka
+          release_name: Release ${{steps.get-id.outputs.id}}-java-kafka
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -90,20 +90,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r all-in-one-runner.zip AllInOneRunner/target/quarkus-app
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./all-in-one-runner.zip
-          asset_name: all-in-one-runner.zip
-          asset_content_type: application/zip
-      - name: Zip aaio release
-        uses: montudor/action-zip@v1
-        with:
-            args: zip -qq -r all-in-one-runner.zip AllInOneRunner/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release aaio
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -116,7 +103,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r history-manager.zip HistoryManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -129,7 +116,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r registry-subscription-manager.zip RegistrySubscriptionManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -142,7 +129,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r registry-manager.zip RegistryManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -155,7 +142,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r subscription-manager.zip SubscriptionManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -168,7 +155,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r query-manager.zip QueryManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -181,8 +168,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r entity-manager.zip EntityManager/target/quarkus-app
-      - name: Upload Release Asset
-        id: upload-release-asset 
+      - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -220,39 +206,39 @@ jobs:
           docker tag scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-kafka-latest
           docker tag scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-kafka-latest
           docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-latest
-      - name: start docker aaio 
-        run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up &
-          sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-environment.json
-      - name: Stopping Scorpio 
-        run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
-      - name: docker-login
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-      - name: docker tag and push
-        run: |
-          docker push scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/history-manager:java-kafka-latest
-          docker push scorpiobroker/registry-subscription-manager:java-kafka-latest
-          docker push scorpiobroker/registry-manager:java-kafka-latest
-          docker push scorpiobroker/subscription-manager:java-kafka-latest
-          docker push scorpiobroker/query-manager:java-kafka-latest
-          docker push scorpiobroker/entity-manager:java-kafka-latest
-          docker push scorpiobroker/all-in-one-runner:java-kafka-latest
-      - name: Create Release
+#      - name: start docker aaio 
+#        run: |
+#          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up &
+#          sleep 120
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-environment.json
+#      - name: Stopping Scorpio 
+#        run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
+#      - name: docker-login
+#        uses: docker/login-action@v2
+#        with:
+#          username: ${{ secrets.DOCKER_USER }}
+#          password: ${{ secrets.DOCKER_TOKEN }}
+#      - name: docker tag and push
+#        run: |
+#          docker push scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}}
+#          docker push scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
+#          docker push scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}}
+#          docker push scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
+#          docker push scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
+#          docker push scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
+#          docker push scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
+#          docker push scorpiobroker/history-manager:java-kafka-latest
+#          docker push scorpiobroker/registry-subscription-manager:java-kafka-latest
+#          docker push scorpiobroker/registry-manager:java-kafka-latest
+#          docker push scorpiobroker/subscription-manager:java-kafka-latest
+#          docker push scorpiobroker/query-manager:java-kafka-latest
+#          docker push scorpiobroker/entity-manager:java-kafka-latest
+#          docker push scorpiobroker/all-in-one-runner:java-kafka-latest
+      - name: Create Release ${{steps.get-id.outputs.id}}-java-kafka
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -267,20 +253,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r all-in-one-runner.zip AllInOneRunner/target/quarkus-app
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./all-in-one-runner.zip
-          asset_name: all-in-one-runner.zip
-          asset_content_type: application/zip
-      - name: Zip aaio release
-        uses: montudor/action-zip@v1
-        with:
-            args: zip -qq -r all-in-one-runner.zip AllInOneRunner/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release aaio
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -293,7 +266,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r history-manager.zip HistoryManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -306,7 +279,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r registry-subscription-manager.zip RegistrySubscriptionManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -319,7 +292,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r registry-manager.zip RegistryManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -332,7 +305,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r subscription-manager.zip SubscriptionManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -345,7 +318,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r query-manager.zip QueryManager/target/quarkus-app
-      - name: Upload Release Asset
+      - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -358,8 +331,7 @@ jobs:
         uses: montudor/action-zip@v1
         with:
             args: zip -qq -r entity-manager.zip EntityManager/target/quarkus-app
-      - name: Upload Release Asset
-        id: upload-release-asset 
+      - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -405,7 +377,7 @@ jobs:
       - name: docker-login
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
+          username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: docker push
         run: |
