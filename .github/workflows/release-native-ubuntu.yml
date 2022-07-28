@@ -223,7 +223,7 @@ jobs:
           draft: false
           prerelease: false
           body_path: RELEASENOTES
-            - name: Upload Release aaio
+      - name: Upload Release aaio
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
