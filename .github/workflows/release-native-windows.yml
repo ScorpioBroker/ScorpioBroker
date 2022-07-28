@@ -25,7 +25,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-eureka-with-kafka
         run: |
-          mvn clean package -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=windows-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=kafka-eureka 
+          mvn clean package -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=windows-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=windows -D"quarkus.profile"=kafka-eureka 
       - name: docker tag
         run: |
           docker tag scorpiobroker/history-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:windows-kafka-eureka-latest
@@ -174,7 +174,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-kafka
         run: |
-          mvn clean package -Dnative -Dkafka -Ddocker -Ddocker-tag=windows-kafka-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=kafka 
+          mvn clean package -Dnative -Dkafka -Ddocker -Ddocker-tag=windows-kafka-${{steps.get-id.outputs.id}} -Dos=windows -D"quarkus.profile"=kafka 
       - name: docker tag 
         run: |
           docker tag scorpiobroker/history-manager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:windows-kafka-latest
@@ -312,7 +312,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-aio
         run: |
-          mvn clean package -Dnative -Din-memory -Ddocker -Ddocker-tag=windows-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=in-memory 
+          mvn clean package -Dnative -Din-memory -Ddocker -Ddocker-tag=windows-${{steps.get-id.outputs.id}} -Dos=windows -D"quarkus.profile"=in-memory 
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:windows-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:windows-latest
