@@ -1,4 +1,4 @@
-name: RELEASE PUBLISH
+name: Release Java version
 on: 
   push:
     branches: "quarkus-release/**"
@@ -206,38 +206,38 @@ jobs:
           docker tag scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-kafka-latest
           docker tag scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-kafka-latest
           docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-latest
-#      - name: start docker aaio 
-#        run: |
-#          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up &
-#          sleep 120
-#      - name: newman action
-#        uses: matt-ball/newman-action@master
-#        with:
-#          collection: api-test.json
-#          environment: api-test-environment.json
-#      - name: Stopping Scorpio 
-#        run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
-#      - name: docker-login
-#        uses: docker/login-action@v2
-#        with:
-#          username: ${{ secrets.DOCKER_USER }}
-#          password: ${{ secrets.DOCKER_TOKEN }}
-#      - name: docker tag and push
-#        run: |
-#          docker push scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}}
-#          docker push scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
-#          docker push scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}}
-#          docker push scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
-#          docker push scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
-#          docker push scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
-#          docker push scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
-#          docker push scorpiobroker/history-manager:java-kafka-latest
-#          docker push scorpiobroker/registry-subscription-manager:java-kafka-latest
-#          docker push scorpiobroker/registry-manager:java-kafka-latest
-#          docker push scorpiobroker/subscription-manager:java-kafka-latest
-#          docker push scorpiobroker/query-manager:java-kafka-latest
-#          docker push scorpiobroker/entity-manager:java-kafka-latest
-#          docker push scorpiobroker/all-in-one-runner:java-kafka-latest
+      - name: start docker aaio 
+        run: |
+          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker push scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-manager:java-kafka-latest
+          docker push scorpiobroker/registry-subscription-manager:java-kafka-latest
+          docker push scorpiobroker/registry-manager:java-kafka-latest
+          docker push scorpiobroker/subscription-manager:java-kafka-latest
+          docker push scorpiobroker/query-manager:java-kafka-latest
+          docker push scorpiobroker/entity-manager:java-kafka-latest
+          docker push scorpiobroker/all-in-one-runner:java-kafka-latest
       - name: Create Release ${{steps.get-id.outputs.id}}-java-kafka
         id: create_release
         uses: actions/create-release@v1
@@ -359,7 +359,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java
         run: |
-          mvn clean package -Din-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java 
+          mvn clean package -Din-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
