@@ -73,8 +73,7 @@
 							<repository>scorpiobroker/${project.artifactId}</repository>
 							<tag>${docker-tag}</tag>
 							<buildArgs>
-								<FILE_BUILD>${project.build.finalName}.jar</FILE_BUILD>
-								<FILE_RUN>${project.artifactId}.jar</FILE_RUN>
+								<FILE_BUILD>scorpio-${project.artifactId}${nativeext}</FILE_BUILD>
 							</buildArgs>
 						</configuration>
 					</plugin>

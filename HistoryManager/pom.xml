@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>history-manager</artifactId>
 	<packaging>jar</packaging>
 	<name>HistoryManager</name>
- 	<parent>
+	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>broker-parent</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
@@ -39,8 +38,7 @@
 							<repository>scorpiobroker/${project.artifactId}</repository>
 							<tag>${docker-tag}</tag>
 							<buildArgs>
-								<FILE_BUILD>${project.build.finalName}.jar</FILE_BUILD>
-								<FILE_RUN>${project.artifactId}.jar</FILE_RUN>
+								<FILE_BUILD>scorpio-${project.artifactId}${nativeext}</FILE_BUILD>
 							</buildArgs>
 						</configuration>
 					</plugin>
@@ -49,7 +47,7 @@
 		</profile>
 	</profiles>
 	<dependencies>
-	  <dependency>
+		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>commons</artifactId>
 		</dependency>
