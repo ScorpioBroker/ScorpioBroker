@@ -305,7 +305,6 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java
         run: |
-          cd AllInOneRunner
           mvn clean package -Din-memory -Ddocker -Ddocker-tag=ubuntu-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: docker tag
         run: |
