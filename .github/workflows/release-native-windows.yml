@@ -21,11 +21,11 @@ jobs:
         id: get-id
         shell: pwsh
         run: |
-          id=$(${{github.ref_name}}.split('/')[1])
+          $id='${{github.ref_name}}'.split('_')[1]
           echo "::set-output name=id::$id"
       - name: build-windows-with-eureka-with-kafka
         run: |
-          mvn clean package -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=windows-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=kafka-eureka -Dnativeext=exe
+          mvn clean package -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=windows-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=kafka-eureka -Dnativeext=.exe
       - name: docker tag
         run: |
           docker tag scorpiobroker/history-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:windows-kafka-eureka-latest
@@ -168,12 +168,13 @@ jobs:
           docker build -t testserver .
       - name: Get release number
         id: get-id
+        shell: pwsh
         run: |
-          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          $id='${{github.ref_name}}'.split('_')[1]
           echo "::set-output name=id::$id"
       - name: build-windows-with-kafka
         run: |
-          mvn clean package -Dnative -Dkafka -Ddocker -Ddocker-tag=windows-kafka-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=kafka -Dnativeext=exe
+          mvn clean package -Dnative -Dkafka -Ddocker -Ddocker-tag=windows-kafka-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=kafka -Dnativeext=.exe
       - name: docker tag 
         run: |
           docker tag scorpiobroker/history-manager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:windows-kafka-latest
@@ -305,12 +306,13 @@ jobs:
           docker build -t testserver .
       - name: Get release number
         id: get-id
+        shell: pwsh
         run: |
-          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          $id='${{github.ref_name}}'.split('_')[1]
           echo "::set-output name=id::$id"
       - name: build-windows-aio
         run: |
-          mvn clean package -Dnative -Din-memory -Ddocker -Ddocker-tag=windows-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=in-memory -Dnativeext=exe
+          mvn clean package -Dnative -Din-memory -Ddocker -Ddocker-tag=windows-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=in-memory -Dnativeext=.exe
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:windows-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:windows-latest
