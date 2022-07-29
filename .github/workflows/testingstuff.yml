@@ -7,8 +7,4 @@ jobs:
       - name: Get release number
         shell: pwsh
         run: |
-          Get-ChildItem -Path C:\ -Force -Recurse -Include *.json
-      - name: Get release number
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path C:\ -Force -Recurse -Include *docker*
+          docker info
