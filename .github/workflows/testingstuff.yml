@@ -4,9 +4,11 @@ jobs:
   build-windows-kafka-eureka:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2     
       - name: Get release number
-        id: get-id
         shell: pwsh
         run: |
-          ls c:\ProgramData\docker\config
+          Get-ChildItem -Path C:\ -Force -Recurse -Include *.json
+      - name: Get release number
+        shell: pwsh
+        run: |
+          Get-ChildItem -Path C:\ -Force -Recurse -Include *docker*
