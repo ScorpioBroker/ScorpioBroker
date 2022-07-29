@@ -9,4 +9,4 @@ jobs:
         id: get-id
         shell: pwsh
         run: |
-          ls c:\users
+          ls c:\users\installer\AppData\
