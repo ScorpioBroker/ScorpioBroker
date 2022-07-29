@@ -2,48 +2,84 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
-		<artifactId>BrokerParent</artifactId>
+		<artifactId>broker-parent</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
-	<artifactId>AllInOneRunner</artifactId>
+	<artifactId>all-in-one-runner</artifactId>
+	<name>AllInOneRunner</name>
 
 	<dependencies>
-		<!-- <dependency>
-			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>Commons</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
-		</dependency>-->
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>EntityManager</artifactId>
+			<artifactId>entity-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>HistoryManager</artifactId>
+			<artifactId>history-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>QueryManager</artifactId>
+			<artifactId>query-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>RegistryManager</artifactId>
+			<artifactId>registry-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>RegistrySubscriptionManager</artifactId>
+			<artifactId>registry-subscription-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>SubscriptionManager</artifactId>
+			<artifactId>subscription-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
 		</dependency>
 	</dependencies>
-
+	<profiles>
+		<profile>
+			<id>docker</id>
+			<activation>
+				<property>
+					<name>docker</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.12</version>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+									<goal>push</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<dockerfile>src/main/resources/dockerfiles/dockerfile-${os}</dockerfile>
+							<repository>scorpiobroker/${project.artifactId}</repository>
+							<tag>${docker-tag}</tag>
+							<buildArgs>
+								<FILE_BUILD>${project.build.finalName}-runner${nativeext}</FILE_BUILD>
+								<FILE_RUN>scorpio-${project.artifactId}${nativeext}</FILE_RUN>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

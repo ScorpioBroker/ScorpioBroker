@@ -1,48 +1,64 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<artifactId>RegistrySubscriptionManager</artifactId>
+	<artifactId>registry-subscription-manager</artifactId>
+	<name>RegistrySubscriptionManager</name>
 	<packaging>jar</packaging>
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
-		<artifactId>BrokerParent</artifactId>
+		<artifactId>broker-parent</artifactId>
 		<version>3.0.0-SNAPSHOT</version>
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
-
-	<!--
 	<profiles>
 		<profile>
-			<id>docker-dist</id>
+			<id>kafka</id>
+			<activation>
+				<property>
+					<name>kafka</name>
+				</property>
+			</activation>
 			<build>
 				<plugins>
 					<plugin>
-						<groupId>com.spotify</groupId>
-						<artifactId>dockerfile-maven-plugin</artifactId>
-						<version>1.4.12</version>
-						<executions>
-							<execution>
-								<id>default</id>
-								<goals>
-									<goal>build</goal>
-									<goal>push</goal>
-								</goals>
-							</execution>
-						</executions>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
-							<dockerfile>dockerfile4maven</dockerfile>
-							<repository>scorpiobroker/scorpio</repository>
-							<tag>${project.artifactId}_${project.version}</tag>
-							<buildArgs>
-								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>
-								<JAR_FILE_RUN>${project.artifactId}.jar</JAR_FILE_RUN>
-							</buildArgs>
+							<excludes>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
+							</excludes>
 						</configuration>
 					</plugin>
 				</plugins>
 			</build>
 		</profile>
 		<profile>
-			<id>docker-dist-no-eureka</id>
+			<id>in-memory</id>
+			<activation>
+				<property>
+					<name>in-memory</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingKafka.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>docker</id>
+			<activation>
+				<property>
+					<name>docker</name>
+				</property>
+			</activation>
 			<build>
 				<plugins>
 					<plugin>
@@ -59,12 +75,12 @@
 							</execution>
 						</executions>
 						<configuration>
-							<dockerfile>dockerfile4maven_no_eureka</dockerfile>
-							<repository>scorpiobroker/scorpio</repository>
-							<tag>${project.artifactId}-no-eureka_${project.version}</tag>
+							<dockerfile>src/main/resources/dockerfiles/dockerfile-${os}</dockerfile>
+							<repository>scorpiobroker/${project.artifactId}</repository>
+							<tag>${docker-tag}</tag>
 							<buildArgs>
-								<JAR_FILE_BUILD>${project.build.finalName}.jar</JAR_FILE_BUILD>
-								<JAR_FILE_RUN>${project.artifactId}.jar</JAR_FILE_RUN>
+								<FILE_BUILD>${project.build.finalName}-runner${nativeext}</FILE_BUILD>
+								<FILE_RUN>scorpio-${project.artifactId}${nativeext}</FILE_RUN>
 							</buildArgs>
 						</configuration>
 					</plugin>
@@ -72,7 +88,6 @@
 			</build>
 		</profile>
 	</profiles>
-	-->
 	<dependencies>
 		<dependency>
 			<groupId>com.google.guava</groupId>
@@ -84,7 +99,7 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>Commons</artifactId>
+			<artifactId>commons</artifactId>
 		</dependency>
 	</dependencies>
 </project>

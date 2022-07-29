@@ -8,6 +8,7 @@ import javax.inject.Inject;
 
 import com.github.jsonldjava.utils.JsonUtils;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,8 @@ public abstract class CSourceMessagingBase {
 
 	@Inject
 	CSourceService cSourceService;
+	@ConfigProperty(name = "scorpio.registry.autorecording", defaultValue = "active")
+	String AUTO_REG_STATUS;
 
 	private static final Logger logger = LoggerFactory.getLogger(CSourceMessagingKafka.class);
 
@@ -48,7 +51,9 @@ public abstract class CSourceMessagingBase {
 					case AppConstants.CREATE_REQUEST:
 					case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 					case AppConstants.APPEND_REQUEST:
-						cSourceService.handleEntityCreateOrUpdate(message);
+						if( AUTO_REG_STATUS.equals("active")) {
+							cSourceService.handleEntityCreateOrUpdate(message);	
+						}
 						break;
 					default:
 						break;

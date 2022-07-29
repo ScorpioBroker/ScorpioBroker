@@ -554,18 +554,20 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> appendToEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, String payload, String options, int payloadType, Logger logger) {
-		return HttpUtils.getAtContext(request).onItem().transformToUni(t -> {
+		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
+				.onItem().transformToUni(t -> {
 			logger.trace("append entity :: started");
+			List<Object> contextHeaders = t.getItem2();
 			String[] optionsArray = getOptionsArray(options);
 			// try {
 			boolean atContextAllowed;
 			try {
-				atContextAllowed = HttpUtils.doPreflightCheck(request, t);
+				atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
 			} catch (ResponseException e1) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e1));
 			}
 			List<Object> context = new ArrayList<Object>();
-			context.addAll(t);
+			context.addAll(contextHeaders);
 			if (payload == null || payload.isEmpty()) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed")));
@@ -585,9 +587,8 @@ public interface EntryControllerFunctions {
 			}
 			Map<String, Object> resolved;
 			try {
-				HttpUtils.validateUri(entityId);
 				resolved = (Map<String, Object>) JsonLdProcessor
-						.expand(t, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
+						.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}

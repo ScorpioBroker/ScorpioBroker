@@ -207,7 +207,7 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 		ArrayList<Object> replacements = Lists.newArrayList();
 		Tuple3<String, ArrayList<Object>, Integer> tmp;
 		if (idValue.isEmpty() && idPatternValue.isEmpty()) { // case 1: type only
-			tmp = getSqlWhereByType(typeValue, true, newCount);
+			tmp = getSqlWhereByType(typeValue, false, newCount);
 			newCount = tmp.getItem3();
 			replacements.addAll(tmp.getItem2());
 			sqlWhere += tmp.getItem1();
