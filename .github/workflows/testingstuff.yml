@@ -9,8 +9,4 @@ jobs:
         id: get-id
         shell: pwsh
         run: |
-          $id='${{github.ref_name}}'.split('_')[1]
-          echo "::set-output name=id::$id"
-      - name: build-windows-with-eureka-with-kafka
-        run: |
-          echo ${{steps.get-id.outputs.id}}
+          ls c:\users
