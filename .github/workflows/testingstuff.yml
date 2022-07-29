@@ -9,4 +9,4 @@ jobs:
         id: get-id
         shell: pwsh
         run: |
-          ls c:\ProgramData\docker
+          ls c:\ProgramData\docker\config
