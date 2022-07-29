@@ -13,6 +13,14 @@ jobs:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
+      - name: Setup docker on windows
+        shell: pwsh
+        run: |
+          $dockerSettingPath = "C:\Users\<username>\AppData\Roaming\Docker\settings.json"
+          $settingsContent = Get-Content $dockerSettingPath -Raw | ConvertFrom-Json
+          $settingsContent.exposeDockerAPIOnTCP2375 = $true
+          $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
+          Restart-Service com.docker.service
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
@@ -174,6 +182,14 @@ jobs:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
+      - name: Setup docker on windows
+        shell: pwsh
+        run: |
+          $dockerSettingPath = "C:\Users\<username>\AppData\Roaming\Docker\settings.json"
+          $settingsContent = Get-Content $dockerSettingPath -Raw | ConvertFrom-Json
+          $settingsContent.exposeDockerAPIOnTCP2375 = $true
+          $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
+          Restart-Service com.docker.service
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
@@ -324,6 +340,14 @@ jobs:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
+      - name: Setup docker on windows
+        shell: pwsh
+        run: |
+          $dockerSettingPath = "C:\Users\<username>\AppData\Roaming\Docker\settings.json"
+          $settingsContent = Get-Content $dockerSettingPath -Raw | ConvertFrom-Json
+          $settingsContent.exposeDockerAPIOnTCP2375 = $true
+          $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
+          Restart-Service com.docker.service
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
