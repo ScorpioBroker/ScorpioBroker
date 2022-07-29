@@ -233,7 +233,7 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> deleteMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int payloadType) {
-		
+
 		try {
 			getJsonPayload(payload);
 		} catch (Exception exception) {
@@ -258,7 +258,7 @@ public interface EntryControllerFunctions {
 						.failure(new ResponseException(ErrorType.BadRequestData, "An empty array is not allowed"));
 
 			}
-			
+
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem().transform(Unchecked.function(t2 -> {
 				String entityId = "NO ENTITY ID FOUND";
@@ -326,13 +326,32 @@ public interface EntryControllerFunctions {
 			boolean preFlight = HttpUtils.doPreflightCheck(request, t);
 			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem()
 					.transform(i -> Tuple3.of(preFlight, t, i));
-		})).onItem().transform(Unchecked.function(t -> {
-			return Tuple4.of(
-					(Map<String, Object>) JsonLdProcessor
-							.expand((List<Object>) t.getItem2(), t.getItem3(), opts, payloadType, t.getItem1()).get(0),
-					t.getItem2(), HttpUtils.getHeaders(request), getOptionsArray(options));
-		})).onItem().transformToUni(t -> {
-			Map<String, Object> entry = t.getItem1();
+		})).onItem().transformToUni(Unchecked.function(tt -> {
+			String entityIdTmp;
+			if (tt.getItem3().containsKey(NGSIConstants.JSON_LD_ID)) {
+				entityIdTmp = (String) tt.getItem3().get(NGSIConstants.JSON_LD_ID);
+			} else if (tt.getItem3().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
+				entityIdTmp = (String) tt.getItem3().get(NGSIConstants.QUERY_PARAMETER_ID);
+			} else {
+				entityIdTmp = "NO ID PROVIDED";
+			}
+			Map<String, Object> expanded = null;
+			try {
+				expanded = (Map<String, Object>) JsonLdProcessor
+						.expand((List<Object>) tt.getItem2(), tt.getItem3(), opts, payloadType, tt.getItem1()).get(0);
+			} catch (Exception e) {
+				NGSIRestResponse response;
+				if (e instanceof ResponseException) {
+					response = new NGSIRestResponse((ResponseException) e);
+				} else {
+					response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+				}
+				return Uni.createFrom().item(Tuple3.of(new BatchFailure(entityIdTmp, response), null, false));
+			}
+			Tuple4<Map<String, Object>, Object, ArrayListMultimap<String, String>, String[]> t = Tuple4.of(expanded,
+					tt.getItem2(), HttpUtils.getHeaders(request), getOptionsArray(options));
+
+			Map<String, Object> entry = expanded;// t.getItem1();
 			String entityId;
 			if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
 				entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
@@ -404,7 +423,7 @@ public interface EntryControllerFunctions {
 							return Uni.createFrom().item(Tuple3.of(new BatchFailure(entityId, response), null, false));
 						});
 			}
-		}).collectFailures().concatenate().collect().asList().onItem().transform(t -> {
+		})).collectFailures().concatenate().collect().asList().onItem().transform(t -> {
 			BatchResult result = new BatchResult();
 			boolean insertedOneEntity = false;
 			boolean appendedOneEntity = false;
