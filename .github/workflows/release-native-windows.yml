@@ -20,7 +20,7 @@ jobs:
           $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
           New-Item -Path $dockerSettingPath -ItemType File
           $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
-          Restart-Service com.docker.service
+          Restart-Service docker
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
@@ -189,7 +189,7 @@ jobs:
           $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
           New-Item -Path $dockerSettingPath -ItemType File
           $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
-          Restart-Service com.docker.service
+          Restart-Service docker
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
@@ -347,7 +347,7 @@ jobs:
           $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
           New-Item -Path $dockerSettingPath -ItemType File
           $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
-          Restart-Service com.docker.service
+          Restart-Service docker
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
