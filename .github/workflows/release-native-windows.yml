@@ -13,14 +13,6 @@ jobs:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
-      - name: Setup docker on windows
-        shell: pwsh
-        run: |
-          $dockerSettingPath = "C:\ProgramData\Docker\settings.json"
-          $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
-          New-Item -Path $dockerSettingPath -ItemType File
-          $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
-          Restart-Service docker
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
@@ -45,7 +37,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-eureka-with-kafka
         run: |
-          mvn clean package -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=windows-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=windows -D"quarkus.profile"=kafka-eureka 
+          mvn clean package -Dnative -Deureka -Dkafka -Dos=windows -D"quarkus.profile"=kafka-eureka 
       - name: docker build
         run: |
           cd AllInOneRunner
@@ -376,14 +368,6 @@ jobs:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
-      - name: Setup docker on windows
-        shell: pwsh
-        run: |
-          $dockerSettingPath = "C:\ProgramData\Docker\settings.json"
-          $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
-          New-Item -Path $dockerSettingPath -ItemType File
-          $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
-          Restart-Service docker
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:

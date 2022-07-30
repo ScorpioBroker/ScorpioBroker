@@ -43,7 +43,7 @@ services:
     depends_on:
       - eureka
   emgr:
-    image: scorpiobroker/entity-manager-java-kafka-eureka-latest
+    image: scorpiobroker/entity-manager-ubuntu-kafka-eureka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -54,7 +54,7 @@ services:
       - kafka
       - eureka
   histmgr:
-    image: scorpiobroker/history-manager-java-kafka-eureka-latest
+    image: scorpiobroker/history-manager-ubuntu-kafka-eureka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -66,7 +66,7 @@ services:
       - gateway
       - eureka
   qrymgr:
-    image: scorpiobroker/query-manager-java-kafka-eureka-latest
+    image: scorpiobroker/query-manager-ubuntu-kafka-eureka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -78,7 +78,7 @@ services:
       - postgres
       - eureka
   regmgr:
-    image: scorpiobroker/registry-manager-java-kafka-eureka-latest
+    image: scorpiobroker/registry-manager-ubuntu-kafka-eureka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -91,7 +91,7 @@ services:
       - gateway
       - eureka
   regsbsmgr:
-    image: scorpiobroker/registry-subscription-manager-java-kafka-eureka-latest
+    image: scorpiobroker/registry-subscription-manager-ubuntu-kafka-eureka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -103,7 +103,7 @@ services:
       - postgres
       - eureka
   sbsmgr:
-    image: scorpiobroker/subscription-manager-java-kafka-eureka-latest
+    image: scorpiobroker/subscription-manager-ubuntu-kafka-eureka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
