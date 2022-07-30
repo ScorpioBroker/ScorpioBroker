@@ -41,7 +41,7 @@ jobs:
       - name: docker build
         run: |
           cd AllInOneRunner
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one=runner:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one-runner:windows-kafka-eureka-${{steps.get-id.outputs.id}}
           cd ..
           cd HistoryManager
           docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=history-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-history-manager.exe -t scorpiobroker/history-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
@@ -224,7 +224,7 @@ jobs:
       - name: docker build
         run: |
           cd AllInOneRunner
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one=runner:windows-kafka-${{steps.get-id.outputs.id}}
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one-runner:windows-kafka-${{steps.get-id.outputs.id}}
           cd ..
           cd HistoryManager
           docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=history-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-history-manager.exe -t scorpiobroker/history-manager:windows-kafka-${{steps.get-id.outputs.id}}
@@ -396,7 +396,7 @@ jobs:
       - name: docker build
         run: |
           cd AllInOneRunner
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one=runner:windows-${{steps.get-id.outputs.id}}
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one-runner:windows-${{steps.get-id.outputs.id}}
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:windows-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:windows-latest
