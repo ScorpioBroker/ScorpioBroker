@@ -18,7 +18,7 @@ jobs:
         run: |
           $dockerSettingPath = "C:\ProgramData\Docker\settings.json"
           $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
-          New -Item -Path $dockerSettingPath -ItemType File
+          New-Item -Path $dockerSettingPath -ItemType File
           $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
           Restart-Service com.docker.service
       - name: Setup GraalVM
@@ -187,7 +187,7 @@ jobs:
         run: |
           $dockerSettingPath = "C:\ProgramData\Docker\settings.json"
           $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
-          New -Item -Path $dockerSettingPath -ItemType File
+          New-Item -Path $dockerSettingPath -ItemType File
           $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
           Restart-Service com.docker.service
       - name: Setup GraalVM
@@ -345,7 +345,7 @@ jobs:
         run: |
           $dockerSettingPath = "C:\ProgramData\Docker\settings.json"
           $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
-          New -Item -Path $dockerSettingPath -ItemType File
+          New-Item -Path $dockerSettingPath -ItemType File
           $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
           Restart-Service com.docker.service
       - name: Setup GraalVM
