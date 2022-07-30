@@ -16,9 +16,9 @@ jobs:
       - name: Setup docker on windows
         shell: pwsh
         run: |
-          $dockerSettingPath = "C:\Users\$env:UserName\AppData\Roaming\Docker\settings.json"
-          $settingsContent = Get-Content $dockerSettingPath -Raw | ConvertFrom-Json
-          $settingsContent.exposeDockerAPIOnTCP2375 = $true
+          $dockerSettingPath = "C:\ProgramData\Docker\settings.json"
+          $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
+          New -Item -Path $dockerSettingPath -ItemType File
           $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
           Restart-Service com.docker.service
       - name: Setup GraalVM
@@ -185,9 +185,9 @@ jobs:
       - name: Setup docker on windows
         shell: pwsh
         run: |
-          $dockerSettingPath = "C:\Users\$env:UserName\AppData\Roaming\Docker\settings.json"
-          $settingsContent = Get-Content $dockerSettingPath -Raw | ConvertFrom-Json
-          $settingsContent.exposeDockerAPIOnTCP2375 = $true
+          $dockerSettingPath = "C:\ProgramData\Docker\settings.json"
+          $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
+          New -Item -Path $dockerSettingPath -ItemType File
           $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
           Restart-Service com.docker.service
       - name: Setup GraalVM
@@ -343,9 +343,9 @@ jobs:
       - name: Setup docker on windows
         shell: pwsh
         run: |
-          $dockerSettingPath = "C:\Users\$env:UserName\AppData\Roaming\Docker\settings.json"
-          $settingsContent = Get-Content $dockerSettingPath -Raw | ConvertFrom-Json
-          $settingsContent.exposeDockerAPIOnTCP2375 = $true
+          $dockerSettingPath = "C:\ProgramData\Docker\settings.json"
+          $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
+          New -Item -Path $dockerSettingPath -ItemType File
           $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
           Restart-Service com.docker.service
       - name: Setup GraalVM
