@@ -13,10 +13,6 @@ jobs:
           version: '22.1.0'
           java-version: '17'
           components: 'native-image'
-      - name: Build testserver
-        run: |
-          cd testserver
-          docker build -t testserver .
       - name: Get release number
         id: get-id
         run: |
@@ -114,10 +110,6 @@ jobs:
           version: '22.1.0'
           java-version: '17'
           components: 'native-image'
-      - name: Build testserver
-        run: |
-          cd testserver
-          docker build -t testserver .
       - name: Get release number
         id: get-id
         run: |
@@ -210,10 +202,6 @@ jobs:
           version: '22.1.0'
           java-version: '17'
           components: 'native-image'
-      - name: Build testserver
-        run: |
-          cd testserver
-          docker build -t testserver .
       - name: Get release number
         id: get-id
         run: |
