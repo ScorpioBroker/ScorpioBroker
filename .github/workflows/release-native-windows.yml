@@ -46,6 +46,28 @@ jobs:
       - name: build-windows-with-eureka-with-kafka
         run: |
           mvn clean package -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=windows-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=windows -D"quarkus.profile"=kafka-eureka 
+      - name: docker build
+        run: |
+          cd AllInOneRunner
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one=runner:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd HistoryManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=history-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-history-manager.exe -t scorpiobroker/history-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd RegistrySubscriptionManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=registry-subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-subscription-manager.exe -t scorpiobroker/registry-subscription-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd RegistryManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=registry-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-manager.exe -t scorpiobroker/registry-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd SubscriptionManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-subscription-manager.exe -t scorpiobroker/subscription-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd QueryManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=query-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-query-manager.exe -t scorpiobroker/query-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd EntityManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=entity-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-entity-manager.exe -t scorpiobroker/entity-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
       - name: docker tag
         run: |
           docker tag scorpiobroker/history-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:windows-kafka-eureka-latest
@@ -182,14 +204,6 @@ jobs:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
-      - name: Setup docker on windows
-        shell: pwsh
-        run: |
-          $dockerSettingPath = "C:\ProgramData\Docker\settings.json"
-          $settingsContent = @{exposeDockerAPIOnTCP2375  = $true}
-          New-Item -Path $dockerSettingPath -ItemType File
-          $settingsContent | ConvertTo-Json | Set-Content $dockerSettingPath
-          Restart-Service docker
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
@@ -214,7 +228,29 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-kafka
         run: |
-          mvn clean package -Dnative -Dkafka -Ddocker -Ddocker-tag=windows-kafka-${{steps.get-id.outputs.id}} -Dos=windows -D"quarkus.profile"=kafka 
+          mvn clean package -Dnative -Dkafka -Dos=windows -D"quarkus.profile"=kafka 
+      - name: docker build
+        run: |
+          cd AllInOneRunner
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one=runner:windows-kafka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd HistoryManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=history-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-history-manager.exe -t scorpiobroker/history-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd RegistrySubscriptionManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=registry-subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-subscription-manager.exe -t scorpiobroker/registry-subscription-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd RegistryManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=registry-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-manager.exe -t scorpiobroker/registry-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd SubscriptionManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-subscription-manager.exe -t scorpiobroker/subscription-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd QueryManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=query-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-query-manager.exe -t scorpiobroker/query-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          cd ..
+          cd EntityManager
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=entity-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-entity-manager.exe -t scorpiobroker/entity-manager:windows-kafka-${{steps.get-id.outputs.id}}
       - name: docker tag 
         run: |
           docker tag scorpiobroker/history-manager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:windows-kafka-latest
@@ -372,7 +408,11 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-aio
         run: |
-          mvn clean package -Dnative -Din-memory -Ddocker -Ddocker-tag=windows-${{steps.get-id.outputs.id}} -Dos=windows -D"quarkus.profile"=in-memory 
+          mvn clean package -Dnative -Din-memory -Dos=windows -D"quarkus.profile"=in-memory 
+      - name: docker build
+        run: |
+          cd AllInOneRunner
+          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one=runner:windows-${{steps.get-id.outputs.id}}
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:windows-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:windows-latest
