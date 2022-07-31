@@ -17,6 +17,7 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.smallrye.mutiny.Uni;
 
 @Singleton
 @UnlessBuildProfile("in-memory")
@@ -32,13 +33,15 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 	SubscriptionService subService;
 
 	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
-	void listenForSubs(Message<SubscriptionRequest> message) {
+	Uni<Void> listenForSubs(Message<SubscriptionRequest> message) {
 		listenForSubscriptionUpdates(message.getPayload(), message.getPayload().getId());
+		return Uni.createFrom().nullItem();
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
-	void listenForAlive(Message<AnnouncementMessage> message) {
+	Uni<Void> listenForAlive(Message<AnnouncementMessage> message) {
 		listenForAnnouncements(message.getPayload(), message.getPayload().getId());
+		return Uni.createFrom().nullItem();
 	}
 
 	@Override
