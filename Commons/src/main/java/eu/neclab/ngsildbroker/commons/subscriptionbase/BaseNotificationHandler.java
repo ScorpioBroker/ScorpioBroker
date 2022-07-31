@@ -27,7 +27,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 
 	@Override
 	public void notify(Notification notification, SubscriptionRequest subscriptionRequest) {
-		if (!subscriptionRequest.getSubscription().isActive()) {
+		if (subscriptionRequest.getSubscription().isActive() != null && !subscriptionRequest.getSubscription().isActive()) {
 			return;
 		}
 		Subscription subscription = subscriptionRequest.getSubscription();
