@@ -6,6 +6,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
@@ -15,35 +16,29 @@ import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
-import io.quarkus.arc.profile.IfBuildProfile;
-import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.quarkus.arc.profile.UnlessBuildProfile;
 
 @Singleton
-@IfBuildProfile("kafka")
+@UnlessBuildProfile("in-memory")
 public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
 	@Inject
 	@Channel(AppConstants.REG_SUB_ALIVE_CHANNEL)
-	MutinyEmitter<AnnouncementMessage> aliveEmitter;
+	Emitter<AnnouncementMessage> aliveEmitter;
 
 	@Inject
 	RegistrySubscriptionService subService;
 
 	@Incoming(AppConstants.REG_SUB_SYNC_RETRIEVE_CHANNEL)
-	@IfBuildProfile("kafka")
-	Uni<Void> listenForSubs(Message<SubscriptionRequest> message) {
+	void listenForSubs(Message<SubscriptionRequest> message) {
 		listenForSubscriptionUpdates(message.getPayload(), message.getPayload().getId());
-		return Uni.createFrom().nullItem();
 	}
 
 	@Incoming(AppConstants.REG_SUB_ALIVE_RETRIEVE_CHANNEL)
-	@IfBuildProfile("kafka")
-	Uni<Void> listenForAlive(Message<AnnouncementMessage> message) {
+	void listenForAlive(Message<AnnouncementMessage> message) {
 		listenForAnnouncements(message.getPayload(), message.getPayload().getId());
-		return Uni.createFrom().nullItem();
 	}
 
 	@Override
@@ -52,7 +47,7 @@ public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager
 	}
 
 	@Override
-	protected MutinyEmitter<AnnouncementMessage> getAliveEmitter() {
+	protected Emitter<AnnouncementMessage> getAliveEmitter() {
 		return aliveEmitter;
 
 	}

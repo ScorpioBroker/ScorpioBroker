@@ -30,11 +30,13 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterf
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.RegistrySubscriptionSyncService;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 
 @Singleton
+@IfBuildProfile("in-memory")
 public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@Inject
@@ -45,9 +47,6 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	@Broadcast
 	MutinyEmitter<InternalNotification> internalNotificationSender;
 
-	@Inject
-	@Channel(AppConstants.REG_SUB_SYNC_CHANNEL)
-	MutinyEmitter<SyncMessage> syncSender;
 
 	private NotificationHandler internalHandler;
 
@@ -150,6 +149,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		return false;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	protected boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {
 		List<String> attribs = subscription.getSubscription().getAttributeNames();
@@ -196,7 +196,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	protected MutinyEmitter<SyncMessage> getSyncChannelSender() {
-		return syncSender;
+		return null;
 	}
 
 }

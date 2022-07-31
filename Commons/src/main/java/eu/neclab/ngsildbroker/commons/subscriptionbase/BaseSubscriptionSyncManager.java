@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
-import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.quarkus.arc.profile.IfBuildProfile;
 
 public abstract class BaseSubscriptionSyncManager {
 
@@ -33,7 +34,7 @@ public abstract class BaseSubscriptionSyncManager {
 
 	BaseSubscriptionService subscriptionService;
 
-	private MutinyEmitter<AnnouncementMessage> kafkaSender;
+	private Emitter<AnnouncementMessage> kafkaSender;
 
 	@ConfigProperty(name = "scorpio.sync.announcement-time", defaultValue = "200")
 	int announcementTime;
@@ -46,6 +47,7 @@ public abstract class BaseSubscriptionSyncManager {
 	AliveAnnouncement INSTANCE_ID;
 
 	@PostConstruct
+	@IfBuildProfile("kafka")
 	public void setup() {
 		this.kafkaSender = getAliveEmitter();
 		this.subscriptionService = getSubscriptionService();
@@ -56,7 +58,7 @@ public abstract class BaseSubscriptionSyncManager {
 
 	protected abstract BaseSubscriptionService getSubscriptionService();
 
-	protected abstract MutinyEmitter<AnnouncementMessage> getAliveEmitter();
+	protected abstract Emitter<AnnouncementMessage> getAliveEmitter();
 
 	protected abstract void setSyncId();
 
