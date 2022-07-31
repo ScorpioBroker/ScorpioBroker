@@ -76,10 +76,10 @@ public class QueryParser {
 //		if (!matcher.matches()) {
 //			throw new BadRequestException();
 //		}
-		Matcher matcher = p.matcher(input);
-		if (!matcher.matches()) {
-			throw new ResponseException(ErrorType.BadRequestData, "");
-		}
+//		Matcher matcher = p.matcher(input);
+//		if (!matcher.matches()) {
+//			throw new ResponseException(ErrorType.BadRequestData, "");
+//		}
 
 		// TODO: regex doesn't validate brackets queries for some reason
 		QueryTerm root = new QueryTerm(context);
