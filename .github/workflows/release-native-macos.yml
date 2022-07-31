@@ -21,6 +21,7 @@ jobs:
       - name: Get build number
         id: get-build-id
         run: |
+          cd BrokerParent
           id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
           echo "::set-output name=id::$id"
       - name: build-macos-with-eureka-with-kafka
@@ -46,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.id}}-runner
+          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-all-in-one-runner
           asset_content_type: application/octet-stream
       - name: Upload Release history-manager
@@ -55,7 +56,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-history-manager
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
@@ -64,7 +65,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-registry-subscription-manager
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
@@ -73,7 +74,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-registry-manager
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
@@ -82,7 +83,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-subscription-manager
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
@@ -91,7 +92,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-query-manager
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
@@ -100,7 +101,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-entity-manager
           asset_content_type: application/octet-stream
   build-macos-kafka:
@@ -138,7 +139,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.id}}-runner
+          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-all-in-one-runner
           asset_content_type: application/octet-stream
       - name: Upload Release history-manager
@@ -147,7 +148,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-history-manager
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
@@ -156,7 +157,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-registry-subscription-manager
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
@@ -165,7 +166,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-registry-manager
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
@@ -174,7 +175,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-subscription-manager
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
@@ -183,7 +184,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-query-manager
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
@@ -192,7 +193,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.id}}-runner
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-entity-manager
           asset_content_type: application/octet-stream
   build-macos-aaio:
@@ -213,6 +214,7 @@ jobs:
       - name: Get build number
         id: get-build-id
         run: |
+          cd BrokerParent
           id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
           echo "::set-output name=id::$id"
       - name: build-macos-aio
@@ -235,6 +237,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.id}}-runner
+          asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.output.id}}-runner
           asset_name: scorpio-all-in-one-runner
           asset_content_type: application/octet-stream
