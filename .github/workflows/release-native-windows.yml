@@ -41,25 +41,32 @@ jobs:
       - name: docker build
         run: |
           cd AllInOneRunner
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one-runner:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one-runner:windows-kafka-eureka-${{steps.get-id.outputs.id}} .
           cd ..
           cd HistoryManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=history-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-history-manager.exe -t scorpiobroker/history-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=history-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-history-manager.exe -t scorpiobroker/history-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} .
           cd ..
           cd RegistrySubscriptionManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=registry-subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-subscription-manager.exe -t scorpiobroker/registry-subscription-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=registry-subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-subscription-manager.exe -t scorpiobroker/registry-subscription-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} .
           cd ..
           cd RegistryManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=registry-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-manager.exe -t scorpiobroker/registry-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=registry-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-manager.exe -t scorpiobroker/registry-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} .
           cd ..
           cd SubscriptionManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-subscription-manager.exe -t scorpiobroker/subscription-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-subscription-manager.exe -t scorpiobroker/subscription-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} .
           cd ..
           cd QueryManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=query-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-query-manager.exe -t scorpiobroker/query-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=query-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-query-manager.exe -t scorpiobroker/query-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} .
           cd ..
           cd EntityManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=entity-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-entity-manager.exe -t scorpiobroker/entity-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=entity-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-entity-manager.exe -t scorpiobroker/entity-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} .
       - name: docker tag
         run: |
           docker tag scorpiobroker/history-manager:windows-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:windows-kafka-eureka-latest
@@ -116,7 +123,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           tag_name: ${{steps.get-id.outputs.id}}-windows-kafka
           release_name: Release ${{steps.get-id.outputs.id}}-windows-kafka
@@ -126,7 +133,7 @@ jobs:
       - name: Upload Release aaio
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.id}}-runner.exe
@@ -135,7 +142,7 @@ jobs:
       - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.id}}-runner.exe
@@ -144,7 +151,7 @@ jobs:
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.id}}-runner.exe
@@ -153,7 +160,7 @@ jobs:
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.id}}-runner.exe
@@ -162,7 +169,7 @@ jobs:
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.id}}-runner.exe
@@ -171,7 +178,7 @@ jobs:
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.id}}-runner.exe
@@ -180,7 +187,7 @@ jobs:
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.id}}-runner.exe
@@ -224,25 +231,32 @@ jobs:
       - name: docker build
         run: |
           cd AllInOneRunner
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one-runner:windows-kafka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one-runner:windows-kafka-${{steps.get-id.outputs.id}} .
           cd ..
           cd HistoryManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=history-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-history-manager.exe -t scorpiobroker/history-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=history-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-history-manager.exe -t scorpiobroker/history-manager:windows-kafka-${{steps.get-id.outputs.id}} .
           cd ..
           cd RegistrySubscriptionManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=registry-subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-subscription-manager.exe -t scorpiobroker/registry-subscription-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=registry-subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-subscription-manager.exe -t scorpiobroker/registry-subscription-manager:windows-kafka-${{steps.get-id.outputs.id}} .
           cd ..
           cd RegistryManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=registry-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-manager.exe -t scorpiobroker/registry-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=registry-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-registry-manager.exe -t scorpiobroker/registry-manager:windows-kafka-${{steps.get-id.outputs.id}} .
           cd ..
           cd SubscriptionManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-subscription-manager.exe -t scorpiobroker/subscription-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=subscription-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-subscription-manager.exe -t scorpiobroker/subscription-manager:windows-kafka-${{steps.get-id.outputs.id}} .
           cd ..
           cd QueryManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=query-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-query-manager.exe -t scorpiobroker/query-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=query-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-query-manager.exe -t scorpiobroker/query-manager:windows-kafka-${{steps.get-id.outputs.id}} .
           cd ..
           cd EntityManager
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=entity-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-entity-manager.exe -t scorpiobroker/entity-manager:windows-kafka-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=entity-manager-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-entity-manager.exe -t scorpiobroker/entity-manager:windows-kafka-${{steps.get-id.outputs.id}} .
       - name: docker tag 
         run: |
           docker tag scorpiobroker/history-manager:windows-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:windows-kafka-latest
@@ -288,7 +302,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           tag_name: ${{steps.get-id.outputs.id}}-windows-kafka
           release_name: Release ${{steps.get-id.outputs.id}}-windows-kafka
@@ -298,7 +312,7 @@ jobs:
       - name: Upload Release aaio
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.id}}-runner.exe
@@ -307,7 +321,7 @@ jobs:
       - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.id}}-runner.exe
@@ -316,7 +330,7 @@ jobs:
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.id}}-runner.exe
@@ -325,7 +339,7 @@ jobs:
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.id}}-runner.exe
@@ -334,7 +348,7 @@ jobs:
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.id}}-runner.exe
@@ -343,7 +357,7 @@ jobs:
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.id}}-runner.exe
@@ -352,7 +366,7 @@ jobs:
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.id}}-runner.exe
@@ -396,7 +410,8 @@ jobs:
       - name: docker build
         run: |
           cd AllInOneRunner
-          docker build -f ./src/main/resources/dockerfiles/dockerfile-windows --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one-runner:windows-${{steps.get-id.outputs.id}}
+          copy .\src\main\resources\dockerfiles\dockerfile-windows .\dockerfile
+          docker build --build-arg FILE_BUILD=all-in-one-runner-${{steps.get-build-id.id}}-runner.exe --build-arg FILE_RUN=scorpio-all-in-one-runner.exe -t scorpiobroker/all-in-one-runner:windows-${{steps.get-id.outputs.id}} .
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:windows-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:windows-latest
@@ -424,7 +439,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}/
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}/
         with:
           tag_name: ${{steps.get-id.outputs.id}}-windows
           release_name: Release ${{steps.get-id.outputs.id}}-windows
@@ -434,7 +449,7 @@ jobs:
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.id}}-runner.exe
