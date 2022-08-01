@@ -11,8 +11,8 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
@@ -27,7 +27,7 @@ public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager
 
 	@Inject
 	@Channel(AppConstants.REG_SUB_ALIVE_CHANNEL)
-	Emitter<AnnouncementMessage> aliveEmitter;
+	Emitter<AliveAnnouncement> aliveEmitter;
 
 	@Inject
 	RegistrySubscriptionService subService;
@@ -39,7 +39,7 @@ public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager
 	}
 
 	@Incoming(AppConstants.REG_SUB_ALIVE_RETRIEVE_CHANNEL)
-	Uni<Void> listenForAlive(Message<AnnouncementMessage> message) {
+	Uni<Void> listenForAlive(Message<AliveAnnouncement> message) {
 		listenForAnnouncements(message.getPayload(), message.getPayload().getId());
 		return Uni.createFrom().nullItem();
 	}
@@ -50,7 +50,7 @@ public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager
 	}
 
 	@Override
-	protected Emitter<AnnouncementMessage> getAliveEmitter() {
+	protected Emitter<AliveAnnouncement> getAliveEmitter() {
 		return aliveEmitter;
 
 	}

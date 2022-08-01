@@ -1,8 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
-
-public class AliveAnnouncement implements AnnouncementMessage {
+public class AliveAnnouncement {
 
 	private String id;
 

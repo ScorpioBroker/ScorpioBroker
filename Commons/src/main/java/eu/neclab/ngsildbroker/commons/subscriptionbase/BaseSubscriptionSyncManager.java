@@ -19,8 +19,6 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
-import io.quarkus.arc.profile.IfBuildProfile;
 
 public abstract class BaseSubscriptionSyncManager {
 
@@ -34,7 +32,7 @@ public abstract class BaseSubscriptionSyncManager {
 
 	BaseSubscriptionService subscriptionService;
 
-	private Emitter<AnnouncementMessage> kafkaSender;
+	private Emitter<AliveAnnouncement> kafkaSender;
 
 	@ConfigProperty(name = "scorpio.sync.announcement-time", defaultValue = "200")
 	int announcementTime;
@@ -47,7 +45,6 @@ public abstract class BaseSubscriptionSyncManager {
 	AliveAnnouncement INSTANCE_ID;
 
 	@PostConstruct
-	@IfBuildProfile("kafka")
 	public void setup() {
 		this.kafkaSender = getAliveEmitter();
 		this.subscriptionService = getSubscriptionService();
@@ -58,7 +55,7 @@ public abstract class BaseSubscriptionSyncManager {
 
 	protected abstract BaseSubscriptionService getSubscriptionService();
 
-	protected abstract Emitter<AnnouncementMessage> getAliveEmitter();
+	protected abstract Emitter<AliveAnnouncement> getAliveEmitter();
 
 	protected abstract void setSyncId();
 
@@ -86,21 +83,15 @@ public abstract class BaseSubscriptionSyncManager {
 
 	}
 
-	protected void listenForAnnouncements(AnnouncementMessage announcement, String key) {
+	protected void listenForAnnouncements(AliveAnnouncement announcement, String key) {
 		if (key.equals(syncId)) {
 			return;
 		}
-		if (announcement instanceof AliveAnnouncement) {
-			synchronized (currentInstances) {
-				currentInstances.add(announcement.getId());
-			}
+
+		synchronized (currentInstances) {
+			currentInstances.add(announcement.getId());
 		}
-//		if (announcement instanceof TakingAnnouncement) {
-//
-//		}
-//		if (announcement instanceof HandingOfAnnouncement) {
-//
-//		}
+
 	}
 
 	protected void listenForSubscriptionUpdates(SubscriptionRequest sub, String key) {
