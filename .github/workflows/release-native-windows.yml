@@ -38,6 +38,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-eureka-with-kafka
         run: |
+          del .\BrokerParent\pom.xml
+          move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
           mvn clean package -Pkafka -Dnative -Deureka -Dkafka -Dos=windows -D"quarkus.profile"=kafka-eureka 
       - name: docker build
         run: |
@@ -229,6 +231,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-kafka
         run: |
+          del .\BrokerParent\pom.xml
+          move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
           mvn clean package -Pkafka -Dnative -Dkafka -Dos=windows -D"quarkus.profile"=kafka 
       - name: docker build
         run: |
@@ -409,7 +413,9 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-aio
         run: |
-          mvn clean package -Dnative -Din-memory -Dos=windows -D"quarkus.profile"=in-memory 
+          del .\BrokerParent\pom.xml
+          move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
+          mvn clean package -Dnative -Din-memory -Pin-memory -Dos=windows -D"quarkus.profile"=in-memory 
       - name: docker build
         run: |
           cd AllInOneRunner

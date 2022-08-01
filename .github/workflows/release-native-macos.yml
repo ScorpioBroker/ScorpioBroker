@@ -26,6 +26,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos-with-eureka-with-kafka
         run: |
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -Dnative -Deureka -Dkafka -Dos=macos -Dquarkus.profile=kafka-eureka
       - name: show build results
         run: |
@@ -127,6 +129,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos-with-kafka
         run: |
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -Pkafka -Dnative -Dkafka -Dos=macos -Dquarkus.profile=kafka
       - name: Start Kafka
         uses: 280780363/kafka-action@v1.0
@@ -250,7 +254,9 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos-aio
         run: |
-          mvn clean package -Dnative -Din-memory -Dos=macos -Dquarkus.profile=in-memory
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
+          mvn clean package -Dnative -Din-memory -Pin-memory -Dos=macos -Dquarkus.profile=in-memory
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1

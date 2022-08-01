@@ -22,6 +22,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-eureka-with-kafka
         run: |
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -Pkafka -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
       - name: docker tag
         run: |
@@ -196,6 +198,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-kafka
         run: |
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -Dkafka -Pkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: docker tag 
         run: |
@@ -359,7 +363,9 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java
         run: |
-          mvn clean package -Din-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
+          mvn clean package -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest

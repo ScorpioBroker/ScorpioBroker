@@ -40,10 +40,6 @@
 			<artifactId>subscription-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
-		<dependency>
-			<groupId>io.smallrye.reactive</groupId>
-			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
-		</dependency>
 	</dependencies>
 	<profiles>
 		<profile>
