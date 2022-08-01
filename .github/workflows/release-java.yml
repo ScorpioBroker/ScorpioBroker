@@ -22,7 +22,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-eureka-with-kafka
         run: |
-          mvn clean package -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
+          mvn clean package -Pkafka -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
       - name: docker tag
         run: |
           docker tag scorpiobroker/history-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-eureka-latest
@@ -196,7 +196,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-kafka
         run: |
-          mvn clean package -Dkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
+          mvn clean package -Dkafka -Pkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: docker tag 
         run: |
           docker tag scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-latest

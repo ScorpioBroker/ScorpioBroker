@@ -127,7 +127,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos-with-kafka
         run: |
-          mvn clean package -Dnative -Dkafka -Dos=macos -Dquarkus.profile=kafka
+          mvn clean package -Pkafka -Dnative -Dkafka -Dos=macos -Dquarkus.profile=kafka
       - name: Start Kafka
         uses: 280780363/kafka-action@v1.0
         with:

@@ -30,7 +30,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-ubuntu-with-eureka-with-kafka
         run: |
-          mvn clean package -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=kafka-eureka
+          mvn clean package -Pkafka -Dnative -Deureka -Dkafka -Ddocker -Ddocker-tag=ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=kafka-eureka
       - name: docker tag
         run: |
           docker tag scorpiobroker/history-manager:ubuntu-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:ubuntu-kafka-eureka-latest
@@ -178,7 +178,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-ubuntu-with-kafka
         run: |
-          mvn clean package -Dnative -Dkafka -Ddocker -Ddocker-tag=ubuntu-kafka-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=kafka
+          mvn clean package -Pkafka -Dnative -Dkafka -Ddocker -Ddocker-tag=ubuntu-kafka-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=kafka
       - name: docker tag 
         run: |
           docker tag scorpiobroker/history-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:ubuntu-kafka-latest

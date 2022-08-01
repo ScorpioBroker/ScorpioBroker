@@ -38,7 +38,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-eureka-with-kafka
         run: |
-          mvn clean package -Dnative -Deureka -Dkafka -Dos=windows -D"quarkus.profile"=kafka-eureka 
+          mvn clean package -Pkafka -Dnative -Deureka -Dkafka -Dos=windows -D"quarkus.profile"=kafka-eureka 
       - name: docker build
         run: |
           cd AllInOneRunner
@@ -229,7 +229,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-kafka
         run: |
-          mvn clean package -Dnative -Dkafka -Dos=windows -D"quarkus.profile"=kafka 
+          mvn clean package -Pkafka -Dnative -Dkafka -Dos=windows -D"quarkus.profile"=kafka 
       - name: docker build
         run: |
           cd AllInOneRunner
