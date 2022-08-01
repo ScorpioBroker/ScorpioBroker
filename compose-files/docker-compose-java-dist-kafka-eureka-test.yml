@@ -34,6 +34,8 @@ services:
       POSTGRES_DB: ngb
   eureka:
     image: scorpiobroker/scorpio:eureka-server_latest
+    environment:
+      LOGGING_LEVEL_ROOT: DEBUG
     ports:
       - "8761"
   gateway:
