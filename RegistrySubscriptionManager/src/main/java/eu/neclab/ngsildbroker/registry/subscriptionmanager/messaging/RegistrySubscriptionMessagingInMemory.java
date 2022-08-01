@@ -9,12 +9,12 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import io.quarkus.arc.profile.IfBuildProfile;
 
-import io.quarkus.arc.properties.IfBuildProperty;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
-@IfBuildProperty("in-memory")
+@IfBuildProfile("in-memory")
 public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
