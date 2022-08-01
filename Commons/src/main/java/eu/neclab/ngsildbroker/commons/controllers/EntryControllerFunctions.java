@@ -13,6 +13,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.net.HttpHeaders;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
@@ -227,7 +228,7 @@ public interface EntryControllerFunctions {
 		if (body == null) {
 			RestResponse.status(status);
 		}
-		return RestResponseBuilderImpl.create(status).entity(body).build();
+		return RestResponseBuilderImpl.create(status).entity(body).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
 	}
 
 	@SuppressWarnings("unchecked")

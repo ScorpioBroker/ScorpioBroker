@@ -55,7 +55,7 @@ public class EntityBatchController {
 	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String payload,
 			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch,
-				AppConstants.ENTITY_CREATE_PAYLOAD);
+				AppConstants.ENTITY_CREATE_PAYLOAD).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@POST
