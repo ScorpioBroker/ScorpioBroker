@@ -6,6 +6,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
@@ -15,19 +16,18 @@ import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
-import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
-@IfBuildProfile("kafka")
+@UnlessBuildProfile("in-memory")
 public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
 	@Inject
 	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
-	MutinyEmitter<AnnouncementMessage> aliveEmitter;
+	Emitter<AnnouncementMessage> aliveEmitter;
 
 	@Inject
 	SubscriptionService subService;
@@ -50,7 +50,7 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 	}
 
 	@Override
-	protected MutinyEmitter<AnnouncementMessage> getAliveEmitter() {
+	protected Emitter<AnnouncementMessage> getAliveEmitter() {
 		return aliveEmitter;
 	}
 

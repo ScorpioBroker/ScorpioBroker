@@ -71,11 +71,11 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 								.setLastFailedNotification(new Date(System.currentTimeMillis()));
 					}
 					return null;
-				}).onFailure().call(t -> {
+				}).onFailure().recoverWithItem(t -> {
 					logger.error("finally failed to send notification subscription id: "
 							+ request.getSubscription().getId() + " notification id: " + notification.getId());
 					return null;
-				}).subscribe();
+				}).await().indefinitely();
 	}
 
 }

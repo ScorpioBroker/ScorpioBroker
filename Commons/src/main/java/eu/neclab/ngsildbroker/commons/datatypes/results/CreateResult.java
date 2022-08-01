@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes.results;
 
-import java.util.List;
-
 public class CreateResult {
 
 	String entityId;

@@ -37,15 +37,17 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SubscriptionSyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.MultiMap;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @Singleton
+@IfBuildProfile("in-memory")
 public class SubscriptionService extends BaseSubscriptionService {
 	@Inject
 	SubscriptionInfoDAO subService;
@@ -57,10 +59,6 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
-
-	@Inject
-	@Channel(AppConstants.SUB_SYNC_CHANNEL)
-	MutinyEmitter<SyncMessage> syncEmitter;
 
 	@Inject
 	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
@@ -283,7 +281,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	protected MutinyEmitter<SyncMessage> getSyncChannelSender() {
-		return syncEmitter;
+		return null;
 	}
 
 }

@@ -293,17 +293,24 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	private Uni<Subscription> createSub(SubscriptionRequest subscriptionRequest) {
 		subscriptionRequest.setType(AppConstants.CREATE_REQUEST);
-		return Uni.combine().all().unis(subscriptionInfoDAO.storeSubscription(subscriptionRequest),
-				kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest))).combinedWith((t, u) -> {
-					return subscriptionRequest.getSubscription();
-				});
+		List<Uni<Void>> unis = Lists.newArrayListWithCapacity(2);
+		unis.add(subscriptionInfoDAO.storeSubscription(subscriptionRequest));
+		if (kafkaSender != null) {
+			unis.add(kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest)));
+		}
+		return Uni.combine().all().unis(unis).combinedWith((l) -> {
+			return subscriptionRequest.getSubscription();
+		});
 	}
 
 	private Uni<Void> updateSub(SubscriptionRequest subscriptionRequest) {
-		Uni<Void> uni1 = subscriptionInfoDAO.storeSubscription(subscriptionRequest);
-		subscriptionRequest.setType(AppConstants.UPDATE_REQUEST);
-		Uni<Void> uni2 = kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest));
-		return Uni.combine().all().unis(uni1, uni2).discardItems();
+		List<Uni<Void>> unis = Lists.newArrayListWithCapacity(2);
+		unis.add(subscriptionInfoDAO.storeSubscription(subscriptionRequest));
+		if (kafkaSender != null) {
+			subscriptionRequest.setType(AppConstants.UPDATE_REQUEST);
+			unis.add(kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest)));
+		}
+		return Uni.combine().all().unis(unis).discardItems();
 	}
 
 	private void putInTable(Table<String, String, List<SubscriptionRequest>> table, String row, String colum,
@@ -377,10 +384,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	}
 
 	private Uni<Void> deleteSub(SubscriptionRequest removedSub) {
-		Uni<Void> uni1 = subscriptionInfoDAO.deleteSubscription(removedSub);
-		removedSub.setType(AppConstants.DELETE_REQUEST);
-		Uni<Void> uni2 = kafkaSender.send(new SyncMessage(syncIdentifier, removedSub));
-		return Uni.combine().all().unis(uni1, uni2).discardItems();
+		List<Uni<Void>> unis = Lists.newArrayListWithCapacity(2);
+		unis.add(subscriptionInfoDAO.deleteSubscription(removedSub));
+		if (kafkaSender != null) {
+			removedSub.setType(AppConstants.DELETE_REQUEST);
+			unis.add(kafkaSender.send(new SyncMessage(syncIdentifier, removedSub)));
+		}
+		return Uni.combine().all().unis(unis).discardItems();
 
 	}
 
