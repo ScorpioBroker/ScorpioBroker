@@ -14,7 +14,6 @@ jobs:
           release_name: test1
           draft: false
           prerelease: false
-          body_path: RELEASENOTES
   test2:
     runs-on: ubuntu-latest
     steps:    
@@ -28,4 +27,4 @@ jobs:
           release_name: test2
           draft: false
           prerelease: false
-          body_path: RELEASENOTES
+
