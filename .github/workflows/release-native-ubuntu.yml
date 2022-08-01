@@ -179,7 +179,7 @@ jobs:
           id=$(echo ${{github.ref_name}} | cut -d/ -f2)
           echo "::set-output name=id::$id"
       - name: build-ubuntu-with-kafka
-        run: |          
+        run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -Pkafka -Dnative -Dkafka -Ddocker -Ddocker-tag=ubuntu-kafka-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=kafka
