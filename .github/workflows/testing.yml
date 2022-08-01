@@ -1,0 +1,31 @@
+name: API_TEST
+on: [push,pull_request]
+jobs:
+  test1:
+    runs-on: ubuntu-latest
+    steps:    
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: test1
+          release_name: test1
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+  test2:
+    runs-on: ubuntu-latest
+    steps:    
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: test2
+          release_name: test2
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
