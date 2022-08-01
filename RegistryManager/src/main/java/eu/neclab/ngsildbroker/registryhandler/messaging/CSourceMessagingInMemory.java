@@ -8,15 +8,15 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
-@UnlessBuildProfile("kafka")
+@IfBuildProfile("in-memory")
 public class CSourceMessagingInMemory extends CSourceMessagingBase {
 
 	@Incoming(AppConstants.ENTITY_CHANNEL)
-	@UnlessBuildProfile("kafka")
 	public Uni<Void> handleEntity(Message<BaseRequest> mutinyMessage) {
 		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(mutinyMessage));
 

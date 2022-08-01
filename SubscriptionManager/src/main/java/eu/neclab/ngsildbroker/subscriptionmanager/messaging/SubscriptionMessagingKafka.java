@@ -2,12 +2,14 @@ package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
@@ -15,6 +17,9 @@ import io.smallrye.reactive.messaging.kafka.api.IncomingKafkaRecordMetadata;
 @Singleton
 @UnlessBuildProfile("in-memory")
 public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
+
+	@ConfigProperty(name = "scorpio.messaging.duplicate", defaultValue = "false")
+	boolean duplicate;
 
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	public Uni<Void> handleEntity(Message<BaseRequest> message) {
@@ -26,6 +31,9 @@ public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
 			timestamp = metaData.getTimestamp().toEpochMilli();
 		} else {
 			timestamp = System.currentTimeMillis();
+		}
+		if (duplicate) {
+			return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message), timestamp);
 		}
 		return baseHandleEntity(message, timestamp);
 	}
