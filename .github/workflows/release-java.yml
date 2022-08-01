@@ -83,8 +83,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          tag_name: ${{steps.get-id.outputs.id}}-java-kafka
-          release_name: Release ${{steps.get-id.outputs.id}}-java-kafka
+          tag_name: ${{steps.get-id.outputs.id}}-java-kafka-eureka
+          release_name: ${{steps.get-id.outputs.id}}-java-kafka-eureka
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -249,7 +249,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           tag_name: ${{steps.get-id.outputs.id}}-java-kafka
-          release_name: Release ${{steps.get-id.outputs.id}}-java-kafka
+          release_name: ${{steps.get-id.outputs.id}}-java-kafka
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -396,7 +396,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}/
         with:
           tag_name: ${{steps.get-id.outputs.id}}-java
-          release_name: Release ${{steps.get-id.outputs.id}}-java
+          release_name: ${{steps.get-id.outputs.id}}-java
           draft: false
           prerelease: false
           body_path: RELEASENOTES

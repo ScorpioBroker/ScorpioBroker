@@ -38,8 +38,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          tag_name: ${{steps.get-id.outputs.id}}-macos-kafka
-          release_name: Release ${{steps.get-id.outputs.id}}-macos-kafka
+          tag_name: ${{steps.get-id.outputs.id}}-macos-kafka-eureka
+          release_name: ${{steps.get-id.outputs.id}}-macos-kafka-eureka
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -164,7 +164,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           tag_name: ${{steps.get-id.outputs.id}}-macos-kafka
-          release_name: Release ${{steps.get-id.outputs.id}}-macos-kafka
+          release_name: ${{steps.get-id.outputs.id}}-macos-kafka
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -264,7 +264,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}/
         with:
           tag_name: ${{steps.get-id.outputs.id}}-macos
-          release_name: Release ${{steps.get-id.outputs.id}}-macos
+          release_name: ${{steps.get-id.outputs.id}}-macos
           draft: false
           prerelease: false
           body_path: RELEASENOTES

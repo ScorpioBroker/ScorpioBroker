@@ -128,8 +128,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          tag_name: ${{steps.get-id.outputs.id}}-windows-kafka
-          release_name: Release ${{steps.get-id.outputs.id}}-windows-kafka
+          tag_name: ${{steps.get-id.outputs.id}}-windows-kafka-eureka
+          release_name: ${{steps.get-id.outputs.id}}-windows-kafka-eureka
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -311,7 +311,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           tag_name: ${{steps.get-id.outputs.id}}-windows-kafka
-          release_name: Release ${{steps.get-id.outputs.id}}-windows-kafka
+          release_name: ${{steps.get-id.outputs.id}}-windows-kafka
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -451,7 +451,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}/
         with:
           tag_name: ${{steps.get-id.outputs.id}}-windows
-          release_name: Release ${{steps.get-id.outputs.id}}-windows
+          release_name: ${{steps.get-id.outputs.id}}-windows
           draft: false
           prerelease: false
           body_path: RELEASENOTES
