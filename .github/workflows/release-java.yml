@@ -11,6 +11,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.17
+      - name: Install zip
+        uses: montudor/action-zip@v1
       - name: Build testserver
         run: |
           cd testserver
@@ -89,10 +91,8 @@ jobs:
           prerelease: false
           body_path: RELEASENOTES
       - name: Zip aaio release
-        uses: montudor/action-zip@v1
         working-directory: AllInOneRunner/target/quarkus-app
-        with:
-            args: zip -qq -r all-in-one-runner.zip *
+        run: zip -qq -r all-in-one-runner.zip *
       - name: Upload Release aaio
         uses: actions/upload-release-asset@v1
         env:
@@ -103,10 +103,8 @@ jobs:
           asset_name: all-in-one-runner-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-manager release
-        uses: montudor/action-zip@v1
         working-directory: HistoryManager/target/quarkus-app
-        with:
-            args: zip -qq -r history-manager.zip *
+        run: zip -qq -r history-manager.zip *
       - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -117,10 +115,8 @@ jobs:
           asset_name: history-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-subscription-manager release
-        uses: montudor/action-zip@v1
         working-directory: RegistrySubscriptionManager/target/quarkus-app
-        with:
-            args: zip -qq -r registry-subscription-manager.zip *
+        run: zip -qq -r registry-subscription-manager.zip *
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -131,10 +127,8 @@ jobs:
           asset_name: registry-subscription-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-manager release
-        uses: montudor/action-zip@v1
         working-directory: RegistryManager/target/quarkus-app
-        with:
-            args: zip -qq -r registry-manager.zip *
+        run: zip -qq -r registry-manager.zip *
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -145,10 +139,8 @@ jobs:
           asset_name: registry-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip subscription-manager release
-        uses: montudor/action-zip@v1
         working-directory: SubscriptionManager/target/quarkus-app
-        with:
-            args: zip -qq -r subscription-manager.zip *
+        run: zip -qq -r subscription-manager.zip *
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -159,10 +151,8 @@ jobs:
           asset_name: subscription-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip query-manager release
-        uses: montudor/action-zip@v1
         working-directory: QueryManager/target/quarkus-app
-        with:
-            args: zip -qq -r query-manager.zip *
+        run: zip -qq -r query-manager.zip *
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -173,10 +163,8 @@ jobs:
           asset_name: query-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip entity-manager release
-        uses: montudor/action-zip@v1
         working-directory: EntityManager/target/quarkus-app
-        with:
-            args: zip -qq -r entity-manager.zip *
+        run: zip -qq -r entity-manager.zip *
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -194,6 +182,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.17
+      - name: Install zip
+        uses: montudor/action-zip@v1
       - name: Build testserver
         run: |
           cd testserver
@@ -261,10 +251,8 @@ jobs:
           prerelease: false
           body_path: RELEASENOTES
       - name: Zip aaio release
-        uses: montudor/action-zip@v1
         working-directory: AllInOneRunner/target/quarkus-app
-        with:
-            args: zip -qq -r all-in-one-runner.zip *
+        run: zip -qq -r all-in-one-runner.zip *
       - name: Upload Release aaio
         uses: actions/upload-release-asset@v1
         env:
@@ -275,10 +263,8 @@ jobs:
           asset_name: all-in-one-runner-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-manager release
-        uses: montudor/action-zip@v1
         working-directory: HistoryManager/target/quarkus-app
-        with:
-            args: zip -qq -r history-manager.zip *
+        run: zip -qq -r history-manager.zip *
       - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -289,10 +275,8 @@ jobs:
           asset_name: history-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-subscription-manager release
-        uses: montudor/action-zip@v1
         working-directory: RegistrySubscriptionManager/target/quarkus-app
-        with:
-            args: zip -qq -r registry-subscription-manager.zip *
+        run: zip -qq -r registry-subscription-manager.zip *
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -303,10 +287,8 @@ jobs:
           asset_name: registry-subscription-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-manager release
-        uses: montudor/action-zip@v1
         working-directory: RegistryManager/target/quarkus-app
-        with:
-            args: zip -qq -r registry-manager.zip *
+        run: zip -qq -r registry-manager.zip *
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -317,10 +299,8 @@ jobs:
           asset_name: registry-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip subscription-manager release
-        uses: montudor/action-zip@v1
         working-directory: SubscriptionManager/target/quarkus-app
-        with:
-            args: zip -qq -r subscription-manager.zip *
+        run: zip -qq -r subscription-manager.zip *
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -331,10 +311,8 @@ jobs:
           asset_name: subscription-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip query-manager release
-        uses: montudor/action-zip@v1
         working-directory: QueryManager/target/quarkus-app
-        with:
-            args: zip -qq -r query-manager.zip *
+        run: zip -qq -r query-manager.zip *
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -345,10 +323,8 @@ jobs:
           asset_name: query-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip entity-manager release
-        uses: montudor/action-zip@v1
         working-directory: EntityManager/target/quarkus-app
-        with:
-            args: zip -qq -r entity-manager.zip *
+        run: zip -qq -r entity-manager.zip *
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -366,6 +342,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.17
+      - name: Install zip
+        uses: montudor/action-zip@v1
       - name: Build testserver
         run: |
           cd testserver
@@ -415,10 +393,8 @@ jobs:
           prerelease: false
           body_path: RELEASENOTES
       - name: Zip aaio release
-        uses: montudor/action-zip@v1
         working-directory: SubscriptionManager/target/quarkus-app
-        with:
-            args: zip -qq -r all-in-one-runner.zip *
+        run: zip -qq -r all-in-one-runner.zip *
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
