@@ -3,4 +3,4 @@ WORKDIR /usr/src/scorpio
 ARG FILE_BUILD
 ARG FILE_RUN
 COPY target/${FILE_BUILD} ./${FILE_RUN}
-CMD ${FILE_RUN}
+CMD ./${FILE_RUN}
