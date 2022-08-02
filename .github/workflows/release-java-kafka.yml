@@ -1,4 +1,4 @@
-name: Release Java version
+name: Release Java version with kafka
 on: 
   push:
     branches: "quarkus-release/**"

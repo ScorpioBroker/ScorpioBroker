@@ -355,7 +355,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}/
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           tag_name: ${{steps.get-id.outputs.id}}-ubuntu
           release_name: ${{steps.get-id.outputs.id}}-ubuntu
