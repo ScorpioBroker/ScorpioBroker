@@ -46,11 +46,11 @@ jobs:
         run: |
           docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-eureka-test.yml up &
           sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-environment.json
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-environment.json
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-eureka-test.yml down
       - name: start docker dist 
@@ -196,11 +196,11 @@ jobs:
         run: |
           docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml up &
           sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-environment.json
+ #     - name: newman action
+ #       uses: matt-ball/newman-action@master
+ #       with:
+ #         collection: api-test.json
+ #         environment: api-test-environment.json
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml down
       - name: docker-login
@@ -335,11 +335,11 @@ jobs:
         run: |
           docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml up &
           sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-environment.json
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-environment.json
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml down 
       - name: docker-login

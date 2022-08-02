@@ -132,31 +132,6 @@ jobs:
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -Pkafka -Dnative -Dkafka -Dos=macos -Dquarkus.profile=kafka
-      - name: Start Kafka
-        uses: 280780363/kafka-action@v1.0
-        with:
-          kafka version: "latest" # Optional, kafka version
-          zookeeper version: "latest" # Optional, zookeeper version
-          kafka port: 9092 # Optional, kafka port
-          zookeeper port: 2181 # Optional, zookeeper port
-          auto create topic: "true" # Optional, auto create kafka topic
-      - name: start postgis
-        uses: huaxk/postgis-action@v1
-        with:
-          postgresql version: '11'  # See https://https://hub.docker.com/r/mdillon/postgis for available versions, if it is not specified, use the default value 'latest'
-          postgresql password: 'ngb'   # This environment variable sets the superuser password for PostgreSQL, maybe string or secrets, the default superuser is defined by the input environment variable: postgresql user.
-          postgresql user: 'ngb'  # This optional environment variable is used in conjunction with postgresql password to set a user and its password. This variable will create the specified user with superuser power and a database with the same name. If it is not specified, then the default user of 'postgres' will be used.
-          postgresql db: 'ngb'  # This optional environment variable can be used to define a different name for the default database that is created when the image is first started. If it is not specified, then the value of postgresql user will be used.
-      - name: start scorpio 
-        run: |
-          cd AllInOneRunner/target
-          sleep 15
-          ./all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-environment.json
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-kafka
         id: create_release
         uses: actions/create-release@v1
