@@ -94,11 +94,11 @@ jobs:
         run: |
           docker-compose -f ./compose-files/docker-compose-windows-dist-kafka-eureka-test.yml up &
           sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-environment.json
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-environment.json
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-windows-dist-kafka-eureka-test.yml down
       - name: docker-login
@@ -140,7 +140,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-all-in-one-runner.exe
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
@@ -149,7 +149,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-history-manager.exe
+          asset_name: scorpio-history-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
@@ -158,7 +158,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-registry-subscription-manager.exe
+          asset_name: scorpio-registry-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
@@ -167,7 +167,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-registry-manager.exe
+          asset_name: scorpio-registry-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
@@ -176,7 +176,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-subscription-manager.exe
+          asset_name: scorpio-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
@@ -185,7 +185,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-query-manager.exe
+          asset_name: scorpio-query-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
@@ -194,7 +194,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-entity-manager.exe
+          asset_name: scorpio-entity-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
   build-windows-kafka:
     runs-on: windows-latest
@@ -322,7 +322,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-all-in-one-runner.exe
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
@@ -331,7 +331,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-history-manager.exe
+          asset_name: scorpio-history-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
@@ -340,7 +340,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-registry-subscription-manager.exe
+          asset_name: scorpio-registry-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
@@ -349,7 +349,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-registry-manager.exe
+          asset_name: scorpio-registry-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
@@ -358,7 +358,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-subscription-manager.exe
+          asset_name: scorpio-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
@@ -367,7 +367,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-query-manager.exe
+          asset_name: scorpio-query-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
@@ -376,7 +376,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-entity-manager.exe
+          asset_name: scorpio-entity-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
   build-windows-aaio:
     runs-on: windows-latest
@@ -462,5 +462,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-all-in-one-runner.exe
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows.exe
           asset_content_type: application/octet-stream

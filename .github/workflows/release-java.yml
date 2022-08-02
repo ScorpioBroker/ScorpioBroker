@@ -90,8 +90,9 @@ jobs:
           body_path: RELEASENOTES
       - name: Zip aaio release
         uses: montudor/action-zip@v1
+        working-directory: AllInOneRunner/target/quarkus-app
         with:
-            args: zip -qq -r all-in-one-runner.zip AllInOneRunner/target/quarkus-app
+            args: zip -qq -r all-in-one-runner.zip *
       - name: Upload Release aaio
         uses: actions/upload-release-asset@v1
         env:
@@ -99,12 +100,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./all-in-one-runner.zip
-          asset_name: all-in-one-runner.zip
+          asset_name: all-in-one-runner-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-manager release
         uses: montudor/action-zip@v1
+        working-directory: HistoryManager/target/quarkus-app
         with:
-            args: zip -qq -r history-manager.zip HistoryManager/target/quarkus-app
+            args: zip -qq -r history-manager.zip *
       - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -112,12 +114,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./history-manager.zip
-          asset_name: history-manager.zip
+          asset_name: history-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-subscription-manager release
         uses: montudor/action-zip@v1
+        working-directory: RegistrySubscriptionManager/target/quarkus-app
         with:
-            args: zip -qq -r registry-subscription-manager.zip RegistrySubscriptionManager/target/quarkus-app
+            args: zip -qq -r registry-subscription-manager.zip *
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -125,12 +128,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./registry-subscription-manager.zip
-          asset_name: registry-subscription-manager.zip
+          asset_name: registry-subscription-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-manager release
         uses: montudor/action-zip@v1
+        working-directory: RegistryManager/target/quarkus-app
         with:
-            args: zip -qq -r registry-manager.zip RegistryManager/target/quarkus-app
+            args: zip -qq -r registry-manager.zip *
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -138,12 +142,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./registry-manager.zip
-          asset_name: registry-manager.zip
+          asset_name: registry-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip subscription-manager release
         uses: montudor/action-zip@v1
+        working-directory: SubscriptionManager/target/quarkus-app
         with:
-            args: zip -qq -r subscription-manager.zip SubscriptionManager/target/quarkus-app
+            args: zip -qq -r subscription-manager.zip *
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -151,12 +156,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./subscription-manager.zip
-          asset_name: subscription-manager.zip
+          asset_name: subscription-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip query-manager release
         uses: montudor/action-zip@v1
+        working-directory: QueryManager/target/quarkus-app
         with:
-            args: zip -qq -r query-manager.zip QueryManager/target/quarkus-app
+            args: zip -qq -r query-manager.zip *
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -164,12 +170,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./query-manager.zip
-          asset_name: query-manager.zip
+          asset_name: query-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip entity-manager release
         uses: montudor/action-zip@v1
+        working-directory: EntityManager/target/quarkus-app
         with:
-            args: zip -qq -r entity-manager.zip EntityManager/target/quarkus-app
+            args: zip -qq -r entity-manager.zip *
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -177,7 +184,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./entity-manager.zip
-          asset_name: entity-manager.zip
+          asset_name: entity-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
   build-java-kafka:
     runs-on: ubuntu-latest
@@ -255,8 +262,9 @@ jobs:
           body_path: RELEASENOTES
       - name: Zip aaio release
         uses: montudor/action-zip@v1
+        working-directory: AllInOneRunner/target/quarkus-app
         with:
-            args: zip -qq -r all-in-one-runner.zip AllInOneRunner/target/quarkus-app
+            args: zip -qq -r all-in-one-runner.zip *
       - name: Upload Release aaio
         uses: actions/upload-release-asset@v1
         env:
@@ -264,12 +272,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./all-in-one-runner.zip
-          asset_name: all-in-one-runner.zip
+          asset_name: all-in-one-runner-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-manager release
         uses: montudor/action-zip@v1
+        working-directory: HistoryManager/target/quarkus-app
         with:
-            args: zip -qq -r history-manager.zip HistoryManager/target/quarkus-app
+            args: zip -qq -r history-manager.zip *
       - name: Upload Release history-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -277,12 +286,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./history-manager.zip
-          asset_name: history-manager.zip
+          asset_name: history-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-subscription-manager release
         uses: montudor/action-zip@v1
+        working-directory: RegistrySubscriptionManager/target/quarkus-app
         with:
-            args: zip -qq -r registry-subscription-manager.zip RegistrySubscriptionManager/target/quarkus-app
+            args: zip -qq -r registry-subscription-manager.zip *
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -290,12 +300,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./registry-subscription-manager.zip
-          asset_name: registry-subscription-manager.zip
+          asset_name: registry-subscription-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-manager release
         uses: montudor/action-zip@v1
+        working-directory: RegistryManager/target/quarkus-app
         with:
-            args: zip -qq -r registry-manager.zip RegistryManager/target/quarkus-app
+            args: zip -qq -r registry-manager.zip *
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -303,12 +314,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./registry-manager.zip
-          asset_name: registry-manager.zip
+          asset_name: registry-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip subscription-manager release
         uses: montudor/action-zip@v1
+        working-directory: SubscriptionManager/target/quarkus-app
         with:
-            args: zip -qq -r subscription-manager.zip SubscriptionManager/target/quarkus-app
+            args: zip -qq -r subscription-manager.zip *
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -316,12 +328,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./subscription-manager.zip
-          asset_name: subscription-manager.zip
+          asset_name: subscription-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip query-manager release
         uses: montudor/action-zip@v1
+        working-directory: QueryManager/target/quarkus-app
         with:
-            args: zip -qq -r query-manager.zip QueryManager/target/quarkus-app
+            args: zip -qq -r query-manager.zip *
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
         env:
@@ -329,12 +342,13 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./query-manager.zip
-          asset_name: query-manager.zip
+          asset_name: query-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip entity-manager release
         uses: montudor/action-zip@v1
+        working-directory: EntityManager/target/quarkus-app
         with:
-            args: zip -qq -r entity-manager.zip EntityManager/target/quarkus-app
+            args: zip -qq -r entity-manager.zip *
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
         env:
@@ -342,7 +356,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./entity-manager.zip
-          asset_name: entity-manager.zip
+          asset_name: entity-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
   build-java-aaio:
     runs-on: ubuntu-latest
@@ -402,8 +416,9 @@ jobs:
           body_path: RELEASENOTES
       - name: Zip aaio release
         uses: montudor/action-zip@v1
+        working-directory: SubscriptionManager/target/quarkus-app
         with:
-            args: zip -qq -r all-in-one-runner.zip AllInOneRunner/target/quarkus-app
+            args: zip -qq -r all-in-one-runner.zip *
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
@@ -411,5 +426,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./all-in-one-runner.zip
-          asset_name: all-in-one-runner.zip
+          asset_name: all-in-one-runner-java-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
