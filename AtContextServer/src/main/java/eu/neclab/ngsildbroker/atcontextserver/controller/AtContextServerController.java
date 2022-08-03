@@ -1,19 +1,19 @@
 package eu.neclab.ngsildbroker.atcontextserver.controller;
 
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
 
+import javax.inject.Singleton;
+import org.jboss.resteasy.reactive.RestResponse;
+import io.vertx.core.http.HttpServerRequest;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("ngsi-ld/contextes")
+@Singleton
+@Path("ngsi-ld/contextes")
 public class AtContextServerController {
 	private final static Logger logger = LogManager.getLogger(AtContextServerController.class);
 
@@ -44,9 +44,10 @@ public class AtContextServerController {
 	 * @param attrs
 	 * @return
 	 */
-	@GetMapping(path = "/{contextId}")
-	public ResponseEntity<Object> getContextForEntity(HttpServletRequest request,
-			@PathVariable("contextId") String contextId) {
+	@GET
+	Path("/{contextId}")
+	public RestResponse<Object> getContextForEntity( HttpServerRequest request,
+			@PathParam("contextId") String contextId) {
 		logger.trace("getAtContext() for " + contextId);
 		/*
 		 * if(contextId.equals(AppConstants.CORE_CONTEXT_URL_SUFFIX)) { return
@@ -58,11 +59,11 @@ public class AtContextServerController {
 
 		// body.append(DataSerializer.toJson(contextes));
 		body.append("}");
-		return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(body.toString());
+		return RestResponse.accepted().contentType(MediaType.APPLICATION_JSON).body(body.toString());
 	}
 
-	@GetMapping(name = "atcontextget")
-	public ResponseEntity<Object> getAllContextes() {
+	@GET
+	public RestResponse<Object> getAllContextes() {
 		StringBuilder body = new StringBuilder("{\n");
 		// Manuallly done because gson shows the actual byte values and not a string
 //		Map<String, byte[]> contextMapping = null;//atContext.getAllContextes();
@@ -70,7 +71,7 @@ public class AtContextServerController {
 //			body.append("    \"" + contextEntry.getKey() + "\": \"" + new String(contextEntry.getValue()) + "\",\n");
 //		}
 		body.append("}");
-		return ResponseEntity.accepted().contentType(MediaType.APPLICATION_JSON).body(body.toString());
+		return RestResponse.accepted().contentType(MediaType.APPLICATION_JSON).body(body.toString());
 	}
 
 }
