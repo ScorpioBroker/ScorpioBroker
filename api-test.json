@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "126238c3-267e-4925-82db-482845c1e965",
+		"_postman_id": "9ff7a6d6-5717-42f1-b79a-0e811c568a7d",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -9770,7 +9770,7 @@
 																	"            pm.expect(notificationData).to.eql(payloadBody);\r",
 																	"            });\r",
 																	"        });\r",
-																	"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																	"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																	"}, 3000);\r",
 																	"    \r",
 																	"\r",
@@ -9937,7 +9937,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest1\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"stringproperty==\\\"trigger\\\"\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://testserver:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest2\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"stringproperty==\\\"trigger\\\"\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://testserver:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 																},
 																"url": {
 																	"raw": "{{BrokerHost}}/ngsi-ld/v1/subscriptions",
@@ -9995,7 +9995,7 @@
 																			"            pm.expect(notificationData).to.eql(payloadBody);\r",
 																			"            });\r",
 																			"        });\r",
-																			"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																			"}, 3000);\r",
 																			"    \r",
 																			"\r",
@@ -10114,10 +10114,10 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(0);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
-																			"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																			"}, 3000);\r",
 																			"    \r",
 																			"\r",
@@ -10281,7 +10281,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest1\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"testref==urn:mytest1\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://testserver:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest3\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"testref==urn:mytest1\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://testserver:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 																},
 																"url": {
 																	"raw": "{{BrokerHost}}/ngsi-ld/v1/subscriptions",
@@ -10339,7 +10339,7 @@
 																			"            pm.expect(notificationData).to.eql(payloadBody);\r",
 																			"            });\r",
 																			"        });\r",
-																			"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																			"}, 3000);\r",
 																			"    \r",
 																			"\r",
@@ -10458,10 +10458,10 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(0);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
-																			"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																			"}, 3000);\r",
 																			"    \r",
 																			"\r",
@@ -10688,7 +10688,7 @@
 																			"            pm.expect(notificationData).to.eql(payloadBody);\r",
 																			"            });\r",
 																			"        });\r",
-																			"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																			"}, 3000);\r",
 																			"    \r",
 																			"\r",
@@ -10807,10 +10807,10 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(0);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
-																			"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																			"}, 3000);\r",
 																			"    \r",
 																			"\r",
@@ -10976,7 +10976,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest1\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"watchedAttributes\": [\"mywatchedprop\"],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://testserver:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest6\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"watchedAttributes\": [\"mywatchedprop\"],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://testserver:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 														},
 														"url": {
 															"raw": "{{BrokerHost}}/ngsi-ld/v1/subscriptions",
@@ -11034,7 +11034,7 @@
 																	"            pm.expect(notificationData).to.eql(payloadBody);\r",
 																	"            });\r",
 																	"        });\r",
-																	"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																	"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																	"}, 3000);\r",
 																	"    \r",
 																	"\r",
@@ -11153,10 +11153,10 @@
 																	"            console.log(\"Retrieving notifications from testserver\")\r",
 																	"            console.log(notificationServer + \"/\" + subId)\r",
 																	"            console.log(value);\r",
-																	"            pm.expect(value.length).to.eql(0);\r",
+																	"            pm.expect(value.length).to.eql(1);\r",
 																	"            });\r",
 																	"        });\r",
-																	"        pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																	"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
 																	"}, 3000);\r",
 																	"    \r",
 																	"\r",
