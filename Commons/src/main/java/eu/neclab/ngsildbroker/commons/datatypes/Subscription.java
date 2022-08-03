@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**
@@ -34,6 +35,7 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
  * @version 1.0
  * @created 11-Jun-2018 11:13:23
  */
+@RegisterForReflection
 public class Subscription {
 
 	static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);

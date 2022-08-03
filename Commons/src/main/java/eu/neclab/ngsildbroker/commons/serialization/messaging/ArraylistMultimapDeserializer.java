@@ -11,13 +11,12 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 
-public class ArraylistMultimapDeserializer extends ObjectMapperDeserializer<ArrayListMultimap<String, String>> {
+public class ArraylistMultimapDeserializer extends ObjectMapperDeserializer<ArrayListMultimap> {
 
 	static final Logger logger = LoggerFactory.getLogger(ArraylistMultimapDeserializer.class);
 
-	public ArraylistMultimapDeserializer(Class<ArrayListMultimap<String, String>> type) {
-		super(type);
-		// TODO Auto-generated constructor stub
+	public ArraylistMultimapDeserializer() {
+		super(ArrayListMultimap.class);
 	}
 
 	@Override

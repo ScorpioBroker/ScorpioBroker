@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory;
 
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
 
-public class ArraylistMultimapSerializer extends ObjectMapperSerializer<ArrayListMultimap<String, String>> {
+public class ArraylistMultimapSerializer extends ObjectMapperSerializer<ArrayListMultimap> {
 	static final Logger logger = LoggerFactory.getLogger(ArraylistMultimapSerializer.class);
 
 	@Override
-	public byte[] serialize(String topic, ArrayListMultimap<String, String> data) {
+	public byte[] serialize(String topic, ArrayListMultimap data) {
 		try {
 			return JsonUtils.toString(data.asMap()).getBytes();
 		} catch (Exception e) {
