@@ -3,7 +3,6 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection(ignoreNested = false, serialization = true)
 public class SyncMessage {
 
 	private String syncId;

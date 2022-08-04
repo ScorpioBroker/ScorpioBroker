@@ -13,7 +13,7 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
-@RegisterForReflection
+
 public class EndPoint {
 
 	private String accept;
