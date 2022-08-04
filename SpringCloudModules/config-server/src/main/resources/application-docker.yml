@@ -1,3 +1,0 @@
-mysettings:
-  eureka:
-    host: ${eureka.host:eureka}

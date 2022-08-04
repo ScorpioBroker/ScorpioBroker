@@ -66,4 +66,4 @@ spring:
     web-application-type: reactive
 logging:
   level:
-    root: INFO
+    root: DEBUG

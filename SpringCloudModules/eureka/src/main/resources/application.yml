@@ -17,4 +17,4 @@ eureka:
     hostname: ${mysettings.eureka.port}
 logging:
   level:
-    root: ERROR
+    root: INFO
