@@ -20,7 +20,9 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
+@RegisterForReflection(ignoreNested = false, serialization = true)
 public class SubscriptionRequest extends BaseRequest {
 	private static final String SUBSCRIPTION = "subscription";
 	private static final String CONTEXT = "context";
@@ -29,9 +31,7 @@ public class SubscriptionRequest extends BaseRequest {
 	private static final String HEADERS = "headers";
 	private static final String ID = "id";
 	private static final String REQUEST_TYPE = "requestType";
-	@Expose
 	private Subscription subscription;
-	@Expose
 	private List<Object> context;
 
 	private boolean active;
