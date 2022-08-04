@@ -37,7 +37,7 @@ services:
     ports:
       - "8761"
   gateway:
-    image: scorpiobroker/scorpio:gateway_latest
+    image: scorpiobroker/scorpio:gateway_aaio_latest
     ports:
       - "9090:9090"
     depends_on:
