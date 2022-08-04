@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.List;
 
 import eu.neclab.ngsildbroker.commons.enums.Format;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
  * @author hebgen

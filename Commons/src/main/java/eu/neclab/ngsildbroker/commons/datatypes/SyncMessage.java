@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 
 public class SyncMessage {
 
