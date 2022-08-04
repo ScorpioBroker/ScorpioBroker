@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**
@@ -12,6 +13,7 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
+@RegisterForReflection
 public class EndPoint {
 
 	private String accept;

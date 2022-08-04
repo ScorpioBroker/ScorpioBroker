@@ -5,12 +5,14 @@ import java.util.Date;
 import java.util.List;
 
 import eu.neclab.ngsildbroker.commons.enums.Format;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
  * @author hebgen
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
+@RegisterForReflection
 public class NotificationParam {
 
 	private List<String> attributeNames;

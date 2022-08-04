@@ -35,7 +35,7 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
  * @version 1.0
  * @created 11-Jun-2018 11:13:23
  */
-@RegisterForReflection
+@RegisterForReflection(ignoreNested = false, serialization = true)
 public class Subscription {
 
 	static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
