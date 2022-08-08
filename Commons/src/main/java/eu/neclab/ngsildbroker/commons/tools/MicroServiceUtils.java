@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -55,8 +56,9 @@ public class MicroServiceUtils {
 	}
 
 	public static Message<BaseRequest> deepCopyRequestMessage(Message<BaseRequest> original) {
-		BaseRequest originalPayload = original.getPayload();
 		Message<BaseRequest> result = new Message<BaseRequest>() {
+			BaseRequest originalPayload = original.getPayload();
+
 			@Override
 			public BaseRequest getPayload() {
 				BaseRequest result = new BaseRequest(originalPayload);
@@ -128,8 +130,9 @@ public class MicroServiceUtils {
 	}
 
 	public static Message<SubscriptionRequest> deepCopySubscriptionMessage(Message<SubscriptionRequest> busMessage) {
-		SubscriptionRequest originalPayload = busMessage.getPayload();
+
 		Message<SubscriptionRequest> result = new Message<SubscriptionRequest>() {
+			SubscriptionRequest originalPayload = busMessage.getPayload();
 
 			@Override
 			public SubscriptionRequest getPayload() {
@@ -154,6 +157,29 @@ public class MicroServiceUtils {
 		for (Entry<String, String> entry : receiverInfo.entries()) {
 			result.add(entry.getKey(), entry.getValue());
 		}
+		return result;
+	}
+
+	public static Message<SyncMessage> deepCopySyncMessage(Message<SyncMessage> message) {
+		Message<SyncMessage> result = new Message<SyncMessage>() {
+			SyncMessage originalPayload = message.getPayload();
+
+			@Override
+			public SyncMessage getPayload() {
+				SubscriptionRequest tmp = new SubscriptionRequest();
+				SubscriptionRequest originalPayload = this.originalPayload.getRequest();
+				tmp.setActive(originalPayload.isActive());
+				tmp.setContext(deppCopyList(originalPayload.getContext()));
+				tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
+				tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+				tmp.setId(originalPayload.getId());
+				tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
+				tmp.setType(originalPayload.getRequestType());
+				tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
+				return new SyncMessage(this.originalPayload.getSyncId(), tmp);
+			}
+
+		};
 		return result;
 	}
 
