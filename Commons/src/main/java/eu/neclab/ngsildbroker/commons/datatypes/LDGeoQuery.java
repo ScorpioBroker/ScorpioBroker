@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.Serializable;
 import java.util.List;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -10,8 +11,12 @@ import eu.neclab.ngsildbroker.commons.enums.Geometry;
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
-public class LDGeoQuery {
+public class LDGeoQuery implements Serializable{
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 5962159976772552231L;
 	private List<Double> coordinates;
 	private Geometry geometry;
 	private String geoProperty = NGSIConstants.NGSI_LD_LOCATION;

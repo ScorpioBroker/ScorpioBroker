@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import eu.neclab.ngsildbroker.commons.enums.TemporalRelation;
@@ -9,8 +10,12 @@ import eu.neclab.ngsildbroker.commons.enums.TemporalRelation;
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
-public class LDTemporalQuery {
+public class LDTemporalQuery implements Serializable {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = -3707086157071475658L;
 	private Date endTimeAt;
 	private TemporalRelation temprel;
 	private Date timeAt;

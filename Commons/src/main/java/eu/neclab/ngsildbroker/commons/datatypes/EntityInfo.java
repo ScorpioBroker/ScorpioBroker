@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.Serializable;
 import java.net.URI;
 
 /**
@@ -7,8 +8,12 @@ import java.net.URI;
  * @version 1.0
  * @created 11-Jun-2018 11:34:28
  */
-public class EntityInfo {
+public class EntityInfo implements Serializable{
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = -1589924178919349697L;
 	private URI id;
 	private String idPattern;
 	private String type;
