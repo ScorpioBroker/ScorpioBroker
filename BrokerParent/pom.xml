@@ -168,6 +168,10 @@
 			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-kubernetes</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>com.github.fmcejudo</groupId>
 			<artifactId>quarkus-eureka</artifactId>
 			<version>0.0.14</version>

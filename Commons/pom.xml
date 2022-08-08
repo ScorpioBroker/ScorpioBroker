@@ -62,9 +62,16 @@
 			<artifactId>commons-io</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
+			<groupId>io.vertx</groupId>
+			<artifactId>vertx-consul-client</artifactId>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.orbitz.consul/consul-client -->
+		<dependency>
+			<groupId>com.orbitz.consul</groupId>
+			<artifactId>consul-client</artifactId>
+			<version>1.5.3</version>
+		</dependency>
+
 	</dependencies>
 	<profiles>
 		<profile>
