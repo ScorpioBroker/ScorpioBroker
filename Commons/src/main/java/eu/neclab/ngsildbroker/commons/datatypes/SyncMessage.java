@@ -1,9 +1,15 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.Serializable;
+
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
-public class SyncMessage {
+public class SyncMessage implements Serializable {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 1572704886071996626L;
 	private String syncId;
 	private SubscriptionRequest request;
 
