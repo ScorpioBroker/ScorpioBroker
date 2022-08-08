@@ -18,6 +18,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -36,7 +37,7 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
  * @created 11-Jun-2018 11:13:23
  */
 
-public class Subscription implements Serializable{
+public class Subscription implements Serializable {
 
 	/**
 	 *
@@ -70,7 +71,6 @@ public class Subscription implements Serializable{
 	@JsonIgnore
 	private ScopeQueryTerm scopeQuery;
 
-	
 	public Subscription() {
 	}
 
@@ -898,13 +898,13 @@ public class Subscription implements Serializable{
 								endPoint.setNotifierInfo(notifierInfo);
 								break;
 							case NGSIConstants.NGSI_LD_RECEIVERINFO:
-								HeadersMultiMap receiverInfo = new HeadersMultiMap();
+								ArrayListMultimap<String, String> receiverInfo = ArrayListMultimap.create();
 								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null,
 										context, opts, 999);
 								for (Map<String, Object> headerEntry : (List<Map<String, Object>>) compacted
 										.get(JsonLdConsts.GRAPH)) {
 									headerEntry.forEach((t, u) -> {
-										receiverInfo.add(t, u.toString());
+										receiverInfo.put(t, u.toString());
 									});
 
 								}

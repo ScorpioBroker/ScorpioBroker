@@ -6,6 +6,8 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.collect.ArrayListMultimap;
+
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**
@@ -23,7 +25,7 @@ public class EndPoint implements Serializable {
 	private String accept;
 	private URI uri;
 	private Map<String, String> notifierInfo;
-	private HeadersMultiMap receiverInfo;
+	private ArrayListMultimap<String, String> receiverInfo;
 
 	public EndPoint() {
 
@@ -86,11 +88,11 @@ public class EndPoint implements Serializable {
 		this.notifierInfo = notifierInfo;
 	}
 
-	public void setReceiverInfo(HeadersMultiMap receiverInfo) {
+	public void setReceiverInfo(ArrayListMultimap<String, String> receiverInfo) {
 		this.receiverInfo = receiverInfo;
 	}
 
-	public HeadersMultiMap getReceiverInfo() {
+	public ArrayListMultimap<String, String> getReceiverInfo() {
 		return receiverInfo;
 	}
 

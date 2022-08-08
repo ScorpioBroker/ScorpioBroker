@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 @Singleton
 public class MicroServiceUtils {
@@ -145,6 +146,14 @@ public class MicroServiceUtils {
 			}
 
 		};
+		return result;
+	}
+
+	public static HeadersMultiMap getHeaders(ArrayListMultimap<String, String> receiverInfo) {
+		HeadersMultiMap result = new HeadersMultiMap();
+		for (Entry<String, String> entry : receiverInfo.entries()) {
+			result.add(entry.getKey(), entry.getValue());
+		}
 		return result;
 	}
 

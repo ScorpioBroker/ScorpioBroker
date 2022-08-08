@@ -9,6 +9,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -35,7 +36,9 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 		}
 		if (request.getSubscription().getNotification().getEndPoint().getReceiverInfo() != null) {
 			MultiMap headers = httpReq.headers();
-			HeadersMultiMap receiverInfo = request.getSubscription().getNotification().getEndPoint().getReceiverInfo();
+
+			HeadersMultiMap receiverInfo = MicroServiceUtils
+					.getHeaders(request.getSubscription().getNotification().getEndPoint().getReceiverInfo());
 			for (String headerName : receiverInfo.names()) {
 				List<String> value = receiverInfo.getAll(headerName);
 				if (value.size() == 1) {

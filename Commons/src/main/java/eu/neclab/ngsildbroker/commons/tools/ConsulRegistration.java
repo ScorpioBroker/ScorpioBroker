@@ -39,7 +39,7 @@ public class ConsulRegistration {
 	@ConfigProperty(name = "quarkus.http.port")
 	int port;
 
-	@ConfigProperty(name = "scorpio.consul.ervice-id", defaultValue = "")
+	@ConfigProperty(name = "scorpio.consul.ervice-id")
 	Optional<String> serviceId;
 
 	// @ConfigProperty(name = "scorpio.consul.active", defaultValue = "false")
