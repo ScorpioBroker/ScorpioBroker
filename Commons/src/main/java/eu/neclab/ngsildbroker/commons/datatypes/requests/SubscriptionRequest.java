@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -19,8 +20,13 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
-
-public class SubscriptionRequest extends BaseRequest {
+public class SubscriptionRequest extends BaseRequest implements Serializable {
+	
+	
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = -8865320601510717203L;
 	private static final String SUBSCRIPTION = "subscription";
 	private static final String CONTEXT = "context";
 	private static final String ACTIVE = "active";

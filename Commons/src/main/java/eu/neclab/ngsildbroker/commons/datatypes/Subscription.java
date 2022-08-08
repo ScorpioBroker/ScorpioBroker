@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -35,8 +36,12 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
  * @created 11-Jun-2018 11:13:23
  */
 
-public class Subscription {
+public class Subscription implements Serializable{
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = -327073906884724592L;
 	static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private String description;
 	private Long expiresAt;
