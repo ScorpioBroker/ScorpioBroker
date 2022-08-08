@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -13,8 +14,12 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
  * @created 11-Jun-2018 11:13:22
  */
 
-public class EndPoint {
+public class EndPoint implements Serializable {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = -7535049847687307441L;
 	private String accept;
 	private URI uri;
 	private Map<String, String> notifierInfo;

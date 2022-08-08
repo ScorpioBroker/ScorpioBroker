@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -12,8 +13,12 @@ import eu.neclab.ngsildbroker.commons.enums.Format;
  * @created 11-Jun-2018 11:13:22
  */
 
-public class NotificationParam {
+public class NotificationParam implements Serializable {
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = -5749495213091903926L;
 	private List<String> attributeNames;
 	private EndPoint endPoint;
 	private Format format;
