@@ -32,28 +32,6 @@ jobs:
           docker tag scorpiobroker/query-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-kafka-eureka-latest
           docker tag scorpiobroker/entity-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-kafka-eureka-latest
           docker tag scorpiobroker/all-in-one-runner:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-eureka-latest
-      - name: start docker aaio 
-        run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-eureka-test.yml up &
-          sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-environment.json
-      - name: Stopping Scorpio 
-        run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-eureka-test.yml down
-      - name: start docker dist 
-        run: |
-          docker-compose -f ./compose-files/docker-compose-java-dist-kafka-eureka-test.yml up &
-          sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-environment.json
-      - name: Stopping Scorpio 
-        run: docker-compose -f ./compose-files/docker-compose-java-dist-kafka-eureka-test.yml down
   build-java-kafka:
     runs-on: ubuntu-latest
     steps:
@@ -93,9 +71,20 @@ jobs:
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
-          environment: api-test-environment.json
+          environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
+      - name: start docker dist 
+        run: |
+          docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-dist-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml down
   build-java-aaio:
     runs-on: ubuntu-latest
     steps:
@@ -129,6 +118,6 @@ jobs:
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
-          environment: api-test-environment.json
+          environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml down 
