@@ -50,9 +50,8 @@ public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager
 	}
 
 	@Incoming(AppConstants.REG_SUB_ALIVE_RETRIEVE_CHANNEL)
-	Uni<Void> listenForAlive(Message<AliveAnnouncement> message) {
-		listenForAnnouncements(message.getPayload(), message.getPayload().getId());
-		return Uni.createFrom().nullItem();
+	void listenForAlive(AliveAnnouncement message) {
+		listenForAnnouncements(message, message.getId());
 	}
 
 	@Override

@@ -37,21 +37,20 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 	SubscriptionService subService;
 
 	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
-	Uni<Void> listenForSubs(Message<SyncMessage> message) {
+	void listenForSubs(SyncMessage message) {
 //		Message<SyncMessage> tmp;
 //		if (duplicate) {
 //			tmp = MicroServiceUtils.deepCopySyncMessage(message);
 //		} else {
 //			tmp = message;
 //		}
-		listenForSubscriptionUpdates(message.getPayload().getRequest(), message.getPayload().getSyncId());
-		return Uni.createFrom().nullItem();
+		listenForSubscriptionUpdates(message.getRequest(), message.getSyncId());
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
-	Uni<Void> listenForAlive(Message<AliveAnnouncement> message) {
-		listenForAnnouncements(message.getPayload(), message.getPayload().getId());
-		return Uni.createFrom().nullItem();
+	void listenForAlive(AliveAnnouncement message) {
+		listenForAnnouncements(message, message.getId());
+
 	}
 
 	@Override

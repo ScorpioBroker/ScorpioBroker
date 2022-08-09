@@ -10,7 +10,6 @@ import com.google.common.collect.ArrayListMultimap;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +29,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 
 @Singleton
@@ -45,7 +45,7 @@ public class EntityService implements EntryCRUDService {
 	@Inject
 	@Channel(AppConstants.ENTITY_CHANNEL)
 	@Broadcast
-	Emitter<BaseRequest> kafkaSenderInterface;
+	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
 
@@ -217,16 +217,8 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	private Uni<Void> handleRequest(EntityRequest request) {
-		return entityInfoDAO.storeEntity(request).onItem().transform(t -> {
-			new Thread() {
-				@Override
-				public void run() {
-					kafkaSenderInterface.send(new BaseRequest(request));
-				}
-
-			}.start();
-			return null;
-		});
+		return entityInfoDAO.storeEntity(request).onItem()
+				.transformToUni(t -> kafkaSenderInterface.send(new BaseRequest(request)));
 
 	}
 

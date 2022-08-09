@@ -8,8 +8,6 @@ import java.util.Map;
 
 import com.google.common.collect.ArrayListMultimap;
 
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
-
 /**
  * @author hebgen
  * @version 1.0
