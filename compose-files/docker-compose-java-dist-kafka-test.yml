@@ -33,7 +33,7 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   emgr:
-    image: scorpiobroker/entity-manager-java-kafka-latest
+    image: scorpiobroker/entity-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -43,7 +43,7 @@ services:
     depends_on:
       - kafka
   histmgr:
-    image: scorpiobroker/history-manager-java-kafka-latest
+    image: scorpiobroker/history-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -53,7 +53,7 @@ services:
     depends_on:
       - kafka
   qrymgr:
-    image: scorpiobroker/query-manager-java-kafka-latest
+    image: scorpiobroker/query-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -64,7 +64,7 @@ services:
       - kafka
       - postgres
   regmgr:
-    image: scorpiobroker/registry-manager-java-kafka-latest
+    image: scorpiobroker/registry-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -75,7 +75,7 @@ services:
       - kafka
       - postgres
   regsbsmgr:
-    image: scorpiobroker/registry-subscription-manager-java-kafka-latest
+    image: scorpiobroker/registry-subscription-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -86,7 +86,7 @@ services:
       - kafka
       - postgres
   sbsmgr:
-    image: scorpiobroker/subscription-manager-java-kafka-latest
+    image: scorpiobroker/subscription-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
