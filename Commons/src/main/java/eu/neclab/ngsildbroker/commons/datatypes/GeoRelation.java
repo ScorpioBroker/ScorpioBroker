@@ -1,12 +1,18 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.Serializable;
+
 /**
  * @author hebgen
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
-public class GeoRelation {
+public class GeoRelation implements Serializable{
 
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 5081747550503416154L;
 	private Object maxDistance;
 	private Double maxDistanceAsDouble;
 	private Object minDistance;

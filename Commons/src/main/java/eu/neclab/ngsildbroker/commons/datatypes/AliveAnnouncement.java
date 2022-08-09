@@ -1,7 +1,13 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-public class AliveAnnouncement {
+import java.io.Serializable;
 
+public class AliveAnnouncement implements Serializable {
+
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 6312100677371638447L;
 	private String id;
 
 	public AliveAnnouncement() {
