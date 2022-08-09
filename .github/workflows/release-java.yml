@@ -77,7 +77,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./all-in-one-runner.zip
+          asset_path: ./AllInOneRunner/target/quarkus-app/all-in-one-runner.zip
           asset_name: all-in-one-runner-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-manager release
@@ -89,7 +89,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./history-manager.zip
+          asset_path: ./HistoryManager/target/quarkus-app/history-manager.zip
           asset_name: history-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-subscription-manager release
@@ -101,7 +101,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./registry-subscription-manager.zip
+          asset_path: ./RegistrySubscriptionManager/target/quarkus-app/registry-subscription-manager.zip
           asset_name: registry-subscription-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-manager release
@@ -113,7 +113,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./registry-manager.zip
+          asset_path: ./RegistryManager/target/quarkus-app/registry-manager.zip
           asset_name: registry-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip subscription-manager release
@@ -125,7 +125,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./subscription-manager.zip
+          asset_path: ./SubscriptionManager/target/quarkus-app/subscription-manager.zip
           asset_name: subscription-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip query-manager release
@@ -137,7 +137,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./query-manager.zip
+          asset_path: ./QueryManager/target/quarkus-app/query-manager.zip
           asset_name: query-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip entity-manager release
@@ -149,7 +149,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./entity-manager.zip
+          asset_path: ./EntityManager/target/quarkus-app/entity-manager.zip
           asset_name: entity-manager-java-kafka-eureka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
   build-java-kafka:
@@ -196,7 +196,7 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
-      - name: start docker aaio 
+      - name: start docker dist 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
           sleep 120
@@ -248,7 +248,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./all-in-one-runner.zip
+          asset_path: ./AllInOneRunner/target/quarkus-app/all-in-one-runner.zip
           asset_name: all-in-one-runner-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-manager release
@@ -260,7 +260,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./history-manager.zip
+          asset_path: ./HistoryManager/target/quarkus-app/history-manager.zip
           asset_name: history-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-subscription-manager release
@@ -272,7 +272,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./registry-subscription-manager.zip
+          asset_path: ./RegistrySubscriptionManager/target/quarkus-app/registry-subscription-manager.zip
           asset_name: registry-subscription-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip registry-manager release
@@ -284,7 +284,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./registry-manager.zip
+          asset_path: ./RegistryManager/target/quarkus-app/registry-manager.zip
           asset_name: registry-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip subscription-manager release
@@ -296,7 +296,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./subscription-manager.zip
+          asset_path: ./SubscriptionManager/target/quarkus-app/subscription-manager.zip
           asset_name: subscription-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip query-manager release
@@ -308,7 +308,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./query-manager.zip
+          asset_path: ./QueryManager/target/quarkus-app/query-manager.zip
           asset_name: query-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip entity-manager release
@@ -320,7 +320,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./entity-manager.zip
+          asset_path: ./EntityManager/target/quarkus-app/entity-manager.zip
           asset_name: entity-manager-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
   build-java-aaio:
@@ -382,7 +382,7 @@ jobs:
           prerelease: false
           body_path: RELEASENOTES
       - name: Zip aaio release
-        working-directory: SubscriptionManager/target/quarkus-app
+        working-directory: AllInOneRunner/target/quarkus-app
         run: zip -qq -r all-in-one-runner.zip *
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
@@ -390,6 +390,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./all-in-one-runner.zip
+          asset_path: ./AllInOneRunner/target/quarkus-app/all-in-one-runner.zip
           asset_name: all-in-one-runner-java-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip

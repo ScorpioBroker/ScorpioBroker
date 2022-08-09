@@ -41,8 +41,9 @@ public class ConsulRegistration {
 	@ConfigProperty(name = "scorpio.consul.ervice-id")
 	Optional<String> serviceId;
 
-	// @ConfigProperty(name = "scorpio.consul.active", defaultValue = "false")
-	boolean active = true;
+	@ConfigProperty(name = "scorpio.consul.active", defaultValue = "false")
+	boolean active;
+	
 	@ConfigProperty(name = "scorpio.consul.host", defaultValue = "localhost")
 	String consulHost;
 
@@ -81,7 +82,7 @@ public class ConsulRegistration {
 					.setAddress(InetAddress.getLocalHost().getHostName());
 
 			this.client = ConsulClient.create(vertx, options);
-			
+
 			logger.info("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 			client.registerService(serviceOptions, event -> {
 				logger.info("event called");
