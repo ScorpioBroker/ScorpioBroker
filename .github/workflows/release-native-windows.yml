@@ -156,10 +156,19 @@ jobs:
       - name: Start Kafka
         uses: 280780363/kafka-action@v1.0
         with:
-          kafka version: "latest"           zookeeper version: "latest"           kafka port: 9092           zookeeper port: 2181           auto create topic: "true"        -name: Start Postgres with postgis
+          kafka version: "latest"
+          zookeeper version: "latest"
+          kafka port: 9092
+          zookeeper port: 2181
+          auto create topic: "true"
+      - name: Start Postgres with postgis
         uses: huaxk/postgis-action@v1
         with:
-          postgresql version: '11'            postgresql password: 'ngb'             postgresql user: 'ngb'            postgresql db: 'ngb'        - name: Start aaio windows
+          postgresql version: '11'
+          postgresql password: 'ngb'
+          postgresql user: 'ngb'
+          postgresql db: 'ngb'
+      - name: Start aaio windows
         shell: pwsh
         run: |
           sleep 30
@@ -346,6 +355,13 @@ jobs:
           del .\BrokerParent\pom.xml
           move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
           mvn clean package -Dnative -Din-memory -Pin-memory -Dos=windows -D"quarkus.profile"=in-memory 
+      - name: Start Postgres with postgis
+        uses: huaxk/postgis-action@v1
+        with:
+          postgresql version: '11'
+          postgresql password: 'ngb'
+          postgresql user: 'ngb'
+          postgresql db: 'ngb'
       - name: Start aaio windows
         shell: pwsh
         run: |
