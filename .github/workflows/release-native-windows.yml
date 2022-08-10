@@ -153,40 +153,39 @@ jobs:
           del .\BrokerParent\pom.xml
           move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
           mvn clean package -Pkafka -Dnative -Dkafka -Dos=windows -D"quarkus.profile"=kafka 
-      - name: Start Kafka
-        uses: 280780363/kafka-action@v1.0
-        with:
-          kafka version: "latest"
-          zookeeper version: "latest"
-          kafka port: 9092
-          zookeeper port: 2181
-          auto create topic: "true"
-      - name: Start Postgres with postgis
-        uses: huaxk/postgis-action@v1
-        with:
-          postgresql version: '11'
-          postgresql password: 'ngb'
-          postgresql user: 'ngb'
-          postgresql db: 'ngb'
+      - name: Start kafka and postgis
+        shell: pwsh
+        run: |
+          docker-compose -f compose-files\docker-compose-kafka-postgis.yml up &
+          sleep 30
       - name: Start aaio windows
         shell: pwsh
         run: |
-          sleep 30
-          Start-Process -NoNewWindow AllInOneRunner\target\all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+          AllInOneRunner\target\all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe &
           sleep 3
       - name: newman action
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
-          environment: api-test-aaio-environment.json
+          environment: api-test-aaio-localhost-environment.json
       - name: Stop aaio windows
         shell: pwsh
         run: |
           taskkill /IM all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+      - name: Stop kafka and postgis
+        shell: pwsh
+        run: |
+          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
+          docker system prune -a
+          docker volume prune
+      - name: Start kafka and postgis
+        shell: pwsh
+        run: |
+          docker-compose -f compose-files\docker-compose-kafka-postgis.yml up &
+          sleep 30
       - name: Start EntityManager windows
         shell: pwsh
         run: |
-          sleep 30
           Start-Process -NoNewWindow EntityManager\target\entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           sleep 3
       - name: Start QueryManager windows
@@ -218,7 +217,7 @@ jobs:
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
-          environment: api-test-dist-environment.json
+          environment: api-test-dist-localhost-environment.json
       - name: Stop EntityManager windows
         shell: pwsh
         run: |
@@ -243,6 +242,12 @@ jobs:
         shell: pwsh
         run: |
           taskkill /IM history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+      - name: Stop kafka and postgis
+        shell: pwsh
+        run: |
+          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
+          docker system prune -a
+          docker volume prune
       - name: Create Release ${{steps.get-id.outputs.id}}-windows-kafka
         id: create_release
         uses: actions/create-release@v1
@@ -355,28 +360,31 @@ jobs:
           del .\BrokerParent\pom.xml
           move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
           mvn clean package -Dnative -Din-memory -Pin-memory -Dos=windows -D"quarkus.profile"=in-memory 
-      - name: Start Postgres with postgis
-        uses: huaxk/postgis-action@v1
-        with:
-          postgresql version: '11'
-          postgresql password: 'ngb'
-          postgresql user: 'ngb'
-          postgresql db: 'ngb'
+      - name: Start kafka and postgis
+        shell: pwsh
+        run: |
+          docker-compose -f compose-files\docker-compose-postgis.yml up &
+          sleep 30
       - name: Start aaio windows
         shell: pwsh
         run: |
-          sleep 30
           Start-Process -NoNewWindow AllInOneRunner\target\all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
           sleep 3
       - name: newman action
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
-          environment: api-test-aaio-environment.json
+          environment: api-test-aaio-localhost-environment.json
       - name: Stop aaio windows
         shell: pwsh
         run: |
           taskkill /IM all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+      - name: Stop kafka and postgis
+        shell: pwsh
+        run: |
+          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
+          docker system prune -a
+          docker volume prune
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1

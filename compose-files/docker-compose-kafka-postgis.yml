@@ -12,9 +12,9 @@ services:
   kafka:
     image: bitnami/kafka
     ports:
-      - "9092"
+      - "9092:9092"
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_HOST_NAME: 0.0.0.0
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_PORT: 9092
       KAFKA_LOG_RETENTION_MS: 10000
@@ -27,30 +27,8 @@ services:
   postgres:
     image: postgis/postgis
     ports:
-      - "5432"
+      - "5432:5432"
     environment:
       POSTGRES_USER: ngb
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
-  eureka:
-    image: scorpiobroker/scorpio:eureka-server_latest
-    ports:
-      - "8761"
-  gateway:
-    image: scorpiobroker/scorpio:gateway_aaio_latest
-    ports:
-      - "9090:9090"
-    depends_on:
-      - eureka
-  scorpio:
-    image: scorpiobroker/all-in-one-runner:java-kafka-eureka-latest
-    ports:
-      - "27015"
-    environment:
-      DBHOST: postgres
-      BUSHOST: kafka
-      QUARKUS_EUREKA_SERVICE-URL_DEFAULT: "http://eureka:8761/eureka"
-    depends_on:
-      - postgres
-      - kafka
-      - eureka

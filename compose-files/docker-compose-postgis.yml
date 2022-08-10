@@ -8,16 +8,8 @@ services:
   postgres:
     image: postgis/postgis
     ports:
-      - "5432"
+      - "5432:5432"
     environment:
       POSTGRES_USER: ngb
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
-  scorpio:
-    image: scorpiobroker/all-in-one-runner:windows-latest
-    environment:
-      DBHOST: postgres
-    ports:
-      - "9090:9090"
-    depends_on:
-      - postgres
