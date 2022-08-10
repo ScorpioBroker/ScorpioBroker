@@ -57,7 +57,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-manager
@@ -65,7 +66,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-history-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
@@ -73,7 +75,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-registry-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
@@ -81,7 +84,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-registry-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
@@ -89,7 +93,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
@@ -97,7 +102,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-query-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
@@ -105,7 +111,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-entity-manager-${{steps.get-id.outputs.id}}-windows-kafka-eureka.exe
           asset_content_type: application/octet-stream
   build-windows-kafka:
@@ -243,7 +250,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-manager
@@ -251,7 +259,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./HistoryManager/target/history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-history-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
@@ -259,7 +268,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-registry-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
@@ -267,7 +277,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-registry-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
@@ -275,7 +286,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-subscription-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
@@ -283,7 +295,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-query-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
@@ -291,7 +304,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-entity-manager-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
   build-windows-aaio:
@@ -363,6 +377,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}           asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows.exe
           asset_content_type: application/octet-stream
