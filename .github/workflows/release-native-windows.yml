@@ -299,31 +299,26 @@ jobs:
       - name: Start QueryManager windows
         shell: pwsh
         run: |
-          sleep 30
           Start-Process -NoNewWindow QueryManager\target\query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           sleep 3
       - name: Start SubscriptionManager windows
         shell: pwsh
         run: |
-          sleep 30
           Start-Process -NoNewWindow SubscriptionManager\target\subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           sleep 3
       - name: Start RegistryManager windows
         shell: pwsh
         run: |
-          sleep 30
           Start-Process -NoNewWindow RegistryManager\target\registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           sleep 3
       - name: Start RegistrySubscriptionManager windows
         shell: pwsh
         run: |
-          sleep 30
           Start-Process -NoNewWindow RegistrySubscriptionManager\target\registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           sleep 3
       - name: Start HistoryManager windows
         shell: pwsh
         run: |
-          sleep 30
           Start-Process -NoNewWindow HistoryManager\target\history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           sleep 3
       - name: newman action
