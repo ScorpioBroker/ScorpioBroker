@@ -31,13 +31,6 @@ public abstract class CSourceMessagingBase {
 			new LinkedBlockingQueue<Runnable>());
 
 	public Uni<Void> baseHandleEntity(Message<BaseRequest> mutinyMessage) {
-
-		try {
-			logger.debug("received message in csource from entity channel"
-					+ JsonUtils.toString(mutinyMessage.getPayload().getFinalPayload()));
-		} catch (Exception e) {
-			logger.error("failed to output debug", e);
-		}
 		BaseRequest message = mutinyMessage.getPayload();
 		executor.execute(new Runnable() {
 

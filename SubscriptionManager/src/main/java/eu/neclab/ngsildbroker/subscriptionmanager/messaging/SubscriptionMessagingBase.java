@@ -18,7 +18,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
 
-
 public abstract class SubscriptionMessagingBase {
 	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessagingBase.class);
 	private ThreadPoolExecutor entityExecutor = new ThreadPoolExecutor(10, 50, 1, TimeUnit.MINUTES,
@@ -30,7 +29,6 @@ public abstract class SubscriptionMessagingBase {
 	SubscriptionService subscriptionService;
 
 	public Uni<Void> baseHandleEntity(Message<BaseRequest> message, long timestamp) {
-		
 
 		BaseRequest payload = new BaseRequest(message.getPayload());
 		entityExecutor.execute(new Runnable() {
@@ -53,12 +51,6 @@ public abstract class SubscriptionMessagingBase {
 	}
 
 	private void handleBaseRequestEntity(BaseRequest message, String key, long timeStamp) {
-		try {
-			logger.debug(JsonUtils.toPrettyString(message.getFinalPayload()));
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		switch (message.getRequestType()) {
 			case AppConstants.APPEND_REQUEST:
 				logger.debug("Append got called: " + key);

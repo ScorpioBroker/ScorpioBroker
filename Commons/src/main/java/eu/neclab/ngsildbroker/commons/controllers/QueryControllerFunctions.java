@@ -25,6 +25,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.MultiMap;
@@ -170,7 +171,8 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			qp.setCheck(check);
 			return queryService.getData(qp, decodedQueryParams, t, headers, false).onItem()
 					.transformToUni(t2 -> HttpUtils.generateReply(request, t2, forceArray, qp.getCountResult(), context,
-							t, AppConstants.QUERY_ENDPOINT));
+							t, AppConstants.QUERY_ENDPOINT))
+					.runSubscriptionOn(Infrastructure.getDefaultExecutor());
 
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

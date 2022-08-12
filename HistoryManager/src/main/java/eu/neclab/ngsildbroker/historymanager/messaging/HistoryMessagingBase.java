@@ -30,12 +30,7 @@ public abstract class HistoryMessagingBase {
 	HistoryService historyService;
 
 	public Uni<Void> baseHandleEntity(Message<BaseRequest> message) {
-		try {
-			logger.debug("received message in history from entity channel"
-					+ JsonUtils.toString(message.getPayload().getFinalPayload()));
-		} catch (Exception e) {
-			logger.error("failed to output debug", e);
-		}
+		
 		entityExecutor.execute(new Runnable() {
 
 			@Override
