@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import java.util.List;
@@ -7,6 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 
 import org.slf4j.Logger;
@@ -74,7 +77,15 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each(" + tableDataColumn + ") WHERE key IN ( "
 					+ expandedAttributeList + "))";
 		}
-		String sqlQuery = "SELECT DISTINCT " + dataColumn + " as data";
+
+		String sqlQuery;
+		try {
+			sqlQuery = "SELECT DISTINCT " + dataColumn + " as data, CASE WHEN matchContext(ogcontext, context, "
+					+ qp.getContextHash() + ", " + JsonUtils.toString(qp.getContext())
+					+ ") THEN ogcompacted ELSE null END AS compacted";
+		} catch (IOException e) {
+			throw new AssertionError();
+		}
 		if (qp.getCountResult()) {
 			sqlQuery += ", count(*) OVER() AS count";
 		}

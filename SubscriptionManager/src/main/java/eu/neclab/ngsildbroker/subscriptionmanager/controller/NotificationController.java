@@ -44,7 +44,7 @@ public class NotificationController {
 		return HttpUtils.getAtContext(req).onItem().transform(Unchecked.function(t -> {
 			subscriptionManager.remoteNotify(id,
 					(Map<String, Object>) JsonLdProcessor.expand(t, JsonUtils.fromString(payload), opts,
-							AppConstants.NOTIFICAITION_RECEIVED, HttpUtils.doPreflightCheck(req, t)).get(0));
+							AppConstants.NOTIFICAITION_RECEIVED, HttpUtils.doPreflightCheck(req, t)).getItem1().get(0));
 			return RestResponse.ok();
 		})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 

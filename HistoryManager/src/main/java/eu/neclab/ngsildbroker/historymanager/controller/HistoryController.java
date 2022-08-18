@@ -139,7 +139,7 @@ public class HistoryController {
 						Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 								.expand(linkHeaders, JsonUtils.fromString(payload), opts,
 										AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
-								.get(0);
+								.getItem1().get(0);
 						return historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId,
 								resolved, attrId, instanceId, context).onItem().transform(t2 -> {
 									return RestResponse.noContent();

@@ -18,6 +18,7 @@ public class QueryResult extends BaseResult {
 	private Long resultsLeftAfter;
 	private Long resultsLeftBefore;
 	private List<Map<String, Object>> data;
+	private List<Map<String, Object>> compactedData;
 	private Long count = 0l;
 
 	public QueryResult(List<Map<String, Object>> data, String errorMsg, ErrorType errorType, int shortErrorMsg,
@@ -80,6 +81,14 @@ public class QueryResult extends BaseResult {
 
 	public void setCount(Long count) {
 		this.count = count;
+	}
+
+	public List<Map<String, Object>> getCompactedData() {
+		return compactedData;
+	}
+
+	public void setCompactedData(List<Map<String, Object>> compactedData) {
+		this.compactedData = compactedData;
 	}
 
 	public void finalize() throws Throwable {

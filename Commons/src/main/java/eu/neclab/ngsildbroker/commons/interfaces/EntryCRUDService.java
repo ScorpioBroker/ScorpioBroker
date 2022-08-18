@@ -18,7 +18,8 @@ public interface EntryCRUDService {
 	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry, String[] options);
 
-	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved);
+	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			Map<String, Object> original, int contextHash, Map<String, Object> context);
 
 	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId);
 

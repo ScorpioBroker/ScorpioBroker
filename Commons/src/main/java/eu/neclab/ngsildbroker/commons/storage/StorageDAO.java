@@ -20,6 +20,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
@@ -143,9 +144,15 @@ public abstract class StorageDAO {
 					return storageFunctions.translateNgsildQueryToSql(qp, conn).onItem().transform(t -> {
 						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 						List<Map<String, Object>> list = Lists.newArrayList();
+						List<Map<String, Object>> compactedList = Lists.newArrayList();
 						Long count = 0l;
 						for (Row e : t) {
-							list.add(e.getJsonObject("data").getMap());
+							JsonObject compacted = e.getJsonObject("compacted");
+							if (compacted == null) {
+								list.add(e.getJsonObject("data").getMap());
+							} else {
+								compactedList.add(compacted.getMap());
+							}
 							count = e.getLong("count");
 						}
 						queryResult.setCount(count);
@@ -162,6 +169,7 @@ public abstract class StorageDAO {
 						}
 						queryResult.setResultsLeftBefore(before);
 						queryResult.setData(list);
+						queryResult.setCompactedData(compactedList);
 						return queryResult;
 					});
 				} else {
@@ -412,10 +420,13 @@ public abstract class StorageDAO {
 			JsonObject kvValue = request.getKeyValue();
 			if (value != null) {
 				if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
+					CreateEntityRequest tmp = (CreateEntityRequest) request;
 					sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 							+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
-							+ ") VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb)";
-					return client.preparedQuery(sql).execute(Tuple.of(key, value, valueWithoutSysAttrs, kvValue))
+							+ ",context, ogcompacted, ogcontext) VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, $5, $6::jsonb, $7::jsonb )";
+					return client.preparedQuery(sql)
+							.execute(Tuple.from(Lists.newArrayList(key, value, valueWithoutSysAttrs, kvValue,
+									tmp.getContextHash(), tmp.getOriginal(), tmp.getContext())))
 							.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> {
 								if (e instanceof PgException) {
 									PgException pgE = (PgException) e;

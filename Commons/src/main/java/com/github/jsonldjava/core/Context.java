@@ -32,7 +32,7 @@ public class Context extends LinkedHashMap<String, Object> {
 	private static final long serialVersionUID = 2894534897574805571L;
 
 	private JsonLdOptions options;
-	private Map<String, Object> termDefinitions;
+	public Map<String, Object> termDefinitions;
 	public Map<String, Object> inverse = null;
 
 	private boolean dontAddCoreContext;

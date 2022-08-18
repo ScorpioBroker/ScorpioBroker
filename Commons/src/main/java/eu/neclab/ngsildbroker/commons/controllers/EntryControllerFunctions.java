@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -78,7 +79,7 @@ public interface EntryControllerFunctions {
 			Map<String, Object> entry;
 			try {
 				entry = (Map<String, Object>) JsonLdProcessor.expand((List<Object>) tupleItem.getItem2(),
-						tupleItem.getItem3(), opts, payloadType, tupleItem.getItem1()).get(0);
+						tupleItem.getItem3(), opts, payloadType, tupleItem.getItem1()).getItem1().get(0);
 			} catch (Exception e1) {
 				NGSIRestResponse response;
 				if (e1 instanceof ResponseException) {
@@ -119,91 +120,92 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> createMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int maxCreateBatch, int payloadType) {
-		List<Map<String, Object>> jsonPayload;
-		try {
-			jsonPayload = getJsonPayload(payload);
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
-		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
-			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
-					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
-		}
-		return HttpUtils.getAtContext(request).onItem().transformToMulti(t -> {
-			boolean preFlight;
-
-			try {
-				preFlight = HttpUtils.doPreflightCheck(request, t);
-			} catch (ResponseException e) {
-				return Multi.createFrom().failure(e);
-			}
-			Multi<Tuple3<List<Object>, Map<String, Object>, Boolean>> tmpResult = Multi.createFrom()
-					.items(jsonPayload.parallelStream()).onItem().transform(i -> Tuple3.of(t, i, preFlight));
-			return tmpResult;
-		}).onItem().transformToUni(itemTuple -> {
-			Map<String, Object> expanded;
-			String entityId;
-			if (itemTuple.getItem2().containsKey(NGSIConstants.JSON_LD_ID)) {
-				entityId = (String) itemTuple.getItem2().get(NGSIConstants.JSON_LD_ID);
-			} else if (itemTuple.getItem2().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
-				entityId = (String) itemTuple.getItem2().get(NGSIConstants.QUERY_PARAMETER_ID);
-			} else {
-				entityId = "NO ID PROVIDED";
-			}
-			try {
-				expanded = (Map<String, Object>) JsonLdProcessor
-						.expand(itemTuple.getItem1(), itemTuple.getItem2(), opts, payloadType, itemTuple.getItem3())
-						.get(0);
-			} catch (Exception e1) {
-				NGSIRestResponse response;
-				if (e1 instanceof ResponseException) {
-					response = new NGSIRestResponse((ResponseException) e1);
-				} else {
-					response = new NGSIRestResponse(ErrorType.InvalidRequest,
-							"failed to expand payload because: " + e1.getCause().getLocalizedMessage());
-				}
-				return Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null));
-			}
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			return entityService.createEntry(headers, expanded).onItem()
-					.transform(i -> Tuple2.of(new BatchFailure("dummy", null), i)).onFailure().recoverWithItem(e -> {
-						NGSIRestResponse response;
-						if (e instanceof ResponseException) {
-							response = new NGSIRestResponse((ResponseException) e);
-						} else {
-							response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-						}
-
-						return Tuple2.of(new BatchFailure(entityId, response), null);
-					});
-		}).collectFailures().concatenate().collect().asList().onItemOrFailure().transform((results, fails) -> {
-			if (results == null) {
-				return HttpUtils.handleControllerExceptions(fails);
-			}
-			BatchResult result = new BatchResult();
-			results.forEach(i -> {
-				if (i.getItem2() != null) {
-					result.addSuccess(((CreateResult) i.getItem2()).getEntityId());
-				} else {
-					result.addFail(i.getItem1());
-				}
-			});
-			System.out.println(fails);
-			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
-		});
-
-//				t -> {
+		return Uni.createFrom().item(RestResponse.noContent());
+//		List<Map<String, Object>> jsonPayload;
+//		try {
+//			jsonPayload = getJsonPayload(payload);
+//		} catch (Exception exception) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
+//		}
+//		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
+//			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
+//					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
+//		}
+//		return HttpUtils.getAtContext(request).onItem().transformToMulti(t -> {
+//			boolean preFlight;
+//
+//			try {
+//				preFlight = HttpUtils.doPreflightCheck(request, t);
+//			} catch (ResponseException e) {
+//				return Multi.createFrom().failure(e);
+//			}
+//			Multi<Tuple3<List<Object>, Map<String, Object>, Boolean>> tmpResult = Multi.createFrom()
+//					.items(jsonPayload.parallelStream()).onItem().transform(i -> Tuple3.of(t, i, preFlight));
+//			return tmpResult;
+//		}).onItem().transformToUni(itemTuple -> {
+//			Map<String, Object> expanded;
+//			String entityId;
+//			if (itemTuple.getItem2().containsKey(NGSIConstants.JSON_LD_ID)) {
+//				entityId = (String) itemTuple.getItem2().get(NGSIConstants.JSON_LD_ID);
+//			} else if (itemTuple.getItem2().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
+//				entityId = (String) itemTuple.getItem2().get(NGSIConstants.QUERY_PARAMETER_ID);
+//			} else {
+//				entityId = "NO ID PROVIDED";
+//			}
+//			try {
+//				expanded = (Map<String, Object>) JsonLdProcessor
+//						.expand(itemTuple.getItem1(), itemTuple.getItem2(), opts, payloadType, itemTuple.getItem3())
+//						.getItem1().get(0);
+//			} catch (Exception e1) {
+//				NGSIRestResponse response;
+//				if (e1 instanceof ResponseException) {
+//					response = new NGSIRestResponse((ResponseException) e1);
+//				} else {
+//					response = new NGSIRestResponse(ErrorType.InvalidRequest,
+//							"failed to expand payload because: " + e1.getCause().getLocalizedMessage());
+//				}
+//				return Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null));
+//			}
+//			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+//			return entityService.createEntry(headers, expanded, itemTuple.getItem2(), -1).onItem()
+//					.transform(i -> Tuple2.of(new BatchFailure("dummy", null), i)).onFailure().recoverWithItem(e -> {
+//						NGSIRestResponse response;
+//						if (e instanceof ResponseException) {
+//							response = new NGSIRestResponse((ResponseException) e);
+//						} else {
+//							response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+//						}
+//
+//						return Tuple2.of(new BatchFailure(entityId, response), null);
+//					});
+//		}).collectFailures().concatenate().collect().asList().onItemOrFailure().transform((results, fails) -> {
+//			if (results == null) {
+//				return HttpUtils.handleControllerExceptions(fails);
+//			}
 //			BatchResult result = new BatchResult();
-//			t.forEach(i -> {
+//			results.forEach(i -> {
 //				if (i.getItem2() != null) {
-//					result.addSuccess(i.getItem2().getEntityId());
+//					result.addSuccess(((CreateResult) i.getItem2()).getEntityId());
 //				} else {
 //					result.addFail(i.getItem1());
 //				}
 //			});
+//			System.out.println(fails);
 //			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
 //		});
+//
+////				t -> {
+////			BatchResult result = new BatchResult();
+////			t.forEach(i -> {
+////				if (i.getItem2() != null) {
+////					result.addSuccess(i.getItem2().getEntityId());
+////				} else {
+////					result.addFail(i.getItem1());
+////				}
+////			});
+////			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
+////		});
 	}
 
 	@SuppressWarnings("unchecked")
@@ -228,7 +230,8 @@ public interface EntryControllerFunctions {
 		if (body == null) {
 			RestResponse.status(status);
 		}
-		return RestResponseBuilderImpl.create(status).entity(body).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
+		return RestResponseBuilderImpl.create(status).entity(body)
+				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -266,7 +269,8 @@ public interface EntryControllerFunctions {
 				if (t2 instanceof String) {
 					entityId = (String) t2;
 				} else {
-					List<Object> resolved = JsonLdProcessor.expand(t, t2, opts, payloadType, atContextAllowed);
+					List<Object> resolved = JsonLdProcessor.expand(t, t2, opts, payloadType, atContextAllowed)
+							.getItem1();
 					entityId = (String) ((Map<String, Object>) resolved.get(0)).get(NGSIConstants.JSON_LD_ID);
 				}
 
@@ -304,164 +308,166 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> upsertMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, String options, int maxCreateBatch, int payloadType) {
-		List<Map<String, Object>> jsonPayload;
-		try {
-			jsonPayload = getJsonPayload(payload);
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
-		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
-			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
-					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
-		}
-		boolean replace;
-
-		String[] optionsArray = getOptionsArray(options);
-		if (ArrayUtils.contains(optionsArray, NGSIConstants.UPDATE_OPTION)) {
-			replace = false;
-		} else {
-			replace = true;
-		}
-		return HttpUtils.getAtContext(request).onItem().transformToMulti(Unchecked.function(t -> {
-			boolean preFlight = HttpUtils.doPreflightCheck(request, t);
-			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem()
-					.transform(i -> Tuple3.of(preFlight, t, i));
-		})).onItem().transformToUni(Unchecked.function(tt -> {
-			String entityIdTmp;
-			if (tt.getItem3().containsKey(NGSIConstants.JSON_LD_ID)) {
-				entityIdTmp = (String) tt.getItem3().get(NGSIConstants.JSON_LD_ID);
-			} else if (tt.getItem3().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
-				entityIdTmp = (String) tt.getItem3().get(NGSIConstants.QUERY_PARAMETER_ID);
-			} else {
-				entityIdTmp = "NO ID PROVIDED";
-			}
-			Map<String, Object> expanded = null;
-			try {
-				expanded = (Map<String, Object>) JsonLdProcessor
-						.expand((List<Object>) tt.getItem2(), tt.getItem3(), opts, payloadType, tt.getItem1()).get(0);
-			} catch (Exception e) {
-				NGSIRestResponse response;
-				if (e instanceof ResponseException) {
-					response = new NGSIRestResponse((ResponseException) e);
-				} else {
-					response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-				}
-				return Uni.createFrom().item(Tuple3.of(new BatchFailure(entityIdTmp, response), null, false));
-			}
-			Tuple4<Map<String, Object>, Object, ArrayListMultimap<String, String>, String[]> t = Tuple4.of(expanded,
-					tt.getItem2(), HttpUtils.getHeaders(request), getOptionsArray(options));
-
-			Map<String, Object> entry = expanded;// t.getItem1();
-			String entityId;
-			if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
-				entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
-			} else {
-				return Uni.createFrom()
-						.failure(new ResponseException(ErrorType.BadRequestData, "No Entity Id provided"));
-			}
-			if (replace) {
-				return entityService.deleteEntry(t.getItem3(), entityId).onFailure().recoverWithUni(e -> {
-					NGSIRestResponse response;
-					if (e instanceof ResponseException) {
-						response = new NGSIRestResponse((ResponseException) e);
-						if (response.getStatus().equals(HttpResponseStatus.NOT_FOUND)) {
-							return Uni.createFrom().item(false);
-						}
-					}
-					return Uni.createFrom().failure(e);
-				}).onItem().transformToUni(t2 -> {
-					return entityService.createEntry(t.getItem3(), t.getItem1()).onItem().transform(i -> {
-						boolean inserted;
-						if (t2) {
-							inserted = false;
-						} else {
-							inserted = true;
-						}
-						return Tuple3.of(new BatchFailure("", null), entityId, inserted);
-					});
-				}).onFailure().recoverWithItem(e -> {
-					NGSIRestResponse response;
-					if (e instanceof ResponseException) {
-						response = new NGSIRestResponse((ResponseException) e);
-					} else {
-						response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-					}
-					return Tuple3.of(new BatchFailure(entityId, response), null, false);
-				});
-			} else {
-				return entityService.appendToEntry(t.getItem3(), entityId, entry, t.getItem4()).onItem()
-						.transform(Unchecked.function(i -> {
-							if (i.getNotUpdated().isEmpty()) {
-								return Tuple3.of(new BatchFailure("", null), entityId, false);
-							} else {
-								return Tuple3.of(
-										new BatchFailure(entityId, new NGSIRestResponse(ErrorType.MultiStatus,
-												JsonUtils.toPrettyString(i.getNotUpdated()) + " was not added")),
-										null, false);
-							}
-						})).onFailure().recoverWithUni(e -> {
-							NGSIRestResponse response;
-							if (e instanceof ResponseException) {
-								response = new NGSIRestResponse((ResponseException) e);
-								if (response.getStatus().equals(HttpResponseStatus.NOT_FOUND)) {
-									return entityService.createEntry(t.getItem3(), entry).onItem()
-											.transform(i -> Tuple3.of(new BatchFailure("", null), entityId, true))
-											.onFailure().recoverWithItem(e1 -> {
-												NGSIRestResponse response1;
-												if (e1 instanceof ResponseException) {
-													response1 = new NGSIRestResponse((ResponseException) e1);
-												} else {
-													response1 = new NGSIRestResponse(ErrorType.InternalError,
-															e1.getLocalizedMessage());
-												}
-												return Tuple3.of(new BatchFailure(entityId, response1), null, false);
-											});
-								}
-							} else {
-								response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-							}
-							return Uni.createFrom().item(Tuple3.of(new BatchFailure(entityId, response), null, false));
-						});
-			}
-		})).collectFailures().concatenate().collect().asList().onItem().transform(t -> {
-			BatchResult result = new BatchResult();
-			boolean insertedOneEntity = false;
-			boolean appendedOneEntity = false;
-			for (Tuple3<BatchFailure, ? extends Object, Boolean> i : t) {
-				if (i.getItem2() != null) {
-					if (i.getItem3()) {
-						insertedOneEntity = true;
-					} else {
-						appendedOneEntity = true;
-					}
-					result.addSuccess((String) i.getItem2());
-				} else {
-					result.addFail(i.getItem1());
-				}
-			}
-			boolean failedOnce = !result.getFails().isEmpty();
-			int status;
-			// for 1.5.1 update no more bad request on fail only multi status
-			if (failedOnce) {
-				if (insertedOneEntity || appendedOneEntity) {
-					status = HttpStatus.SC_MULTI_STATUS;
-				} else {
-					status = HttpStatus.SC_BAD_REQUEST;
-				}
-			} else {
-				if (insertedOneEntity && appendedOneEntity) {
-					status = HttpStatus.SC_MULTI_STATUS;
-				} else {
-					if (insertedOneEntity) {
-						status = HttpStatus.SC_CREATED;
-					} else {
-						status = HttpStatus.SC_NO_CONTENT;
-					}
-				}
-			}
-			return generateBatchResultReply(result, status);
-		});
+		return Uni.createFrom().item(RestResponse.noContent());
+//		List<Map<String, Object>> jsonPayload;
+//		try {
+//			jsonPayload = getJsonPayload(payload);
+//		} catch (Exception exception) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
+//		}
+//		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
+//			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
+//					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
+//		}
+//		boolean replace;
+//
+//		String[] optionsArray = getOptionsArray(options);
+//		if (ArrayUtils.contains(optionsArray, NGSIConstants.UPDATE_OPTION)) {
+//			replace = false;
+//		} else {
+//			replace = true;
+//		}
+//		return HttpUtils.getAtContext(request).onItem().transformToMulti(Unchecked.function(t -> {
+//			boolean preFlight = HttpUtils.doPreflightCheck(request, t);
+//			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem()
+//					.transform(i -> Tuple3.of(preFlight, t, i));
+//		})).onItem().transformToUni(Unchecked.function(tt -> {
+//			String entityIdTmp;
+//			if (tt.getItem3().containsKey(NGSIConstants.JSON_LD_ID)) {
+//				entityIdTmp = (String) tt.getItem3().get(NGSIConstants.JSON_LD_ID);
+//			} else if (tt.getItem3().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
+//				entityIdTmp = (String) tt.getItem3().get(NGSIConstants.QUERY_PARAMETER_ID);
+//			} else {
+//				entityIdTmp = "NO ID PROVIDED";
+//			}
+//			Map<String, Object> expanded = null;
+//			Map<String, Object> original = tt.getItem3();
+//			try {
+//				expanded = (Map<String, Object>) JsonLdProcessor
+//						.expand((List<Object>) tt.getItem2(), original, opts, payloadType, tt.getItem1()).getItem1().get(0);
+//			} catch (Exception e) {
+//				NGSIRestResponse response;
+//				if (e instanceof ResponseException) {
+//					response = new NGSIRestResponse((ResponseException) e);
+//				} else {
+//					response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+//				}
+//				return Uni.createFrom().item(Tuple3.of(new BatchFailure(entityIdTmp, response), null, false));
+//			}
+//			Tuple4<Map<String, Object>, Object, ArrayListMultimap<String, String>, String[]> t = Tuple4.of(expanded,
+//					tt.getItem2(), HttpUtils.getHeaders(request), getOptionsArray(options));
+//
+//			Map<String, Object> entry = expanded;// t.getItem1();
+//			String entityId;
+//			if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
+//				entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
+//			} else {
+//				return Uni.createFrom()
+//						.failure(new ResponseException(ErrorType.BadRequestData, "No Entity Id provided"));
+//			}
+//			if (replace) {
+//				return entityService.deleteEntry(t.getItem3(), entityId).onFailure().recoverWithUni(e -> {
+//					NGSIRestResponse response;
+//					if (e instanceof ResponseException) {
+//						response = new NGSIRestResponse((ResponseException) e);
+//						if (response.getStatus().equals(HttpResponseStatus.NOT_FOUND)) {
+//							return Uni.createFrom().item(false);
+//						}
+//					}
+//					return Uni.createFrom().failure(e);
+//				}).onItem().transformToUni(t2 -> {
+//					return entityService.createEntry(t.getItem3(), t.getItem1()).onItem().transform(i -> {
+//						boolean inserted;
+//						if (t2) {
+//							inserted = false;
+//						} else {
+//							inserted = true;
+//						}
+//						return Tuple3.of(new BatchFailure("", null), entityId, inserted);
+//					});
+//				}).onFailure().recoverWithItem(e -> {
+//					NGSIRestResponse response;
+//					if (e instanceof ResponseException) {
+//						response = new NGSIRestResponse((ResponseException) e);
+//					} else {
+//						response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+//					}
+//					return Tuple3.of(new BatchFailure(entityId, response), null, false);
+//				});
+//			} else {
+//				return entityService.appendToEntry(t.getItem3(), entityId, entry, t.getItem4()).onItem()
+//						.transform(Unchecked.function(i -> {
+//							if (i.getNotUpdated().isEmpty()) {
+//								return Tuple3.of(new BatchFailure("", null), entityId, false);
+//							} else {
+//								return Tuple3.of(
+//										new BatchFailure(entityId, new NGSIRestResponse(ErrorType.MultiStatus,
+//												JsonUtils.toPrettyString(i.getNotUpdated()) + " was not added")),
+//										null, false);
+//							}
+//						})).onFailure().recoverWithUni(e -> {
+//							NGSIRestResponse response;
+//							if (e instanceof ResponseException) {
+//								response = new NGSIRestResponse((ResponseException) e);
+//								if (response.getStatus().equals(HttpResponseStatus.NOT_FOUND)) {
+//									return entityService.createEntry(t.getItem3(), entry).onItem()
+//											.transform(i -> Tuple3.of(new BatchFailure("", null), entityId, true))
+//											.onFailure().recoverWithItem(e1 -> {
+//												NGSIRestResponse response1;
+//												if (e1 instanceof ResponseException) {
+//													response1 = new NGSIRestResponse((ResponseException) e1);
+//												} else {
+//													response1 = new NGSIRestResponse(ErrorType.InternalError,
+//															e1.getLocalizedMessage());
+//												}
+//												return Tuple3.of(new BatchFailure(entityId, response1), null, false);
+//											});
+//								}
+//							} else {
+//								response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+//							}
+//							return Uni.createFrom().item(Tuple3.of(new BatchFailure(entityId, response), null, false));
+//						});
+//			}
+//		})).collectFailures().concatenate().collect().asList().onItem().transform(t -> {
+//			BatchResult result = new BatchResult();
+//			boolean insertedOneEntity = false;
+//			boolean appendedOneEntity = false;
+//			for (Tuple3<BatchFailure, ? extends Object, Boolean> i : t) {
+//				if (i.getItem2() != null) {
+//					if (i.getItem3()) {
+//						insertedOneEntity = true;
+//					} else {
+//						appendedOneEntity = true;
+//					}
+//					result.addSuccess((String) i.getItem2());
+//				} else {
+//					result.addFail(i.getItem1());
+//				}
+//			}
+//			boolean failedOnce = !result.getFails().isEmpty();
+//			int status;
+//			// for 1.5.1 update no more bad request on fail only multi status
+//			if (failedOnce) {
+//				if (insertedOneEntity || appendedOneEntity) {
+//					status = HttpStatus.SC_MULTI_STATUS;
+//				} else {
+//					status = HttpStatus.SC_BAD_REQUEST;
+//				}
+//			} else {
+//				if (insertedOneEntity && appendedOneEntity) {
+//					status = HttpStatus.SC_MULTI_STATUS;
+//				} else {
+//					if (insertedOneEntity) {
+//						status = HttpStatus.SC_CREATED;
+//					} else {
+//						status = HttpStatus.SC_NO_CONTENT;
+//					}
+//				}
+//			}
+//			return generateBatchResultReply(result, status);
+//		});
 	}
 
 	@SuppressWarnings("unchecked")
@@ -490,7 +496,7 @@ public interface EntryControllerFunctions {
 					Map<String, Object> resolvedBody;
 					try {
 						resolvedBody = (Map<String, Object>) JsonLdProcessor
-								.expand(contextHeaders, body, opts, payloadType, atContextAllowed).get(0);
+								.expand(contextHeaders, body, opts, payloadType, atContextAllowed).getItem1().get(0);
 					} catch (JsonLdError | ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
@@ -528,14 +534,22 @@ public interface EntryControllerFunctions {
 						new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload")));
 			}
 			Map<String, Object> resolved;
+			Map<String, Object> original;
+			int contextHash;
+			Map<String, Object> context;
 			try {
-				resolved = (Map<String, Object>) JsonLdProcessor
-						.expand(t, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
+				original = (Map<String, Object>) JsonUtils.fromString(payload);
+				Tuple2<List<Object>, Context> tmp = JsonLdProcessor.expand(t, original, opts, payloadType,
+						atContextAllowed);
+				original.remove("@context");
+				resolved = (Map<String, Object>) tmp.getItem1().get(0);
+				contextHash = tmp.getItem2().termDefinitions.hashCode();
+				context = tmp.getItem2().termDefinitions;
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem()
-					.transform(createResult -> {
+			return entityService.createEntry(HttpUtils.getHeaders(request), resolved, original, contextHash, context)
+					.onItem().transform(createResult -> {
 						logger.trace("create entity :: completed");
 						String entityId = createResult.getEntityId();
 						try {
@@ -557,48 +571,48 @@ public interface EntryControllerFunctions {
 			String entityId, String payload, String options, int payloadType, Logger logger) {
 		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
 				.onItem().transformToUni(t -> {
-			logger.trace("append entity :: started");
-			List<Object> contextHeaders = t.getItem2();
-			String[] optionsArray = getOptionsArray(options);
-			// try {
-			boolean atContextAllowed;
-			try {
-				atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
-			} catch (ResponseException e1) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e1));
-			}
-			List<Object> context = new ArrayList<Object>();
-			context.addAll(contextHeaders);
-			if (payload == null || payload.isEmpty()) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed")));
-			}
-			Map<String, Object> body;
-			try {
-				body = ((Map<String, Object>) JsonUtils.fromString(payload));
-			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-			}
-			Object bodyContext = body.get(JsonLdConsts.CONTEXT);
+					logger.trace("append entity :: started");
+					List<Object> contextHeaders = t.getItem2();
+					String[] optionsArray = getOptionsArray(options);
+					// try {
+					boolean atContextAllowed;
+					try {
+						atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+					} catch (ResponseException e1) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e1));
+					}
+					List<Object> context = new ArrayList<Object>();
+					context.addAll(contextHeaders);
+					if (payload == null || payload.isEmpty()) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed")));
+					}
+					Map<String, Object> body;
+					try {
+						body = ((Map<String, Object>) JsonUtils.fromString(payload));
+					} catch (Exception e) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+					}
+					Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 
-			if (bodyContext instanceof List) {
-				context.addAll((List<Object>) bodyContext);
-			} else {
-				context.add(bodyContext);
-			}
-			Map<String, Object> resolved;
-			try {
-				resolved = (Map<String, Object>) JsonLdProcessor
-						.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
-			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-			}
-			return entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved, optionsArray).onItem()
-					.transformToUni(tResult -> {
-						return HttpUtils.generateReply(request, tResult, context, AppConstants.UPDATE_REQUEST);
-					});
+					if (bodyContext instanceof List) {
+						context.addAll((List<Object>) bodyContext);
+					} else {
+						context.add(bodyContext);
+					}
+					Map<String, Object> resolved;
+					try {
+						resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
+								JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).getItem1().get(0);
+					} catch (Exception e) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+					}
+					return entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved, optionsArray)
+							.onItem().transformToUni(tResult -> {
+								return HttpUtils.generateReply(request, tResult, context, AppConstants.UPDATE_REQUEST);
+							});
 
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	private static String[] getOptionsArray(String options) {

@@ -58,11 +58,11 @@ public class EntityService implements EntryCRUDService {
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved, Map<String, Object> original, int contextHash, Map<String, Object> context) {
 		logger.debug("createMessage() :: started");
 		EntityRequest request;
 		try {
-			request = new CreateEntityRequest(resolved, headers);
+			request = new CreateEntityRequest(resolved, headers, original, contextHash, context);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}

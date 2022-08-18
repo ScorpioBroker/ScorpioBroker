@@ -58,7 +58,7 @@ public interface SubscriptionControllerFunctions {
 			try {
 				body = (Map<String, Object>) JsonLdProcessor
 						.expand(linkHeaders, body, opts, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, atContextAllowed)
-						.get(0);
+						.getItem1().get(0);
 			} catch (JsonLdError | ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -209,7 +209,7 @@ public interface SubscriptionControllerFunctions {
 					Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 					try {
 						body = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders, body, opts,
-								AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed).get(0);
+								AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, atContextAllowed).getItem1().get(0);
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}

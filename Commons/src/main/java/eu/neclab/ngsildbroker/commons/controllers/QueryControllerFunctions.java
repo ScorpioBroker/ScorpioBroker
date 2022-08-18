@@ -185,7 +185,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, t);
 			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
 			Map<String, Object> queries = (Map<String, Object>) JsonLdProcessor
-					.expand(t, rawPayload, opts, payloadType, atContextAllowed).get(0);
+					.expand(t, rawPayload, opts, payloadType, atContextAllowed).getItem1().get(0);
 
 			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				Object payloadContext = rawPayload.get(NGSIConstants.JSON_LD_CONTEXT);

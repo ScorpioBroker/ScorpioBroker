@@ -13,6 +13,10 @@ import io.vertx.core.json.JsonObject;
 
 public class CreateEntityRequest extends EntityRequest {
 
+	private int contextHash;
+	private Map<String, Object> original;
+	private Map<String, Object> context;
+
 	/**
 	 * constructor for serialization
 	 */
@@ -20,10 +24,13 @@ public class CreateEntityRequest extends EntityRequest {
 
 	}
 
-	public CreateEntityRequest(Map<String, Object> resolved, ArrayListMultimap<String, String> headers)
-			throws ResponseException {
+	public CreateEntityRequest(Map<String, Object> resolved, ArrayListMultimap<String, String> headers,
+			Map<String, Object> original, int contextHash, Map<String, Object> context) throws ResponseException {
 		super(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, AppConstants.CREATE_REQUEST);
 		generatePayloadVersions(resolved);
+		this.original = original;
+		this.contextHash = contextHash;
+		this.context = context;
 	}
 
 	private void generatePayloadVersions(Map<String, Object> payload) throws ResponseException {
@@ -35,6 +42,30 @@ public class CreateEntityRequest extends EntityRequest {
 		this.entityWithoutSysAttrs = JsonObject.mapFrom(payload);
 		this.keyValue = JsonObject.mapFrom(getKeyValueEntity(payload));
 
+	}
+
+	public Map<String, Object> getContext() {
+		return context;
+	}
+
+	public void setContext(Map<String, Object> context) {
+		this.context = context;
+	}
+
+	public int getContextHash() {
+		return contextHash;
+	}
+
+	public void setContextHash(int contextHash) {
+		this.contextHash = contextHash;
+	}
+
+	public Map<String, Object> getOriginal() {
+		return original;
+	}
+
+	public void setOriginal(Map<String, Object> original) {
+		this.original = original;
 	}
 
 }

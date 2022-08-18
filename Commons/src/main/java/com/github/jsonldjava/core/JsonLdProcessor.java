@@ -14,6 +14,7 @@ import com.github.jsonldjava.impl.NQuadTripleCallback;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 /**
  * This class implements the <a href=
@@ -158,8 +159,8 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while expanding.
 	 * @throws ResponseException
 	 */
-	public static List<Object> expand(List<Object> contextLinks, Object input, JsonLdOptions opts, int payloadType,
-			boolean atContextAllowed) throws JsonLdError, ResponseException {
+	public static Tuple2<List<Object>, Context> expand(List<Object> contextLinks, Object input, JsonLdOptions opts,
+			int payloadType, boolean atContextAllowed) throws JsonLdError, ResponseException {
 		// 1)
 		// TODO: look into java futures/promises
 
@@ -224,7 +225,7 @@ public class JsonLdProcessor {
 			tmp.add(expanded);
 			expanded = tmp;
 		}
-		return (List<Object>) expanded;
+		return Tuple2.of((List<Object>) expanded, activeCtx);
 	}
 
 	/**
@@ -237,7 +238,7 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while expanding.
 	 * @throws ResponseException
 	 */
-	public static List<Object> expand(Object input) throws JsonLdError, ResponseException {
+	public static Tuple2<List<Object>, Context> expand(Object input) throws JsonLdError, ResponseException {
 		return expand(null, input, new JsonLdOptions(""), -1, true);
 	}
 
@@ -366,7 +367,7 @@ public class JsonLdProcessor {
 		final Object savedExpandedContext = opts.getExpandContext();
 		opts.setExpandContext(null);
 		opts.setFrameExpansion(true);
-		final List<Object> expandedFrame = expand(null, frame, opts, -1, true);
+		final List<Object> expandedFrame = expand(null, frame, opts, -1, true).getItem1();
 		opts.setExpandContext(savedExpandedContext);
 
 		// 4. Set context to the value of @context from frame, if it exists, or

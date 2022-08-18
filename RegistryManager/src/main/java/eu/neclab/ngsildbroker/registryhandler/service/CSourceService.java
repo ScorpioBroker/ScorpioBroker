@@ -191,7 +191,6 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				});
 	}
 
-	@Override
 	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
 
 		logger.debug("createMessage() :: started");
@@ -498,5 +497,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	private Uni<Void> handleRequest(CSourceRequest request) {
 		return cSourceInfoDAO.storeRegistryEntry(request).onItem()
 				.transformToUni(t -> kafkaSenderInterface.send(new BaseRequest(request)));
+	}
+
+	@Override
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			Map<String, Object> original, int contextHash, Map<String, Object> context) {
+		return createEntry(headers, resolved);
 	}
 }

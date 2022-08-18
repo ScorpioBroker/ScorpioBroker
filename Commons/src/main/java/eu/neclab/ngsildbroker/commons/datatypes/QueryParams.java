@@ -70,8 +70,26 @@ public class QueryParams {
 	private int offSet = 0;
 	private String check;
 	private int lastN;
+	private Map<String, Object> context;
+	private int contextHash;
 
 	private String scopeQ;
+
+	public Map<String, Object> getContext() {
+		return context;
+	}
+
+	public void setContext(Map<String, Object> context) {
+		this.context = context;
+	}
+
+	public int getContextHash() {
+		return contextHash;
+	}
+
+	public void setContextHash(int contextHash) {
+		this.contextHash = contextHash;
+	}
 
 	public String getScopeQ() {
 		return scopeQ;

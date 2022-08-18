@@ -133,7 +133,8 @@ public class EntityController {// implements EntityHandlerInterface {
 						Object jsonPayload = JsonUtils.fromString(payload);
 						logger.trace("partial-update entity :: started");
 						Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor.expand(atContext,
-								jsonPayload, opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, atContextAllowed).get(0);
+								jsonPayload, opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, atContextAllowed)
+								.getItem1().get(0);
 						Context context = JsonLdProcessor.getCoreContextClone();
 						context = context.parse(atContext, true);
 						if (jsonPayload instanceof Map) {

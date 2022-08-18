@@ -72,15 +72,15 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		return historyDAO.isTempEntityExist(request.getId(), HttpUtils.getInternalTenant(headers)
-				).onItem().transform(Unchecked.function(t -> {
-			return t;
-		})).onItem().transformToUni(t2 -> {
-			return handleRequest(request).combinedWith((t, u) -> {
-				logger.debug("createMessage() :: completed");
-				return  new CreateResult(request.getId(), Boolean.parseBoolean(t2.toString()));
-			});
-		});
+		return historyDAO.isTempEntityExist(request.getId(), HttpUtils.getInternalTenant(headers)).onItem()
+				.transform(Unchecked.function(t -> {
+					return t;
+				})).onItem().transformToUni(t2 -> {
+					return handleRequest(request).combinedWith((t, u) -> {
+						logger.debug("createMessage() :: completed");
+						return new CreateResult(request.getId(), Boolean.parseBoolean(t2.toString()));
+					});
+				});
 	}
 
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
@@ -178,6 +178,12 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Override
 	protected StorageDAO getCsourceDAO() {
 		return null;
+	}
+
+	@Override
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			Map<String, Object> original, int contextHash, Map<String, Object> context) {
+		return createEntry(headers, resolved);
 	}
 
 }

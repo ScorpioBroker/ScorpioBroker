@@ -239,6 +239,20 @@ public final class HttpUtils {
 		}
 	}
 
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, QueryResult expanded,
+			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
+			boolean forceArrayResult, int endPoint) {
+		return getReplyBody(request.headers().getAll(HttpHeaders.ACCEPT), endPoint, additionalHeaders, expanded,
+				forceArrayResult, ldContext, contextLinks, getGeometry(request)).onItem().transformToUni(t -> {
+					boolean compress = false;
+					String options = request.params().get(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+					if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
+						compress = true;
+					}
+					return generateReply(t, additionalHeaders, compress);
+				});
+
+	}
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult, int endPoint) {
@@ -254,6 +268,128 @@ public final class HttpUtils {
 
 	}
 
+	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
+			ArrayListMultimap<String, String> additionalHeaders, QueryResult queryResult, boolean forceArrayResult,
+			Context ldContext, List<Object> contextLinks, String geometryProperty) {
+		String replyBody;
+		int sendingContentType = parseAcceptHeader(acceptHeader);
+		Map<String, Object> compacted;
+		Object result = null;
+		if (queryResult.getData() != null) {
+			try {
+				compacted = JsonLdProcessor.compact(queryResult.getData(), contextLinks, ldContext, opts, endPoint);
+			} catch (JsonLdError | ResponseException e4) {
+				return Uni.createFrom().failure(e4);
+			}
+			Object graph = compacted.get(JsonLdConsts.GRAPH);
+			if (graph != null) {
+				result = graph;
+			} else {
+				result = compacted;
+			}
+		}
+		if (queryResult.getCompactedData() != null) {
+			if (result == null) {
+				if (queryResult.getCompactedData().size() == 1) {
+					result = queryResult.getCompactedData().get(0);
+				} else {
+					result = queryResult.getCompactedData();
+				}
+			} else {
+				if (result instanceof List) {
+					((List<Object>) result).addAll(queryResult.getCompactedData());
+				} else {
+					ArrayList<Object> temp = new ArrayList<Object>();
+					temp.add(result);
+					temp.addAll(queryResult.getCompactedData());
+					result = temp;
+				}
+			}
+		}
+		Object context = ldContext.termDefinitions;
+		if (forceArrayResult && !(result instanceof List)) {
+			ArrayList<Object> temp = new ArrayList<Object>();
+			temp.add(result);
+			result = temp;
+		}
+		if (additionalHeaders == null) {
+			additionalHeaders = ArrayListMultimap.create();
+		}
+		switch (sendingContentType) {
+			case 1:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+				if (result instanceof Map) {
+					((Map) result).remove(JsonLdConsts.CONTEXT);
+				}
+				if (result instanceof List) {
+					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+					for (Map<String, Object> entry : list) {
+						entry.remove(JsonLdConsts.CONTEXT);
+					}
+				}
+				try {
+					replyBody = JsonUtils.toPrettyString(result);
+				} catch (IOException e3) {
+					return Uni.createFrom().failure(e3);
+				}
+				if (contextLinks != null) {
+					for (Object entry : contextLinks) {
+						if (entry instanceof String) {
+							additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
+									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+						} else {
+							additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+						}
+
+					}
+				}
+				break;
+			case 2:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+				if (result instanceof List) {
+					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+					for (Map<String, Object> entry : list) {
+						entry.put(JsonLdConsts.CONTEXT, context);
+					}
+				}
+				try {
+					replyBody = JsonUtils.toPrettyString(result);
+				} catch (IOException e2) {
+					return Uni.createFrom().failure(e2);
+				}
+				break;
+			case 3:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
+				try {
+					replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
+				} catch (JsonLdError | ResponseException e1) {
+					return Uni.createFrom().failure(e1);
+				}
+				break;
+			case 4:// geo+json
+				switch (endPoint) {
+					case AppConstants.QUERY_ENDPOINT:
+						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
+						try {
+							replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
+						} catch (IOException e) {
+							return Uni.createFrom().failure(e);
+						}
+						break;
+					default:
+						return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
+								"Provided accept types " + acceptHeader + " are not supported"));
+				}
+				break;
+			case -1:
+			default:
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
+						"Provided accept types " + acceptHeader + " are not supported"));
+		}
+		return Uni.createFrom().item(replyBody);
+
+	}
 	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
 			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
 			Context ldContext, List<Object> contextLinks, String geometryProperty) {
@@ -428,7 +564,7 @@ public final class HttpUtils {
 				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
 			}
 		}
-		return HttpUtils.generateReply(request, qResult.getData(), additionalHeaders, context, contextLinks, forceArray,
+		return HttpUtils.generateReply(request, qResult, additionalHeaders, context, contextLinks, forceArray,
 				endPoint);
 	}
 
