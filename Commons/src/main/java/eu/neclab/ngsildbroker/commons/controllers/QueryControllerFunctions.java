@@ -167,6 +167,8 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
+			qp.setContext(context.termDefinitions);
+			qp.setContextHash(context.termDefinitions.hashCode());
 			qp.setTenant(tenantid);
 			qp.setCheck(check);
 			return queryService.getData(qp, decodedQueryParams, t, headers, false).onItem()

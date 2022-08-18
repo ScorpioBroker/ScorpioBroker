@@ -80,8 +80,8 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 
 		String sqlQuery;
 		try {
-			sqlQuery = "SELECT DISTINCT " + dataColumn + " as data, CASE WHEN matchContext(ogcontext, context, "
-					+ qp.getContextHash() + ", " + JsonUtils.toString(qp.getContext())
+			sqlQuery = "SELECT DISTINCT " + dataColumn + " as data, CASE WHEN matchContext(ogcontext, context, '"
+					+ JsonUtils.toString(qp.getContext()) + "'::jsonb, " + qp.getContextHash() + ", id"
 					+ ") THEN ogcompacted ELSE null END AS compacted";
 		} catch (IOException e) {
 			throw new AssertionError();

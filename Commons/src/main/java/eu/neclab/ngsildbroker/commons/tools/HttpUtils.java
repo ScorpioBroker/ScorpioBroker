@@ -253,6 +253,7 @@ public final class HttpUtils {
 				});
 
 	}
+
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
 			boolean forceArrayResult, int endPoint) {
@@ -275,7 +276,7 @@ public final class HttpUtils {
 		int sendingContentType = parseAcceptHeader(acceptHeader);
 		Map<String, Object> compacted;
 		Object result = null;
-		if (queryResult.getData() != null) {
+		if (queryResult.getData() != null && !queryResult.getData().isEmpty()) {
 			try {
 				compacted = JsonLdProcessor.compact(queryResult.getData(), contextLinks, ldContext, opts, endPoint);
 			} catch (JsonLdError | ResponseException e4) {
@@ -288,7 +289,7 @@ public final class HttpUtils {
 				result = compacted;
 			}
 		}
-		if (queryResult.getCompactedData() != null) {
+		if (queryResult.getCompactedData() != null && !queryResult.getCompactedData().isEmpty()) {
 			if (result == null) {
 				if (queryResult.getCompactedData().size() == 1) {
 					result = queryResult.getCompactedData().get(0);
@@ -390,6 +391,7 @@ public final class HttpUtils {
 		return Uni.createFrom().item(replyBody);
 
 	}
+
 	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
 			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
 			Context ldContext, List<Object> contextLinks, String geometryProperty) {
@@ -545,7 +547,7 @@ public final class HttpUtils {
 		if (count == true) {
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 		}
-		if (qResult == null || qResult.getData() == null || qResult.getData().size() == 0) {
+		if (qResult == null || (qResult.getData().isEmpty() && qResult.getCompactedData().isEmpty())) {
 			return HttpUtils.generateReply(request, Lists.newArrayList(), additionalHeaders,
 					AppConstants.HISTORY_ENDPOINT);
 		}

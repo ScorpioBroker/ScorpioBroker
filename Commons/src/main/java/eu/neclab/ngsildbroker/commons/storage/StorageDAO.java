@@ -176,10 +176,17 @@ public abstract class StorageDAO {
 					return storageFunctions.translateNgsildQueryToSql(qp, conn).onItem().transform(t -> {
 						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 						List<Map<String, Object>> list = Lists.newArrayList();
+						List<Map<String, Object>> compactedList = Lists.newArrayList();
 						t.forEach(e -> {
-							list.add(e.getJsonObject(0).getMap());
+							JsonObject compacted = e.getJsonObject("compacted");
+							if (compacted == null) {
+								list.add(e.getJsonObject("data").getMap());
+							} else {
+								compactedList.add(compacted.getMap());
+							}
 						});
 						queryResult.setData(list);
+						queryResult.setCompactedData(compactedList);
 						queryResult.setOffset(qp.getOffSet());
 						queryResult.setLimit(qp.getLimit());
 						long after;
@@ -423,10 +430,12 @@ public abstract class StorageDAO {
 					CreateEntityRequest tmp = (CreateEntityRequest) request;
 					sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
 							+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
-							+ ",context, ogcompacted, ogcontext) VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, $5, $6::jsonb, $7::jsonb )";
+							+ ",context, ogcompacted, ogcontext) VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, ARRAY["
+							+ tmp.getContextHash() + "], $5::jsonb, $6::jsonb )";
+
 					return client.preparedQuery(sql)
 							.execute(Tuple.from(Lists.newArrayList(key, value, valueWithoutSysAttrs, kvValue,
-									tmp.getContextHash(), tmp.getOriginal(), tmp.getContext())))
+									JsonObject.mapFrom(tmp.getOriginal()), JsonObject.mapFrom(tmp.getContext()))))
 							.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> {
 								if (e instanceof PgException) {
 									PgException pgE = (PgException) e;
