@@ -108,7 +108,7 @@ public class Notification {
 		notificationBody.append("\",\n\t\"subscriptionId\": \"");
 		notificationBody.append(subscriptionId);
 		notificationBody.append("\",\n\t\"notifiedAt\": \"");
-		notificationBody.append(SerializationTools.formatter.format(Instant.ofEpochMilli(notifiedAt)));
+		notificationBody.append(SerializationTools.notifiedAt_formatter.format(Instant.ofEpochMilli(notifiedAt)));
 		notificationBody.append("\",\n\t\"data\": ");
 		notificationBody.append(dataResponse.getBody());
 		switch (triggerReason) {
