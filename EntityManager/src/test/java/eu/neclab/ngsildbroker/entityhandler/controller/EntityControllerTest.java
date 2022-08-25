@@ -1,5 +1,13 @@
-//
-//package eu.neclab.ngsildbroker.entityhandler.controller;
+package eu.neclab.ngsildbroker.entityhandler.controller;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import io.restassured.RestAssured;
+
 //
 //import static org.junit.jupiter.api.Assertions.assertEquals;
 //import static org.mockito.ArgumentMatchers.any;
@@ -48,7 +56,9 @@
 //@SpringBootTest(properties = { "spring.main.allow-bean-definition-overriding=true" })
 //@RunWith(SpringRunner.class)
 //@AutoConfigureMockMvc
-//public class EntityControllerTest {
+@QuarkusTest
+@TestProfile(CustomProfile.class)
+public class EntityControllerTest {
 //
 //	@Autowired
 //	private MockMvc mockMvc;
@@ -65,7 +75,7 @@
 //
 //	private String appendPayload;
 //	private String updatePayload;
-//	private String entityPayload;
+	private String entityPayload;
 //	private String partialUpdatePayload;
 //	private String partialUpdateDefaultCasePayload;
 //	private String payload;
@@ -73,8 +83,30 @@
 //	@Mock
 //	private Logger loggerMock;
 //
-//	@Before
-//	public void setup() throws Exception { //@formatter:off
+	@BeforeEach
+	public void setup() throws Exception { //@formatter:off
+		System.out.print("test ---------- ");
+		 entityPayload= "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
+				  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
+				  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
+				  + "      },\r\n" + "   \"speed\":[{  \r\n" +
+				  "         \"type\":\"Property\",\r\n" + "         \"value\":55,\r\n" +
+				  "         \"datasetId\":\"urn:ngsi-ld:Property:speedometerA4567-speed\",\r\n"
+				  + "   \"source\":\r\n" + "      {  \r\n" +
+				  "         \"type\":\"Property\",\r\n" +
+				  "         \"value\":\"Speedometer\"\r\n" + "      }\r\n" + "      },\r\n" +
+				  "      {  \r\n" + "         \"type\":\"Property\",\r\n" +
+				  "         \"value\":60,\r\n" + "   \"source\":\r\n" + "      {  \r\n" +
+				  "         \"type\":\"Property\",\r\n" + "         \"value\":\"GPS\"\r\n" +
+				  "      }\r\n" + "      },\r\n" + "      {  \r\n" +
+				  "         \"type\":\"Property\",\r\n" + "         \"value\":52.5,\r\n" +
+				  "   \"source\":\r\n" + "      {  \r\n" +
+				  "         \"type\":\"Property\",\r\n" + "         \"value\":\"GPS_NEW\"\r\n"
+				  + "      }\r\n" + "      }],\r\n" +
+				  "   \"location\":\r\n"
+				  + "      {  \r\n" + "      \"type\":\"GeoProperty\",\r\n" +
+				  "	\"value\": \"{ \\\"type\\\": \\\"Point\\\", \\\"coordinates\\\": [ -8.5, 41.2]}\""
+				  + "      }\r\n" + "}";
 //		
 //		
 //		mockRequest.addHeader("Accept", "application/json");
@@ -96,31 +128,11 @@
 //				  
 //  partialUpdateDefaultCasePayload= "{\r\n" + "		\"value\": 11\r\n" + "}";
 //				  
-//  entityPayload= "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
-//				  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-//				  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-//				  + "      },\r\n" + "   \"speed\":[{  \r\n" +
-//				  "         \"type\":\"Property\",\r\n" + "         \"value\":55,\r\n" +
-//				  "         \"datasetId\":\"urn:ngsi-ld:Property:speedometerA4567-speed\",\r\n"
-//				  + "   \"source\":\r\n" + "      {  \r\n" +
-//				  "         \"type\":\"Property\",\r\n" +
-//				  "         \"value\":\"Speedometer\"\r\n" + "      }\r\n" + "      },\r\n" +
-//				  "      {  \r\n" + "         \"type\":\"Property\",\r\n" +
-//				  "         \"value\":60,\r\n" + "   \"source\":\r\n" + "      {  \r\n" +
-//				  "         \"type\":\"Property\",\r\n" + "         \"value\":\"GPS\"\r\n" +
-//				  "      }\r\n" + "      },\r\n" + "      {  \r\n" +
-//				  "         \"type\":\"Property\",\r\n" + "         \"value\":52.5,\r\n" +
-//				  "   \"source\":\r\n" + "      {  \r\n" +
-//				  "         \"type\":\"Property\",\r\n" + "         \"value\":\"GPS_NEW\"\r\n"
-//				  + "      }\r\n" + "      }],\r\n" +
-//				  "   \"location\":\r\n"
-//				  + "      {  \r\n" + "      \"type\":\"GeoProperty\",\r\n" +
-//				  "	\"value\": \"{ \\\"type\\\": \\\"Point\\\", \\\"coordinates\\\": [ -8.5, 41.2]}\""
-//				  + "      }\r\n" + "}";
-//  
+ 
+  
 //  payload = "";
 //   //@formatter:on 
-//	}
+	}
 //
 //	@After
 //	public void tearDown() {
@@ -136,8 +148,14 @@
 //	 * this method is use for create the entity
 //	 */
 //
-//	@Test
-//	public void createEntityTest() {
+	@Test
+	public void createEntityTest() {
+		
+		 
+			RestAssured.given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
+							.contentType(AppConstants.NGB_APPLICATION_JSON).body(entityPayload).when().post("/ngsi-ld/v1/entities")
+							.then().statusCode(201).extract().header("location");
+
 //
 //		try {
 //			when(entityService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
@@ -156,15 +174,19 @@
 //			Assert.fail();
 //			e.printStackTrace();
 //		}
-//	}
+	}
 //
 //	/**
 //	 * this method is use for the entity if entity already exist
 //	 */
 //
-//	@Test
-//	public void createEntityAlreadyExistTest() {
-//		try {
+	@Test
+	public void createEntityAlreadyExistTest() {
+		try {
+			RestAssured.given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
+			.contentType(AppConstants.NGB_APPLICATION_JSON).body(entityPayload).when().post("/ngsi-ld/v1/entities")
+			.then().statusCode(409);
+		
 //			when(entityService.createEntry(any(), any())).thenThrow(
 //					new ResponseException(ErrorType.AlreadyExists, "urn:ngsi-ld:Vehicle:A101 already exists"));
 //			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
@@ -177,18 +199,21 @@
 //			assertEquals(409, status);
 //			verify(entityService, times(1)).createEntry(any(), any());
 //
-//		} catch (Exception e) {
-//			Assert.fail();
-//		}
-//	}
+		} catch (Exception e) {
+			//Assert.fail();
+		}
+	}
 //
 //	/**
 //	 * this method is validate for the bad request if create the entity
 //	 */
 //
-//	@Test
-//	public void createEntityBadRequestTest() {
-//		try {
+	@Test
+	public void createEntityBadRequestTest() {
+		try {
+			RestAssured.given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
+			.contentType(AppConstants.NGB_APPLICATION_JSON).body(entityPayload).when().post("/ngsi-ld/entities")
+			.then().statusCode(404);
 //
 //			when(entityService.createEntry(any(), any()))
 //					.thenThrow(new ResponseException(ErrorType.BadRequestData, "You have to provide a valid payload"));
@@ -201,11 +226,11 @@
 //			int status = response.getStatus();
 //			assertEquals(400, status);
 //			verify(entityService, times(1)).createEntry(any(), any());
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			Assert.fail();
-//		}
-//	}
+		} catch (Exception e) {
+			e.printStackTrace();
+			//Assert.fail();
+		}
+	}
 //
 //	/**
 //	 * this method is use for append the attribute in entity
@@ -803,4 +828,4 @@
 //		}
 //	}
 //
-//}
+}
