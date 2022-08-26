@@ -8,12 +8,9 @@ import javax.inject.Singleton;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
-
 import com.github.jsonldjava.core.JsonLdProcessor;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
