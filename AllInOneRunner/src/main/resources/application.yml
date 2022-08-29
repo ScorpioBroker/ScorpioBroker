@@ -117,7 +117,7 @@ logging:
 ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
 scorpio:
-  gatewayurl: null
+  gatewayurl: http://34.77.231.0:80
   fedbrokers: null
   cors: 
     enable: true

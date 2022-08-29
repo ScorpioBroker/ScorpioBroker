@@ -181,8 +181,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 								headers.get(HttpHeaders.ACCEPT.toLowerCase()));
 						if (linkHeaders != null) {
 							for (Object entry : linkHeaders) {
-								additionalHeaders.add("Link", entry
-										+ "; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
+								additionalHeaders.add("Link", "<" + entry
+										+ ">; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
 							}
 						}
 						String endpoint;
@@ -203,6 +203,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 										HttpMethod.POST, entity, String.class);
 								resultBody = response.getBody();
 							} else {
+								additionalHeaders.remove(HttpHeaders.ACCEPT);
+								additionalHeaders.add(HttpHeaders.ACCEPT, "application/json");
 								entity = new HttpEntity<String>(additionalHeaders);
 								response = restTemplate.exchange(
 										new URI(endpoint + "/ngsi-ld/v1/entities?" + encodeQuery(rawQueryString)),
@@ -314,7 +316,13 @@ public abstract class BaseQueryService implements EntryQueryService {
 		long count = 0;
 		for (Future<RemoteQueryResult> future : futures) {
 			logger.trace("future.isDone = " + future.isDone());
-			RemoteQueryResult tempResult = future.get();
+			RemoteQueryResult tempResult;
+			try {
+				tempResult = future.get();
+			} catch (Exception e) {
+				logger.warn("Remote query failed", e);
+				continue;
+			}
 			for (Map<String, Object> entry : tempResult.getId2Data().values()) {
 				queryResult.addData(entry);
 			}
