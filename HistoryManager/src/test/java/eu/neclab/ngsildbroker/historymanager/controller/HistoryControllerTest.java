@@ -1,126 +1,153 @@
-/*
- * package eu.neclab.ngsildbroker.historymanager.controller;
- * 
- * import static org.mockito.ArgumentMatchers.any; import static
- * org.mockito.Mockito.times; import static org.mockito.Mockito.verify; import
- * static org.mockito.Mockito.when; import static
- * org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
- * import static
- * org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
- * import static
- * org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
- * import static
- * org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
- * import static
- * org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
- * import static
- * org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
- * import java.net.URI; import java.util.ArrayList; import java.util.List;
- * import org.junit.After; import org.junit.Assert; import org.junit.Before;
- * import org.junit.Test; import org.junit.runner.RunWith; import
- * org.mockito.Mock; import org.mockito.Mockito; import
- * org.mockito.MockitoAnnotations; import
- * org.springframework.beans.factory.annotation.Autowired; import
- * org.springframework.beans.factory.annotation.Value; import
- * org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
- * import org.springframework.boot.test.context.SpringBootTest; import
- * org.springframework.boot.test.mock.mockito.MockBean; import
- * org.springframework.test.context.junit4.SpringRunner; import
- * org.springframework.test.web.servlet.MockMvc; import
- * org.springframework.test.web.servlet.request.MockMvcRequestBuilders; import
- * eu.neclab.ngsildbroker.commons.constants.AppConstants; import
- * eu.neclab.ngsildbroker.commons.enums.ErrorType; import
- * eu.neclab.ngsildbroker.commons.exceptions.ResponseException; import
- * eu.neclab.ngsildbroker.commons.ldcontext.ContextResolverBasic; import
- * eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver; import
- * eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO; import
- * eu.neclab.ngsildbroker.historymanager.service.HistoryService; import
- * eu.neclab.ngsildbroker.historymanager.utils.Validator;
- * 
- * @RunWith(SpringRunner.class)
- * 
- * @SpringBootTest(properties = {
- * "spring.main.allow-bean-definition-overriding=true" })
- * 
- * @AutoConfigureMockMvc public class HistoryControllerTest {
- * 
- * @Autowired private MockMvc mockMvc;
- * 
- * @Mock private ParamsResolver paramResolver;
- * 
- * @MockBean private HistoryService historyService;
- * 
- * @MockBean private Validator validate;
- * 
- * @Mock HistoryDAO historyDAO;
- * 
- * @Autowired ContextResolverBasic contextResolver;
- * 
- * @Value("${atcontext.url}") String atContextServerUrl;
- * 
- * private String temporalPayload; private URI uri;
- * 
- * @Before public void setup() throws Exception {
- * 
- * uri = new URI(AppConstants.HISTORY_URL + "urn:ngsi-ld:testunit:151");
- * 
- * MockitoAnnotations.initMocks(this);
- * 
- * // @formatter:on
- * 
- * temporalPayload = "{\r\n    " + "\"id\": \"urn:ngsi-ld:testunit:151\"," +
- * "\r\n    \"type\": \"AirQualityObserved\"," + "\r\n    \"airQualityLevel\": "
- * + "[\r\n        {" + "\r\n              " + "\r\n            " +
- * "\"type\": \"Property\",\r\n            \"value\": \"good\"," +
- * "\r\n            \"observedAt\": \"2018-08-07T12:00:00Z\"" + "\r\n        },"
- * + "\r\n        {" + "\r\n               " +
- * "\r\n            \"type\": \"Property\"," +
- * "\r\n            \"value\": \"moderate\"," +
- * "\r\n            \"observedAt\": \"2018-08-14T12:00:00Z\"" + "\r\n        },"
- * + "\r\n        " + "{\r\n       " + "\r\n            \"type\": \"Property\","
- * + "\r\n            \"value\": \"unhealthy\"," +
- * "\r\n            \"observedAt\": \"2018-09-14T12:00:00Z\"" +
- * "\r\n        }\r\n    ]," + "\r\n    \"@context\": [" +
- * "\r\n    \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\"" +
- * "\r\n    ]\r\n}\r\n\r\n";
- * 
- * }
- * 
- * @After public void tearDown() { temporalPayload = ""; }
- * 
- *//**
-	 * this method is use for create the temporalEntity
-	 */
-/*
- * 
- * @Test public void createTemporalEntityTest() { try {
- * when(historyService.createTemporalEntityFromBinding(any(),
- * any())).thenReturn(uri);
- * mockMvc.perform(post("/ngsi-ld/v1/temporal/entities/").contentType(
- * AppConstants.NGB_APPLICATION_JSONLD)
- * .accept(AppConstants.NGB_APPLICATION_JSONLD).content(temporalPayload))
- * .andExpect(status().isCreated()); verify(historyService,
- * times(1)).createTemporalEntityFromBinding(any(), any()); } catch (Exception
- * e) { Assert.fail(e.getMessage()); } }
- * 
- *//**
-	 * this method is try to create the temporalEntity having "BAD REQUEST"
-	 */
-/*
- * 
- * @Test public void createTemporalEntityBadRequestTest() { try {
- * when(historyService.createTemporalEntityFromBinding(any(), any()))
- * .thenThrow(new ResponseException(ErrorType.BadRequestData));
- * mockMvc.perform(post("/ngsi-ld/v1/temporal/entities/").contentType(
- * AppConstants.NGB_APPLICATION_JSONLD)
- * .accept(AppConstants.NGB_APPLICATION_JSONLD).content(temporalPayload))
- * .andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").
- * value("Bad Request Data."));
- * 
- * verify(historyService, times(1)).createTemporalEntityFromBinding(any(),
- * any()); } catch (Exception e) { Assert.fail(e.getMessage()); } }
- * 
- *//**
+
+  package eu.neclab.ngsildbroker.historymanager.controller;
+ 
+  import static io.restassured.RestAssured.given;
+  import static org.junit.jupiter.api.Assertions.assertEquals;
+  import static org.mockito.ArgumentMatchers.any;
+  import static org.mockito.Mockito.mock;
+  import static org.mockito.Mockito.when;
+  import javax.ws.rs.core.HttpHeaders;
+  import javax.ws.rs.core.Response.Status;
+  import org.junit.jupiter.api.AfterEach;
+  import org.junit.jupiter.api.BeforeEach;
+  import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+  import org.junit.jupiter.api.Order;
+  import org.junit.jupiter.api.Test;
+  import org.junit.jupiter.api.TestMethodOrder;
+  import org.mockito.InjectMocks;
+  import org.mockito.Mockito;
+  import java.net.URI; 
+  import java.util.ArrayList;
+  import java.util.List;
+  import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+  import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
+  import eu.neclab.ngsildbroker.commons.enums.ErrorType; 
+  import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+  import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver; 
+  import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO; 
+  import eu.neclab.ngsildbroker.historymanager.service.HistoryService; 
+  import eu.neclab.ngsildbroker.historymanager.utils.Validator;
+  import io.quarkus.test.junit.QuarkusTest;
+  import io.quarkus.test.junit.TestProfile;
+  import io.restassured.response.ExtractableResponse;
+  import io.restassured.response.Response;
+  import io.smallrye.mutiny.Uni;
+  
+	@QuarkusTest
+	@TestMethodOrder(OrderAnnotation.class)
+	@TestProfile(CustomProfile.class)
+	public class HistoryControllerTest {
+
+		@InjectMocks
+		private HistoryService historyService;
+		private String temporalPayload;
+		private String temporalInvalidPayload;
+
+		@BeforeEach
+		public void setup() {
+			historyService = mock(HistoryService.class);
+			temporalPayload = "{\r\n    " + "\"id\": \"urn:ngsi-ld:testunit:151\","
+					+ "\r\n    \"type\": \"AirQualityObserved\"," + "\r\n    \"airQualityLevel\": " + "[\r\n        {"
+					+ "\r\n              " + "\r\n            "
+					+ "\"type\": \"Property\",\r\n            \"value\": \"good\","
+					+ "\r\n            \"observedAt\": \"2018-08-07T12:00:00Z\"" + "\r\n        }," + "\r\n        {"
+					+ "\r\n               " + "\r\n            \"type\": \"Property\","
+					+ "\r\n            \"value\": \"moderate\","
+					+ "\r\n            \"observedAt\": \"2018-08-14T12:00:00Z\"" + "\r\n        }," + "\r\n        "
+					+ "{\r\n       " + "\r\n            \"type\": \"Property\","
+					+ "\r\n            \"value\": \"unhealthy\","
+					+ "\r\n            \"observedAt\": \"2018-09-14T12:00:00Z\"" + "\r\n        }\r\n    ],"
+					+ "\r\n    \"@context\": ["
+					+ "\r\n    \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\""
+					+ "\r\n    ]\r\n}\r\n\r\n";
+			
+			temporalInvalidPayload = "{\r\n    " + "\"id\": \"urn151\","
+					+ "\r\n    \"type\": \"AirQualityObserved\"," + "\r\n    \"airQualityLevel\": " + "[\r\n        {"
+					+ "\r\n              " + "\r\n            "
+					+ "\"type\": \"Property\",\r\n            \"value\": \"good\","
+					+ "\r\n            \"observedAt\": \"2018-08-07T12:00:00Z\"" + "\r\n        }," + "\r\n        {"
+					+ "\r\n               " + "\r\n            \"type\": \"Property\","
+					+ "\r\n            \"value\": \"moderate\","
+					+ "\r\n            \"observedAt\": \"2018-08-14T12:00:00Z\"" + "\r\n        }," + "\r\n        "
+					+ "{\r\n       " + "\r\n            \"type\": \"Property\","
+					+ "\r\n            \"value\": \"unhealthy\","
+					+ "\r\n            \"observedAt\": \"2018-09-14T12:00:00Z\"" + "\r\n        }\r\n    ],"
+					+ "\r\n    \"@context\": ["
+					+ "\r\n    \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\""
+					+ "\r\n    ]\r\n}\r\n\r\n";
+		}
+
+		@AfterEach
+		public void teardown() {
+			temporalPayload = null;
+			temporalInvalidPayload = null;
+		}
+
+		/*
+		 * this method is used to create temporal entities
+		 */
+		@Test
+		@Order(1)
+		public void createTemporalEntityTest() {
+
+			CreateResult cr = Mockito.mock(CreateResult.class);
+			System.out.println("----"+temporalPayload);
+			cr.setEntityId("urn:ngsi-ld:testunit:151");
+			when(historyService.createEntry(any(), any())).thenReturn(Uni.createFrom().item(cr));
+			ExtractableResponse<Response> response = given().body(temporalPayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON).when()
+					.post("/ngsi-ld/v1/temporal/entities/").then().statusCode(Status.CREATED.getStatusCode())
+					.statusCode(201).extract();
+			int statusCode = response.statusCode();
+			assertEquals(201, statusCode);
+		}
+		
+	     /*
+		 * this method is create the temporalEntity having "BAD REQUEST"
+		 */
+		@Test
+		@Order(2)
+	    public void createTemporalEntityBadRequestTest() {
+			try {
+				ExtractableResponse<Response> response =	given()
+			      .body(temporalInvalidPayload)
+			    .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
+			     .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSON)
+			    .when()
+			    .post("/ngsi-ld/v1/temporal/entities/")
+			    .then()
+			       .statusCode(Status.BAD_REQUEST.getStatusCode())
+			       .statusCode(400).extract();
+				int statusCode = response.statusCode();
+				assertEquals(400, statusCode);
+			}catch(Exception e) {
+				e.printStackTrace();
+		   }
+		}
+		
+		/*
+		 * this method is use to delete the temporalEntity
+		 */
+		@Test
+		@Order(3)
+		public void deleteTemporalEntity() {
+			try {
+				ExtractableResponse<Response> response = given()
+						.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+						.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+						.delete("/ngsi-ld/v1/temporal/entities/urn:ngsi-ld:testunit:151").then()
+						.statusCode(Status.NO_CONTENT.getStatusCode()).statusCode(204).extract();
+				int statusCode = response.statusCode();
+				assertEquals(204, statusCode);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+	
+/**
 	 * this method is try to create the temporalEntity having "INTERNAL SERVER
 	 * ERROR"
 	 */
