@@ -136,11 +136,11 @@ public abstract class BaseQueryService implements EntryQueryService {
 					String endpoint = ((List<Map<String, String>>) reg.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
 							.get(NGSIConstants.JSON_LD_VALUE);
 					MultiMap additionalHeaders = HttpUtils.getAdditionalHeaders(reg, linkHeaders,
-							headers.get(HttpHeaders.ACCEPT.toString()));
+							Lists.newArrayList("application/json"));
 					if (linkHeaders != null) {
 						for (Object entry : linkHeaders) {
-							additionalHeaders.add("Link",
-									entry + "; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
+							additionalHeaders.add("Link", "<" + entry
+									+ ">; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
 						}
 					}
 					logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/?" + rawQueryString);
