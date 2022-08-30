@@ -100,10 +100,7 @@ public class EntityControllerTest {
 	@Test
 	@Order(1)
 	public void createEntityTest() {
-		
-//		Mockito.when(entityService.createEntry(any(), any()))
-//				.thenReturn((Uni.createFrom().item(new CreateResult("urn:ngsi-ld:Vehicle:A101", true))));
-		try
+	try
 		{
 			ExtractableResponse<Response> response = RestAssured.given()
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -142,11 +139,10 @@ public class EntityControllerTest {
 		}
 	}
 
-//
-//	/**
-//	 * this method is validate for the bad request if create the entity
-//	 */
-//
+
+	/**
+	 * this method is validate for the bad request if create the entity
+	 */
 	@Test
 	@Order(3)
 	public void createEntityBadRequestTest() {
@@ -178,7 +174,7 @@ public class EntityControllerTest {
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD)
 					.body(appendPayload).when()
-					.post("/ngsi-ld/v1/entities/{entityId}/attrs\", \"urn:ngsi-ld:Vehicle:A101").then()
+					.post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101").then()
 					.statusCode(204).statusCode(204).extract();
 			int statusCode = response.statusCode();
 			assertEquals(204, statusCode);
