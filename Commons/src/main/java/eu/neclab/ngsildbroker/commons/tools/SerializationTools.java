@@ -49,6 +49,8 @@ public class SerializationTools {
 			.ofPattern(NGSIConstants.ALLOWED_IN_DEFAULT_DATE_FORMAT).withZone(ZoneId.of("Z"));// .withZone(ZoneId.systemDefault());
 	public static DateTimeFormatter formatter = DateTimeFormatter
 			.ofPattern(NGSIConstants.ALLOWED_OUT_DEFAULT_DATE_FORMAT).withZone(ZoneId.of("Z"));// systemDefault());
+	public static DateTimeFormatter notifiedAt_formatter = DateTimeFormatter
+			.ofPattern(NGSIConstants.ALLOWED_OUT_DEFAULT_DATE_FORMAT_NOTIFIEDAT).withZone(ZoneId.of("Z"));// systemDefault());
 //	public static SimpleDateFormat forgivingFormatter = new SimpleDateFormat(
 //			NGSIConstants.DEFAULT_FORGIVING_DATE_FORMAT);
 
