@@ -23,11 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @TestMethodOrder(OrderAnnotation.class)
 @TestProfile(CustomProfile.class)
 public class NotificationControllerTest {
+	
 	private String qPayload;
 	private String ePayload;
 
 	@BeforeEach
-	public void setup() throws Exception { //@formatter:off
+	public void setup() {
   
 			qPayload ="{\r\n"
 					+ "        \"id\": \"ngsildbroker:notification:-4670513482090232260\",\r\n"
@@ -63,8 +64,6 @@ public class NotificationControllerTest {
 			
 			ePayload ="";
 			  
-			  //@formatter:on 
-
 	}
 
 	@AfterEach
@@ -73,8 +72,6 @@ public class NotificationControllerTest {
 		qPayload = null;
 	}
 	
-
-
 	/**
 	 * this method is use for notify the subscription
 	 */
@@ -86,44 +83,16 @@ public class NotificationControllerTest {
 	        ExtractableResponse<Response> response = RestAssured.given()
 	        		.body(qPayload)
 	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
 	                .when()
 	                .post("/remotenotify/{id}", "-4670513482090232260")
 	                .then()
-	                   .statusCode(Status.OK.getStatusCode())
-	                   .statusCode(200).extract();
-	            int statusCode = response.statusCode();
-	            assertEquals(200, statusCode);
+	                .statusCode(Status.OK.getStatusCode())
+	                .statusCode(200).extract();
+	        int statusCode = response.statusCode();
+	        assertEquals(200, statusCode);
 	            
-	    }catch(Exception e) {
-
-	        e.printStackTrace();
-	    }
-
-	}
-
-	/**
-	 * this method is use for validate the BadRequest Data
-	 */
-	@Test
-	@Order(2)
-	public void notifyBadRequestTest() {
-		
-		try {    
-	        ExtractableResponse<Response> response = RestAssured.given()
-	        		.body(ePayload)
-	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
-	                .when()
-	                .post("/remotenotify/{id}", "-4670513482090232260")
-	                .then()
-	                   .statusCode(Status.INTERNAL_SERVER_ERROR.getStatusCode())
-	                   .statusCode(500).extract();
-	            int statusCode = response.statusCode();
-	            assertEquals(500, statusCode);
-	            
-	    }catch(Exception e) {
-
+	    } catch(Exception e) {
 	        e.printStackTrace();
 	    }
 
