@@ -1,91 +1,51 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.mockito.Mockito;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
+import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.RestAssured;
+import io.restassured.response.ExtractableResponse;
+import io.restassured.response.Response;
+import io.smallrye.mutiny.Uni;
 
-//
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.times;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-//import javax.servlet.http.HttpServletRequest;
-//import org.junit.After;
-//import org.junit.Assert;
-//import org.junit.Before;
-//import org.junit.Test;
-//import org.junit.jupiter.api.Disabled;
-//import org.junit.runner.RunWith;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.Mockito;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-//import org.springframework.boot.test.context.SpringBootTest;
-//import org.springframework.boot.test.mock.mockito.MockBean;
-//import org.springframework.http.HttpStatus;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.mock.web.MockHttpServletRequest;
-//import org.springframework.mock.web.MockHttpServletResponse;
-//import org.springframework.test.context.junit4.SpringRunner;
-//import org.springframework.test.web.servlet.MockMvc;
-//import org.springframework.test.web.servlet.MvcResult;
-//import org.springframework.test.web.servlet.ResultActions;
-//import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-//import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-//import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
-//import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
-//import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-//import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-//import eu.neclab.ngsildbroker.entityhandler.services.EntityInfoDAO;
-//import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
-//
-//@SpringBootTest(properties = { "spring.main.allow-bean-definition-overriding=true" })
-//@RunWith(SpringRunner.class)
-//@AutoConfigureMockMvc
+import static org.mockito.ArgumentMatchers.any;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response.Status;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @QuarkusTest
 @TestProfile(CustomProfile.class)
+@TestMethodOrder(OrderAnnotation.class)
 public class EntityControllerTest {
-//
-//	@Autowired
-//	private MockMvc mockMvc;
-//
-//	@MockBean
-//	private EntityService entityService;
-//
-//    @MockBean
-//	private EntityInfoDAO entityInfoDAO;
-//
-//	MockHttpServletRequest mockRequest = new MockHttpServletRequest();
-//
-//	private final static Logger logger = LoggerFactory.getLogger(EntityController.class);
-//
-//	private String appendPayload;
+
+	// @InjectMock
+	EntityService entityService;
+
+	private String appendPayload;
+	private String invalidAppendPayload;
 //	private String updatePayload;
 	private String entityPayload;
-//	private String partialUpdatePayload;
-//	private String partialUpdateDefaultCasePayload;
+	private String partialUpdatePayload;
+	private String partialUpdateDefaultCasePayload;
 //	private String payload;
-//
-//	@Mock
-//	private Logger loggerMock;
-//
+	private String incorrectPayload;
+	private String incorrectAppendPayload;
+	private String invalidPartialUpdateDefaultCasePayload;
+	private String InvalidPartialUpdatePayload;
+
 	@BeforeEach
 	public void setup() throws Exception { //@formatter:off
-		System.out.print("test ---------- ");
+		entityService = Mockito.mock(EntityService.class);
 		 entityPayload= "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
 				  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
 				  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
@@ -107,182 +67,168 @@ public class EntityControllerTest {
 				  + "      {  \r\n" + "      \"type\":\"GeoProperty\",\r\n" +
 				  "	\"value\": \"{ \\\"type\\\": \\\"Point\\\", \\\"coordinates\\\": [ -8.5, 41.2]}\""
 				  + "      }\r\n" + "}";
-//		
-//		
-//		mockRequest.addHeader("Accept", "application/json");
-//		mockRequest.addHeader("Content-Type", "application/json");
-//		mockRequest.addHeader("Link","<https://raw.githubusercontent.com/easy-global-market/ngsild-api-data-models/feature/add-json-ld-context-for-ngsi-ld-test-suite/ngsi-ld-test-suite/ngsi-ld-test-suite-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-//		
-//		
-//  appendPayload= "{\r\n" + "	\"brandName1\": {\r\n" +
-//				  "		\"type\": \"Property\",\r\n" + "		\"value\": \"BMW\"\r\n" +
-//				  "	}\r\n" + "}";
+		 
+	
+		 incorrectPayload = "{\r\n    \"ids\": \"urn:ngsi-ld:testunit:154\",\r\n    \"type\": \"Vehicle\",\r\n    \"brandName\": [\r\n        {\r\n              \r\n            \"type\": \"Property\",\r\n            \"value\": \"good\",\r\n            \"observedAt\": \"2018-08-07T12:00:00Z\"\r\n        }\r\n    ]\r\n}";
+         appendPayload= "{\r\n" + "	\"brandName1\": {\r\n" +
+				  "		\"type\": \"Property\",\r\n" + "		\"value\": \"BMW\"\r\n" +
+				  "	}\r\n" + "}";
+         invalidAppendPayload= "{\r\n" + "	\"brandName1\": {\r\n" +
+		  "		\"type\": \"property\",\r\n" + "		\"value\": \"BMW\"\r\n" +
+		  "	}\r\n" + "}";
+         incorrectAppendPayload= "{\r\n" + "	\"brandName123\": {\r\n" +
+		  "		\"type\": \"Property\",\r\n" + "		\"value\": \"BMW\"\r\n" +
+		  "	}\r\n" + "}";
 //				  
 //  updatePayload="{\r\n" + "	\"brandName1\": {\r\n" +
 //				  "		\"type\": \"Property\",\r\n" + "		\"value\": \"Audi\"\r\n" +
 //				  "	}\r\n" + "}"; 
 // 
-//  partialUpdatePayload= "{\r\n" + "		\"value\": 20,\r\n"
-//				  + "		\"datasetId\": \"urn:ngsi-ld:Property:speedometerA4567-speed\"\r\n"
-//				  + "}";
-//				  
-//  partialUpdateDefaultCasePayload= "{\r\n" + "		\"value\": 11\r\n" + "}";
-//				  
- 
-  
-//  payload = "";
-//   //@formatter:on 
+         partialUpdatePayload= "{\r\n" + "		\"value\": 20,\r\n"
+				  + "		\"datasetId\": \"urn:ngsi-ld:Property:speedometerA4567-speed\"\r\n"
+				  + "}";
+         InvalidPartialUpdatePayload= "{\r\n" + "		\"value\": 20,\r\n"
+		  + "		\"datasetId\": \"urn:ngsi-ld:Property:InvalidspeedometerA4567-speed\"\r\n"
+		  + "}";
+			  
+         partialUpdateDefaultCasePayload= "{\r\n" + "		\"value\": 11\r\n" + "}";
+         invalidPartialUpdateDefaultCasePayload= "{\r\n" + "		\"valueInvalid\": 11\r\n" + "}";
+
 	}
-//
-//	@After
-//	public void tearDown() {
-//		appendPayload = null;
-//		updatePayload = null;
-//		entityPayload = null;
-//		partialUpdatePayload = null;
-//		partialUpdateDefaultCasePayload = null;
-//		payload = null;
-//	}
-//
-//	/**
-//	 * this method is use for create the entity
-//	 */
-//
+
+
+	/**
+	 * this method is use for create the entity
+	 */
+
 	@Test
+	@Order(1)
 	public void createEntityTest() {
 		
-		 
-			RestAssured.given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
-							.contentType(AppConstants.NGB_APPLICATION_JSON).body(entityPayload).when().post("/ngsi-ld/v1/entities")
-							.then().statusCode(201).extract().header("location");
+//		Mockito.when(entityService.createEntry(any(), any()))
+//				.thenReturn((Uni.createFrom().item(new CreateResult("urn:ngsi-ld:Vehicle:A101", true))));
+		try
+		{
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD)
+					.body(entityPayload).when()
+					.post("/ngsi-ld/v1/entities").then()
+					.statusCode(201).statusCode(201).extract();
+			int statusCode = response.statusCode();
+			assertEquals(201, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();		
+		}
 
-//
-//		try {
-//			when(entityService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
-//
-//			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
-//					.andExpect(status().isCreated())
-//					.andExpect(redirectedUrl("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101"));
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(201, status);
-//			verify(entityService, times(1)).createEntry(any(), any());
-//		} catch (Exception e) {
-//			Assert.fail();
-//			e.printStackTrace();
-//		}
 	}
-//
-//	/**
-//	 * this method is use for the entity if entity already exist
-//	 */
-//
+
+
+	/**
+	 * this method is use for the entity if entity already exist
+	 */
+
 	@Test
+	@Order(2)
 	public void createEntityAlreadyExistTest() {
 		try {
-			RestAssured.given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
-			.contentType(AppConstants.NGB_APPLICATION_JSON).body(entityPayload).when().post("/ngsi-ld/v1/entities")
-			.then().statusCode(409);
-		
-//			when(entityService.createEntry(any(), any())).thenThrow(
-//					new ResponseException(ErrorType.AlreadyExists, "urn:ngsi-ld:Vehicle:A101 already exists"));
-//			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
-//					.andExpect(status().isConflict()).andExpect(jsonPath("$.title").value("Already exists."));
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(409, status);
-//			verify(entityService, times(1)).createEntry(any(), any());
-//
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD)
+					.body(entityPayload).when()
+					.post("/ngsi-ld/v1/entities").then()
+					.statusCode(409).statusCode(409).extract();
+			int statusCode = response.statusCode();
+			assertEquals(409, statusCode);
+
 		} catch (Exception e) {
-			//Assert.fail();
+			e.printStackTrace();		
 		}
 	}
+
 //
 //	/**
 //	 * this method is validate for the bad request if create the entity
 //	 */
 //
 	@Test
+	@Order(3)
 	public void createEntityBadRequestTest() {
 		try {
-			RestAssured.given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
-			.contentType(AppConstants.NGB_APPLICATION_JSON).body(entityPayload).when().post("/ngsi-ld/entities")
-			.then().statusCode(404);
-//
-//			when(entityService.createEntry(any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.BadRequestData, "You have to provide a valid payload"));
-//			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/").contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(entityPayload))
-//					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(400, status);
-//			verify(entityService, times(1)).createEntry(any(), any());
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD)
+					.body(incorrectPayload).when()
+					.post("/ngsi-ld/v1/entities").then()
+					.statusCode(400).statusCode(400).extract();
+			int statusCode = response.statusCode();
+			assertEquals(400, statusCode);
+
 		} catch (Exception e) {
 			e.printStackTrace();
-			//Assert.fail();
 		}
 	}
-//
-//	/**
-//	 * this method is use for append the attribute in entity
-//	 */
-//
+
+
+	/**
+	 * this method is use for append the attribute in entity
+	 */
+
+	@Test
+	@Order(4)
+	public void appendEntityNoContentTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD)
+					.body(appendPayload).when()
+					.post("/ngsi-ld/v1/entities/{entityId}/attrs\", \"urn:ngsi-ld:Vehicle:A101").then()
+					.statusCode(204).statusCode(204).extract();
+			int statusCode = response.statusCode();
+			assertEquals(204, statusCode);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is use for append the attribute in entity for multi status
+	 */
+
 //	@Test
-//	public void appendEntityNoContentTest() {
-//		try {
-//
-//			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
-//			when(entityService.appendToEntry(any(), any(), any(), any())).thenReturn(updateResult);
-//			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(appendPayload))
-//					.andExpect(status().isNoContent());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(204, status);
-//			verify(entityService, times(1)).appendToEntry(any(), any(), any(), any());
-//
-//		} catch (Exception e) {
-//			Assert.fail();
-//			e.printStackTrace();
-//		}
-//	}
-//
-//	/**
-//	 * this method is use for append the attribute in entity for multi status
-//	 */
-//
-//	@Test
+//	@Order(5)
 //	public void appendEntityMultiStatusTest() throws Exception {
 //		try {
-//			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
-//			when(entityService.appendToEntry(any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
-//
-//			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(appendPayload))
-//					.andExpect(status().isMultiStatus());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(207, status);
-//			verify(entityService, times(1)).appendToEntry(any(), any(), any(), any());
-//
+//			ExtractableResponse<Response> response =    RestAssured.given()
+//                    .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//                    .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+//                    .body(appendPayload)
+//                   .when()
+//                   .post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
+//                   .then()
+//                      .statusCode(207)
+//                      .statusCode(207).extract();
+//                   int statusCode = response.statusCode();
+//                   assertEquals(207, statusCode);
+////			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
+////			when(entityService.appendToEntry(any(), any(), any(), any()))
+////					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
+////
+////			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
+////							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
+////							.content(appendPayload))
+////					.andExpect(status().isMultiStatus());
+////
+////			MvcResult mvcResult = resultAction.andReturn();
+////			MockHttpServletResponse res = mvcResult.getResponse();
+////			int status = res.getStatus();
+////			assertEquals(207, status);
+////			verify(entityService, times(1)).appendToEntry(any(), any(), any(), any());
+////
 //		} catch (Exception e) {
-//			Assert.fail();
+//			//Assert.fail();
 //			e.printStackTrace();
 //		}
 //	}
@@ -291,105 +237,101 @@ public class EntityControllerTest {
 //	 * this method is validate the bad request if append the attribute in entity
 //	 */
 //
+	@Test
+	@Order(6)
+	public void appendEntityBadRequestTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(invalidAppendPayload).when()
+					.post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101").then()
+					.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+			int statusCode = response.statusCode();
+			assertEquals(400, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is validate the data not found if append the attribute in entity
+	 */
+
+	@Test
+	@Order(7)
+	public void appendEntityNotFoundTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(appendPayload).when()
+					.post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:VehicleInvalid:A101").then()
+					.statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			int statusCode = response.statusCode();
+			assertEquals(404, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is use for update the entity
+	 */
+
 //	@Test
-//	public void appendEntityBadRequestTest() {
-//		try {
-//			when(entityService.appendToEntry(any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.BadRequestData, "You have to provide a valid payload"));
-//			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(appendPayload))
-//					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(400, status);
-//			verify(entityService, times(1)).appendToEntry(any(), any(), any(), any());
-//
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			Assert.fail();
-//		}
-//	}
-//
-//	/**
-//	 * this method is validate the data not found if append the attribute in entity
-//	 */
-//
-//	@Test
-//	public void appendEntityNotFoundTest() {
-//		try {
-//			when(entityService.appendToEntry(any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.NotFound, "Resource not found."));
-//			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(appendPayload))
-//					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."));
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(404, status);
-//			verify(entityService, times(1)).appendToEntry(any(), any(), any(), any());
-//
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			Assert.fail();
-//		}
-//	}
-//
-//	/**
-//	 * this method is use for update the entity
-//	 */
-//
-//	@Test
+//	@Order(8)
 //	public void updateEntityNoContentTest() {
 //		try {
-//			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
-//			when(entityService.updateEntry(any(), any(), any())).thenReturn(updateResult);
-//
-//			ResultActions resultAction = mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(updatePayload))
-//					.andExpect(status().isNoContent());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(204, status);
-//
-//			verify(entityService, times(1)).updateEntry(any(), any(), any());
+//			ExtractableResponse<Response> response = RestAssured.given()
+//					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(appendPayload).when()
+//					.patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101").then()
+//					.statusCode(Status.NO_CONTENT.getStatusCode()).statusCode(204).extract();
+//			int statusCode = response.statusCode();
+//			assertEquals(204, statusCode);
 //		} catch (Exception e) {
-//			Assert.fail();
 //			e.printStackTrace();
 //		}
 //	}
+
 //
 //	/**
 //	 * this method is use for update the entity for multi status
 //	 */
-//
+////
 //	@Test
+//	@Order(9)
 //	public void updateEntityMultiStatusTest() {
 //		try {
-//
-//			when(entityService.updateEntry(any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
-//			;
-//
-//			ResultActions resultAction = mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(updatePayload))
-//					.andExpect(status().isMultiStatus());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(207, status);
-//
+//			ExtractableResponse<Response> response =    RestAssured.given()
+//                    .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//                    .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+//                    .body(appendPayload)
+//                   .when()
+//                   .patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
+//                   .then()
+//                      .statusCode(207)
+//                      .statusCode(207).extract();
+//                   int statusCode = response.statusCode();
+//                   assertEquals(207, statusCode);
+////
+////			when(entityService.updateEntry(any(), any(), any()))
+////					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
+////			;
+////
+////			ResultActions resultAction = mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
+////							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
+////							.content(updatePayload))
+////					.andExpect(status().isMultiStatus());
+////
+////			MvcResult mvcResult = resultAction.andReturn();
+////			MockHttpServletResponse res = mvcResult.getResponse();
+////			int status = res.getStatus();
+////			assertEquals(207, status);
+////
 //		} catch (Exception e) {
-//			Assert.fail();
+//			//Assert.fail();
 //			e.printStackTrace();
 //		}
 //	}
@@ -398,265 +340,222 @@ public class EntityControllerTest {
 //	 * this method is validate the bad request if entity update
 //	 */
 //
-//	@Test
-//	public void updateEntityBadRequestTest() {
-//		try {
-//			when(entityService.updateEntry(any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
-//			ResultActions resultAction = mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(updatePayload))
-//					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(400, status);
-//			verify(entityService, times(1)).updateEntry(any(), any(), any());
-//		} catch (Exception e) {
-//			Assert.fail();
-//		}
-//	}
-//
-//	/**
-//	 * this method is validate the data not found if entity update
-//	 */
-//
-//	@Test
-//	public void updateEntityNotFoundTest() {
-//		try {
-//			when(entityService.updateEntry(any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.NotFound, "Resource not found."));
-//			ResultActions resultAction = mockMvc.perform(patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(updatePayload))
-//					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."));
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(404, status);
-//			verify(entityService, times(1)).updateEntry(any(), any(), any());
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			Assert.fail();
-//		}
-//	}
-//
-//	/**
-//	 * this method is use for partial update the attribute
-//	 */
-//
-//	@Test
-//	public void partialUpdateAttributeIfDatasetIdExistNoContentTest() {
-//		try {
-//			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
-//			when(entityService.partialUpdateEntity(any(), any(), any(), any())).thenReturn(updateResult);
-//			// when(updateResult.getStatus()).thenReturn(true);
-//			ResultActions resultAction = mockMvc.perform(
-//					patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
-//							.with(request -> {
-//								request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
-//								return request;
-//							}).contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(partialUpdatePayload))
-//					.andExpect(status().isNoContent());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(204, status);
-//			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
-//		} catch (Exception e) {
-//			Assert.fail();
-//			e.printStackTrace();
-//		}
-//	}
-//
-//	/**
-//	 * this method is use for partial update the attribute if datasetId is not exist
-//	 */
-//
-//	@Test
-//	public void partialUpdateAttributeIfDatasetIdIsNotExistTest() {
-//		try {
-//			when(entityService.partialUpdateEntity(any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.NotFound, "Resource not found."));
-//			ResultActions resultAction = mockMvc.perform(
-//					patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
-//							.with(request -> {
-//								request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
-//								return request;
-//							}).contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(partialUpdatePayload))
-//					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(404, status);
-//
-//			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			Assert.fail();
-//		}
-//	}
-//
-//	/**
-//	 * this method is validate the bad request in partial update attribute
-//	 */
-//
-//	@Test
-//	public void partialUpdateAttributeBadRequestTest() {
-//		try {
-//			when(entityService.partialUpdateEntity(any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
-//			ResultActions resultAction = mockMvc.perform(
-//					patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
-//							.with(request -> {
-//								request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
-//								return request;
-//							}).contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).with(request -> {
-//								request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
-//								return request;
-//							}).content(partialUpdatePayload))
-//					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(400, status);
-//			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			Assert.fail();
-//		}
-//	}
-//
-//	/**
-//	 * this method is use for partial update attribute default datasetId
-//	 */
-//
-//	@Test
-//	public void partialUpdateAttributeDefaultDatasetIdCaseTest() {
-//		try {
-//			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
-//			when(entityService.partialUpdateEntity(any(), any(), any(), any())).thenReturn(updateResult);
-//			// when(updateResult.getStatus()).thenReturn(true);
-//			ResultActions resultAction = mockMvc.perform(
-//					patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
-//							.with(request -> {
-//								request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
-//								return request;
-//							}).contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(partialUpdateDefaultCasePayload))
-//					.andExpect(status().isNoContent());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(204, status);
-//			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
-//		} catch (Exception e) {
-//			Assert.fail();
-//			e.printStackTrace();
-//		}
-//	}
-//
-//	/**
-//	 * this method is validate for the not found in partial update attribute default
-//	 * datasetId
-//	 */
-//
-//	@Test
-//	public void partialUpdateAttributeDefaultDatasetIdCaseNotFoundTest() {
-//		try {
-//			when(entityService.partialUpdateEntity(any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.NotFound, "Resource not found."));
-//			ResultActions resultAction = mockMvc.perform(
-//					patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
-//							.with(request -> {
-//								request.setServletPath("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101/attrs/speed");
-//								return request;
-//							}).contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(partialUpdateDefaultCasePayload))
-//					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(404, status);
-//			verify(entityService, times(1)).partialUpdateEntity(any(), any(), any(), any());
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			Assert.fail();
-//		}
-//	}
-//
-//	/**
-//	 * this method is use for delete the entity
-//	 */
-//
-//	@Test
-//	public void deleteEntityTest() {
-//		try {
-//			when(entityService.deleteEntry(any(), any())).thenReturn(true);
-//			ResultActions resultAction = mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
-//					.andExpect(status().isNoContent());
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(204, status);
-//			verify(entityService, times(1)).deleteEntry(any(), any());
-//		} catch (Exception e) {
-//			Assert.fail();
-//			e.printStackTrace();
-//		}
-//	}
-//
-//	/**
-//	 * this method is validate the not found if delete the entity
-//	 */
-//
-//	@Test
-//	public void deleteEntityNotFoundTest() {
-//		try {
-//			when(entityService.deleteEntry(any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.NotFound, "Resource not found."));
-//			ResultActions resultAction = mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
-//					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(404, status);
-//			verify(entityService, times(1)).deleteEntry(any(), any());
-//
-//		} catch (Exception e) {
-//			Assert.fail();
-//		}
-//	}
+	@Test
+	@Order(10)
+	public void updateEntityBadRequestTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(invalidAppendPayload).when()
+					.patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:Vehicle:A101").then()
+					.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+			int statusCode = response.statusCode();
+			assertEquals(400, statusCode);
+		} catch (Exception e) {
+		}
+	}
+
+
+	/**
+	 * this method is validate the data not found if entity update
+	 */
+
+	@Test
+	@Order(11)
+	public void updateEntityNotFoundTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(incorrectAppendPayload).when()
+					.patch("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:ngsi-ld:VehicleInvalid:A101").then()
+					.statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			int statusCode = response.statusCode();
+			assertEquals(404, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is use for partial update the attribute
+	 */
+
+	@Test
+	@Order(12)
+	public void partialUpdateAttributeIfDatasetIdExistNoContentTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(partialUpdatePayload).when()
+					.patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed").then()
+					.statusCode(Status.NO_CONTENT.getStatusCode()).statusCode(204).extract();
+			int statusCode = response.statusCode();
+			assertEquals(204, statusCode);
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is use for partial update the attribute if datasetId is not exist
+	 */
+
+	@Test
+	@Order(13)
+	public void partialUpdateAttributeIfDatasetIdIsNotExistTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(partialUpdatePayload).when()
+					.patch("/ngsi-ld/v1/entitiess/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
+					.then().statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			int statusCode = response.statusCode();
+			assertEquals(404, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is validate the bad request in partial update attribute
+	 */
+
+	@Test
+	@Order(14)
+	public void partialUpdateAttributeBadRequestTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(appendPayload).when()
+					.patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed").then()
+					.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+			int statusCode = response.statusCode();
+			assertEquals(400, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is use for partial update attribute default datasetId
+	 */
+
+	@Test
+	@Order(15)
+	public void partialUpdateAttributeDefaultDatasetIdCaseTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD)
+					.body(partialUpdateDefaultCasePayload).when()
+					.patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed").then()
+					.statusCode(Status.NO_CONTENT.getStatusCode()).statusCode(204).extract();
+			int statusCode = response.statusCode();
+			assertEquals(204, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is validate for the not found in partial update attribute default
+	 * datasetId
+	 */
+
+	@Test
+	@Order(16)
+	public void partialUpdateAttributeDefaultDatasetIdCaseNotFoundTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(InvalidPartialUpdatePayload)
+					.when().patch("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
+					.then().statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			int statusCode = response.statusCode();
+			assertEquals(404, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is use for delete the entity
+	 */
+
+	@Test
+	@Order(17)
+	public void deleteEntityTest() {
+		try {
+
+			RestAssured.given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
+					.contentType(AppConstants.NGB_APPLICATION_JSON).when()
+					.delete("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A101").then().statusCode(204);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+	/**
+	 * this method is validate the not found if delete the entity
+	 */
+
+	@Test
+	@Order(18)
+	public void deleteEntityNotFoundTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(appendPayload).when()
+					.delete("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A101").then()
+					.statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			int statusCode = response.statusCode();
+			assertEquals(404, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 //
 //	/**
 //	 * this method is validate the bad request if delete the entity
 //	 */
 //
 //	@Test
+//	@Order(19)
 //	public void deleteEntityBadRequestTest() {
 //		try {
-//			when(entityService.deleteEntry(any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
-//			ResultActions resultAction = mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A101")
-//							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
-//					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(400, status);
-//
-//			verify(entityService, times(1)).deleteEntry(any(), any());
+//			ExtractableResponse<Response> response =    RestAssured.given()
+//                    .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//                    .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+//                    
+//                   .when()
+//                   .delete("/ngsi-ld/v1/entities/{entityId}", "test:urn:ngsi-ld:Vehicle:A101")
+//                   .then()
+//                      .statusCode(Status.BAD_REQUEST.getStatusCode())
+//                      .statusCode(400).extract();
+//                   int statusCode = response.statusCode();
+//                   assertEquals(400, statusCode);
+////			when(entityService.deleteEntry(any(), any()))
+////					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
+////			ResultActions resultAction = mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}", "urn:ngsi-ld:Vehicle:A101")
+////							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
+////					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
+////			MvcResult mvcResult = resultAction.andReturn();
+////			MockHttpServletResponse res = mvcResult.getResponse();
+////			int status = res.getStatus();
+////			assertEquals(400, status);
+////
+////			verify(entityService, times(1)).deleteEntry(any(), any());
 //		} catch (Exception e) {
-//			Assert.fail();
+//			//Assert.fail();
 //		}
 //	}
 //
@@ -666,24 +565,37 @@ public class EntityControllerTest {
 //	 */
 //
 //	@Test
+//	@Order(20)
 //	public void deleteAttributeInstanceIfDatasetIdExistTest() {
 //		try {
-//			when(entityService.deleteAttribute(any(), any(), any(), any(), any())).thenReturn(true);
-//			ResultActions resultAction = mockMvc.perform(delete(
-//					"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
-//					"urn:ngsi-ld:Vehicle:A101", "speed").with(request -> {
-//						request.setServletPath(
-//								"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed\",\r\n"
-//										+ "					\"urn:ngsi-ld:Vehicle:A101\", \"speed\"");
-//						return request;
-//					}).contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isNoContent());
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(204, status);
-//			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
+//			ExtractableResponse<Response> response =    RestAssured.given()
+//                    .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//                    .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+//                    .body(appendPayload)
+//                   .when()
+//                   .delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
+//       					"urn:ngsi-ld:Vehicle:A101", "speed")
+//                   .then()
+//                      .statusCode(Status.NO_CONTENT.getStatusCode())
+//                      .statusCode(204).extract();
+//                   int statusCode = response.statusCode();
+//                   assertEquals(204, statusCode);
+////			when(entityService.deleteAttribute(any(), any(), any(), any(), any())).thenReturn(true);
+////			ResultActions resultAction = mockMvc.perform(delete(
+////					"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
+////					"urn:ngsi-ld:Vehicle:A101", "speed").with(request -> {
+////						request.setServletPath(
+////								"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed\",\r\n"
+////										+ "					\"urn:ngsi-ld:Vehicle:A101\", \"speed\"");
+////						return request;
+////					}).contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isNoContent());
+////			MvcResult mvcResult = resultAction.andReturn();
+////			MockHttpServletResponse res = mvcResult.getResponse();
+////			int status = res.getStatus();
+////			assertEquals(204, status);
+////			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 //		} catch (Exception e) {
-//			Assert.fail();
+//		//	Assert.fail();
 //			e.printStackTrace();
 //		}
 //	}
@@ -693,138 +605,164 @@ public class EntityControllerTest {
 //	 * attribute instance
 //	 */
 //
-//	@Test
-//	public void deleteAttributeInstanceIfDatasetIdNotExistTest() {
-//		try {
-//			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.NotFound, "Resource not found."));
-//			ResultActions resultAction = mockMvc.perform(delete(
-//					"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
-//					"urn:ngsi-ld:Vehicle:A101", "speed").with(request -> {
-//						request.setServletPath(
-//								"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed\",\r\n"
-//										+ "					\"urn:ngsi-ld:Vehicle:A101\", \"speed\"");
-//						return request;
-//					}).contentType(AppConstants.NGB_APPLICATION_JSONLD)).andExpect(status().isNotFound())
-//					.andExpect(jsonPath("$.title").value("Resource not found."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(404, status);
-//
-//			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
-//		} catch (Exception e) {
-//			Assert.fail();
-//		}
-//	}
+	@Test
+	@Order(21)
+	public void deleteAttributeInstanceIfDatasetIdNotExistTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(appendPayload).when()
+					.delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
+							"urn:ngsi-ld:Vehicle:A101", "speed")
+					.then().statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			int statusCode = response.statusCode();
+			assertEquals(404, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 //
 //	/**
 //	 * this method is validate for bad request in case of delete attribute
 //	 */
 //
 //	@Test
+//	@Order(22)
 //	public void deleteAttributeInstanceBadRequestTest() {
 //		try {
-//			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
-//			ResultActions resultAction = mockMvc.perform(delete(
-//					"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
-//					"urn:ngsi-ld:Vehicle:A101", "speed").with(request -> {
-//						request.setServletPath(
-//								"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed\",\r\n"
-//										+ "					\"urn:ngsi-ld:Vehicle:A101\", \"speed\"");
-//						return request;
-//					}).contentType(AppConstants.NGB_APPLICATION_JSONLD))
-//					.andExpect(jsonPath("$.title").value("Bad Request Data."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(400, status);
-//			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
+//			ExtractableResponse<Response> response =    RestAssured.given()
+//                    .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//                    .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+//                    .body(appendPayload)
+//                   .when()
+//                   .delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
+//       					"urn:ngsi-ld:Vehicle:A101", "speedd")
+//                   .then()
+//                      .statusCode(Status.BAD_REQUEST.getStatusCode())
+//                      .statusCode(400).extract();
+//                   int statusCode = response.statusCode();
+//                   assertEquals(400, statusCode);
+//			
+////			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
+////					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
+////			ResultActions resultAction = mockMvc.perform(delete(
+////					"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed",
+////					"urn:ngsi-ld:Vehicle:A101", "speed").with(request -> {
+////						request.setServletPath(
+////								"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?datasetId=urn:ngsi-ld:Property:speedometerA4567-speed\",\r\n"
+////										+ "					\"urn:ngsi-ld:Vehicle:A101\", \"speed\"");
+////						return request;
+////					}).contentType(AppConstants.NGB_APPLICATION_JSONLD))
+////					.andExpect(jsonPath("$.title").value("Bad Request Data."));
+////			MvcResult mvcResult = resultAction.andReturn();
+////			MockHttpServletResponse res = mvcResult.getResponse();
+////			int status = res.getStatus();
+////			assertEquals(400, status);
+////			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 //		} catch (Exception e) {
-//			Assert.fail();
+//		//	Assert.fail();
 //		}
 //	}
 //
-//	/**
-//	 * this method is validate not found in case of delete attribute
-//	 */
-//
-//	@Test
-//	public void deleteAttributeInstanceNotFoundTest() {
-//		try {
-//			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.NotFound, "Resource not found."));
-//			ResultActions resultAction = mockMvc.perform(
-//					delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
-//							.with(request -> {
-//								request.setServletPath(
-//										"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}\", \"urn:ngsi-ld:Vehicle:A101\", \"speed");
-//								return request;
-//							}).contentType(AppConstants.NGB_APPLICATION_JSONLD))
-//					.andExpect(status().isNotFound()).andExpect(jsonPath("$.title").value("Resource not found."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(404, status);
-//			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
-//		} catch (Exception e) {
-//			Assert.fail();
-//		}
-//	}
+	/**
+	 * this method is validate not found in case of delete attribute
+	 */
+
+	@Test
+	@Order(23)
+	public void deleteAttributeInstanceNotFoundTest() {
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(appendPayload).when()
+					.delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}", "urn:ngsi-ld:Vehicle:A101", "speed")
+					.then().statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			int statusCode = response.statusCode();
+			assertEquals(404, statusCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 //
 //	/**
 //	 * this method is use for all the delete attribute
 //	 */
 //
 //	@Test
+//	@Order(24)
 //	public void deleteAllAttributeInstanceTest() {
 //		try {
-//			when(entityService.deleteAttribute(any(), any(), any(), any(), any())).thenReturn(true);
-//			ResultActions resultAction = mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true",
-//							"urn:ngsi-ld:Vehicle:A101", "speed").with(request -> {
-//								request.setServletPath(
-//										"\"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true\",\r\n"
-//												+ "				 	\"urn:ngsi-ld:Vehicle:A101\", \"speed\"");
-//								return request;
-//							}).contentType(AppConstants.NGB_APPLICATION_JSONLD))
-//					.andExpect(status().isNoContent());
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(204, status);
-//
-//			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
+//			ExtractableResponse<Response> response =    RestAssured.given()
+//                    .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//                    .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+//                    .body(appendPayload)
+//                   .when()
+//                   .delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true",
+//							"urn:ngsi-ld:Vehicle:A101", "speed")
+//                   .then()
+//                      .statusCode(Status.NO_CONTENT.getStatusCode())
+//                      .statusCode(204).extract();
+//                   int statusCode = response.statusCode();
+//                   assertEquals(204, statusCode);
+////			when(entityService.deleteAttribute(any(), any(), any(), any(), any())).thenReturn(true);
+////			ResultActions resultAction = mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true",
+////							"urn:ngsi-ld:Vehicle:A101", "speed").with(request -> {
+////								request.setServletPath(
+////										"\"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true\",\r\n"
+////												+ "				 	\"urn:ngsi-ld:Vehicle:A101\", \"speed\"");
+////								return request;
+////							}).contentType(AppConstants.NGB_APPLICATION_JSONLD))
+////					.andExpect(status().isNoContent());
+////			MvcResult mvcResult = resultAction.andReturn();
+////			MockHttpServletResponse res = mvcResult.getResponse();
+////			int status = res.getStatus();
+////			assertEquals(204, status);
+////
+////			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 //		} catch (Exception e) {
-//			Assert.fail();
+//			//Assert.fail();
 //			e.printStackTrace();
 //		}
 //	}
-//
-//	/**
-//	 * this method is validate the bad request in case of delete all attribute
-//	 */
-//
+////
+////	/**
+////	 * this method is validate the bad request in case of delete all attribute
+////	 */
+////
 //	@Test
+//	@Order(25)
 //	public void deleteAllAttributeInstanceBadRequestTest() {
 //		try {
-//			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
-//					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
-//			ResultActions resultAction = mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true",
-//							"urn:ngsi-ld:Vehicle:A101", "speed").with(request -> {
-//								request.setServletPath(
-//										"\"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true\",\r\n"
-//												+ "					\"urn:ngsi-ld:Vehicle:A101\", \"speed\"");
-//								return request;
-//							}).contentType(AppConstants.NGB_APPLICATION_JSONLD))
-//					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse res = mvcResult.getResponse();
-//			int status = res.getStatus();
-//			assertEquals(400, status);
-//			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
+//			ExtractableResponse<Response> response =    RestAssured.given()
+//                    .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//                    .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+//                    .body(appendPayload)
+//                   .when()
+//                   .delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true",
+//							"urn:ngsi-ld:Vehicle:A101", "speed")
+//                   .then()
+//                      .statusCode(Status.BAD_REQUEST.getStatusCode())
+//                      .statusCode(400).extract();
+//                   int statusCode = response.statusCode();
+//                   assertEquals(400, statusCode);
+////			when(entityService.deleteAttribute(any(), any(), any(), any(), any()))
+////					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
+////			ResultActions resultAction = mockMvc.perform(delete("/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true",
+////							"urn:ngsi-ld:Vehicle:A101", "speed").with(request -> {
+////								request.setServletPath(
+////										"\"/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}?deleteAll=true\",\r\n"
+////												+ "					\"urn:ngsi-ld:Vehicle:A101\", \"speed\"");
+////								return request;
+////							}).contentType(AppConstants.NGB_APPLICATION_JSONLD))
+////					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
+////			MvcResult mvcResult = resultAction.andReturn();
+////			MockHttpServletResponse res = mvcResult.getResponse();
+////			int status = res.getStatus();
+////			assertEquals(400, status);
+////			verify(entityService, times(1)).deleteAttribute(any(), any(), any(), any(), any());
 //		} catch (Exception e) {
-//			Assert.fail();
+//			//Assert.fail();
 //		}
 //	}
 //
