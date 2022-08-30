@@ -1,27 +1,23 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response.Status;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.mockito.Mockito;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import io.smallrye.mutiny.Uni;
-
-import static org.mockito.ArgumentMatchers.any;
-
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response.Status;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @QuarkusTest
 @TestProfile(CustomProfile.class)
@@ -45,7 +41,7 @@ public class EntityControllerTest {
 
 	@BeforeEach
 	public void setup() throws Exception { //@formatter:off
-		entityService = Mockito.mock(EntityService.class);
+		//entityService = Mockito.mock(EntityService.class);
 		 entityPayload= "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
 				  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
 				  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
