@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>eu.neclab.ngsildbroker</groupId>
 	<artifactId>broker-parent</artifactId>
@@ -17,7 +19,7 @@
 		<surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
 		<java.version>17</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
-		<maven.compiler.target>${java.version}</maven.compiler.target>	
+		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<nativeext></nativeext>
 	</properties>
 	<build>
@@ -131,6 +133,11 @@
 		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-junit5</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-junit5-mockito</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -259,11 +266,11 @@
 		<profile>
 			<id>windowsext</id>
 			<activation>
-        		<os>
-        			<family>windows</family>
-        		</os>
-    		</activation>
-    		<properties>	
+				<os>
+					<family>windows</family>
+				</os>
+			</activation>
+			<properties>
 				<nativeext>.exe</nativeext>
 			</properties>
 		</profile>
