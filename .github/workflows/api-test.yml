@@ -49,11 +49,18 @@ jobs:
         run: |
           id=$(echo ${{github.ref_name}} | cut -d/ -f2)
           echo "::set-output name=id::$id"
+      - name: start kafka & postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-kafka-postgis.yml up &
+          sleep 30
       - name: build-java-with-kafka
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -Pkafka -Dkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
+      - name: stop kafka & postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-kafka-postgis.yml down
       - name: docker tag 
         run: |
           docker tag scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-latest
@@ -102,11 +109,18 @@ jobs:
         run: |
           id=$(echo ${{github.ref_name}} | cut -d/ -f2)
           echo "::set-output name=id::$id"
+      - name: start kafka & postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-postgis.yml up &
+          sleep 30
       - name: build-java
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
+      - name: stop postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-postgis.yml down
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
