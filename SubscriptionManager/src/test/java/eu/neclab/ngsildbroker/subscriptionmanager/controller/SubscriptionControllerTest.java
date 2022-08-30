@@ -1,318 +1,387 @@
-//
-//package eu.neclab.ngsildbroker.subscriptionmanager.controller;
-//
-//import static org.junit.jupiter.api.Assertions.assertEquals;
-//import static org.mockito.ArgumentMatchers.any;
-//import static org.mockito.Mockito.doNothing;
-//import static org.mockito.Mockito.doThrow;
-//import static org.mockito.Mockito.mock;
-//import static org.mockito.Mockito.times;
-//import static org.mockito.Mockito.verify;
-//import static org.mockito.Mockito.when;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-//
-//import java.util.ArrayList;
-//import java.util.List;
-//
-//import org.junit.After;
-//import org.junit.Before;
-//import org.junit.Test;
-//import org.junit.runner.RunWith;
-//import org.mockito.InjectMocks;
-//import org.mockito.MockitoAnnotations;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-//import org.springframework.boot.test.context.SpringBootTest;
-//import org.springframework.boot.test.mock.mockito.MockBean;
-//import org.springframework.mock.web.MockHttpServletResponse;
-//import org.springframework.test.context.junit4.SpringRunner;
-//import org.springframework.test.web.servlet.MockMvc;
-//import org.springframework.test.web.servlet.MvcResult;
-//import org.springframework.test.web.servlet.ResultActions;
-//
-//import com.google.common.collect.ArrayListMultimap;
-//
-//import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-//import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-//import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-//import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-//import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-//import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
-//import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
-//import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
-//import junit.framework.Assert;
-//
-//@SpringBootTest(properties = { "spring.main.allow-bean-definition-overriding=true" })
-//
-//@RunWith(SpringRunner.class)
-//
-//@AutoConfigureMockMvc
-//public class SubscriptionControllerTest {
-//
-//	@Autowired
-//	private MockMvc mockMvc;
-//
-//	@MockBean
-//	private SubscriptionService subscriptionService;
-//
-//	@MockBean
-//	private QueryParams qp;
-//
-//	@Inject
-// SubscriptionController subscriptionController;
-//
-//	private String subscriptionEntityPayload;
-//	private String subscriptionEntityPayload1;
-//
-//	@Before
-//	public void setup() throws Exception {
-//		MockitoAnnotations.initMocks(this);
-//
-//	// @formatter:off
-//  
-//  subscriptionEntityPayload = "{" +
-//  "\r\n\"id\": \"urn:ngsi-ld:Subscription:211\"," +
-//  "\r\n\"type\": \"Subscription\"," + "\r\n\"entities\": [{" +
-//  "\r\n		  \"id\": \"urn:ngsi-ld:Vehicle:A143\"," +
-//  "\r\n		  \"type\": \"Vehicle\"" + "\r\n		}]," +
-//  "\r\n\"watchedAttributes\": [\"brandName\"]," +
-//  "\r\n		\"q\":\"brandName!=Mercedes\"," + "\r\n\"notification\": {" +
-//  "\r\n  \"attributes\": [\"brandName\"]," + "\r\n  \"format\": \"keyValues\","
-//  + "\r\n  \"endpoint\": {" +
-//  "\r\n   \"uri\": \"mqtt://localhost:1883/notify\"," +
-//  "\r\n   \"accept\": \"application/json\"," + "\r\n	\"notifierinfo\": {" +
-//  "\r\n	  \"version\" : \"mqtt5.0\"," + "\r\n	  \"qos\" : 0" + "\r\n	}" +
-//  "\r\n  }" + "\r\n}" + "\r\n}";
-//  
-//  
-//  subscriptionEntityPayload1 = "{" +
-//		  "\r\n\"id\": \"urn:ngsi-ld:Subscription:211\"," +
-//		  "\r\n\"type\": \"Subscription\"," + "\r\n\"entities\": [{" +
-//		  "\r\n		  \"id\": \"urn:ngsi-ld:Vehicle:143\"," +
-//		  "\r\n		  \"type\": \"Vehicle\"" + "\r\n		}]," +
-//		  "\r\n\"watchedAttributes\": [\"brandName\"]," +
-//		  "\r\n		\"q\":\"brandName!=Mercedes\"," + "\r\n\"notification\": {" +
-//		  "\r\n  \"attributes\": [\"brandName\"]," + "\r\n  \"format\": \"keyValues\","
-//		  + "\r\n  \"endpoint\": {" +
-//		  "\r\n   \"uri\": \"mqtt://localhost:1883/notify\"," +
-//		  "\r\n   \"accept\": \"application/json\"," + "\r\n	\"notifierinfo\": {" +
-//		  "\r\n	  \"version\" : \"mqtt5.0\"," + "\r\n	  \"qos\" : 0" + "\r\n	}" +
-//		  "\r\n  }" + "\r\n}" + "\r\n}";
-//  
-//  // @formatter:on 
-//	}
-//
-//	@After
-//	public void tearDown() {
-//		subscriptionEntityPayload = null;
-//	}
-//
-//	/**
-//	 * this method is use for subscribe the entity
-//	 */
-//
-//	@Test
-//	public void createSubscriptionEntityTest() {
-//		try {
-//			when(subscriptionService.subscribe(any())).thenReturn("urn:ngsi-ld:Subscription:211");
-//			ResultActions resultAction = mockMvc
-//					.perform(post("/ngsi-ld/v1/subscriptions").contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(subscriptionEntityPayload))
-//					.andExpect(status().isCreated());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(201, status);
-//			verify(subscriptionService, times(1)).subscribe(any());
-//
-//		} catch (Exception e) {
-//			Assert.fail();
-//			e.printStackTrace();
-//		}
-//	}
-//
-//	/**
-//	 * this method is try to subscribe the entity having "BAD REQUEST"
-//	 */
-//
-//	@Test
-//	public void createSubscriptionEntityBadRequestTest() {
-//		try {
-//			when(subscriptionService.subscribe(any()))
-//					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
-//			ResultActions resultAction = mockMvc
-//					.perform(post("/ngsi-ld/v1/subscriptions").contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(subscriptionEntityPayload))
-//					.andExpect(status().isBadRequest()).andExpect(jsonPath("$.title").value("Bad Request Data."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(400, status);
-//			verify(subscriptionService, times(1)).subscribe(any());
-//
-//		} catch (Exception e) {
-//			Assert.fail(e.getMessage());
-//		}
-//	}
-//
-//	/**
-//	 * this method is use for the subscribe entity if subscribe entity already
-//	 * exists
-//	 */
-//
-//	@Test
-//	public void createSubscriptionEntityAlreadyExistTest() {
-//		try {
-//			when(subscriptionService.subscribe(any()))
-//					.thenThrow(new ResponseException(ErrorType.AlreadyExists, "Already exists."));
-//			ResultActions resultAction = mockMvc
-//					.perform(post("/ngsi-ld/v1/subscriptions").contentType(AppConstants.NGB_APPLICATION_JSON)
-//							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(subscriptionEntityPayload))
-//					.andExpect(status().isConflict()).andExpect(jsonPath("$.title").value("Already exists."));
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(409, status);
-//			verify(subscriptionService, times(1)).subscribe(any());
-//
-//		} catch (Exception e) {
-//			Assert.fail();
-//		}
-//	}
-//
-//	/**
-//	 * this method is used get the subscribe entity by Id.
-//	 * 
-//	 * @throws Exception
-//	 */
-//
-//	@Test
-//	public void getSubscriptionEntityByIdNotFoundTest() throws Exception {
-//		when(subscriptionService.getSubscription(any(), any()))
-//				.thenThrow(new ResponseException(ErrorType.NotFound, ""));
-//		ResultActions resultAction = mockMvc.perform(
-//				get("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:211").accept(AppConstants.NGB_APPLICATION_JSON))
-//				.andExpect(status().isNotFound());
-//
-//		MvcResult mvcResult = resultAction.andReturn();
-//		MockHttpServletResponse response = mvcResult.getResponse();
-//		int status = response.getStatus();
-//		assertEquals(404, status);
-//		verify(subscriptionService, times(1)).getSubscription(any(), any());
-//	}
-//
-//	/**
-//	 * this method is used get the subscribe entity.
-//	 */
-//
-//	@Test
-//	public void getSubscriptionEntityTest() {
-//		try {
-//
-//			SubscriptionRequest subscription = null;
-//			subscription = DataSerializer.getSubscriptionRequest(subscriptionEntityPayload);
-//			List<SubscriptionRequest> context = new ArrayList<>();
-//			context.add(subscription);
-//
-//			when(subscriptionService.getAllSubscriptions(any())).thenReturn(context);
-//			ResultActions resultAction = mockMvc
-//					.perform(get("/ngsi-ld/v1/subscriptions/").accept(AppConstants.NGB_APPLICATION_JSON))
-//					.andExpect(status().isOk());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(200, status);
-//			verify(subscriptionService, times(1)).getAllSubscriptions(any());
-//
-//		} catch (Exception e) {
-//			Assert.fail(e.getMessage());
-//		}
-//	}
-//
-//	/**
-//	 * this method is use for delete subscription
-//	 */
-//
-//	@Test
-//	public void deleteSubscriptionTest() {
-//		try {
-//			ResultActions resultAction = mockMvc
-//					.perform(delete("/ngsi-ld/v1/subscriptions/{id}", "urn:ngsi-ld:Subscription:211")
-//							.contentType(AppConstants.NGB_APPLICATION_JSONLD))
-//					.andExpect(status().isNoContent());
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(204, status);
-//
-//			verify(subscriptionService, times(1)).unsubscribe(any(), any());
-//
-//		} catch (Exception e) {
-//			Assert.fail();
-//			e.printStackTrace();
-//		}
-//	}
-//
-//	/**
-//	 * this method is update the subscription
-//	 */
-//	@Test
-//	public void updateSubscriptionTest() {
-//		try {
-//			BaseSubscriptionService bss = mock(BaseSubscriptionService.class);
-//			doNothing().when(bss).updateSubscription(any());
-//			ResultActions resultAction = mockMvc
-//					.perform(patch("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:211/")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(subscriptionEntityPayload))
-//					.andExpect(status().isNoContent());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(204, status);
-//
-//			verify(subscriptionService, times(1)).updateSubscription(any());
-//
-//		} catch (Exception e) {
-//			Assert.fail();
-//			e.printStackTrace();
-//		}
-//
-//	}
-//
-//	/**
-//	 * this method is update the subscription
-//	 */
-//
-//	@Test
-//	public void updateSubscriptionBadRequestTest() {
-//		try {
-//			doNothing().when(subscriptionService).updateSubscription(any());
-//			ResultActions resultAction = mockMvc
-//					.perform(patch("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:212/")
-//							.contentType(AppConstants.NGB_APPLICATION_JSON).accept(AppConstants.NGB_APPLICATION_JSONLD)
-//							.content(subscriptionEntityPayload))
-//					.andExpect(status().isBadRequest());
-//
-//			MvcResult mvcResult = resultAction.andReturn();
-//			MockHttpServletResponse response = mvcResult.getResponse();
-//			int status = response.getStatus();
-//			assertEquals(400, status);
-//			verify(subscriptionService, times(0)).updateSubscription(any());
-//
-//		} catch (Exception e) {
-//			Assert.fail();
-//			e.printStackTrace();
-//		}
-//
-//	}
-//
-//}
+package eu.neclab.ngsildbroker.subscriptionmanager.controller;
+
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response.Status;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import io.restassured.RestAssured;
+import io.restassured.response.ExtractableResponse;
+import io.restassured.response.Response;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
+@QuarkusTest
+@TestMethodOrder(OrderAnnotation.class)
+@TestProfile(CustomProfile.class)
+public class SubscriptionControllerTest {
+
+	private String subscriptionEntityPayload;
+	private String subscriptionEntityPayload1;
+
+	@BeforeEach
+	public void setup() throws Exception {
+
+	// @formatter:off
+  
+		subscriptionEntityPayload = "{" +
+				"\r\n\"id\": \"urn:ngsi-ld:Subscription:211\"," +
+				"\r\n\"type\": \"Subscription\"," + "\r\n\"entities\": [{" +
+				"\r\n		  \"id\": \"urn:ngsi-ld:Vehicle:A143\"," +
+				"\r\n		  \"type\": \"Vehicle\"" + "\r\n		}]," +
+				"\r\n\"watchedAttributes\": [\"brandName\"]," +
+				"\r\n		\"q\":\"brandName!=Mercedes\"," + "\r\n\"notification\": {" +
+				"\r\n  \"attributes\": [\"brandName\"]," + "\r\n  \"format\": \"keyValues\","
+				+ "\r\n  \"endpoint\": {" +
+				"\r\n   \"uri\": \"mqtt://localhost:1883/notify\"," +
+				"\r\n   \"accept\": \"application/json\"," + "\r\n	\"notifierinfo\": {" +
+				"\r\n	  \"version\" : \"mqtt5.0\"," + "\r\n	  \"qos\" : 0" + "\r\n	}" +
+				"\r\n  }" + "\r\n}" + "\r\n}";
+		
+		subscriptionEntityPayload1 = "{" +
+				"\r\n\"id\": \"urn:ngsi-ld:Subscription:211\"," +
+				"\r\n\"type\": \"Subscription123\"," + "\r\n\"entities\": [{" +
+				"\r\n		  \"id\": \"urn:ngsi-ld:Vehicle:A143\"," +
+				"\r\n		  \"type\": \"Vehicle\"" + "\r\n		}]," +
+				"\r\n\"watchedAttributes\": [\"brandName\"]," +
+				"\r\n		\"q\":\"brandName!=Mercedes\"," + "\r\n\"notification\": {" +
+				"\r\n  \"attributes\": [\"brandName\"]," + "\r\n  \"format\": \"keyValues\","
+				+ "\r\n  \"endpoint\": {" +
+				"\r\n   \"uri\": \"mqtt://localhost:1883/notify\"," +
+				"\r\n   \"accept\": \"application/json\"," + "\r\n	\"notifierinfo\": {" +
+				"\r\n	  \"version\" : \"mqtt5.0\"," + "\r\n	  \"qos\" : 0" + "\r\n	}" +
+				"\r\n  }" + "\r\n}" + "\r\n}";
+		
+	}
+
+	@AfterEach
+	public void tearDown() {
+		subscriptionEntityPayload = null;
+		subscriptionEntityPayload1 = null;
+	}
+	
+	/**
+	 * this method is use for subscribe the entity
+	 */
+
+	@Test
+	@Order(1)
+	public void createSubscriptionEntityTest() {	
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	                  .body(subscriptionEntityPayload)
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .post("/ngsi-ld/v1/subscriptions")
+	                .then()
+	                   .statusCode(Status.CREATED.getStatusCode())
+	                   .statusCode(201).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(201, statusCode);
+	            
+	    }catch(Exception e) {
+	        e.printStackTrace();
+	    }			
+
+	}
+	
+	/**
+	 * this method is use for the subscribe entity if subscribe entity already
+	 * exists
+	 */
+
+	@Test
+	@Order(2)
+	public void createSubscriptionEntityAlreadyExistTest() {
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	                  .body(subscriptionEntityPayload)
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .post("/ngsi-ld/v1/subscriptions")
+	                .then()
+	                   .statusCode(Status.CONFLICT.getStatusCode())
+	                   .statusCode(409).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(409, statusCode);
+	            
+	    }catch(Exception e) {
+	        System.out.println("SubscriptionControllerTestMy Test()  :: "+e);
+	        e.printStackTrace();
+	    }	
+
+	}
+	
+	/**
+	 * this method is try to subscribe the entity having "BAD REQUEST"
+	 */
+
+	@Test
+	@Order(3)
+	public void createSubscriptionEntityBadRequestTest() {
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	                  .body(subscriptionEntityPayload1)
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .post("/ngsi-ld/v1/subscriptions")
+	                .then()
+	                   .statusCode(Status.BAD_REQUEST.getStatusCode())
+	                   .statusCode(400).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(400, statusCode);
+	            
+	    }catch(Exception e) {
+
+	        e.printStackTrace();
+	    }	
+
+	}
+	
+	/**
+	 * this method is used get the subscribe entity by Id.
+	 */
+
+	@Test
+	@Order(4)
+	public void getSubscriptionEntityByIdTest() {
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .get("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:211")
+	                .then()
+	                   .statusCode(Status.OK.getStatusCode())
+	                   .statusCode(200).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(200, statusCode);
+	            
+	    }catch(Exception e) {
+
+	        e.printStackTrace();
+	    }	
+		
+	}
+
+	/**
+	 * this method is used get the subscribe entity if Id not found
+	 */
+
+	@Test
+	@Order(5)
+	public void getSubscriptionEntityByIdNotFoundTest() {
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .get("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:212")
+	                .then()
+	                   .statusCode(Status.NOT_FOUND.getStatusCode())
+	                   .statusCode(404).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(404, statusCode);
+	            
+	    }catch(Exception e) {
+
+	        e.printStackTrace();
+	    }
+		
+	}
+	
+	/**
+	 * this method is used get the subscribe entity.
+	 */
+
+	@Test
+	@Order(6)
+	public void getSubscriptionEntityTest() {
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .get("/ngsi-ld/v1/subscriptions/")
+	                .then()
+	                   .statusCode(Status.OK.getStatusCode())
+	                   .statusCode(200).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(200, statusCode);
+	            
+	    }catch(Exception e) {
+
+	        e.printStackTrace();
+	    }	
+
+	}
+
+	
+	/**
+	 * this method is update the subscription
+	 */
+	
+	@Test
+	@Order(7)
+	public void updateSubscriptionTest() {
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	        		.body(subscriptionEntityPayload)
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .patch("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:211/")
+	                .then()
+	                   .statusCode(Status.NO_CONTENT.getStatusCode())
+	                   .statusCode(204).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(204, statusCode);
+	            
+	    }catch(Exception e) {
+
+	        e.printStackTrace();
+	    }
+
+	}
+	
+	/**
+	 * this method is update the subscription if Id not found
+	 */
+
+	@Test
+	@Order(8)
+	public void updateSubscriptionBadRequestTest() {
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	        		.body(subscriptionEntityPayload)
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .patch("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:212/")
+	                .then()
+	                   .statusCode(Status.BAD_REQUEST.getStatusCode())
+	                   .statusCode(400).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(400, statusCode);
+	            
+	    }catch(Exception e) {
+
+	        e.printStackTrace();
+	    }
+
+	}
+
+	/**
+	 * this method is used get the subscribe entity if limit < 0
+	 */
+
+	@Test
+    @Order(9)
+    public void getAllSubscriptionBadRequestTest() {
+         ExtractableResponse<Response> response = RestAssured.given()
+                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+                .when()
+                .get("/ngsi-ld/v1/subscriptions?limit=-1")
+                .then()
+                   .statusCode(Status.BAD_REQUEST.getStatusCode())
+                   .statusCode(400).extract();
+            int statusCode = response.statusCode();
+            assertEquals(400, statusCode);
+            assertNotEquals(200, response.statusCode());
+    }
+	
+	/**
+	 * this method is used get the subscribe entity if limit = 10000
+	 */
+    
+    @Test
+    @Order(10)
+    public void getAllSubscriptionForbiddenTest() {
+         ExtractableResponse<Response> response = RestAssured.given()
+                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+                .when()
+                .get("/ngsi-ld/v1/subscriptions?limit=10000")
+                .then()
+                   .statusCode(Status.FORBIDDEN.getStatusCode())
+                   .statusCode(403).extract();
+            int statusCode = response.statusCode();
+            assertEquals(403, statusCode);
+            assertNotEquals(200, response.statusCode());
+    }
+    
+	/**
+	 * this method is use for delete subscription
+	 */
+
+	@Test
+	@Order(11)
+	public void deleteSubscriptionTest() {
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .delete("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:211")
+	                .then()
+	                   .statusCode(Status.NO_CONTENT.getStatusCode())
+	                   .statusCode(204).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(204, statusCode);
+	            
+	    }catch(Exception e) {
+
+	        e.printStackTrace();
+	    }
+
+	}
+	
+	/**
+	 * this method is use for delete subscription if Id not found
+	 */
+	
+	@Test
+	@Order(12)
+	public void deleteSubscriptionIdNotFoundTest() {
+		
+		try {    
+	        ExtractableResponse<Response> response = RestAssured.given()
+	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	                 .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
+	                .when()
+	                .delete("/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:212")
+	                .then()
+	                   .statusCode(Status.NOT_FOUND.getStatusCode())
+	                   .statusCode(404).extract();
+	            int statusCode = response.statusCode();
+	            assertEquals(404, statusCode);
+	            
+	    }catch(Exception e) {
+
+	        e.printStackTrace();
+	    }
+	
+	}
+}
