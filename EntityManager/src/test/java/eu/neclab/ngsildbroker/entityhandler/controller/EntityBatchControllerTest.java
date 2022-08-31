@@ -33,74 +33,53 @@ public class EntityBatchControllerTest {
 
 	@BeforeEach
 	public void setup() {
-  
-				  payload= "[  \r\n" + "{  \r\n" +
-					  "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
-					  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-					  + "      },\r\n" + "   \"speed\":{  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":80\r\n" +
-					  "    }\r\n" + "},\r\n" + "{  \r\n" +
-					  "   \"id\":\"urn:ngsi-ld:Vehicle:A102\",\r\n" +
-					  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-					  + "      },\r\n" + "   \"speed\":{  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":81\r\n" +
-					  "    }\r\n" + "},\r\n" + "{  \r\n" +
-					  "   \"id\":\"urn:ngsi-ld:Vehicle:A103\",\r\n" +
-					  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-					  + "      },\r\n" + "   \"speed\":{  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":82\r\n" +
-					  "    }\r\n" + "}\r\n" + "]";
-				  
-			     badRequestPayload = "[  \r\n" + "{  \r\n" +
-					  "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
-					  "   \"type123\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-					  + "      },\r\n" + "   \"speed\":{  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":80\r\n" +
-					  "    }\r\n" + "},\r\n" + "{  \r\n" +
-					  "   \"id\":\"urn:ngsi-ld:Vehicle:A102\",\r\n" +
-					  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-					  + "      },\r\n" + "   \"speed\":{  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":81\r\n" +
-					  "    }\r\n" + "},\r\n" + "{  \r\n" +
-					  "   \"id\":\"urn:ngsi-ld:Vehicle:A103\",\r\n" +
-					  "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-					  + "      },\r\n" + "   \"speed\":{  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":82\r\n" +
-					  "    }\r\n" + "}\r\n" + "]";
-			  
-			     badRequestPayload1 = "[  \r\n" + "{  \r\n" +
-					  "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
-					  "   \"type123\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-					  + "      },\r\n" + "   \"speed\":{  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":80\r\n" +
-					  "    }\r\n" + "},\r\n" + "{  \r\n" +
-					  "   \"id\":\"urn:ngsi-ld:Vehicle:A102\",\r\n" +
-					  "   \"type123\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-					  + "      },\r\n" + "   \"speed\":{  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":81\r\n" +
-					  "    }\r\n" + "},\r\n" + "{  \r\n" +
-					  "   \"id\":\"urn:ngsi-ld:Vehicle:A103\",\r\n" +
-					  "   \"type123\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n"
-					  + "      },\r\n" + "   \"speed\":{  \r\n" +
-					  "         \"type\":\"Property\",\r\n" + "         \"value\":82\r\n" +
-					  "    }\r\n" + "}\r\n" + "]";
-			  
-			     deletePayload = "[  \r\n" + "\"urn:ngsi-ld:Vehicle:A101\",\r\n" +
-							    "\"urn:ngsi-ld:Vehicle:A102\",\r\n" + 
-							    "\"urn:ngsi-ld:Vehicle:A103\"\r\n" + "]"; 
-  
 
-			     BadRequestDeletePayload = "[  \r\n" + "\"urn:ngsi-ld:Vehicle:A201\",\r\n" +
-					            "\"urn:ngsi-ld:Vehicle:A102\"\r\n" + "]";  
+		payload = "[  \r\n" + "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n" + "   \"type\":\"Vehicle\",\r\n"
+				+ "   \"brandName\":\r\n" + "      {  \r\n" + "         \"type\":\"Property\",\r\n"
+				+ "         \"value\":\"Mercedes\"\r\n" + "      },\r\n" + "   \"speed\":{  \r\n"
+				+ "         \"type\":\"Property\",\r\n" + "         \"value\":80\r\n" + "    }\r\n" + "},\r\n"
+				+ "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A102\",\r\n" + "   \"type\":\"Vehicle\",\r\n"
+				+ "   \"brandName\":\r\n" + "      {  \r\n" + "         \"type\":\"Property\",\r\n"
+				+ "         \"value\":\"Mercedes\"\r\n" + "      },\r\n" + "   \"speed\":{  \r\n"
+				+ "         \"type\":\"Property\",\r\n" + "         \"value\":81\r\n" + "    }\r\n" + "},\r\n"
+				+ "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A103\",\r\n" + "   \"type\":\"Vehicle\",\r\n"
+				+ "   \"brandName\":\r\n" + "      {  \r\n" + "         \"type\":\"Property\",\r\n"
+				+ "         \"value\":\"Mercedes\"\r\n" + "      },\r\n" + "   \"speed\":{  \r\n"
+				+ "         \"type\":\"Property\",\r\n" + "         \"value\":82\r\n" + "    }\r\n" + "}\r\n" + "]";
+
+		badRequestPayload = "[  \r\n" + "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n"
+				+ "   \"type123\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n"
+				+ "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n" + "      },\r\n"
+				+ "   \"speed\":{  \r\n" + "         \"type\":\"Property\",\r\n" + "         \"value\":80\r\n"
+				+ "    }\r\n" + "},\r\n" + "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A102\",\r\n"
+				+ "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n"
+				+ "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n" + "      },\r\n"
+				+ "   \"speed\":{  \r\n" + "         \"type\":\"Property\",\r\n" + "         \"value\":81\r\n"
+				+ "    }\r\n" + "},\r\n" + "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A103\",\r\n"
+				+ "   \"type\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n"
+				+ "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n" + "      },\r\n"
+				+ "   \"speed\":{  \r\n" + "         \"type\":\"Property\",\r\n" + "         \"value\":82\r\n"
+				+ "    }\r\n" + "}\r\n" + "]";
+
+		badRequestPayload1 = "[  \r\n" + "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A101\",\r\n"
+				+ "   \"type123\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n"
+				+ "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n" + "      },\r\n"
+				+ "   \"speed\":{  \r\n" + "         \"type\":\"Property\",\r\n" + "         \"value\":80\r\n"
+				+ "    }\r\n" + "},\r\n" + "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A102\",\r\n"
+				+ "   \"type123\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n"
+				+ "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n" + "      },\r\n"
+				+ "   \"speed\":{  \r\n" + "         \"type\":\"Property\",\r\n" + "         \"value\":81\r\n"
+				+ "    }\r\n" + "},\r\n" + "{  \r\n" + "   \"id\":\"urn:ngsi-ld:Vehicle:A103\",\r\n"
+				+ "   \"type123\":\"Vehicle\",\r\n" + "   \"brandName\":\r\n" + "      {  \r\n"
+				+ "         \"type\":\"Property\",\r\n" + "         \"value\":\"Mercedes\"\r\n" + "      },\r\n"
+				+ "   \"speed\":{  \r\n" + "         \"type\":\"Property\",\r\n" + "         \"value\":82\r\n"
+				+ "    }\r\n" + "}\r\n" + "]";
+
+		deletePayload = "[  \r\n" + "\"urn:ngsi-ld:Vehicle:A101\",\r\n" + "\"urn:ngsi-ld:Vehicle:A102\",\r\n"
+				+ "\"urn:ngsi-ld:Vehicle:A103\"\r\n" + "]";
+
+		BadRequestDeletePayload = "[  \r\n" + "\"urn:ngsi-ld:Vehicle:A201\",\r\n" + "\"urn:ngsi-ld:Vehicle:A102\"\r\n"
+				+ "]";
 
 	}
 
@@ -120,23 +99,19 @@ public class EntityBatchControllerTest {
 	@Test
 	@Order(1)
 	public void createMultipleEntityTest() {
-		
-		try {    
-	        ExtractableResponse<Response> response = RestAssured.given()
-	                .body(payload)
-	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
-	                .when()
-	                .post("/ngsi-ld/v1/entityOperations/create")
-	                .then()
-	                .statusCode(Status.CREATED.getStatusCode())
-	                .statusCode(201).extract();
-	        int statusCode = response.statusCode();
-	        assertEquals(201, statusCode);
-	            
-	    } catch(Exception e) {
-	        e.printStackTrace();
-	    }
+
+		try {
+			ExtractableResponse<Response> response = RestAssured.given().body(payload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.post("/ngsi-ld/v1/entityOperations/create").then().statusCode(Status.CREATED.getStatusCode())
+					.statusCode(201).extract();
+			int statusCode = response.statusCode();
+			assertEquals(201, statusCode);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -147,23 +122,19 @@ public class EntityBatchControllerTest {
 	@Test
 	@Order(2)
 	public void createMultipleEntityBadRequestTest() {
-		
-		try {    
-	        ExtractableResponse<Response> response = RestAssured.given()
-	                .body(badRequestPayload)
-	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
-	                .when()
-	                .post("/ngsi-ld/v1/entityOperations/create")
-	                .then()
-	                .statusCode(Status.BAD_REQUEST.getStatusCode())
-	                .statusCode(400).extract();
-	        int statusCode = response.statusCode();
-	        assertEquals(400, statusCode);
-	            
-	    } catch(Exception e) {
-	        e.printStackTrace();
-	    }
+
+		try {
+			ExtractableResponse<Response> response = RestAssured.given().body(badRequestPayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.post("/ngsi-ld/v1/entityOperations/create").then().statusCode(Status.BAD_REQUEST.getStatusCode())
+					.statusCode(400).extract();
+			int statusCode = response.statusCode();
+			assertEquals(400, statusCode);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -173,23 +144,19 @@ public class EntityBatchControllerTest {
 	@Test
 	@Order(3)
 	public void updateMultipleEntityTest() {
-		
-		try {    
-	        ExtractableResponse<Response> response = RestAssured.given()
-	                .body(payload)
-	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
-	                .when()
-	                .post("/ngsi-ld/v1/entityOperations/update")
-	                .then()
-	                .statusCode(Status.NO_CONTENT.getStatusCode())
-	                .statusCode(204).extract();
-	        int statusCode = response.statusCode();
-	        assertEquals(204, statusCode);
-	            
-	    } catch(Exception e) {
-	        e.printStackTrace();
-	    }
+
+		try {
+			ExtractableResponse<Response> response = RestAssured.given().body(payload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.post("/ngsi-ld/v1/entityOperations/update").then().statusCode(Status.NO_CONTENT.getStatusCode())
+					.statusCode(204).extract();
+			int statusCode = response.statusCode();
+			assertEquals(204, statusCode);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -200,23 +167,19 @@ public class EntityBatchControllerTest {
 	@Test
 	@Order(4)
 	public void updateMultipleEntityBadRequestTest() {
-		
-		try {    
-	        ExtractableResponse<Response> response = RestAssured.given()
-	                .body(badRequestPayload1)
-	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
-	                .when()
-	                .post("/ngsi-ld/v1/entityOperations/update")
-	                .then()
-	                .statusCode(Status.BAD_REQUEST.getStatusCode())
-	                .statusCode(400).extract();
-	        int statusCode = response.statusCode();
-	        assertEquals(400, statusCode);
-	            
-	    } catch(Exception e) {
-	        e.printStackTrace();
-	    }
+
+		try {
+			ExtractableResponse<Response> response = RestAssured.given().body(badRequestPayload1)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.post("/ngsi-ld/v1/entityOperations/update").then().statusCode(Status.BAD_REQUEST.getStatusCode())
+					.statusCode(400).extract();
+			int statusCode = response.statusCode();
+			assertEquals(400, statusCode);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -227,23 +190,19 @@ public class EntityBatchControllerTest {
 	@Test
 	@Order(5)
 	public void upsertMultipleEntityTest() {
-		
-		try {    
-	        ExtractableResponse<Response> response = RestAssured.given()
-	                .body(payload)
-	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
-	                .when()
-	                .post("/ngsi-ld/v1/entityOperations/upsert")
-	                .then()
-	                .statusCode(Status.NO_CONTENT.getStatusCode())
-	                .statusCode(204).extract();
-	        int statusCode = response.statusCode();
-	        assertEquals(204, statusCode);
-	            
-	    } catch(Exception e) {
-	        e.printStackTrace();
-	    }
+
+		try {
+			ExtractableResponse<Response> response = RestAssured.given().body(payload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.post("/ngsi-ld/v1/entityOperations/upsert").then().statusCode(Status.NO_CONTENT.getStatusCode())
+					.statusCode(204).extract();
+			int statusCode = response.statusCode();
+			assertEquals(204, statusCode);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -254,23 +213,19 @@ public class EntityBatchControllerTest {
 	@Test
 	@Order(6)
 	public void upsertMultipleEntityBadRequestTest() {
-		
-		try {    
-	        ExtractableResponse<Response> response = RestAssured.given()
-	                .body(badRequestPayload1)
-	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
-	                .when()
-	                .post("/ngsi-ld/v1/entityOperations/upsert")
-	                .then()
-	                .statusCode(Status.BAD_REQUEST.getStatusCode())
-	                .statusCode(400).extract();
-	        int statusCode = response.statusCode();
-	        assertEquals(400, statusCode);
-	            
-	    } catch(Exception e) {
-	        e.printStackTrace();
-	    }
+
+		try {
+			ExtractableResponse<Response> response = RestAssured.given().body(badRequestPayload1)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.post("/ngsi-ld/v1/entityOperations/upsert").then().statusCode(Status.BAD_REQUEST.getStatusCode())
+					.statusCode(400).extract();
+			int statusCode = response.statusCode();
+			assertEquals(400, statusCode);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -280,23 +235,19 @@ public class EntityBatchControllerTest {
 	@Test
 	@Order(7)
 	public void deleteMultipleEntityTest() {
-		
-		try {    
-	        ExtractableResponse<Response> response = RestAssured.given()
-	                .body(deletePayload)
-	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
-	                .when()
-	                .post("/ngsi-ld/v1/entityOperations/delete")
-	                .then()
-	                .statusCode(Status.NO_CONTENT.getStatusCode())
-	                .statusCode(204).extract();
-	        int statusCode = response.statusCode();
-	        assertEquals(204, statusCode);
-	            
-	    } catch(Exception e) {
-	        e.printStackTrace();
-	    }
+
+		try {
+			ExtractableResponse<Response> response = RestAssured.given().body(deletePayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.post("/ngsi-ld/v1/entityOperations/delete").then().statusCode(Status.NO_CONTENT.getStatusCode())
+					.statusCode(204).extract();
+			int statusCode = response.statusCode();
+			assertEquals(204, statusCode);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -307,24 +258,20 @@ public class EntityBatchControllerTest {
 	@Test
 	@Order(8)
 	public void deleteMultipleEntityBadRequestTest() {
-		
-		try {    
-	        ExtractableResponse<Response> response = RestAssured.given()
-	                .body(BadRequestDeletePayload)
-	                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-	                .header(HttpHeaders.ACCEPT,AppConstants.NGB_APPLICATION_JSONLD)
-	                .when()
-	                .post("/ngsi-ld/v1/entityOperations/delete")
-	                .then()
-	                .statusCode(Status.BAD_REQUEST.getStatusCode())
-	                .statusCode(400).extract();
-	        int statusCode = response.statusCode();
-	        assertEquals(400, statusCode);
-	            
-	    } catch(Exception e) {
-	        e.printStackTrace();
-	    }
-		
+
+		try {
+			ExtractableResponse<Response> response = RestAssured.given().body(BadRequestDeletePayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.post("/ngsi-ld/v1/entityOperations/delete").then().statusCode(Status.BAD_REQUEST.getStatusCode())
+					.statusCode(400).extract();
+			int statusCode = response.statusCode();
+			assertEquals(400, statusCode);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
 	}
-	
+
 }
