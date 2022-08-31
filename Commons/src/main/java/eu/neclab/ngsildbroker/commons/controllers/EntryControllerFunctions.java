@@ -225,9 +225,11 @@ public interface EntryControllerFunctions {
 		if (result.getSuccess().isEmpty()) {
 			status = HttpStatus.SC_BAD_REQUEST;
 		}
-		if (body == null) {
-			RestResponse.status(status);
+		if (result.getFails().isEmpty() && !result.getSuccess().isEmpty()) {
+			status = okStatus;
+			body = result.getSuccess().toString();
 		}
+		
 		return RestResponseBuilderImpl.create(status).entity(body).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
 	}
 
@@ -451,7 +453,7 @@ public interface EntryControllerFunctions {
 				}
 			} else {
 				if (insertedOneEntity && appendedOneEntity) {
-					status = HttpStatus.SC_MULTI_STATUS;
+					status = HttpStatus.SC_CREATED;
 				} else {
 					if (insertedOneEntity) {
 						status = HttpStatus.SC_CREATED;
