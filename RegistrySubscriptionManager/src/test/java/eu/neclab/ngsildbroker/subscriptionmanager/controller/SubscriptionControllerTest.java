@@ -3,20 +3,16 @@ package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response.Status;
-
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
-import org.mockito.MockitoAnnotations;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.ExtractableResponse;
@@ -38,9 +34,9 @@ public class SubscriptionControllerTest {
 		// @formatter:off
 		  
 		  subscriptionEntityPayload = "{" +
-		  "\r\n\"id\": \"urn:ngsi-ld:Subscription:211\"," +
+		  "\r\n\"id\": \"urn:ngsi-ld:Subscription:c011\"," +
 		  "\r\n\"type\": \"Subscription\"," + "\r\n\"entities\": [{" +
-		  "\r\n		  \"id\": \"urn:ngsi-ld:Vehicle:A143\"," +
+		  "\r\n		  \"id\": \"urn:ngsi-ld:Vehicle:a034\"," +
 		  "\r\n		  \"type\": \"Vehicle\"" + "\r\n		}]," +
 		  "\r\n\"watchedAttributes\": [\"brandName\"]," +
 		  "\r\n		\"q\":\"brandName!=Mercedes\"," + "\r\n\"notification\": {" +
@@ -70,7 +66,7 @@ public class SubscriptionControllerTest {
 						  		+ "}";
 		  
 		  subscriptionTypePayloadBadRequestt="{\r\n"
-										  		+ "   \"id\":\"urn:ngsi-ld:Subscription:102\",\r\n"
+										  		+ "   \"id\":\"urn:ngsi-ld:Subscription:v01\",\r\n"
 										  		+ "   \"type\":\"Subscription1\",\r\n"
 										  		+ "   \"entities\":[\r\n"
 										  		+ "      {\r\n"
@@ -91,7 +87,7 @@ public class SubscriptionControllerTest {
 								  		+ "{\r\n"
 								  		+ "    \"entities\": [\r\n"
 								  		+ "        {\r\n"
-								  		+ "            \"id\": \"urn:ngsi-ld:Subscription:102\",\r\n"
+								  		+ "            \"id\": \"urn:ngsi-ld:Subscription:v01\",\r\n"
 								  		+ "            \"type\": \"Building\"\r\n"
 								  		+ "        }\r\n"
 								  		+ "    ],\r\n"
@@ -129,7 +125,6 @@ public class SubscriptionControllerTest {
 	/**
 	 * this method is use for create Registry subscription entity
 	 */
-
 	@Test
 	@Order(1)
 	public void createRegistrySubscriptionEntityTest() {
@@ -140,15 +135,17 @@ public class SubscriptionControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/csourceSubscriptions").then().statusCode(Status.CREATED.getStatusCode())
 					.statusCode(201).extract();
-			int statusCode = response.statusCode();
-			assertEquals(201, statusCode);
+			assertEquals(201, response.statusCode());
 		} catch (Exception e) {
-			System.out.println("SubscriptionControllerTestMy Test()  :: " + e);
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
 	}
 
+	/**
+	 * this method is use for Already exist Registry subscription entity
+	 */
 	@Test
 	@Order(2)
 	public void createSubscriptionEntityAlreadyExistTest() {
@@ -158,15 +155,19 @@ public class SubscriptionControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/csourceSubscriptions").then().statusCode(Status.CONFLICT.getStatusCode())
 					.statusCode(409).extract();
-			int statusCode = response.statusCode();
-			assertEquals(409, statusCode);
+
+			assertEquals(409, response.statusCode());
 		} catch (Exception e) {
-			System.out.println("SubscriptionControllerTestMy Test()  :: " + e);
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
 	}
 
+	/**
+	 * this method is test for create Registry subscription entity id , required
+	 * BadRequest
+	 */
 	@Test
 	@Order(3)
 	public void createRegistrySubscriptionEntityIdNeedBadRequestTest() {
@@ -176,14 +177,17 @@ public class SubscriptionControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/csourceSubscriptions").then().statusCode(Status.BAD_REQUEST.getStatusCode())
 					.statusCode(400).extract();
-			int statusCode = response.statusCode();
-			assertEquals(400, statusCode);
+			assertEquals(400, response.statusCode());
 		} catch (Exception e) {
-			System.out.println("SubscriptionControllerTestMy Test()  :: " + e);
+			Assertions.fail();
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * this method is test for create Registry subscription entity type required
+	 * BadRequest
+	 */
 	@Test
 	@Order(4)
 	public void createRegistrySubscriptionEntityTypeBadRequestTest() {
@@ -193,110 +197,145 @@ public class SubscriptionControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/csourceSubscriptions").then().statusCode(Status.BAD_REQUEST.getStatusCode())
 					.statusCode(400).extract();
-			int statusCode = response.statusCode();
-			assertEquals(400, statusCode);
+			assertEquals(400, response.statusCode());
 		} catch (Exception e) {
-			System.out.println("SubscriptionControllerTestMy Test()  :: " + e);
+			Assertions.fail();
 			e.printStackTrace();
 		}
 	}
 
 	/**
-	 * this method is use for the rgistry subscribe entity if Id Not Found
+	 * this method is use to get rgistry subscribe entity by id
 	 */
 
 	@Test
 	@Order(5)
-	public void getRegistrySubscriptionEntityByIdTest() throws Exception {
-
-		ExtractableResponse<Response> response = given()
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.get("/ngsi-ld/v1/csourceSubscriptions/urn:ngsi-ld:Subscription:211").then()
-				.statusCode(Status.OK.getStatusCode()).statusCode(200).extract();
-		int statusCode = response.statusCode();
+	public void getRegistrySubscriptionEntityByIdTest() {
+		try {
+			ExtractableResponse<Response> response = given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.get("/ngsi-ld/v1/csourceSubscriptions/urn:ngsi-ld:Subscription:c011").then()
+					.statusCode(Status.OK.getStatusCode()).statusCode(200).extract();
+			assertEquals(200, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+		}
 
 	}
 
+	/**
+	 * this method is use to get rgistry subscribe entity by id with two parameter
+	 */
 	@Test
 	@Order(6)
 	public void getRegistrySubscriptionEntityByIdwithTest() throws Exception {
 		ExtractableResponse<Response> response = given()
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.get("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:211").then()
+				.get("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:c011").then()
 				.statusCode(Status.OK.getStatusCode()).statusCode(200).extract();
 		int statusCode = response.statusCode();
 		assertEquals(200, statusCode);
 
 	}
 
+	/**
+	 * this method is use for validate Not Found
+	 */
 	@Test
 	@Order(7)
 	public void getRegistrySubscriptionEntityByIdNotFoundTest() throws Exception {
-		ExtractableResponse<Response> response = given()
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.get("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:0a").then()
-				.statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
-		int statusCode = response.statusCode();
-		assertEquals(404, statusCode);
+		try {
+			ExtractableResponse<Response> response = given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.get("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:0a").then()
+					.statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			assertEquals(404, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 	}
 
+	/**
+	 * this method is use for validate BadRequest
+	 */
 	@Test
 	@Order(8)
 	public void getRegistrySubscriptionEntityByIdBadRequestTest() throws Exception {
-		ExtractableResponse<Response> response = given()
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.get("/ngsi-ld/v1/csourceSubscriptions/{id}", ":ngsi-ld:Subscription:0a").then()
-				.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
-		int statusCode = response.statusCode();
-
+		try {
+			ExtractableResponse<Response> response = given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.get("/ngsi-ld/v1/csourceSubscriptions/{id}", ":ngsi-ld:Subscription:0a").then()
+					.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+			assertEquals(400, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 	}
 
 	/**
 	 * this method is update the registry subscription entity
 	 */
-
 	@Test
 	@Order(9)
 	public void updateRegistrySubscriptionTest() {
-
-		ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.patch("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:211").then()
-				.statusCode(Status.NO_CONTENT.getStatusCode()).statusCode(204).extract();
-		int statusCode = response.statusCode();
-		assertEquals(204, statusCode);
-		assertNotEquals(201, response.statusCode());
+		try {
+			ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.patch("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:211").then()
+					.statusCode(Status.NO_CONTENT.getStatusCode()).statusCode(204).extract();
+			assertEquals(204, response.statusCode());
+			assertNotEquals(201, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 	}
 
+	/**
+	 * this method is use for validate Update Registry subscription Not Found
+	 */
 	@Test
 	@Order(10)
 	public void updateRegistrySubscriptionNotFoundTest() {
-		ExtractableResponse<Response> response = given().body(subscripttionNotFoundPayload)
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.patch("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:0a").then()
-				.statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
-		int statusCode = response.statusCode();
-		assertEquals(404, statusCode);
-		assertNotEquals(400, response.statusCode());
+		try {
+			ExtractableResponse<Response> response = given().body(subscripttionNotFoundPayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.patch("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:0a").then()
+					.statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			assertEquals(404, response.statusCode());
+			assertNotEquals(400, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 	}
 
+	/**
+	 * this method is use for validate Update Registry subscription BadRequest Data
+	 */
 	@Test
 	@Order(11)
 	public void updateRegistrySubscriptionBadRequestTest() {
-		ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.patch("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:a01a").then()
-				.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
-		int statusCode = response.statusCode();
-		assertEquals(400, statusCode);
-		assertNotEquals(201, response.statusCode());
+		try {
+			ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.patch("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:a01a").then()
+					.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+			assertEquals(400, response.statusCode());
+			assertNotEquals(201, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 	}
 
 	/*
@@ -306,40 +345,59 @@ public class SubscriptionControllerTest {
 	@Test
 	@Order(12)
 	public void getAllRegistrySubscriptionTest() {
-		ExtractableResponse<Response> response = given()
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.get("/ngsi-ld/v1/csourceSubscriptions/").then().statusCode(Status.OK.getStatusCode()).statusCode(200)
-				.extract();
-		int statusCode = response.statusCode();
-
-		assertNotEquals(400, response.statusCode());
+		try {
+			ExtractableResponse<Response> response = given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.get("/ngsi-ld/v1/csourceSubscriptions/").then().statusCode(Status.OK.getStatusCode())
+					.statusCode(200).extract();
+			assertEquals(200, response.statusCode());
+			assertNotEquals(400, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 	}
 
+	/*
+	 * this method is use for validate BadRequest
+	 */
 	@Test
 	@Order(13)
 	public void getAllRegistrySubscriptionBadRequestTest() {
-		ExtractableResponse<Response> response = given()
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.get("/ngsi-ld/v1/csourceSubscriptions?limit=-1").then().statusCode(Status.BAD_REQUEST.getStatusCode())
-				.statusCode(400).extract();
-		int statusCode = response.statusCode();
-		assertEquals(400, statusCode);
-		assertNotEquals(200, response.statusCode());
+		try {
+			ExtractableResponse<Response> response = given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.get("/ngsi-ld/v1/csourceSubscriptions?limit=-1").then()
+					.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+			int statusCode = response.statusCode();
+			assertEquals(400, statusCode);
+			assertNotEquals(200, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 	}
 
+	/*
+	 * this method is use for validate Forbidden
+	 */
 	@Test
 	@Order(14)
 	public void getAllRegistrySubscriptionForbiddenTest() {
-		ExtractableResponse<Response> response = given()
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.get("/ngsi-ld/v1/csourceSubscriptions?limit=10000").then().statusCode(Status.FORBIDDEN.getStatusCode())
-				.statusCode(403).extract();
-		int statusCode = response.statusCode();
-		assertEquals(403, statusCode);
-		assertNotEquals(200, response.statusCode());
+		try {
+			ExtractableResponse<Response> response = given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.get("/ngsi-ld/v1/csourceSubscriptions?limit=10000").then()
+					.statusCode(Status.FORBIDDEN.getStatusCode()).statusCode(403).extract();
+			assertEquals(403, response.statusCode());
+			assertNotEquals(200, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -347,44 +405,61 @@ public class SubscriptionControllerTest {
 	 */
 	@Test
 	@Order(15)
-	public void deleteSubscriptionByIdTest() throws Exception {
-
-		ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.delete("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:211").then()
-				.statusCode(Status.NO_CONTENT.getStatusCode()).statusCode(204).extract();
-		int statusCode = response.statusCode();
-		assertEquals(204, statusCode);
-		assertNotEquals(400, response.statusCode());
+	public void deleteSubscriptionByIdTest() {
+		try {
+			ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.delete("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:211").then()
+					.statusCode(Status.NO_CONTENT.getStatusCode()).statusCode(204).extract();
+			assertEquals(204, response.statusCode());
+			assertNotEquals(400, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 
 	}
 
+	/**
+	 * this method is use for validate Delete Id Not Found
+	 */
 	@Test
 	@Order(16)
-	public void deleteSubscriptionByIdNotFoundTest() throws Exception {
-		ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.delete("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:a0a").then()
-				.statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
-		int statusCode = response.statusCode();
-		assertEquals(404, statusCode);
-		assertNotEquals(400, response.statusCode());
+	public void deleteSubscriptionByIdNotFoundTest() {
+		try {
+			ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.delete("/ngsi-ld/v1/csourceSubscriptions/{id}", "urn:ngsi-ld:Subscription:a0a").then()
+					.statusCode(Status.NOT_FOUND.getStatusCode()).statusCode(404).extract();
+			assertEquals(404, response.statusCode());
+			assertNotEquals(400, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 
 	}
 
+	/**
+	 * this method is use for validate Delete BadRequest Data
+	 */
 	@Test
 	@Order(17)
-	public void deleteSubscriptionByBadRequestTest() throws Exception {
-		ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
-				.delete("/ngsi-ld/v1/csourceSubscriptions/{id}", ":ngsi-ld:Subscription:a0a").then()
-				.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
-		int statusCode = response.statusCode();
-		assertEquals(400, statusCode);
-		assertNotEquals(200, response.statusCode());
+	public void deleteSubscriptionByBadRequestTest() {
+		try {
+			ExtractableResponse<Response> response = given().body(subscriptionEntityPayload)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.delete("/ngsi-ld/v1/csourceSubscriptions/{id}", ":ngsi-ld:Subscription:a0a").then()
+					.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+			assertEquals(400, response.statusCode());
+			assertNotEquals(200, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
 
 	}
 
