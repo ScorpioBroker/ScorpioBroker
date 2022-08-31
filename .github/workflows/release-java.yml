@@ -26,7 +26,7 @@ jobs:
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -Pkafka -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
+          mvn clean package -DskipTests -Pkafka -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
       - name: docker tag
         run: |
           docker tag scorpiobroker/history-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-eureka-latest
@@ -175,7 +175,7 @@ jobs:
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -Dkafka -Pkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
+          mvn clean package -DskipTests -Dkafka -Pkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: docker tag 
         run: |
           docker tag scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-latest
@@ -346,7 +346,7 @@ jobs:
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest

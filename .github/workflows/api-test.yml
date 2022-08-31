@@ -22,7 +22,7 @@ jobs:
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -Pkafka -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
+          mvn clean package -DskipTests -Pkafka -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
       - name: docker tag
         run: |
           docker tag scorpiobroker/history-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-eureka-latest
@@ -57,7 +57,7 @@ jobs:
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -Pkafka -Dkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
+          mvn clean package -DskipTests -Pkafka -Dkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: stop kafka & postgis for unit tests
         run: |
           docker-compose -f ./compose-files/docker-compose-kafka-postgis.yml down
@@ -117,7 +117,7 @@ jobs:
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: stop postgis for unit tests
         run: |
           docker-compose -f ./compose-files/docker-compose-postgis.yml down

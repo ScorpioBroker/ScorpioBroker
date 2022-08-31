@@ -1,1 +1,24 @@
-TEST RELEASE DO NOT USE OR DOWNLOAD
+RELEASE NOTES SCORPIO 3.0
+
+With the release of Scorpio 3.0 we are happy to announce that quite a few changes. 
+
+FRAMEWORK CHANGE
+
+We have moved frameworks. With this release we are starting to provide a new Scorpio version which is build using the Quarkus framework and not Spring Boot anymore. 
+For the time being we will maintain both versions of Scorpio and release them in parallel. However we will eventually fully move development to the Quarkus version.
+
+
+The move to Quarkus essentially provides less memory consumption and a faster startup time. On openJDK we currently have roughly reduced the startup time and the memory consumption to 50%. 
+Moving to Quarkus we have also adapted a reactive approach in the development which allows for a considerable higher number of connections towards the broker which can be handled in parallel.
+
+With the move to Quarkus we are able to provide native executables for Windows, Ubuntu and MacOS. The native executables start in less than a second and reduces the initial memory consumption to less than 100MB.
+
+AVAILABLE VERSIONS
+
+As you might have seen already there are quite a few variants of Scorpio now released. You can either download the Individual Microservices (e.g. EntityManager, QueryManager, etc.) or the All-In-One Variant which starts everything in one VM. Scorpio is provided either as a Java version or natively compiled for Windows(x64), Ubuntu(x64) and MacOS(x64). 
+We provide a version with a Eureka integration however since Eureka integration is much better on the Spring side, we strongly recommend for anyone using a Eureka based setup to stay with the Spring version for the time being.
+Our All In One variant is now also availble in a version without needing Kafka. This good news for everyone with limit hardware and if you only want to run a single instance of Scorpio. However mind you that scaling of Scorpio instances REQUIRES a Kafka variant.
+
+DOCKER VERSIONS
+
+We will provide docker images on Dockerhub and on the AWS ECR. All Java versions from Quarkus and Spring will be provided and the Ubuntu native version. Going forward from this release we have changed our naming conventions and will provide versions with following naming scheme: scorpiobroker/[<microservices-name>|all-in-one-runner]:<os>-<variant>-<release-number/latest>. Spring versions will have a prefix "Spring" in the tag. 

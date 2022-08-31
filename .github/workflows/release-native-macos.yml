@@ -28,7 +28,7 @@ jobs:
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -Dnative -Deureka -Dkafka -Dos=macos -Dquarkus.profile=kafka-eureka
+          mvn clean package -DskipTests -Dnative -Deureka -Dkafka -Dos=macos -Dquarkus.profile=kafka-eureka
       - name: show build results
         run: |
           ls -R
@@ -131,7 +131,7 @@ jobs:
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -Pkafka -Dnative -Dkafka -Dos=macos -Dquarkus.profile=kafka
+          mvn clean package -DskipTests -Pkafka -Dnative -Dkafka -Dos=macos -Dquarkus.profile=kafka
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-kafka
         id: create_release
         uses: actions/create-release@v1
@@ -231,7 +231,7 @@ jobs:
         run: |
           rm ./BrokerParent/pom.xml
           mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -Dnative -Din-memory -Pin-memory -Dos=macos -Dquarkus.profile=in-memory
+          mvn clean package -DskipTests -Dnative -Din-memory -Pin-memory -Dos=macos -Dquarkus.profile=in-memory
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
