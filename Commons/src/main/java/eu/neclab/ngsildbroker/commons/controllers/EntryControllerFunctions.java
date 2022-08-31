@@ -188,8 +188,9 @@ public interface EntryControllerFunctions {
 		if (result.getSuccess().isEmpty()) {
 			status = HttpStatus.BAD_REQUEST;
 		}
-		if (body == null) {
-			return ResponseEntity.status(status).build();
+		if (result.getFails().isEmpty() && !result.getSuccess().isEmpty()) {
+			status = okStatus;
+			body = result.getSuccess().toString();
 		}
 		return ResponseEntity.status(status).body(body);
 	}
@@ -379,7 +380,7 @@ public interface EntryControllerFunctions {
 			}
 		} else {
 			if (insertedOneEntity && appendedOneEntity) {
-				status = HttpStatus.MULTI_STATUS;
+				status = HttpStatus.CREATED;
 			} else {
 				if (insertedOneEntity) {
 					status = HttpStatus.CREATED;
