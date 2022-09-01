@@ -4,6 +4,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response.Status;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
@@ -106,10 +107,10 @@ public class EntityBatchControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/entityOperations/create").then().statusCode(Status.CREATED.getStatusCode())
 					.statusCode(201).extract();
-			int statusCode = response.statusCode();
-			assertEquals(201, statusCode);
+			assertEquals(201, response.statusCode());
 
 		} catch (Exception e) {
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
@@ -129,10 +130,10 @@ public class EntityBatchControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/entityOperations/create").then().statusCode(Status.BAD_REQUEST.getStatusCode())
 					.statusCode(400).extract();
-			int statusCode = response.statusCode();
-			assertEquals(400, statusCode);
+			assertEquals(400, response.statusCode());
 
 		} catch (Exception e) {
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
@@ -151,10 +152,10 @@ public class EntityBatchControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/entityOperations/update").then().statusCode(Status.NO_CONTENT.getStatusCode())
 					.statusCode(204).extract();
-			int statusCode = response.statusCode();
-			assertEquals(204, statusCode);
+			assertEquals(204, response.statusCode());
 
 		} catch (Exception e) {
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
@@ -174,10 +175,10 @@ public class EntityBatchControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/entityOperations/update").then().statusCode(Status.BAD_REQUEST.getStatusCode())
 					.statusCode(400).extract();
-			int statusCode = response.statusCode();
-			assertEquals(400, statusCode);
+			assertEquals(400, response.statusCode());
 
 		} catch (Exception e) {
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
@@ -197,10 +198,10 @@ public class EntityBatchControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/entityOperations/upsert").then().statusCode(Status.NO_CONTENT.getStatusCode())
 					.statusCode(204).extract();
-			int statusCode = response.statusCode();
-			assertEquals(204, statusCode);
+			assertEquals(204, response.statusCode());
 
 		} catch (Exception e) {
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
@@ -220,10 +221,10 @@ public class EntityBatchControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/entityOperations/upsert").then().statusCode(Status.BAD_REQUEST.getStatusCode())
 					.statusCode(400).extract();
-			int statusCode = response.statusCode();
-			assertEquals(400, statusCode);
+			assertEquals(400, response.statusCode());
 
 		} catch (Exception e) {
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
@@ -242,10 +243,10 @@ public class EntityBatchControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/entityOperations/delete").then().statusCode(Status.NO_CONTENT.getStatusCode())
 					.statusCode(204).extract();
-			int statusCode = response.statusCode();
-			assertEquals(204, statusCode);
+			assertEquals(204, response.statusCode());
 
 		} catch (Exception e) {
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
@@ -265,10 +266,10 @@ public class EntityBatchControllerTest {
 					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
 					.post("/ngsi-ld/v1/entityOperations/delete").then().statusCode(Status.BAD_REQUEST.getStatusCode())
 					.statusCode(400).extract();
-			int statusCode = response.statusCode();
-			assertEquals(400, statusCode);
+			assertEquals(400, response.statusCode());
 
 		} catch (Exception e) {
+			Assertions.fail();
 			e.printStackTrace();
 		}
 
