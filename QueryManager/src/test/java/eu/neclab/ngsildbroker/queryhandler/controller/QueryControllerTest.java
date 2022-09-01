@@ -95,7 +95,7 @@ public class QueryControllerTest {
 	}
 
 	/**
-	 * this method is use for get Entity By Id Not Found
+	 * this method is use to validate Enitity Not Found
 	 */
 	@Test
 	@Order(1)
@@ -111,9 +111,9 @@ public class QueryControllerTest {
 		}
 
 	}
-
+	
 	/**
-	 * this method is use for get Entites based on Quaery
+	 * this method is use to validate get query for entity type
 	 */
 	@Test
 	@Order(2)
@@ -131,7 +131,7 @@ public class QueryControllerTest {
 	}
 
 	/**
-	 * this method is use for get Entites based on Quaery BadRequest
+	 * this method is use to Validate get query BadRequest
 	 */
 	@Test
 	@Order(3)
@@ -153,7 +153,7 @@ public class QueryControllerTest {
 	 */
 	@Test
 	@Order(4)
-	public void getAllTypesTest() throws Exception {
+	public void getAllTypesTest() {
 		try {
 			ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
 					.contentType(AppConstants.NGB_APPLICATION_JSON).when().get("/ngsi-ld/v1/types").then()
@@ -167,7 +167,7 @@ public class QueryControllerTest {
 	}
 
 	/**
-	 * this method is use for get Entites based on entity type
+	 * this method is use to validate get type Not Found
 	 */
 	@Test
 	@Order(5)
@@ -183,6 +183,9 @@ public class QueryControllerTest {
 		}
 	}
 
+	/**
+	 * this method is use to validate get all attribute 
+	 */
 	@Test
 	@Order(6)
 	public void getAllAttributesTest() throws Exception {
@@ -199,7 +202,7 @@ public class QueryControllerTest {
 	}
 
 	/**
-	 * this method is use for get Entites based on Attrs Not Found
+	 * this method is use to validate get attribute Not Found
 	 */
 	@Test
 	@Order(7)
