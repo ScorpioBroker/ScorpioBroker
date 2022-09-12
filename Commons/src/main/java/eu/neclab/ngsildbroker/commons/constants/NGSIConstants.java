@@ -294,4 +294,5 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_GEOPROPERTY_GEOQ_ATTRIB = "https://uri.etsi.org/ngsi-ld/geoproperty";
 	public static final String NGSI_LD_SCOPE = "https://uri.etsi.org/ngsi-ld/default-context/scope";
 	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/default-context/scopeQ";
+	public static final Object NGSI_LD_TENANT_SHORT = "tenant";
 }

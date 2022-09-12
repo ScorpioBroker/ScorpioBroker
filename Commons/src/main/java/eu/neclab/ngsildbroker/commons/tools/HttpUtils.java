@@ -51,6 +51,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -681,12 +682,17 @@ public final class HttpUtils {
 	public static HttpHeaders getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
 			List<String> accept) {
 		HttpHeaders result = new HttpHeaders();
-		Context myContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 		result.addAll(HttpHeaders.ACCEPT, accept);
 		Object tenant = registration.get(NGSIConstants.NGSI_LD_TENANT);
 		if (tenant != null) {
-			result.add(NGSIConstants.TENANT_HEADER, (String) myContext.compactValue(NGSIConstants.NGSI_LD_TENANT,
-					((List<Map<String, Object>>) tenant).get(0)));
+			Map<String, Object> tmp = Maps.newHashMap();
+			tmp.put(NGSIConstants.NGSI_LD_TENANT, tenant);
+			try {
+				result.add(NGSIConstants.TENANT_HEADER, (String) JsonLdProcessor.compact(tmp, null, opts).get(NGSIConstants.NGSI_LD_TENANT_SHORT));
+			} catch (JsonLdError | ResponseException e) {
+				logger.error("Failed to extract tenant", e);
+			}
+			 
 		}
 		Object receiverInfo = registration.get(NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO);
 		if (receiverInfo != null) {
