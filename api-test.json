@@ -8367,7 +8367,9 @@
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
 																	"console.log(payloadBody.id);\r",
-																	"console.log(\"Response\" + pm.response.body.toString());\r",
+																	"if(pm.response.body !== null){\r",
+																	"    console.log(\"Response\" + pm.response.body.toString());\r",
+																	"}\r",
 																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"created4level\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"entityId4level\", entityId);\r",
@@ -8442,7 +8444,9 @@
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
 																	"console.log(payloadBody.id);\r",
-																	"console.log(\"Response\" + pm.response.body.toString());\r",
+																	"if(pm.response.body !== null){\r",
+																	"    console.log(\"Response\" + pm.response.body.toString());\r",
+																	"}\r",
 																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"created4levelnotfound\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"entityId4levelnotfound\", entityId);\r",
