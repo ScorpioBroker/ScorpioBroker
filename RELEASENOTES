@@ -1,3 +1,15 @@
+RELEASE NOTES SCORPIO 3.0.1 / FIWARE_8.3
+
+This is a minor update for the FIWARE release. 
+
+In this release we adress 
+ - an issue where tenants were not properly forwarded in a federation setup. 
+ - an issue where scope queries did not contain all results in certain cases
+ - in docker images for the Quarkus release, setting the default names for postgres and kafka 
+ - in the Spring release addressing an issue where tenant connection pools did not follow the instructed size
+ - in the Spring release added support for custom pool sizes for tenants using SCORPIO_TENANTS_DEFAULT_POOLMAX or SCORPIO_TENANTS_TENANTNAME_POOLMAX.
+	if SCORPIO_TENANTS_DEFAULT_POOLMAX is set to -1 the default poolsize will be used
+
 RELEASE NOTES SCORPIO 3.0
 
 With the release of Scorpio 3.0 we are happy to announce that quite a few changes. 

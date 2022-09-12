@@ -8,7 +8,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 public class ScopeQueryTerm {
 
 	private static final String REGEX_PLUS = "[^\\/]+";
-	private static final String REGEX_HASH = ".+";
+	private static final String REGEX_HASH = ".*";
 	private String[] scopeLevels;
 
 	private ScopeQueryTerm next = null;
@@ -103,15 +103,16 @@ public class ScopeQueryTerm {
 	private String getSQLScopeQuery() {
 		StringBuilder result = new StringBuilder("'^");
 		for (String entry : scopeLevels) {
-			result.append("\\/");
 			switch (entry) {
 				case "+":
+					result.append("\\/");
 					result.append(REGEX_PLUS);
 					break;
 				case "#":
 					result.append(REGEX_HASH);
 					break;
 				default:
+					result.append("\\/");
 					result.append(entry);
 					break;
 			}
