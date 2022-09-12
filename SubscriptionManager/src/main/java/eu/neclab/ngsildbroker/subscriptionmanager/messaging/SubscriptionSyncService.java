@@ -9,8 +9,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
@@ -18,7 +16,6 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.quarkus.arc.profile.UnlessBuildProfile;
-import io.smallrye.mutiny.Uni;
 
 @Singleton
 @UnlessBuildProfile("in-memory")
