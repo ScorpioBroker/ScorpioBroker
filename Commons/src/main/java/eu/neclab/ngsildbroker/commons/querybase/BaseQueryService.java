@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
+import org.apache.http.HttpStatus;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,14 +162,17 @@ public abstract class BaseQueryService implements EntryQueryService {
 							count = Long.parseLong(response.headers().get(NGSIConstants.COUNT_HEADER_RESULT));
 						}
 						remoteResult.setCount(count);
-						try {
-							remoteResult.addData(JsonLdProcessor.expand(linkHeaders,
-									JsonUtils.fromString(response.bodyAsString()), opts,
-									AppConstants.ENTITY_RETRIEVED_PAYLOAD,
-									HttpUtils.parseAcceptHeader(additionalHeaders.getAll(HttpHeaders.ACCEPT)) == 2));
-						} catch (JsonLdError | ResponseException | IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+						if (response.statusCode() == HttpStatus.SC_OK) {
+							try {
+								remoteResult.addData(JsonLdProcessor.expand(linkHeaders,
+										JsonUtils.fromString(response.bodyAsString()), opts,
+										AppConstants.ENTITY_RETRIEVED_PAYLOAD, HttpUtils
+												.parseAcceptHeader(additionalHeaders.getAll(HttpHeaders.ACCEPT)) == 2));
+							} catch (JsonLdError | ResponseException | IOException e) {
+								logger.warn("Failed to expand received data", e);
+							}
+						} else {
+							logger.warn("Unexpected result " + response.bodyAsString());
 						}
 						return remoteResult;
 					}).onFailure().recoverWithItem(e -> {

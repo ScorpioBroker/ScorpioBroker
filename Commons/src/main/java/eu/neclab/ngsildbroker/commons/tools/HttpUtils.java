@@ -410,8 +410,7 @@ public final class HttpUtils {
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 		}
 		if (qResult == null || qResult.getData() == null || qResult.getData().size() == 0) {
-			return HttpUtils.generateReply(request, Lists.newArrayList(), additionalHeaders,
-					AppConstants.HISTORY_ENDPOINT);
+			return HttpUtils.generateReply(request, Lists.newArrayList(), additionalHeaders, endPoint);
 		}
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
@@ -711,14 +710,15 @@ public final class HttpUtils {
 			List<String> accept) {
 		HeadersMultiMap result = HeadersMultiMap.headers();
 
-		Context myContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
+		// Context myContext = JsonLdProcessor.getCoreContextClone().parse(context,
+		// true);
 		for (String entry : accept) {
 			result.add(HttpHeaders.ACCEPT, entry);
 		}
 		Object tenant = registration.get(NGSIConstants.NGSI_LD_TENANT);
 		if (tenant != null) {
-			result.add(NGSIConstants.TENANT_HEADER, (String) myContext.compactValue(NGSIConstants.NGSI_LD_TENANT,
-					((List<Map<String, Object>>) tenant).get(0)));
+			result.add(NGSIConstants.TENANT_HEADER,
+					(String) ((List<Map<String, Object>>) tenant).get(0).get(NGSIConstants.JSON_LD_ID));
 		}
 		Object receiverInfo = registration.get(NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO);
 		if (receiverInfo != null) {
