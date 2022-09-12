@@ -388,7 +388,7 @@ public final class HttpUtils {
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 		}
 		if (qResult == null || qResult.getActualDataString() == null || qResult.getActualDataString().size() == 0) {
-			return HttpUtils.generateReply(request, "[]", additionalHeaders, AppConstants.HISTORY_ENDPOINT);
+			return HttpUtils.generateReply(request, "[]", additionalHeaders, endPoint);
 		}
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
@@ -688,11 +688,12 @@ public final class HttpUtils {
 			Map<String, Object> tmp = Maps.newHashMap();
 			tmp.put(NGSIConstants.NGSI_LD_TENANT, tenant);
 			try {
-				result.add(NGSIConstants.TENANT_HEADER, (String) JsonLdProcessor.compact(tmp, null, opts).get(NGSIConstants.NGSI_LD_TENANT_SHORT));
+				result.add(NGSIConstants.TENANT_HEADER,
+						(String) JsonLdProcessor.compact(tmp, null, opts).get(NGSIConstants.NGSI_LD_TENANT_SHORT));
 			} catch (JsonLdError | ResponseException e) {
 				logger.error("Failed to extract tenant", e);
 			}
-			 
+
 		}
 		Object receiverInfo = registration.get(NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO);
 		if (receiverInfo != null) {
