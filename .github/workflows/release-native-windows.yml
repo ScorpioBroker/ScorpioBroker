@@ -153,101 +153,101 @@ jobs:
           del .\BrokerParent\pom.xml
           move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
           mvn clean package -DskipTests -Pkafka -Dnative -Dkafka -Dos=windows -D"quarkus.profile"=kafka 
-      - name: Start kafka and postgis
-        shell: pwsh
-        run: |
-          docker-compose -f compose-files\docker-compose-kafka-postgis.yml up &
-          sleep 30
-      - name: Start aaio windows
-        shell: pwsh
-        run: |
-          AllInOneRunner\target\all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe &
-          sleep 3
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-aaio-localhost-environment.json
-      - name: Stop aaio windows
-        shell: pwsh
-        run: |
-          taskkill /IM all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
-      - name: Stop kafka and postgis
-        shell: pwsh
-        run: |
-          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
-          docker system prune -a
-          docker volume prune
-      - name: Start kafka and postgis
-        shell: pwsh
-        run: |
-          docker-compose -f compose-files\docker-compose-kafka-postgis.yml up &
-          sleep 30
-      - name: Start EntityManager windows
-        shell: pwsh
-        run: |
-          Start-Process -NoNewWindow EntityManager\target\entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          sleep 3
-      - name: Start QueryManager windows
-        shell: pwsh
-        run: |
-          Start-Process -NoNewWindow QueryManager\target\query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          sleep 3
-      - name: Start SubscriptionManager windows
-        shell: pwsh
-        run: |
-          Start-Process -NoNewWindow SubscriptionManager\target\subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          sleep 3
-      - name: Start RegistryManager windows
-        shell: pwsh
-        run: |
-          Start-Process -NoNewWindow RegistryManager\target\registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          sleep 3
-      - name: Start RegistrySubscriptionManager windows
-        shell: pwsh
-        run: |
-          Start-Process -NoNewWindow RegistrySubscriptionManager\target\registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          sleep 3
-      - name: Start HistoryManager windows
-        shell: pwsh
-        run: |
-          Start-Process -NoNewWindow HistoryManager\target\history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          sleep 3
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-dist-localhost-environment.json
-      - name: Stop EntityManager windows
-        shell: pwsh
-        run: |
-          taskkill /IM entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-      - name: Stop QueryManager windows
-        shell: pwsh
-        run: |
-          taskkill /IM query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-      - name: Stop SubscriptionManager windows
-        shell: pwsh
-        run: |
-          taskkill /IM subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-      - name: Stop RegistryManager windows
-        shell: pwsh
-        run: |
-          taskkill /IM registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-      - name: Stop RegistrySubscriptionManager windows
-        shell: pwsh
-        run: |
-          taskkill /IM registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-      - name: Stop HistoryManager windows
-        shell: pwsh
-        run: |
-          taskkill /IM history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-      - name: Stop kafka and postgis
-        shell: pwsh
-        run: |
-          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
-          docker system prune -a
-          docker volume prune
+#      - name: Start kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml up &
+#          sleep 30
+#      - name: Start aaio windows
+#        shell: pwsh
+#        run: |
+#          AllInOneRunner\target\all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe &
+#          sleep 3
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-aaio-localhost-environment.json
+#      - name: Stop aaio windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
+#          docker system prune -a
+#          docker volume prune
+#      - name: Start kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml up &
+#          sleep 30
+#      - name: Start EntityManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow EntityManager\target\entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start QueryManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow QueryManager\target\query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start SubscriptionManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow SubscriptionManager\target\subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start RegistryManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow RegistryManager\target\registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start RegistrySubscriptionManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow RegistrySubscriptionManager\target\registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: Start HistoryManager windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow HistoryManager\target\history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-dist-localhost-environment.json
+#      - name: Stop EntityManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop QueryManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop SubscriptionManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop RegistryManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop RegistrySubscriptionManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop HistoryManager windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM history-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
+#          docker system prune -a
+#          docker volume prune
       - name: Create Release ${{steps.get-id.outputs.id}}-windows-kafka
         id: create_release
         uses: actions/create-release@v1
@@ -360,31 +360,31 @@ jobs:
           del .\BrokerParent\pom.xml
           move .\BrokerParent\build-pom.xml .\BrokerParent\pom.xml
           mvn clean package -DskipTests -Dnative -Din-memory -Pin-memory -Dos=windows -D"quarkus.profile"=in-memory 
-      - name: Start kafka and postgis
-        shell: pwsh
-        run: |
-          docker-compose -f compose-files\docker-compose-postgis.yml up &
-          sleep 30
-      - name: Start aaio windows
-        shell: pwsh
-        run: |
-          Start-Process -NoNewWindow AllInOneRunner\target\all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
-          sleep 3
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-aaio-localhost-environment.json
-      - name: Stop aaio windows
-        shell: pwsh
-        run: |
-          taskkill /IM all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
-      - name: Stop kafka and postgis
-        shell: pwsh
-        run: |
-          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
-          docker system prune -a
-          docker volume prune
+#      - name: Start kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-postgis.yml up &
+#          sleep 30
+#      - name: Start aaio windows
+#        shell: pwsh
+#        run: |
+#          Start-Process -NoNewWindow AllInOneRunner\target\all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+#          sleep 3
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-aaio-localhost-environment.json
+#      - name: Stop aaio windows
+#        shell: pwsh
+#        run: |
+#          taskkill /IM all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+#      - name: Stop kafka and postgis
+#        shell: pwsh
+#        run: |
+#          docker-compose -f compose-files\docker-compose-kafka-postgis.yml down
+#          docker system prune -a
+#          docker volume prune
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
