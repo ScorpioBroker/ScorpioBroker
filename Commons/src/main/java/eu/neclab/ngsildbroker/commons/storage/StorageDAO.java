@@ -14,6 +14,14 @@ import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
+import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
+import org.springframework.boot.env.OriginTrackedMapPropertySource;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.AbstractEnvironment;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -25,6 +33,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -56,15 +65,26 @@ public abstract class StorageDAO {
 
 	@Autowired
 	private HikariConfig hikariConfig;
-	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
+	private static Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 	private TransactionTemplate writerTransactionTemplate;
 	private JdbcTemplate writerJdbcTemplateWithTransaction;
 	private DBWriteTemplates defaultTemplates;
-	private HashMap<String, DBWriteTemplates> tenant2Templates = new HashMap<String, DBWriteTemplates>();
+	private static HashMap<String, DBWriteTemplates> tenant2Templates = new HashMap<String, DBWriteTemplates>();
 
 	protected abstract StorageFunctionsInterface getStorageFunctions();
 
 	StorageFunctionsInterface storageFunctions;
+
+	@Value("${scorpio.tenants.default.poolmax:-1}")
+	int tenantPoolMax;
+
+	@Value("${scorpio.tenants.default.idlemin:-1}")
+	int tenantIdleMin;
+
+	Map<String, Integer[]> specialTenantPools = Maps.newHashMap();
+
+	@Autowired
+	AbstractEnvironment env;
 
 	@PostConstruct
 	public void init() {
@@ -75,6 +95,33 @@ public abstract class StorageDAO {
 		this.defaultTemplates = new DBWriteTemplates(writerJdbcTemplateWithTransaction, writerTransactionTemplate,
 				writerJdbcTemplate);
 		storageFunctions = getStorageFunctions();
+
+		env.getPropertySources().forEach(t -> {
+
+			if (t instanceof OriginTrackedMapPropertySource) {
+				OriginTrackedMapPropertySource tmp = (OriginTrackedMapPropertySource) t;
+				for (String propName : tmp.getPropertyNames()) {
+					if (propName.startsWith("scorpio.tenants.") && !propName.equals("scorpio.tenants.default.poolmax")
+							&& !propName.equals("scorpio.tenants.default.idlemin")) {
+						Integer[] tmpInt;
+						String[] splitted = propName.substring("scorpio.tenants.".length()).split("\\.");
+						if (specialTenantPools.containsKey(splitted[0])) {
+							tmpInt = specialTenantPools.get(splitted[0]);
+						} else {
+							tmpInt = new Integer[2];
+						}
+						if (splitted[1].equals("poolmax")) {
+							tmpInt[0] = (Integer) tmp.getProperty(propName);
+						}
+						if (splitted[1].equals("idlemin")) {
+							tmpInt[1] = (Integer) tmp.getProperty(propName);
+						}
+						specialTenantPools.put(splitted[0], tmpInt);
+					}
+				}
+			}
+		});
+		System.out.println();
 	}
 
 	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
@@ -194,6 +241,30 @@ public abstract class StorageDAO {
 		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(hikariConfig.getJdbcUrl(), tenantDatabaseName);
 		tenantHikariConfig.setJdbcUrl(tenantJdbcURL);
 		tenantHikariConfig.setPoolName(tenantDatabaseName + "-db-pool");
+		if (specialTenantPools.containsKey(tenantidvalue)) {
+			Integer[] poolConfig = specialTenantPools.get(tenantidvalue);
+			if (poolConfig[0] != null) {
+				tenantHikariConfig.setMaximumPoolSize(poolConfig[0]);
+			} else {
+				if (tenantPoolMax != -1) {
+					tenantHikariConfig.setMaximumPoolSize(tenantPoolMax);
+				}
+			}
+			if (poolConfig[1] != null) {
+				tenantHikariConfig.setMinimumIdle(poolConfig[1]);
+			} else {
+				if (tenantIdleMin != -1) {
+					tenantHikariConfig.setMinimumIdle(tenantIdleMin);
+				}
+			}
+		} else {
+			if (tenantPoolMax != -1) {
+				tenantHikariConfig.setMaximumPoolSize(tenantPoolMax);
+			}
+			if (tenantIdleMin != -1) {
+				tenantHikariConfig.setMinimumIdle(tenantIdleMin);
+			}
+		}
 		return new HikariDataSource(tenantHikariConfig);
 	}
 
