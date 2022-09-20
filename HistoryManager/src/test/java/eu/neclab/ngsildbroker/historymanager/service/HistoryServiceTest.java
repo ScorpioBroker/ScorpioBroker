@@ -2,19 +2,14 @@ package eu.neclab.ngsildbroker.historymanager.service;
 
 import static org.mockito.ArgumentMatchers.any;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.enterprise.inject.Default;
-import javax.inject.Inject;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.Gson;
 
@@ -22,7 +17,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -38,7 +32,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
@@ -47,13 +40,9 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
-import eu.neclab.ngsildbroker.historymanager.controller.CustomProfile;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.junit.mockito.InjectMock;
-import io.quarkus.test.junit.mockito.InjectSpy;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.pgclient.PgPool;
@@ -230,7 +219,7 @@ public class HistoryServiceTest {
 		/*
 		 * try { multimaparr.put("content-type", "application/json"); Gson gson = new
 		 * Gson(); Map<String, Object> resolved = gson.fromJson(temporalPayload,
-	  */
+		 */
 		try {
 			ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
 			multimaparr.put("content-type", "application/json");
@@ -367,7 +356,6 @@ public class HistoryServiceTest {
 		}
 	}
 
-	 
 	@Test
 	public void deleteTemporalByIdNullTest() {
 		try {

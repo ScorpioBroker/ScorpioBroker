@@ -1,30 +1,19 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import io.agroal.api.AgroalDataSource;
+  import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
-import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.groups.UniAwaitOptional;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import io.smallrye.reactive.messaging.kafka.fault.KafkaIgnoreFailure;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.mutiny.pgclient.PgPool;
-import net.bytebuddy.implementation.MethodCall.FieldSetting;
-
+ import io.smallrye.mutiny.Uni;
+ import io.smallrye.reactive.messaging.MutinyEmitter;
+ import io.vertx.mutiny.pgclient.PgPool;
+ 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.nullable;
-
-import java.lang.reflect.Field;
-import java.util.HashMap;
+ 
+ import java.util.HashMap;
 import java.util.Map;
 
-import javax.inject.Inject;
-
+ 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
@@ -33,13 +22,11 @@ import com.google.gson.Gson;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InjectMocks;
+ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -49,18 +36,12 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
+ import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import groovy.util.logging.Slf4j;
-
+ import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+ 
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.utils.JsonUtils;
 

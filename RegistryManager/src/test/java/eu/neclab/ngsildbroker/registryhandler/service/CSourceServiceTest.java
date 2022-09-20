@@ -1,40 +1,29 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.reflect.Reflection;
 import com.google.gson.Gson;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.params.shadow.com.univocity.parsers.common.fields.FieldSet;
-import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-import org.junit.jupiter.api.Order;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.mockito.internal.util.reflection.*;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
@@ -46,7 +35,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 
@@ -54,9 +42,8 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 @TestMethodOrder(OrderAnnotation.class)
 public class CSourceServiceTest {
 	/*
-	 * @Value("${scorpio.registry.autorecording:active}") 
-	 * String AUTO_REG_STATUS;
-	  */
+	 * @Value("${scorpio.registry.autorecording:active}") String AUTO_REG_STATUS;
+	 */
 
 	@InjectMocks
 	@Spy
@@ -64,7 +51,6 @@ public class CSourceServiceTest {
 
 	@ConfigProperty(name = "scorpio.registry.autoregmode", defaultValue = "types")
 	String AUTO_REG_MODE;
- 	
 
 	@ConfigProperty(name = "scorpio.registry.autorecording", defaultValue = "active")
 	String AUTO_REG_STATUS;
@@ -216,7 +202,7 @@ public class CSourceServiceTest {
 	 */
 	@Test
 	public void registerCSourceTest() throws Exception {
-	 
+
 		multimaparr.put("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
@@ -338,7 +324,7 @@ public class CSourceServiceTest {
 			e.printStackTrace();
 		}
 	}
- 
+
 	@Test
 	public void updateEntryTest() throws Exception {
 
