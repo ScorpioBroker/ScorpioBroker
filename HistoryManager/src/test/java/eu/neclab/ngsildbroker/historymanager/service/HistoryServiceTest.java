@@ -1,18 +1,15 @@
 package eu.neclab.ngsildbroker.historymanager.service;
 
 import static org.mockito.ArgumentMatchers.any;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.Gson;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -23,7 +20,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
@@ -209,18 +205,13 @@ public class HistoryServiceTest {
 	}
 
 	/**
-	 * this method is use test "createTemporalEntityFromBinding" method of
+	 * this method is use for create temporal entity 
 	 * HistoryService
 	 */
 
 	@Test
-	// @Disabled
-	public void createTemporalEntityFromBindingTest() throws Exception {
-		/*
-		 * try { multimaparr.put("content-type", "application/json"); Gson gson = new
-		 * Gson(); Map<String, Object> resolved = gson.fromJson(temporalPayload,
-		 */
-		try {
+ 	public void createTemporalEntityTest() throws Exception {
+	 	try {
 			ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
 			multimaparr.put("content-type", "application/json");
 			Gson gson = new Gson();
@@ -254,6 +245,7 @@ public class HistoryServiceTest {
 			historyService.createEntry(multimaparr, resolved).await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals(request.getId() + "already exists", e.getMessage());
+			Mockito.verify(historyService).createEntry(any(), any());
 		}
 
 	}
@@ -356,6 +348,9 @@ public class HistoryServiceTest {
 		}
 	}
 
+	/**
+	 * this method is use for delete the temporal entity if id is null
+	 */
 	@Test
 	public void deleteTemporalByIdNullTest() {
 		try {
@@ -367,6 +362,7 @@ public class HistoryServiceTest {
 				historyService.deleteEntry(multimaparr, null).await().indefinitely();
 			} catch (Exception e) {
 				Assertions.assertEquals("empty entity id not allowed", e.getMessage());
+				Mockito.verify(historyService).deleteEntry(any(), any());
 			}
 		} catch (Exception e) {
 			Assertions.fail();
@@ -392,6 +388,7 @@ public class HistoryServiceTest {
 				historyService.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:2").await().indefinitely();
 			} catch (Exception e) {
 				Assertions.assertEquals("urn:ngsi-ld:Vehicle:2" + " was not found", e.getMessage());
+				Mockito.verify(historyService).deleteEntry(any(), any());
 			}
 		} catch (Exception ex) {
 			Assertions.fail();

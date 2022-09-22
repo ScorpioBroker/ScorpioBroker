@@ -1,17 +1,14 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
 import static org.mockito.ArgumentMatchers.any;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.Gson;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -41,11 +38,7 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 @QuarkusTest
 @TestMethodOrder(OrderAnnotation.class)
 public class CSourceServiceTest {
-	/*
-	 * @Value("${scorpio.registry.autorecording:active}") String AUTO_REG_STATUS;
-	 */
-
-	@InjectMocks
+    @InjectMocks
 	@Spy
 	CSourceService csourceService;
 
@@ -63,10 +56,7 @@ public class CSourceServiceTest {
 	@Mock
 	CSourceDAO csourceDAO;
 
-//	@Mock
-//	StorageDAO storageDAO ;
-
-	@Mock
+ 	@Mock
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	@Mock
@@ -211,10 +201,14 @@ public class CSourceServiceTest {
 		Mockito.when(csourceDAO.storeRegistryEntry(any())).thenReturn(Uni.createFrom().voidItem());
 		CreateResult result = csourceService.createEntry(multimaparr, resolved).await().indefinitely();
 		Assertions.assertEquals("urn:ngsi-ld:ContextSourceRegistration:csr4", result.getEntityId());
+		Mockito.verify(csourceService).createEntry(any(), any());
 	}
 
+	/**
+	 * this method is use for create CSource Registry but Id not provided
+	 */
 	@Test
-	public void registerCSourceIdNotFoundTest() throws Exception {
+	public void registerCSourceIdNotProvideTest() throws Exception {
 		multimaparr.put("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
@@ -228,9 +222,8 @@ public class CSourceServiceTest {
 	}
 
 	/**
-	 * this method is use to validate CSource Registry Id Not Found
+	 * this method is use to validate CSource Registry Id is null
 	 */
-
 	@Test
 	public void registerCSourceIdNullFoundTest() throws Exception {
 		multimaparr.put("content-type", "application/json");
@@ -241,6 +234,7 @@ public class CSourceServiceTest {
 		Mockito.when(csourceDAO.storeRegistryEntry(any())).thenReturn(Uni.createFrom().voidItem());
 		CreateResult result = csourceService.createEntry(multimaparr, resolved).await().indefinitely();
 		Assertions.assertEquals("", result.getEntityId());
+		Mockito.verify(csourceService).createEntry(any(), any());
 	}
 
 	/**
@@ -267,6 +261,7 @@ public class CSourceServiceTest {
 					.appendToEntry(multimaparr, "urn:ngsi-ld:ContextSourceRegistration:csr3", resolved, optionsArray)
 					.await().indefinitely();
 			Assertions.assertEquals(updateResult.getUpdated(), request.getUpdateResult().getUpdated());
+			Mockito.verify(csourceService).appendToEntry(any(), any(), any(), any());
 		} catch (Exception e) {
 			Assertions.fail();
 			e.printStackTrace();
@@ -297,6 +292,7 @@ public class CSourceServiceTest {
 			csourceService.appendToEntry(multimaparr, null, resolved, optionsArray).await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("empty entity id is not allowed", e.getMessage());
+			Mockito.verify(csourceService).appendToEntry(any(), any(), any(), any());
 		}
 	}
 
@@ -319,35 +315,34 @@ public class CSourceServiceTest {
 			Map<String, Object> getresult = csourceService
 					.getRegistrationById("urn:ngsi-ld:ContextSourceRegistration:csr3", null).await().indefinitely();
 			Assertions.assertEquals(originalresolved, getresult);
+			Mockito.verify(csourceService).getRegistrationById(any(), any());
 		} catch (Exception e) {
 			Assertions.fail();
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * this method is use for get update  CSource Registry by Id
+	 */
 	@Test
-	public void updateEntryTest() throws Exception {
-
+	public void updateCSourceEntrybyIdTest() throws Exception {
 		ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 		csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-
 		multimaparr.put("content-type", "application/json");
 		UpdateResult updateResult = new UpdateResult();
 		Gson gson = new Gson();
-
 		Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
 		Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
 		String[] optionsArray = new String[0];
 		AppendCSourceRequest request = new AppendCSourceRequest(multimaparr,
 				"urn:ngsi-ld:ContextSourceRegistration:csr3", originalresolved, resolved, optionsArray);
-
 		Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
 		try {
 			csourceService.updateEntry(multimaparr, "urn:ngsi-ld:ContextSourceRegistration:csr3", resolved).await()
 					.indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("not supported in registry", e.getMessage());
-
 		}
 
 	}
@@ -360,17 +355,15 @@ public class CSourceServiceTest {
 		try {
 			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-			// when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
-
-			Gson gson = new Gson();
+     		Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
 			Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-
 			multimaparr.put("content-type", "application/json");
 			Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
 			boolean deleteresult = csourceService.deleteEntry(multimaparr, "urn:ngsi-ld:ContextSourceRegistration:csr3")
 					.await().indefinitely();
 			Assertions.assertEquals(true, deleteresult);
+			Mockito.verify(csourceService).deleteEntry(any(), any());
 		} catch (Exception ex) {
 			Assertions.fail();
 
@@ -382,24 +375,19 @@ public class CSourceServiceTest {
 	 */
 	@Test
 	public void deleteEntryBadRequestTest() {
-
 		ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 		csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-		// when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
-
-		Gson gson = new Gson();
+ 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
 		Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-
 		multimaparr.put("content-type", "application/json");
 		Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
 		try {
 			csourceService.deleteEntry(multimaparr, null).await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("empty entity id not allowed", e.getMessage());
-
+			Mockito.verify(csourceService).deleteEntry(any(), any());
 		}
-
 	}
 
 	/**
@@ -410,18 +398,14 @@ public class CSourceServiceTest {
 		try {
 			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-			// when(csourceInfoDAO.getAllIds()).thenReturn(csourceIds);
-			Gson gson = new Gson();
+ 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
 			Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-
 			BaseRequest br = new BaseRequest();
 			br.setFinalPayload(originalresolved);
 			br.setHeaders(multimaparr);
-
 			multimaparr.put("content-type", "application/json");
 			Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
-
 			csourceService.handleEntityDelete(br);
 			Mockito.verify(csourceService).handleEntityDelete(any());
 		} catch (Exception e) {
