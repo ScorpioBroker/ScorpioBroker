@@ -1,47 +1,39 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
-  import io.agroal.api.AgroalDataSource;
+import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.junit.QuarkusTest;
- import io.smallrye.mutiny.Uni;
- import io.smallrye.reactive.messaging.MutinyEmitter;
- import io.vertx.mutiny.pgclient.PgPool;
- 
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.mutiny.pgclient.PgPool;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import static org.mockito.ArgumentMatchers.any;
- 
- import java.util.HashMap;
+import java.util.HashMap;
 import java.util.Map;
-
- 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.Gson;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
- import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
- import org.mockito.InjectMocks;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.slf4j.LoggerFactory;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
- import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
- import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
- 
+import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.utils.JsonUtils;
 
@@ -97,9 +89,7 @@ public class EntityServiceTest {
 	@BeforeEach
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
-
 		pgClient.preparedQuery("SELECT $1");
-
 		ObjectMapper objectMapper = new ObjectMapper();
 
 		enitityIdNotPayload = "{\r\n" + "    \"id\": \" \",\r\n" + "    \"type\": \"Vehicle\",\r\n"
@@ -236,6 +226,7 @@ public class EntityServiceTest {
 			Map<String, Object> resolved = gson.fromJson(entityPayload, Map.class);
 			CreateResult result = entityService.createEntry(multimaparr, resolved).await().indefinitely();
 			Assertions.assertEquals("urn:ngsi-ld:Vehicle:A103", result.getEntityId());
+			Mockito.verify(entityService).createEntry(any(),any());
 		} catch (Exception e) {
 			Assertions.fail();
 			e.printStackTrace();
@@ -243,26 +234,30 @@ public class EntityServiceTest {
 	}
 
 	/**
-	 * this method is use for create the entity
+	 * this method is use for verify entity id is null
 	 */
 	@Test
 	@Order(2)
 	public void createMessageNullTest() {
+		try {
 		multimaparr.put("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(enitityIdNotPayload, Map.class);
 		CreateResult s = entityService.createEntry(multimaparr, resolved).await().indefinitely();
 		Assertions.assertEquals(null, s.getEntityId());
-
+		Mockito.verify(entityService).createEntry(any(),any());
+		}catch(Exception e) {
+			e.printStackTrace();
+			Assertions.fail();
+		}
 	}
 
 	/**
-	 * this method is use for update the entity if Attribute is not same
+	 * this method is use for update the entity if Attribute id is not exist
 	 */
 	@Test
 	@Order(3)
-	public void updateMessageAttrIsNotExistTest() throws Exception {
-
+	public void updateMessageAttrIdNotExistTest() throws Exception {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
@@ -278,6 +273,7 @@ public class EntityServiceTest {
 					resolved, null);
 			updateResult = entityService.updateEntry(entityIds, entityPayload, resolved).await().indefinitely();
 			Assertions.assertEquals(request.getUpdateResult().getNotUpdated(), updateResult.getNotUpdated());
+			Mockito.verify(entityService).updateEntry(any(), any(), any());
 		} catch (Exception ex) {
 			Assertions.fail();
 			ex.printStackTrace();
@@ -285,10 +281,10 @@ public class EntityServiceTest {
 	}
 
 	/**
-	 * this method is use for update the entity temp method Run
+	 * this method is use for update attribute if attribute not found
 	 */
 	@Test
-	public void updateMessageAttrNotFound() throws Exception {
+	public void updateMessageAttrNotFound() {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A100");
@@ -313,10 +309,11 @@ public class EntityServiceTest {
 	}
 
 	/**
-	 * this method is use for append the field or attribute in entity
+	 * this method is use for append the field Attribute
 	 */
 	@Test
-	public void appendFieldTest() throws Exception {
+	public void appendFieldTest()  {
+		try {
 		MockitoAnnotations.initMocks(this);
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
@@ -335,6 +332,9 @@ public class EntityServiceTest {
 				.indefinitely();
 		Assertions.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
 		Mockito.verify(entityService).appendToEntry(any(), any(), any(), any());
+		}catch(Exception e) {
+			Assertions.fail();
+		}
 
 	}
 
@@ -428,7 +428,7 @@ public class EntityServiceTest {
 	 * this method is use to Validate delete Attribute but Attribute Not Found
 	 */
 	@Test
-	public void deleteAttributeInstanceTest() throws Exception {
+	public void deleteAttributeNotFoundTest() throws Exception {
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 		entityIds.put(AppConstants.REQUEST_ID, "urn:ngsi-ld:Vehicle:A103");
 		Map<String, Object> m = new HashMap<String, Object>();
@@ -472,6 +472,7 @@ public class EntityServiceTest {
 	 */
 	@Test
 	public void deleteEntityTest() throws Exception {
+		try {
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 		entityIds.put(AppConstants.REQUEST_ID, "urn:ngsi-ld:Vehicle:A103");
 		Map<String, Object> m = new HashMap<String, Object>();
@@ -482,10 +483,13 @@ public class EntityServiceTest {
 		boolean result = entityService.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103").await().indefinitely();
 		Assertions.assertEquals(true, result);
 		Mockito.verify(entityService).deleteEntry(any(), any());
+		}catch(Exception e) {
+			Assertions.fail();
+		}
 	}
 
 	/**
-	 * this method is use to Validate delete Entry but Entity id Not allowed
+	 * this method is use to Validate delete Entry but Entity id Not Found
 	 */
 	@Test
 	public void deleteEntityNotFoundTest() throws Exception {
