@@ -13882,10 +13882,7 @@
 																	"    pm.expect(entityId1).to.eql(\"urn:test:testbatchentity1005\");\r",
 																	"    pm.expect(entityId2).to.eql(\"urn:test:testbatchentity1007\");\r",
 																	"});\r",
-																	"pm.test(\"Status code name has string\", function () {\r",
-																	"    pm.response.to.have.status(\"Created\");\r",
-																	"});\r",
-																	"\r",
+																	" \r",
 																	" "
 																],
 																"type": "text/javascript"
@@ -13960,7 +13957,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"type\": \"Query\",\r\n    \"entities\": [\r\n        {\r\n            \"id\": \"urn:test:testbatchentity1005\",\r\n            \"type\": \"TestType\"\r\n        },\r\n        {\r\n            \"id\": \"urn:test:testbatchentity1006\",\r\n            \"type\": \"TestType\"\r\n        }\r\n    ]\r\n}"
+															"raw": "{\r\n    \"type\": \"Query\",\r\n    \"entities\": [\r\n        {\r\n            \"id\": \"urn:test:testbatchentity1005\",\r\n            \"type\": \"TestType\"\r\n        },\r\n        {\r\n            \"id\": \"urn:test:testbatchentity1006\",\r\n            \"type\": \"TestType\"\r\n        }\r\n    ],\"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/query",
@@ -14004,7 +14001,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "[\r\n    \"urn:test:testbatchentity1005\",\r\n    \"urn:test:testbatchentity1006\"\r\n]"
+															"raw": "[\r\n    \"urn:test:testbatchentity1005\",\r\n    \"urn:test:testbatchentity1006\",\r\n    \"urn:test:testbatchentity1007\"\r\n]"
 														},
 														"url": {
 															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
