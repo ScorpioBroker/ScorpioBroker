@@ -150,11 +150,12 @@ public class HistoryPostQueryParserTest {
 		invalidTypePayload = null;
 	}
 
-
-
+	/**
+	 * this method is use test "parse" method for querying attrs
+	 */
 	@Test
 	@Order(1)
-	
+
 	public void historyQueryAttrsTest() throws ResponseException {
 
 		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
@@ -162,20 +163,15 @@ public class HistoryPostQueryParserTest {
 		Gson gson = new Gson();
 		Map<String, Object> queries = gson.fromJson(attrsPayload, Map.class);
 		Integer limit = null;
-		
-		
 		Integer offset = null;
 		boolean count = false;
 		List<String> options = new ArrayList<>();
 		Context context = new Context();
-		
-		
 		QueryParams result = historyPostQueryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count,
 				options, context);
 		Assertions.assertEquals("null", result.getAttrs());
-		Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
-		
-		
+		Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
+				context);
 	}
 
 	/**
@@ -191,18 +187,14 @@ public class HistoryPostQueryParserTest {
 		Map<String, Object> queries = gson.fromJson(entityPayload, Map.class);
 		Integer limit = -1;
 		Integer offset = 0;
-		
-		
-		
 		boolean count = false;
 		List<String> options = new ArrayList<>();
 		Context context = new Context();
 		QueryParams result = historyPostQueryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count,
 				options, context);
-		
-		
 		Assertions.assertEquals(count, result.getCountResult());
-		Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
+		Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
+				context);
 	}
 
 	/**
@@ -222,21 +214,19 @@ public class HistoryPostQueryParserTest {
 		boolean count = false;
 		List<String> options = new ArrayList<>();
 		Context context = new Context();
-		
-		
 		try {
 			historyPostQueryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
 		} catch (Exception e) {
-			
-			
 			Assertions.assertEquals("Time is empty", e.getMessage());
-			Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
+			Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
+					context);
 		}
 	}
 
-
-
-	
+	/**
+	 * this method is use test "parse" method for querying temporal entities when
+	 * query is invalid
+	 */
 	@Test
 	@Order(4)
 	public void invalidHistoryQueryTest() throws ResponseException {
@@ -247,8 +237,6 @@ public class HistoryPostQueryParserTest {
 		Map<String, Object> queries = gson.fromJson(invalidPayload, Map.class);
 		Integer limit = -1;
 		Integer offset = 0;
-		
-		
 		boolean count = false;
 		List<String> options = new ArrayList<>();
 		Context context = new Context();
@@ -256,7 +244,8 @@ public class HistoryPostQueryParserTest {
 			historyPostQueryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
 		} catch (Exception e) {
 			Assertions.assertEquals("Type has to be Query for this operation", e.getMessage());
-			Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
+			Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
+					context);
 		}
 	}
 
@@ -274,21 +263,15 @@ public class HistoryPostQueryParserTest {
 		Map<String, Object> queries = gson.fromJson(invalidTypePayload, Map.class);
 		Integer limit = -1;
 		Integer offset = 0;
-		
-		
 		boolean count = false;
 		List<String> options = new ArrayList<>();
 		Context context = new Context();
-		
-		
-		
 		try {
 			historyPostQueryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
 		} catch (Exception e) {
-			
-			
 			Assertions.assertEquals("type is an unknown entry", e.getMessage());
-			Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
+			Mockito.verify(historyPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
+					context);
 		}
 	}
 }

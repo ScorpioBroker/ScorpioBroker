@@ -106,8 +106,6 @@ public class EntityPostQueryParserTest {
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
 
-		
-		
 		pgClient.preparedQuery("SELECT $1");
 		ObjectMapper objectMapper = new ObjectMapper();
 
@@ -148,9 +146,9 @@ public class EntityPostQueryParserTest {
 		invalidTypePayload = null;
 	}
 
-	
-	
-
+	/**
+	 * this method is use test "parse" method for querying attrs
+	 */
 	@Test
 	@Order(1)
 	public void queryAttrsTest() throws ResponseException {
@@ -158,22 +156,17 @@ public class EntityPostQueryParserTest {
 		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
 		multimaparr.put("content-type", "application/json");
 		Gson gson = new Gson();
-		
-		
 		Map<String, Object> queries = gson.fromJson(attrsPayload, Map.class);
 		Integer limit = null;
 		Integer offset = null;
-		
-		
 		boolean count = false;
 		List<String> options = new ArrayList<>();
 		Context context = new Context();
 		QueryParams result = entityPostQueryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
 				context);
-		
-		
 		Assertions.assertEquals(null, queryParams.getAttrs());
-		Mockito.verify(entityPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
+		Mockito.verify(entityPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
+				context);
 	}
 
 	/**
@@ -183,29 +176,26 @@ public class EntityPostQueryParserTest {
 	@Order(2)
 	public void queryEntitiesTest() throws ResponseException {
 
-		
-		
-		
-		
 		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
 		multimaparr.put("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> queries = gson.fromJson(entityPayload, Map.class);
 		Integer limit = null;
 		Integer offset = null;
-		
-		
-		
 		boolean count = false;
 		List<String> options = new ArrayList<>();
 		Context context = new Context();
 		QueryParams result = entityPostQueryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
 				context);
 		Assertions.assertEquals(count, result.getCountResult());
-		Mockito.verify(entityPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
+		Mockito.verify(entityPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
+				context);
 	}
 
-
+	/**
+	 * this method is use test "parse" method for querying entities when query is
+	 * invalid
+	 */
 	@Test
 	@Order(3)
 	public void invalidQueryTest() throws ResponseException {
@@ -223,15 +213,14 @@ public class EntityPostQueryParserTest {
 			entityPostQueryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
 		} catch (Exception e) {
 			Assertions.assertEquals("Type has to be Query for this operation", e.getMessage());
-			Mockito.verify(entityPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
+			Mockito.verify(entityPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
+					context);
 		}
 	}
 
-	
-	
-	
 	/**
-	 * this method is use test "parse" method for querying entities when type is invalid
+	 * this method is use test "parse" method for querying entities when type 
+	 * is invalid
 	 */
 	@Test
 	@Order(4)
@@ -244,18 +233,14 @@ public class EntityPostQueryParserTest {
 		Integer limit = -1;
 		Integer offset = 0;
 		boolean count = false;
-		
-		
 		List<String> options = new ArrayList<>();
 		Context context = new Context();
 		try {
-			
-			
-			
 			entityPostQueryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
 		} catch (Exception e) {
 			Assertions.assertEquals("type is an unknown entry", e.getMessage());
-			Mockito.verify(entityPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
+			Mockito.verify(entityPostQueryParser).parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
+					context);
 		}
 	}
 }
