@@ -7,8 +7,13 @@ import io.agroal.api.AgroalDataSource;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -16,9 +21,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.gson.Gson;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,23 +41,29 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 
 import eu.neclab.ngsildbroker.subscriptionmanager.controller.CustomProfile;
-import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.IntervalNotificationHandler;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionServiceKafka;
 import groovy.util.logging.Slf4j;
 
 @QuarkusTest
 @Slf4j
 @TestMethodOrder(OrderAnnotation.class)
 @TestProfile(CustomProfile.class)
-public class SubscriptionServiceTest {
+public class RegistrySubscriptionServiceTest {
 
 	String payload;
+	String payload1;
+	JsonNode blankNode;
+	JsonNode payloadNode;
 
 	@Mock
 	SubscriptionRequest subscriptionRequest;
@@ -56,15 +71,15 @@ public class SubscriptionServiceTest {
 	@Mock
 	IntervalNotificationHandler intervalHandlerREST;
 
-	@Mock
-	InternalNotification notify;
+	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
+	boolean directDB;
 
 	@Mock
 	HashMap<String, Subscription> subscriptionId2Subscription;
 
 	@InjectMocks
 	@Spy
-	SubscriptionService subscriptionService;
+	RegistrySubscriptionService subscriptionService;
 
 	@Mock
 	NotificationParam param;
@@ -73,24 +88,28 @@ public class SubscriptionServiceTest {
 	Subscription subscriptionMock;
 
 	@Mock
+	RegistrySubscriptionServiceKafka kafka;
+
+	@Mock
 	IntervalNotificationHandler intervalNotificationHandler;
 
 	@Mock
 	MutinyEmitter<SubscriptionRequest> internalSubEmitter;
 
 	@Mock
-	SubscriptionServiceKafka kafka;
+	BaseSubscriptionService baseService;
 
 	@Mock
-	SubscriptionInfoDAO subService;
+	RegistrySubscriptionInfoDAO subService;
 
 	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
 
 	// resolved payload of a subscription.
 
 	@BeforeEach
-	public void setUp() {
+	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
+		ObjectMapper objectMapper = new ObjectMapper();
 
 		payload = "{\r\n  \"https://uri.etsi.org/ngsi-ld/entities\" : [ "
 				+ "{\r\n    \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/default-context/Vehicle\" ]"
@@ -102,6 +121,28 @@ public class SubscriptionServiceTest {
 				+ "\r\n      } ],\r\n      \"https://uri.etsi.org/ngsi-ld/uri\" : [ {"
 				+ "\r\n        \"@value\" : \"http://localhost:8080/acc\"\r\n      } ]"
 				+ "\r\n    } ]\r\n  } ],\r\n  \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/Subscription\" ]" + "\r\n}";
+
+		payload1 = "{\r\n  \"https://uri.etsi.org/ngsi-ld/entities\" : [ "
+				+ "{\r\n    \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/default-context/Vehicle\" ]"
+				+ "\r\n  } ],\r\n  \"@id\" : \"urn:ngsi-ld:Subscription:173224\","
+				+ "\r\n  \"https://uri.etsi.org/ngsi-ld/notification\" : [ "
+				+ "{\r\n    \"https://uri.etsi.org/ngsi-ld/endpoint\" : [ "
+				+ "{\r\n      \"https://uri.etsi.org/ngsi-ld/accept\" : [ "
+				+ "{\r\n        \"@value\" : \"application/json\""
+				+ "\r\n      } ],\r\n      \"https://uri.etsi.org/ngsi-ld/uri\" : [ {"
+				+ "\r\n        \"@value\" : \"http://localhost:8080/acc\"\r\n      } ]"
+				+ "\r\n    } ]\r\n  } ],\r\n  \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/Subscription\" ]" + "\r\n}";
+
+		blankNode = objectMapper.createObjectNode();
+		payloadNode = objectMapper.readTree(payload);
+		payloadNode = objectMapper.readTree(payload1);
+		directDB = true;
+	}
+
+	@AfterEach
+	public void tearDown() {
+		payload = null;
+		payload1 = null;
 	}
 
 	/**
@@ -109,7 +150,7 @@ public class SubscriptionServiceTest {
 	 */
 	@Test
 	@Order(1)
-	public void serviceTest() throws ResponseException {
+	public void createSubscriptionTest() throws ResponseException {
 
 		List<Object> context = new ArrayList<>();
 		Context context1 = new Context();
@@ -121,18 +162,41 @@ public class SubscriptionServiceTest {
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
 		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, subIds, 0);
-		String subId = subscriptionService.subscribe(subRequest).await().indefinitely();
-		Assertions.assertEquals("urn:ngsi-ld:Subscription:173223", subId);
-		Mockito.verify(subscriptionService).subscribe(any());
+		Void result = subscriptionService.subscribeInternal(subRequest).await().indefinitely();
+		Assertions.assertEquals(null, result);
+		Mockito.verify(subscriptionService).subscribeInternal(any());
 	}
 
 	/**
-	 * this method is used to test updatesubscription test
+	 * this method is used to test create subscription test
 	 */
 	@Test
 	@Order(2)
-	public void updateSubscriptionNotFoundTest() throws Exception {
+	public void subscribeInternalTest() throws ResponseException {
 
+		List<Object> context = new ArrayList<>();
+		Context context1 = new Context();
+		Subscription subscription = null;
+		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
+		multimaparr.put("content-type", "application/json");
+		Gson gson = new Gson();
+		Map<String, Object> resolved = gson.fromJson(payload1, Map.class);
+		Subscription s = Subscription.expandSubscription(resolved, context1, true);
+		subscription = new Subscription();
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, subIds, 0);
+		Void result = subscriptionService.subscribeInternal(subRequest).await().indefinitely();
+		Assertions.assertEquals(null, result);
+		Mockito.verify(subscriptionService).subscribeInternal(any());
+	}
+
+	/**
+	 * this method is used to test update subscription test
+	 */
+	@Test
+	@Order(3)
+	public void updateSubscriptionTest1() throws ResponseException {
+
+		MockitoAnnotations.initMocks(this);
 		List<Object> context = new ArrayList<>();
 		Context context1 = new Context();
 		Subscription subscription = null;
@@ -141,14 +205,14 @@ public class SubscriptionServiceTest {
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
-		System.out.println("Print Sub -- " + s.getId());
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
+		subscriptionRequest = new SubscriptionRequest(s, context, subIds, 0);
+		Mockito.when(baseService.updateSubscription(any())).thenReturn(Uni.createFrom().voidItem());
 		try {
-			subscriptionService.updateSubscription(subRequest).await().indefinitely();
+			subscriptionService.updateInternal(subscriptionRequest).await().indefinitely();
 		} catch (Exception e) {
-			Assertions.assertEquals("urn:ngsi-ld:Subscription:173223 not found", e.getMessage());
-			Mockito.verify(subscriptionService).updateSubscription(any());
+			Assertions.assertEquals(e.getLocalizedMessage(), e.getMessage());
+			Mockito.verify(subscriptionService).updateInternal(any());
 		}
 	}
 
@@ -156,7 +220,7 @@ public class SubscriptionServiceTest {
 	 * this method is used to test getAllSubscriptions method
 	 */
 	@Test
-	@Order(3)
+	@Order(4)
 	public void getAllSubscriptionsTest() {
 
 		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
@@ -166,101 +230,40 @@ public class SubscriptionServiceTest {
 	}
 
 	/**
-	 * this method is used to test subscribeToRemote method
-	 */
-	@Test
-	@Order(4)
-	public void getInternalNotificationTest() throws ResponseException {
-
-		List<Object> context = new ArrayList<>();
-		Context context1 = new Context();
-		Subscription subscription = null;
-		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
-		Subscription s = Subscription.expandSubscription(resolved, context1, true);
-		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, subIds, 0);
-		subscriptionService.subscribeToRemote(subRequest, notify);
-		Mockito.verify(subscriptionService).subscribeToRemote(any(), any());
-
-	}
-
-	/**
-	 * this method is used to test subscribeToRemote method when Subscription is
-	 * null
-	 */
-	@Test
-	@Order(5)
-	public void getInternalNotificationNullTest() throws ResponseException {
-
-		Subscription subscription = null;
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		subscription = new Subscription();
-		SubscriptionRequest subRequest = null;
-		subscriptionService.subscribeToRemote(subRequest, notify);
-		Mockito.verify(subscriptionService).subscribeToRemote(any(), any());
-	}
-
-	/**
-	 * this method is used to test remoteNotify method
-	 */
-	@Test
-	@Order(6)
-	public void remoteNotificationNullTest() throws ResponseException {
-
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		String id = new String("urn:ngsi-ld:Subscription:173223");
-		Map<String, Object> resolved = null;
-		subscriptionService.remoteNotify(id, resolved);
-		Mockito.verify(subscriptionService).remoteNotify(any(), any());
-	}
-
-	/**
-	 * this method is used to test handleRegistryNotification method
-	 */
-	@Test
-	@Order(7)
-	public void handleRegistryNotificationTest() throws ResponseException {
-
-		List<Object> context = new ArrayList<>();
-		Context context1 = new Context();
-		Subscription subscription = null;
-		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-		InternalNotification notify = new InternalNotification(payload, payload, null, payload, null, 0, context,
-				payload, subIds);
-		subscriptionService.handleRegistryNotification(notify);
-		Mockito.verify(subscriptionService).handleRegistryNotification(any());
-		;
-	}
-
-	/**
 	 * this method is used to test unsubscribe method
 	 */
 	@Test
-	@Order(8)
-	public void unsubscribeNotFoundTest() throws URISyntaxException, ResponseException {
+	@Order(5)
+	public void unsubscribeInternalTest() throws URISyntaxException, ResponseException {
 
 		Subscription subscription = null;
 		Subscription removedSub = new Subscription();
 		String id = new String("urn:ngsi-ld:Subscription:173223");
 		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-		try {
-			subscriptionService.unsubscribe(id, subIds).await().indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("urn:ngsi-ld:Subscription:173223 not found", e.getMessage());
-			Mockito.verify(subscriptionService).unsubscribe(any(), any());
-		}
+		subscriptionService.unsubscribeInternal(id).await().indefinitely();
+		Mockito.verify(subscriptionService).unsubscribeInternal(any());
+	}
+
+	/**
+	 * this method is used to test deconstructor method
+	 */
+	@Test
+	@Order(6)
+	public void deconstructorTest() throws URISyntaxException, ResponseException {
+
+		multimaparr.put("content-type", "application/json");
+		MockitoAnnotations.initMocks(this);
+		Subscription removedSub = new Subscription();
+		String id = new String("urn:ngsi-ld:Subscription:173224");
+		subscriptionService.deconstructor();
+		Mockito.verify(subscriptionService).deconstructor();
 	}
 
 	/**
 	 * this method is used to test getSubscription method
 	 */
 	@Test
-	@Order(9)
+	@Order(7)
 	public void getSubscriptionTest() throws ResponseException {
 
 		multimaparr.put("content-type", "application/json");
