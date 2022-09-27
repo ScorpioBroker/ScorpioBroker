@@ -195,7 +195,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 				RemoteQueryResult queryResult = new RemoteQueryResult(null, ErrorType.None, -1, true);
 				csourceResult.forEach(entry -> {
 					entry.getId2Data().values().forEach(valueEntry -> {
-						queryResult.addData(entry);
+						queryResult.addData(valueEntry);
 					});
 					queryResult.setCount(queryResult.getCount() + entry.getCount());
 				});
