@@ -1,3 +1,10 @@
+RELEASE NOTES SCORPIO 3.0.2
+
+This a minor bugfix release addressing 
+
+ - an issue where the result of a federated query was not merged correctly
+ - an issue with the return codes and body of entity operations
+
 RELEASE NOTES SCORPIO 3.0.1 / FIWARE_8.3
 
 This is a minor update for the FIWARE release. 
