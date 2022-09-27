@@ -4,21 +4,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+import org.springframework.http.HttpHeaders;
 import javax.servlet.http.HttpServletRequest;
-
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
@@ -188,10 +185,11 @@ public interface EntryControllerFunctions {
 		if (result.getSuccess().isEmpty()) {
 			status = HttpStatus.BAD_REQUEST;
 		}
-		if (body == null) {
-			return ResponseEntity.status(status).build();
+		if (result.getFails().isEmpty() && !result.getSuccess().isEmpty()) {
+			status = okStatus;
+			body = result.getSuccess().toString();
 		}
-		return ResponseEntity.status(status).body(body);
+		return ResponseEntity.status(status).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).body(body);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -379,7 +377,7 @@ public interface EntryControllerFunctions {
 			}
 		} else {
 			if (insertedOneEntity && appendedOneEntity) {
-				status = HttpStatus.MULTI_STATUS;
+				status = HttpStatus.CREATED;
 			} else {
 				if (insertedOneEntity) {
 					status = HttpStatus.CREATED;
