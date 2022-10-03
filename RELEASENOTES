@@ -1,3 +1,9 @@
+RELEASE NOTES SCORPIO 3.0.3
+
+This a minor bugfix release addressing 
+
+ - an issue where the DBUSER and DBPASS settings in the quarkus release where not respected properly
+ 
 RELEASE NOTES SCORPIO 3.0.2
 
 This a minor bugfix release addressing 
