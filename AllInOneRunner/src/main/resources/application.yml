@@ -119,12 +119,12 @@ ngsild:
 scorpio:
   tenants: 
      default:
-        poolmax: 5
-        idlemin: 2
+        poolmax: -1
+        idlemin: -1
 #     test555:
 #        poolmax: 20
 #        idlemin: 15
-  gatewayurl: http://34.77.231.0:80
+  gatewayurl: null
   fedbrokers: null
   cors: 
     enable: true
