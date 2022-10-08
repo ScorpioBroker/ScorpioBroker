@@ -169,6 +169,10 @@
 			<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>io.strimzi</groupId>
+			<artifactId>kafka-oauth-client</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
