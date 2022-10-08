@@ -1,3 +1,9 @@
+RELEASE NOTES SCORPIO 3.0.4
+
+In this release we are adressing 
+ - an issue where kafka messages were not acknowledged in the quarkus branch.
+ - adding support for SSL on the kafka connections 
+ 
 RELEASE NOTES SCORPIO 3.0.3
 
 This a minor bugfix release addressing 
