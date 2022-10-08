@@ -10,6 +10,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +30,6 @@ import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import io.smallrye.reactive.messaging.annotations.Broadcast;
 
 @Singleton
 public class EntityService implements EntryCRUDService {
@@ -44,8 +43,7 @@ public class EntityService implements EntryCRUDService {
 
 	@Inject
 	@Channel(AppConstants.ENTITY_CHANNEL)
-	@Broadcast
-	MutinyEmitter<BaseRequest> kafkaSenderInterface;
+	Emitter<BaseRequest> kafkaSenderInterface;
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
 
@@ -147,7 +145,9 @@ public class EntityService implements EntryCRUDService {
 					return new DeleteEntityRequest(entityId, headers, t);
 				})).onItem().transformToUni(t -> {
 					Uni<Void> store = entityInfoDAO.storeEntity(t);
-					BaseRequest temp = new BaseRequest(t);
+					BaseRequest temp = new BaseRequest();
+					temp.setHeaders(t.getHeaders());
+					temp.setId(t.getId());
 					temp.setRequestPayload(t.getOldEntity());
 					temp.setFinalPayload(t.getOldEntity());
 
@@ -217,8 +217,11 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	private Uni<Void> handleRequest(EntityRequest request) {
-		return entityInfoDAO.storeEntity(request).onItem()
-				.transformToUni(t -> kafkaSenderInterface.send(new BaseRequest(request)));
+		return entityInfoDAO.storeEntity(request).onItem().transformToUni(t -> {
+			request.setSendTimestamp(System.currentTimeMillis());
+			kafkaSenderInterface.send(request);
+			return Uni.createFrom().voidItem();
+		});
 
 	}
 

@@ -18,6 +18,7 @@ public class BaseRequest {
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
 	private int requestType;
+	private long sendTimestamp;
 
 	public BaseRequest() {
 
@@ -32,16 +33,24 @@ public class BaseRequest {
 		this.requestType = requestType;
 	}
 
-	public BaseRequest(BaseRequest request) {
-		this.id = request.id;
-		this.headers = request.headers;
-		this.requestPayload = request.requestPayload;
-		this.finalPayload = request.finalPayload;
-		this.requestType = request.requestType;
-	}
+//	public BaseRequest(BaseRequest request) {
+//		this.id = request.id;
+//		this.headers = request.headers;
+//		this.requestPayload = request.requestPayload;
+//		this.finalPayload = request.finalPayload;
+//		this.requestType = request.requestType;
+//	}
 
 	public int getRequestType() {
 		return requestType;
+	}
+
+	public long getSendTimestamp() {
+		return sendTimestamp;
+	}
+
+	public void setSendTimestamp(long sendTimestamp) {
+		this.sendTimestamp = sendTimestamp;
 	}
 
 	public void setRequestType(int requestType) {
@@ -109,8 +118,8 @@ public class BaseRequest {
 	 * @return the internal null value if the tenant is not present
 	 */
 	public String getTenant() {
-		if (headers.containsKey(NGSIConstants.TENANT_HEADER )) {
-			return headers.get(NGSIConstants.TENANT_HEADER ).get(0);
+		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
 		}
 		return AppConstants.INTERNAL_NULL_KEY;
 	}

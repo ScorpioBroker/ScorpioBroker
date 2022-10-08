@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,8 +18,7 @@ public abstract class RegistrySubscriptionMessagingBase {
 	@Inject
 	RegistrySubscriptionService subscriptionService;
 
-	public Uni<Void> baseHandleCsource(Message<BaseRequest> busMessage, long timestamp) {
-		BaseRequest message = busMessage.getPayload();
+	public Uni<Void> baseHandleCsource(BaseRequest message, long timestamp) {
 		String key = message.getId();
 		switch (message.getRequestType()) {
 			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
@@ -45,8 +43,7 @@ public abstract class RegistrySubscriptionMessagingBase {
 		return Uni.createFrom().nullItem();
 	}
 
-	public Uni<Void> baseHandleSubscription(Message<SubscriptionRequest> busMessage) {
-		SubscriptionRequest message = busMessage.getPayload();
+	public Uni<Void> baseHandleSubscription(SubscriptionRequest message) {
 		String key = message.getId();
 		switch (message.getRequestType()) {
 			case AppConstants.UPDATE_REQUEST:

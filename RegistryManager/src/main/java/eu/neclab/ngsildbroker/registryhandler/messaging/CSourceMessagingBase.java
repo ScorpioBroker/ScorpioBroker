@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +27,8 @@ public abstract class CSourceMessagingBase {
 	private ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 50, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
 
-	public Uni<Void> baseHandleEntity(Message<BaseRequest> mutinyMessage) {
-		BaseRequest message = mutinyMessage.getPayload();
+	public Uni<Void> baseHandleEntity(BaseRequest mutinyMessage) {
+		BaseRequest message = mutinyMessage;
 		executor.execute(new Runnable() {
 
 			@Override
@@ -42,8 +41,8 @@ public abstract class CSourceMessagingBase {
 					case AppConstants.CREATE_REQUEST:
 					case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 					case AppConstants.APPEND_REQUEST:
-						if( AUTO_REG_STATUS.equals("active")) {
-							cSourceService.handleEntityCreateOrUpdate(message);	
+						if (AUTO_REG_STATUS.equals("active")) {
+							cSourceService.handleEntityCreateOrUpdate(message);
 						}
 						break;
 					default:
@@ -51,7 +50,7 @@ public abstract class CSourceMessagingBase {
 				}
 			};
 		});
-		return Uni.createFrom().nullItem();
+		return Uni.createFrom().voidItem();
 	}
 
 }

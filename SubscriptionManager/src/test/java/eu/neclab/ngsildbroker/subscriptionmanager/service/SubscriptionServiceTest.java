@@ -3,8 +3,6 @@ package eu.neclab.ngsildbroker.subscriptionmanager.service;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 
-import io.agroal.api.AgroalDataSource;
-
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -141,7 +139,6 @@ public class SubscriptionServiceTest {
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
-		System.out.println("Print Sub -- " + s.getId());
 		subscription = new Subscription();
 		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		try {

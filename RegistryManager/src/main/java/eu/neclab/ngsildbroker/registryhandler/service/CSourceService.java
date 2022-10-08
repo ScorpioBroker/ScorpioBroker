@@ -228,9 +228,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				.transform(Unchecked.function(t -> {
 					return Tuple2.of(new DeleteCSourceRequest(null, headers, registrationId),
 							new DeleteCSourceRequest(t, headers, registrationId));
-				})).onItem()
-				.transformToUni(t -> cSourceInfoDAO.storeRegistryEntry(t.getItem1()).onItem().transformToUni(
-						i -> kafkaSenderInterface.send(new BaseRequest(t.getItem2())).onItem().transform(k -> true)));
+				})).onItem().transformToUni(t -> cSourceInfoDAO.storeRegistryEntry(t.getItem1()).onItem()
+						.transformToUni(i -> kafkaSenderInterface.send(t.getItem2()).onItem().transform(k -> true)));
 
 	}
 
@@ -496,7 +495,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	private Uni<Void> handleRequest(CSourceRequest request) {
-		return cSourceInfoDAO.storeRegistryEntry(request).onItem()
-				.transformToUni(t -> kafkaSenderInterface.send(new BaseRequest(request)));
+		return cSourceInfoDAO.storeRegistryEntry(request).onItem().transformToUni(t -> {
+			request.setSendTimestamp(System.currentTimeMillis());
+			return kafkaSenderInterface.send(request);
+		});
 	}
 }

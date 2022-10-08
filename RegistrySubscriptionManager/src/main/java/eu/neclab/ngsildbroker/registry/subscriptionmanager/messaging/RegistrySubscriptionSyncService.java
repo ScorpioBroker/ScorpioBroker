@@ -9,7 +9,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Message;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
@@ -37,7 +36,7 @@ public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager
 	RegistrySubscriptionService subService;
 
 	@Incoming(AppConstants.REG_SUB_SYNC_RETRIEVE_CHANNEL)
-	Uni<Void> listenForSubs(Message<SyncMessage> message) {
+	Uni<Void> listenForSubs(SyncMessage message) {
 //		Message<SubscriptionRequest> tmp;
 //		if (duplicate) {
 //			tmp = MicroServiceUtils.deepCopySubscriptionMessage(message);
@@ -45,7 +44,7 @@ public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager
 //			tmp = message;
 //		}
 		// listenForSubscriptionUpdates(tmp.getPayload(), tmp.getPayload().getId());
-		listenForSubscriptionUpdates(message.getPayload().getRequest(), message.getPayload().getSyncId());
+		listenForSubscriptionUpdates(message.getRequest(), message.getSyncId());
 		return Uni.createFrom().nullItem();
 	}
 

@@ -14,7 +14,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Message;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,22 +55,13 @@ public class MicroServiceUtils {
 		}
 	}
 
-	public static Message<BaseRequest> deepCopyRequestMessage(Message<BaseRequest> original) {
-		Message<BaseRequest> result = new Message<BaseRequest>() {
-			BaseRequest originalPayload = original.getPayload();
-
-			@Override
-			public BaseRequest getPayload() {
-				BaseRequest result = new BaseRequest(originalPayload);
-				result.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
-				result.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
-				result.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
-				return result;
-			}
-
-		};
+	public static BaseRequest deepCopyRequestMessage(BaseRequest originalPayload) {
+		BaseRequest result = new BaseRequest();
+		result.setId(originalPayload.getId());
+		result.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
+		result.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
+		result.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
 		return result;
-
 	}
 
 	private static Map<String, Object> deepCopyMap(Map<String, Object> original) {
@@ -129,27 +120,17 @@ public class MicroServiceUtils {
 		return result;
 	}
 
-	public static Message<SubscriptionRequest> deepCopySubscriptionMessage(Message<SubscriptionRequest> busMessage) {
-
-		Message<SubscriptionRequest> result = new Message<SubscriptionRequest>() {
-			SubscriptionRequest originalPayload = busMessage.getPayload();
-
-			@Override
-			public SubscriptionRequest getPayload() {
-				SubscriptionRequest tmp = new SubscriptionRequest();
-				tmp.setActive(originalPayload.isActive());
-				tmp.setContext(deppCopyList(originalPayload.getContext()));
-				tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
-				tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
-				tmp.setId(originalPayload.getId());
-				tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
-				tmp.setType(originalPayload.getRequestType());
-				tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
-				return tmp;
-			}
-
-		};
-		return result;
+	public static SubscriptionRequest deepCopySubscriptionMessage(SubscriptionRequest originalPayload) {
+		SubscriptionRequest tmp = new SubscriptionRequest();
+		tmp.setActive(originalPayload.isActive());
+		tmp.setContext(deppCopyList(originalPayload.getContext()));
+		tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
+		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+		tmp.setId(originalPayload.getId());
+		tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
+		tmp.setType(originalPayload.getRequestType());
+		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
+		return tmp;
 	}
 
 	public static HeadersMultiMap getHeaders(ArrayListMultimap<String, String> receiverInfo) {
@@ -160,27 +141,18 @@ public class MicroServiceUtils {
 		return result;
 	}
 
-	public static Message<SyncMessage> deepCopySyncMessage(Message<SyncMessage> message) {
-		Message<SyncMessage> result = new Message<SyncMessage>() {
-			SyncMessage originalPayload = message.getPayload();
-
-			@Override
-			public SyncMessage getPayload() {
-				SubscriptionRequest tmp = new SubscriptionRequest();
-				SubscriptionRequest originalPayload = this.originalPayload.getRequest();
-				tmp.setActive(originalPayload.isActive());
-				tmp.setContext(deppCopyList(originalPayload.getContext()));
-				tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
-				tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
-				tmp.setId(originalPayload.getId());
-				tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
-				tmp.setType(originalPayload.getRequestType());
-				tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
-				return new SyncMessage(this.originalPayload.getSyncId(), tmp);
-			}
-
-		};
-		return result;
+	public static SyncMessage deepCopySyncMessage(SyncMessage originalSync) {
+		SubscriptionRequest tmp = new SubscriptionRequest();
+		SubscriptionRequest originalPayload = originalSync.getRequest();
+		tmp.setActive(originalPayload.isActive());
+		tmp.setContext(deppCopyList(originalPayload.getContext()));
+		tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
+		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+		tmp.setId(originalPayload.getId());
+		tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
+		tmp.setType(originalPayload.getRequestType());
+		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
+		return new SyncMessage(originalSync.getSyncId(), tmp);
 	}
 
 }

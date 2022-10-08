@@ -167,7 +167,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public UniAndGroup2<CreateResult, Void> handleRequest(HistoryEntityRequest request) {
 		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request),
-				kafkaSenderInterface.send(new BaseRequest(request)));
+				kafkaSenderInterface.send(request));
 	}
 
 	@Override

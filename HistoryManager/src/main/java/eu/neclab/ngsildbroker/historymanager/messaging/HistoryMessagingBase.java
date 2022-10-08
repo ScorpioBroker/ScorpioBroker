@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,29 +26,29 @@ public abstract class HistoryMessagingBase {
 	@Inject
 	HistoryService historyService;
 
-	public Uni<Void> baseHandleEntity(Message<BaseRequest> message) {
-		
+	public Uni<Void> baseHandleEntity(BaseRequest message) {
+
 		entityExecutor.execute(new Runnable() {
 
 			@Override
 			public void run() {
 				HistoryEntityRequest request;
 				try {
-					switch (message.getPayload().getRequestType()) {
+					switch (message.getRequestType()) {
 						case AppConstants.APPEND_REQUEST:
-							logger.debug("Append got called: " + message.getPayload().getId());
-							request = new AppendHistoryEntityRequest(message.getPayload());
+							logger.debug("Append got called: " + message.getId());
+							request = new AppendHistoryEntityRequest(message);
 							break;
 						case AppConstants.CREATE_REQUEST:
-							logger.debug("Create got called: " + message.getPayload().getId());
-							request = new CreateHistoryEntityRequest(message.getPayload());
+							logger.debug("Create got called: " + message.getId());
+							request = new CreateHistoryEntityRequest(message);
 							break;
 						case AppConstants.UPDATE_REQUEST:
-							logger.debug("Update got called: " + message.getPayload().getId());
-							request = new UpdateHistoryEntityRequest(message.getPayload());
+							logger.debug("Update got called: " + message.getId());
+							request = new UpdateHistoryEntityRequest(message);
 							break;
 						case AppConstants.DELETE_REQUEST:
-							logger.debug("Delete got called: " + message.getPayload().getId());
+							logger.debug("Delete got called: " + message.getId());
 							request = null;
 							break;
 						default:
@@ -62,7 +61,6 @@ public abstract class HistoryMessagingBase {
 				} catch (Exception e) {
 					logger.error("Internal history recording failed", e.getMessage());
 				}
-
 			}
 		});
 		return Uni.createFrom().nullItem();

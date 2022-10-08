@@ -189,7 +189,6 @@ public interface EntryControllerFunctions {
 					result.addFail(i.getItem1());
 				}
 			});
-			System.out.println(fails);
 			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
 		});
 

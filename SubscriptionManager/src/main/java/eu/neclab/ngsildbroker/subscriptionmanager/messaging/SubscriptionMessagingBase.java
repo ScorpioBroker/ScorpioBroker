@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +25,7 @@ public abstract class SubscriptionMessagingBase {
 	@Inject
 	SubscriptionService subscriptionService;
 
-	public Uni<Void> baseHandleEntity(Message<BaseRequest> message, long timestamp) {
-
-		BaseRequest payload = new BaseRequest(message.getPayload());
+	public Uni<Void> baseHandleEntity(BaseRequest payload, long timestamp) {
 		entityExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -38,14 +35,14 @@ public abstract class SubscriptionMessagingBase {
 		return Uni.createFrom().nullItem();
 	}
 
-	public Uni<Void> baseHandleInternalNotification(Message<InternalNotification> message) {
+	public Uni<Void> baseHandleInternalNotification(InternalNotification message) {
 		notificationExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				handleBaseRequestInternalNotification(message.getPayload());
+				handleBaseRequestInternalNotification(message);
 			}
 		});
-		return Uni.createFrom().nullItem();
+		return Uni.createFrom().voidItem();
 	}
 
 	private void handleBaseRequestEntity(BaseRequest message, String key, long timeStamp) {
