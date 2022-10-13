@@ -33,6 +33,8 @@ public class UpdateEntityRequest extends EntityRequest {
 		try {
 			this.updateResult = updateFields(entityBody, resolved, attrName);
 
+		} catch (ResponseException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new ResponseException(ErrorType.NotFound, e.getMessage());
 		}
@@ -160,18 +162,31 @@ public class UpdateEntityRequest extends EntityRequest {
 	}
 
 	private void updateAttrib(Map<String, Object> originalEntry, Map<String, Object> updateEntry,
-			UpdateResult updateResult) {
+			UpdateResult updateResult) throws ResponseException {
 		for (Entry<String, Object> entry : updateEntry.entrySet()) {
 			String key = entry.getKey();
 			if (!originalEntry.containsKey(key)) {
 				updateResult.addToNotUpdated(key, "entry not found in attribute");
 			} else {
+				validateValue(key, originalEntry.get(key), entry.getValue());
 				originalEntry.put(key, entry.getValue());
 				updateResult.addToUpdated(key);
 			}
 		}
 	}
 
+	private void validateValue(String key, Object originalObj, Object newObj) throws ResponseException {
+		switch (key) {
+			case NGSIConstants.JSON_LD_TYPE:
+				if (!originalObj.equals(newObj)) {
+					throw new ResponseException(ErrorType.BadRequestData, "The type of an attribute cannot be changed");
+				}
+				break;
+			default:
+				break;
+		}
+	}
+	
 	public UpdateResult getUpdateResult() {
 		return updateResult;
 	}
