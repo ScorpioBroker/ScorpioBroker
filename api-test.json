@@ -12603,6 +12603,238 @@
 													"response": []
 												}
 											]
+										},
+										{
+											"name": "Interval Subscription with context in Link",
+											"item": [
+												{
+													"name": "Create Simple Entity Context in Link",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"var subId = pm.collectionVariables.get(\"subId\");\r",
+																	"\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"    \r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Link",
+																"value": "<https://fiware.github.io/data-models/full-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": " {\r\n        \"id\": \"urn:ngsi-ld:Vehicle:A500\",\r\n        \"type\": \"Vehicle\",\r\n        \"brandName\": {\r\n            \"type\": \"Property\",\r\n            \"value\": \"Mercedes\"\r\n        },\r\n        \"speed\": {\r\n            \"type\": \"Property\",\r\n            \"value\": 80\r\n        }\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Subscription With Id No Context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"var subId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"subId\", subId);\r",
+																	"var created = pm.collectionVariables.get(\"created\");\r",
+																	"var notificationServer = pm.globals.get(\"notificationserver-external\");\r",
+																	"console.log(notificationServer + \"/\" + subId)\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																	"});\r",
+																	"setTimeout(function(){\r",
+																	"    \r",
+																	"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																	"            pm.test(\"Check for notification\", function () {\r",
+																	"                var value = response.json();\r",
+																	"                console.log(\"Retrieving notifications from testserver\")\r",
+																	"                console.log(notificationServer + \"/\" + subId)\r",
+																	"                console.log(value);\r",
+																	"                pm.expect(value.length).to.greaterThan(2);\r",
+																	"                for(let i=0; i < 3; i++){\r",
+																	"                    notification = value[i].body;\r",
+																	"                    headers = value[i].headers;\r",
+																	"                    pm.expect(notification.type).to.eql(\"Notification\");\r",
+																	"                    pm.expect(notification).to.have.property(\"id\");\r",
+																	"                    pm.expect(notification.data.length).to.eql(1);\r",
+																	"                    var notificationData = notification.data[0];\r",
+																	"                    delete notificationData[\"createdAt\"];\r",
+																	"                    delete notificationData[\"modifiedAt\"];\r",
+																	"                    console.log(\"expected notification: \" + JSON.stringify(payloadBody));\r",
+																	"                    console.log(\"received notification: \" + JSON.stringify(notificationData));\r",
+																	"                    pm.expect(notificationData).to.eql(created);\r",
+																	"                }\r",
+																	"            });\r",
+																	"        });\r",
+																	"    }, 15000);\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Link",
+																"value": "<https://fiware.github.io/data-models/full-context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n  \"id\": \"urn:ngsi-ld:Subscription:withTimeInterval\",\r\n  \"type\": \"Subscription\",\r\n  \"entities\": [{\"type\": \"Vehicle\"}],\r\n  \"timeInterval\": 5,\r\n  \"throttling\": 0,\r\n  \"notification\": {\r\n    \"format\": \"normalized\",\r\n    \"attributes\": [\"speed\", \"brandName\"],\r\n    \"endpoint\": {\r\n      \"uri\": \"{{notificationserver}}\",\r\n      \"accept\": \"application/json\"\r\n    }\r\n  }\r\n}\r\n\r\n"
+														},
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Subcription",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
 										}
 									]
 								}
