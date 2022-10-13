@@ -50,7 +50,12 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 					storeEntry(entityRequest.getId(), null, null, now, attribIdPayload,
 							JsonUtils.toPrettyString(jsonElement), EntityTools.getInstanceId(jsonElement), false);
 				}
-			}
+			} else if(entry.getValue() instanceof Map) {
+                Map<String, Object> jsonElement = (Map<String, Object>) entry.getValue();
+                jsonElement = setCommonTemporalProperties(jsonElement, now);
+                storeEntry(entityRequest.getId(), null, null, now, attribIdPayload,
+                        JsonUtils.toPrettyString(jsonElement), EntityTools.getInstanceId(jsonElement), false);
+            }
 		}
 
 	}
