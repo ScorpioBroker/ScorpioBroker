@@ -356,7 +356,7 @@ public class HistoryControllerTest {
 	@Test
 	public void deleteTemporalEntityByAttrTest() {
 		try {
-			when(historyService.delete(any(), any(), any(), any(), any())).thenReturn(true);
+			when(historyService.delete(any(), any(), any(), any(), any(), any())).thenReturn(true);
 			ResultActions resultAction = mockMvc
 					.perform(MockMvcRequestBuilders
 							.delete("/ngsi-ld/v1/temporal/entities/{entityId}/attrs/{attrId}",
@@ -368,7 +368,7 @@ public class HistoryControllerTest {
 			MockHttpServletResponse response = mvcResult.getResponse();
 			int status = response.getStatus();
 			assertEquals(204, status);
-			verify(historyService, times(1)).delete(any(), any(), any(), any(), any());
+			verify(historyService, times(1)).delete(any(), any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -382,7 +382,7 @@ public class HistoryControllerTest {
 	@Test
 	public void deleteTemporalEntityByAttrInternalServerErrorTest() throws Exception {
 		try {
-			when(historyService.delete(any(), any(), any(), any(), any()))
+			when(historyService.delete(any(), any(), any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.InternalError, "Internal error"));
 
 			ResultActions resultAction = mockMvc
@@ -396,7 +396,7 @@ public class HistoryControllerTest {
 			MockHttpServletResponse response = mvcResult.getResponse();
 			int status = response.getStatus();
 			assertEquals(500, status);
-			verify(historyService, times(1)).delete(any(), any(), any(), any(), any());
+			verify(historyService, times(1)).delete(any(), any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -409,7 +409,7 @@ public class HistoryControllerTest {
 	@Test
 	public void deleteTemporalEntityByAttrBadRequestTest() {
 		try {
-			when(historyService.delete(any(), any(), any(), any(), any()))
+			when(historyService.delete(any(), any(), any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
 
 			ResultActions resultAction = mockMvc
@@ -423,7 +423,7 @@ public class HistoryControllerTest {
 			MockHttpServletResponse response = mvcResult.getResponse();
 			int status = response.getStatus();
 			assertEquals(400, status);
-			verify(historyService, times(1)).delete(any(), any(), any(), any(), any());
+			verify(historyService, times(1)).delete(any(), any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}
@@ -436,7 +436,7 @@ public class HistoryControllerTest {
 	@Test
 	public void deleteTemporalEntityByAttrResourceNotFoundTest() {
 		try {
-			when(historyService.delete(any(), any(), any(), any(), any()))
+			when(historyService.delete(any(), any(), any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.NotFound, "Resource not found."));
 
 			ResultActions resultAction = mockMvc
@@ -450,7 +450,7 @@ public class HistoryControllerTest {
 			MockHttpServletResponse response = mvcResult.getResponse();
 			int status = response.getStatus();
 			assertEquals(404, status);
-			verify(historyService, times(1)).delete(any(), any(), any(), any(), any());
+			verify(historyService, times(1)).delete(any(), any(), any(), any(), any(), any());
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
 		}

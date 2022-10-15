@@ -16,7 +16,7 @@ import eu.neclab.ngsildbroker.commons.serialization.MultiMapDeserializer;
 import eu.neclab.ngsildbroker.commons.serialization.MultiMapSerializer;
 
 public class BaseRequest {
-	
+
 	@JsonDeserialize(using = MultiMapDeserializer.class)
 	@JsonSerialize(using = MultiMapSerializer.class)
 	private ArrayListMultimap<String, String> headers;
@@ -24,6 +24,8 @@ public class BaseRequest {
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
 	private int requestType;
+
+	private int batchId = -1;
 
 	public BaseRequest() {
 
@@ -152,4 +154,14 @@ public class BaseRequest {
 			this.finalPayload = new HashMap<String, Object>(finalPayload);
 		}
 	}
+
+	public int getBatchId() {
+		return batchId;
+	}
+
+	public void setBatchId(int batchId) {
+		this.batchId = batchId;
+	}
+
+	
 }

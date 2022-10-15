@@ -18,6 +18,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
@@ -116,10 +119,17 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@Value("${scorpio.sync.check-time:1000}")
 	int checkTime;
 
+	int coreCount = Runtime.getRuntime().availableProcessors();
+	protected ThreadPoolExecutor notificationPool = new ThreadPoolExecutor(2, coreCount * 4, 60000, TimeUnit.MILLISECONDS,
+			new LinkedBlockingDeque<Runnable>());
+
+	BatchNotificationHandler batchNotificationHandler;
+
 	@PostConstruct
 	private void setup() {
 		setSyncTopic();
 		setSyncId();
+		batchNotificationHandler = new BatchNotificationHandler(this);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		subscriptionInfoDAO = getSubscriptionInfoDao();
 		try {
@@ -229,8 +239,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				subId2TimerTask.put(subscriptionRequest.getTenant(), subscription.getId().toString(), cancel);
 				watchDog.schedule(cancel, subscription.getExpiresAt() - System.currentTimeMillis());
 			}
-			new Thread() {
-				@SuppressWarnings("unchecked")
+			notificationPool.execute(new Runnable() {
+
+				@Override
 				public void run() {
 					if (sendInitialNotification) {
 						try {
@@ -240,14 +251,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 								for (String entry : temp) {
 									notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
 								}
-								sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
+								sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST, -1);
 							}
 						} catch (ResponseException | IOException e) {
 							logger.error("Failed to send initial notifcation", e);
 						}
 					}
-				};
-			}.start();
+				}
+			});
 		}
 		if (!internal) {
 			createSub(subscriptionRequest);
@@ -473,7 +484,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 		for (SubscriptionRequest subscription : subsToCheck) {
 			if (messageTime >= sub2CreationTime.get(subscription)) {
-				new Thread() {
+				notificationPool.execute(new Runnable() {
+
+					@Override
 					public void run() {
 						Map<String, Object> data = null;
 						try {
@@ -481,14 +494,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 							if (data != null) {
 								ArrayList<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
 								dataList.add(data);
-								sendNotification(dataList, subscription, methodType);
+								sendNotification(dataList, subscription, methodType, request.getBatchId());
 							}
 						} catch (ResponseException e) {
 							logger.error("Failed to handle new data for the subscriptions, cause: " + e.getMessage());
 						}
 					}
-
-				}.start();
+				});
 			}
 
 		}
@@ -496,14 +508,18 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	}
 
 	protected void sendNotification(List<Map<String, Object>> dataList, SubscriptionRequest subscription,
-			int triggerReason) {
+			int triggerReason, int batchId) {
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
 		if (handler == null) {
 			logger.info("Failed to send notification for protocol: " + endpointProtocol);
 			logger.info(subscription.getSubscription().getNotification().getEndPoint().getUri().toString());
 		} else {
-			handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+			if (batchId == -1) {
+				handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+			} else {
+				batchNotificationHandler.addDataToBatch(batchId, handler, subscription, dataList, triggerReason);
+			}
 		}
 
 	}
@@ -785,5 +801,15 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 			});
 		}
+	}
+
+	public void finalizeBatch(int batchId) {
+		notificationPool.execute(new Runnable() {
+			@Override
+			public void run() {
+				batchNotificationHandler.finalizeBatch(batchId);
+			}
+		});
+
 	}
 }

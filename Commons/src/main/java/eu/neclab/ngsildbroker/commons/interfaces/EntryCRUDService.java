@@ -12,12 +12,26 @@ public interface EntryCRUDService {
 	UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> entry)
 			throws ResponseException, Exception;
 
+	UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> entry,
+			int batchId) throws ResponseException, Exception;
+
 	UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> entry,
 			String[] options) throws ResponseException, Exception;
+
+	UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> entry,
+			String[] options, int batchId) throws ResponseException, Exception;
 
 	CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception;
 
+	CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved, int batchId)
+			throws ResponseException, Exception;
+
 	boolean deleteEntry(ArrayListMultimap<String, String> headers, String entryId) throws ResponseException, Exception;
+
+	boolean deleteEntry(ArrayListMultimap<String, String> headers, String entryId, int batchId)
+			throws ResponseException, Exception;
+
+	void finalizeBatch(int batchId);
 
 }
