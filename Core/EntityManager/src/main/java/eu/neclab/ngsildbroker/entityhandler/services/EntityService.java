@@ -93,6 +93,10 @@ public class EntityService implements EntryCRUDService {
 		kafkaExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
+				System.err.println(request.getRequestType());
+				System.err.println(request.getBatchId());
+				System.out.println();
+				System.out.println();
 				kafkaTemplate.send(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
 
 			}
@@ -298,6 +302,7 @@ public class EntityService implements EntryCRUDService {
 		BaseRequest request = new BaseRequest();
 		request.setRequestType(AppConstants.FINALIZE_BATCH_REQUEST);
 		request.setBatchId(batchId);
+		request.setId("" + batchId);
 		sendToKafka(request);
 	}
 

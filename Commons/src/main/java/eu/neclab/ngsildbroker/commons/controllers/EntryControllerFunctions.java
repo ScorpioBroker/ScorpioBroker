@@ -8,6 +8,8 @@ import java.util.Random;
 
 import org.springframework.http.HttpHeaders;
 import javax.servlet.http.HttpServletRequest;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -16,6 +18,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -33,7 +36,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	static Random random = new Random();
-
+	static Logger logger = LoggerFactory.getLogger(EntryControllerFunctions.class);
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> updateMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, int maxUpdateBatch, String options, int payloadType) {
@@ -193,7 +196,11 @@ public interface EntryControllerFunctions {
 		}
 		if (result.getFails().isEmpty() && !result.getSuccess().isEmpty()) {
 			status = okStatus;
-			body = result.getSuccess().toString();
+			try {
+				body = JsonUtils.toPrettyString(result.getSuccess());
+			} catch (Exception e) {
+				logger.error("Failed to generate reply body for batch result.", e);
+			} 
 		}
 		return ResponseEntity.status(status).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 				.body(body);

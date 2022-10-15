@@ -46,6 +46,7 @@ public class BaseRequest {
 		this.requestPayload = request.requestPayload;
 		this.finalPayload = request.finalPayload;
 		this.requestType = request.requestType;
+		this.batchId = request.batchId;
 	}
 
 	public int getRequestType() {
@@ -117,6 +118,9 @@ public class BaseRequest {
 	 * @return the internal null value if the tenant is not present
 	 */
 	public String getTenant() {
+		if (headers == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
 		if (headers.containsKey(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK)) {
 			return headers.get(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK).get(0);
 		}
@@ -163,5 +167,4 @@ public class BaseRequest {
 		this.batchId = batchId;
 	}
 
-	
 }
