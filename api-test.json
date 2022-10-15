@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "f149fb1f-9df1-4b11-98bb-ca46a66bbce9",
+		"_postman_id": "b1cdbab5-8756-4799-a20b-0e219efe9f12",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -12467,7 +12467,7 @@
 																	"var subId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"subId\", subId);\r",
 																	"var created = pm.collectionVariables.get(\"created\");\r",
-																	"var notificationServer = pm.globals.get(\"notificationserver-external\");\r",
+																	"var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
 																	"console.log(notificationServer + \"/\" + subId)\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
@@ -12694,7 +12694,7 @@
 																	"var subId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"subId\", subId);\r",
 																	"var created = pm.collectionVariables.get(\"created\");\r",
-																	"var notificationServer = pm.globals.get(\"notificationserver-external\");\r",
+																	"var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
 																	"console.log(notificationServer + \"/\" + subId)\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
@@ -12751,7 +12751,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n  \"id\": \"urn:ngsi-ld:Subscription:withTimeInterval\",\r\n  \"type\": \"Subscription\",\r\n  \"entities\": [{\"type\": \"Vehicle\"}],\r\n  \"timeInterval\": 5,\r\n  \"throttling\": 0,\r\n  \"notification\": {\r\n    \"format\": \"normalized\",\r\n    \"attributes\": [\"speed\", \"brandName\"],\r\n    \"endpoint\": {\r\n      \"uri\": \"{{notificationserver}}\",\r\n      \"accept\": \"application/json\"\r\n    }\r\n  }\r\n}\r\n\r\n"
+															"raw": "{\r\n  \"id\": \"urn:ngsi-ld:Subscription:withTimeInterval123\",\r\n  \"type\": \"Subscription\",\r\n  \"entities\": [{\"type\": \"Vehicle\"}],\r\n  \"timeInterval\": 5,\r\n  \"throttling\": 0,\r\n  \"notification\": {\r\n    \"format\": \"normalized\",\r\n    \"attributes\": [\"speed\", \"brandName\"],\r\n    \"endpoint\": {\r\n      \"uri\": \"{{notificationserver}}\",\r\n      \"accept\": \"application/json\"\r\n    }\r\n  }\r\n}\r\n\r\n"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
