@@ -3,9 +3,14 @@ package eu.neclab.ngsildbroker.commons.subscriptionbase;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
+
+import org.springframework.beans.factory.annotation.Value;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
@@ -15,6 +20,12 @@ import reactor.util.function.Tuples;
 public class BatchNotificationHandler {
 
 	private BaseSubscriptionService subService;
+	private Timer watchDog = new Timer(true);
+	private Map<Integer, MyTask> batchId2WatchTask = Maps.newHashMap();
+
+	@Value("${scorpio.subscription.batchevactime:300000}")
+	int waitTimeForEvac;
+
 	Table<Integer, SubscriptionRequest, Tuple3<NotificationHandler, List<Map<String, Object>>, Integer>> batches = HashBasedTable
 			.create();
 
@@ -32,6 +43,13 @@ public class BatchNotificationHandler {
 		} else {
 			entry.getT2().addAll(dataList);
 		}
+		MyTask task = batchId2WatchTask.get(batchId);
+		if (task == null) {
+			task = new MyTask(batchId);
+		} else {
+			task.cancel();
+		}
+		watchDog.schedule(task, 60000);
 
 	}
 
@@ -45,5 +63,20 @@ public class BatchNotificationHandler {
 					entry.getKey());
 		}
 		batches.row(batchId).clear();
+		batchId2WatchTask.remove(batchId).cancel();
+	}
+
+	private class MyTask extends TimerTask {
+		private int batchId;
+
+		public MyTask(int batchId) {
+			this.batchId = batchId;
+		}
+
+		@Override
+		public void run() {
+			finalizeBatch(batchId);
+		}
+
 	}
 }
