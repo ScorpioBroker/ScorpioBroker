@@ -22,6 +22,18 @@ public interface EntryCRUDService {
 
 	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId);
 
+	Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> entry,
+			int batchId);
+
+	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, String[] options, int batchId);
+
+	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved, int batchId);
+
+	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, int batchId);
+
+	Uni<Void> finalizeBatch(int batchId);
+	
 	public static Uni<Map<String, Object>> validateIdAndGetBody(String entityId, String tenantId, StorageDAO dao) {
 		// null id check
 		if (entityId == null) {

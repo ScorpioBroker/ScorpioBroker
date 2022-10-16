@@ -58,7 +58,8 @@ public class EntityService implements EntryCRUDService {
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			int batchId) {
 		logger.debug("createMessage() :: started");
 		EntityRequest request;
 		try {
@@ -66,10 +67,15 @@ public class EntityService implements EntryCRUDService {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
+		request.setBatchId(batchId);
 		return handleRequest(request).onItem().transform(v -> {
 			logger.debug("createMessage() :: completed");
 			return new CreateResult(request.getId(), true);
 		});
+	}
+
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+		return createEntry(headers, resolved, -1);
 	}
 
 	/**
@@ -83,7 +89,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws IOException
 	 */
 	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved) {
+			Map<String, Object> resolved, int batchId) {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
 		String tenantid = HttpUtils.getInternalTenant(headers);
@@ -95,11 +101,17 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().item(t.getUpdateResult());
 					}
+					t.setBatchId(batchId);
 					return handleRequest(t).onItem().transform(v -> {
 						logger.trace("partialUpdateEntity() :: completed");
 						return t.getUpdateResult();
 					});
 				});
+	}
+
+	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved) {
+		return updateEntry(headers, entityId, resolved, -1);
 	}
 
 	/**
@@ -112,7 +124,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws IOException
 	 */
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options) {
+			Map<String, Object> resolved, String[] options, int batchId) {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
@@ -129,6 +141,7 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().item(t.getUpdateResult());
 					}
+					t.setBatchId(batchId);
 					return handleRequest(t).onItem().transform(v -> {
 						logger.trace("partialUpdateEntity() :: completed");
 						return t.getUpdateResult();
@@ -136,7 +149,12 @@ public class EntityService implements EntryCRUDService {
 				});
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
+	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved, String[] options) {
+		return appendToEntry(headers, entityId, resolved, options, -1);
+	}
+
+	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, int batchId) {
 		logger.trace("deleteEntity() :: started");
 		if (entityId == null) {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
@@ -152,19 +170,17 @@ public class EntityService implements EntryCRUDService {
 					temp.setId(t.getId());
 					temp.setRequestPayload(t.getOldEntity());
 					temp.setFinalPayload(t.getOldEntity());
-
+					temp.setBatchId(batchId);
 					return store.onItem().transform(v -> {
-						new Thread() {
-							@Override
-							public void run() {
-								kafkaSenderInterface.send(temp);
-							}
-						}.start();
-
+						kafkaSenderInterface.send(temp);
 						return true;
 					});
 
 				});
+	}
+
+	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
+		return deleteEntry(headers, entityId, -1);
 	}
 
 	public Uni<UpdateResult> partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId,
@@ -225,6 +241,15 @@ public class EntityService implements EntryCRUDService {
 			return Uni.createFrom().voidItem();
 		});
 
+	}
+
+	@Override
+	public Uni<Void> finalizeBatch(int batchId) {
+		BaseRequest request = new BaseRequest();
+		request.setRequestType(AppConstants.FINALIZE_BATCH_REQUEST);
+		request.setBatchId(batchId);
+		request.setId("" + batchId);
+		return Uni.createFrom().completionStage(kafkaSenderInterface.send(request));
 	}
 
 }

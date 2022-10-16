@@ -32,7 +32,7 @@ public class IntervalNotificationHandler {
 	}
 
 	public void addSub(SubscriptionRequest subscriptionRequest) {
-		MyTimer timer = new MyTimer(subscriptionRequest);
+		MyTimer timer = new MyTimer(subscriptionRequest, Notification.copy(baseNotification));
 		synchronized (id2TimerTask) {
 			id2TimerTask.put(subscriptionRequest.getSubscription().getId().toString(), timer);
 		}
@@ -51,9 +51,13 @@ public class IntervalNotificationHandler {
 	private class MyTimer extends TimerTask {
 
 		private SubscriptionRequest subscriptionRequest;
+		private Notification notification;
 
-		public MyTimer(SubscriptionRequest subscriptionRequest) {
+		public MyTimer(SubscriptionRequest subscriptionRequest, Notification base) {
 			this.subscriptionRequest = subscriptionRequest;
+			this.notification = base;
+			notification.setSubscriptionId(subscriptionRequest.getSubscription().getId());
+			notification.setContext(subscriptionRequest.getContext());
 		}
 
 		public void run() {
@@ -65,10 +69,10 @@ public class IntervalNotificationHandler {
 				for (Map<String, Object> entry : entries) {
 					dataList.add(entry);
 				}
-				baseNotification.setSubscriptionId(subscriptionRequest.getSubscription().getId());
-				baseNotification.setNotifiedAt(System.currentTimeMillis());
-				baseNotification.setData(dataList);
-				notificationHandler.notify(baseNotification, subscriptionRequest);
+
+				notification.setNotifiedAt(System.currentTimeMillis());
+				notification.setData(dataList);
+				notificationHandler.notify(notification, subscriptionRequest);
 				return null;
 			})).onFailure().call(e -> {
 				logger.error("Failed to read database entry", e);

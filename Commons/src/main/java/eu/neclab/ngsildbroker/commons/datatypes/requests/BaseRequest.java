@@ -19,6 +19,7 @@ public class BaseRequest {
 	protected Map<String, Object> finalPayload;
 	private int requestType;
 	private long sendTimestamp;
+	private int batchId = -1;
 
 	public BaseRequest() {
 
@@ -63,6 +64,14 @@ public class BaseRequest {
 
 	public void setHeaders(ArrayListMultimap<String, String> headers) {
 		this.headers = headers;
+	}
+
+	public int getBatchId() {
+		return batchId;
+	}
+
+	public void setBatchId(int batchId) {
+		this.batchId = batchId;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

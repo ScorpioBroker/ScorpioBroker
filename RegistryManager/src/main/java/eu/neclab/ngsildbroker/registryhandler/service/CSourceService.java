@@ -152,16 +152,25 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 	}
 
-	@Override
 	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> entry) {
+		return updateEntry(headers, registrationId, entry, -1);
+	}
+
+	@Override
+	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry, int batchId) {
 		throw new MethodNotFoundException("not supported in registry");
 	}
 
-	// need to be check and change
-	@Override
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> entry, String[] options) {
+		return appendToEntry(headers, registrationId, entry, options, -1);
+	}
+
+	@Override
+	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry, String[] options, int batchId) {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
@@ -191,8 +200,13 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				});
 	}
 
-	@Override
 	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+		return createEntry(headers, resolved, -1);
+	}
+
+	@Override
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			int batchId) {
 
 		logger.debug("createMessage() :: started");
 		CSourceRequest request;
@@ -216,8 +230,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	}
 
-	@Override
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId) {
+		return deleteEntry(headers, registrationId, -1);
+	}
+
+	@Override
+	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId, int batchId) {
 		logger.trace("deleteEntity() :: started");
 		if (registrationId == null) {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
@@ -499,5 +517,10 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			request.setSendTimestamp(System.currentTimeMillis());
 			return kafkaSenderInterface.send(request);
 		});
+	}
+
+	@Override
+	public Uni<Void> finalizeBatch(int batchId) {
+		return Uni.createFrom().voidItem();
 	}
 }

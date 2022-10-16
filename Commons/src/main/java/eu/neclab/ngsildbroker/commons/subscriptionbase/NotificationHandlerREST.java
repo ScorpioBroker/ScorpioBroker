@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
@@ -18,6 +19,9 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 class NotificationHandlerREST extends BaseNotificationHandler {
 	private WebClient webClient;
+	
+	@ConfigProperty(name = "scorpio.subscription.maxretries", defaultValue = "5")
+	int maxRetries;
 
 	NotificationHandlerREST(WebClient webClient) {
 		this.webClient = webClient;
@@ -52,7 +56,7 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 		logger.debug("should send notification now");
 		logger.debug(httpReq.toString());
 		logger.debug("Content length: " + compacted.getEntity().length());
-		int retryCount = 5;
+		int retryCount = maxRetries;
 		httpReq.sendBuffer(Buffer.buffer(compacted.getEntity())).onFailure().retry()
 				.withBackOff(Duration.ofSeconds(5), Duration.ofSeconds(60)).atMost(retryCount).onItem()
 				.transform(result -> {

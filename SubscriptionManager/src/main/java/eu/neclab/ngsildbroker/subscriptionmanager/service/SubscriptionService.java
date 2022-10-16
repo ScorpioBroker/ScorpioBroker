@@ -200,18 +200,12 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	public void remoteNotify(String id, Map<String, Object> notification) {
 
-		new Thread() {
-			@Override
-			public void run() {
-				SubscriptionRequest subscription = remoteNotifyCallbackId2InternalSub.get(id);
-				if (subscription == null) {
-					return;
-				}
-				sendNotification((List<Map<String, Object>>) notification.get(NGSIConstants.NGSI_LD_DATA), subscription,
-						AppConstants.UPDATE_REQUEST);
-			}
-		}.start();
-
+		SubscriptionRequest subscription = remoteNotifyCallbackId2InternalSub.get(id);
+		if (subscription == null) {
+			return;
+		}
+		sendNotification((List<Map<String, Object>>) notification.get(NGSIConstants.NGSI_LD_DATA), subscription,
+				AppConstants.UPDATE_REQUEST, -1);
 	}
 
 	public void handleRegistryNotification(InternalNotification notification) {

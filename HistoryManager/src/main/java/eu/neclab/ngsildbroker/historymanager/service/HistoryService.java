@@ -60,11 +60,16 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
-		return createTemporalEntity(headers, resolved, false);
+		return createEntry(headers, resolved, -1);
+	}
+
+	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			int batchId) {
+		return createTemporalEntity(headers, resolved, false, batchId);
 	}
 
 	Uni<CreateResult> createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			boolean fromEntity) {
+			boolean fromEntity, int batchId) {
 		logger.trace("creating temporal entity");
 		CreateHistoryEntityRequest request;
 		try {
@@ -72,18 +77,22 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		return historyDAO.isTempEntityExist(request.getId(), HttpUtils.getInternalTenant(headers)
-				).onItem().transform(Unchecked.function(t -> {
-			return t;
-		})).onItem().transformToUni(t2 -> {
-			return handleRequest(request).combinedWith((t, u) -> {
-				logger.debug("createMessage() :: completed");
-				return  new CreateResult(request.getId(), Boolean.parseBoolean(t2.toString()));
-			});
-		});
+		return historyDAO.isTempEntityExist(request.getId(), HttpUtils.getInternalTenant(headers)).onItem()
+				.transform(Unchecked.function(t -> {
+					return t;
+				})).onItem().transformToUni(t2 -> {
+					return handleRequest(request).combinedWith((t, u) -> {
+						logger.debug("createMessage() :: completed");
+						return new CreateResult(request.getId(), Boolean.parseBoolean(t2.toString()));
+					});
+				});
 	}
 
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
+		return deleteEntry(headers, entityId, -1);
+	}
+
+	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, int batchId) {
 		return delete(headers, entityId, null, null, null);
 	}
 
@@ -114,6 +123,11 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) {
+		return appendToEntry(headers, entityId, resolved, options, -1);
+	}
+
+	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved, String[] options, int batchId) {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transform(Unchecked.function(t -> {
 			return new AppendHistoryEntityRequest(headers, resolved, entityId);
@@ -161,13 +175,18 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Override
 	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry) {
+		return updateEntry(headers, entityId, entry, -1);
+	}
+
+	@Override
+	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, int batchId) {
 		// History can't do this
 		throw new MethodNotFoundException();
 	}
 
 	public UniAndGroup2<CreateResult, Void> handleRequest(HistoryEntityRequest request) {
-		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request),
-				kafkaSenderInterface.send(request));
+		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request), kafkaSenderInterface.send(request));
 	}
 
 	@Override
@@ -178,6 +197,11 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Override
 	protected StorageDAO getCsourceDAO() {
 		return null;
+	}
+
+	@Override
+	public Uni<Void> finalizeBatch(int batchId) {
+		return Uni.createFrom().voidItem();
 	}
 
 }

@@ -126,11 +126,17 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 
+	@ConfigProperty(name = "scorpio.subscription.batchnotifications", defaultValue = "true")
+	boolean batchHandling;
+
+	BatchNotificationHandler batchNotificationHandler;
+
 	@PostConstruct
 	void setup() {
 		JsonLdProcessor.init(coreContext);
 		setSyncId();
 		kafkaSender = getSyncChannelSender();
+		batchNotificationHandler = new BatchNotificationHandler(this);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		webClient = WebClient.create(vertx);
 		subscriptionInfoDAO = getSubscriptionInfoDao();
@@ -261,25 +267,21 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 					watchDog.schedule(cancel, subscription.getExpiresAt() - System.currentTimeMillis());
 				}
 
-				new Thread() {
-					public void run() {
-						if (sendInitialNotification) {
-							subscriptionInfoDAO.getEntriesFromSub(t).onItem().transform(Unchecked.function(t2 -> {
-								if (!t2.isEmpty()) {
-									List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
-									for (Map<String, Object> entry : t2) {
-										notifcation.add(entry);
-									}
-									sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
-								}
-								return null;
-							})).onFailure().recoverWithItem(e -> {
-								logger.error("Failed to send initial notifcation", e);
-								return null;
-							}).await().indefinitely();
+				if (sendInitialNotification) {
+					subscriptionInfoDAO.getEntriesFromSub(t).onItem().transform(Unchecked.function(t2 -> {
+						if (!t2.isEmpty()) {
+							List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
+							for (Map<String, Object> entry : t2) {
+								notifcation.add(entry);
+							}
+							sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST, -1);
 						}
-					}
-				}.start();
+						return null;
+					})).onFailure().recoverWithItem(e -> {
+						logger.error("Failed to send initial notifcation", e);
+						return null;
+					}).await().indefinitely();
+				}
 			}
 			return t;
 		}).onItem().transformToUni(t -> {
@@ -526,33 +528,30 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 		for (SubscriptionRequest subscription : subsToCheck) {
 			if (messageTime >= sub2CreationTime.get(subscription)) {
-				new Thread() {
-					public void run() {
-						Map<String, Object> data = null;
-						try {
-							data = generateDataFromBaseOp(request, subscription, methodType);
-							if (data != null) {
-								ArrayList<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
-								dataList.add(data);
-								sendNotification(dataList, subscription, methodType);
-							}
-						} catch (ResponseException e) {
-							logger.error("Failed to handle new data for the subscriptions, cause: " + e.getMessage());
-						}
+				Map<String, Object> data = null;
+				try {
+					data = generateDataFromBaseOp(request, subscription, methodType);
+					if (data != null) {
+						ArrayList<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
+						dataList.add(data);
+						sendNotification(dataList, subscription, methodType, request.getBatchId());
 					}
-
-				}.start();
+				} catch (ResponseException e) {
+					logger.error("Failed to handle new data for the subscriptions, cause: " + e.getMessage());
+				}
 			}
-
 		}
-
 	}
 
 	protected void sendNotification(List<Map<String, Object>> dataList, SubscriptionRequest subscription,
-			int triggerReason) {
+			int triggerReason, int batchId) {
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
-		handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+		if (batchId == -1 || !batchHandling) {
+			handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+		} else {
+			batchNotificationHandler.addDataToBatch(batchId, handler, subscription, dataList, triggerReason);
+		}
 	}
 
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {
@@ -818,5 +817,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 			});
 		}
+	}
+
+	public void finalizeBatch(int batchId) {
+		batchNotificationHandler.finalizeBatch(batchId);
 	}
 }
