@@ -59,7 +59,7 @@ public class IntervalNotificationHandler {
 
 		@SuppressWarnings("unchecked")
 		public void run() {
-			if(!subscriptionRequest.isActive()) {
+			if (!subscriptionRequest.isActive()) {
 				return;
 			}
 			try {
@@ -71,6 +71,7 @@ public class IntervalNotificationHandler {
 				baseNotification.setSubscriptionId(subscriptionRequest.getSubscription().getId());
 				baseNotification.setNotifiedAt(System.currentTimeMillis());
 				baseNotification.setData(dataList);
+				baseNotification.setContext(subscriptionRequest.getContext());
 				notificationHandler.notify(baseNotification, subscriptionRequest);
 			} catch (Exception e) {
 				logger.error("Failed to read database entry");
