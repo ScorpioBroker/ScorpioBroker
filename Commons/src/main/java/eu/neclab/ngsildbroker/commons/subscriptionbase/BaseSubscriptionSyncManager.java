@@ -20,8 +20,6 @@ import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
-import eu.neclab.ngsildbroker.commons.datatypes.HandingOfAnnouncement;
-import eu.neclab.ngsildbroker.commons.datatypes.TakingAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.AnnouncementMessage;

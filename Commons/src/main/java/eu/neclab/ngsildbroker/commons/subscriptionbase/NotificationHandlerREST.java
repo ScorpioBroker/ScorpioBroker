@@ -7,6 +7,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
@@ -53,6 +54,9 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 
 	private RestTemplate restTemplate;
 
+	@Value("${scorpio.subscription.maxretries:5}")
+	int maxRetries;
+
 	NotificationHandlerREST(SubscriptionInfoDAOInterface baseSubscriptionInfoDAO, RestTemplate restTemplate) {
 		super(baseSubscriptionInfoDAO);
 		this.restTemplate = restTemplate;
@@ -76,7 +80,7 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 			}
 		}
 		req = req.bodyByteArray(compacted.getBody().getBytes());
-		int retryCount = 5;
+		int retryCount = maxRetries;
 		boolean success = false;
 		ThreadLocalRandom random = ThreadLocalRandom.current();
 		while (true) {

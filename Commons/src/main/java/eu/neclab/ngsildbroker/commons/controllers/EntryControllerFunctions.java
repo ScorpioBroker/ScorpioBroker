@@ -9,7 +9,6 @@ import java.util.Random;
 import org.springframework.http.HttpHeaders;
 import javax.servlet.http.HttpServletRequest;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
