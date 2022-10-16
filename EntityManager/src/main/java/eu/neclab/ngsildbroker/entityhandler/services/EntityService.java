@@ -171,6 +171,7 @@ public class EntityService implements EntryCRUDService {
 					temp.setRequestPayload(t.getOldEntity());
 					temp.setFinalPayload(t.getOldEntity());
 					temp.setBatchId(batchId);
+					temp.setRequestType(AppConstants.DELETE_REQUEST);
 					return store.onItem().transform(v -> {
 						kafkaSenderInterface.send(temp);
 						return true;
