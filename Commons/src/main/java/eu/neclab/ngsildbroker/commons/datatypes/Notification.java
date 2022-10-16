@@ -200,9 +200,15 @@ public class Notification {
 		Notification result = new Notification();
 		result.id = baseNotification.id;
 		result.contentType = baseNotification.contentType;
-		result.context = List.copyOf(baseNotification.context);
-		result.data = List.copyOf(baseNotification.data);
-		result.headers = ArrayListMultimap.create(baseNotification.headers);
+		if (baseNotification.context != null) {
+			result.context = List.copyOf(baseNotification.context);
+		}
+		if (baseNotification.data != null) {
+			result.data = List.copyOf(baseNotification.data);
+		}
+		if (baseNotification.headers != null) {
+			result.headers = ArrayListMultimap.create(baseNotification.headers);
+		}
 		result.notifiedAt = baseNotification.notifiedAt;
 		result.subscriptionId = baseNotification.subscriptionId;
 		result.triggerReason = baseNotification.triggerReason;
