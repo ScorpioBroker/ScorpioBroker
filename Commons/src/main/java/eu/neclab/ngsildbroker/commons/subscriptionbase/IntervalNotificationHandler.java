@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
 public class IntervalNotificationHandler {
@@ -23,7 +25,7 @@ public class IntervalNotificationHandler {
 	private Timer executor = new Timer(true);
 	private SubscriptionInfoDAOInterface infoDAO;
 	private Notification baseNotification;
-
+	
 	public IntervalNotificationHandler(NotificationHandler notificationHandler, SubscriptionInfoDAOInterface infoDAO,
 			Notification baseNotification) {
 		this.notificationHandler = notificationHandler;
@@ -64,20 +66,25 @@ public class IntervalNotificationHandler {
 			if (!subscriptionRequest.isActive()) {
 				return;
 			}
-			infoDAO.getEntriesFromSub(subscriptionRequest).onItem().call(Unchecked.function(entries -> {
-				List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
-				for (Map<String, Object> entry : entries) {
-					dataList.add(entry);
-				}
-
-				notification.setNotifiedAt(System.currentTimeMillis());
-				notification.setData(dataList);
-				notificationHandler.notify(notification, subscriptionRequest);
-				return null;
-			})).onFailure().call(e -> {
-				logger.error("Failed to read database entry", e);
-				return null;
-			}).await().indefinitely();
+			
+			List<Map<String, Object>> data = infoDAO.getEntriesFromSub(subscriptionRequest).runSubscriptionOn(Infrastructure.getDefaultExecutor())
+					.onItem().transform(entries -> {
+						List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
+						for (Map<String, Object> entry : entries) {
+							dataList.add(entry);
+						}
+						return dataList;
+					}).await().indefinitely();
+			notification.setNotifiedAt(System.currentTimeMillis());
+			notification.setData(data);
+			notificationHandler.notify(notification, subscriptionRequest);
+			
+//						
+//						return true;
+//					})).runSubscriptionOn(Infrastructure.getDefaultExecutor()).onFailure().recoverWithItem(e -> {
+//						logger.error("Failed to read database entry", e);
+//						return true;
+//					}).await().indefinitely();
 
 		}
 
