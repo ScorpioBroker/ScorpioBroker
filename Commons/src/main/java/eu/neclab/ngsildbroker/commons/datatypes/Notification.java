@@ -163,9 +163,15 @@ public class Notification {
 	public static Notification copy(Notification baseNotification) {
 		Notification result = new Notification();
 		result.id = baseNotification.id;
-		result.context = List.copyOf(baseNotification.context);
-		result.data = List.copyOf(baseNotification.data);
-		result.headers = ArrayListMultimap.create(baseNotification.headers);
+		if (baseNotification.context != null) {
+			result.context = List.copyOf(baseNotification.context);
+		}
+		if (baseNotification.data != null) {
+			result.data = List.copyOf(baseNotification.data);
+		}
+		if (baseNotification.headers != null) {
+			result.headers = ArrayListMultimap.create(baseNotification.headers);
+		}
 		result.notifiedAt = baseNotification.notifiedAt;
 		result.subscriptionId = baseNotification.subscriptionId;
 		result.triggerReason = baseNotification.triggerReason;
