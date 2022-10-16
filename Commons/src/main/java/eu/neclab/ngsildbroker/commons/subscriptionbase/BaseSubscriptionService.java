@@ -125,6 +125,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	BatchNotificationHandler batchNotificationHandler;
 
+	@Value("${scorpio.subscription.batchnotifications:true}")
+	boolean batchHandling;
+
 	@PostConstruct
 	private void setup() {
 		setSyncTopic();
@@ -515,7 +518,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			logger.info("Failed to send notification for protocol: " + endpointProtocol);
 			logger.info(subscription.getSubscription().getNotification().getEndPoint().getUri().toString());
 		} else {
-			if (batchId == -1) {
+			if (batchId == -1 || !batchHandling) {
 				handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
 			} else {
 				batchNotificationHandler.addDataToBatch(batchId, handler, subscription, dataList, triggerReason);
