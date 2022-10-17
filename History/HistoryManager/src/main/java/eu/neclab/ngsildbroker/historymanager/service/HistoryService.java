@@ -62,13 +62,19 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
-		return createTemporalEntity(headers, resolved, false);
+		return createEntry(headers, resolved, -1);
+	}
+
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			int batchId) throws ResponseException, Exception {
+		return createTemporalEntity(headers, resolved, false, batchId);
 	}
 
 	CreateResult createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			boolean fromEntity) throws ResponseException, Exception {
+			boolean fromEntity, int batchId) throws ResponseException, Exception {
 
 		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
+		request.setBatchId(batchId);
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		boolean created = true;
 		try {
@@ -104,11 +110,16 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId)
 			throws ResponseException, Exception {
-		return delete(headers, entityId, null, null, null);
+		return deleteEntry(headers, entityId, -1);
+	}
+
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId, int batchId)
+			throws ResponseException, Exception {
+		return delete(headers, entityId, null, null, null, batchId);
 	}
 
 	public boolean delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
-			String instanceId, Context linkHeaders) throws ResponseException, Exception {
+			String instanceId, Context linkHeaders, int batchId) throws ResponseException, Exception {
 		logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
 
 		String resolvedAttrId = null;
@@ -118,14 +129,14 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		}
 		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId,
 				entityId);
+		request.setBatchId(batchId);
 		handleRequest(request);
 		return true;
 	}
 
-	// need to be check and change
 	// endpoint "/entities/{entityId}/attrs"
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
+			Map<String, Object> resolved, String[] options, int batchId) throws ResponseException, Exception {
 		// if (!this.entityIds.containsEntry(HttpUtils.getInternalTenant(headers),
 		// entityId)) {
 		// throw new ResponseException(ErrorType.NotFound, "You cannot create an
@@ -134,9 +145,14 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 		historyDAO.getAllIds(entityId, HttpUtils.getInternalTenant(headers));
 		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, resolved, entityId);
-
+		request.setBatchId(batchId);
 		handleRequest(request);
 		return request.getUpdateResult();
+	}
+
+	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
+		return appendToEntry(headers, entityId, resolved, options, -1);
 	}
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
@@ -179,6 +195,12 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		throw new MethodNotFoundException();
 	}
 
+	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, int batchId) throws ResponseException, Exception {
+		// History can't do this
+		throw new MethodNotFoundException();
+	}
+
 	void handleRequest(HistoryEntityRequest request) throws ResponseException {
 		if (directDB) {
 			pushToDB(request);
@@ -194,5 +216,11 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Override
 	protected StorageDAO getCsourceDAO() {
 		return null;
+	}
+
+	@Override
+	public void finalizeBatch(int batchId) {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -190,8 +190,8 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	public void remoteNotify(String id, Map<String, Object> notification) {
+		notificationPool.execute(new Runnable() {
 
-		new Thread() {
 			@Override
 			public void run() {
 				SubscriptionRequest subscription = remoteNotifyCallbackId2InternalSub.get(id);
@@ -199,10 +199,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 					return;
 				}
 				sendNotification((List<Map<String, Object>>) notification.get(NGSIConstants.NGSI_LD_DATA), subscription,
-						AppConstants.UPDATE_REQUEST);
+						AppConstants.UPDATE_REQUEST, -1);
 			}
-		}.start();
-
+		});
 	}
 
 	public void handleRegistryNotification(InternalNotification notification) {

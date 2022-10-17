@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.commons.tools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.format.DateTimeParseException;
@@ -49,7 +48,6 @@ import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -650,7 +648,11 @@ public final class HttpUtils {
 	public static ResponseEntity<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
 			Object notificationData, List<Object> context, String geometryProperty, String contentType)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
-		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
+
+		Context ldContext = JsonLdProcessor.getCoreContextClone();
+		if (context != null) {
+			ldContext = ldContext.parse(context, true);
+		}
 
 		ArrayListMultimap<String, String> headers;
 		if (origHeaders == null) {
@@ -671,9 +673,11 @@ public final class HttpUtils {
 				ldContext, context, geometryProperty);
 		// need to clean context for subscriptions. This is a bit bad practice but reply
 		// generation relies on side effects so clean up here
-		HashSet<Object> temp = Sets.newHashSet(context);
-		context.clear();
-		context.addAll(temp);
+		if (context != null) {
+			HashSet<Object> temp = Sets.newHashSet(context);
+			context.clear();
+			context.addAll(temp);
+		}
 
 		return ResponseEntity.ok().headers(getHttpHeaders(headers)).body(body);
 	}

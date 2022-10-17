@@ -16,12 +16,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
 import javax.el.MethodNotFoundException;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
-import org.apache.http.entity.mime.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +38,6 @@ import com.google.common.collect.Table;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
@@ -82,6 +79,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@Value("${scorpio.topics.registry}")
 	String CSOURCE_TOPIC;
 	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
+			new LinkedBlockingQueue<Runnable>());
+	private ThreadPoolExecutor regStoreExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
 	@Value("${scorpio.directDB}")
 	boolean directDB = true;
@@ -196,10 +195,15 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		throw new MethodNotFoundException("not supported in registry");
 	}
 
+	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry, int batchId) throws ResponseException, Exception {
+		throw new MethodNotFoundException("not supported in registry");
+	}
+
 	// need to be check and change
 	@Override
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
+			Map<String, Object> entry, String[] options, int batchId) throws ResponseException, Exception {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		Map<String, Object> originalRegistration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		AppendCSourceRequest request = new AppendCSourceRequest(headers, registrationId, originalRegistration, entry,
@@ -210,8 +214,14 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 		this.csourceTimerTask(headers, request.getFinalPayload());
 		pushToDB(request);
+		request.setBatchId(batchId);
 		sendToKafka(request);
 		return request.getUpdateResult();
+	}
+
+	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
+		return appendToEntry(headers, registrationId, entry, options, -1);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -220,8 +230,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
-			throws ResponseException, Exception {
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			int batchId) throws ResponseException, Exception {
 		String id;
 		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
 		if (idObj == null) {
@@ -231,6 +241,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			id = (String) idObj;
 		}
 		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
+		request.setBatchId(batchId);
 		/*
 		 * String tenantId = HttpUtils.getInternalTenant(headers); if
 		 * (this.csourceIds.containsEntry(tenantId, request.getId())) { throw new
@@ -243,6 +254,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	}
 
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+			throws ResponseException, Exception {
+		return createEntry(headers, resolved, -1);
+	}
+
 	private void sendToKafka(BaseRequest request) {
 		kafkaExecutor.execute(new Runnable() {
 			@Override
@@ -253,8 +269,13 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		});
 	}
 
-	@Override
 	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId)
+			throws ResponseException, Exception {
+		return deleteEntry(headers, registrationId, -1);
+	}
+
+	@Override
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId, int batchId)
 			throws ResponseException, Exception {
 		if (registrationId == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid delete for registration. No ID provided.");
@@ -269,6 +290,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 		Map<String, Object> registration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId);
+		requestForSub.setBatchId(batchId);
 		sendToKafka(requestForSub);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		pushToDB(request);
@@ -486,7 +508,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			logger.error("Failed to store internal regentry", e);
 		}
 		if (!failed && fedBrokers != null && !fedBrokers.isBlank()) {
-			new Thread() {
+			regStoreExecutor.execute(new Runnable() {
+
+				@Override
 				public void run() {
 					int retry = 5;
 					for (String fedBroker : fedBrokers.split(",")) {
@@ -531,10 +555,18 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 							}
 						}
 					}
-				};
-			}.start();
+
+				}
+			});
+
 		}
 
+	}
+
+	@Override
+	public void finalizeBatch(int batchId) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

@@ -16,7 +16,7 @@ import eu.neclab.ngsildbroker.commons.serialization.MultiMapDeserializer;
 import eu.neclab.ngsildbroker.commons.serialization.MultiMapSerializer;
 
 public class BaseRequest {
-	
+
 	@JsonDeserialize(using = MultiMapDeserializer.class)
 	@JsonSerialize(using = MultiMapSerializer.class)
 	private ArrayListMultimap<String, String> headers;
@@ -24,6 +24,8 @@ public class BaseRequest {
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
 	private int requestType;
+
+	private int batchId = -1;
 
 	public BaseRequest() {
 
@@ -44,6 +46,7 @@ public class BaseRequest {
 		this.requestPayload = request.requestPayload;
 		this.finalPayload = request.finalPayload;
 		this.requestType = request.requestType;
+		this.batchId = request.batchId;
 	}
 
 	public int getRequestType() {
@@ -115,6 +118,9 @@ public class BaseRequest {
 	 * @return the internal null value if the tenant is not present
 	 */
 	public String getTenant() {
+		if (headers == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
 		if (headers.containsKey(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK)) {
 			return headers.get(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK).get(0);
 		}
@@ -152,4 +158,13 @@ public class BaseRequest {
 			this.finalPayload = new HashMap<String, Object>(finalPayload);
 		}
 	}
+
+	public int getBatchId() {
+		return batchId;
+	}
+
+	public void setBatchId(int batchId) {
+		this.batchId = batchId;
+	}
+
 }

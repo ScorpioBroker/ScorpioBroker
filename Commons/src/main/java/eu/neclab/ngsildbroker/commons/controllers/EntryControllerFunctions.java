@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+
 import org.springframework.http.HttpHeaders;
 import javax.servlet.http.HttpServletRequest;
+
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -14,6 +17,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -30,13 +34,14 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
-
+	static Random random = new Random();
+	static Logger logger = LoggerFactory.getLogger(EntryControllerFunctions.class);
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> updateMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, int maxUpdateBatch, String options, int payloadType) {
 		String[] optionsArray = getOptionsArray(options);
 		List<Map<String, Object>> jsonPayload;
-
+		int batchId = random.nextInt();
 		try {
 			jsonPayload = getJsonPayload(payload);
 		} catch (Exception exception) {
@@ -83,7 +88,8 @@ public interface EntryControllerFunctions {
 			}
 			try {
 
-				UpdateResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray);
+				UpdateResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray,
+						batchId);
 				if (updateResult.getNotUpdated().isEmpty()) {
 					result.addSuccess(entityId);
 				} else {
@@ -102,13 +108,14 @@ public interface EntryControllerFunctions {
 				result.addFail(new BatchFailure(entityId, response));
 			}
 		}
+		entityService.finalizeBatch(batchId);
 		return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 	}
 
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> createMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, int maxCreateBatch, int payloadType) {
-
+		int batchId = random.nextInt();
 		List<Map<String, Object>> jsonPayload;
 		try {
 			jsonPayload = getJsonPayload(payload);
@@ -147,7 +154,7 @@ public interface EntryControllerFunctions {
 				continue;
 			}
 			try {
-				result.addSuccess(entityService.createEntry(headers, resolved).getEntityId());
+				result.addSuccess(entityService.createEntry(headers, resolved, batchId).getEntityId());
 			} catch (Exception e) {
 				RestResponse response;
 				if (e instanceof ResponseException) {
@@ -163,6 +170,7 @@ public interface EntryControllerFunctions {
 			}
 
 		}
+		entityService.finalizeBatch(batchId);
 		return generateBatchResultReply(result, HttpStatus.CREATED);
 	}
 
@@ -187,9 +195,14 @@ public interface EntryControllerFunctions {
 		}
 		if (result.getFails().isEmpty() && !result.getSuccess().isEmpty()) {
 			status = okStatus;
-			body = result.getSuccess().toString();
+			try {
+				body = JsonUtils.toPrettyString(result.getSuccess());
+			} catch (Exception e) {
+				logger.error("Failed to generate reply body for batch result.", e);
+			} 
 		}
-		return ResponseEntity.status(status).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).body(body);
+		return ResponseEntity.status(status).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+				.body(body);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -197,6 +210,7 @@ public interface EntryControllerFunctions {
 			String payload, int payloadType) {
 		List<Object> jsonPayload;
 		boolean atContextAllowed;
+		int batchId = random.nextInt();
 		List<Object> links = HttpUtils.getAtContext(request);
 		try {
 
@@ -240,6 +254,7 @@ public interface EntryControllerFunctions {
 				result.addFail(new BatchFailure(entityId, response));
 			}
 		}
+		entityService.finalizeBatch(batchId);
 		return generateBatchResultReply(result, HttpStatus.NO_CONTENT);
 	}
 
