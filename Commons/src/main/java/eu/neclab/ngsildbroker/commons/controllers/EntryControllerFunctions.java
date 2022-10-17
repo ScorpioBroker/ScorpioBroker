@@ -44,12 +44,12 @@ import io.vertx.core.http.HttpServerRequest;
 
 public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
-	static Random random = new Random();
+
 	static Logger logger = LoggerFactory.getLogger(EntryControllerFunctions.class);
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> updateMultiple(EntryCRUDService entityService, HttpServerRequest request,
-			String payload, int maxUpdateBatch, String options, int payloadType) {
+			String payload, int maxUpdateBatch, String options, int payloadType, Random random) {
 		List<Map<String, Object>> jsonPayload;
 		try {
 			jsonPayload = getJsonPayload(payload);
@@ -125,7 +125,7 @@ public interface EntryControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> createMultiple(EntryCRUDService entityService, HttpServerRequest request,
-			String payload, int maxCreateBatch, int payloadType) {
+			String payload, int maxCreateBatch, int payloadType, Random random) {
 		List<Map<String, Object>> jsonPayload;
 		int batchId = random.nextInt();
 		try {
@@ -248,7 +248,7 @@ public interface EntryControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> deleteMultiple(EntryCRUDService entityService, HttpServerRequest request,
-			String payload, int payloadType) {
+			String payload, int payloadType, Random random) {
 		int batchId = random.nextInt();
 		try {
 			getJsonPayload(payload);
@@ -321,7 +321,7 @@ public interface EntryControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> upsertMultiple(EntryCRUDService entityService, HttpServerRequest request,
-			String payload, String options, int maxCreateBatch, int payloadType) {
+			String payload, String options, int maxCreateBatch, int payloadType, Random random) {
 		List<Map<String, Object>> jsonPayload;
 		int batchId = random.nextInt();
 		try {

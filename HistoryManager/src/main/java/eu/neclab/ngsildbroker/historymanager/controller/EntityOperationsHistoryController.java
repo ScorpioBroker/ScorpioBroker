@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.historymanager.controller;
 
 import java.util.List;
+import java.util.Random;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -45,6 +46,8 @@ public class EntityOperationsHistoryController {
 
 	private PayloadQueryParamParser paramParser = new HistoryPostQueryParser();
 
+	Random random = new Random();
+
 	@PostConstruct
 	public void init() {
 		JsonLdProcessor.init(coreContext);
@@ -54,7 +57,7 @@ public class EntityOperationsHistoryController {
 	@POST
 	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createMultiple(entityService, request, payload, maxCreateBatch,
-				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
+				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, random);
 	}
 
 	@Path("/upsert")
@@ -62,7 +65,7 @@ public class EntityOperationsHistoryController {
 	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String payload,
 			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.upsertMultiple(entityService, request, payload, options, maxCreateBatch,
-				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
+				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, random);
 	}
 
 	@Path("/update")
@@ -70,14 +73,14 @@ public class EntityOperationsHistoryController {
 	public Uni<RestResponse<Object>> updateMultiple(HttpServerRequest request, String payload,
 			@QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.updateMultiple(entityService, request, payload, maxUpdateBatch, options,
-				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD);
+				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, random);
 	}
 
 	@Path("/delete")
 	@POST
 	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.deleteMultiple(entityService, request, payload,
-				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD);
+				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, random);
 	}
 
 	@Path("/query")

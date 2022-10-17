@@ -1,0 +1,49 @@
+name: API test against native Ubuntu version
+on: 
+  push:
+    branches: "development-quarkus"
+jobs:
+  build-ubuntu-aaio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '22.1.0'
+          java-version: '17'
+          components: 'native-image'
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-ubuntu-aio
+        run: |
+          rm ./BrokerParent/pom.xml
+          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
+          mvn clean package -DskipTests -Dnative -Din-memory -Pin-memory -Ddocker -Ddocker-tag=ubuntu-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=in-memory
+      - name: docker tag
+        run: |
+          docker tag scorpiobroker/all-in-one-runner:ubuntu-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-latest
+      - name: start docker aaio 
+        run: |
+          docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml up &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-aaio-environment.json
+      - name: Stopping Scorpio 
+        run: docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml down 
