@@ -127,7 +127,7 @@ public class BaseRequest {
 	 * @return the internal null value if the tenant is not present
 	 */
 	public String getTenant() {
-		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
+		if (headers != null && headers.containsKey(NGSIConstants.TENANT_HEADER)) {
 			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
 		}
 		return AppConstants.INTERNAL_NULL_KEY;
