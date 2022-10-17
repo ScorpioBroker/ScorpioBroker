@@ -62,7 +62,10 @@ public class BatchNotificationHandler {
 					entry.getKey());
 		}
 		batches.row(batchId).clear();
-		batchId2WatchTask.remove(batchId).cancel();
+		MyTask task = batchId2WatchTask.remove(batchId);
+		if (task != null) {
+			task.cancel();
+		}
 	}
 
 	private class MyTask extends TimerTask {

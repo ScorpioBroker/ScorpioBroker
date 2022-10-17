@@ -235,7 +235,11 @@ public interface EntryControllerFunctions {
 		}
 		if (result.getFails().isEmpty() && !result.getSuccess().isEmpty()) {
 			status = okStatus;
-			body = result.getSuccess().toString();
+			try {
+				body = JsonUtils.toPrettyString(result.getSuccess());
+			} catch (Exception e) {
+				logger.error("Failed to generate reply body for batch operation.", e);
+			}
 		}
 
 		return RestResponseBuilderImpl.create(status).entity(body)
