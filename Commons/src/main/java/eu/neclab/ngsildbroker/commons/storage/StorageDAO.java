@@ -115,7 +115,6 @@ public abstract class StorageDAO {
 				}
 			}
 		});
-		System.out.println();
 	}
 
 	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)

@@ -93,10 +93,6 @@ public class EntityService implements EntryCRUDService {
 		kafkaExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				System.err.println(request.getRequestType());
-				System.err.println(request.getBatchId());
-				System.out.println();
-				System.out.println();
 				kafkaTemplate.send(ENTITY_TOPIC, request.getId(), new BaseRequest(request));
 
 			}
