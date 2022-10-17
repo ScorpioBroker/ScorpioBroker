@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
@@ -68,17 +69,16 @@ public class IntervalNotificationHandler {
 			}
 			try {
 				List<String> entries = infoDAO.getEntriesFromSub(subscriptionRequest);
-				if (entries != null && !entries.isEmpty()) {
-					List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
-					for (String entry : entries) {
-						dataList.add((Map<String, Object>) JsonUtils.fromString(entry));
-					}
-
-					notification.setNotifiedAt(System.currentTimeMillis());
-					notification.setData(dataList);
-
-					notificationHandler.notify(notification, subscriptionRequest);
+				if (entries == null) {
+					entries = Lists.newArrayList();
 				}
+				List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
+				for (String entry : entries) {
+					dataList.add((Map<String, Object>) JsonUtils.fromString(entry));
+				}
+				notification.setNotifiedAt(System.currentTimeMillis());
+				notification.setData(dataList);
+				notificationHandler.notify(notification, subscriptionRequest);
 			} catch (Exception e) {
 				logger.error("Failed to read database entry");
 			}
