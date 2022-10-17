@@ -1,3 +1,14 @@
+RELEASE NOTES SCORPIO 3.0.5
+
+In this release we are adressing
+
+ - fixing of the interval subscription
+ - an issue with the auto history recording of patched entities
+ - addressing a potential out of resource situation in the subscription handler 
+ 
+Changes in batch handling and subscriptions:
+When using entityOperations to create/update/delete entities, they will be bundled into one notification instead of many. If this behaviour is unwanted it can be deactived via setting config/env variable SCORPIO_SUBSCRIPTION_BATCHNOTIFICATIONS to false.
+
 RELEASE NOTES SCORPIO 3.0.4
 
 In this release we are adressing 
