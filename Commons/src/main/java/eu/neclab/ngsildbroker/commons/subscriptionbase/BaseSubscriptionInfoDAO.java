@@ -118,9 +118,6 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 			template = getJDBCTemplates(sub).getWriterJdbcTemplate();
 		}
 
-		if (sub.getId() == null) {
-			System.err.println();
-		}
 		template.update("INSERT INTO " + dbname
 				+ " (subscription_id, subscription_request) VALUES (?, ?) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request",
 				sub.getId(), sub.toJsonString());

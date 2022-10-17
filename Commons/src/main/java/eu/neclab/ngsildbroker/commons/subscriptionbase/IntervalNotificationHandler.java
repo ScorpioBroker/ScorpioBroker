@@ -68,15 +68,17 @@ public class IntervalNotificationHandler {
 			}
 			try {
 				List<String> entries = infoDAO.getEntriesFromSub(subscriptionRequest);
-				List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
-				for (String entry : entries) {
-					dataList.add((Map<String, Object>) JsonUtils.fromString(entry));
+				if (entries != null && !entries.isEmpty()) {
+					List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
+					for (String entry : entries) {
+						dataList.add((Map<String, Object>) JsonUtils.fromString(entry));
+					}
+
+					notification.setNotifiedAt(System.currentTimeMillis());
+					notification.setData(dataList);
+
+					notificationHandler.notify(notification, subscriptionRequest);
 				}
-				
-				notification.setNotifiedAt(System.currentTimeMillis());
-				notification.setData(dataList);
-				
-				notificationHandler.notify(notification, subscriptionRequest);
 			} catch (Exception e) {
 				logger.error("Failed to read database entry");
 			}
