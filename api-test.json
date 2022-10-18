@@ -11933,7 +11933,7 @@
 																	"                headers = value[0].headers;\r",
 																	"                pm.expect(notification.type).to.eql(\"Notification\");\r",
 																	"                pm.expect(notification).to.have.property(\"id\");\r",
-																	"                pm.expect(notification.data.length).to.eql(21);\r",
+																	"                pm.expect(notification.data.length).to.eql(30);\r",
 																	"                notification.data.sort(function(a, b) {\r",
 																	"                    if(a.id < b.id){\r",
 																	"                        return -1;\r",
