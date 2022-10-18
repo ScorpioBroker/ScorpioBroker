@@ -36,6 +36,7 @@ public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	static Random random = new Random();
 	static Logger logger = LoggerFactory.getLogger(EntryControllerFunctions.class);
+
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> updateMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, int maxUpdateBatch, String options, int payloadType) {
@@ -199,7 +200,7 @@ public interface EntryControllerFunctions {
 				body = JsonUtils.toPrettyString(result.getSuccess());
 			} catch (Exception e) {
 				logger.error("Failed to generate reply body for batch result.", e);
-			} 
+			}
 		}
 		return ResponseEntity.status(status).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 				.body(body);
@@ -261,6 +262,7 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> upsertMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, String options, int maxCreateBatch, int payloadType) {
+		int batchId = random.nextInt();
 		String[] optionsArray = getOptionsArray(options);
 		List<Map<String, Object>> jsonPayload;
 		try {
@@ -322,15 +324,15 @@ public interface EntryControllerFunctions {
 			RestResponse response;
 			if (replace) {
 				try {
-					entityService.deleteEntry(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID));
-					result.addSuccess(entityService.createEntry(headers, resolved).getEntityId());
+					entityService.deleteEntry(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID), batchId);
+					result.addSuccess(entityService.createEntry(headers, resolved, batchId).getEntityId());
 					appendedOneEntity = true;
 				} catch (Exception e1) {
 					if (e1 instanceof ResponseException) {
 						response = new RestResponse((ResponseException) e1);
 						if (response.getStatus().equals(HttpStatus.NOT_FOUND)) {
 							try {
-								result.addSuccess(entityService.createEntry(headers, resolved).getEntityId());
+								result.addSuccess(entityService.createEntry(headers, resolved, batchId).getEntityId());
 								insertedOneEntity = true;
 							} catch (Exception e) {
 								if (e instanceof ResponseException) {
@@ -349,7 +351,8 @@ public interface EntryControllerFunctions {
 			} else {
 
 				try {
-					UpdateResult updateResult = entityService.appendToEntry(headers, entityId, resolved, new String[0]);
+					UpdateResult updateResult = entityService.appendToEntry(headers, entityId, resolved, new String[0],
+							batchId);
 					if (updateResult.getNotUpdated().isEmpty()) {
 						result.addSuccess(entityId);
 						appendedOneEntity = true;
@@ -362,7 +365,7 @@ public interface EntryControllerFunctions {
 						ResponseException responseException = ((ResponseException) e1);
 						if (responseException.getHttpStatus().equals(HttpStatus.NOT_FOUND)) {
 							try {
-								result.addSuccess(entityService.createEntry(headers, resolved).getEntityId());
+								result.addSuccess(entityService.createEntry(headers, resolved, batchId).getEntityId());
 							} catch (Exception e) {
 								if (e instanceof ResponseException) {
 									response = new RestResponse((ResponseException) e);
@@ -401,6 +404,7 @@ public interface EntryControllerFunctions {
 				}
 			}
 		}
+		entityService.finalizeBatch(batchId);
 		return generateBatchResultReply(result, status);
 	}
 

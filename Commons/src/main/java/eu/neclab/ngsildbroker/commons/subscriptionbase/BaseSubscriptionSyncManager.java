@@ -126,7 +126,7 @@ public abstract class BaseSubscriptionSyncManager {
 			break;
 		case AppConstants.CREATE_REQUEST:
 			try {
-				sub.setActive(false);
+				//sub.setActive(false);
 				subscriptionService.subscribe(sub, true);
 			} catch (ResponseException e) {
 				logger.debug("Failed to forward create request", e);

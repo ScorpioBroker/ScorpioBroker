@@ -82,6 +82,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@Value("${scorpio.alltypesub.type:4ll7yp35}")
 	private String allTypeSubType;
 
+	@Value("${scorpio.subscription.batchevactime:300000}")
+	int waitTimeForEvac;
+
 	private NotificationHandlerREST notificationHandlerREST;
 	private IntervalNotificationHandler intervalHandlerREST;
 
@@ -120,8 +123,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	int checkTime;
 
 	int coreCount = Runtime.getRuntime().availableProcessors();
-	protected ThreadPoolExecutor notificationPool = new ThreadPoolExecutor(2, coreCount * 4, 60000, TimeUnit.MILLISECONDS,
-			new LinkedBlockingDeque<Runnable>());
+	protected ThreadPoolExecutor notificationPool = new ThreadPoolExecutor(2, coreCount * 4, 60000,
+			TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>());
 
 	BatchNotificationHandler batchNotificationHandler;
 
@@ -132,7 +135,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private void setup() {
 		setSyncTopic();
 		setSyncId();
-		batchNotificationHandler = new BatchNotificationHandler(this);
+		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		subscriptionInfoDAO = getSubscriptionInfoDao();
 		try {
@@ -182,7 +185,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions();
 			for (String subscriptionString : subscriptions) {
 				try {
-					subscribe(SubscriptionRequest.fromJsonString(subscriptionString, false), true);
+					SubscriptionRequest sub = SubscriptionRequest.fromJsonString(subscriptionString, false);
+					// disregard previously stored internal subs they should come back when the sub
+					// is actually there
+					if (!sub.getSubscription().getNotification().getEndPoint().getUri().getScheme()
+							.equals("internal")) {
+						subscribe(sub, true);
+					}
 				} catch (Exception e) {
 					logger.error("Failed to load stored subscription", e);
 				}
@@ -346,9 +355,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		if (task != null) {
 			task.cancel();
 		}
-		if (!internal) {
-			deleteSub(removedSub);
-		}
+
+		deleteSub(removedSub);
+
 	}
 
 	private void deleteSub(SubscriptionRequest removedSub) {

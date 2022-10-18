@@ -10,8 +10,6 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 
-import org.springframework.beans.factory.annotation.Value;
-
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import reactor.util.function.Tuple3;
@@ -23,14 +21,14 @@ public class BatchNotificationHandler {
 	private Timer watchDog = new Timer(true);
 	private Map<Integer, MyTask> batchId2WatchTask = Maps.newHashMap();
 
-	@Value("${scorpio.subscription.batchevactime:300000}")
 	int waitTimeForEvac;
 
 	Table<Integer, SubscriptionRequest, Tuple3<NotificationHandler, List<Map<String, Object>>, Integer>> batches = HashBasedTable
 			.create();
 
-	public BatchNotificationHandler(BaseSubscriptionService subService) {
+	public BatchNotificationHandler(BaseSubscriptionService subService, int waitTimeForEvac) {
 		this.subService = subService;
+		this.waitTimeForEvac = waitTimeForEvac;
 	}
 
 	public void addDataToBatch(int batchId, NotificationHandler handler, SubscriptionRequest subscriptionRequest,
@@ -46,10 +44,9 @@ public class BatchNotificationHandler {
 		MyTask task = batchId2WatchTask.get(batchId);
 		if (task == null) {
 			task = new MyTask(batchId);
-		} else {
-			task.cancel();
+			batchId2WatchTask.put(batchId, task);
+			watchDog.schedule(task, waitTimeForEvac);
 		}
-		watchDog.schedule(task, 60000);
 
 	}
 
@@ -64,7 +61,7 @@ public class BatchNotificationHandler {
 		}
 		batches.row(batchId).clear();
 		MyTask task = batchId2WatchTask.remove(batchId);
-		if(task != null) {
+		if (task != null) {
 			task.cancel();
 		}
 	}
