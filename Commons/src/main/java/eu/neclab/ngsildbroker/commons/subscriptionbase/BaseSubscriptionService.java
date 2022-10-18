@@ -122,7 +122,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@Value("${scorpio.sync.check-time:1000}")
 	int checkTime;
 
-	int coreCount = Runtime.getRuntime().availableProcessors();
+	int coreCount = 8;//Runtime.getRuntime().availableProcessors();
 	protected ThreadPoolExecutor notificationPool = new ThreadPoolExecutor(2, coreCount * 4, 60000,
 			TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>());
 
