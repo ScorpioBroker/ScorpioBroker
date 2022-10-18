@@ -123,7 +123,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	int checkTime;
 
 	int coreCount = 8;//Runtime.getRuntime().availableProcessors();
-	protected ThreadPoolExecutor notificationPool = new ThreadPoolExecutor(2, coreCount * 4, 60000,
+	protected ThreadPoolExecutor notificationPool = new ThreadPoolExecutor(10, 50, 60000,
 			TimeUnit.MILLISECONDS, new LinkedBlockingDeque<Runnable>());
 
 	BatchNotificationHandler batchNotificationHandler;
