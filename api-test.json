@@ -11422,8 +11422,8 @@
 																	"pm.collectionVariables.set(\"entityIds\", entityIds);\r",
 																	"var subId = pm.collectionVariables.get(\"subId\");\r",
 																	"\r",
-																	"pm.test(\"Status code is 201\", function () {\r",
-																	"    pm.response.to.have.status(201);\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
 																	"});\r",
 																	"\r",
 																	"setTimeout(function(){\r",
@@ -11637,7 +11637,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest32\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytesthuge\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
