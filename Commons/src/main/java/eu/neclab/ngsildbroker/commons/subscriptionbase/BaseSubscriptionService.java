@@ -129,6 +129,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@ConfigProperty(name = "scorpio.subscription.batchnotifications", defaultValue = "true")
 	boolean batchHandling;
 
+	@ConfigProperty(name = "scorpio.subscription.batchevactime", defaultValue = "300000")
+	int waitTimeForEvac;
+
 	BatchNotificationHandler batchNotificationHandler;
 
 	@PostConstruct
@@ -136,7 +139,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		JsonLdProcessor.init(coreContext);
 		setSyncId();
 		kafkaSender = getSyncChannelSender();
-		batchNotificationHandler = new BatchNotificationHandler(this);
+		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		webClient = WebClient.create(vertx);
 		subscriptionInfoDAO = getSubscriptionInfoDao();
@@ -192,15 +195,18 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 					logger.error("Failed to load stored subscription", e);
 					continue;
 				}
-				unis.add(subscribe(request, true).onFailure().recoverWithItem(e -> {
-					logger.error("Failed to load stored subscription", e);
-					return null;
-				}).onItem().transform(t -> {
-					if (t != null) {
-						logger.debug("subscribed to " + subscriptionString);
-					}
-					return t;
-				}));
+				if (!request.getSubscription().getNotification().getEndPoint().getUri().getScheme()
+						.equals("internal")) {
+					unis.add(subscribe(request, true).onFailure().recoverWithItem(e -> {
+						logger.error("Failed to load stored subscription", e);
+						return null;
+					}).onItem().transform(t -> {
+						if (t != null) {
+							logger.debug("subscribed to " + subscriptionString);
+						}
+						return t;
+					}));
+				}
 			}
 			logger.debug("done loading stored subscribtipns");
 			if (unis.isEmpty()) {
@@ -379,10 +385,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		if (task != null) {
 			task.cancel();
 		}
-		if (!internal) {
-			return deleteSub(removedSub);
-		}
-		return Uni.createFrom().voidItem();
+
+		return deleteSub(removedSub);
+
 	}
 
 	private Uni<Void> deleteSub(SubscriptionRequest removedSub) {

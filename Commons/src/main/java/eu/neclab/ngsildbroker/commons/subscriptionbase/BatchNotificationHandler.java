@@ -22,14 +22,14 @@ public class BatchNotificationHandler {
 	private Timer watchDog = new Timer(true);
 	private Map<Integer, MyTask> batchId2WatchTask = Maps.newHashMap();
 
-	@ConfigProperty(name = "scorpio.subscription.batchevactime", defaultValue = "300000")
 	int waitTimeForEvac;
 
 	Table<Integer, SubscriptionRequest, Tuple3<NotificationHandler, List<Map<String, Object>>, Integer>> batches = HashBasedTable
 			.create();
 
-	public BatchNotificationHandler(BaseSubscriptionService subService) {
+	public BatchNotificationHandler(BaseSubscriptionService subService, int waitTimeForEvac) {
 		this.subService = subService;
+		this.waitTimeForEvac = waitTimeForEvac;
 	}
 
 	public void addDataToBatch(int batchId, NotificationHandler handler, SubscriptionRequest subscriptionRequest,
@@ -45,10 +45,8 @@ public class BatchNotificationHandler {
 		MyTask task = batchId2WatchTask.get(batchId);
 		if (task == null) {
 			task = new MyTask(batchId);
-		} else {
-			task.cancel();
+			watchDog.schedule(task, waitTimeForEvac);
 		}
-		watchDog.schedule(task, 60000);
 
 	}
 
