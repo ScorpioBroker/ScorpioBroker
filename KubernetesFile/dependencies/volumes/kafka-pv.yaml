@@ -4,6 +4,7 @@ metadata:
   name: kafka-pv-volume
   labels:
     type: local
+  namespace: scorpio-broker
 spec:
   storageClassName: manual
   capacity:
@@ -19,6 +20,7 @@ metadata:
   labels:
       component: kafka-claim0
   name: kafka-claim0
+  namespace: scorpio-broker
 spec:
   storageClassName: manual
   accessModes:

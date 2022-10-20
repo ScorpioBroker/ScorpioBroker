@@ -5,6 +5,7 @@ metadata:
   labels:
     type: local
     app: postgres
+  namespace: scorpio-broker
 spec:
   storageClassName: manual
   capacity:
@@ -20,6 +21,7 @@ metadata:
   name: postgres-pv-claim
   labels:
     app: postgres
+  namespace: scorpio-broker
 spec:
   storageClassName: manual
   accessModes:

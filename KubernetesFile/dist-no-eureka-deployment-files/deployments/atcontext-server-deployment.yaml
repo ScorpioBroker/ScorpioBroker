@@ -17,31 +17,11 @@ spec:
         service: atcontext-server
     spec:
       containers:
-      - image: scorpiobroker/scorpio:AtContextServer-no-eureka_latest
+      - image: scorpiobroker/scorpio:AtContextServer-no-eureka_2.1.13
         imagePullPolicy: Always
         name: atcontext-server
         ports:
         - containerPort: 27015
-        readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:27015/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
-          periodSeconds: 5
-        livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:27015/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
-          periodSeconds: 5
   
         resources:
           limits:

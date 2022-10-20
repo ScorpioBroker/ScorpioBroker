@@ -4,6 +4,7 @@ metadata:
   labels:
     component: zookeeper
   name: zookeeper
+  namespace: scorpio-broker
 spec:
   progressDeadlineSeconds: 600
   replicas: 1

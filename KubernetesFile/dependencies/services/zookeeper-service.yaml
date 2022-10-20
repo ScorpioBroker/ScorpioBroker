@@ -4,6 +4,7 @@ metadata:
   labels:
       component: zookeeper
   name: zookeeper
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "2181"
