@@ -23,7 +23,7 @@ spec:
         service: gateway
     spec:
       containers:
-      - image: scorpiobroker/scorpio:gateway_latest
+      - image: scorpiobroker/scorpio:gateway_1.1.0
         imagePullPolicy: Always
         name: gateway
         ports:
@@ -37,15 +37,12 @@ spec:
               - -c
               - curl -X PUT "http://eureka:8761/eureka/apps/GATEWAY/$HOSTNAME:gateway:9090/status?value=OUT_OF_SERVICE"
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:9090/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
+          httpGet:
+            path: /actuator/health
+            port: 9090
+          initialDelaySeconds: 50
           periodSeconds: 5
+          successThreshold: 1
         resources:
           limits:
             cpu: 500m
