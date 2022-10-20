@@ -97,5 +97,6 @@ public class AppConstants {
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	public static final String INTERNAL_REGISTRATION_ID = "scorpio:hosted:registryentries";
 	public static final int FINALIZE_BATCH_REQUEST = 99;
+	public static final String CONTENT_TYPE = "content-type";
 
 }
