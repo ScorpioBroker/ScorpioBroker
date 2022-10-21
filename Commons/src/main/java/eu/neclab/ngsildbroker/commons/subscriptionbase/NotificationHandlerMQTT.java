@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import com.google.common.collect.ArrayListMultimap;
+import org.springframework.http.HttpHeaders;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
@@ -53,7 +54,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		} else {
 			Mqtt5BlockingClient client5 = (Mqtt5BlockingClient) client;
 			client5.publishWith().topic(callback.getPath().substring(1))
-					.contentType(headers.get(AppConstants.CONTENT_TYPE).get(0)).qos(MqttQos.fromCode(qos))
+					.contentType(headers.get(HttpHeaders.CONTENT_TYPE).get(0)).qos(MqttQos.fromCode(qos))
 					.payload(payload.getBytes()).send();
 		}
 
