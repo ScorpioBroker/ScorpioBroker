@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.google.common.collect.ArrayListMultimap;
 
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -23,17 +24,18 @@ public interface EntryCRUDService {
 	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId);
 
 	Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> entry,
-			int batchId);
+			BatchInfo batchInfo);
 
 	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, String[] options, int batchId);
+			Map<String, Object> entry, String[] options, BatchInfo batchInfo);
 
-	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved, int batchId);
+	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			BatchInfo batchInfo);
 
-	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, int batchId);
+	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, BatchInfo batchInfo);
 
-	Uni<Void> finalizeBatch(int batchId);
-	
+	Uni<Void> sendFail(BatchInfo batchInfo);
+
 	public static Uni<Map<String, Object>> validateIdAndGetBody(String entityId, String tenantId, StorageDAO dao) {
 		// null id check
 		if (entityId == null) {

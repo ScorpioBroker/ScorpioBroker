@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
@@ -154,23 +155,23 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> entry) {
-		return updateEntry(headers, registrationId, entry, -1);
+		return updateEntry(headers, registrationId, entry, new BatchInfo(-1, -1));
 	}
 
 	@Override
 	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, int batchId) {
+			Map<String, Object> entry, BatchInfo batchInfo) {
 		throw new MethodNotFoundException("not supported in registry");
 	}
 
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> entry, String[] options) {
-		return appendToEntry(headers, registrationId, entry, options, -1);
+		return appendToEntry(headers, registrationId, entry, options, new BatchInfo(-1, -1));
 	}
 
 	@Override
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options, int batchId) {
+			Map<String, Object> entry, String[] options, BatchInfo batchInfo) {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
@@ -201,12 +202,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
-		return createEntry(headers, resolved, -1);
+		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
 	@Override
 	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			int batchId) {
+			BatchInfo batchInfo) {
 
 		logger.debug("createMessage() :: started");
 		CSourceRequest request;
@@ -231,11 +232,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId) {
-		return deleteEntry(headers, registrationId, -1);
+		return deleteEntry(headers, registrationId, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId, int batchId) {
+	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			BatchInfo batchInfo) {
 		logger.trace("deleteEntity() :: started");
 		if (registrationId == null) {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
@@ -520,7 +522,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public Uni<Void> finalizeBatch(int batchId) {
+	public Uni<Void> sendFail(BatchInfo batchInfo) {
 		return Uni.createFrom().voidItem();
 	}
+
 }

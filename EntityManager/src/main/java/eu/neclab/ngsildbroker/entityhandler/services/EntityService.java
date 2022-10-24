@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -59,7 +60,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws ResponseException
 	 */
 	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			int batchId) {
+			BatchInfo batchInfo) {
 		logger.debug("createMessage() :: started");
 		EntityRequest request;
 		try {
@@ -67,7 +68,7 @@ public class EntityService implements EntryCRUDService {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		request.setBatchId(batchId);
+		request.setBatchInfo(batchInfo);
 		return handleRequest(request).onItem().transform(v -> {
 			logger.debug("createMessage() :: completed");
 			return new CreateResult(request.getId(), true);
@@ -75,7 +76,7 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
-		return createEntry(headers, resolved, -1);
+		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
 	/**
@@ -89,7 +90,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws IOException
 	 */
 	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, int batchId) {
+			Map<String, Object> resolved, BatchInfo batchInfo) {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
 		String tenantid = HttpUtils.getInternalTenant(headers);
@@ -101,7 +102,7 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().item(t.getUpdateResult());
 					}
-					t.setBatchId(batchId);
+					t.setBatchInfo(batchInfo);
 					return handleRequest(t).onItem().transform(v -> {
 						logger.trace("partialUpdateEntity() :: completed");
 						return t.getUpdateResult();
@@ -111,7 +112,7 @@ public class EntityService implements EntryCRUDService {
 
 	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved) {
-		return updateEntry(headers, entityId, resolved, -1);
+		return updateEntry(headers, entityId, resolved, new BatchInfo(-1, -1));
 	}
 
 	/**
@@ -124,7 +125,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws IOException
 	 */
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options, int batchId) {
+			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
@@ -141,7 +142,7 @@ public class EntityService implements EntryCRUDService {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().item(t.getUpdateResult());
 					}
-					t.setBatchId(batchId);
+					t.setBatchInfo(batchInfo);
 					return handleRequest(t).onItem().transform(v -> {
 						logger.trace("partialUpdateEntity() :: completed");
 						return t.getUpdateResult();
@@ -151,10 +152,10 @@ public class EntityService implements EntryCRUDService {
 
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) {
-		return appendToEntry(headers, entityId, resolved, options, -1);
+		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, int batchId) {
+	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo) {
 		logger.trace("deleteEntity() :: started");
 		if (entityId == null) {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
@@ -170,7 +171,7 @@ public class EntityService implements EntryCRUDService {
 					temp.setId(t.getId());
 					temp.setRequestPayload(t.getOldEntity());
 					temp.setFinalPayload(t.getOldEntity());
-					temp.setBatchId(batchId);
+					temp.setBatchInfo(batchInfo);
 					temp.setRequestType(AppConstants.DELETE_REQUEST);
 					return store.onItem().transform(v -> {
 						kafkaSenderInterface.send(temp);
@@ -181,7 +182,7 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
-		return deleteEntry(headers, entityId, -1);
+		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
 	}
 
 	public Uni<UpdateResult> partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId,
@@ -245,11 +246,11 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	@Override
-	public Uni<Void> finalizeBatch(int batchId) {
+	public Uni<Void> sendFail(BatchInfo batchInfo) {
 		BaseRequest request = new BaseRequest();
-		request.setRequestType(AppConstants.FINALIZE_BATCH_REQUEST);
-		request.setBatchId(batchId);
-		request.setId("" + batchId);
+		request.setRequestType(AppConstants.BATCH_ERROR_REQUEST);
+		request.setBatchInfo(batchInfo);
+		request.setId("" + batchInfo.getBatchId());
 		return Uni.createFrom().completionStage(kafkaSenderInterface.send(request));
 	}
 

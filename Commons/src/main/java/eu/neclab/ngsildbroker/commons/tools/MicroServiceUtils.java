@@ -64,7 +64,7 @@ public class MicroServiceUtils {
 			result.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
 		}
 		result.setRequestType(originalPayload.getRequestType());
-		result.setBatchId(originalPayload.getBatchId());
+		result.setBatchInfo(originalPayload.getBatchInfo());
 		return result;
 	}
 

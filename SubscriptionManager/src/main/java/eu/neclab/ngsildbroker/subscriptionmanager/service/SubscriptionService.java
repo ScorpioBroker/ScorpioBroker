@@ -24,6 +24,7 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
@@ -205,7 +206,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 			return;
 		}
 		sendNotification((List<Map<String, Object>>) notification.get(NGSIConstants.NGSI_LD_DATA), subscription,
-				AppConstants.UPDATE_REQUEST, -1);
+				AppConstants.UPDATE_REQUEST, new BatchInfo(-1, -1));
 	}
 
 	public void handleRegistryNotification(InternalNotification notification) {

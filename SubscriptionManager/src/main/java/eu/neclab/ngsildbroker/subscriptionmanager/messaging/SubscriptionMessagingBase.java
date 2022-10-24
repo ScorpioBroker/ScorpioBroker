@@ -67,9 +67,9 @@ public abstract class SubscriptionMessagingBase {
 				subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
 						AppConstants.OPERATION_DELETE_ENTITY);
 				break;
-			case AppConstants.FINALIZE_BATCH_REQUEST:
-				logger.debug("Finalizing batch " + key);
-				subscriptionService.finalizeBatch(message.getBatchId());
+			case AppConstants.BATCH_ERROR_REQUEST:
+				logger.debug("fail in batch " + key);
+				subscriptionService.addFail(message.getBatchInfo());
 			default:
 				break;
 		}

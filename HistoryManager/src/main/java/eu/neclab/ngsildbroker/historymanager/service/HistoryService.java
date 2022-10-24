@@ -15,6 +15,7 @@ import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
@@ -60,16 +61,16 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
-		return createEntry(headers, resolved, -1);
+		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
 	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			int batchId) {
-		return createTemporalEntity(headers, resolved, false, batchId);
+			BatchInfo batchInfo) {
+		return createTemporalEntity(headers, resolved, false, batchInfo);
 	}
 
 	Uni<CreateResult> createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			boolean fromEntity, int batchId) {
+			boolean fromEntity, BatchInfo batchInfo) {
 		logger.trace("creating temporal entity");
 		CreateHistoryEntityRequest request;
 		try {
@@ -89,10 +90,10 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	}
 
 	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
-		return deleteEntry(headers, entityId, -1);
+		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, int batchId) {
+	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo) {
 		return delete(headers, entityId, null, null, null);
 	}
 
@@ -123,11 +124,11 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) {
-		return appendToEntry(headers, entityId, resolved, options, -1);
+		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
 	}
 
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options, int batchId) {
+			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transform(Unchecked.function(t -> {
 			return new AppendHistoryEntityRequest(headers, resolved, entityId);
@@ -175,12 +176,12 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Override
 	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry) {
-		return updateEntry(headers, entityId, entry, -1);
+		return updateEntry(headers, entityId, entry, new BatchInfo(-1, -1));
 	}
 
 	@Override
 	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, int batchId) {
+			Map<String, Object> entry, BatchInfo batchInfo) {
 		// History can't do this
 		throw new MethodNotFoundException();
 	}
@@ -200,7 +201,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public Uni<Void> finalizeBatch(int batchId) {
+	public Uni<Void> sendFail(BatchInfo batchInfo) {
 		return Uni.createFrom().voidItem();
 	}
 

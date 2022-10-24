@@ -114,6 +114,6 @@ public class AppConstants {
 	public static final String REG_SUB_ALIVE_CHANNEL = "regsubalive";
 	public static final String REG_SUB_ALIVE_RETRIEVE_CHANNEL = "regsubaliveretrieve";
 	public static final String HISTORY_CHANNEL = "history";
-	public static final int FINALIZE_BATCH_REQUEST = 99;
+	public static final int BATCH_ERROR_REQUEST = 99;
 
 }
