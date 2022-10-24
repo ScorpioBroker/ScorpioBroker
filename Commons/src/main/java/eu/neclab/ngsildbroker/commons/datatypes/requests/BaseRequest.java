@@ -12,6 +12,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.serialization.MultiMapDeserializer;
 import eu.neclab.ngsildbroker.commons.serialization.MultiMapSerializer;
 
@@ -25,7 +26,7 @@ public class BaseRequest {
 	protected Map<String, Object> finalPayload;
 	private int requestType;
 
-	private int batchId = -1;
+	private BatchInfo batchInfo = new BatchInfo(-1, -1);
 
 	public BaseRequest() {
 
@@ -46,7 +47,7 @@ public class BaseRequest {
 		this.requestPayload = request.requestPayload;
 		this.finalPayload = request.finalPayload;
 		this.requestType = request.requestType;
-		this.batchId = request.batchId;
+		this.batchInfo = request.batchInfo;
 	}
 
 	public int getRequestType() {
@@ -159,12 +160,12 @@ public class BaseRequest {
 		}
 	}
 
-	public int getBatchId() {
-		return batchId;
+	public BatchInfo getBatchInfo() {
+		return batchInfo;
 	}
 
-	public void setBatchId(int batchId) {
-		this.batchId = batchId;
+	public void setBatchInfo(BatchInfo batchInfo) {
+		this.batchInfo = batchInfo;
 	}
 
 }

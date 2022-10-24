@@ -10,8 +10,10 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
@@ -20,6 +22,7 @@ public class BatchNotificationHandler {
 	private BaseSubscriptionService subService;
 	private Timer watchDog = new Timer(true);
 	private Map<Integer, MyTask> batchId2WatchTask = Maps.newHashMap();
+	private Map<Integer, Integer[]> batchId2Count2BatchSize = Maps.newHashMap();
 
 	int waitTimeForEvac;
 
@@ -31,21 +34,51 @@ public class BatchNotificationHandler {
 		this.waitTimeForEvac = waitTimeForEvac;
 	}
 
-	public void addDataToBatch(int batchId, NotificationHandler handler, SubscriptionRequest subscriptionRequest,
-			List<Map<String, Object>> dataList, int triggerReason) {
-		Tuple3<NotificationHandler, List<Map<String, Object>>, Integer> entry = batches.get(batchId,
-				subscriptionRequest);
-		if (entry == null) {
-			entry = Tuples.of(handler, dataList, triggerReason);
-			batches.put(batchId, subscriptionRequest, entry);
-		} else {
-			entry.getT2().addAll(dataList);
+	public void addFail(BatchInfo batchInfo) {
+
+		synchronized (batchId2Count2BatchSize) {
+			increaseBatch(batchInfo);
 		}
-		MyTask task = batchId2WatchTask.get(batchId);
-		if (task == null) {
-			task = new MyTask(batchId);
-			batchId2WatchTask.put(batchId, task);
-			watchDog.schedule(task, waitTimeForEvac);
+
+	}
+
+	private void increaseBatch(BatchInfo batchInfo) {
+		int batchId = batchInfo.getBatchId();
+		int batchSize = batchInfo.getBatchSize();
+		Integer[] tuple = batchId2Count2BatchSize.get(batchId);
+		if (tuple == null) {
+			tuple = new Integer[] { 1, batchSize };
+			batchId2Count2BatchSize.put(batchId, tuple);
+		} else {
+			tuple[0] = tuple[0] + 1;
+		}
+		if (tuple[0] >= tuple[1]) {
+			finalizeBatch(batchId);
+		}
+
+	}
+
+	public void addDataToBatch(BatchInfo batchInfo, NotificationHandler handler,
+			SubscriptionRequest subscriptionRequest, List<Map<String, Object>> dataList, int triggerReason) {
+
+		synchronized (batchId2Count2BatchSize) {
+			int batchId = batchInfo.getBatchId();
+			Tuple3<NotificationHandler, List<Map<String, Object>>, Integer> entry = batches.get(batchId,
+					subscriptionRequest);
+			if (entry == null) {
+				entry = Tuples.of(handler, dataList, triggerReason);
+				batches.put(batchId, subscriptionRequest, entry);
+			} else {
+				entry.getT2().addAll(dataList);
+			}
+			MyTask task = batchId2WatchTask.get(batchId);
+			if (task == null) {
+				task = new MyTask(batchId);
+				batchId2WatchTask.put(batchId, task);
+				watchDog.schedule(task, waitTimeForEvac);
+			}
+
+			increaseBatch(batchInfo);
 		}
 
 	}
@@ -64,6 +97,7 @@ public class BatchNotificationHandler {
 		if (task != null) {
 			task.cancel();
 		}
+		batchId2Count2BatchSize.remove(batchId);
 	}
 
 	private class MyTask extends TimerTask {

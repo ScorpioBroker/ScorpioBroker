@@ -20,6 +20,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -69,13 +70,13 @@ public class EntityService implements EntryCRUDService {
 	 * @throws ResponseException
 	 */
 	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			int batchId) throws ResponseException, Exception {
+			BatchInfo batchInfo) throws ResponseException, Exception {
 
 		// get message channel for ENTITY_CREATE topic.
 		logger.debug("createMessage() :: started");
 		// MessageChannel messageChannel = producerChannels.createWriteChannel();
 		EntityRequest request = new CreateEntityRequest(resolved, headers);
-		request.setBatchId(batchId);
+		request.setBatchInfo(batchInfo);
 		pushToDB(request);
 		sendToKafka(request);
 		logger.debug("createMessage() :: completed");
@@ -86,7 +87,7 @@ public class EntityService implements EntryCRUDService {
 	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
 		// TODO Auto-generated method stub
-		return createEntry(headers, resolved, -1);
+		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
 	private void sendToKafka(BaseRequest request) {
@@ -134,7 +135,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws IOException
 	 */
 	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, int batchId) throws ResponseException, Exception {
+			Map<String, Object> resolved, BatchInfo batchInfo) throws ResponseException, Exception {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
 
@@ -143,7 +144,7 @@ public class EntityService implements EntryCRUDService {
 		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantid);
 		// String entityBody = validateIdAndGetBody(entityId);
 		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, resolved, null);
-		request.setBatchId(batchId);
+		request.setBatchInfo(batchInfo);
 		// update fields
 
 		// pubilsh merged message
@@ -157,7 +158,7 @@ public class EntityService implements EntryCRUDService {
 
 	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved) throws ResponseException, Exception {
-		return updateEntry(headers, entityId, resolved, -1);
+		return updateEntry(headers, entityId, resolved, new BatchInfo(-1, -1));
 	}
 
 	/**
@@ -170,7 +171,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws IOException
 	 */
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options, int batchId) throws ResponseException, Exception {
+			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) throws ResponseException, Exception {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
@@ -182,7 +183,7 @@ public class EntityService implements EntryCRUDService {
 		// get entity details
 		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantId);
 		AppendEntityRequest request = new AppendEntityRequest(headers, entityId, entityBody, resolved, options);
-		request.setBatchId(batchId);
+		request.setBatchInfo(batchInfo);
 		handleRequest(request);
 
 		logger.trace("appendMessage() :: completed");
@@ -191,7 +192,7 @@ public class EntityService implements EntryCRUDService {
 
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
-		return appendToEntry(headers, entityId, resolved, options, -1);
+		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -215,7 +216,7 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	@SuppressWarnings("unchecked")
-	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId, int batchId)
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo)
 			throws ResponseException, Exception {
 		logger.trace("deleteEntity() :: started");
 		if (entityId == null) {
@@ -231,7 +232,7 @@ public class EntityService implements EntryCRUDService {
 		}
 		request.setRequestPayload(oldEntity);
 		request.setFinalPayload(oldEntity);
-		request.setBatchId(batchId);
+		request.setBatchInfo(batchInfo);
 		sendToKafka(request);
 		logger.trace("deleteEntity() :: completed");
 		return true;
@@ -239,7 +240,7 @@ public class EntityService implements EntryCRUDService {
 
 	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId)
 			throws ResponseException, Exception {
-		return deleteEntry(headers, entityId, -1);
+		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
 	}
 
 	public UpdateResult partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId, String attrId,
@@ -294,12 +295,13 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	@Override
-	public void finalizeBatch(int batchId) {
+	public void sendFail(BatchInfo batchInfo) {
 		BaseRequest request = new BaseRequest();
-		request.setRequestType(AppConstants.FINALIZE_BATCH_REQUEST);
-		request.setBatchId(batchId);
-		request.setId("" + batchId);
+		request.setRequestType(AppConstants.BATCH_ERROR_REQUEST);
+		request.setBatchInfo(batchInfo);
+		request.setId("" + batchInfo.getBatchId());
 		sendToKafka(request);
+
 	}
 
 }
