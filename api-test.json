@@ -33426,15 +33426,18 @@
 																	"var entityId1 = payloadBody[0].id;\r",
 																	"var entityId2 = payloadBody[1].id;\r",
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId1);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId2);\r",
+																	"pm.collectionVariables.set(\"entityId1\", entityId1);\r",
+																	"pm.collectionVariables.set(\"entityId2\", entityId2);\r",
+																	"\r",
+																	"var response = pm.response.json();\r",
 																	"\r",
 																	"pm.test(\"Successful POST request\", function () {\r",
 																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207]);\r",
 																	"});\r",
+																	"\r",
 																	"pm.test(\"Response validations\", function () {\r",
-																	"     pm.expect(entityId1).to.equal(\"urn:test:testbatchentity1005\");\r",
-																	"     pm.expect(entityId2).to.equal(\"urn:test:testbatchentity1006\");\r",
+																	"     pm.expect(entityId1).to.equal(response[0]);\r",
+																	"     pm.expect(entityId2).to.equal(response[1]);\r",
 																	"}); \r",
 																	"\r",
 																	"pm.test(\"Content-Type is present\", function () {\r",
@@ -33585,7 +33588,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "[\r\n    \"urn:test:testbatchentity1005\",\r\n    \"urn:test:testbatchentity1006\"\r\n]"
+															"raw": "[\r\n    \"{{entityId1}}\",\r\n    \"{{entityId2}}\"\r\n]"
 														},
 														"url": {
 															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
@@ -33624,13 +33627,13 @@
 																	"pm.collectionVariables.set(\"entityId2\", entityId2);\r",
 																	"pm.collectionVariables.set(\"@context\", payloadBody[0][\"@context\"]);\r",
 																	"pm.collectionVariables.set(\"@context\", payloadBody[1][\"@context\"]);\r",
-																	"\r",
+																	"var response = pm.response.json();\r",
 																	"pm.test(\"Successful POST request\", function () {\r",
 																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207]);\r",
 																	"});\r",
 																	"pm.test(\"Response validations\", function () {\r",
-																	"     pm.expect(entityId1).to.equal(\"urn:test:testbatchentity1005\");\r",
-																	"     pm.expect(entityId2).to.equal(\"urn:test:testbatchentity1006\");\r",
+																	"     pm.expect(entityId1).to.equal(response[0]);\r",
+																	"     pm.expect(entityId2).to.equal(response[1]);\r",
 																	"});\r",
 																	"pm.test(\"Content-Type is present\", function () {\r",
 																	"    pm.response.to.have.header(\"Content-Type\");\r",
@@ -33794,7 +33797,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "[\r\n    \"urn:test:testbatchentity1005\",\r\n    \"urn:test:testbatchentity1006\"\r\n]"
+															"raw": "[\r\n    \"{{entityId1}}\",\r\n    \"{{entityId2}}\"\r\n]"
 														},
 														"url": {
 															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
@@ -33836,7 +33839,7 @@
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"entityId1\", entityId1);\r",
 																	"pm.collectionVariables.set(\"entityId2\", entityId2);\r",
-																	"\r",
+																	"var response = pm.response.json();\r",
 																	"pm.test(\"Content-Type is present\", function () {\r",
 																	"    pm.response.to.have.header(\"Content-Type\");\r",
 																	"});\r",
@@ -33846,8 +33849,8 @@
 																	"});\r",
 																	"\r",
 																	"pm.test(\"Response validations\", function () {\r",
-																	"     pm.expect(entityId1).to.equal(\"urn:test:testbatchentity1005\");\r",
-																	"     pm.expect(entityId2).to.equal(\"urn:test:testbatchentity1006\");\r",
+																	"     pm.expect(entityId1).to.equal(response[0]);\r",
+																	"     pm.expect(entityId2).to.equal(response[1]);\r",
 																	"});\r",
 																	"pm.test(\"Status code name has string\", function () {\r",
 																	"    pm.response.to.have.status(\"Created\");\r",
@@ -33904,7 +33907,8 @@
 																	"var entityId2 = payloadBody[1].id;\r",
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"entityId1\", entityId1);\r",
-																	"pm.collectionVariables.set(\"entityId2\", entityId2);\r",
+																	"pm.collectionVariables.set(\"entityId3\", entityId2);\r",
+																	"var response = pm.response.json();\r",
 																	"pm.test(\"Content-Type is present\", function () {\r",
 																	"    pm.response.to.have.header(\"Content-Type\");\r",
 																	"});\r",
@@ -33912,8 +33916,8 @@
 																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207,204]);\r",
 																	"});\r",
 																	"pm.test(\"Response validations\", function () {\r",
-																	"     pm.expect(entityId1).to.equal(\"urn:test:testbatchentity1005\");\r",
-																	"     pm.expect(entityId2).to.equal(\"urn:test:testbatchentity1007\");\r",
+																	"     pm.expect(entityId1).to.equal(response[0]);\r",
+																	"     pm.expect(entityId2).to.equal(response[1]);\r",
 																	"});\r",
 																	" \r",
 																	" "
@@ -34046,7 +34050,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "[\r\n    \"urn:test:testbatchentity1005\",\r\n    \"urn:test:testbatchentity1006\",\r\n    \"urn:test:testbatchentity1007\"\r\n]"
+															"raw": "[\r\n    \"{{entityId1}}\",\r\n    \"{{entityId2}}\",\r\n    \"{{entityId3}}\"\r\n]"
 														},
 														"url": {
 															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
@@ -36070,6 +36074,20 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId1",
+			"value": ""
+		},
+		{
+			"key": "entityId2",
+			"value": ""
 		}
 	]
 }
