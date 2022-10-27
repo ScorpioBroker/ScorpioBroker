@@ -185,6 +185,25 @@
 			<artifactId>quarkus-eureka</artifactId>
 			<version>0.0.14</version>
 		</dependency>
+		<dependency>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>smallrye-reactive-messaging-camel</artifactId>
+			<version>3.21.0</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-reactive-streams</artifactId>
+			<version>2.13.0</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.apache.camel.quarkus/camel-quarkus-kafka -->
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-kafka</artifactId>
+			<version>2.13.0</version>
+		</dependency>
 	</dependencies>
 	<profiles>
 		<profile>

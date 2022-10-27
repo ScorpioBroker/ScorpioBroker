@@ -94,9 +94,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	private boolean sendInitialNotification;
 	private boolean sendDeleteNotification;
 
-	protected String subSyncTopic;
+	//protected String subSyncTopic;
 
-	protected String syncIdentifier;
+	//protected String syncIdentifier;
 
 	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
@@ -138,8 +138,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@PostConstruct
 	void setup() {
 		JsonLdProcessor.init(coreContext);
-		setSyncId();
-		kafkaSender = getSyncChannelSender();
+		//setSyncId();
+		//kafkaSender = getSyncChannelSender();
 		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		webClient = WebClient.create(vertx);
@@ -163,7 +163,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	}
 
-	protected abstract MutinyEmitter<SyncMessage> getSyncChannelSender();
+	//protected abstract MutinyEmitter<SyncMessage> getSyncChannelSender();
 
 	protected void destroy() {
 		try {
@@ -174,7 +174,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 	}
 
-	protected abstract void setSyncId();
+	//protected abstract void setSyncId();
 
 	protected abstract boolean sendDeleteNotification();
 
@@ -305,9 +305,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		subscriptionRequest.setType(AppConstants.CREATE_REQUEST);
 		List<Uni<Void>> unis = Lists.newArrayListWithCapacity(2);
 		unis.add(subscriptionInfoDAO.storeSubscription(subscriptionRequest));
-		if (kafkaSender != null) {
-			unis.add(kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest)));
-		}
+		//if (kafkaSender != null) {
+		//	unis.add(kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest)));
+		//}
 		return Uni.combine().all().unis(unis).combinedWith((l) -> {
 			return subscriptionRequest.getSubscription();
 		});
@@ -318,7 +318,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		unis.add(subscriptionInfoDAO.storeSubscription(subscriptionRequest));
 		if (kafkaSender != null) {
 			subscriptionRequest.setType(AppConstants.UPDATE_REQUEST);
-			unis.add(kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest)));
+			//unis.add(kafkaSender.send(new SyncMessage(syncIdentifier, subscriptionRequest)));
 		}
 		return Uni.combine().all().unis(unis).discardItems();
 	}
@@ -397,7 +397,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		unis.add(subscriptionInfoDAO.deleteSubscription(removedSub));
 		if (kafkaSender != null) {
 			removedSub.setType(AppConstants.DELETE_REQUEST);
-			unis.add(kafkaSender.send(new SyncMessage(syncIdentifier, removedSub)));
+			//unis.add(kafkaSender.send(new SyncMessage(syncIdentifier, removedSub)));
 		}
 		return Uni.combine().all().unis(unis).discardItems();
 
