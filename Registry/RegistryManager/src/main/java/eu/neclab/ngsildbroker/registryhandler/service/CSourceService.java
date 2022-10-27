@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import javax.el.MethodNotFoundException;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.MethodNotSupportedException;
 import org.apache.http.client.fluent.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,7 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
@@ -196,14 +198,14 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, int batchId) throws ResponseException, Exception {
+			Map<String, Object> entry, BatchInfo batchInfo) throws ResponseException, Exception {
 		throw new MethodNotFoundException("not supported in registry");
 	}
 
 	// need to be check and change
 	@Override
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options, int batchId) throws ResponseException, Exception {
+			Map<String, Object> entry, String[] options, BatchInfo batchInfo) throws ResponseException, Exception {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		Map<String, Object> originalRegistration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		AppendCSourceRequest request = new AppendCSourceRequest(headers, registrationId, originalRegistration, entry,
@@ -214,14 +216,14 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 		this.csourceTimerTask(headers, request.getFinalPayload());
 		pushToDB(request);
-		request.setBatchId(batchId);
+		request.setBatchInfo(batchInfo);
 		sendToKafka(request);
 		return request.getUpdateResult();
 	}
 
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
 			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
-		return appendToEntry(headers, registrationId, entry, options, -1);
+		return appendToEntry(headers, registrationId, entry, options, new BatchInfo(-1, -1));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -231,7 +233,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	@Override
 	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			int batchId) throws ResponseException, Exception {
+			BatchInfo batchInfo) throws ResponseException, Exception {
 		String id;
 		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
 		if (idObj == null) {
@@ -241,7 +243,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			id = (String) idObj;
 		}
 		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
-		request.setBatchId(batchId);
+		request.setBatchInfo(batchInfo);
 		/*
 		 * String tenantId = HttpUtils.getInternalTenant(headers); if
 		 * (this.csourceIds.containsEntry(tenantId, request.getId())) { throw new
@@ -256,7 +258,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
-		return createEntry(headers, resolved, -1);
+		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
 	private void sendToKafka(BaseRequest request) {
@@ -271,11 +273,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId)
 			throws ResponseException, Exception {
-		return deleteEntry(headers, registrationId, -1);
+		return deleteEntry(headers, registrationId, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId, int batchId)
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId, BatchInfo batchInfo)
 			throws ResponseException, Exception {
 		if (registrationId == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid delete for registration. No ID provided.");
@@ -290,7 +292,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 		Map<String, Object> registration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId);
-		requestForSub.setBatchId(batchId);
+		requestForSub.setBatchInfo(batchInfo);
 		sendToKafka(requestForSub);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		pushToDB(request);
@@ -564,9 +566,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public void finalizeBatch(int batchId) {
-		// TODO Auto-generated method stub
-		
+	public void sendFail(BatchInfo batchInfo) {
+		throw new MethodNotFoundException("Registry doesn't do batches");
+
 	}
 
 }
