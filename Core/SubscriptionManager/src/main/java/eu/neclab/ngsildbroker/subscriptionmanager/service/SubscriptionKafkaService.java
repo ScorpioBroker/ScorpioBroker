@@ -44,9 +44,9 @@ public class SubscriptionKafkaService {
 				subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
 						AppConstants.OPERATION_DELETE_ENTITY);
 				break;
-			case AppConstants.FINALIZE_BATCH_REQUEST:
+			case AppConstants.BATCH_ERROR_REQUEST:
 				logger.debug("Finalizing batch " + key);
-				subscriptionService.finalizeBatch(message.getBatchId());
+				subscriptionService.addFail(message.getBatchInfo());
 				break;
 			default:
 				break;

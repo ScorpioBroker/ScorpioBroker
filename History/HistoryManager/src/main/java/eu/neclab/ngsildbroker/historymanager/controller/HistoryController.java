@@ -28,6 +28,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
@@ -109,7 +110,8 @@ public class HistoryController {
 			context = context.parse(links, true);
 			logger.trace("deleteAttrib2TemporalEntity :: started");
 			logger.debug("entityId : " + entityId + " attrId : " + attrId);
-			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null, context, -1);
+			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null, context,
+					new BatchInfo(-1, -1));
 			logger.trace("deleteAttrib2TemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (Exception exception) {
@@ -160,7 +162,8 @@ public class HistoryController {
 			List<Object> links = HttpUtils.getAtContext(request);
 			context = context.parse(links, true);
 
-			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId, context, -1);
+			historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId, context,
+					new BatchInfo(-1, -1));
 			logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
 			return ResponseEntity.noContent().build();
 		} catch (Exception exception) {
