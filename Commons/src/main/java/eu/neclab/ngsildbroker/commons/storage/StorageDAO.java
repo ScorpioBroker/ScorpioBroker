@@ -14,6 +14,9 @@ import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.env.OriginTrackedMapPropertySource;
+import org.springframework.core.env.AbstractEnvironment;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -23,7 +26,8 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -55,15 +59,26 @@ public abstract class StorageDAO {
 
 	@Autowired
 	private HikariConfig hikariConfig;
-	private Map<Object, DataSource> resolvedDataSources = new HashMap<>();
+	private static Map<Object, DataSource> resolvedDataSources = new HashMap<>();
 	private TransactionTemplate writerTransactionTemplate;
 	private JdbcTemplate writerJdbcTemplateWithTransaction;
 	private DBWriteTemplates defaultTemplates;
-	private HashMap<String, DBWriteTemplates> tenant2Templates = new HashMap<String, DBWriteTemplates>();
+	private static HashMap<String, DBWriteTemplates> tenant2Templates = new HashMap<String, DBWriteTemplates>();
 
 	protected abstract StorageFunctionsInterface getStorageFunctions();
 
 	StorageFunctionsInterface storageFunctions;
+
+	@Value("${scorpio.tenants.default.poolmax:-1}")
+	int tenantPoolMax;
+
+	@Value("${scorpio.tenants.default.idlemin:-1}")
+	int tenantIdleMin;
+
+	Map<String, Integer[]> specialTenantPools = Maps.newHashMap();
+
+	@Autowired
+	AbstractEnvironment env;
 
 	@PostConstruct
 	public void init() {
@@ -74,6 +89,32 @@ public abstract class StorageDAO {
 		this.defaultTemplates = new DBWriteTemplates(writerJdbcTemplateWithTransaction, writerTransactionTemplate,
 				writerJdbcTemplate);
 		storageFunctions = getStorageFunctions();
+
+		env.getPropertySources().forEach(t -> {
+
+			if (t instanceof OriginTrackedMapPropertySource) {
+				OriginTrackedMapPropertySource tmp = (OriginTrackedMapPropertySource) t;
+				for (String propName : tmp.getPropertyNames()) {
+					if (propName.startsWith("scorpio.tenants.") && !propName.equals("scorpio.tenants.default.poolmax")
+							&& !propName.equals("scorpio.tenants.default.idlemin")) {
+						Integer[] tmpInt;
+						String[] splitted = propName.substring("scorpio.tenants.".length()).split("\\.");
+						if (specialTenantPools.containsKey(splitted[0])) {
+							tmpInt = specialTenantPools.get(splitted[0]);
+						} else {
+							tmpInt = new Integer[2];
+						}
+						if (splitted[1].equals("poolmax")) {
+							tmpInt[0] = (Integer) tmp.getProperty(propName);
+						}
+						if (splitted[1].equals("idlemin")) {
+							tmpInt[1] = (Integer) tmp.getProperty(propName);
+						}
+						specialTenantPools.put(splitted[0], tmpInt);
+					}
+				}
+			}
+		});
 	}
 
 	public boolean storeTenantdata(String tableName, String columnName, String tenantidvalue, String databasename)
@@ -193,6 +234,30 @@ public abstract class StorageDAO {
 		String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(hikariConfig.getJdbcUrl(), tenantDatabaseName);
 		tenantHikariConfig.setJdbcUrl(tenantJdbcURL);
 		tenantHikariConfig.setPoolName(tenantDatabaseName + "-db-pool");
+		if (specialTenantPools.containsKey(tenantidvalue)) {
+			Integer[] poolConfig = specialTenantPools.get(tenantidvalue);
+			if (poolConfig[0] != null) {
+				tenantHikariConfig.setMaximumPoolSize(poolConfig[0]);
+			} else {
+				if (tenantPoolMax != -1) {
+					tenantHikariConfig.setMaximumPoolSize(tenantPoolMax);
+				}
+			}
+			if (poolConfig[1] != null) {
+				tenantHikariConfig.setMinimumIdle(poolConfig[1]);
+			} else {
+				if (tenantIdleMin != -1) {
+					tenantHikariConfig.setMinimumIdle(tenantIdleMin);
+				}
+			}
+		} else {
+			if (tenantPoolMax != -1) {
+				tenantHikariConfig.setMaximumPoolSize(tenantPoolMax);
+			}
+			if (tenantIdleMin != -1) {
+				tenantHikariConfig.setMinimumIdle(tenantIdleMin);
+			}
+		}
 		return new HikariDataSource(tenantHikariConfig);
 	}
 
@@ -232,26 +297,61 @@ public abstract class StorageDAO {
 				queryResult.setActualDataString(list);
 				return queryResult;
 			}
-			if (qp.getCountResult() == true) {
+			if (qp.getCountResult()) {
 				if (qp.getLimit() == 0) {
 					String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
-					Integer count = template.queryForObject(sqlQueryCount, Integer.class);
+					Long count = template.queryForObject(sqlQueryCount, Long.class);
 					queryResult.setCount(count);
 					return queryResult;
 				}
+
 				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
-				List<String> list = template.queryForList(sqlQuery, String.class);
+				List<Map<String, Object>> result = template.queryForList(sqlQuery);
+				List<String> list = Lists.newArrayList();
+				if (result.size() > 0) {
+					Long count = (Long) result.get(0).get("count");
+					if (count != null) {
+						queryResult.setCount(count);
+						long after = count - qp.getOffSet() - qp.getLimit();
+						if (after < 0) {
+							after = 0;
+						}
+						queryResult.setResultsLeftAfter(after);
+						long before = count - qp.getOffSet();
+						if (before < 0) {
+							before = 0;
+						}
+						queryResult.setResultsLeftBefore(before);
+					}
+				}
+				for (Map<String, Object> entry : result) {
+					list.add((String) entry.get("data").toString());
+				}
+
 				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
-				String sqlQueryCount = storageFunctions.translateNgsildQueryToCountResult(qp);
-				Integer count = template.queryForObject(sqlQueryCount, Integer.class);
-				queryResult.setCount(count);
+
+				queryResult.setOffset(qp.getOffSet());
+				queryResult.setLimit(qp.getLimit());
+
 				return queryResult;
 			} else {
 				String sqlQuery = storageFunctions.translateNgsildQueryToSql(qp);
 				List<String> list = template.queryForList(sqlQuery, String.class);
 				queryResult.setDataString(list);
 				queryResult.setActualDataString(list);
+				queryResult.setOffset(qp.getOffSet());
+				queryResult.setLimit(qp.getLimit());
+				long after;
+				if (list.size() < qp.getLimit()) {
+					after = 0;
+				} else {
+					after = qp.getLimit() + 1;
+				}
+				long before = qp.getOffSet();
+
+				queryResult.setResultsLeftAfter(after);
+				queryResult.setResultsLeftBefore(before);
 				return queryResult;
 			}
 		} catch (DataIntegrityViolationException e) {
@@ -264,7 +364,7 @@ public abstract class StorageDAO {
 		return queryResult;
 	}
 
-	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException{
+	public boolean storeTemporalEntity(HistoryEntityRequest request) throws SQLException {
 		boolean result = true;
 		DBWriteTemplates templates = getJDBCTemplates(request);
 
@@ -308,12 +408,13 @@ public abstract class StorageDAO {
 		}
 		return n > 0;
 	}
+
 	private boolean doTemporalSqlAttrInsert(DBWriteTemplates templates, String value, String entityId,
 			String entityType, String attributeId, String entityCreatedAt, String entityModifiedAt, String instanceId,
 			Boolean overwriteOp) {
 		try {
 			Integer n = 0;
-			
+
 			if (!value.equals("null")) {
 				// https://gist.github.com/mdellabitta/1444003
 				try {
@@ -329,7 +430,7 @@ public abstract class StorageDAO {
 								tn = templates.getWriterJdbcTemplateWithTransaction().update(sql, entityId, entityType,
 										entityCreatedAt, entityModifiedAt);
 							}
-                     
+
 							if (entityId != null && attributeId != null) {
 								if (overwriteOp != null && overwriteOp) {
 									sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
@@ -352,8 +453,7 @@ public abstract class StorageDAO {
 
 						}
 					});
-				}
-				catch (DataIntegrityViolationException e) {
+				} catch (DataIntegrityViolationException e) {
 					logger.info("Failed to create attribute instance because of data inconsistency");
 					logger.info("Attempting recovery");
 					try {
@@ -441,7 +541,7 @@ public abstract class StorageDAO {
 				sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA + " = ?::jsonb , "
 						+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = ?::jsonb , " + DBConstants.DBCOLUMN_KVDATA
 						+ " = ?::jsonb WHERE " + DBConstants.DBCOLUMN_ID + "=?";
-						n = templates.getWriterJdbcTemplate().update(sql, value, valueWithoutSysAttrs, kvValue, key);
+				n = templates.getWriterJdbcTemplate().update(sql, value, valueWithoutSysAttrs, kvValue, key);
 
 			}
 		} else {
@@ -472,8 +572,8 @@ public abstract class StorageDAO {
 
 		return result;
 	}
-	
-	protected String getTenant(String tenantId){
+
+	protected String getTenant(String tenantId) {
 		if (tenantId == null) {
 			return null;
 		}
@@ -482,7 +582,7 @@ public abstract class StorageDAO {
 		}
 		return tenantId;
 	}
-	
+
 	private String validateDataBaseNameByTenantId(String tenantid) {
 		if (tenantid == null)
 			return null;

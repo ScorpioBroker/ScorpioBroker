@@ -14,8 +14,9 @@ public class InternalNotification extends Notification {
 	}
 
 	public InternalNotification(String id, String type, Long notifiedAt, String subscriptionId,
-			List<Map<String, Object>> data, int triggerReason, List<Object> context, String tenantId, ArrayListMultimap<String, String> headers) {
-		super(id, type, notifiedAt, subscriptionId, data, triggerReason, context, headers);
+			List<Map<String, Object>> data, int triggerReason, List<Object> context, String tenantId,
+			ArrayListMultimap<String, String> headers) {
+		super(id, type, notifiedAt, subscriptionId, data, triggerReason, context, headers, null);
 		this.tenantId = tenantId;
 	}
 

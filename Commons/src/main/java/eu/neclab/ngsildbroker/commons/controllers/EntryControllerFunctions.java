@@ -4,13 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
+import org.springframework.http.HttpHeaders;
 import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.slf4j.Logger;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
@@ -18,21 +15,28 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-
+import org.apache.commons.lang.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 public interface EntryControllerFunctions {
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	static Random random = new Random();
+	static Logger logger = LoggerFactory.getLogger(EntryControllerFunctions.class);
 
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> updateMultiple(EntryCRUDService entityService, HttpServletRequest request,
@@ -45,6 +49,10 @@ public interface EntryControllerFunctions {
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
+		int batchId = random.nextInt();
+		int batchSize = jsonPayload.size();
+		BatchInfo info = new BatchInfo(batchId, batchSize);
+
 		BatchResult result = new BatchResult();
 		List<Object> linkHeaders = HttpUtils.getAtContext(request);
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
@@ -61,6 +69,7 @@ public interface EntryControllerFunctions {
 			return ResponseEntity.status(responseException.getHttpStatus())
 					.body(new RestResponse(responseException).toJson());
 		}
+
 		for (Map<String, Object> compactedEntry : jsonPayload) {
 			String entityId = "NOT AVAILABLE";
 			Map<String, Object> entry;
@@ -86,10 +95,11 @@ public interface EntryControllerFunctions {
 			}
 			try {
 
-				UpdateResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray);
+				UpdateResult updateResult = entityService.appendToEntry(headers, entityId, entry, optionsArray, info);
 				if (updateResult.getNotUpdated().isEmpty()) {
 					result.addSuccess(entityId);
 				} else {
+					entityService.sendFail(info);
 					result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
 							JsonUtils.toPrettyString(updateResult.getNotUpdated()) + " was not added")));
 				}
@@ -101,7 +111,7 @@ public interface EntryControllerFunctions {
 				} else {
 					response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 				}
-
+				entityService.sendFail(info);
 				result.addFail(new BatchFailure(entityId, response));
 			}
 		}
@@ -118,6 +128,10 @@ public interface EntryControllerFunctions {
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
+		int batchId = random.nextInt();
+		int batchSize = jsonPayload.size();
+		BatchInfo info = new BatchInfo(batchId, batchSize);
+
 		BatchResult result = new BatchResult();
 		if (maxCreateBatch != -1 && jsonPayload.size() > maxCreateBatch) {
 			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
@@ -146,11 +160,12 @@ public interface EntryControllerFunctions {
 				} else {
 					response = new RestResponse(ErrorType.BadRequestData, e.getLocalizedMessage());
 				}
+				entityService.sendFail(info);
 				result.addFail(new BatchFailure("FAILED TO PARSE BODY", response));
 				continue;
 			}
 			try {
-				result.addSuccess(entityService.createEntry(headers, resolved));
+				result.addSuccess(entityService.createEntry(headers, resolved, info).getEntityId());
 			} catch (Exception e) {
 				RestResponse response;
 				if (e instanceof ResponseException) {
@@ -162,6 +177,7 @@ public interface EntryControllerFunctions {
 				if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
 					entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
 				}
+				entityService.sendFail(info);
 				result.addFail(new BatchFailure(entityId, response));
 			}
 
@@ -180,7 +196,7 @@ public interface EntryControllerFunctions {
 
 	private static ResponseEntity<String> generateBatchResultReply(BatchResult result, HttpStatus okStatus) {
 		HttpStatus status = HttpStatus.MULTI_STATUS;
-		String body = DataSerializer.toJson(result);
+		String body = result.toJsonString();
 		if (result.getFails().isEmpty()) {
 			status = okStatus;
 			body = null;
@@ -188,11 +204,16 @@ public interface EntryControllerFunctions {
 		if (result.getSuccess().isEmpty()) {
 			status = HttpStatus.BAD_REQUEST;
 		}
-
-		if (body == null) {
-			return ResponseEntity.status(status).build();
+		if (result.getFails().isEmpty() && !result.getSuccess().isEmpty()) {
+			status = okStatus;
+			try {
+				body = JsonUtils.toPrettyString(result.getSuccess());
+			} catch (Exception e) {
+				logger.error("Failed to generate reply body for batch result.", e);
+			}
 		}
-		return ResponseEntity.status(status).body(body);
+		return ResponseEntity.status(status).header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+				.body(body);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -200,6 +221,7 @@ public interface EntryControllerFunctions {
 			String payload, int payloadType) {
 		List<Object> jsonPayload;
 		boolean atContextAllowed;
+
 		List<Object> links = HttpUtils.getAtContext(request);
 		try {
 
@@ -217,6 +239,9 @@ public interface EntryControllerFunctions {
 			return HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.BadRequestData, "An empty array is not allowed"));
 		}
+		int batchId = random.nextInt();
+		int batchSize = jsonPayload.size();
+		BatchInfo info = new BatchInfo(batchId, batchSize);
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		BatchResult result = new BatchResult();
 		for (Object entry : jsonPayload) {
@@ -228,9 +253,10 @@ public interface EntryControllerFunctions {
 					List<Object> resolved = JsonLdProcessor.expand(links, entry, opts, payloadType, atContextAllowed);
 					entityId = (String) ((Map<String, Object>) resolved.get(0)).get(NGSIConstants.JSON_LD_ID);
 				}
-				if (entityService.deleteEntry(headers, entityId)) {
+				if (entityService.deleteEntry(headers, entityId, info)) {
 					result.addSuccess(entityId);
 				} else {
+					entityService.sendFail(info);
 					result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.InternalError, "")));
 				}
 			} catch (Exception e) {
@@ -249,6 +275,7 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static ResponseEntity<String> upsertMultiple(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, String options, int maxCreateBatch, int payloadType) {
+
 		String[] optionsArray = getOptionsArray(options);
 		List<Map<String, Object>> jsonPayload;
 		try {
@@ -278,6 +305,8 @@ public interface EntryControllerFunctions {
 		if (ArrayUtils.contains(optionsArray, NGSIConstants.UPDATE_OPTION)) {
 			replace = false;
 		}
+		BatchInfo batchInfo = new BatchInfo(random.nextInt(), jsonPayload.size());
+		int batchId = random.nextInt();
 		for (Map<String, Object> entry : jsonPayload) {
 			Map<String, Object> resolved;
 			try {
@@ -296,70 +325,85 @@ public interface EntryControllerFunctions {
 				} else if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
 					entityId = (String) entry.get(NGSIConstants.JSON_LD_ID);
 				}
+				entityService.sendFail(batchInfo);
 				result.addFail(new BatchFailure(entityId, response));
 				continue;
 			}
-			try {
-				result.addSuccess(entityService.createEntry(headers, resolved));
-				insertedOneEntity = true;
-			} catch (Exception e) {
-				String entityId;
-				if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
-					entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
-				} else {
-					result.addFail(new BatchFailure("NO ID PROVIDED",
-							new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
-					continue;
-				}
-				RestResponse response;
-				if (e instanceof ResponseException) {
-					ResponseException responseException = ((ResponseException) e);
-					if (responseException.getHttpStatus().equals(HttpStatus.CONFLICT)) {
-						if (replace) {
+			String entityId;
+			if (resolved.containsKey(NGSIConstants.JSON_LD_ID)) {
+				entityId = (String) resolved.get(NGSIConstants.JSON_LD_ID);
+			} else {
+				entityService.sendFail(batchInfo);
+				result.addFail(new BatchFailure("NO ID PROVIDED",
+						new RestResponse(ErrorType.BadRequestData, "No Entity Id provided")));
+				continue;
+			}
+			RestResponse response;
+			if (replace) {
+				try {
+					entityService.deleteEntry(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID));
+					result.addSuccess(entityService.createEntry(headers, resolved, batchInfo).getEntityId());
+					appendedOneEntity = true;
+				} catch (Exception e1) {
+					if (e1 instanceof ResponseException) {
+						response = new RestResponse((ResponseException) e1);
+						if (response.getStatus().equals(HttpStatus.NOT_FOUND)) {
 							try {
-								entityService.deleteEntry(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID));
-								result.addSuccess(entityService.createEntry(headers, resolved));
+								result.addSuccess(
+										entityService.createEntry(headers, resolved, batchInfo).getEntityId());
 								insertedOneEntity = true;
-							} catch (Exception e1) {
-								if (e1 instanceof ResponseException) {
-									response = new RestResponse((ResponseException) e1);
+							} catch (Exception e) {
+								if (e instanceof ResponseException) {
+									response = new RestResponse((ResponseException) e);
 								} else {
-									response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
+									response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 								}
-								result.addFail(new BatchFailure(entityId, response));// TODO Auto-generated catch block
-							}
-						} else {
-
-							try {
-								UpdateResult updateResult = entityService.appendToEntry(headers, entityId, resolved,
-										new String[0]);
-								if (updateResult.getNotUpdated().isEmpty()) {
-									result.addSuccess(entityId);
-									appendedOneEntity = true;
-								} else {
-									result.addFail(new BatchFailure(entityId,
-											new RestResponse(ErrorType.MultiStatus,
-													JsonUtils.toPrettyString(updateResult.getNotUpdated())
-															+ " was not added")));
-								}
-							} catch (Exception e1) {
-								if (e1 instanceof ResponseException) {
-									response = new RestResponse((ResponseException) e1);
-								} else {
-									response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
-								}
-
+								entityService.sendFail(batchInfo);
 								result.addFail(new BatchFailure(entityId, response));
 							}
 						}
 					} else {
-						response = new RestResponse((ResponseException) e);
+						response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
+						entityService.sendFail(batchInfo);
+						result.addFail(new BatchFailure(entityId, response));
+					}
+				}
+			} else {
+
+				try {
+					UpdateResult updateResult = entityService.appendToEntry(headers, entityId, resolved, new String[0],
+							batchInfo);
+					if (updateResult.getNotUpdated().isEmpty()) {
+						result.addSuccess(entityId);
+						appendedOneEntity = true;
+					} else {
+						entityService.sendFail(batchInfo);
+						result.addFail(new BatchFailure(entityId, new RestResponse(ErrorType.MultiStatus,
+								JsonUtils.toPrettyString(updateResult.getNotUpdated()) + " was not added")));
+					}
+				} catch (Exception e1) {
+					if (e1 instanceof ResponseException) {
+						ResponseException responseException = ((ResponseException) e1);
+						if (responseException.getHttpStatus().equals(HttpStatus.NOT_FOUND)) {
+							try {
+								result.addSuccess(
+										entityService.createEntry(headers, resolved, batchInfo).getEntityId());
+							} catch (Exception e) {
+								if (e instanceof ResponseException) {
+									response = new RestResponse((ResponseException) e);
+								} else {
+									response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+								}
+								entityService.sendFail(batchInfo);
+								result.addFail(new BatchFailure(entityId, response));
+							}
+						}
+					} else {
+						response = new RestResponse(ErrorType.InternalError, e1.getLocalizedMessage());
+						entityService.sendFail(batchInfo);
 						result.addFail(new BatchFailure(entityId, response));
 					}
 
-				} else {
-					response = new RestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-					result.addFail(new BatchFailure(entityId, response));
 				}
 			}
 		}
@@ -375,7 +419,7 @@ public interface EntryControllerFunctions {
 			}
 		} else {
 			if (insertedOneEntity && appendedOneEntity) {
-				status = HttpStatus.MULTI_STATUS;
+				status = HttpStatus.CREATED;
 			} else {
 				if (insertedOneEntity) {
 					status = HttpStatus.CREATED;
@@ -417,7 +461,7 @@ public interface EntryControllerFunctions {
 
 	public static ResponseEntity<String> createEntry(EntryCRUDService entityService, HttpServletRequest request,
 			String payload, int payloadType, String baseUrl, Logger logger) {
-		String result = null;
+		CreateResult result = null;
 		try {
 			logger.trace("create entity :: started");
 			List<Object> contextHeaders = HttpUtils.getAtContext(request);
@@ -431,7 +475,13 @@ public interface EntryControllerFunctions {
 					.expand(contextHeaders, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
 			result = entityService.createEntry(HttpUtils.getHeaders(request), resolved);
 			logger.trace("create entity :: completed");
-			return ResponseEntity.status(HttpStatus.CREATED).header("location", baseUrl + result).build();
+			HttpStatus status;
+			if (result.isCreatedOrUpdated()) {
+				status = HttpStatus.CREATED;
+			} else {
+				status = HttpStatus.NO_CONTENT;
+			}
+			return ResponseEntity.status(status).header("location", baseUrl + result.getEntityId()).build();
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}

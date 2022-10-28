@@ -24,26 +24,32 @@ public class SubscriptionKafkaService {
 	public void handleEntity(@Payload BaseRequest message, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 			@Header(KafkaHeaders.RECEIVED_TIMESTAMP) long timeStamp) {
 		switch (message.getRequestType()) {
-		case AppConstants.APPEND_REQUEST:
-			logger.debug("Append got called: " + key);
-			subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_APPEND_ENTITY);
-			break;
-		case AppConstants.CREATE_REQUEST:
-			logger.debug("Create got called: " + key);
-			subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
-					AppConstants.OPERATION_CREATE_ENTITY);
-			break;
-		case AppConstants.UPDATE_REQUEST:
-			logger.debug("Update got called: " + key);
-			subscriptionService.checkSubscriptionsWithDelta(message, timeStamp, AppConstants.OPERATION_UPDATE_ENTITY);
-			break;
-		case AppConstants.DELETE_REQUEST:
-			logger.debug("Delete got called: " + key);
-			subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
-					AppConstants.OPERATION_DELETE_ENTITY);
-			break;
-		default:
-			break;
+			case AppConstants.APPEND_REQUEST:
+				logger.debug("Append got called: " + key);
+				subscriptionService.checkSubscriptionsWithDelta(message, timeStamp,
+						AppConstants.OPERATION_APPEND_ENTITY);
+				break;
+			case AppConstants.CREATE_REQUEST:
+				logger.debug("Create got called: " + key);
+				subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
+						AppConstants.OPERATION_CREATE_ENTITY);
+				break;
+			case AppConstants.UPDATE_REQUEST:
+				logger.debug("Update got called: " + key);
+				subscriptionService.checkSubscriptionsWithDelta(message, timeStamp,
+						AppConstants.OPERATION_UPDATE_ENTITY);
+				break;
+			case AppConstants.DELETE_REQUEST:
+				logger.debug("Delete got called: " + key);
+				subscriptionService.checkSubscriptionsWithAbsolute(message, timeStamp,
+						AppConstants.OPERATION_DELETE_ENTITY);
+				break;
+			case AppConstants.BATCH_ERROR_REQUEST:
+				logger.debug("Finalizing batch " + key);
+				subscriptionService.addFail(message.getBatchInfo());
+				break;
+			default:
+				break;
 		}
 	}
 

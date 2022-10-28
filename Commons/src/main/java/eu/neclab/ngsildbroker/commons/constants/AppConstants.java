@@ -96,5 +96,8 @@ public class AppConstants {
 	public static final int DELETE_ATTRIBUTE_REQUEST = 4;
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	public static final String INTERNAL_REGISTRATION_ID = "scorpio:hosted:registryentries";
+	public static final String CONTENT_TYPE = "content-type";
+	public static final int BATCH_ERROR_REQUEST = 99;
+
 
 }

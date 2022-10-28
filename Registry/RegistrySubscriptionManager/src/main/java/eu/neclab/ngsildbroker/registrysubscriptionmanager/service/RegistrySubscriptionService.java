@@ -5,11 +5,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -48,10 +44,10 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	private HashMap<String, SubscriptionRequest> id2InternalSubscriptions = new HashMap<String, SubscriptionRequest>();
 
-	@PostConstruct
-	private void notificationHandlerSetup() {
-		this.internalHandler = new InternalNotificationHandler(kafkaTemplate, NOTIFICATION_TOPIC);
-	}
+//	@PostConstruct
+//	private void notificationHandlerSetup() {
+//		this.internalHandler = new InternalNotificationHandler(kafkaTemplate, NOTIFICATION_TOPIC);
+//	}
 
 	@Override
 	protected SubscriptionInfoDAOInterface getSubscriptionInfoDao() {
@@ -68,7 +64,8 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 			int triggerReason) {
 		return new Notification(EntityTools.getRandomID("notification:"), NGSIConstants.CSOURCE_NOTIFICATION,
 				System.currentTimeMillis(), request.getSubscription().getId(), dataList, triggerReason,
-				request.getContext(), request.getHeaders());
+				request.getContext(), request.getHeaders(),
+				request.getSubscription().getNotification().getEndPoint().getAccept());
 	}
 
 	@Override
@@ -78,7 +75,12 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {
+
 		if (endpointProtocol.equals("internal")) {
+			if (internalHandler == null) {
+				internalHandler = new InternalNotificationHandler(subscriptionInfoDAO, kafkaTemplate,
+						NOTIFICATION_TOPIC);
+			}
 			return internalHandler;
 		}
 		return super.getNotificationHandler(endpointProtocol);
@@ -87,7 +89,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	void subscribeInternal(SubscriptionRequest request) {
 		makeSubscriptionInternal(request);
 		try {
-			subscribe(request);
+			subscribe(request, true);
 		} catch (ResponseException e) {
 			logger.debug("Failed to subscribe internally", e);
 		}
@@ -97,29 +99,29 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		SubscriptionRequest request = id2InternalSubscriptions.remove(subId);
 		try {
 			if (request != null) {
-				unsubscribe(subId, request.getHeaders());
+				unsubscribe(subId, request.getHeaders(), true);
 			}
 		} catch (ResponseException e) {
 			logger.debug("Failed to subscribe internally", e);
 		}
 	}
 
-	@PreDestroy
-	protected void deconstructor() {
-		for (Entry<String, SubscriptionRequest> entry : id2InternalSubscriptions.entrySet()) {
-			try {
-				unsubscribe(entry.getKey(), entry.getValue().getHeaders());
-			} catch (ResponseException e) {
-				logger.debug("Failed to subscribe internally", e);
-			}
-		}
-
-	}
+//	@PreDestroy
+//	protected void deconstructor() {
+//		for (Entry<String, SubscriptionRequest> entry : id2InternalSubscriptions.entrySet()) {
+//			try {
+//				unsubscribe(entry.getKey(), entry.getValue().getHeaders());
+//			} catch (ResponseException e) {
+//				logger.debug("Failed to subscribe internally", e);
+//			}
+//		}
+//
+//	}
 
 	public void updateInternal(SubscriptionRequest request) {
 		makeSubscriptionInternal(request);
 		try {
-			updateSubscription(request);
+			updateSubscription(request, true);
 		} catch (ResponseException e) {
 			logger.debug("Failed to subscribe internally", e);
 		}
@@ -136,6 +138,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 			logger.debug("Failed to set internal sub endpoint", e);
 		}
 		sub.setTimeInterval(0);
+
 		id2InternalSubscriptions.put(sub.getId(), request);
 	}
 

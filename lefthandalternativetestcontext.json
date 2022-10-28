@@ -1,0 +1,10 @@
+{
+	"@context": {
+		"stringpropertyalternative": "http://testdom.com/stringproperty",
+		"intpropertyalternative": "http://testdom.com/intproperty",
+		"floatpropertyalternative": "http://testdom.com/floatproperty",
+		"complexpropertyalternative": "http://testdom.com/complexproperty",
+		"testrelationshipalternative": "http://testdom.com/testrelationship",
+		"TestTypealternative": "http://testdom.com/TestType"
+	}
+}

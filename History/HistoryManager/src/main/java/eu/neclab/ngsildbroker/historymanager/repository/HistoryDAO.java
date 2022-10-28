@@ -1,12 +1,11 @@
 package eu.neclab.ngsildbroker.historymanager.repository;
 
+import java.sql.ResultSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.springframework.stereotype.Repository;
-
 import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -23,7 +22,7 @@ public class HistoryDAO extends StorageDAO {
 	}
 
 	public void entityExists(String entityId, String tenantId) throws ResponseException {
-		
+
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		if (tenantId == AppConstants.INTERNAL_NULL_KEY) {
 			result.putAll(AppConstants.INTERNAL_NULL_KEY,
@@ -41,7 +40,49 @@ public class HistoryDAO extends StorageDAO {
 
 		}
 	}
-	
+
+	public void attributeExists(String entityId, String tenantId, String resolvedAttrId, String instanceId)
+			throws ResponseException {
+		Map<String, String> results = new HashMap<>();
+		if (tenantId == AppConstants.INTERNAL_NULL_KEY) {
+			getJDBCTemplate(null)
+					.query("select attributeid, instanceid from temporalentityattrinstance WHERE temporalentity_id='"
+							+ entityId + "' and attributeid='" + resolvedAttrId + "'", (ResultSet rs) -> {
+								while (rs.next()) {
+									results.put(rs.getString("instanceid"), rs.getString("attributeid"));
+								}
+								return true;
+							});
+			if (results.isEmpty()) {
+				throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
+			}
+			if (instanceId != null) {
+				if (!results.containsKey(instanceId)) {
+					throw new ResponseException(ErrorType.NotFound, instanceId + " not found");
+				}
+			}
+		} else {
+			getJDBCTemplate(tenantId)
+					.query("select attributeid, instanceid from temporalentityattrinstance WHERE temporalentity_id='"
+							+ entityId + "' and attributeid='" + resolvedAttrId + "'", (ResultSet rs) -> {
+								while (rs.next()) {
+									results.put(rs.getString("instanceid"), rs.getString("attributeid"));
+								}
+								return true;
+							});
+			if (results.isEmpty()) {
+				throw new ResponseException(ErrorType.NotFound, resolvedAttrId + " not found");
+			}
+			if (instanceId != null) {
+				if (!results.containsKey(instanceId)) {
+					throw new ResponseException(ErrorType.NotFound, instanceId + " not found");
+				}
+			}
+
+		}
+
+	}
+
 	public void getAllIds(String entityId, String tenantId) throws ResponseException {
 		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
 		result.putAll(AppConstants.INTERNAL_NULL_KEY,

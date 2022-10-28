@@ -221,7 +221,7 @@ public class HistoryServiceTest {
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(temporalPayload, Map.class);
 			CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(multimaparr, resolved, false);
-			String result = historyService.createEntry(multimaparr, resolved);
+			String result = historyService.createEntry(multimaparr, resolved).getEntityId();
 			assertEquals(result, request.getId());
 			verify(historyService, times(1)).createEntry(any(), any());
 			verify(historyService).handleRequest(any());

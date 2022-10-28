@@ -6,9 +6,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.springframework.http.HttpHeaders;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.hivemq.client.mqtt.MqttClient;
 import com.hivemq.client.mqtt.datatypes.MqttQos;
@@ -16,12 +13,16 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3BlockingClient;
 import com.hivemq.client.mqtt.mqtt3.Mqtt3Client;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5BlockingClient;
 import com.hivemq.client.mqtt.mqtt5.Mqtt5Client;
-
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 
 class NotificationHandlerMQTT extends BaseNotificationHandler {
+
+	public NotificationHandlerMQTT(SubscriptionInfoDAOInterface baseSubscriptionInfoDAO) {
+		super(baseSubscriptionInfoDAO);
+	}
 
 	private final String CLIENT_ID = "ScorpioMqttNotifier";
 	private HashMap<URI, MqttClient> uri2client = new HashMap<URI, MqttClient>();
@@ -52,7 +53,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		} else {
 			Mqtt5BlockingClient client5 = (Mqtt5BlockingClient) client;
 			client5.publishWith().topic(callback.getPath().substring(1))
-					.contentType(headers.get(HttpHeaders.CONTENT_TYPE).get(0)).qos(MqttQos.fromCode(qos))
+					.contentType(headers.get(AppConstants.CONTENT_TYPE).get(0)).qos(MqttQos.fromCode(qos))
 					.payload(payload.getBytes()).send();
 		}
 

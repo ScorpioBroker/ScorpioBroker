@@ -76,8 +76,8 @@ spring:
       connectionTimeout: 30000
       idleTimeout: 30000
       maxLifetime: 2000000
-      maximumPoolSize: 20
-      minimumIdle: 5
+      maximumPoolSize: 16
+      minimumIdle: 2
       poolName: SpringBootHikariCP
     password: ${mysettings.postgres.password}
     url: ${jdbcurl}
@@ -117,8 +117,18 @@ logging:
 ngsild:
   corecontext: https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
 scorpio:
-#  gatewayurl: http://localhost:9090
-#  fedbrokers: http://remotehost:9090
+  tenants: 
+     default:
+        poolmax: -1
+        idlemin: -1
+#     test555:
+#        poolmax: 20
+#        idlemin: 15
+  gatewayurl: null
+  fedbrokers: null
+  cors: 
+    enable: true
+    allowall: true
   directDB: true
   history:
     autorecording: active

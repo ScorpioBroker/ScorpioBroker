@@ -16,12 +16,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.PostConstruct;
 import javax.el.MethodNotFoundException;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.MethodNotSupportedException;
 import org.apache.http.client.fluent.Request;
-import org.apache.http.entity.mime.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,13 +38,14 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
-import eu.neclab.ngsildbroker.commons.datatypes.RestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -81,6 +81,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@Value("${scorpio.topics.registry}")
 	String CSOURCE_TOPIC;
 	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
+			new LinkedBlockingQueue<Runnable>());
+	private ThreadPoolExecutor regStoreExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
 	@Value("${scorpio.directDB}")
 	boolean directDB = true;
@@ -195,10 +197,15 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		throw new MethodNotFoundException("not supported in registry");
 	}
 
+	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry, BatchInfo batchInfo) throws ResponseException, Exception {
+		throw new MethodNotFoundException("not supported in registry");
+	}
+
 	// need to be check and change
 	@Override
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
+			Map<String, Object> entry, String[] options, BatchInfo batchInfo) throws ResponseException, Exception {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		Map<String, Object> originalRegistration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		AppendCSourceRequest request = new AppendCSourceRequest(headers, registrationId, originalRegistration, entry,
@@ -209,8 +216,14 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 		this.csourceTimerTask(headers, request.getFinalPayload());
 		pushToDB(request);
+		request.setBatchInfo(batchInfo);
 		sendToKafka(request);
 		return request.getUpdateResult();
+	}
+
+	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
+			Map<String, Object> entry, String[] options) throws ResponseException, Exception {
+		return appendToEntry(headers, registrationId, entry, options, new BatchInfo(-1, -1));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -219,8 +232,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
-			throws ResponseException, Exception {
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			BatchInfo batchInfo) throws ResponseException, Exception {
 		String id;
 		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
 		if (idObj == null) {
@@ -230,6 +243,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			id = (String) idObj;
 		}
 		CSourceRequest request = new CreateCSourceRequest(resolved, headers, id);
+		request.setBatchInfo(batchInfo);
 		/*
 		 * String tenantId = HttpUtils.getInternalTenant(headers); if
 		 * (this.csourceIds.containsEntry(tenantId, request.getId())) { throw new
@@ -238,8 +252,13 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		 */
 		pushToDB(request);
 		sendToKafka(request);
-		return request.getId();
+		return new CreateResult(request.getId(), true);
 
+	}
+
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+			throws ResponseException, Exception {
+		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
 	private void sendToKafka(BaseRequest request) {
@@ -252,8 +271,13 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		});
 	}
 
-	@Override
 	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId)
+			throws ResponseException, Exception {
+		return deleteEntry(headers, registrationId, new BatchInfo(-1, -1));
+	}
+
+	@Override
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String registrationId, BatchInfo batchInfo)
 			throws ResponseException, Exception {
 		if (registrationId == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid delete for registration. No ID provided.");
@@ -268,6 +292,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 		Map<String, Object> registration = validateIdAndGetBodyAsMap(registrationId, tenantId);
 		CSourceRequest requestForSub = new DeleteCSourceRequest(registration, headers, registrationId);
+		requestForSub.setBatchInfo(batchInfo);
 		sendToKafka(requestForSub);
 		CSourceRequest request = new DeleteCSourceRequest(null, headers, registrationId);
 		pushToDB(request);
@@ -437,15 +462,15 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 							HashMap<String, Object> tmp = new HashMap<String, Object>();
 							tmp.put(NGSIConstants.JSON_LD_ID, entry.getKey());
 							switch (typeString) {
-							case NGSIConstants.NGSI_LD_GEOPROPERTY:
-							case NGSIConstants.NGSI_LD_PROPERTY:
-								propertyNames.add(tmp);
-								break;
-							case NGSIConstants.NGSI_LD_RELATIONSHIP:
-								relationshipNames.add(tmp);
-								break;
-							default:
-								continue;
+								case NGSIConstants.NGSI_LD_GEOPROPERTY:
+								case NGSIConstants.NGSI_LD_PROPERTY:
+									propertyNames.add(tmp);
+									break;
+								case NGSIConstants.NGSI_LD_RELATIONSHIP:
+									relationshipNames.add(tmp);
+									break;
+								default:
+									continue;
 							}
 						}
 					}
@@ -484,8 +509,10 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			failed = true;
 			logger.error("Failed to store internal regentry", e);
 		}
-		if (!failed && fedBrokers != null) {
-			new Thread() {
+		if (!failed && fedBrokers != null && !fedBrokers.isBlank()) {
+			regStoreExecutor.execute(new Runnable() {
+
+				@Override
 				public void run() {
 					int retry = 5;
 					for (String fedBroker : fedBrokers.split(",")) {
@@ -499,16 +526,17 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 								String csourceId = microServiceUtils.getGatewayURL().toString();
 								copyToSend.put(NGSIConstants.JSON_LD_ID, csourceId);
 
-								HttpResponse resp = Request.Patch(fedBroker + "csourceRegistrations/" + csourceId)
-										.addHeader("Content-Type", "application/json")
+								HttpResponse resp = Request
+										.Patch(fedBroker + "ngsi-ld/v1/csourceRegistrations/" + csourceId)
+										.addHeader("Content-Type", "application/ld+json")
 										.bodyByteArray(JsonUtils
 												.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts))
 												.getBytes())
 										.execute().returnResponse();
 								int returnCode = resp.getStatusLine().getStatusCode();
 								if (returnCode == ErrorType.NotFound.getCode()) {
-									resp = Request.Post(fedBroker + "csourceRegistrations/")
-											.addHeader("Content-Type", "application/json")
+									resp = Request.Post(fedBroker + "ngsi-ld/v1/csourceRegistrations/")
+											.addHeader("Content-Type", "application/ld+json")
 											.bodyByteArray(JsonUtils
 													.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts))
 													.getBytes())
@@ -529,9 +557,17 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 							}
 						}
 					}
-				};
-			}.start();
+
+				}
+			});
+
 		}
+
+	}
+
+	@Override
+	public void sendFail(BatchInfo batchInfo) {
+		throw new MethodNotFoundException("Registry doesn't do batches");
 
 	}
 

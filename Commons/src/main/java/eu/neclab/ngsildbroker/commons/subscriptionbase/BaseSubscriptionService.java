@@ -18,10 +18,22 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
+import com.github.filosganga.geogson.model.LineString;
+import com.github.filosganga.geogson.model.Point;
+import com.github.filosganga.geogson.model.Polygon;
+import com.github.filosganga.geogson.model.positions.SinglePosition;
+import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
@@ -37,22 +49,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.client.RestTemplate;
 
-import com.github.filosganga.geogson.model.LineString;
-import com.github.filosganga.geogson.model.Point;
-import com.github.filosganga.geogson.model.Polygon;
-import com.github.filosganga.geogson.model.positions.SinglePosition;
-import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
+import eu.neclab.ngsildbroker.commons.datatypes.EndPoint;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoPropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
+import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
@@ -60,7 +66,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.SubscriptionCRUDService;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
@@ -78,6 +83,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@Value("${scorpio.alltypesub.type:4ll7yp35}")
 	private String allTypeSubType;
 
+	@Value("${scorpio.subscription.batchevactime:300000}")
+	int waitTimeForEvac;
+
 	private NotificationHandlerREST notificationHandlerREST;
 	private IntervalNotificationHandler intervalHandlerREST;
 
@@ -90,7 +98,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected RestTemplate restTemplate = HttpUtils.getRestTemplate();
 
-	private SubscriptionInfoDAOInterface subscriptionInfoDAO;
+	protected SubscriptionInfoDAOInterface subscriptionInfoDAO;
 
 	private boolean sendInitialNotification;
 	private boolean sendDeleteNotification;
@@ -115,10 +123,20 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@Value("${scorpio.sync.check-time:1000}")
 	int checkTime;
 
+	int coreCount = 8;// Runtime.getRuntime().availableProcessors();
+	protected ThreadPoolExecutor notificationPool = new ThreadPoolExecutor(10, 50, 60000, TimeUnit.MILLISECONDS,
+			new LinkedBlockingDeque<Runnable>());
+
+	BatchNotificationHandler batchNotificationHandler;
+
+	@Value("${scorpio.subscription.batchnotifications:true}")
+	boolean batchHandling;
+
 	@PostConstruct
 	private void setup() {
 		setSyncTopic();
 		setSyncId();
+		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		subscriptionInfoDAO = getSubscriptionInfoDao();
 		try {
@@ -128,14 +146,18 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 		sendInitialNotification = sendInitialNotification();
 		sendDeleteNotification = sendDeleteNotification();
-		notificationHandlerREST = new NotificationHandlerREST(restTemplate);
+		notificationHandlerREST = new NotificationHandlerREST(subscriptionInfoDAO, restTemplate);
 		Subscription temp = new Subscription();
 		temp.setId("invalid:base");
+		NotificationParam temp2 = new NotificationParam();
+		EndPoint temp3 = new EndPoint();
+		temp2.setEndPoint(temp3);
+		temp.setNotification(temp2);
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
 						AppConstants.UPDATE_REQUEST));
 
-		notificationHandlerMQTT = new NotificationHandlerMQTT();
+		notificationHandlerMQTT = new NotificationHandlerMQTT(subscriptionInfoDAO);
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
 						AppConstants.UPDATE_REQUEST));
@@ -164,8 +186,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			List<String> subscriptions = subscriptionInfoDAO.getStoredSubscriptions();
 			for (String subscriptionString : subscriptions) {
 				try {
-					subscribe(DataSerializer.getSubscriptionRequest(subscriptionString), true);
-				} catch (ResponseException e) {
+					SubscriptionRequest sub = SubscriptionRequest.fromJsonString(subscriptionString, false);
+					// disregard previously stored internal subs they should come back when the sub
+					// is actually there
+					if (!sub.getSubscription().getNotification().getEndPoint().getUri().getScheme()
+							.equals("internal")) {
+						subscribe(sub, true);
+					}
+				} catch (Exception e) {
 					logger.error("Failed to load stored subscription", e);
 				}
 			}
@@ -176,7 +204,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		return subscribe(subscriptionRequest, false);
 	}
 
-	String subscribe(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
+	public String subscribe(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
 		logger.debug("Subscribe got called " + subscriptionRequest.getSubscription().toString());
 		Subscription subscription = subscriptionRequest.getSubscription();
 		if (subscription.getId() == null) {
@@ -184,8 +212,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			subscriptionRequest.setId(subscription.getId());
 		} else {
 			synchronized (tenant2subscriptionId2Subscription) {
-				if (this.tenant2subscriptionId2Subscription.contains(subscriptionRequest.getTenant(),
-						subscription.getId().toString())) {
+				if (this.tenant2subscriptionId2Subscription.containsColumn(subscription.getId().toString())) {
 					throw new ResponseException(ErrorType.AlreadyExists,
 							subscription.getId().toString() + " already exists");
 
@@ -225,8 +252,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				subId2TimerTask.put(subscriptionRequest.getTenant(), subscription.getId().toString(), cancel);
 				watchDog.schedule(cancel, subscription.getExpiresAt() - System.currentTimeMillis());
 			}
-			new Thread() {
-				@SuppressWarnings("unchecked")
+			notificationPool.execute(new Runnable() {
+
+				@Override
 				public void run() {
 					if (sendInitialNotification) {
 						try {
@@ -236,14 +264,15 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 								for (String entry : temp) {
 									notifcation.add((Map<String, Object>) JsonUtils.fromString(entry));
 								}
-								sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST);
+								sendNotification(notifcation, subscriptionRequest, AppConstants.CREATE_REQUEST,
+										new BatchInfo(-1, -1));
 							}
 						} catch (ResponseException | IOException e) {
 							logger.error("Failed to send initial notifcation", e);
 						}
 					}
-				};
-			}.start();
+				}
+			});
 		}
 		if (!internal) {
 			createSub(subscriptionRequest);
@@ -291,7 +320,8 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		unsubscribe(id, headers, false);
 	}
 
-	void unsubscribe(String id, ArrayListMultimap<String, String> headers, boolean internal) throws ResponseException {
+	public void unsubscribe(String id, ArrayListMultimap<String, String> headers, boolean internal)
+			throws ResponseException {
 		String tenant = HttpUtils.getInternalTenant(headers);
 		SubscriptionRequest removedSub;
 		synchronized (tenant2subscriptionId2Subscription) {
@@ -327,9 +357,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		if (task != null) {
 			task.cancel();
 		}
-		if (!internal) {
-			deleteSub(removedSub);
-		}
+
+		deleteSub(removedSub);
+
 	}
 
 	private void deleteSub(SubscriptionRequest removedSub) {
@@ -342,7 +372,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		updateSubscription(subscriptionRequest, false);
 	}
 
-	void updateSubscription(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
+	public void updateSubscription(SubscriptionRequest subscriptionRequest, boolean internal) throws ResponseException {
 		Subscription subscription = subscriptionRequest.getSubscription();
 		String tenant = subscriptionRequest.getTenant();
 		SubscriptionRequest oldSubRequest;
@@ -468,7 +498,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 		for (SubscriptionRequest subscription : subsToCheck) {
 			if (messageTime >= sub2CreationTime.get(subscription)) {
-				new Thread() {
+				notificationPool.execute(new Runnable() {
+
+					@Override
 					public void run() {
 						Map<String, Object> data = null;
 						try {
@@ -476,14 +508,13 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 							if (data != null) {
 								ArrayList<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
 								dataList.add(data);
-								sendNotification(dataList, subscription, methodType);
+								sendNotification(dataList, subscription, methodType, request.getBatchInfo());
 							}
 						} catch (ResponseException e) {
 							logger.error("Failed to handle new data for the subscriptions, cause: " + e.getMessage());
 						}
 					}
-
-				}.start();
+				});
 			}
 
 		}
@@ -491,10 +522,20 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	}
 
 	protected void sendNotification(List<Map<String, Object>> dataList, SubscriptionRequest subscription,
-			int triggerReason) {
+			int triggerReason, BatchInfo batchInfo) {
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
-		handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+		if (handler == null) {
+			logger.info("Failed to send notification for protocol: " + endpointProtocol);
+			logger.info(subscription.getSubscription().getNotification().getEndPoint().getUri().toString());
+		} else {
+			if (batchInfo.getBatchId() == -1 || !batchHandling) {
+				handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+			} else {
+				batchNotificationHandler.addDataToBatch(batchInfo, handler, subscription, dataList, triggerReason);
+			}
+		}
+
 	}
 
 	protected NotificationHandler getNotificationHandler(String endpointProtocol) {
@@ -610,30 +651,30 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 				Shape queryShape;
 				switch (geoQuery.getGeometry()) {
-				case Point: {
-					queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
-					break;
-				}
-				case Polygon: {
-					PolygonBuilder polygonBuilder = shapeFactory.polygon();
-					for (int i = 0; i < coordinates.size(); i = i + 2) {
-						polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+					case Point: {
+						queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
+						break;
 					}
+					case Polygon: {
+						PolygonBuilder polygonBuilder = shapeFactory.polygon();
+						for (int i = 0; i < coordinates.size(); i = i + 2) {
+							polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+						}
 
-					queryShape = polygonBuilder.build();
-					break;
-				}
-				case LineString: {
-					LineStringBuilder lineStringBuilder = shapeFactory.lineString();
-					for (int i = 0; i < coordinates.size(); i = i + 2) {
-						lineStringBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+						queryShape = polygonBuilder.build();
+						break;
 					}
-					queryShape = lineStringBuilder.build();
-					break;
-				}
-				default: {
-					return false;
-				}
+					case LineString: {
+						LineStringBuilder lineStringBuilder = shapeFactory.lineString();
+						for (int i = 0; i < coordinates.size(); i = i + 2) {
+							lineStringBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
+						}
+						queryShape = lineStringBuilder.build();
+						break;
+					}
+					default: {
+						return false;
+					}
 				}
 				if (GEO_REL_CONTAINS.equals(relation)) {
 					return SpatialPredicate.Contains.evaluate(entityShape, queryShape);
@@ -774,5 +815,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 			});
 		}
+	}
+
+	public void addFail(BatchInfo batchInfo) {
+		batchNotificationHandler.addFail(batchInfo);
 	}
 }

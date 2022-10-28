@@ -181,8 +181,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 								headers.get(HttpHeaders.ACCEPT.toLowerCase()));
 						if (linkHeaders != null) {
 							for (Object entry : linkHeaders) {
-								additionalHeaders.add("Link", entry
-										+ "; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
+								additionalHeaders.add("Link", "<" + entry
+										+ ">; rel=http://www.w3.org/ns/json-ld#context; type=\"application/ld+json\"");
 							}
 						}
 						String endpoint;
@@ -196,13 +196,15 @@ public abstract class BaseQueryService implements EntryQueryService {
 							HttpEntity<String> entity;
 							String resultBody;
 							ResponseEntity<String> response;
-							int count = 0;
+							long count = 0;
 							if (postQuery) {
 								entity = new HttpEntity<String>(rawQueryString, additionalHeaders);
 								response = restTemplate.exchange(endpoint + "/ngsi-ld/v1/entityOperations/query",
 										HttpMethod.POST, entity, String.class);
 								resultBody = response.getBody();
 							} else {
+								additionalHeaders.remove(HttpHeaders.ACCEPT);
+								additionalHeaders.add(HttpHeaders.ACCEPT, "application/json");
 								entity = new HttpEntity<String>(additionalHeaders);
 								response = restTemplate.exchange(
 										new URI(endpoint + "/ngsi-ld/v1/entities?" + encodeQuery(rawQueryString)),
@@ -210,8 +212,8 @@ public abstract class BaseQueryService implements EntryQueryService {
 								resultBody = response.getBody();
 							}
 							if (response.getHeaders().containsKey(NGSIConstants.COUNT_HEADER_RESULT)) {
-								count = Integer
-										.parseInt(response.getHeaders().get(NGSIConstants.COUNT_HEADER_RESULT).get(0));
+								count = Long
+										.parseLong(response.getHeaders().get(NGSIConstants.COUNT_HEADER_RESULT).get(0));
 							}
 							logger.debug("http call result :: ::" + resultBody);
 
@@ -311,10 +313,16 @@ public abstract class BaseQueryService implements EntryQueryService {
 		ExecutorService executorService = Executors.newFixedThreadPool(2);
 		List<Future<RemoteQueryResult>> futures = executorService.invokeAll(callablesCollection);
 		RemoteQueryResult queryResult = new RemoteQueryResult(null, ErrorType.None, -1, true);
-		int count = 0;
+		long count = 0;
 		for (Future<RemoteQueryResult> future : futures) {
 			logger.trace("future.isDone = " + future.isDone());
-			RemoteQueryResult tempResult = future.get();
+			RemoteQueryResult tempResult;
+			try {
+				tempResult = future.get();
+			} catch (Exception e) {
+				logger.warn("Remote query failed", e);
+				continue;
+			}
 			for (Map<String, Object> entry : tempResult.getId2Data().values()) {
 				queryResult.addData(entry);
 			}

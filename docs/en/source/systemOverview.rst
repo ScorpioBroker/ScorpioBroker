@@ -17,13 +17,10 @@ It covers the high-level operations (HTTP based REST with method POST/GET/DELETE
 - **LD Context Resolver**: This component is responsible for expanding the NGSI-LD document based on the JSON-LD @context for further processing by the other components of the Scorpio Broker.
 - **Subscription & Notification Manager**: This component is responsible for handling CRUD operations related to entities and/or csource subscription & notification.
 - **Query Manager**: This component handles simple or complex queries (e.g. geo-query) to the Scorpio Broker. 
-- **Storage Manager**: This component is responsible for fetching data from the message broker and then transforming them into relevant schema format in order to persist in DB tables. Additionally, this manager also provides interfaces for complex queries to the DB e.g. Geo query or cross-domain entity context relationship queries.
 - **Context Registry Manager**: This component is responsible for providing interfaces for CRUD operations of csource registration/query/ subscription.
 - **Health Check & Monitoring**: This component is responsible for monitoring the health of running services & infrastructure.
 - **Message Bus Handler**: Every module of the Scorpio Broker may need to communicate with the bus for the inter-module exchange of messages. This interface is provided by the message bus handler.
-- **Storage Connectors**: The Scorpio Broker needs to store certain information in different DB formats. So storage connectors (using any type of message broker methodology) provide the way to connect to those storage systems (which may be present locally or remotely). For example, the entity information could be stored in/streamed to a different types of storage systems e.g. MySQL, PostgreSQL, Bigdata, etc. These connectors could also be implemented for storage resiliency purposes.
 - **Context Registry Connector**: Scorpio Broker needs to communicate to the context registry in order to know about the registered context sources (brokers/providers) and the type of data model they support. The context registry connector allows the message broker mechanism to connect to the context registry that may be running locally or remotely in federated mode.
-- **Storage**: This is the actual storage (e.g. Postgres/Postgis) where data is persisted. 
 - **Context Registry**: This is the component which is responsible for saving the registration of the context sources/producers. 
 
 *****************************************

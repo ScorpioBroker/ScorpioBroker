@@ -210,6 +210,7 @@ public interface NGSIConstants {
 
 	public static final String ALLOWED_IN_DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss[.SSSSSS][.SSSSS][.SSSS][.SSS][.SS][.S]'Z'";
 	public static final String ALLOWED_OUT_DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+	public static final String ALLOWED_OUT_DEFAULT_DATE_FORMAT_NOTIFIEDAT = "yyyy-MM-dd'T'HH:mm:ss[.SSSSSS]'Z'";
 	public static final String DEFAULT_FORGIVING_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 	public static final String HEADER_REL_LDCONTEXT = "http://www.w3.org/ns/json-ld#context";
 
@@ -219,7 +220,7 @@ public interface NGSIConstants {
 	public static final List<String> ALLOWED_GEOREL = Arrays.asList("near", "equals", "disjoint", "intersects",
 			"within", "contains", "overlaps");
 	public static final List<String> SPECIAL_PROPERTIES = Arrays.asList(NGSI_LD_CREATED_AT, NGSI_LD_OBSERVED_AT,
-			NGSI_LD_MODIFIED_AT, NGSI_LD_DATA_SET_ID, NGSI_LD_UNIT_CODE);
+			NGSI_LD_MODIFIED_AT, NGSI_LD_DATA_SET_ID, NGSI_LD_UNIT_CODE, JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT);
 	public static final String MQTT_QOS = "mqtt_qos";
 	public static final String MQTT_VERSION = "mqtt_version";
 	public static final String DEFAULT_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/default-data-set-id";
@@ -243,7 +244,7 @@ public interface NGSIConstants {
 	public static final String MQTT_VERSION_3 = "mqtt3.1.1";
 	public static final String[] VALID_MQTT_VERSION = { "mqtt5.0", "mqtt3.1.1" };
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
-	public static final String COUNT_HEADER_RESULT = "count";
+	public static final String COUNT_HEADER_RESULT = "ngsild-results-count";
 	public static final String REGEX_NGSI_LD_ATTR_TYPES = new String(
 			NGSI_LD_PROPERTY + "|" + NGSI_LD_RELATIONSHIP + "|" + NGSI_LD_GEOPROPERTY);
 
@@ -293,4 +294,5 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_GEOPROPERTY_GEOQ_ATTRIB = "https://uri.etsi.org/ngsi-ld/geoproperty";
 	public static final String NGSI_LD_SCOPE = "https://uri.etsi.org/ngsi-ld/default-context/scope";
 	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/default-context/scopeQ";
+	public static final Object NGSI_LD_TENANT_SHORT = "tenant";
 }

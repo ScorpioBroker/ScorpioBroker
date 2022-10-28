@@ -167,7 +167,7 @@ public class CSourceServiceTest {
 					"urn:ngsi-ld:ContextSourceRegistration:csr4");
 			when(csourceInfoDAO.storeRegistryEntry(request)).thenReturn(true);
 			csourceInfoDAO.storeRegistryEntry(request);
-			String id = csourceService.createEntry(multimaparr, resolved);
+			String id = csourceService.createEntry(multimaparr, resolved).getEntityId();
 			Assert.assertEquals("urn:ngsi-ld:ContextSourceRegistration:csr4", id);
 		} catch (Exception ex) {
 			Assert.fail();

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 public class MicroServiceUtils {
 	private final static Logger logger = LogManager.getLogger(MicroServiceUtils.class);
 
-	@Value("${scorpio.gatewayurl:}")
+	@Value("${scorpio.gatewayurl}")
 	private String gatewayUrl;
 
 	@Value("${server.port}")

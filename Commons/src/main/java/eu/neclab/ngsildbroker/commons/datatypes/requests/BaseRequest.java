@@ -12,6 +12,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.serialization.MultiMapDeserializer;
 import eu.neclab.ngsildbroker.commons.serialization.MultiMapSerializer;
 
@@ -24,6 +25,8 @@ public class BaseRequest {
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
 	private int requestType;
+
+	private BatchInfo batchInfo = new BatchInfo(-1, -1);
 
 	public BaseRequest() {
 
@@ -44,6 +47,7 @@ public class BaseRequest {
 		this.requestPayload = request.requestPayload;
 		this.finalPayload = request.finalPayload;
 		this.requestType = request.requestType;
+		this.batchInfo = request.batchInfo;
 	}
 
 	public int getRequestType() {
@@ -115,6 +119,9 @@ public class BaseRequest {
 	 * @return the internal null value if the tenant is not present
 	 */
 	public String getTenant() {
+		if (headers == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
 		if (headers.containsKey(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK)) {
 			return headers.get(NGSIConstants.TENANT_HEADER_FOR_INTERNAL_CHECK).get(0);
 		}
@@ -152,4 +159,13 @@ public class BaseRequest {
 			this.finalPayload = new HashMap<String, Object>(finalPayload);
 		}
 	}
+
+	public BatchInfo getBatchInfo() {
+		return batchInfo;
+	}
+
+	public void setBatchInfo(BatchInfo batchInfo) {
+		this.batchInfo = batchInfo;
+	}
+
 }

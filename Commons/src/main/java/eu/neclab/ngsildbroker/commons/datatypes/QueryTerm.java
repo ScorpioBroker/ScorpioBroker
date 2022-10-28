@@ -449,6 +449,8 @@ public class QueryTerm {
 			this.operant = "\"" + operant + "\"";
 		} else if (operant.startsWith("'") && operant.endsWith("'")) {
 			this.operant = "\"" + operant.substring(1, operant.length() - 1) + "\"";
+		} else if (operant.startsWith("%22") && operant.endsWith("%22")) {
+			this.operant = "\"" + operant.substring(3, operant.length() - 3) + "\"";
 		} else {
 			this.operant = operant;
 		}

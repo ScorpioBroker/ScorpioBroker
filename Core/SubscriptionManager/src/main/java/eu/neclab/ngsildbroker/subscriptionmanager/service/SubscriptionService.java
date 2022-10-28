@@ -27,13 +27,13 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.serialization.DataSerializer;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -75,7 +75,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 			int triggerReason) {
 		return new Notification(EntityTools.getRandomID("notification:"), NGSIConstants.NOTIFICATION,
 				System.currentTimeMillis(), request.getSubscription().getId(), dataList, -1, request.getContext(),
-				request.getHeaders());
+				request.getHeaders(), request.getSubscription().getNotification().getEndPoint().getAccept());
 	}
 
 	@Override
@@ -140,8 +140,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 				remoteSub.getNotification().getEndPoint().setUri(prepareNotificationServlet(subscriptionRequest));
 				String body;
 				try {
-					Map<String, Object> expandedBody = (Map<String, Object>) JsonUtils
-							.fromString(DataSerializer.toJson(remoteSub));
+					Map<String, Object> expandedBody = remoteSub.toJson();
 					expandedBody.remove(NGSIConstants.NGSI_LD_STATUS);
 					expandedBody.remove(NGSIConstants.JSON_LD_ID);
 					body = JsonUtils.toPrettyString(
@@ -192,8 +191,8 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	public void remoteNotify(String id, Map<String, Object> notification) {
+		notificationPool.execute(new Runnable() {
 
-		new Thread() {
 			@Override
 			public void run() {
 				SubscriptionRequest subscription = remoteNotifyCallbackId2InternalSub.get(id);
@@ -201,10 +200,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 					return;
 				}
 				sendNotification((List<Map<String, Object>>) notification.get(NGSIConstants.NGSI_LD_DATA), subscription,
-						AppConstants.UPDATE_REQUEST);
+						AppConstants.UPDATE_REQUEST, new BatchInfo(-1, -1));
 			}
-		}.start();
-
+		});
 	}
 
 	public void handleRegistryNotification(InternalNotification notification) {

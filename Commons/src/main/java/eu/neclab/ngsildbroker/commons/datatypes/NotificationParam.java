@@ -81,7 +81,6 @@ public class NotificationParam {
 	}
 
 	public void setLastNotification(Date lastNotification) {
-		this.timesSent++;
 		this.lastNotification = lastNotification;
 	}
 
@@ -90,6 +89,7 @@ public class NotificationParam {
 	}
 
 	public void setLastSuccessfulNotification(Date lastSuccessfulNotification) {
+		this.timesSent++;
 		this.lastSuccessfulNotification = lastSuccessfulNotification;
 	}
 

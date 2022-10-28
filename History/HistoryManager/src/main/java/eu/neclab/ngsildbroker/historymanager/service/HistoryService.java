@@ -8,21 +8,17 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.PostConstruct;
 import javax.el.MethodNotFoundException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
@@ -30,6 +26,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequ
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -63,21 +60,32 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	private ThreadPoolExecutor kafkaExecutor = new ThreadPoolExecutor(1, 1, 1, TimeUnit.MINUTES,
 			new LinkedBlockingQueue<Runnable>());
-	
-	public String createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
+
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved)
 			throws ResponseException, Exception {
-		return createTemporalEntity(headers, resolved, false);
+		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
-	String createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			boolean fromEntity) throws ResponseException, Exception {
+	public CreateResult createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			BatchInfo batchInfo) throws ResponseException, Exception {
+		return createTemporalEntity(headers, resolved, false, batchInfo);
+	}
+
+	CreateResult createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			boolean fromEntity, BatchInfo batchInfo) throws ResponseException, Exception {
 
 		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
+		request.setBatchInfo(batchInfo);
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		historyDAO.entityExists(request.getId(), tenantId);
+		boolean created = true;
+		try {
+			historyDAO.entityExists(request.getId(), tenantId);
+		} catch (ResponseException e) {
+			created = false;
+		}
 		logger.trace("creating temporal entity");
 		handleRequest(request);
-		return request.getId();
+		return new CreateResult(request.getId(), created);
 	}
 
 	private void pushToKafka(BaseRequest request) throws ResponseException {
@@ -103,45 +111,49 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId)
 			throws ResponseException, Exception {
-		return delete(headers, entityId, null, null, null);
+		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
+	}
+
+	public boolean deleteEntry(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo)
+			throws ResponseException, Exception {
+		return delete(headers, entityId, null, null, null, batchInfo);
 	}
 
 	public boolean delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
-			String instanceId, Context linkHeaders) throws ResponseException, Exception {
-		historyDAO.getAllIds(entityId,HttpUtils.getInternalTenant(headers));
-		//String tenantId = HttpUtils.getInternalTenant(headers);
-
-			//if (!this.entityIds.containsEntry(tenantId, entityId)) {
-				//throw new ResponseException(ErrorType.NotFound, entityId + " not found");
-			//}
-			//if (attributeId == null) {
-				//this.entityIds.remove(tenantId, entityId);
-			//}
+			String instanceId, Context linkHeaders, BatchInfo batchInfo) throws ResponseException, Exception {
 		logger.debug("deleting temporal entity with id : " + entityId + "and attributeId : " + attributeId);
 
 		String resolvedAttrId = null;
 		if (attributeId != null) {
 			resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
+			historyDAO.attributeExists(entityId, HttpUtils.getInternalTenant(headers), resolvedAttrId, instanceId);
 		}
 		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId,
-				entityId);	
+				entityId);
+		request.setBatchInfo(batchInfo);
 		handleRequest(request);
 		return true;
 	}
 
-	// need to be check and change
 	// endpoint "/entities/{entityId}/attrs"
 	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
-		//if (!this.entityIds.containsEntry(HttpUtils.getInternalTenant(headers), entityId)) {
-			//throw new ResponseException(ErrorType.NotFound, "You cannot create an attribute on a none existing entity");
-		//}
-		
+			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) throws ResponseException, Exception {
+		// if (!this.entityIds.containsEntry(HttpUtils.getInternalTenant(headers),
+		// entityId)) {
+		// throw new ResponseException(ErrorType.NotFound, "You cannot create an
+		// attribute on a none existing entity");
+		// }
+
 		historyDAO.getAllIds(entityId, HttpUtils.getInternalTenant(headers));
 		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(headers, resolved, entityId);
-		
+		request.setBatchInfo(batchInfo);
 		handleRequest(request);
 		return request.getUpdateResult();
+	}
+
+	public UpdateResult appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> resolved, String[] options) throws ResponseException, Exception {
+		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
 	}
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
@@ -184,6 +196,12 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		throw new MethodNotFoundException();
 	}
 
+	public UpdateResult updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, BatchInfo batchInfo) throws ResponseException, Exception {
+		// History can't do this
+		throw new MethodNotFoundException();
+	}
+
 	void handleRequest(HistoryEntityRequest request) throws ResponseException {
 		if (directDB) {
 			pushToDB(request);
@@ -200,4 +218,10 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	protected StorageDAO getCsourceDAO() {
 		return null;
 	}
+
+	@Override
+	public void sendFail(BatchInfo batchInfo) {
+		throw new MethodNotFoundException();
+	}
+
 }

@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -94,8 +95,10 @@ public class EntityBatchControllerTest {
 	@Test
 	public void createMultipleEntityTest() {
 		try {
-			when(entityService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
+			when(entityService.createEntry(any(), any()))
+					.thenReturn(new CreateResult("urn:ngsi-ld:Vehicle:A101", true));
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isCreated());
 
@@ -119,9 +122,10 @@ public class EntityBatchControllerTest {
 	@Test
 	public void createMultipleEntityIfEntityNotExistTest() {
 		try {
-			when(entityService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101")
+			when(entityService.createEntry(any(), any())).thenReturn(new CreateResult("urn:ngsi-ld:Vehicle:A101", true))
 					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isMultiStatus());
 
@@ -147,7 +151,8 @@ public class EntityBatchControllerTest {
 		try {
 			when(entityService.createEntry(any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/create").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isBadRequest());
 
@@ -171,7 +176,8 @@ public class EntityBatchControllerTest {
 		try {
 			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
 			when(entityService.appendToEntry(any(), any(), any(), any())).thenReturn(updateResult);
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isNoContent());
 
@@ -196,7 +202,8 @@ public class EntityBatchControllerTest {
 			UpdateResult updateResult = Mockito.mock(UpdateResult.class);
 			when(entityService.appendToEntry(any(), any(), any(), any())).thenReturn(updateResult)
 					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isMultiStatus());
 			MvcResult mvcResult = resultAction.andReturn();
@@ -219,7 +226,8 @@ public class EntityBatchControllerTest {
 		try {
 			when(entityService.appendToEntry(any(), any(), any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/update").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isBadRequest());
 			MvcResult mvcResult = resultAction.andReturn();
@@ -240,8 +248,10 @@ public class EntityBatchControllerTest {
 	@Test
 	public void upsertMultipleEntityTest() {
 		try {
-			when(entityService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101");
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
+			when(entityService.createEntry(any(), any()))
+					.thenReturn(new CreateResult("urn:ngsi-ld:Vehicle:A101", true));
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isCreated());
 			MvcResult mvcResult = resultAction.andReturn();
@@ -262,9 +272,10 @@ public class EntityBatchControllerTest {
 	@Test
 	public void upsertMultipleEntityIfEntityNotExistTest() {
 		try {
-			when(entityService.createEntry(any(), any())).thenReturn("urn:ngsi-ld:Vehicle:A101")
+			when(entityService.createEntry(any(), any())).thenReturn(new CreateResult("urn:ngsi-ld:Vehicle:A101", true))
 					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isMultiStatus());
 
@@ -289,14 +300,15 @@ public class EntityBatchControllerTest {
 		try {
 			when(entityService.createEntry(any(), any()))
 					.thenThrow(new ResponseException(ErrorType.BadRequestData, "Bad Request Data."));
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/upsert").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(payload))
 					.andExpect(status().isBadRequest());
 			MvcResult mvcResult = resultAction.andReturn();
 			MockHttpServletResponse response = mvcResult.getResponse();
 			int status = response.getStatus();
 			Assert.assertEquals(400, status);
-    		verify(entityService, times(3)).createEntry(any(), any());
+			verify(entityService, times(3)).createEntry(any(), any());
 
 		} catch (Exception e) {
 			Assert.fail();
@@ -311,7 +323,8 @@ public class EntityBatchControllerTest {
 	public void deleteMultipleEntityTest() {
 		try {
 			when(entityService.deleteEntry(any(), any())).thenReturn(true);
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/delete").contentType(AppConstants.NGB_APPLICATION_JSON)
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/delete").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(deletePayload))
 					.andExpect(status().isNoContent());
 			MvcResult mvcResult = resultAction.andReturn();
@@ -334,7 +347,8 @@ public class EntityBatchControllerTest {
 		try {
 			when(entityService.deleteEntry(any(), any())).thenReturn(true)
 					.thenThrow(new ResponseException(ErrorType.MultiStatus, "Multi status result"));
-			ResultActions resultAction = mockMvc.perform(post("/ngsi-ld/v1/entityOperations/delete").contentType(AppConstants.NGB_APPLICATION_JSON)
+			ResultActions resultAction = mockMvc
+					.perform(post("/ngsi-ld/v1/entityOperations/delete").contentType(AppConstants.NGB_APPLICATION_JSON)
 							.accept(AppConstants.NGB_APPLICATION_JSONLD).content(deletePayload))
 					.andExpect(status().isMultiStatus());
 			MvcResult mvcResult = resultAction.andReturn();
