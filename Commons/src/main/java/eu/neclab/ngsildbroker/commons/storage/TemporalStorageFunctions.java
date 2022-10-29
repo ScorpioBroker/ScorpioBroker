@@ -5,10 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
@@ -233,20 +231,75 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		if (qp.getTemporalValues()) {
 			String timeProperty = qp.getTimeproperty();
 			if (timeProperty == null || timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
-				sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE + "'->0->'"
-						+ NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_OBSERVED_AT + "'->0->'"
-						+ NGSIConstants.JSON_LD_VALUE + "')) from jsonb_array_elements(attributedata) as x(t))";
+				sqlQuery +=  "                    jsonb_build_object(\r\n'"
+						+                         NGSIConstants.JSON_LD_TYPE+"',\r\n"
+						+ "                        (\r\n"
+						+ "                            select\r\n"
+						+ "                                json_agg(jsonb(t ->'"+NGSIConstants.JSON_LD_TYPE+"'))\r\n"
+						+ "                            from\r\n"
+						+ "                                jsonb_array_elements(attributedata) as x (t)\r\n"
+						+ "                        ) ->0\r\n"
+						+ "                    ) || jsonb_build_object(\r\n"
+						+ "                        'values',\r\n"
+						+ "                        (\r\n"
+						+ "                            select\r\n"
+						+ "                                json_agg(\r\n"
+						+"									json_build_array("
+						+ "                                    json_build_array(\r\n"
+						+ "                                        t ->'"+ NGSIConstants.NGSI_LD_HAS_VALUE + "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "',\r\n"
+						+ "                                        t ->'" +NGSIConstants.NGSI_LD_OBSERVED_AT + "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "'\r\n"
+						+ "                                    )\r\n"
+						+ "                                   )\r\n"
+						+ "                                )\r\n"
+						+ "                            from\r\n"
+						+ "                                jsonb_array_elements(attributedata) as x (t)\r\n))";
 			} else {
 				if (timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-					sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE
-							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_MODIFIED_AT
-							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE
-							+ "')) from jsonb_array_elements(attributedata) as x(t))";
+					sqlQuery +=  "                    jsonb_build_object(\r\n'"
+							+                         NGSIConstants.JSON_LD_TYPE+"',\r\n"
+							+ "                        (\r\n"
+							+ "                            select\r\n"
+							+ "                                json_agg(jsonb(t ->'"+NGSIConstants.JSON_LD_TYPE+"'))\r\n"
+							+ "                            from\r\n"
+							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n"
+							+ "                        ) ->0\r\n"
+							+ "                    ) || jsonb_build_object(\r\n"
+							+ "                        'values',\r\n"
+							+ "                        (\r\n"
+							+ "                            select\r\n"
+							+ "                                json_agg(\r\n"
+							+"									json_build_array("
+							+ "                                    json_build_array(\r\n"
+							+ "                                        t ->'"+ NGSIConstants.NGSI_LD_HAS_VALUE + "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "',\r\n"
+							+ "                                        t ->'" +NGSIConstants.NGSI_LD_MODIFIED_AT + "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "'\r\n"
+							+ "                                    )\r\n"
+							+ "                                  )\r\n"
+							+ "                                )\r\n"
+							+ "                            from\r\n"
+							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n))";
 				} else if (timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)) {
-					sqlQuery += "(select json_agg(jsonb_build_array(t -> '" + NGSIConstants.NGSI_LD_HAS_VALUE
-							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE + "',t->'" + NGSIConstants.NGSI_LD_CREATED_AT
-							+ "'->0->'" + NGSIConstants.JSON_LD_VALUE
-							+ "')) from jsonb_array_elements(attributedata) as x(t))";
+					sqlQuery +=  "                    jsonb_build_object(\r\n'"
+							+                         NGSIConstants.JSON_LD_TYPE+"',\r\n"
+							+ "                        (\r\n"
+							+ "                            select\r\n"
+							+ "                                json_agg(jsonb(t ->'"+NGSIConstants.JSON_LD_TYPE+"'))\r\n"
+							+ "                            from\r\n"
+							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n"
+							+ "                        ) ->0\r\n"
+							+ "                    ) || jsonb_build_object(\r\n"
+							+ "                        'values',\r\n"
+							+ "                        (\r\n"
+							+ "                            select\r\n"
+							+ "                                json_agg(\r\n"
+							+"									json_build_array("
+							+ "                                    json_build_array(\r\n"
+							+ "                                        t ->'"+ NGSIConstants.NGSI_LD_HAS_VALUE + "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "',\r\n"
+							+ "                                        t ->'" +NGSIConstants.NGSI_LD_CREATED_AT + "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "'\r\n"
+							+ "                                    )\r\n"
+							+ "                                    )\r\n"
+							+ "                                )\r\n"
+							+ "                            from\r\n"
+							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n))";
 				} else {
 					throw new ResponseException(ErrorType.BadRequestData, "Invalid timeproperty");
 
