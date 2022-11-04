@@ -1,3 +1,13 @@
+RELEASE NOTES SCORPIO 3.0.6
+
+In this release we are adressing 
+
+General:
+
+ - changes to the batch handling for notifications. previously a racing condition could have happened.
+ - fixed simplified representation on temporal queries
+ - an issue with MQTT notifications
+
 RELEASE NOTES SCORPIO 3.0.5
 
 In this release we are adressing
