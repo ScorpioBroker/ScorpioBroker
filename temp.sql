@@ -294,7 +294,7 @@ CREATE TABLE public.attr2iid
 	created timestamp without time zone,
 	observed timestamp without time zone,
 	modified timestamp without time zone
-) PARTITION BY HASH(attr);
+);
 
 ALTER TABLE IF EXISTS public.attr2iid
     ADD CONSTRAINT iid_fkey FOREIGN KEY (iid)
@@ -591,7 +591,7 @@ declare
 	location GEOMETRY(Geometry, 4326);
 	scopes text[];
 BEGIN
-    CREATE TEMP TABLE externalInserts (endPoint text UNIQUE, tenant text, headers jsonb, forwardEntity jsonb) ON COMMIT DROP;
+    CREATE TEMP TABLE resultTable (endPoint text UNIQUE, tenant text, headers jsonb, forwardEntity jsonb) ON COMMIT DROP;
 	templateEntity := '{}'::jsonb;
 	templateEntity := jsonb_set(templateEntity, '{@id}', insertEntity->'@id');
 	entityId := insertEntity->>'@id';
@@ -629,7 +629,7 @@ BEGIN
 			removeAttrib := false;
 			IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
 				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
-					INSERT INTO externalInserts VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(externalInserts.forwardEntity, '{attribName}', attribValue);
+					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
 					IF i_rec.reg_mode > 1 THEN
 						removeAttrib := true;
 						IF i_rec.reg_mode = 3 THEN
@@ -639,7 +639,7 @@ BEGIN
 				END LOOP;
 			ELSE
 				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
-					INSERT INTO externalInserts VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(externalInserts.forwardEntity, '{attribName}', attribValue);
+					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
 					IF i_rec.reg_mode > 1 THEN
 						removeAttrib := true;
 						IF i_rec.reg_mode = 3 THEN
@@ -658,19 +658,187 @@ BEGIN
 		SELECT insertEntity || templateEntity INTO insertEntity;
 		BEGIN
 			INSERT INTO ENTITY (ENTITY_ID, ENTITY_DATA) VALUES (entityId, insertEntity);
-			INSERT INTO externalInserts VALUES ('ADDED ENTITY', null, null, insertEntity);
+			INSERT INTO resultTable VALUES ('ADDED ENTITY', null, null, insertEntity);
 		EXCEPTION WHEN OTHERS THEN
-			INSERT INTO externalInserts VALUES ('ERROR', null, null, sqlstate::jsonb);
+			INSERT INTO resultTable VALUES ('ERROR', null, null, sqlstate::jsonb);
 		END;
 	END IF;
-	RETURN QUERY SELECT * FROM externalInserts;
+	RETURN QUERY SELECT * FROM resultTable;
 END;
 $$ LANGUAGE PLPGSQL;
 
 
 
 
-CREATE OR REPLACE FUNCTION APPENDNGSILDENTITY (ENTITYID text, DELTAENTITY JSONB, NOOVERWRITE boolean) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+
+
+
+CREATE OR REPLACE FUNCTION NOLOCALINFOOPERATION (ENTITYID text, DELTAENTITY JSONB, OPERATIONFIELD smallint) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+declare
+	attribName text;
+	templateEntity jsonb;
+	entityType text;
+	entityTypes jsonb;
+	attribValue jsonb;
+	location GEOMETRY(Geometry, 4326);
+	scopes text[];
+BEGIN
+    CREATE TEMP TABLE resultTable (endPoint text UNIQUE, tenant text, headers jsonb, forwardEntity jsonb) ON COMMIT DROP;
+	templateEntity := '{}'::jsonb;
+	IF DELTAENTITY ? '@id' THEN
+		templateEntity := jsonb_set(templateEntity, '@id', DELTAENTITY->'@id');
+		DELTAENTITY := DELTAENTITY - '@id';
+	END IF;
+	templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/createdAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/createdAt');
+	DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/createdAt';
+	templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/modifiedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/modifiedAt');
+	DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/modifiedAt';
+	IF DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/observedAt' THEN
+		templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/observedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/observedAt');
+		DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/observedAt';
+	END IF;
+	IF DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/location' THEN
+		IF (DELTAENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
+			location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
+		ELSE
+			location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0}')::text ), 4326);
+		END IF;
+	ELSE
+		location = null;
+	END IF;
+	IF (DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
+		scopes = getScopes(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/scope}');
+	ELSIF (DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
+		scopes = getScopes(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
+	ELSE
+		scopes = NULL;
+	END IF;
+	IF DELTAENTITY ? '@type' THEN
+		templateEntity := jsonb_set(templateEntity, '@type', DELTAENTITY->'@type');
+		entityTypes := DELTAENTITY->'@type';
+		DELTAENTITY := DELTAENTITY - '@type';
+		FOR entityType IN select jsonb_array_elements_text from jsonb_array_elements_text(entityTypes) LOOP
+			FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
+				attribValue := DELTAENTITY->attribName;
+				IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
+					CASE OPERATIONFIELD
+						WHEN 2 THEN
+							FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+								INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END LOOP;
+						WHEN 3 THEN
+							FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.appendAttrs = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+								INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END LOOP;
+						WHEN 4 THEN
+							FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateAttrs = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+								INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END LOOP;
+					END CASE;
+				ELSE
+					CASE OPERATIONFIELD
+						WHEN 2 THEN
+							FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+								INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END LOOP;
+						WHEN 3 THEN
+							FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.appendAttrs = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+								INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END LOOP;
+						WHEN 4 THEN
+							FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateAttrs = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+								INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END LOOP;
+					END CASE;
+				END IF;
+				DELTAENTITY := DELTAENTITY - attribName;
+			END LOOP;
+		END LOOP;
+		
+		FOR attribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(DELTAENTITY) LOOP
+			INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '{{"attribName": attribName, "datasetId": "any"}}'::jsonb) ON CONFLICT SET resultTable.forwardEntity=resultTable.forwardEntity || '{{"attribName": attribName, "datasetId": "any"}}'::jsonb;
+		END LOOP;
+	ELSE
+		FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
+			attribValue := DELTAENTITY->attribName;
+			IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
+				CASE OPERATIONFIELD
+					WHEN 2 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateEntity = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode = 3 THEN
+								EXIT;
+							END IF;
+						END LOOP;
+					WHEN 3 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.appendAttrs = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode = 3 THEN
+								EXIT;
+							END IF;
+						END LOOP;
+					WHEN 4 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateAttrs = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode = 3 THEN
+								EXIT;
+							END IF;
+						END LOOP;
+				END CASE;
+			ELSE
+				CASE OPERATIONFIELD
+					WHEN 2 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateEntity = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode = 3 THEN
+								EXIT;
+							END IF;
+						END LOOP;
+					WHEN 3 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.appendAttrs = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode = 3 THEN
+								EXIT;
+							END IF;
+						END LOOP;
+					WHEN 4 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateAttrs = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode = 3 THEN
+								EXIT;
+							END IF;
+						END LOOP;
+				END CASE;
+			END IF;
+			DELTAENTITY := DELTAENTITY - attribName;
+		END LOOP;
+		FOR attribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(DELTAENTITY) LOOP
+			INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '{{"attribName": attribName, "datasetId": "any"}}'::jsonb) ON CONFLICT SET forwardEntity=resultTable.forwardEntity || '{{"attribName": attribName, "datasetId": "any"}}'::jsonb;
+		END LOOP;
+	END IF;
+	RETURN QUERY SELECT * FROM resultTable;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION LOCALINFOOPERATION (ENTITYID text, DELTAENTITY JSONB, LOCALENTITY JSONB, IID BIGINT, NOOVERWRITE BOOLEAN, OPERATIONFIELD SMALLINT) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
 declare
 	attribName text;
 	templateEntity jsonb;
@@ -680,205 +848,240 @@ declare
 	i_rec record;
 	countInt integer;
 	removeAttrib boolean;
-	entityId text;
 	location GEOMETRY(Geometry, 4326);
 	scopes text[];
 	localEntity jsonb;
 	notUpdated text[];
+	localAttribValue jsonb;
+	localDatasetId text;
+	datasetId text;
+	tempArray jsonb;
 BEGIN
-    CREATE TEMP TABLE externalInserts (endPoint text UNIQUE, tenant text, headers jsonb, forwardEntity jsonb) ON COMMIT DROP;
-	SELECT entity.ENTITY, entity.id INTO localEntity, iid FROM entity WHERE entity.ENTITY_ID = ENTITYID;
-	IF localEntity IS NOT NULL THEN
-		templateEntity := '{}'::jsonb;
-		entityTypes := localEntity->'@type';
-		IF DELTAENTITY ? '@type' THEN
-			IF localEntity->'@type'@>DELTAENTITY->'@type' THEN
-				localEntity := jsonb_set(localEntity, '@type', DELTAENTITY->'@type');
-				templateEntity := jsonb_set(templateEntity, '@type', DELTAENTITY->'@type');
-				DELTAENTITY := DELTAENTITY - '@type';
-			ELSE
-				INSERT INTO externalInserts (endpoint, forwardEntity) VALUES ('ERROR', '{"Removing a type is not allowed"}'::jsonb);
-				EXIT;
-			END IF;
-		END IF;
-		IF DELTAENTITY ? '@id' THEN
-			templateEntity := jsonb_set(templateEntity, '@id', DELTAENTITY->'@id');
-			DELTAENTITY := DELTAENTITY - '@id';
-		END IF;
-		templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/createdAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/createdAt');
-		localEntity := jsonb_set(localEntity, '{https://uri.etsi.org/ngsi-ld/createdAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/createdAt');
-		DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/createdAt';
-		templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/modifiedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/modifiedAt');
-		localEntity := jsonb_set(localEntity, '{https://uri.etsi.org/ngsi-ld/modifiedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/modifiedAt');
-		DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/modifiedAt';
-		IF DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/observedAt' THEN
-			templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/observedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/observedAt');
-			localEntity := jsonb_set(localEntity, '{https://uri.etsi.org/ngsi-ld/observedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/observedAt');
-			DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/observedAt';
-		END IF;
-		IF DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/location' THEN
-			IF (DELTAENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
-				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
-			ELSE
-				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0}')::text ), 4326);
-			END IF;
-		ELSIF localEntity ? 'https://uri.etsi.org/ngsi-ld/location' THEN
-			IF (localEntity@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
-				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(localEntity#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
-			ELSE
-				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(localEntity#>'{https://uri.etsi.org/ngsi-ld/location,0}')::text ), 4326);
-			END IF;
-		ELSE
-			location = null;
-		END IF;
-		IF (DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
-			scopes = getScopes(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/scope}');
-		ELSIF (DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
-			scopes = getScopes(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
-		ELSIF (localEntity ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
-			scopes = getScopes(localEntity#>'{https://uri.etsi.org/ngsi-ld/scope}');
-		ELSIF (localEntity ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
-			scopes = getScopes(localEntity#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
-		ELSE
-			scopes = NULL;
-		END IF;
-		FOR entityType IN select jsonb_array_elements_text from jsonb_array_elements_text(entityTypes) LOOP
-			FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
-				attribValue := DELTAENTITY->attribName;
-				removeAttrib := false;
-				IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
-					FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
-						INSERT INTO externalInserts VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(externalInserts.forwardEntity, '{attribName}', attribValue);
-						IF i_rec.reg_mode > 1 THEN
-							removeAttrib := true;
-							IF i_rec.reg_mode = 3 THEN
-								EXIT;
-							END IF;
-						END IF;
-					END LOOP;
-				ELSE
-					FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
-						INSERT INTO externalInserts VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(externalInserts.forwardEntity, '{attribName}', attribValue);
-						IF i_rec.reg_mode > 1 THEN
-							removeAttrib := true;
-							IF i_rec.reg_mode = 3 THEN
-								EXIT;
-							END IF;
-						END IF;
-					END LOOP;
-				END IF;
-				IF removeAttrib THEN
-					DELTAENTITY := DELTAENTITY - attribName;
-				END IF;
-			END LOOP;
-		END LOOP;
-		FOR attribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(DELTAENTITY) LOOP
-			FOR attribValue IN SELECT jsonb_array_elements FROM jsonb_array_elements(DELTAENTITY->attribName) LOOP
-				datasetId := attribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
-				IF NOOVERWRITE THEN
-					SELECT COUNT(iid)=1 INTO removeAttrib FROM attr2iid WHERE attr=attribName AND dataset_id = datasetId;
-					IF removeAttrib THEN
-						INSERT INTO externalInserts VALUES ('NOT ADDED', null, null, '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb) ON CONFLICT SET forwardEntity=externalInserts.forwardEntity || '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb;
-						CONTINUE;
-					END IF;
-				END IF;
-				templateEntity = '[]'::jsonb;
-				FOR localAttribValue IN SELECT jsonb_array_elements FROM jsonb_array_elements(localEntity->attribName) LOOP
-					localDatasetId := localAttribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
-					IF (localDatasetId IS NULL AND datasetId IS NOT NULL) OR (localDatasetId IS NOT NULL AND datasetId IS NULL) OR (localDatasetId <> datasetId) THEN
-						templateEntity = templateEntity || localAttribValue;
-					END IF;
-				END LOOP;
-				templateEntity = templateEntity || attribValue;
-				localEntity := jsonb_set(localEntity, attribName, templateEntity);
-			END LOOP
-		END LOOP;
-		UPDATE ENTITY SET ENTITY.ENTITY=localEntity WHERE ENTITY.id = iid;
-	ELSE	
-		templateEntity := '{}'::jsonb;
-		IF DELTAENTITY ? '@id' THEN
-			templateEntity := jsonb_set(templateEntity, '@id', DELTAENTITY->'@id');
-			DELTAENTITY := DELTAENTITY - '@id';
-		END IF;
-		templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/createdAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/createdAt');
-		DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/createdAt';
-		templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/modifiedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/modifiedAt');
-		DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/modifiedAt';
-		IF DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/observedAt' THEN
-			templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/observedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/observedAt');
-			DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/observedAt';
-		END IF;
-		IF DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/location' THEN
-			IF (DELTAENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
-				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
-			ELSE
-				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0}')::text ), 4326);
-			END IF;
-		ELSE
-			location = null;
-		END IF;
-		IF (DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
-			scopes = getScopes(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/scope}');
-		ELSIF (DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
-			scopes = getScopes(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
-		ELSE
-			scopes = NULL;
-		END IF;
-		IF DELTAENTITY ? '@type' THEN
+    CREATE TEMP TABLE resultTable (endPoint text UNIQUE, tenant text, headers jsonb, forwardEntity jsonb) ON COMMIT DROP;
+	templateEntity := '{}'::jsonb;
+	entityTypes := localEntity->'@type';
+	IF DELTAENTITY ? '@type' THEN
+		IF localEntity->'@type'@>DELTAENTITY->'@type' THEN
+			localEntity := jsonb_set(localEntity, '@type', DELTAENTITY->'@type');
 			templateEntity := jsonb_set(templateEntity, '@type', DELTAENTITY->'@type');
-			entityTypes := DELTAENTITY->'@type';
 			DELTAENTITY := DELTAENTITY - '@type';
-			FOR entityType IN select jsonb_array_elements_text from jsonb_array_elements_text(entityTypes) LOOP
-				FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
-					attribValue := DELTAENTITY->attribName;
-					IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
-						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
-							INSERT INTO externalInserts VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(externalInserts.forwardEntity, '{attribName}', attribValue);
-							IF i_rec.reg_mode = 3 THEN
-								EXIT;
-							END IF;
-						END LOOP;
-					ELSE
-						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
-						INSERT INTO externalInserts VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(externalInserts.forwardEntity, '{attribName}', attribValue);
-							IF i_rec.reg_mode = 3 THEN
-								EXIT;
-							END IF;
-						END LOOP;
-					END IF;
-					DELTAENTITY := DELTAENTITY - attribName;
-				END LOOP;
-			END LOOP;
-			SELECT count(jsonb_object_keys) FROM jsonb_object_keys(DELTAENTITY) INTO countInt;
-			IF countInt > 0 THEN
-				INSERT INTO externalInserts VALUES ('NOT ADDED', null, null, '{{"attribName": attribName, "datasetId": "any"}}'::jsonb) ON CONFLICT SET forwardEntity=externalInserts.forwardEntity || '{{"attribName": attribName, "datasetId": "any"}}'::jsonb;
-			END IF;
 		ELSE
-			FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
-				attribValue := DELTAENTITY->attribName;
-				IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
-					FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.appendAttrs = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
-						INSERT INTO externalInserts VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(externalInserts.forwardEntity, '{attribName}', attribValue);
-						IF i_rec.reg_mode = 3 THEN
-							EXIT;
-						END IF;
-					END LOOP;
-				ELSE
-					FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.appendAttrs = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
-					INSERT INTO externalInserts VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(externalInserts.forwardEntity, '{attribName}', attribValue);
-						IF i_rec.reg_mode = 3 THEN
-							EXIT;
-						END IF;
-					END LOOP;
-				END IF;
-				DELTAENTITY := DELTAENTITY - attribName;
-			END LOOP;
-			SELECT count(jsonb_object_keys) FROM jsonb_object_keys(DELTAENTITY) INTO countInt;
-			IF countInt > 0 THEN
-				INSERT INTO externalInserts VALUES ('NOT ADDED', null, null, '{{"attribName": attribName, "datasetId": "any"}}'::jsonb) ON CONFLICT SET forwardEntity=externalInserts.forwardEntity || '{{"attribName": attribName, "datasetId": "any"}}'::jsonb;
-			END IF;
+			INSERT INTO resultTable (endpoint, forwardEntity) VALUES ('ERROR', '{"Removing a type is not allowed"}'::jsonb);
+			EXIT;
 		END IF;
+	END IF;
+	IF DELTAENTITY ? '@id' THEN
+		templateEntity := jsonb_set(templateEntity, '@id', DELTAENTITY->'@id');
+		DELTAENTITY := DELTAENTITY - '@id';
+	END IF;
+	templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/createdAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/createdAt');
+	localEntity := jsonb_set(localEntity, '{https://uri.etsi.org/ngsi-ld/createdAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/createdAt');
+	DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/createdAt';
+	templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/modifiedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/modifiedAt');
+	localEntity := jsonb_set(localEntity, '{https://uri.etsi.org/ngsi-ld/modifiedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/modifiedAt');
+	DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/modifiedAt';
+	IF DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/observedAt' THEN
+		templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/observedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/observedAt');
+		localEntity := jsonb_set(localEntity, '{https://uri.etsi.org/ngsi-ld/observedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/observedAt');
+			DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/observedAt';
+	END IF;
+	IF DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/location' THEN
+		IF (DELTAENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
+			location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
+		ELSE
+			location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0}')::text ), 4326);
+		END IF;
+	ELSIF localEntity ? 'https://uri.etsi.org/ngsi-ld/location' THEN
+		IF (localEntity@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
+			location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(localEntity#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
+		ELSE
+			location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(localEntity#>'{https://uri.etsi.org/ngsi-ld/location,0}')::text ), 4326);
+		END IF;
+	ELSE
+		location = null;
+	END IF;
+	IF (DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
+		scopes = getScopes(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/scope}');
+	ELSIF (DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
+		scopes = getScopes(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
+	ELSIF (localEntity ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
+		scopes = getScopes(localEntity#>'{https://uri.etsi.org/ngsi-ld/scope}');
+	ELSIF (localEntity ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
+		scopes = getScopes(localEntity#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
+	ELSE
+		scopes = NULL;
+	END IF;
+	FOR entityType IN select jsonb_array_elements_text from jsonb_array_elements_text(entityTypes) LOOP
+		FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
+			attribValue := DELTAENTITY->attribName;
+			removeAttrib := false;
+			IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
+				CASE OPERATIONFIELD
+					WHEN 2 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode > 1 THEN
+								removeAttrib := true;
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END IF;
+						END LOOP;
+					WHEN 3 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.appendAttrs = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode > 1 THEN
+								removeAttrib := true;
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END IF;
+						END LOOP;
+					WHEN 4 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateAttrs = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode > 1 THEN
+								removeAttrib := true;
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END IF;
+						END LOOP;
+				END CASE;
+				
+			ELSE
+				CASE OPERATIONFIELD
+					WHEN 2 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode > 1 THEN
+								removeAttrib := true;
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END IF;
+						END LOOP;
+					WHEN 3 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode > 1 THEN
+								removeAttrib := true;
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END IF;
+						END LOOP;
+					WHEN 4 THEN
+						FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.updateEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+							INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+							IF i_rec.reg_mode > 1 THEN
+								removeAttrib := true;
+								IF i_rec.reg_mode = 3 THEN
+									EXIT;
+								END IF;
+							END IF;
+						END LOOP;
+				END CASE;
+			END IF;
+			IF removeAttrib THEN
+				DELTAENTITY := DELTAENTITY - attribName;
+			END IF;
+		END LOOP;
+	END LOOP;
+	FOR attribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(DELTAENTITY) LOOP
+		FOR attribValue IN SELECT jsonb_array_elements FROM jsonb_array_elements(DELTAENTITY->attribName) LOOP
+			datasetId := attribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
+			IF NOOVERWRITE THEN
+				SELECT COUNT(iid)=1 INTO removeAttrib FROM attr2iid WHERE attr=attribName AND dataset_id = datasetId;
+				IF removeAttrib THEN
+					INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb) ON CONFLICT SET forwardEntity=resultTable.forwardEntity || '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb;
+					CONTINUE;
+				END IF;
+			END IF;
+			tempArray = '[]'::jsonb;
+			removeAttrib := false;
+			FOR localAttribValue IN SELECT jsonb_array_elements FROM jsonb_array_elements(localEntity->attribName) LOOP
+				localDatasetId := localAttribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
+				IF (localDatasetId IS NULL AND datasetId IS NOT NULL) OR (localDatasetId IS NOT NULL AND datasetId IS NULL) OR (localDatasetId <> datasetId) THEN
+					tempArray = tempArray || localAttribValue;
+				ELSIF OPERATIONFIELD = 4 THEN
+					removeAttrib := true;
+					tempArray = tempArray || (localAttribValue || attribValue);
+				END IF;
+			END LOOP;
+			IF OPERATIONFIELD = 2 OR OPERATIONFIELD = 3 THEN
+				tempArray = tempArray || attribValue;
+			ELSIF OPERATIONFIELD = 4 AND removeAttrib THEN
+				INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb) ON CONFLICT SET forwardEntity=resultTable.forwardEntity || '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb;
+			END IF;
+			localEntity := jsonb_set(localEntity, attribName, tempArray);
+		END LOOP
+	END LOOP;
+	UPDATE ENTITY SET ENTITY.ENTITY=localEntity||templateEntity WHERE ENTITY.id = iid;
+	RETURN QUERY SELECT * FROM resultTable;
+END;
+$$ LANGUAGE PLPGSQL;
+
+
+CREATE OR REPLACE FUNCTION APPENDNGSILDENTITY (ENTITYID text, DELTAENTITY JSONB, NOOVERWRITE boolean) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+declare
+	LOCALENTITY jsonb;
+	IID bigint;
+BEGIN
+	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.ENTITY_ID = ENTITYID;
+	IF LOCALENTITY IS NOT NULL THEN
+		RETURN LOCALINFOOPERATION (ENTITYID, DELTAENTITY, LOCALENTITY, IID, NOOVERWRITE, 3)
+	ELSE	
+		RETURN NOLOCALINFOOPERATION (ENTITYID, DELTAENTITY, 3);
 	END IF;	
-	RETURN QUERY SELECT * FROM externalInserts;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION UPDATENGSILDENTITY (ENTITYID text, DELTAENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+declare
+	LOCALENTITY jsonb;
+	IID bigint;
+BEGIN
+	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.ENTITY_ID = ENTITYID;
+	IF LOCALENTITY IS NOT NULL THEN
+		RETURN LOCALINFOOPERATION (ENTITYID, DELTAENTITY, LOCALENTITY, IID, false, 2)
+	ELSE	
+		RETURN NOLOCALINFOOPERATION (ENTITYID, DELTAENTITY, 2);
+	END IF;	
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION PARTIALUPDATENGSI (ENTITYID text, DELTAENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+declare
+	LOCALENTITY jsonb;
+	IID bigint;
+BEGIN
+	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.ENTITY_ID = ENTITYID;
+	IF LOCALENTITY IS NOT NULL THEN
+		RETURN LOCALINFOOPERATION (ENTITYID, DELTAENTITY, LOCALENTITY, IID, false, 4)
+	ELSE	
+		RETURN NOLOCALINFOOPERATION (ENTITYID, DELTAENTITY, 4);
+	END IF;	
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION DELETEENTITY (ENTITYID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+declare
+BEGIN
+	TODO
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION DELETEATTR (ENTITYID text, ATTR text, DATASETID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+declare
+BEGIN
+	TODO
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION VALIDATE_CSOURCE (ENTITYID text, ATTR text, DATASETID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+declare
+BEGIN
+	TODO????????????
 END;
 $$ LANGUAGE PLPGSQL;
