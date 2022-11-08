@@ -1067,15 +1067,107 @@ $$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION DELETEENTITY (ENTITYID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
 declare
+	LOCALENTITY jsonb;
+	IID bigint;
+	i_rec record;
 BEGIN
-	TODO
+	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.ENTITY_ID = ENTITYID;
+	IF LOCALENTITY IS NOT NULL THEN
+		entityTypes := LOCALENTITY->'@type';
+		IF LOCALENTITY ? 'https://uri.etsi.org/ngsi-ld/location' THEN
+			IF (LOCALENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
+				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(LOCALENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
+			ELSE
+				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(LOCALENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0}')::text ), 4326);
+			END IF;
+		ELSE
+			location = null;
+		END IF;
+		IF (localEntity ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
+			scopes = getScopes(localEntity#>'{https://uri.etsi.org/ngsi-ld/scope}');
+		ELSIF (localEntity ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
+			scopes = getScopes(localEntity#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
+		ELSE
+			scopes = NULL;
+		END IF;
+		FOR entityType IN select jsonb_array_elements_text from jsonb_array_elements_text(entityTypes) LOOP
+			FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL) ON CONFLICT DO NOTHING;
+			END LOOP;
+		END LOOP;
+		BEGIN
+			DELETE FROM ENTITY WHERE ENTITY.id = IID;
+			INSERT INTO resultTable VALUES ("DELETED ENTITY", NULL, NULL, LOCALENTITY)
+		EXCEPTION WHEN OTHERS THEN
+			INSERT INTO resultTable VALUES ('ERROR', null, null, sqlstate::jsonb);	
+		END;
+	ELSE
+		FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteEntity = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL) ON CONFLICT DO NOTHING;
+			END LOOP;
+	END IF;
+	RETURN QUERY SELECT * FROM resultTable;
 END;
 $$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION DELETEATTR (ENTITYID text, ATTR text, DATASETID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
-declare
+	LOCALENTITY jsonb;
+	IID bigint;
+	i_rec record;
 BEGIN
-	TODO
+	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.ENTITY_ID = ENTITYID;
+	IF LOCALENTITY IS NOT NULL THEN
+		entityTypes := LOCALENTITY->'@type';
+		IF LOCALENTITY ? 'https://uri.etsi.org/ngsi-ld/location' THEN
+			IF (LOCALENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
+				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(LOCALENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
+			ELSE
+				location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(LOCALENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0}')::text ), 4326);
+			END IF;
+		ELSE
+			location = null;
+		END IF;
+		IF (localEntity ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
+			scopes = getScopes(localEntity#>'{https://uri.etsi.org/ngsi-ld/scope}');
+		ELSIF (localEntity ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
+			scopes = getScopes(localEntity#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
+		ELSE
+			scopes = NULL;
+		END IF;
+		FOR entityType IN select jsonb_array_elements_text from jsonb_array_elements_text(entityTypes) LOOP
+			FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL OR c.e_prop = ATTR) AND (c.e_rel IS NULL OR c.e_rel = ATTR) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, location)) AND (c.scopes IS NULL OR c.scopes && scopes) ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL) ON CONFLICT DO NOTHING;
+			END LOOP;
+		END LOOP;
+		BEGIN
+			attribValue := LOCALENTITY->ATTR;
+			IF attribValue IS NOT NULL THEN
+				tempArray = '[]'::jsonb;
+				FOR localAttribValue IN SELECT jsonb_array_elements FROM jsonb_array_elements(attribValue) LOOP
+					localDatasetId := localAttribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
+					IF (localDatasetId IS NULL AND datasetId IS NOT NULL) OR (localDatasetId IS NOT NULL AND datasetId IS NULL) OR (localDatasetId <> datasetId) THEN
+						tempArray = tempArray || localAttribValue;
+					END IF;
+				END LOOP;
+				SELECT COUNT(jsonb_array_elements)=0 FROM jsonb_array_elements(attribValue) INTO EMPTYATTR;
+				IF EMPTYATTR THEN
+					LOCALENTITY := LOCALENTITY - ATTR;
+				END IF;
+				UPDATE ENTITY SET ENTITY.ENTITY=localEntity||templateEntity WHERE ENTITY.id = iid;
+				INSERT INTO resultTable VALUES ("DELETED ATTRIB", NULL, NULL, '{"attr": ATTR, "datasetId": DATASETID}'::jsonb);
+			ELSE 
+				INSERT INTO resultTable VALUES ("ERROR", NULL, NULL, 02000::jsonb);
+			END IF;
+			
+		EXCEPTION WHEN OTHERS THEN
+			INSERT INTO resultTable VALUES ('ERROR', null, null, sqlstate::jsonb);	
+		END;
+	ELSE
+		FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteEntity = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL OR c.e_prop = ATTR) AND (c.e_rel IS NULL OR c.e_rel = ATTR)AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL) ON CONFLICT DO NOTHING;
+			END LOOP;
+	END IF;
+	RETURN QUERY SELECT * FROM resultTable;	
 END;
 $$ LANGUAGE PLPGSQL;
 
