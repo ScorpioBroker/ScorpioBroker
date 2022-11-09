@@ -189,7 +189,7 @@ public abstract class StorageDAO {
 		if (tenantidvalue == null)
 			return null;
 		try {
-			String databasename = "ngb" + tenantidvalue;
+			String databasename = "ngb" + tenantidvalue.hashCode();
 			List<String> data;
 			data = writerJdbcTemplate.queryForList("SELECT datname FROM pg_database", String.class);
 			if (data.contains(databasename)) {
