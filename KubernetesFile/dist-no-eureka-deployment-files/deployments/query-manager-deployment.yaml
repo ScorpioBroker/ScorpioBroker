@@ -21,7 +21,7 @@ spec:
         service: query-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:QueryManager-no-eureka_2.1.13
+      - image: scorpiobroker/query-manager:spring-kafka-latest
         imagePullPolicy: Always
         name: query-manager
         ports:
@@ -31,14 +31,14 @@ spec:
           httpGet:
             path: /actuator/health
             port: 1026
-          initialDelaySeconds: 50
+          initialDelaySeconds: 60
           periodSeconds: 5
           successThreshold: 1
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 1026
-          initialDelaySeconds: 50
+          initialDelaySeconds: 60
           periodSeconds: 5
           successThreshold: 1
   

@@ -6,11 +6,10 @@ metadata:
   name: entity-manager
   namespace: scorpio-broker
 spec:
-  type: NodePort
   ports:
-  - port: 1025
+  - name: "1025"
+    port: 1025
     targetPort: 1025
-    nodePort: 30011
   selector:
     service: entity-manager
 status: {}

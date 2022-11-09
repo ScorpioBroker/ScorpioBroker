@@ -21,7 +21,7 @@ spec:
         service: registry-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:RegistryManager_2.1.13
+      - image: scorpiobroker/registry-manager:spring-kafka-eureka-latest
         imagePullPolicy: Always
         name: registry-manager
         ports:
@@ -38,7 +38,7 @@ spec:
           httpGet:
             path: /actuator/health
             port: 1030
-          initialDelaySeconds: 50
+          initialDelaySeconds: 60
           periodSeconds: 5
           successThreshold: 1
         resources:

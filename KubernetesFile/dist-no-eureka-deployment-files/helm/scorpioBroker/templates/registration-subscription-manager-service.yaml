@@ -7,9 +7,9 @@ metadata:
     {{ include "registrySubscriptionManager.labels" . | nindent 4 }}
 spec:
   ports:
-  - name: "1030"
-    port: 1030
-    targetPort: 1030
+  - name: "2025"
+    port: 2025
+    targetPort: 2025
   selector:
     {{ include "registrySubscriptionManager.matchLabels" . | nindent 4 }}
 {{- end }}

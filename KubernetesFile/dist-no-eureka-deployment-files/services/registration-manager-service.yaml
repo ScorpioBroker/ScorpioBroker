@@ -6,11 +6,10 @@ metadata:
   name: registry-manager
   namespace: scorpio-broker
 spec:
-  type: NodePort
   ports:
-  - port: 1030
+  - name: "1030"
+    port: 1030
     targetPort: 1030
-    nodePort: 30014
   selector:
     service: registry-manager
 status: {}

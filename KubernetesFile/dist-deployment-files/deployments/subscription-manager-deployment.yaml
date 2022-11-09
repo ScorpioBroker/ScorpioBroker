@@ -23,7 +23,7 @@ spec:
         service: subscription-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:SubscriptionManager_2.1.13
+      - image: scorpiobroker/subscription-manager:spring-kafka-eureka-latest
         imagePullPolicy: Always
         name: subscription-manager
         ports:
@@ -40,7 +40,7 @@ spec:
           httpGet:
             path: /actuator/health
             port: 2027
-          initialDelaySeconds: 50
+          initialDelaySeconds: 60
           periodSeconds: 5
           successThreshold: 1
         resources:

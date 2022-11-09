@@ -37,12 +37,13 @@ spec:
             value: "9092"
           - name: KAFKA_ADVERTISED_HOST_NAME
             value: $(MY_POD_IP)
-          - name: ALLOW_PLAINTEXT_LISTENER
-            value: "yes"
           - name: KAFKA_LOG_RETENTION_MS
             value: "10000"
           - name: KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS
             value: "5000"
+          - name: ALLOW_PLAINTEXT_LISTENER
+            value: "yes"
+
       hostname: kafka
       restartPolicy: Always
       serviceAccountName: ""

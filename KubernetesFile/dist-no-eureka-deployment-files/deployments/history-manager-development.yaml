@@ -21,7 +21,7 @@ spec:
         service: history-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:HistoryManager-no-eureka_2.1.13
+      - image: scorpiobroker/history-manager:spring-kafka-latest
         imagePullPolicy: Always
         name: history-manager
         ports:
@@ -31,14 +31,14 @@ spec:
           httpGet:
             path: /actuator/health
             port: 1040
-          initialDelaySeconds: 50
+          initialDelaySeconds: 60
           periodSeconds: 5
           successThreshold: 1
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 1040
-          initialDelaySeconds: 50
+          initialDelaySeconds: 60
           periodSeconds: 5
           successThreshold: 1
   

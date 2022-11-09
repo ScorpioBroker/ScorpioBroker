@@ -17,7 +17,7 @@ spec:
        component: scorpio
     spec:
       containers:
-      - image: scorpiobroker/scorpio:scorpio-aaio_2.1.13
+      - image: scorpiobroker/all-in-one-runner:spring-kafka-latest
         imagePullPolicy: Always
         name: scorpio
         ports:

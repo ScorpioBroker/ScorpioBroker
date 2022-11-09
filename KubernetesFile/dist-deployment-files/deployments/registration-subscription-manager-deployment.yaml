@@ -21,7 +21,7 @@ spec:
         service: registry-subscription-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:RegistrySubscriptionManager_2.1.13
+      - image: scorpiobroker/registry-subscription-manager:spring-kafka-eureka-latest
         imagePullPolicy: Always
         name: registry-subscription-manager
         ports:
@@ -38,7 +38,7 @@ spec:
           httpGet:
             path: /actuator/health
             port: 2025
-          initialDelaySeconds: 50
+          initialDelaySeconds: 60
           periodSeconds: 5
           successThreshold: 1
         resources:

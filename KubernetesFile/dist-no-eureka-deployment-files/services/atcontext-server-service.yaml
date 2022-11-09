@@ -6,11 +6,10 @@ metadata:
   name: atcontext-server
   namespace: scorpio-broker
 spec:
-  type: NodePort
   ports:
-  - port: 27015
+  - name: "27015"
+    port: 27015
     targetPort: 27015
-    nodePort: 30010
   selector:
     service: atcontext-server
 status: {}

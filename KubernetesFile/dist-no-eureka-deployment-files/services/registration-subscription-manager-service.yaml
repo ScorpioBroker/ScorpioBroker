@@ -6,11 +6,10 @@ metadata:
   name: registry-subscription-manager
   namespace: scorpio-broker
 spec:
-  type: NodePort
   ports:
-  - port: 2025
+  - name: "2025"
+    port: 2025
     targetPort: 2025
-    nodePort: 30015
   selector:
     service: registry-subscription-manager
 status: {}

@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: scorpiobroker/scorpio
-  pullPolicy: IfNotPresent
+  repository: scorpiobroker/all-in-one-runner
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: scorpio-aaio_latest
+  tag: spring-kafka-latest
 
 imagePullSecrets: []
 nameOverride: ""

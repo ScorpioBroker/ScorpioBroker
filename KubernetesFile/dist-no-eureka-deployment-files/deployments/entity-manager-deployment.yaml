@@ -22,7 +22,7 @@ spec:
         service: entity-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:EntityManager-no-eureka_2.1.13
+      - image: scorpiobroker/entity-manager:spring-kafka-latest
         imagePullPolicy: Always
         name: entity-manager
         ports:

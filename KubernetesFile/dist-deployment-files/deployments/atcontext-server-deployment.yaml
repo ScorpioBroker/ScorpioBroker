@@ -17,7 +17,7 @@ spec:
         service: atcontext-server
     spec:
       containers:
-      - image: scorpiobroker/scorpio:AtContextServer_2.1.13
+      - image: scorpiobroker/at-context-server:spring-kafka-eureka-latest
         imagePullPolicy: Always
         name: atcontext-server
         ports:
