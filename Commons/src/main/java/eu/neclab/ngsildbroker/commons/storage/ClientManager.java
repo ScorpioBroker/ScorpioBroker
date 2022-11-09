@@ -122,7 +122,7 @@ public class ClientManager {
 	}
 
 	public Uni<String> findDataBaseNameByTenantId(String tenant, boolean create) {
-		String databasename = "ngb"+tenant.hashCode();
+		String databasename = "ngb"+tenant;
 		return pgClient.preparedQuery("SELECT datname FROM pg_database where datname = $1")
 				.execute(Tuple.of(databasename)).onItem().transformToUni(pgRowSet -> {
 					if (pgRowSet.size() == 0) {
