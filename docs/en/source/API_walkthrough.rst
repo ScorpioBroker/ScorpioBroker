@@ -581,7 +581,7 @@ You can basically update every part of an entity with two exceptions. The type a
 To update our room1 we will do an HTTP POST like this.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1 -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/NgXJLgRa' -d @- <<EOF
+	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/NgXJLgRa' -d @- <<EOF
 	{
 		"temperature": {
 		"value": 25,
@@ -623,11 +623,11 @@ In order to update the temperature we do a POST like this
 Append attribute
 ################
 
-In order to append a new attribute to an entity you execute an HTTP PATCH command on /entities/<entityId>/attrs/ with the new attribute as payload.
+In order to append a new attribute to an entity you execute an HTTP POST command on /entities/<entityId>/attrs/ with the new attribute as payload.
 Append in NGSI-LD by default will overwrite an existing entry. If this is not desired you can add the option parameter with noOverwrite to the URL like this /entities/<entityId>/attrs?options=noOverwrite. Now if we want to add an additional entry for the humidity in room1 we do an HTTP PATCH like this. 
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs -s -S -X PATCH -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/NgXJLgRa' -d @- <<EOF
+	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs -s -S -X POST -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/NgXJLgRa' -d @- <<EOF
 	{
 		"humidity": {
 		"value": 34,
