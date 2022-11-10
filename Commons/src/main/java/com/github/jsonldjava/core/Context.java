@@ -58,10 +58,6 @@ public class Context extends LinkedHashMap<String, Object> {
 		init(new JsonLdOptions());
 	}
 
-	public Map<String, Object> getTermDefinitions() {
-		return termDefinitions;
-	}
-
 	public Context(Object context, JsonLdOptions opts) {
 		// TODO: load remote context
 		super(context instanceof Map ? (Map<String, Object>) context : null);

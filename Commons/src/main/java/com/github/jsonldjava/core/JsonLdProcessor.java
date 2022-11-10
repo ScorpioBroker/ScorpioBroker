@@ -37,8 +37,9 @@ public class JsonLdProcessor {
 		JsonLdProcessor.coreContextUrl = contextUrl;
 		JsonLdProcessor.coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl,
 				false);
-		//this explicitly removes the features term from the core as it is a commonly used term and we don't need the geo json definition
-		JsonLdProcessor.coreContext.getTermDefinitions().remove("features");
+		// this explicitly removes the features term from the core as it is a commonly
+		// used term and we don't need the geo json definition
+		JsonLdProcessor.coreContext.getTermDefinition("features").remove("@container");
 	}
 
 	public static Context getCoreContextClone() {
