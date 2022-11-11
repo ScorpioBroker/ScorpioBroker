@@ -141,14 +141,13 @@ DECLARE
 	headers jsonb;	
 	internalId bigint;
 	attribName text;
+	errorFound boolean;
 BEGIN
     IF (TG_OP = 'INSERT' AND NEW.REG IS NOT NULL) OR
         (TG_OP = 'UPDATE' AND OLD.REG IS NULL AND NEW.REG IS NOT NULL) OR
         (TG_OP = 'UPDATE' AND OLD.REG IS NOT NULL AND NEW.REG IS NULL) OR
         (TG_OP = 'UPDATE' AND OLD.REG IS NOT NULL AND NEW.REG IS NOT NULL AND OLD.REG <> NEW.REG) THEN
-		IF TG_OP = 'UPDATE' THEN
-			DELETE FROM csourceinformation where cs_id = NEW.id;
-		END IF;
+		errorFound := false;		
 		internalId = NEW.id;
 		endpoint = NEW.REG#>>'{https://uri.etsi.org/ngsi-ld/endpoint,0,@value}';
 		IF NEW.REG ? 'https://uri.etsi.org/ngsi-ld/location' THEN
@@ -206,14 +205,17 @@ BEGIN
 		ELSE
 			expires = NULL;
 		END IF;
-		FOR infoEntry IN SELECT jsonb_array_elements FROM jsonb_array_elements(NEW.REG#>'{https://uri.etsi.org/ngsi-ld/information}') LOOP
-			IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/entities' THEN
-				BEGIN
+		BEGIN
+			IF TG_OP = 'UPDATE' THEN
+				DELETE FROM csourceinformation where cs_id = NEW.id;
+			END IF;
+			FOR infoEntry IN SELECT jsonb_array_elements FROM jsonb_array_elements(NEW.REG#>'{https://uri.etsi.org/ngsi-ld/information}') LOOP
+				IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/entities' THEN
 					FOR entitiesEntry IN SELECT jsonb_array_elements FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/entities}') LOOP
 						FOR entityType IN SELECT jsonb_array_elements_text FROM jsonb_array_elements_text(entitiesEntry#>'{@type}') LOOP
-							entityId = NULL;
-							entityIdPattern = NULL;
-							attribsAdded = false;
+							entityId := NULL;
+							entityIdPattern := NULL;
+							attribsAdded := false;
 							IF entitiesEntry ? '@id' THEN
 								entityId = entitiesEntry#>>'{@id}';
 							END IF;
@@ -223,9 +225,23 @@ BEGIN
 							IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/propertyNames' THEN
 								attribsAdded = true;
 								FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/propertyNames}') LOOP
-									IF regMode <> 0 AND WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)=0 FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName THEN
-										ROLLBACK;
-										RAISE EXCEPTION '% conflicts with existing entry', attribName USING ERRCODE='23514', MESSAGE=attribName||' conflicts with existing entry';
+									IF regMode > 1 THEN
+										IF entityId IS NOT NULL THEN 
+											WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id = entityId AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
+											IF errorFound THEN
+												RAISE EXCEPTION 'Registration with attrib % and id % conflicts with existing entry', attribName, entityId USING ERRCODE='23514';
+											END IF;
+										ELSIF entityIdPattern IS NOT NULL THEN
+											WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id ~ entityIdPattern AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
+											IF errorFound THEN
+												RAISE EXCEPTION 'Registration with attrib % and idpattern % conflicts with existing entry', attribName, entityIdPattern USING ERRCODE='23514';
+											END IF;
+										ELSE
+											WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
+											IF errorFound THEN
+												RAISE EXCEPTION 'Registration with attrib % and type % conflicts with existing entry', attribName, entityType USING ERRCODE='23514';
+											END IF;
+										END IF;
 									END IF;
 									INSERT INTO csourceinformation (cs_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) VALUES (internalId, entityId, entityIdPattern, entityType, attribName, NULL, location, scopes, expires, endpoint, tenant, headers, regMode,operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
 								END LOOP;
@@ -233,46 +249,73 @@ BEGIN
 							IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/relationshipNames' THEN
 								attribsAdded = true;
 								FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/relationshipNames}') LOOP
-									IF regMode <> 0 AND WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)=0 FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName THEN
-										ROLLBACK;
-										RAISE EXCEPTION '% conflicts with existing entry', attribName USING ERRCODE='23514', MESSAGE=attribName||' conflicts with existing entry';
+									IF regMode > 1 THEN
+										IF entityId IS NOT NULL THEN 
+											WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id = entityId AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
+											IF errorFound THEN
+												RAISE EXCEPTION 'Registration with attrib % and id % conflicts with existing entry', attribName, entityId USING ERRCODE='23514';
+											END IF;
+										ELSIF entityIdPattern IS NOT NULL THEN
+											WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id ~ entityIdPattern AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
+											IF errorFound THEN
+												RAISE EXCEPTION 'Registration with attrib % and idpattern % conflicts with existing entry', attribName, entityIdPattern USING ERRCODE='23514';
+											END IF;
+										ELSE
+											WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
+											IF errorFound THEN
+												RAISE EXCEPTION 'Registration with attrib % and type % conflicts with existing entry', attribName, entityType USING ERRCODE='23514';
+											END IF;
+										END IF;
 									END IF;
 									INSERT INTO csourceinformation (cs_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) VALUES (internalId, entityId, entityIdPattern, entityType,NULL, attribName, location, scopes, expires, endpoint, tenant, headers, regMode,operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
 									
 								END LOOP;
 							END IF;
 							IF NOT attribsAdded THEN
-								IF regMode <> 0 AND SELECT count(iid)=0 FROM etype2iid WHERE e_type = entityType) THEN
-									RAISE EXCEPTION '% conflicts with existing entry', attribName USING ERRCODE='23514', MESSAGE=attribName||' conflicts with existing entry';
+								IF regMode > 1 THEN
+									IF entityId IS NOT NULL THEN 
+										WITH e_ids AS (SELECT id FROM entity WHERE e_id = entityId) SELECT count(iid) INTO errorFound FROM etype2iid  WHERE etype2iid.e_type = entityType;
+										IF errorFound THEN
+											RAISE EXCEPTION 'Registration with entityId % conflicts with existing entity', entityId USING ERRCODE='23514';
+										END IF;
+									ELSIF entityIdPattern IS NOT NULL THEN
+										WITH e_ids AS (SELECT id FROM entity WHERE e_id ~ entityIdPattern) SELECT count(iid)>0 INTO errorFound FROM etype2iid LEFT JOIN e_ids ON etype2iid.iid = e_ids.id WHERE etype2iid.e_type = entityType;
+										IF errorFound THEN
+											RAISE EXCEPTION 'Registration with idPattern % and type % conflicts with existing entity', entityIdPattern, entityType USING ERRCODE='23514';
+										END IF;
+									ELSE
+										SELECT count(iid)>0 INTO errorFound FROM etype2iid WHERE e_type = entityType;
+										IF errorFound THEN
+											RAISE EXCEPTION 'Registration with type % conflicts with existing entity', entityType USING ERRCODE='23514';
+										END IF;
+									END IF;
 								END IF;
 								INSERT INTO csourceinformation(cs_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) values (internalId, entityId, entityIdPattern, entityType, NULL, NULL, location, scopes, expires, endpoint, tenant, headers, regMode,operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
 							END IF;
 						END LOOP;
 					END LOOP;
-				END;
-			ELSE
-				BEGIN
+				ELSE
 					IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/propertyNames' THEN
 						FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/propertyNames}') LOOP
-							IF regMode <> 0 AND WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)=0 FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName THEN
-								ROLLBACK;
-								RAISE EXCEPTION '% conflicts with existing entry', attribName USING ERRCODE='23514', MESSAGE=attribName||' conflicts with existing entry';
+							SELECT count(attr2iid.iid)>0 INTO errorFound FROM attr2iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
+							IF regMode > 1 AND errorFound THEN
+								RAISE EXCEPTION 'Attribute % conflicts with existing entity', attribName USING ERRCODE='23514';
 							END IF;
 							INSERT INTO csourceinformation(cs_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) VALUES (internalId, NULL, NULL, NULL, attribName, NULL, location, scopes, expires, endpoint, tenant, headers, regMode, operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
 						END LOOP;
 					END IF;
 					IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/relationshipNames' THEN
 						FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/relationshipNames}') LOOP
-							IF regMode <> 0 AND WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)=0 FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName THEN
-								ROLLBACK;
-								RAISE EXCEPTION '% conflicts with existing entry', attribName USING ERRCODE='23514', MESSAGE=attribName||' conflicts with existing entry';
+							SELECT count(attr2iid.iid)>0 INTO errorFound FROM attr2iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
+							IF regMode > 1 AND errorFound THEN
+								RAISE EXCEPTION 'Attribute % conflicts with existing entity', attribName USING ERRCODE='23514';
 							END IF;
 							INSERT INTO csourceinformation(cs_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) VALUES (internalId, NULL, NULL, NULL, NULL, attribName, location, scopes, expires, endpoint, tenant, headers, regMode, operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
 						END LOOP;
 					END IF;
-				END;
-			END IF;
-		END LOOP;
+				END IF;
+			END LOOP;
+		END;
 	END IF;
     RETURN NEW;
 END;
@@ -318,8 +361,9 @@ CREATE TABLE public.attr2iid
 (
     attr text,
     iid bigint,
-	attr_value jsonb,
+	is_rel boolean;
 	dataset_id text,
+	attr_value jsonb,
 	created timestamp without time zone,
 	observed timestamp without time zone,
 	modified timestamp without time zone
@@ -468,17 +512,20 @@ declare
 	modified timestamp without time zone;
 	subAttribName text;
 	subAttribValue jsonb;
+	isRel boolean;
 BEGIN
 	IF attribValue#>>'{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
 		attrValue := attribValue#>'{https://uri.etsi.org/ngsi-ld/hasObject}';
+		isRel := true;
 	ELSE
 		attrValue := attribValue#>'{https://uri.etsi.org/ngsi-ld/hasValue}';
+		isRel := false;
 	END IF;
 	datasetId := attribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
 	created := (attribValue#>>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}')::TIMESTAMP;
 	observed := (attribValue#>>'{https://uri.etsi.org/ngsi-ld/observedAt,0,@value}')::TIMESTAMP;
 	modified := (attribValue#>>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP;
-	INSERT INTO attr2iid VALUES (attribName, entityIid, attrValue, datasetId, created, observed, modified);
+	INSERT INTO attr2iid VALUES (attribName, entityIid, isRel, datasetId, attrValue, created, observed, modified);
 	tempJson := attribValue - '@type';
 	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/datasetId';
 	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/createdAt';
@@ -660,11 +707,8 @@ BEGIN
 		FOR attribName IN select jsonb_object_keys from jsonb_object_keys(insertEntity)	LOOP
 			attribValue := insertEntity->attribName;
 			removeAttrib := false;
-			raise notice 'removeattrib %', removeAttrib;
-			raise notice 'attrib %', attribName;
 			IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
 				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
-					raise notice 'endpoint % rel %', i_rec.endpoint, attribName;
 					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
 					IF i_rec.reg_mode > 1 THEN
 						removeAttrib := true;
@@ -675,7 +719,6 @@ BEGIN
 				END LOOP;
 			ELSE
 				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
-					raise notice 'endpoint % prop %', i_rec.endpoint, attribName;
 					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
 					IF i_rec.reg_mode > 1 THEN
 						removeAttrib := true;
@@ -685,7 +728,6 @@ BEGIN
 					END IF;
 				END LOOP;
 			END IF;
-			raise notice 'removeattrib %', removeAttrib;
 			IF removeAttrib THEN
 				insertEntity := insertEntity - attribName;
 			END IF;
