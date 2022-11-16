@@ -207,7 +207,7 @@ public abstract class BaseQueryService implements EntryQueryService {
 								additionalHeaders.add(HttpHeaders.ACCEPT, "application/json");
 								entity = new HttpEntity<String>(additionalHeaders);
 								response = restTemplate.exchange(
-										new URI(endpoint + "/ngsi-ld/v1/entities?" + encodeQuery(rawQueryString)),
+										new URI(endpoint + "/ngsi-ld/v1/entities/" + encodeQuery(rawQueryString)),
 										HttpMethod.GET, entity, String.class);
 								resultBody = response.getBody();
 							}
