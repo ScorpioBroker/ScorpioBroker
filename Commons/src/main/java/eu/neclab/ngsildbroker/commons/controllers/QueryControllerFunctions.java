@@ -171,7 +171,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			qp.setCheck(check);
 			return queryService.getData(qp, decodedQueryParams, t, headers, false).onItem()
 					.transformToUni(t2 -> HttpUtils.generateReply(request, t2, forceArray, qp.getCountResult(), context,
-							t, AppConstants.QUERY_ENDPOINT))
+							t, AppConstants.QUERY_ENDPOINT,qp.getConcise()))
 					.runSubscriptionOn(Infrastructure.getDefaultExecutor());
 
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -211,7 +211,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 				.transformToUni(
 						t -> queryService.getData(t.getItem1(), payload, t.getItem2(), t.getItem3(), true).onItem()
 								.transformToUni(t2 -> HttpUtils.generateReply(request, t2, true, count, t.getItem4(),
-										t.getItem2(), AppConstants.QUERY_ENDPOINT)))
+										t.getItem2(), AppConstants.QUERY_ENDPOINT,null)))
 				.onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}

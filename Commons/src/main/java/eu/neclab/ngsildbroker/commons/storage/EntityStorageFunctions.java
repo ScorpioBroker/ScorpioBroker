@@ -253,7 +253,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 		if (qp.getQ() != null) {
 			// TODO SQL escape q;
 			sqlWhereProperty = qp.getQ();
-			fullSqlWhereProperty.append(" AND ");
+			//fullSqlWhereProperty.append(" AND ");
 			fullSqlWhereProperty.append(sqlWhereProperty);
 		}
 		return Tuple3.of(fullSqlWhereProperty.toString(), replacements, currentCount);
