@@ -657,8 +657,7 @@ public interface EntryControllerFunctions {
 				newMap.put(NGSIConstants.VALUE, doubleToInt(object));
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 				parentMap.put(keyOfObject, newMap);
-
-			}
+    		}
 
 		}
 	}
@@ -696,7 +695,7 @@ public interface EntryControllerFunctions {
 			try {
 				body = ((Map<String, Object>) JsonUtils.fromString(payload));
 				// --------------------------
-				noConcise(body, null, null);
+			   noConcise(body, null, null);
 				// -------------------------
 			} catch (IOException e) {
 				return Uni.createFrom().failure(e);

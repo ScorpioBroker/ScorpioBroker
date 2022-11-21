@@ -901,6 +901,13 @@ public class Subscription implements Serializable {
 								ArrayListMultimap<String, String> receiverInfo = ArrayListMultimap.create();
 								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null,
 										context, opts, 999);
+								if (!compacted.containsKey(JsonLdConsts.GRAPH)) {
+									List<Map<String, Object>> ls = new ArrayList<>();
+									compacted.remove(JsonLdConsts.CONTEXT);
+									ls.add(compacted);
+									compacted = new HashMap<String, Object>();
+									compacted.put(JsonLdConsts.GRAPH, ls);
+								}
 								for (Map<String, Object> headerEntry : (List<Map<String, Object>>) compacted
 										.get(JsonLdConsts.GRAPH)) {
 									headerEntry.forEach((t, u) -> {
