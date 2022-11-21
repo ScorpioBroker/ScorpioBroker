@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.subscriptionbase;
 
+import java.net.ConnectException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
@@ -84,34 +85,40 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 		boolean success = false;
 		ThreadLocalRandom random = ThreadLocalRandom.current();
 		while (true) {
-			HttpResponse response = req.execute().returnResponse();
-			HttpStatus returnStatus = HttpStatus.valueOf(response.getStatusLine().getStatusCode());
-			if (returnStatus.is2xxSuccessful()) {
-				logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
-						+ notification.getId());
-				success = true;
-				break;
-			} else if (returnStatus.is3xxRedirection()) {
-				logger.info("redirect");
-				success = true;
-				break;
-			} else {
-
-				if (retryCount == 0) {
-					logger.error("finally failed to send notification subscription id: "
-							+ request.getSubscription().getId() + " notification id: " + notification.getId());
+			try {
+				HttpResponse response = req.execute().returnResponse();
+				HttpStatus returnStatus = HttpStatus.valueOf(response.getStatusLine().getStatusCode());
+				if (returnStatus.is2xxSuccessful()) {
+					logger.info("success subscription id: " + request.getSubscription().getId() + " notification id: "
+							+ notification.getId());
+					success = true;
 					break;
+				} else if (returnStatus.is3xxRedirection()) {
+					logger.info("redirect");
+					success = true;
+					break;
+				} else {
+
+					if (retryCount == 0) {
+						logger.error("finally failed to send notification subscription id: "
+								+ request.getSubscription().getId() + " notification id: " + notification.getId());
+						break;
+					}
+					int waitTime = random.nextInt(500, 5000);
+					logger.error("failed to send notification subscription id: " + request.getSubscription().getId()
+							+ " notification id: " + notification.getId() + ". "
+							+ response.getStatusLine().getStatusCode() + " "
+							+ response.getStatusLine().getReasonPhrase() + " " + response.getEntity().toString());
+					logger.error("retrying " + retryCount + " times waiting " + waitTime + " ms");
+					Thread.sleep(waitTime);
+					retryCount--;
 				}
-				int waitTime = random.nextInt(500, 5000);
-				logger.error("failed to send notification subscription id: " + request.getSubscription().getId()
-						+ " notification id: " + notification.getId() + ". " + response.getStatusLine().getStatusCode()
-						+ " " + response.getStatusLine().getReasonPhrase() + " " + response.getEntity().toString());
-				logger.error("retrying " + retryCount + " times waiting " + waitTime + " ms");
-				Thread.sleep(waitTime);
-				retryCount--;
+			} catch (ConnectException exception) {
+				// TODO: handle exception
 			}
 
 		}
+
 		if (!success) {
 			request.getSubscription().getNotification().setLastFailedNotification(new Date(System.currentTimeMillis()));
 		}
