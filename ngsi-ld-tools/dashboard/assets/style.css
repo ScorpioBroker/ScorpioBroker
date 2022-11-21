@@ -1,0 +1,24 @@
+.VirtualizedSelectOption {
+	background-color: grey;
+	color: white;
+}
+
+.VirtualizedSelectFocusedOption {
+  background-color: rgb(152,197,255);
+  color: grey;
+}
+.Select-control {
+    background-color: grey !important;
+}
+
+.Select.is-focused > .Select-control {
+    background-color: grey;
+}
+.Select-value-label {
+    color: white;
+}
+
+.Select--single > .Select-control .Select-value, .Select-placeholder {
+    border: 1px solid grey;
+    border-radius: 4px;
+}
