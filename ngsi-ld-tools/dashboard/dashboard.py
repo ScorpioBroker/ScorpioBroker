@@ -5,6 +5,7 @@ import os
 import random
 import sys
 import time
+import base64
 from datetime import timezone
 import requests
 from dash import Dash, dcc, html, dash_table
