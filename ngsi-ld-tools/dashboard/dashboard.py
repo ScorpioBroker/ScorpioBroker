@@ -12,8 +12,7 @@ from dash.dependencies import Input, Output, State
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
-from dash_bootstrap_templates import load_figure_template
-#from mtk_common import utils
+
 
 LOGGER = logging.getLogger("ngsildmap")
 LOGGER.setLevel(10)
