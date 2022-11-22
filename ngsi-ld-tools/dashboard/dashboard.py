@@ -13,7 +13,7 @@ from dash.dependencies import Input, Output, State
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
-
+import urllib.parse
 
 LOGGER = logging.getLogger("ngsildmap")
 LOGGER.setLevel(10)
@@ -283,7 +283,7 @@ def getTypeEndpoints(host, atContext, isIDSA):
       ,headers=headers,
       ).json()['typeList']
     for entityType in types:
-      result.append({'headers': headers, 'url': host + '/ngsi-ld/v1/types/' + entityType, 'baseUrl': host, 'type': entityType, 'isIDSA': False, 'atContext': atContext})
+      result.append({'headers': headers, 'url': host + '/ngsi-ld/v1/types/' + urllib.parse.quote(entityType), 'baseUrl': host, 'type': entityType, 'isIDSA': False, 'atContext': atContext})
   return result
 def getAttribs(typeEndpoints, isIDSA):
   type2Attribs = []
@@ -316,11 +316,11 @@ def queryEntities(query):
     print('do nothing')
     return []
   else:
-    url = query['url']+'/ngsi-ld/v1/entities?type='+query['type']
+    url = query['url']+'/ngsi-ld/v1/entities?type='+urllib.parse.quote(query['type'])
     if query['q'] and len(query['q'])>0:
-      url += '&q=' + query['q']
+      url += '&q=' + urllib.parse.quote(query['q'])
     if query['geoQ'] and len(query['geoQ'])>0:
-      url += '&' + query['geoQ']
+      url += '&' + urllib.parse.quote(query['geoQ'])
     return requests.get(url, headers=query['headers']).json()
   
 def getEntities(currentQueries):
