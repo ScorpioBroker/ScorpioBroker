@@ -38,6 +38,239 @@ LOGGER.info("NGSI-LD Map starting...")
 
 ROUNDINGVALUE = 0
 
+PRECONFIGURED_QUERIES = os.getenv('SCORPIO_DASHBOARD_QUERIES', None)
+if PRECONFIGURED_QUERIES:
+  PRECONFIGURED_QUERIES = json.loads(PRECONFIGURED_QUERIES)
+else:
+  PRECONFIGURED_QUERIES = []
+POLL_TIME = os.getenv('SCORPIO_DASHBOARD_POLL_TIME', 5000)
+
+if PRECONFIGURED_QUERIES == []:
+  hiddenConfig = ''
+  timerDisabled = True
+  showHosts = True
+  showGraphsHidden = 'hidden'
+else:
+  hiddenConfig = 'hidden'
+  timerDisabled = False
+  showHosts = False
+  showGraphsHidden = ''
+
+app = Dash(external_stylesheets=[dbc.themes.DARKLY])
+#initialSetup(app)
+image_filename = 'assets/ScorpioLogo.png' # replace with your own image
+encoded_image = base64.b64encode(open(image_filename, 'rb').read())
+app.layout = html.Div([
+    html.Div([
+      html.Img(src='data:image/png;base64,{}'.format(encoded_image.decode()), style={'display': 'inline-block', 'height': '80px'}),
+      html.H2('Scorpio Dashboard', style={'display': 'inline-block', 'padding-left': 2, 'vertical-align': 'middle', 'height': '50'})
+    ], id='header_div', style={'text-align': 'center', 'padding': 5}),
+    html.Button('⮟Hosts⮟', id='show-hide-hosts-button', n_clicks=0, style={'width': '100%', 'height': '14px', 'backgroundColor': 'rgb(34,34,34)', 'color': 'white', 'border': '0px', 'margin': 'auto', 'font-size': '10px'}, hidden=hiddenConfig),
+    dbc.Collapse([  
+      html.Div([
+        html.Div([
+          html.Div([
+            html.Div([
+              html.Label('NGSI-LD Host', style={ 'width': 150, 'display': 'inline-block'}),
+              dcc.Input(
+                id='host-input',
+                placeholder='Enter the url of a NGSI-LD broker',
+                value='http://localhost:9090',
+                style={ 'display': 'inline-block', 'padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
+              )
+            ], style={'padding': 2}),
+            html.Div([
+              html.Label('@context', style={ 'width': 150, 'display': 'inline-block'}),
+              dcc.Input(
+                id='atcontext-input',
+                value='https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld',
+                style={ 'display': 'inline-block','padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
+              )
+            ], style={'padding': 2}),
+            html.Div([
+              html.Label('IDSA connector', style={ 'width': 150, 'display': 'inline-block'}),
+              dcc.Checklist(id='idsa-check', options = [{'label': '', 'value': 'isIDSA'}], style={ 'display': 'inline-block', 'color': 'darkgrey', 'border': '0px'})
+            ]),
+          ], style={'display': 'inline-block'}),
+          html.Div([
+            html.Button('Add Host', id='add-host-button', n_clicks=0, style={'backgroundColor': 'black', 'color': 'white', 'border': '1px solid white'})
+          ], style={'display': 'inline-block', 'vertical-align': 'top', 'padding': 2}),
+        ], style={'width': '25vw', 'display': 'inline-block'}),
+        html.Div([
+          dash_table.DataTable(
+            id='hosts-table',
+            columns=[
+              {
+              'name': 'Host',
+              'id': 'url'},
+              {
+              'name': '@Context',
+              'id': 'atContext'},
+              {
+              'name': 'IDSA Connector',
+              'id': 'isIDSA'}
+            ],
+            data=[],
+            editable=True,
+            row_deletable=True,
+            page_size=4,
+            style_header={
+              'backgroundColor': 'grey',
+              'border': '1px solid black'
+            },
+            style_data={
+              'backgroundColor': 'darkgrey',
+              'border': '1px solid black'
+            })
+        ], style={'width': '70vw', 'display': 'inline-block', 'vertical-align': 'top', 'float': 'right'})
+      ], style={'padding': 5})
+    ], id='hosts-collabsable', is_open=showHosts),
+    html.Div([
+      html.Button('⮟Queries⮟', id='show-hide-queries-button', n_clicks=0, style={'width': '100%', 'height': '14px', 'backgroundColor': 'rgb(34,34,34)', 'color': 'white', 'border': '0px', 'margin': 'auto', 'font-size': '10px'}, hidden=hiddenConfig),
+      dbc.Collapse([
+        html.Div([
+          html.Div([
+            dcc.Dropdown(id="type2attrs-dropdown",placeholder='Select an attribute please',multi=False, searchable=False),
+            html.Div([
+              html.Label('Query name:', style={'width': 130, 'display': 'inline-block', 'backgroundColor': 'grey', 'padding': 1}),
+              dcc.Input(
+                id='query-name',
+                placeholder='Enter a query name',
+                style={ 'display': 'inline-block', 'padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
+              )
+            ], style={'padding': 1}),
+            html.Div([
+              html.Label('NGSI-LD query:', style={'width': 130, 'display': 'inline-block', 'backgroundColor': 'grey', 'padding': 1}),
+              dcc.Input(
+                  id='q-input',
+                  placeholder='Enter a q query',
+                  style={ 'display': 'inline-block', 'padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
+                )
+            ], style={'padding': 1}),
+            html.Div([
+              html.Label('Geo query:', style={'width': 130, 'display': 'inline-block', 'backgroundColor': 'grey', 'padding': 1}),
+              dcc.Input(
+                id='geoq-input',
+                placeholder='Enter a geo query',
+                style={ 'display': 'inline-block', 'padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
+              )
+            ], style={'padding': 1})
+          ], style={'width': '100%'}),
+          html.Div([
+            html.Button('Add Query', id='add-query-button', n_clicks=0, style={'backgroundColor': 'black', 'color': 'white', 'border': '1px solid white'})
+          ])
+        ], style={'width': '28vw', 'display': 'inline-block'}),
+        html.Div([
+          dash_table.DataTable(
+            id='query-table',
+            columns=[
+              {
+                'name': 'Query Name',
+                'id': 'qId'},
+              {
+                'name': 'Host',
+                'id': 'url'},
+              {
+                'name': '@Context',
+                'id': 'atContext'},
+              {
+                'name': 'IDSA Connector',
+                'id': 'isIDSA'},
+              {
+                'name': 'Type Attrib Combination',
+                'id': 'type2Attrib'},
+              {
+                'name': 'Q',
+                'id': 'q'},
+              {
+                'name': 'geoQ',
+                'id': 'geoQ'}
+            ],
+            data=PRECONFIGURED_QUERIES,
+            editable=False,
+            row_deletable=True,
+            page_size=5,
+            style_header={
+              'backgroundColor': 'grey',
+              'border': '1px solid black'
+            },
+            style_data={
+              'backgroundColor': 'darkgrey',
+              'border': '1px solid black'
+            })
+        ], style={'width': '70vw', 'display': 'inline-block', 'vertical-align': 'top', 'float': 'right'})
+      ], id='queries-collabsable', is_open=timerDisabled)
+    ], id='type2attrs-dropdown_container', hidden='hidden', style={'padding': 5}),
+    html.Div([
+      html.Div([
+        dash_table.DataTable(
+          id='entities-table',
+          columns=[
+            {
+              'name': 'Entity ID',
+              'id': 'entityId',
+              'selectable': False},
+            {
+              'name': 'Entity Type',
+              'id': 'entityType',
+              'selectable': False},          {
+              'name': 'Selected Attrib',
+              'id': 'attrib',
+              'selectable': False},
+            {
+              'name': 'Attrib Value',
+              'id': 'attrib_value',
+              'selectable': False},
+          ],
+          data=[],
+          row_selectable="multi",
+          column_selectable=None,
+          editable=False,
+          page_size=11,
+          style_header={
+            'backgroundColor': 'grey',
+            'border': '1px solid black'
+          },
+          style_data={
+            'backgroundColor': 'darkgrey',
+            'border': '1px solid black'
+          }
+        )
+      ], id='entities-table_container', style={'width': '49vw', 'display': 'inline-block', 'vertical-align': 'top', 'padding-right': 1, 'height': '49vh'}),
+      html.Div([
+        dcc.Graph(
+          id='entities-map',
+          config={
+            'displayModeBar': False
+          }
+        )
+      ], id='entities_map_container', style={'width': '49vw', 'display': 'inline-block', 'vertical-align': 'top', 'float': 'right', 'height': '49vh'})
+    ], id='entities_view_container', hidden=showGraphsHidden, style={'height': '49vh'}),
+    html.Div([
+      dcc.Graph(
+        id='history-line-graph',
+        figure=px.line(title='History Graph', template='plotly_dark')
+      )
+    ], id='history-line-graph-container', hidden='hidden'),
+    html.Div([
+      dcc.Graph(
+        id='value_distribution_graph',
+        figure=px.bar(title='Value Distribution', template='plotly_dark'),
+        style={'display': 'inline-block', 'width': '78vw'}
+      ),
+      dcc.Graph(
+        id='min_max_avg_graph',
+        figure=px.bar(title='Minimum, Maximum, Average', template='plotly_dark'),
+        style={'display': 'inline-block', 'width': '20vw', 'float': 'right'}
+      )
+    ], id='live_graph_container', hidden=showGraphsHidden),
+    dcc.Interval(
+      id="interval-component",
+      interval=POLL_TIME,  # in milliseconds
+      n_intervals=int(not timerDisabled),
+      disabled=timerDisabled
+    )
+])
 
 def temporalGet(url, headers, isIDSA, entityId, attrib):
   if isIDSA:
@@ -98,8 +331,7 @@ def queryEntities(query):
     if query['q'] and len(query['q'])>0:
       url += '&q=' + query['q']
     if query['geoQ'] and len(query['geoQ'])>0:
-      url += '&geoQ=' + query['geoQ']
-    print(url)
+      url += '&' + query['geoQ']
     return requests.get(url, headers=query['headers']).json()
   
 def getEntities(currentQueries):
@@ -119,236 +351,18 @@ def getInitialMap():
   result.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, uirevision = 'something')#, paper_bgcolor='black', legend_font_color='white')
   return result
 
-
-app = Dash(external_stylesheets=[dbc.themes.DARKLY])
-#initialSetup(app)
-image_filename = 'assets/ScorpioLogo.png' # replace with your own image
-encoded_image = base64.b64encode(open(image_filename, 'rb').read())
-app.layout = html.Div([
-    html.Div([
-      html.Img(src='data:image/png;base64,{}'.format(encoded_image.decode()), style={'display': 'inline-block', 'height': '80px'}),
-      html.H2('Scorpio Dashboard', style={'display': 'inline-block', 'padding-left': 2, 'vertical-align': 'middle', 'height': '50'})
-    ], id='header_div', style={'text-align': 'center', 'padding': 5}),
-    html.Button('⮟Hosts⮟', id='show-hide-hosts-button', n_clicks=0, style={'width': '100%', 'height': '14px', 'backgroundColor': 'rgb(34,34,34)', 'color': 'white', 'border': '0px', 'margin': 'auto', 'font-size': '10px'}),
-    dbc.Collapse([  
-      html.Div([
-        html.Div([
-          html.Div([
-            html.Div([
-              html.Label('NGSI-LD Host', style={ 'width': 150, 'display': 'inline-block'}),
-              dcc.Input(
-                id='host-input',
-                placeholder='Enter the url of a NGSI-LD broker',
-                value='http://localhost:9090',
-                style={ 'display': 'inline-block', 'padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
-              )
-            ], style={'padding': 2}),
-            html.Div([
-              html.Label('@context', style={ 'width': 150, 'display': 'inline-block'}),
-              dcc.Input(
-                id='atcontext-input',
-                value='https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld',
-                style={ 'display': 'inline-block','padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
-              )
-            ], style={'padding': 2}),
-            html.Div([
-              html.Label('IDSA connector', style={ 'width': 150, 'display': 'inline-block'}),
-              dcc.Checklist(id='idsa-check', options = [{'label': '', 'value': 'isIDSA'}], style={ 'display': 'inline-block', 'color': 'darkgrey', 'border': '0px'})
-            ]),
-          ], style={'display': 'inline-block'}),
-          html.Div([
-            html.Button('Add Host', id='add-host-button', n_clicks=0, style={'backgroundColor': 'black', 'color': 'white', 'border': '1px solid white'})
-          ], style={'display': 'inline-block', 'vertical-align': 'top', 'padding': 2}),
-        ], style={'width': '25vw', 'display': 'inline-block'}),
-        html.Div([
-          dash_table.DataTable(
-            id='hosts-table',
-            columns=[
-              {
-              'name': 'Host',
-              'id': 'url'},
-              {
-              'name': '@Context',
-              'id': 'atContext'},
-              {
-              'name': 'IDSA Connector',
-              'id': 'isIDSA'}
-            ],
-            data=[],
-            editable=True,
-            row_deletable=True,
-            page_size=4,
-            style_header={
-              'backgroundColor': 'grey',
-              'border': '1px solid black'
-            },
-            style_data={
-              'backgroundColor': 'darkgrey',
-              'border': '1px solid black'
-            })
-        ], style={'width': '70vw', 'display': 'inline-block', 'vertical-align': 'top', 'float': 'right'})
-      ], style={'padding': 5})
-    ], id='hosts-collabsable', is_open=True),
-    html.Div([
-      html.Button('⮟Queries⮟', id='show-hide-queries-button', n_clicks=0, style={'width': '100%', 'height': '14px', 'backgroundColor': 'rgb(34,34,34)', 'color': 'white', 'border': '0px', 'margin': 'auto', 'font-size': '10px'}),
-      dbc.Collapse([
-        html.Div([
-          html.Div([
-            dcc.Dropdown(id="type2attrs-dropdown",placeholder='Select an attribute please',multi=False, searchable=False),
-            html.Div([
-              html.Label('Query name:', style={'width': 130, 'display': 'inline-block', 'backgroundColor': 'grey', 'padding': 1}),
-              dcc.Input(
-                id='query-name',
-                placeholder='Enter a query name',
-                style={ 'display': 'inline-block', 'padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
-              )
-            ], style={'padding': 1}),
-            html.Div([
-              html.Label('NGSI-LD query:', style={'width': 130, 'display': 'inline-block', 'backgroundColor': 'grey', 'padding': 1}),
-              dcc.Input(
-                  id='q-input',
-                  placeholder='Enter a q query',
-                  style={ 'display': 'inline-block', 'padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
-                )
-            ], style={'padding': 1}),
-            html.Div([
-              html.Label('Geo query:', style={'width': 130, 'display': 'inline-block', 'backgroundColor': 'grey', 'padding': 1}),
-              dcc.Input(
-                id='geoq-input',
-                placeholder='Enter a geo query',
-                style={ 'display': 'inline-block', 'padding': 1, 'backgroundColor': 'darkgrey', 'color': 'white', 'border': '0px'}
-              )
-            ], style={'padding': 1})
-          ], style={'width': '100%'}),
-          html.Div([
-            html.Button('Add Query', id='add-query-button', n_clicks=0, style={'backgroundColor': 'black', 'color': 'white', 'border': '1px solid white'})
-          ])
-        ], style={'width': '28vw', 'display': 'inline-block'}),
-        html.Div([
-          dash_table.DataTable(
-            id='query-table',
-            columns=[
-              {
-                'name': 'Query Name',
-                'id': 'qId'},
-              {
-                'name': 'Host',
-                'id': 'url'},
-              {
-                'name': '@Context',
-                'id': 'atContext'},
-              {
-                'name': 'IDSA Connector',
-                'id': 'isIDSA'},
-              {
-                'name': 'Type Attrib Combination',
-                'id': 'type2Attrib'},
-              {
-                'name': 'Q',
-                'id': 'q'},
-              {
-                'name': 'geoQ',
-                'id': 'geoQ'}
-            ],
-            data=[],
-            editable=False,
-            row_deletable=True,
-            page_size=5,
-            style_header={
-              'backgroundColor': 'grey',
-              'border': '1px solid black'
-            },
-            style_data={
-              'backgroundColor': 'darkgrey',
-              'border': '1px solid black'
-            })
-        ], style={'width': '70vw', 'display': 'inline-block', 'vertical-align': 'top', 'float': 'right'})
-      ], id='queries-collabsable', is_open=True)
-    ], id='type2attrs-dropdown_container', hidden='hidden', style={'padding': 5}),
-    html.Div([
-      html.Div([
-        dash_table.DataTable(
-          id='entities-table',
-          columns=[
-            {
-              'name': 'Entity ID',
-              'id': 'entityId',
-              'selectable': False},
-            {
-              'name': 'Entity Type',
-              'id': 'entityType',
-              'selectable': False},          {
-              'name': 'Selected Attrib',
-              'id': 'attrib',
-              'selectable': False},
-            {
-              'name': 'Attrib Value',
-              'id': 'attrib_value',
-              'selectable': False},
-          ],
-          data=[],
-          row_selectable="multi",
-          column_selectable=None,
-          editable=False,
-          page_size=11,
-          style_header={
-            'backgroundColor': 'grey',
-            'border': '1px solid black'
-          },
-          style_data={
-            'backgroundColor': 'darkgrey',
-            'border': '1px solid black'
-          }
-        )
-      ], id='entities-table_container', style={'width': '49vw', 'display': 'inline-block', 'vertical-align': 'top', 'padding-right': 1, 'height': '49vh'}),
-      html.Div([
-        dcc.Graph(
-          id='entities-map',
-          figure=getInitialMap(),
-          config={
-            'displayModeBar': False
-          }
-        )
-      ], id='entities_map_container', style={'width': '49vw', 'display': 'inline-block', 'vertical-align': 'top', 'float': 'right', 'height': '49vh'})
-    ], id='entities_view_container', hidden='hidden', style={'height': '49vh'}),
-    html.Div([
-      dcc.Graph(
-        id='history-line-graph',
-        figure=px.line(title='History Graph', template='plotly_dark')
-      )
-    ], id='history-line-graph-container', hidden='hidden'),
-    html.Div([
-      dcc.Graph(
-        id='value_distribution_graph',
-        figure=px.bar(title='Value Distribution', template='plotly_dark'),
-        style={'display': 'inline-block', 'width': '78vw'}
-      ),
-      dcc.Graph(
-        id='min_max_avg_graph',
-        figure=px.bar(title='Minimum, Maximum, Average', template='plotly_dark'),
-        style={'display': 'inline-block', 'width': '20vw', 'float': 'right'}
-      )
-    ], id='live_graph_container', hidden='hidden'),
-    dcc.Interval(
-      id="interval-component",
-      interval=5000,  # in milliseconds
-      n_intervals=0,
-      disabled=True
-    )
-])
-
 @app.callback(
   Output('hosts-collabsable', 'is_open'),
   Output('show-hide-hosts-button', 'children'),
   Input('show-hide-hosts-button', 'n_clicks'),
   State('hosts-collabsable', 'is_open'))
 def toggleCollapseHosts(n, isOpen):
-  if n:
+  if n and n > 0:
     if isOpen:
       return not isOpen, '⮞Hosts⮜'
     else:
       return not isOpen, '⮟Hosts⮟'
-  return True, '⮟Hosts⮟'
+  return showHosts, '⮟Hosts⮟'
 
 @app.callback(
   Output('queries-collabsable', 'is_open'),
@@ -356,12 +370,12 @@ def toggleCollapseHosts(n, isOpen):
   Input('show-hide-queries-button', 'n_clicks'),
   State('queries-collabsable', 'is_open'))
 def toggleCollapseHosts(n, isOpen):
-  if n:
+  if n and n > 0:
     if isOpen:
       return not isOpen, '⮞Queries⮜'
     else:
       return not isOpen, '⮟Queries⮟'
-  return True, '⮟Queries⮟'
+  return showHosts, '⮟Queries⮟'
 
 @app.callback(
   Output('hosts-table', 'data'),
@@ -409,6 +423,7 @@ def addQuery(n, queryName, q, geoQ, type2AttrOptions, selectedType2Attr, current
         type2Attr = entry['extra']
     #'extra': {'url': typeEndpoint['baseUrl'], 'headers': typeEndpoint['headers'], 'type': typeEndpoint['type'], 'attribName': attrib['attributeName'], 'isIDSA': typeEndpoint['isIDSA'], 'atContext': typeEndpoint['atContext']}
     currentQueries.append({'qId': queryName, 'url': type2Attr['url'], 'atContext': type2Attr['atContext'], 'isIDSA': type2Attr['isIDSA'],  'type2Attrib': type2Attr['type'] + ' ' + type2Attr['attribName'], 'q': q, 'geoQ': geoQ, 'headers': type2Attr['headers'], 'attribName': type2Attr['attribName'], 'type': type2Attr['type']})
+    print(json.dumps(currentQueries))
   return currentQueries
 
 @app.callback(
@@ -521,7 +536,6 @@ def intervalGetting(n, queryTable):
     attribIndex = []
     attribColumnNames.append(qId + ' ' + attribName)
     legendNames.append(attribName + ' ' + mapData['unitCode'][0])
-    #print(str(mapData))
     for mapDataEntry in mapData[attribName]:
       attribData.append(mapDataEntry)
       attribIndex.append(indexCounter)
