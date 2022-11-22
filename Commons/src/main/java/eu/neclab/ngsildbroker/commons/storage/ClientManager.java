@@ -122,10 +122,10 @@ public class ClientManager {
 	}
 
 	public Uni<String> findDataBaseNameByTenantId(String tenant, boolean create) {
-		String databasename = "ngb"+tenant.hashCode();
-		String databasenameWithoutHash = "ngb"+tenant;
+		String databasename = "ngb" + tenant.hashCode();
+		String databasenameWithoutHash = "ngb" + tenant;
 		return pgClient.preparedQuery("SELECT datname FROM pg_database where datname = $1 OR datname = $2")
-				.execute(Tuple.of(databasename,databasenameWithoutHash)).onItem().transformToUni(pgRowSet -> {
+				.execute(Tuple.of(databasename, databasenameWithoutHash)).onItem().transformToUni(pgRowSet -> {
 					if (pgRowSet.size() == 0) {
 						if (create) {
 							return pgClient.preparedQuery("create database \"" + databasename + "\"").execute().onItem()
@@ -138,7 +138,14 @@ public class ClientManager {
 									new ResponseException(ErrorType.TenantNotFound, tenant + " tenant was not found"));
 						}
 					} else {
-						return Uni.createFrom().item(databasenameWithoutHash);
+						return pgClient.preparedQuery("SELECT datname FROM pg_database where datname = $1")
+								.execute(Tuple.of(databasenameWithoutHash)).onItem().transformToUni(pgRowSet1 -> {
+									if (pgRowSet1.size() != 0) {
+										return Uni.createFrom().item(databasenameWithoutHash);
+									} else
+										return Uni.createFrom().item(databasename);
+								});
+
 					}
 				});
 	}
