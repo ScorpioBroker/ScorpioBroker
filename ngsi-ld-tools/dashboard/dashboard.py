@@ -283,7 +283,7 @@ def getTypeEndpoints(host, atContext, isIDSA):
       ,headers=headers,
       ).json()['typeList']
     for entityType in types:
-      result.append({'headers': headers, 'url': host + '/ngsi-ld/v1/types/' + urllib.parse.quote(entityType), 'baseUrl': host, 'type': entityType, 'isIDSA': False, 'atContext': atContext})
+      result.append({'headers': headers, 'url': host + '/ngsi-ld/v1/types/' + urllib.parse.quote(entityType, safe=''), 'baseUrl': host, 'type': entityType, 'isIDSA': False, 'atContext': atContext})
   return result
 def getAttribs(typeEndpoints, isIDSA):
   type2Attribs = []
@@ -316,11 +316,11 @@ def queryEntities(query):
     print('do nothing')
     return []
   else:
-    url = query['url']+'/ngsi-ld/v1/entities?type='+urllib.parse.quote(query['type'])
+    url = query['url']+'/ngsi-ld/v1/entities?type='+urllib.parse.quote(query['type'], safe='')
     if query['q'] and len(query['q'])>0:
-      url += '&q=' + urllib.parse.quote(query['q'])
+      url += '&q=' + urllib.parse.quote(query['q'], safe='')
     if query['geoQ'] and len(query['geoQ'])>0:
-      url += '&' + urllib.parse.quote(query['geoQ'])
+      url += '&' + urllib.parse.quote(query['geoQ'], safe='')
     return requests.get(url, headers=query['headers']).json()
   
 def getEntities(currentQueries):
