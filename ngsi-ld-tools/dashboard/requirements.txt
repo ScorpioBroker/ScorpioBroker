@@ -1,0 +1,2 @@
+requests
+dash==2.7.0
