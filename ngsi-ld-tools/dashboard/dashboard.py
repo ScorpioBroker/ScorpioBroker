@@ -9,8 +9,6 @@ from datetime import timezone
 import requests
 from dash import Dash, dcc, html, dash_table
 from dash.dependencies import Input, Output, State
-import dash_leaflet as dl
-import dash_leaflet.express as dlx
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
