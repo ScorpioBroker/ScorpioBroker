@@ -6,22 +6,13 @@ import random
 import sys
 import time
 from datetime import timezone
-from threading import Thread
-
-import dash_leaflet as dl
-import dash_leaflet.express as dlx
 import requests
-import schedule
 from dash import Dash, dcc, html, dash_table
 from dash.dependencies import Input, Output, State
-from dash_extensions.javascript import assign
 import dash_leaflet as dl
 import dash_leaflet.express as dlx
 import plotly.express as px
-import plotly.graph_objects as go
 import pandas as pd
-import time
-import base64
 import dash_bootstrap_components as dbc
 from dash_bootstrap_templates import load_figure_template
 #from mtk_common import utils
@@ -33,7 +24,7 @@ sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(formatter)
 sh.setLevel(10)
 LOGGER.addHandler(sh)
-LOGGER.info("NGSI-LD Map starting...")
+LOGGER.info("Scorpio Dashboard starting...")
 
 
 ROUNDINGVALUE = 0
