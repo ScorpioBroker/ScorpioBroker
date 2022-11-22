@@ -544,7 +544,7 @@ def intervalGetting(n, queryTable):
   for i in range(len(attribColumnNames)):
     attribColumnName = attribColumnNames[i]
     temp = px.scatter_mapbox(df, lat='lat', lon='lon', hover_name='entityId', zoom=3, color=attribColumnName, mapbox_style='carto-darkmatter', template='plotly_dark')
-    entitiesMap.add_scattermapbox(marker=temp.data[0].marker, hovertext=temp.data[0].hovertext, hovertemplate=temp.data[0].hovertemplate, mode=temp.data[0].mode, subplot=temp.data[0].subplot, lat=temp.data[0].lat, lon=temp.data[0].lon, name=attribColumnNam)
+    entitiesMap.add_scattermapbox(marker=temp.data[0].marker, hovertext=temp.data[0].hovertext, hovertemplate=temp.data[0].hovertemplate, mode=temp.data[0].mode, subplot=temp.data[0].subplot, lat=temp.data[0].lat, lon=temp.data[0].lon, name=attribColumnName)
   return entitiesTable, barChart, minMaxChart, entitiesMap
 
 
