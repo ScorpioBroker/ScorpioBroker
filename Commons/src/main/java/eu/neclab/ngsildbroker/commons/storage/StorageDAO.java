@@ -20,6 +20,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
@@ -31,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
@@ -400,6 +402,16 @@ public abstract class StorageDAO {
 			}
 			return Uni.createFrom().nullItem();
 		}
+
+	}
+
+	public Uni<RowSet<Row>> createEntity(CreateEntityRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			JsonObject value = JsonObject.mapFrom(request.getPayload());
+			String sql = "SELECT * FROM INSERTNGSILDENTITY($1::jsonb)";
+			return client.preparedQuery(sql).execute(Tuple.of(value)).onFailure().retry().atMost(3).onFailure()
+					.recoverWithUni(e -> Uni.createFrom().failure(e));
+		});
 
 	}
 

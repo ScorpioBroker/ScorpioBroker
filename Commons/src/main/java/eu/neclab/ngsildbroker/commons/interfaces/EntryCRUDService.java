@@ -6,6 +6,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -19,7 +20,7 @@ public interface EntryCRUDService {
 	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry, String[] options);
 
-	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved);
+	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved);
 
 	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId);
 
@@ -29,7 +30,7 @@ public interface EntryCRUDService {
 	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry, String[] options, BatchInfo batchInfo);
 
-	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
 			BatchInfo batchInfo);
 
 	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, BatchInfo batchInfo);

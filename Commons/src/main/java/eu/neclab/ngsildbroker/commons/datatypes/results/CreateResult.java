@@ -1,14 +1,23 @@
 package eu.neclab.ngsildbroker.commons.datatypes.results;
 
+import io.vertx.core.json.JsonArray;
+import io.vertx.mutiny.core.MultiMap;
+
 public class CreateResult {
 
 	String entityId;
-	boolean createdOrUpdated;
+	private String endpoint;
+	private MultiMap headers;
 
-	public CreateResult(String entityId, boolean createdOrUpdated) {
-		super();
+	public CreateResult(String entityId) {
 		this.entityId = entityId;
-		this.createdOrUpdated = createdOrUpdated;
+	}
+
+	public CreateResult(String entityId, String endpoint, MultiMap headers) {
+		this(entityId);
+		this.endpoint = endpoint;
+		this.headers = headers;
+
 	}
 
 	public String getEntityId() {
@@ -19,12 +28,20 @@ public class CreateResult {
 		this.entityId = entityId;
 	}
 
-	public boolean isCreatedOrUpdated() {
-		return createdOrUpdated;
+	public String getEndpoint() {
+		return endpoint;
 	}
 
-	public void setCreatedOrUpdated(boolean createdOrUpdated) {
-		this.createdOrUpdated = createdOrUpdated;
+	public void setEndpoint(String endpoint) {
+		this.endpoint = endpoint;
+	}
+
+	public MultiMap getHeaders() {
+		return headers;
+	}
+
+	public void setHeaders(MultiMap headers) {
+		this.headers = headers;
 	}
 
 }

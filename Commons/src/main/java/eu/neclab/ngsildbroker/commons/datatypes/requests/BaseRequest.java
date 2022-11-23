@@ -15,9 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 public class BaseRequest {
 
 	ArrayListMultimap<String, String> headers;
-	private String id;
-	protected Map<String, Object> requestPayload;
-	protected Map<String, Object> finalPayload;
+	protected Map<String, Object> payload;
 	private int requestType;
 	private long sendTimestamp;
 	private BatchInfo batchInfo;
@@ -26,22 +24,13 @@ public class BaseRequest {
 
 	}
 
-	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
+	BaseRequest(ArrayListMultimap<String, String> headers, Map<String, Object> requestPayload, BatchInfo batchInfo,
 			int requestType) {
 		super();
 		this.headers = headers;
-		this.id = id;
-		this.requestPayload = requestPayload;
 		this.requestType = requestType;
+		this.batchInfo = batchInfo;
 	}
-
-//	public BaseRequest(BaseRequest request) {
-//		this.id = request.id;
-//		this.headers = request.headers;
-//		this.requestPayload = request.requestPayload;
-//		this.finalPayload = request.finalPayload;
-//		this.requestType = request.requestType;
-//	}
 
 	public int getRequestType() {
 		return requestType;
@@ -76,7 +65,8 @@ public class BaseRequest {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	protected void setTemporalProperties(Object jsonNode, String createdAt, String modifiedAt, boolean rootOnly) {
+	protected static void setTemporalProperties(Object jsonNode, String createdAt, String modifiedAt,
+			boolean rootOnly) {
 		if (!(jsonNode instanceof Map)) {
 			return;
 		}
@@ -114,7 +104,7 @@ public class BaseRequest {
 		}
 	}
 
-	private ArrayList<Object> getDateTime(String createdAt) {
+	private static ArrayList<Object> getDateTime(String createdAt) {
 		ArrayList<Object> tmp = new ArrayList<Object>();
 		HashMap<String, Object> tmp2 = new HashMap<String, Object>();
 		tmp2.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
@@ -134,35 +124,11 @@ public class BaseRequest {
 		return AppConstants.INTERNAL_NULL_KEY;
 	}
 
-	public String getId() {
-		return this.id;
+	public Map<String, Object> getPayload() {
+		return payload;
 	}
 
-	public Map<String, Object> getRequestPayload() {
-		return requestPayload;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public void setRequestPayload(Map<String, Object> requestPayload) {
-		if (requestPayload == null) {
-			this.requestPayload = null;
-		} else {
-			this.requestPayload = new HashMap<String, Object>(requestPayload);
-		}
-	}
-
-	public Map<String, Object> getFinalPayload() {
-		return finalPayload;
-	}
-
-	public void setFinalPayload(Map<String, Object> finalPayload) {
-		if (finalPayload == null) {
-			this.finalPayload = null;
-		} else {
-			this.finalPayload = new HashMap<String, Object>(finalPayload);
-		}
+	public void setFinalPayload(Map<String, Object> payload) {
+		this.payload = payload;
 	}
 }
