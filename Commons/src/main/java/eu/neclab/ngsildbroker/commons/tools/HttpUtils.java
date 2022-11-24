@@ -266,8 +266,8 @@ public final class HttpUtils {
 			
 			if (option != null && option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
 				conciseRepresentation(compacted, null, "");
-			} else if (option != null && !option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)&& !option.equals("")) {
-				throw new ResponseException(ErrorType.BadRequestData, "option is not correct");
+			} else if (option != null && !option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)&& !option.isEmpty()) {
+				throw new ResponseException(ErrorType.BadRequestData, "option is invalid");
 
 			}
 		} catch (JsonLdError | ResponseException e4) {
@@ -717,7 +717,7 @@ public final class HttpUtils {
 			acceptHeader.add("application/json");
 		}
 		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
-				ldContext, context, geometryProperty, "").await().indefinitely();
+				ldContext, context, geometryProperty, null).await().indefinitely();
 		// need to clean context for subscriptions. This is a bit bad practice but reply
 		// generation relies on side effects so clean up here
 		HashSet<Object> temp = Sets.newHashSet(context);
