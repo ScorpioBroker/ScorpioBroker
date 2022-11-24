@@ -76,19 +76,20 @@ public class MicroServiceUtils {
 		for (Entry<String, Object> entry : original.entrySet()) {
 			Object copiedValue;
 			Object originalValue = entry.getValue();
+			
+			
 			if (originalValue instanceof List) {
 				copiedValue = deppCopyList((List<Object>) originalValue);
 			} else if (originalValue instanceof Map) {
 				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
-			} else if (originalValue instanceof Integer) {
-				copiedValue = ((Integer) originalValue).intValue();
-			} else if (originalValue instanceof Double) {
-				copiedValue = ((Double) originalValue).doubleValue();
-			} else if (originalValue instanceof Float) {
-				copiedValue = ((Float) originalValue).floatValue();
+			
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
-			} else {
+			} else if (originalValue instanceof Number) {
+				copiedValue = originalValue;
+			}
+			
+			else {
 				copiedValue = originalValue.toString();
 			}
 			result.put(entry.getKey(), copiedValue);

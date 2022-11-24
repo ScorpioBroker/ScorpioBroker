@@ -263,9 +263,10 @@ public final class HttpUtils {
 		Map<String, Object> compacted;
 		try {
 			compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
+			
 			if (option != null && option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
 				conciseRepresentation(compacted, null, "");
-			} else if (option != null && !option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+			} else if (option != null && !option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)&& !option.equals("")) {
 				throw new ResponseException(ErrorType.BadRequestData, "option is not correct");
 
 			}
