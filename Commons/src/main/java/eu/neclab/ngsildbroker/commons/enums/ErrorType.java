@@ -31,29 +31,25 @@ public enum ErrorType {
 	MultiStatus(207, "Multi status result", "Multi status result");
 
 	private final int code;
-	private final String message;
-	private String errorType;
+	private final String type;
+	private final String title;
 
-	private ErrorType(int code, String errorType, String message) {
+	private ErrorType(int code, String type, String title) {
 		this.code = code;
-		this.message = message;
-		this.errorType = errorType;
+		this.type = type;
+		this.title = title;
+	}
+
+	public String getTitle() {
+		return title;
 	}
 
 	public int getCode() {
 		return code;
 	}
 
-	public String getErrorType() {
-		return errorType;
-	}
-
-	public String getMessage() {
-		return message;
-	}
-
-	public String toString() {
-		return "[" + code + " : " + message + " ]";
+	public String getType() {
+		return type;
 	}
 
 }

@@ -294,4 +294,15 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SCOPE = "https://uri.etsi.org/ngsi-ld/default-context/scope";
 	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/default-context/scopeQ";
 	public static final String NGSI_LD_ENTITIES_ENDPOINT = "/entities";
+	public static final String ERROR_TYPE = "type";
+	public static final String ERROR_TITLE = "title";
+	public static final String ERROR_DETAIL_MESSAGE = "message";
+	public static final String ERROR_DETAIL_ENDPOINT = "endpoint";
+	public static final String ERROR_DETAIL_CSOURCE_ID = "cSourceId";
+	public static final String ERROR_DETAIL = "detail";
+	public static final String ERROR_MULTI_RESULT_TYPE = "MultiResult";
+	public static final String ERROR_MULTI_RESULT_TITLE = "No full success on operation";
+	public static final String ERROR_UNEXPECTED_RESULT = "UnexpectedResult";
+	public static final String ERROR_UNEXPECTED_RESULT_NULL_TITLE = "The resource returned no body check detail for the resources return code";
+	public static final String ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE = "The resource gave an unexpected result body";
 }

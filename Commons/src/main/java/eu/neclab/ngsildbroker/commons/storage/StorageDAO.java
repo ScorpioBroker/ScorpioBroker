@@ -407,10 +407,9 @@ public abstract class StorageDAO {
 
 	public Uni<RowSet<Row>> createEntity(CreateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			JsonObject value = JsonObject.mapFrom(request.getPayload());
 			String sql = "SELECT * FROM INSERTNGSILDENTITY($1::jsonb)";
-			return client.preparedQuery(sql).execute(Tuple.of(value)).onFailure().retry().atMost(3).onFailure()
-					.recoverWithUni(e -> Uni.createFrom().failure(e));
+			return client.preparedQuery(sql).execute(Tuple.of(new JsonObject(request.getPayload()))).onFailure().retry()
+					.atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
 		});
 
 	}

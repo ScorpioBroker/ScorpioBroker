@@ -3,6 +3,9 @@ package eu.neclab.ngsildbroker.commons.exceptions;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.json.JsonArray;
@@ -16,57 +19,60 @@ import io.vertx.mutiny.core.MultiMap;
 public class ResponseException extends Exception {
 	private static final long serialVersionUID = 1L;
 
-	private HttpResponseStatus httpStatus;
-	private ErrorType error;
 	private String endpoint;
-	private MultiMap headers;
+	private String cSourceId;
+	private int errorCode;
+	private Object detail;
+	private String title;
+	private String type;
+	private Map<String, Object> json = Maps.newHashMap();
 
 	public ResponseException(ErrorType error) {
-		super(error.getMessage());
-		this.error = error;
-		this.httpStatus = HttpResponseStatus.valueOf(error.getCode());
-
+		this(error, error.getTitle());
 	}
 
-	public ResponseException(ErrorType error, String errorMessage) {
-		super(errorMessage);
-		this.error = error;
-		this.httpStatus = HttpResponseStatus.valueOf(error.getCode());
-
+	public ResponseException(ErrorType error, String detail) {
+		this(error, detail, null, null, null);
 	}
 
-	public ResponseException(ErrorType error, String endpoint, MultiMap headers) {
-		this(error);
+	public ResponseException(ErrorType error, String detail, String endpoint, MultiMap headers, String cSourceId) {
+		this(error.getCode(), error.getType(), error.getTitle(), detail, endpoint, headers, cSourceId);
+	}
+
+	public ResponseException(int errorCode, String type, String title, Object detail, String endpoint, MultiMap headers, String cSourceId) {
+		this.errorCode = errorCode;
+		this.title = title;
+		this.detail = detail;
 		this.endpoint = endpoint;
-		this.headers = headers;
-
-	}
-
-	public ResponseException(ErrorType error, String message, String endpoint, MultiMap headers) {
-		this(error, message);
-		this.endpoint = endpoint;
-		this.headers = headers;
-	}
-
-	public HttpResponseStatus getHttpStatus() {
-		return httpStatus;
-	}
-
-	public ErrorType getError() {
-		return error;
+		this.cSourceId = cSourceId;
+		this.type = type;
+		json.put(NGSIConstants.ERROR_TYPE, type);
+		json.put(NGSIConstants.ERROR_TITLE, title);
+		if(endpoint == null) {
+			json.put(NGSIConstants.ERROR_DETAIL, detail);
+		}else {
+			Map<String, Object> temp = Maps.newHashMap();
+			temp.put(NGSIConstants.ERROR_DETAIL_MESSAGE, detail);
+			temp.put(NGSIConstants.ERROR_DETAIL_ENDPOINT, endpoint);
+			temp.put(NGSIConstants.ERROR_DETAIL_CSOURCE_ID, cSourceId);
+			json.put(NGSIConstants.ERROR_DETAIL, temp);
+		}
 	}
 
 	public String getEndpoint() {
 		return endpoint;
 	}
 
-	public MultiMap getHeaders() {
-		return headers;
+	public String getcSourceId() {
+		return cSourceId;
 	}
 
-	@Override
-	public String toString() {
-		return super.getMessage();
+	public int getErrorCode() {
+		return errorCode;
+	}
+
+	public Object getDetail() {
+		return detail;
 	}
 
 }
