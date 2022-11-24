@@ -795,4 +795,19 @@ public final class HttpUtils {
 		return null;
 
 	}
+	
+	/*
+	 * Return double to int if possible otherwise input is not changed 13.0 -> 13
+	 */	
+	public static Object doubleToInt(Object object) {
+		if (object instanceof Double) {
+			double d = ((Double) object).doubleValue();
+			int i = (int) d;
+			if (d == i)
+				return i;
+			else
+				return d;
+		} else
+			return object;
+	}
 }

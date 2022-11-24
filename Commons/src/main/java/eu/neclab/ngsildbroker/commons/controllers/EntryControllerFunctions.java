@@ -623,11 +623,11 @@ public interface EntryControllerFunctions {
 			// if keyofobject is value then just need
 			// convert double to int if possible
 			if (keyOfObject != null && keyOfObject.equals(NGSIConstants.VALUE)) {
-				parentMap.put(keyOfObject, doubleToInt(object));
+				parentMap.put(keyOfObject, HttpUtils.doubleToInt(object));
 			}
 			else {
 				Map<String, Object> newMap = new HashMap<>();
-				newMap.put(NGSIConstants.VALUE, doubleToInt(object));
+				newMap.put(NGSIConstants.VALUE, HttpUtils.doubleToInt(object));
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 				parentMap.put(keyOfObject, newMap);
     		}
@@ -635,20 +635,7 @@ public interface EntryControllerFunctions {
 		}
 	}
 
-	/*
-	 * Return double to int if possible otherwise input is not changed 13.0 -> 13
-	 */	
-	private static Object doubleToInt(Object object) {
-		if (object instanceof Double) {
-			double d = ((Double) object).doubleValue();
-			int i = (int) d;
-			if (d == i)
-				return i;
-			else
-				return d;
-		} else
-			return object;
-	}
+	
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> createEntry(EntryCRUDService entityService, HttpServerRequest request,
