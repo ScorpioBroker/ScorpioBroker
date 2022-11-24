@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.interfaces;
 
+import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ArrayListMultimap;
@@ -14,13 +15,19 @@ import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import io.smallrye.mutiny.Uni;
 
 public interface EntryCRUDService {
+	
+	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers,
+			Map<String, Object> resolved, List<Object> originalContext, BatchInfo batchInfo);
+	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers,
+			Map<String, Object> resolved, List<Object> originalContext);
+	
 	Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry);
 
 	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry, String[] options);
 
-	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved);
+	
 
 	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId);
 
@@ -30,8 +37,6 @@ public interface EntryCRUDService {
 	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry, String[] options, BatchInfo batchInfo);
 
-	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			BatchInfo batchInfo);
 
 	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, BatchInfo batchInfo);
 

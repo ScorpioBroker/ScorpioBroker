@@ -102,125 +102,107 @@ public class EntityService implements EntryCRUDService {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
 						"No result from the database this should never happen"));
 			}
-			return handleDBResult(request, resultTable, originalContext);
+			return handleDBCreateResult(request, resultTable, originalContext);
 		});
 
 	}
 
-	private Uni<NGSILDOperationResult> handleDBResult(EntityRequest request, RowSet<Row> resultTable,
+	private Uni<NGSILDOperationResult> handleDBCreateResult(CreateEntityRequest request, RowSet<Row> resultTable,
 			List<Object> originalContext) {
 		NGSILDOperationResult result = new NGSILDOperationResult();
 		List<Uni<Void>> unis = Lists.newArrayList();
-		switch (request.getRequestType()) {
-		case AppConstants.CREATE_REQUEST:
+		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
+		resultTable.forEach(row -> {
 
-			Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
-			resultTable.forEach(row -> {
-
-				switch (row.getString(0)) {
-				case "ERROR": {
-					JsonObject sqlState = ((JsonObject) row.getJson(3));
-					if (sqlState.getString("sqlstate").equals(AppConstants.SQL_ALREADY_EXISTS)) {
-						result.addFailure(new ResponseException(ErrorType.AlreadyExists));
-					} else {
-						result.addFailure(
-								new ResponseException(ErrorType.InternalError, sqlState.getString("sqlmessage")));
-					}
-					break;
+			switch (row.getString(0)) {
+			case "ERROR": {
+				JsonObject sqlState = ((JsonObject) row.getJson(3));
+				if (sqlState.getString("sqlstate").equals(AppConstants.SQL_ALREADY_EXISTS)) {
+					result.addFailure(new ResponseException(ErrorType.AlreadyExists));
+				} else {
+					result.addFailure(new ResponseException(ErrorType.InternalError, sqlState.getString("sqlmessage")));
 				}
-				case "ADDED ENTITY": {
-					Map<String, Object> entityAdded = ((JsonObject) row.getJson(3)).getMap();
-					request.setFinalPayload(entityAdded);
+				break;
+			}
+			case "ADDED ENTITY": {
+				Map<String, Object> entityAdded = ((JsonObject) row.getJson(3)).getMap();
+				request.setFinalPayload(entityAdded);
 
-					unis.add(kafkaSenderInterface.send(request).onItem().transform(t -> {
-						result.addSuccess(new CreateResult((String) entityAdded.get(NGSIConstants.JSON_LD_ID)));
-						return t;
-					}));
-					break;
-				}
-				default:
-					String host = row.getString(0);
-					String tenant = row.getString(1);
-					Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-					MultiMap headers = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
-					String cSourceId = row.getString(4);
-					int hash = entityToForward.hashCode();
-					Map<String, Object> compacted = hash2Compacted.get(hash);
-					if (compacted == null) {
-						try {
-							compacted = JsonLdProcessor.compact(entityToForward, originalContext, opts);
-						} catch (ResponseException e) {
-							// TODO add host info
-							result.addFailure(e);
-						} catch (Exception e) {
-							// TODO add host info
-							result.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
-						}
-						hash2Compacted.put(hash, compacted);
+				unis.add(kafkaSenderInterface.send(request).onItem().transform(t -> {
+					result.addSuccess(new CreateResult((String) entityAdded.get(NGSIConstants.JSON_LD_ID)));
+					return t;
+				}));
+				break;
+			}
+			default:
+				String host = row.getString(0);
+				String tenant = row.getString(1);
+				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
+				MultiMap headers = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
+				String cSourceId = ""; // not in the result for now row.getString(4);
+				int hash = entityToForward.hashCode();
+				Map<String, Object> compacted = hash2Compacted.get(hash);
+				if (compacted == null) {
+					try {
+						compacted = JsonLdProcessor.compact(entityToForward, originalContext, opts);
+					} catch (ResponseException e) {
+						// TODO add host info
+						result.addFailure(e);
+					} catch (Exception e) {
+						// TODO add host info
+						result.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
 					}
-					unis.add(webClient.post(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT).putHeaders(headers)
-							.sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-							.transformToUni((response, failure) -> {
-								if (failure != null) {
-
-									result.addFailure(new ResponseException(ErrorType.InternalError,
-											failure.getMessage(), host, headers, cSourceId));
+					hash2Compacted.put(hash, compacted);
+				}
+				unis.add(webClient.post(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT).putHeaders(headers)
+						.sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+						.transformToUni((response, failure) -> {
+							if (failure != null) {
+								result.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(),
+										host, headers, cSourceId));
+							} else {
+								int statusCode = response.statusCode();
+								if (statusCode == 201) {
+									result.addSuccess(new CreateResult(
+											(String) entityToForward.get(NGSIConstants.JSON_LD_ID), host, headers));
+								} else if (statusCode == 207) {
+									result.addFailure(
+											new ResponseException(statusCode, NGSIConstants.ERROR_MULTI_RESULT_TYPE,
+													NGSIConstants.ERROR_MULTI_RESULT_TITLE,
+													response.bodyAsJsonObject().getMap(), host, headers, cSourceId));
 								} else {
-									int statusCode = response.statusCode();
-									if (statusCode == 201) {
-										result.addSuccess(new CreateResult(
-												(String) entityToForward.get(NGSIConstants.JSON_LD_ID), host, headers));
-									} else if (statusCode == 207) {
-										result.addFailure(new ResponseException(statusCode,
-												NGSIConstants.ERROR_MULTI_RESULT_TYPE,
-												NGSIConstants.ERROR_MULTI_RESULT_TITLE,
-												response.bodyAsJsonObject().getMap(), host, headers, cSourceId));
+									JsonObject responseBody = response.bodyAsJsonObject();
+									if (responseBody == null) {
+										result.addFailure(
+												new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
+														NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode,
+														host, headers, cSourceId));
 									} else {
-										JsonObject responseBody = response.bodyAsJsonObject();
-										if (responseBody == null) {
-											result.addFailure(
-													new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
-															NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE,
-															statusCode, host, headers, cSourceId));
+										if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
+												|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)
+												|| !responseBody.containsKey(NGSIConstants.ERROR_DETAIL)) {
+											result.addFailure(new ResponseException(statusCode,
+													responseBody.getString(NGSIConstants.ERROR_TYPE),
+													responseBody.getString(NGSIConstants.ERROR_TITLE),
+													responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), host,
+													headers, cSourceId));
 										} else {
-											if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
-													|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)
-													|| !responseBody.containsKey(NGSIConstants.ERROR_DETAIL)) {
-												result.addFailure(new ResponseException(statusCode,
-														responseBody.getString(NGSIConstants.ERROR_TYPE),
-														responseBody.getString(NGSIConstants.ERROR_TITLE),
-														responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), host,
-														headers, cSourceId));
-											} else {
-												result.addFailure(new ResponseException(500,
-														NGSIConstants.ERROR_UNEXPECTED_RESULT,
-														NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE,
-														responseBody.getMap(), host, headers, cSourceId));
-											}
+											result.addFailure(new ResponseException(500,
+													NGSIConstants.ERROR_UNEXPECTED_RESULT,
+													NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE,
+													responseBody.getMap(), host, headers, cSourceId));
 										}
 									}
 								}
-								return Uni.createFrom().voidItem();
-							}));
-					break;
-				}
+							}
+							return Uni.createFrom().voidItem();
+						}));
+				break;
+			}
 
-			});
-			break;
-		case AppConstants.UPDATE_REQUEST:
-		case AppConstants.APPEND_REQUEST:
-		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-		case AppConstants.DELETE_REQUEST:
-		default:
-			break;
-		}
+		});
 
 		return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
-	}
-
-	private ErrorType getErrorType(int statusCode) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	private MultiMap getHeaders(JsonArray headerFromReg, ArrayListMultimap<String, String> headerFromRequest,
@@ -251,8 +233,8 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	public Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers,
-			Map<String, Object> resolved) {
-		return createEntry(headers, resolved, new BatchInfo(-1, -1));
+			Map<String, Object> resolved, List<Object> originalContext) {
+		return createEntry(headers, resolved, originalContext, new BatchInfo(-1, -1));
 	}
 
 	/**
