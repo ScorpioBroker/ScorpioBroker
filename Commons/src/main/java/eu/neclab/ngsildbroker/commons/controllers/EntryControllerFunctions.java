@@ -14,7 +14,9 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
+import com.google.gson.JsonObject;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
@@ -29,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDBaseResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -589,26 +592,50 @@ public interface EntryControllerFunctions {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload")));
 			}
+			Object originalPayload = JsonUtils.fromString(payload);
+			List<Object> atContext;
+
 			Map<String, Object> resolved;
 			try {
 				resolved = (Map<String, Object>) JsonLdProcessor
-						.expand(t, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
+						.expand(t, originalPayload, opts, payloadType, atContextAllowed).get(0);
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem()
-					.transform(createResult -> {
+			if (atContextAllowed) {
+				Object payloadAtContext = ((Map<String, Object>) originalPayload).get(NGSIConstants.JSON_LD_CONTEXT);
+				if (payloadAtContext == null) {
+					atContext = Lists.newArrayList();
+				} else if (payloadAtContext instanceof List) {
+					atContext = (List<Object>) payloadAtContext;
+				} else {
+					atContext = Lists.newArrayList();
+					atContext.add(payloadAtContext);
+				}
+			} else {
+				atContext = t;
+			}
+			return entityService.createEntry(HttpUtils.getHeaders(request), resolved, atContext).onItem()
+					.transform(operationResult -> {
 						logger.trace("create entity :: completed");
-						String entityId = createResult.getEntityId();
-						try {
-							if (createResult.isCreatedOrUpdated()) {
-								return RestResponse.created(new URI(baseUrl + entityId));
-							} else {
-								return RestResponse.noContent();
+						List<ResponseException> fails = operationResult.getFailures();
+						List<CRUDBaseResult> successes = operationResult.getSuccesses();
+						if (fails.isEmpty()) {
+							try {
+								return RestResponse
+										.created(new URI(baseUrl + ((CreateResult) successes.get(0)).getEntityId()));
+							} catch (URISyntaxException e) {
+								return HttpUtils.handleControllerExceptions(e);
 							}
-						} catch (URISyntaxException e) {
-							return HttpUtils.handleControllerExceptions(e);
+						} else if (successes.isEmpty() && fails.size() == 1) {
+							return HttpUtils.handleControllerExceptions(fails.get(0));
+						} else {
+
+							return new RestResponseBuilderImpl<Object>().status(207)
+									.type(AppConstants.NGB_APPLICATION_JSON)
+									.entity(JsonUtils.toPrettyString(operationResult.getJson())).build();
 						}
+
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 

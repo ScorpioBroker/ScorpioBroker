@@ -1,22 +1,23 @@
 package eu.neclab.ngsildbroker.commons.datatypes.results;
 
 import java.util.List;
+import java.util.Map;
 
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class NGSILDOperationResult {
-	List<Object> successes;
+	List<CRUDBaseResult> successes;
 	List<ResponseException> failures;
 
-	public List<Object> getSuccesses() {
+	public List<CRUDBaseResult> getSuccesses() {
 		return successes;
 	}
 
-	public void setSuccesses(List<Object> successes) {
+	public void setSuccesses(List<CRUDBaseResult> successes) {
 		this.successes = successes;
 	}
 
-	public void addSuccess(Object success) {
+	public void addSuccess(CRUDBaseResult success) {
 		this.successes.add(success);
 	}
 
@@ -30,6 +31,11 @@ public class NGSILDOperationResult {
 
 	public void addFailure(ResponseException failure) {
 		this.failures.add(failure);
+	}
+
+	public Map<String, List<Object>> getJson() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
