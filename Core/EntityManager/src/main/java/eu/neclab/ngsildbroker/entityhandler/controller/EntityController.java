@@ -35,6 +35,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.entityhandler.services.EntityInfoDAO;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 
 /**
@@ -52,6 +53,8 @@ public class EntityController {// implements EntityHandlerInterface {
 	EntityService entityService;
 	@Autowired
 	ObjectMapper objectMapper;
+	@Autowired
+	EntityInfoDAO entityInfoDAO;
 
 	LocalDateTime startAt;
 	LocalDateTime endAt;
@@ -143,15 +146,24 @@ public class EntityController {// implements EntityHandlerInterface {
 				}
 			}
 			String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
-
-			UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,
+			
+			ResponseEntity<String> up = entityService.patchtoEndpoint(entityId, HttpUtils.getHeaders(request), payload, attrId);
+			
+			System.out.println("resp --- " + up);
+			
+			if (up == null) {
+				UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,
 					expandedAttrib, expandedPayload);
-			logger.trace("partial-update entity :: completed");
-			if (update.getNotUpdated().isEmpty()) {
-				return ResponseEntity.noContent().build();
-			} else {
-				return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, JsonUtils
-						.toPrettyString(JsonLdProcessor.compact(update.getNotUpdated().get(0), context, opts))));
+				logger.trace("partial-update entity :: completed");
+					
+				
+				
+				if (update.getNotUpdated().isEmpty()) {
+					return ResponseEntity.noContent().build();
+				} else {
+					return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, JsonUtils
+							.toPrettyString(JsonLdProcessor.compact(update.getNotUpdated().get(0), context, opts))));
+				}
 			}
 			/*
 			 * There is no 207 multi status response in the Partial Attribute Update
@@ -162,6 +174,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
+		return null;
 	}
 
 	/**

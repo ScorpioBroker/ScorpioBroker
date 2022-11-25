@@ -20,6 +20,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
@@ -35,6 +36,13 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+
 @Service
 @EnableAutoConfiguration
 @EnableKafka
@@ -46,6 +54,9 @@ public class EntityService implements EntryCRUDService {
 	boolean directDB;
 	public static boolean checkEntity = false;
 
+	@Autowired
+	EntityService entityService;
+	
 	@Autowired
 	EntityInfoDAO entityInfoDAO;
 
@@ -256,7 +267,11 @@ public class EntityService implements EntryCRUDService {
 		// get entity details
 		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantid);
 
+		System.out.println("Print EntityBody ---- " + entityBody);
+		System.out.println("Print expandedPayload ---- " + expandedPayload);
+		
 		// JsonNode originalJsonNode = objectMapper.readTree(originalJson);
+		
 		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, expandedPayload, attrId);
 		// pubilsh merged message
 		// check if anything is changed.
@@ -267,6 +282,39 @@ public class EntityService implements EntryCRUDService {
 		return request.getUpdateResult();
 	}
 
+	public ResponseEntity<String> patchtoEndpoint(String entityId, ArrayListMultimap<String, String> headers, String payload,
+			String attrId) throws ResponseException, Exception {
+		String tenantid = HttpUtils.getInternalTenant(headers);
+		String endpoint = entityInfoDAO.getEndpoint(entityId, tenantid);
+		
+		System.out.println("Print EndPoint ---- " + endpoint);
+		
+		ResponseEntity<String> res = null;
+		if (endpoint != null) {
+			HttpHeaders header = new HttpHeaders();
+			header.set(NGSIConstants.TENANT_HEADER, tenantid);
+			header.set(NGSIConstants.CONTENT_TYPE_HEADER, AppConstants.NGB_APPLICATION_JSON);
+
+			
+			
+			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+			RestTemplate restTemplate = new RestTemplate(requestFactory);
+
+			logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/" + entityId + "attrs" + attrId);
+			HttpEntity<String> httpEntity = new HttpEntity<>(payload, header);
+			String patchuri = endpoint + "/ngsi-ld/v1/entities/" + entityId + "/attrs/" + attrId;
+			
+			System.out.println("Print PatchURI --- " + patchuri);
+			
+			res = restTemplate.exchange(patchuri, HttpMethod.PATCH, httpEntity,
+					String.class);
+
+			
+			
+		}
+		return res;
+	}
+	
 	public boolean deleteAttribute(ArrayListMultimap<String, String> headers, String entityId, String attrId,
 			String datasetId, String deleteAll) throws ResponseException, Exception {
 		logger.trace("deleteAttribute() :: started");
