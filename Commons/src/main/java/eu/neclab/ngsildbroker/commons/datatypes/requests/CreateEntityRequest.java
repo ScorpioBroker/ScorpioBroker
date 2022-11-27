@@ -1,13 +1,12 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.time.Instant;
 import java.util.Map;
 
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class CreateEntityRequest extends EntityRequest {
 
@@ -20,14 +19,9 @@ public class CreateEntityRequest extends EntityRequest {
 
 	public CreateEntityRequest(Map<String, Object> resolved, ArrayListMultimap<String, String> headers,
 			BatchInfo batchInfo) {
-		super(headers, addSysAttrs(resolved), batchInfo, AppConstants.CREATE_REQUEST);
+		super(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID), addSysAttrs(resolved), batchInfo,
+				AppConstants.CREATE_REQUEST);
 
-	}
-
-	private static Map<String, Object> addSysAttrs(Map<String, Object> resolved) {
-		String now = SerializationTools.formatter.format(Instant.now());
-		setTemporalProperties(resolved, now, now, false);
-		return resolved;
 	}
 
 }

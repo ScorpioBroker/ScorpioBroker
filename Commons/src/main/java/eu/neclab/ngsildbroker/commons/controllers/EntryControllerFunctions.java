@@ -568,11 +568,10 @@ public interface EntryControllerFunctions {
 					return Uni.createFrom().item(Tuple2.of(resolvedBody, context));
 				}).onItem()
 				.transformToUni(resolved -> entityService
-						.updateEntry(HttpUtils.getHeaders(request), entityId, resolved.getItem1()).onItem()
+						.updateEntry(HttpUtils.getHeaders(request), entityId, resolved.getItem1(), resolved.getItem2()).onItem()
 						.transformToUni(updateResult -> {
 							logger.trace("update entry :: completed");
-							return HttpUtils.generateReply(request, updateResult, resolved.getItem2(),
-									AppConstants.UPDATE_REQUEST);
+							return HttpUtils.generateUpdateResultResponse(updateResult);
 						}))
 				.onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

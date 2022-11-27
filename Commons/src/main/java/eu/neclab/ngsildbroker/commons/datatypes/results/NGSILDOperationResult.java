@@ -1,13 +1,27 @@
 package eu.neclab.ngsildbroker.commons.datatypes.results;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class NGSILDOperationResult {
-	List<CRUDBaseResult> successes;
-	List<ResponseException> failures;
+	private int operationType;
+	private String entityId;
+
+	private List<CRUDBaseResult> successes;
+	private List<ResponseException> failures;
+
+	public NGSILDOperationResult(int operationType, String entityId) {
+		super();
+		this.operationType = operationType;
+		this.entityId = entityId;
+	}
 
 	public List<CRUDBaseResult> getSuccesses() {
 		return successes;
@@ -34,8 +48,22 @@ public class NGSILDOperationResult {
 	}
 
 	public Map<String, List<Object>> getJson() {
-		// TODO Auto-generated method stub
-		return null;
+		Map<String, List<Object>> result = Maps.newHashMap();
+		if (!successes.isEmpty()) {
+			List<Object> temp = Lists.newArrayList();
+			for (CRUDBaseResult entry : successes) {
+				temp.add(entry.getJson());
+			}
+			result.put("success", temp);
+		}
+		if (!failures.isEmpty()) {
+			List<Object> temp = Lists.newArrayList();
+			for (ResponseException entry : failures) {
+				temp.add(entry.getJson());
+			}
+			result.put("failure", temp);
+		}
+		return result;
 	}
 
 }

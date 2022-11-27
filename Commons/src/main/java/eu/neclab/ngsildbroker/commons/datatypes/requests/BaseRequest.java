@@ -19,17 +19,19 @@ public class BaseRequest {
 	private int requestType;
 	private long sendTimestamp;
 	private BatchInfo batchInfo;
+	private String id;
 
 	public BaseRequest() {
 
 	}
 
-	BaseRequest(ArrayListMultimap<String, String> headers, Map<String, Object> requestPayload, BatchInfo batchInfo,
-			int requestType) {
+	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
+			BatchInfo batchInfo, int requestType) {
 		super();
 		this.headers = headers;
 		this.requestType = requestType;
 		this.batchInfo = batchInfo;
+		this.id = id;
 	}
 
 	public int getRequestType() {
@@ -128,7 +130,16 @@ public class BaseRequest {
 		return payload;
 	}
 
-	public void setFinalPayload(Map<String, Object> payload) {
+	public void setPayload(Map<String, Object> payload) {
 		this.payload = payload;
 	}
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
 }

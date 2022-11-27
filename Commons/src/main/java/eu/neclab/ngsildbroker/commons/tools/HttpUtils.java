@@ -45,6 +45,8 @@ import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDBaseResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -755,5 +757,24 @@ public final class HttpUtils {
 		}
 		return null;
 
+	}
+
+	public static Uni<RestResponse<Object>> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
+		if(updateResult.getFailures().isEmpty()) {
+			boolean fullSuccess = true;
+			for(CRUDBaseResult success: updateResult.getSuccesses()) {
+				if(!((UpdateResult) success).getNotUpdated().isEmpty()) {
+					fullSuccess = false;
+					break;
+				}
+			}
+			if(fullSuccess) {
+				return Uni.createFrom().item(RestResponse.noContent());
+			}else {
+				//temporary solution
+				return Uni.createFrom().item(new RestResponseBuilderImpl().status(207).entity(updateResult.getJson()).build());  
+			}
+		}
+		return null;
 	}
 }

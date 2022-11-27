@@ -305,4 +305,7 @@ public interface NGSIConstants {
 	public static final String ERROR_UNEXPECTED_RESULT = "UnexpectedResult";
 	public static final String ERROR_UNEXPECTED_RESULT_NULL_TITLE = "The resource returned no body check detail for the resources return code";
 	public static final String ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE = "The resource gave an unexpected result body";
+	public static final String NGSI_LD_ATTRIBUTE_NAME_SHORT = "attributeName";
+	public static final String NGSI_LD_REASON_SHORT = "reason";
+	public static final String NGSI_LD_NOT_UPDATED_SHORT = "notUpdated";
 }

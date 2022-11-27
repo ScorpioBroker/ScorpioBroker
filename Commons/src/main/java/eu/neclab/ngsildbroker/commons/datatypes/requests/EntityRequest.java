@@ -1,16 +1,12 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.time.Instant;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-import io.vertx.core.json.JsonObject;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class EntityRequest extends BaseRequest {
 
@@ -18,10 +14,15 @@ public class EntityRequest extends BaseRequest {
 
 	}
 
-	EntityRequest(ArrayListMultimap<String, String> headers,  Map<String, Object> requestPayload, BatchInfo batchInfo,
-			int requestType) {
-		super(headers, requestPayload, batchInfo, requestType);
+	EntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
+			BatchInfo batchInfo, int requestType) {
+		super(headers, id, requestPayload, batchInfo, requestType);
 	}
-
+	
+	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved) {
+		String now = SerializationTools.formatter.format(Instant.now());
+		setTemporalProperties(resolved, now, now, false);
+		return resolved;
+	}
 
 }

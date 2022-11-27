@@ -75,4 +75,8 @@ public class ResponseException extends Exception {
 		return detail;
 	}
 
+	public Map<String, Object> getJson() {
+		return json;
+	}
+
 }

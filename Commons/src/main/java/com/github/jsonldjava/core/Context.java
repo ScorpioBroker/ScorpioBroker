@@ -945,7 +945,7 @@ public class Context extends LinkedHashMap<String, Object> {
 		return compactIri(iri, null, relativeToVocab, false);
 	}
 
-	String compactIri(String iri) {
+	public String compactIri(String iri) {
 		return compactIri(iri, null, false, false);
 	}
 

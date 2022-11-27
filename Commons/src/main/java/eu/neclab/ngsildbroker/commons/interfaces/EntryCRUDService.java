@@ -15,30 +15,29 @@ import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import io.smallrye.mutiny.Uni;
 
 public interface EntryCRUDService {
-	
-	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers,
-			Map<String, Object> resolved, List<Object> originalContext, BatchInfo batchInfo);
-	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers,
-			Map<String, Object> resolved, List<Object> originalContext);
-	
-	Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry);
 
-	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, String[] options);
+	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			List<Object> originalContext, BatchInfo batchInfo);
 
-	
+	Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+			List<Object> originalContext);
 
-	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId);
+	Uni<NGSILDOperationResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, List<Object> originalContext);
 
-	Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> entry,
+	Uni<NGSILDOperationResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, List<Object> originalContext, BatchInfo batchInfo);
+
+	Uni<NGSILDOperationResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, String[] options, List<Object> originalContext);
+
+	Uni<NGSILDOperationResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, String[] options, List<Object> originalContext, BatchInfo batchInfo);
+
+	Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, List<Object> originalContext);
+
+	Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, List<Object> originalContext,
 			BatchInfo batchInfo);
-
-	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, String[] options, BatchInfo batchInfo);
-
-
-	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, BatchInfo batchInfo);
 
 	Uni<Void> sendFail(BatchInfo batchInfo);
 

@@ -24,6 +24,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -412,6 +413,14 @@ public abstract class StorageDAO {
 					.atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
 		});
 
+	}
+
+	public Uni<RowSet<Row>> updateEntity(UpdateEntityRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			String sql = "SELECT * FROM UPDATENGSILDENTITY($1, $2::jsonb)";
+			return client.preparedQuery(sql).execute(Tuple.of(request.getId(), new JsonObject(request.getPayload())))
+					.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+		});
 	}
 
 	public Uni<Void> storeEntity(EntityRequest request) {

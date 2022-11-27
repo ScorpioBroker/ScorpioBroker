@@ -912,7 +912,7 @@ BEGIN
 			DELTAENTITY := DELTAENTITY - attribName;
 		END LOOP;
 		FOR attribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(DELTAENTITY) LOOP
-			INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '{{"attribName": attribName, "datasetId": "any"}}'::jsonb) ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{{"attribName": attribName, "datasetId": "any"}}'::jsonb;
+			INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '[{"attribName": attribName, "datasetId": "any"}]'::jsonb) ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{"attribName": attribName, "datasetId": "any"}'::jsonb;
 		END LOOP;
 	END IF;
 	RETURN QUERY SELECT * FROM resultTable;
@@ -1092,12 +1092,12 @@ BEGIN
 			END LOOP;
 			IF OPERATIONFIELD = 2 OR OPERATIONFIELD = 3 THEN
 				tempArray = tempArray || attribValue;
-				INSERT INTO resultTable VALUES ('ADDED', null, null, '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb) ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb;
+				INSERT INTO resultTable VALUES ('ADDED', null, null, '[{"attribName": attribName, "datasetId": datasetId}]'::jsonb) ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{"attribName": attribName, "datasetId": datasetId}'::jsonb;
 			ELSIF OPERATIONFIELD = 4 THEN 
 				IF removeAttrib THEN
-					INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb) ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb;
+					INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '[{"attribName": attribName, "datasetId": datasetId}]'::jsonb) ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{"attribName": attribName, "datasetId": datasetId}'::jsonb;
 				ELSE
-					INSERT INTO resultTable VALUES ('ADDED', null, null, '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb) ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{{"attribName": attribName, "datasetId": datasetId}}'::jsonb;
+					INSERT INTO resultTable VALUES ('ADDED', null, null, '[{"attribName": attribName, "datasetId": datasetId}]'::jsonb) ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{"attribName": attribName, "datasetId": datasetId}'::jsonb;
 				END IF;
 			END IF;
 			localEntity := jsonb_set(localEntity, attribName, tempArray);
