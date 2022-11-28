@@ -13,3 +13,4 @@ Go/pkg/
 /*/bin
 /*/*/bin
 .iml
+.idea
