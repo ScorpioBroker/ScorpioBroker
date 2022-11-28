@@ -38,7 +38,7 @@ Please clone the repository and create the necessary images like scorpio broker 
 .. code-block:: console
     
      git clone https://github.com/ScorpioBroker/ScorpioBroker.git
-	 git checkout IoTagentintegration
+	 git checkout remote_query
      cd ScorpioBroker/iot-agent/
 
     ./services scorpio
