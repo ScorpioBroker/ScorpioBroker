@@ -12,5 +12,5 @@ Go/pkg/
 /*.db
 /*/bin
 /*/*/bin
-.iml
+*.iml
 .idea
