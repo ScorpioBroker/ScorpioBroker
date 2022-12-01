@@ -58,8 +58,8 @@ public class MicroServiceUtils {
 	public static BaseRequest deepCopyRequestMessage(BaseRequest originalPayload) {
 		BaseRequest result = new BaseRequest();
 		result.setId(originalPayload.getId());
-		result.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
-		result.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
+		result.setPayload(deepCopyMap(originalPayload.getPayload()));
+		result.setPayload(deepCopyMap(originalPayload.getPayload()));
 		if (originalPayload.getHeaders() != null) {
 			result.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
 		}
@@ -128,10 +128,9 @@ public class MicroServiceUtils {
 		SubscriptionRequest tmp = new SubscriptionRequest();
 		tmp.setActive(originalPayload.isActive());
 		tmp.setContext(deppCopyList(originalPayload.getContext()));
-		tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
+		tmp.setPayload(deepCopyMap(originalPayload.getPayload()));
 		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
 		tmp.setId(originalPayload.getId());
-		tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
 		tmp.setType(originalPayload.getRequestType());
 		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
 		return tmp;
@@ -150,10 +149,9 @@ public class MicroServiceUtils {
 		SubscriptionRequest originalPayload = originalSync.getRequest();
 		tmp.setActive(originalPayload.isActive());
 		tmp.setContext(deppCopyList(originalPayload.getContext()));
-		tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
+		tmp.setPayload(deepCopyMap(originalPayload.getPayload()));
 		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
 		tmp.setId(originalPayload.getId());
-		tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
 		tmp.setType(originalPayload.getRequestType());
 		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
 		return new SyncMessage(originalSync.getSyncId(), tmp);

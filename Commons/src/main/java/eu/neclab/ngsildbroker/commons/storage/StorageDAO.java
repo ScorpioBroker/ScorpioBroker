@@ -26,7 +26,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequ
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
+
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -434,47 +434,5 @@ public abstract class StorageDAO {
 		});
 	}
 
-	public Uni<Void> storeEntity(EntityRequest request) {
-		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String sql;
-			String key = request.getId();
-			JsonObject value = request.getWithSysAttrs();
-			JsonObject valueWithoutSysAttrs = request.getEntityWithoutSysAttrs();
-			JsonObject kvValue = request.getKeyValue();
-			if (value != null) {
-				if (request.getRequestType() == AppConstants.OPERATION_CREATE_ENTITY) {
-					sql = "INSERT INTO " + DBConstants.DBTABLE_ENTITY + " (id, " + DBConstants.DBCOLUMN_DATA + ", "
-							+ DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + ",  " + DBConstants.DBCOLUMN_KVDATA
-							+ ") VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb)";
-					return client.preparedQuery(sql).execute(Tuple.of(key, value, valueWithoutSysAttrs, kvValue))
-							.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> {
-								if (e instanceof PgException) {
-									PgException pgE = (PgException) e;
-									if (pgE.getCode().equals("23505")) { // code for unique constraint
-										return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
-												request.getId() + " already exists"));
-									}
-								}
-								return Uni.createFrom().failure(e);
-
-							}).onItem().ignore().andContinueWithNull();
-				} else {
-					sql = "UPDATE " + DBConstants.DBTABLE_ENTITY + " SET " + DBConstants.DBCOLUMN_DATA
-							+ " = $1::jsonb , " + DBConstants.DBCOLUMN_DATA_WITHOUT_SYSATTRS + " = $2::jsonb , "
-							+ DBConstants.DBCOLUMN_KVDATA + " = $3::jsonb WHERE " + DBConstants.DBCOLUMN_ID + " = $4";
-					return client.preparedQuery(sql).execute(Tuple.of(value, valueWithoutSysAttrs, kvValue, key))
-							.onFailure().retry().atMost(3).onItem().ignore().andContinueWithNull();
-				}
-			} else {
-
-				sql = "DELETE FROM " + DBConstants.DBTABLE_ENTITY + " WHERE id = $1";
-				return client.preparedQuery(sql).execute(Tuple.of(key)).onFailure().retry().atMost(3).onItem()
-						.transformToUni(t -> {
-							// if(t.)
-							return Uni.createFrom().nullItem();
-						});
-			}
-		});
-	}
 
 }
