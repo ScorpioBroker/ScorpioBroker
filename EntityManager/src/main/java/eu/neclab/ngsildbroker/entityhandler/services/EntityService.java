@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -10,8 +11,12 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
@@ -19,39 +24,29 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.OperationResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
@@ -113,15 +108,18 @@ public class EntityService implements EntryCRUDService {
 		NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
 		List<Uni<Void>> unis = Lists.newArrayList();
 		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
+		Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
 		resultTable.forEach(row -> {
 
 			switch (row.getString(0)) {
 			case "ERROR": {
-				JsonObject sqlState = ((JsonObject) row.getJson(3));
-				if (sqlState.getString("sqlstate").equals(AppConstants.SQL_ALREADY_EXISTS)) {
-					result.addFailure(new ResponseException(ErrorType.AlreadyExists));
+				String sqlState = row.getString(1);
+				JsonObject entity = row.getJsonObject(3);
+				if (sqlState.equals(AppConstants.SQL_ALREADY_EXISTS)) {
+					result.addFailure(new ResponseException(ErrorType.AlreadyExists, ErrorType.AlreadyExists.getTitle(),
+							entity.getMap(), context));
 				} else {
-					result.addFailure(new ResponseException(ErrorType.InternalError, sqlState.getString("sqlmessage")));
+					result.addFailure(new ResponseException(ErrorType.InternalError, row.getString(2)));
 				}
 				break;
 			}
@@ -130,7 +128,7 @@ public class EntityService implements EntryCRUDService {
 				request.setPayload(entityAdded);
 
 				unis.add(kafkaSenderInterface.send(request).onItem().transform(t -> {
-					result.addSuccess(new CreateResult((String) entityAdded.get(NGSIConstants.JSON_LD_ID)));
+					result.addSuccess(new CRUDSuccess(null, null, null, entityAdded, context));
 					return t;
 				}));
 				break;
@@ -140,7 +138,7 @@ public class EntityService implements EntryCRUDService {
 				String tenant = row.getString(1);
 				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
 				MultiMap headers = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
-				String cSourceId = ""; // not in the result for now row.getString(4);
+				String cSourceId = row.getString(4);
 				int hash = entityToForward.hashCode();
 				Map<String, Object> compacted = hash2Compacted.get(hash);
 				if (compacted == null) {
@@ -158,45 +156,8 @@ public class EntityService implements EntryCRUDService {
 				unis.add(webClient.post(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT).putHeaders(headers)
 						.sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 						.transformToUni((response, failure) -> {
-							if (failure != null) {
-								result.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(),
-										host, headers, cSourceId));
-							} else {
-								int statusCode = response.statusCode();
-								if (statusCode == 201) {
-									result.addSuccess(new CreateResult(
-											(String) entityToForward.get(NGSIConstants.JSON_LD_ID), host, headers, cSourceId));
-								} else if (statusCode == 207) {
-									result.addFailure(
-											new ResponseException(statusCode, NGSIConstants.ERROR_MULTI_RESULT_TYPE,
-													NGSIConstants.ERROR_MULTI_RESULT_TITLE,
-													response.bodyAsJsonObject().getMap(), host, headers, cSourceId));
-								} else {
-									JsonObject responseBody = response.bodyAsJsonObject();
-									if (responseBody == null) {
-										result.addFailure(
-												new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
-														NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode,
-														host, headers, cSourceId));
-									} else {
-										if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
-												|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)
-												|| !responseBody.containsKey(NGSIConstants.ERROR_DETAIL)) {
-											result.addFailure(new ResponseException(statusCode,
-													responseBody.getString(NGSIConstants.ERROR_TYPE),
-													responseBody.getString(NGSIConstants.ERROR_TITLE),
-													responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), host,
-													headers, cSourceId));
-										} else {
-											result.addFailure(new ResponseException(500,
-													NGSIConstants.ERROR_UNEXPECTED_RESULT,
-													NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE,
-													responseBody.getMap(), host, headers, cSourceId));
-										}
-									}
-								}
-							}
-							return Uni.createFrom().voidItem();
+							return handleWebResponse(result, response, failure, 201, host, headers, cSourceId,
+									entityToForward, context);
 						}));
 				break;
 			}
@@ -204,6 +165,56 @@ public class EntityService implements EntryCRUDService {
 		});
 
 		return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
+	}
+
+	private Uni<Void> handleWebResponse(NGSILDOperationResult result, HttpResponse<Buffer> response, Throwable failure,
+			int successCode, String host, MultiMap headers, String cSourceId, Map<String, Object> entityToForward,
+			Context context) {
+		if (failure != null) {
+			result.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(), host, headers,
+					cSourceId, entityToForward, context));
+		} else {
+			int statusCode = response.statusCode();
+			if (statusCode == successCode) {
+				result.addSuccess(new CRUDSuccess(host, headers, cSourceId, entityToForward, context));
+			} else if (statusCode == 207) {
+				JsonObject jsonObj = response.bodyAsJsonObject();
+				if (jsonObj != null) {
+					NGSILDOperationResult remoteResult;
+					try {
+						remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap());
+					} catch (ResponseException e) {
+						result.addFailure(e);
+						return Uni.createFrom().voidItem();
+					}
+					result.getFailures().addAll(remoteResult.getFailures());
+					result.getSuccesses().addAll(remoteResult.getSuccesses());
+				}
+
+			} else {
+				JsonObject responseBody = response.bodyAsJsonObject();
+				if (responseBody == null) {
+					result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
+							NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode, host, headers, cSourceId,
+							entityToForward, context));
+				} else {
+					if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
+							|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)
+							|| !responseBody.containsKey(NGSIConstants.ERROR_DETAIL)) {
+						result.addFailure(
+								new ResponseException(statusCode, responseBody.getString(NGSIConstants.ERROR_TYPE),
+										responseBody.getString(NGSIConstants.ERROR_TITLE),
+										responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), host, headers, cSourceId,
+										entityToForward, context));
+					} else {
+						result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
+								NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE, responseBody.getMap(),
+								host, headers, cSourceId, entityToForward, context));
+					}
+				}
+			}
+		}
+		return Uni.createFrom().voidItem();
 	}
 
 	private MultiMap getHeaders(JsonArray headerFromReg, ArrayListMultimap<String, String> headerFromRequest,
@@ -223,8 +234,8 @@ public class EntityService implements EntryCRUDService {
 				result.add(headerName, headerValue);
 			});
 		});
+		headerFromRequest.removeAll(NGSIConstants.TENANT_HEADER);
 		if (tenant != null) {
-			headerFromRequest.removeAll(NGSIConstants.TENANT_HEADER);
 			result.add(NGSIConstants.TENANT_HEADER, tenant);
 		}
 		for (Entry<String, String> entry : headerFromRequest.entries()) {
@@ -261,13 +272,12 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	private Uni<NGSILDOperationResult> handleDBUpdateResult(UpdateEntityRequest request, RowSet<Row> resultTable,
+	private Uni<NGSILDOperationResult> handleDBUpdateResult(EntityRequest request, RowSet<Row> resultTable,
 			List<Object> originalContext) {
 		NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, request.getId());
 		List<Uni<Void>> unis = Lists.newArrayList();
 		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
 		Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
-		UpdateResult localResult = new UpdateResult();
 		resultTable.forEach(row -> {
 
 			switch (row.getString(0)) {
@@ -282,17 +292,24 @@ public class EntityService implements EntryCRUDService {
 			case "ADDED": {
 				// [{"attribName": attribName, "datasetId": datasetId}]
 				JsonArray addedAttribs = (JsonArray) row.getJson(3);
+				Set<Attrib> attribs = Sets.newHashSet();
 				addedAttribs.forEach(t -> {
-					localResult.addToUpdated(context.compactIri((String) t));
+					JsonObject obj = (JsonObject) t;
+					attribs.add(new Attrib(obj.getString("attribName"), obj.getString("datasetId")));
 				});
+				result.addSuccess(new CRUDSuccess(null, null, null, attribs));
 				break;
 			}
 			case "NOT ADDED": {
 				// [{"attribName": attribName, "datasetId": datasetId}]
 				JsonArray addedAttribs = (JsonArray) row.getJson(3);
+				Set<Attrib> attribs = Sets.newHashSet();
 				addedAttribs.forEach(t -> {
-					localResult.addToNotUpdated(context.compactIri((String) t), "Entity not found");
+					JsonObject obj = (JsonObject) t;
+					attribs.add(new Attrib(obj.getString("attribName"), obj.getString("datasetId")));
 				});
+				result.addFailure(new ResponseException(ErrorType.NotFound.getCode(), ErrorType.NotFound.getType(),
+						ErrorType.NotFound.getTitle(), ErrorType.NotFound.getTitle(), null, null, null, attribs));
 			}
 			default:
 				String host = row.getString(0);
@@ -322,62 +339,8 @@ public class EntityService implements EntryCRUDService {
 						.patch(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId() + "/attrs")
 						.putHeaders(headers).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 						.transformToUni((response, failure) -> {
-							if (failure != null) {
-								result.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(),
-										host, headers, cSourceId));
-							} else {
-								int statusCode = response.statusCode();
-								if (statusCode == 204) {
-									Set<String> attribs = compacted.keySet();
-									attribs.remove(NGSIConstants.QUERY_PARAMETER_ID);
-									attribs.remove(NGSIConstants.QUERY_PARAMETER_TYPE);
-									UpdateResult updateResult = new UpdateResult(host, headers, cSourceId);
-									attribs.forEach(attrib -> {
-										updateResult.addToUpdated(attrib);
-									});
-
-									result.addSuccess(updateResult);
-								} else if (statusCode == 207) {
-									UpdateResult updateResult = UpdateResult.fromPayload(response.bodyAsJsonObject(),
-											host, headers, cSourceId);
-									if (updateResult == null) {
-										result.addFailure(
-												new ResponseException(statusCode, NGSIConstants.ERROR_MULTI_RESULT_TYPE,
-														NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE,
-														null, host, headers, cSourceId));
-									} else {
-										result.addSuccess(updateResult);
-									}
-								} else if (statusCode == 404) {
-									// do nothing because we have to expect a 404 not found because the relationship
-									// between an update and a registry entry can be ambiguous when there is no type
-									// provided
-								} else {
-									JsonObject responseBody = response.bodyAsJsonObject();
-									if (responseBody == null) {
-										result.addFailure(
-												new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
-														NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode,
-														host, headers, cSourceId));
-									} else {
-										if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
-												|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)
-												|| !responseBody.containsKey(NGSIConstants.ERROR_DETAIL)) {
-											result.addFailure(new ResponseException(statusCode,
-													responseBody.getString(NGSIConstants.ERROR_TYPE),
-													responseBody.getString(NGSIConstants.ERROR_TITLE),
-													responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), host,
-													headers, cSourceId));
-										} else {
-											result.addFailure(new ResponseException(500,
-													NGSIConstants.ERROR_UNEXPECTED_RESULT,
-													NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE,
-													responseBody.getMap(), host, headers, cSourceId));
-										}
-									}
-								}
-							}
-							return Uni.createFrom().voidItem();
+							return handleWebResponse(result, response, failure, 201, host, headers, cSourceId,
+									entityToForward, context);
 						}));
 				break;
 			}
@@ -387,143 +350,54 @@ public class EntityService implements EntryCRUDService {
 		return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
 	}
 
-	/**
-	 * Method to append fields in existing Entity in system/kafka topic
-	 * 
-	 * @param entityId - id of entity to be appended
-	 * @param resolved - jsonld message containing fileds to be appended
-	 * @return AppendResult
-	 * @throws ResponseException
-	 * @throws IOException
-	 */
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) {
-		logger.trace("appendMessage() :: started");
-		// get message channel for ENTITY_APPEND topic
-		// payload validation
-		if (entityId == null) {
-			return Uni.createFrom()
-					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id is not allowed"));
-		}
-
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		// get entity details
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
-				.transform(Unchecked.function(t -> new AppendEntityRequest(headers, entityId, t, resolved, options)))
-				.onItem().transformToUni(t -> {
-					if (t.getUpdateResult().getUpdated().isEmpty()) {
-						return Uni.createFrom().item(t.getUpdateResult());
-					}
-					t.setBatchInfo(batchInfo);
-					return handleRequest(t).onItem().transform(v -> {
-						logger.trace("partialUpdateEntity() :: completed");
-						return t.getUpdateResult();
-					});
-				});
-	}
-
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options) {
-		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
-	}
-
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo) {
-		logger.trace("deleteEntity() :: started");
-		if (entityId == null) {
-			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
-		}
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
-				.transform(Unchecked.function(t -> {
-					return new DeleteEntityRequest(entityId, headers, t);
-				})).onItem().transformToUni(t -> {
-					Uni<Void> store = entityInfoDAO.storeEntity(t);
-					BaseRequest temp = new BaseRequest();
-					temp.setHeaders(t.getHeaders());
-					temp.setId(t.getId());
-					temp.setRequestPayload(t.getOldEntity());
-					temp.setFinalPayload(t.getOldEntity());
-					temp.setBatchInfo(batchInfo);
-					temp.setRequestType(AppConstants.DELETE_REQUEST);
-					return store.onItem().transform(v -> {
-						kafkaSenderInterface.send(temp);
-						return true;
-					});
-
-				});
-	}
-
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
-		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
-	}
-
-	public Uni<UpdateResult> partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId,
-			String attrId, Map<String, Object> expandedPayload) {
-		logger.trace("partialUpdateEntity() :: started");
-		// get message channel for ENTITY_APPEND topic
-		if (entityId == null) {
-			return Uni.createFrom()
-					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
-		}
-
-		String tenantId = HttpUtils.getInternalTenant(headers);
-
-		// get entity details
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem().transformToUni(t2 -> {
-			UpdateEntityRequest updateEntityRequest;
-			try {
-				updateEntityRequest = new UpdateEntityRequest(headers, entityId, t2, expandedPayload, attrId);
-			} catch (ResponseException e) {
-				return Uni.createFrom().failure(e);
-
-			}
-			if (updateEntityRequest.getUpdateResult().getUpdated().isEmpty()) {
-				return Uni.createFrom().item(updateEntityRequest.getUpdateResult());
-			}
-			return handleRequest(updateEntityRequest).onItem().transform(v -> {
-
-				logger.trace("partialUpdateEntity() :: completed");
-				return updateEntityRequest.getUpdateResult();
-			});
-		});
-	}
-
-	public Uni<Boolean> deleteAttribute(ArrayListMultimap<String, String> headers, String entityId, String attrId,
-			String datasetId, String deleteAll) {
-		logger.trace("deleteAttribute() :: started");
-		// get message channel for ENTITY_APPEND topic
-		if (entityId == null) {
-			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
-		}
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
-				.transform(Unchecked.function(t -> {
-					return new DeleteAttributeRequest(headers, entityId, t, attrId, datasetId, deleteAll);
-				})).onItem().transformToUni(t -> handleRequest(t)).onItem().transform(t -> true).onFailure()
-				.transform(t -> {
-					if (t.getMessage().equals("Attribute is not present"))
-						return new ResponseException(ErrorType.NotFound, t.getMessage());
-					else
-						return t;
-				});
-	}
-
-	private Uni<Void> handleRequest(EntityRequest request) {
-		return entityInfoDAO.storeEntity(request).onItem().transformToUni(t -> {
-			request.setSendTimestamp(System.currentTimeMillis());
-			kafkaSenderInterface.send(request);
-			return Uni.createFrom().voidItem();
-		});
-
-	}
-
 	@Override
 	public Uni<Void> sendFail(BatchInfo batchInfo) {
 		BaseRequest request = new BaseRequest();
 		request.setRequestType(AppConstants.BATCH_ERROR_REQUEST);
 		request.setBatchInfo(batchInfo);
 		request.setId("" + batchInfo.getBatchId());
-		return Uni.createFrom().completionStage(kafkaSenderInterface.send(request));
+		return kafkaSenderInterface.send(request);
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, List<Object> originalContext) {
+		return updateEntry(headers, entityId, entry, originalContext, new BatchInfo(-1, -1));
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, String[] options, List<Object> originalContext) {
+		return appendToEntry(headers, entityId, entry, options, originalContext, new BatchInfo(-1, -1));
+
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+			Map<String, Object> entry, String[] options, List<Object> originalContext, BatchInfo batchInfo) {
+		AppendEntityRequest request = new AppendEntityRequest(headers, entityId, entry, batchInfo);
+		boolean noOverwrite = Arrays.stream(options).anyMatch(NGSIConstants.NO_OVERWRITE_OPTION::equals);
+		return entityDAO.appendEntity(request, noOverwrite).onItem().transformToUni(resultTable -> {
+			if (resultTable.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+						"No result from the database this should never happen"));
+			}
+			return handleDBUpdateResult(request, resultTable, originalContext);
+		});
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId,
+			List<Object> originalContext) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId,
+			List<Object> originalContext, BatchInfo batchInfo) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

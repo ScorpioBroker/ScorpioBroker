@@ -308,4 +308,5 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_ATTRIBUTE_NAME_SHORT = "attributeName";
 	public static final String NGSI_LD_REASON_SHORT = "reason";
 	public static final String NGSI_LD_NOT_UPDATED_SHORT = "notUpdated";
+	public static final String ERROR_CODE = "errorCode";
 }
