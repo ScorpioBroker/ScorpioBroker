@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDBaseResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -568,8 +569,8 @@ public interface EntryControllerFunctions {
 					return Uni.createFrom().item(Tuple2.of(resolvedBody, context));
 				}).onItem()
 				.transformToUni(resolved -> entityService
-						.updateEntry(HttpUtils.getHeaders(request), entityId, resolved.getItem1(), resolved.getItem2()).onItem()
-						.transformToUni(updateResult -> {
+						.updateEntry(HttpUtils.getHeaders(request), entityId, resolved.getItem1(), resolved.getItem2())
+						.onItem().transformToUni(updateResult -> {
 							logger.trace("update entry :: completed");
 							return HttpUtils.generateUpdateResultResponse(updateResult);
 						}))
@@ -618,23 +619,20 @@ public interface EntryControllerFunctions {
 					.transform(operationResult -> {
 						logger.trace("create entity :: completed");
 						List<ResponseException> fails = operationResult.getFailures();
-						List<CRUDBaseResult> successes = operationResult.getSuccesses();
+						List<CRUDSuccess> successes = operationResult.getSuccesses();
 						if (fails.isEmpty()) {
 							try {
-								return RestResponse
-										.created(new URI(baseUrl + ((CreateResult) successes.get(0)).getEntityId()));
+								return RestResponse.created(new URI(baseUrl + operationResult.getEntityId()));
 							} catch (URISyntaxException e) {
 								return HttpUtils.handleControllerExceptions(e);
 							}
 						} else if (successes.isEmpty() && fails.size() == 1) {
 							return HttpUtils.handleControllerExceptions(fails.get(0));
 						} else {
-
 							return new RestResponseBuilderImpl<Object>().status(207)
 									.type(AppConstants.NGB_APPLICATION_JSON)
 									.entity(JsonUtils.toPrettyString(operationResult.getJson())).build();
 						}
-
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 

@@ -13,4 +13,6 @@ public class EntityInfoDAO extends StorageDAO {
 	protected StorageFunctionsInterface getStorageFunctions() {
 		return new EntityStorageFunctions();
 	}
+
+	
 }

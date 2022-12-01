@@ -45,16 +45,15 @@ import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDBaseResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.json.JsonObject;
 
 /**
  * A utility class to handle HTTP Requests and Responses.
@@ -195,18 +194,18 @@ public final class HttpUtils {
 			}
 		}
 		switch (appGroup) {
-			case 5:
-				return 2; // application/ld+json
-			case 2:
-			case 3:
-			case 4:
-				return 1; // application/json
-			case 6:
-				return 3;// application/n-quads
-			case 7:
-				return 4;// application/geo+json
-			default:
-				return -1;// error
+		case 5:
+			return 2; // application/ld+json
+		case 2:
+		case 3:
+		case 4:
+			return 1; // application/json
+		case 6:
+			return 3;// application/n-quads
+		case 7:
+			return 4;// application/geo+json
+		default:
+			return -1;// error
 		}
 	}
 
@@ -284,76 +283,76 @@ public final class HttpUtils {
 			additionalHeaders = ArrayListMultimap.create();
 		}
 		switch (sendingContentType) {
-			case 1:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-				if (result instanceof Map) {
-					((Map) result).remove(JsonLdConsts.CONTEXT);
+		case 1:
+			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+			if (result instanceof Map) {
+				((Map) result).remove(JsonLdConsts.CONTEXT);
+			}
+			if (result instanceof List) {
+				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+				for (Map<String, Object> entry : list) {
+					entry.remove(JsonLdConsts.CONTEXT);
 				}
-				if (result instanceof List) {
-					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-					for (Map<String, Object> entry : list) {
-						entry.remove(JsonLdConsts.CONTEXT);
+			}
+			try {
+				replyBody = JsonUtils.toPrettyString(result);
+			} catch (IOException e3) {
+				return Uni.createFrom().failure(e3);
+			}
+			if (contextLinks != null) {
+				for (Object entry : contextLinks) {
+					if (entry instanceof String) {
+						additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+					} else {
+						additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 					}
-				}
-				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e3) {
-					return Uni.createFrom().failure(e3);
-				}
-				if (contextLinks != null) {
-					for (Object entry : contextLinks) {
-						if (entry instanceof String) {
-							additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
-									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-						} else {
-							additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-						}
 
-					}
 				}
-				break;
-			case 2:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-				if (result instanceof List) {
-					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-					for (Map<String, Object> entry : list) {
-						entry.put(JsonLdConsts.CONTEXT, context);
-					}
+			}
+			break;
+		case 2:
+			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+			if (result instanceof List) {
+				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+				for (Map<String, Object> entry : list) {
+					entry.put(JsonLdConsts.CONTEXT, context);
 				}
+			}
+			try {
+				replyBody = JsonUtils.toPrettyString(result);
+			} catch (IOException e2) {
+				return Uni.createFrom().failure(e2);
+			}
+			break;
+		case 3:
+			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
+			try {
+				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
+			} catch (JsonLdError | ResponseException e1) {
+				return Uni.createFrom().failure(e1);
+			}
+			break;
+		case 4:// geo+json
+			switch (endPoint) {
+			case AppConstants.QUERY_ENDPOINT:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
 				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e2) {
-					return Uni.createFrom().failure(e2);
+					replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
+				} catch (IOException e) {
+					return Uni.createFrom().failure(e);
 				}
 				break;
-			case 3:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-				try {
-					replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
-				} catch (JsonLdError | ResponseException e1) {
-					return Uni.createFrom().failure(e1);
-				}
-				break;
-			case 4:// geo+json
-				switch (endPoint) {
-					case AppConstants.QUERY_ENDPOINT:
-						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-						try {
-							replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
-						} catch (IOException e) {
-							return Uni.createFrom().failure(e);
-						}
-						break;
-					default:
-						return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
-								"Provided accept types " + acceptHeader + " are not supported"));
-				}
-				break;
-			case -1:
 			default:
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
 						"Provided accept types " + acceptHeader + " are not supported"));
+			}
+			break;
+		case -1:
+		default:
+			return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
+					"Provided accept types " + acceptHeader + " are not supported"));
 		}
 		return Uni.createFrom().item(replyBody);
 
@@ -543,7 +542,7 @@ public final class HttpUtils {
 		if (e instanceof ResponseException) {
 			ResponseException responseException = (ResponseException) e;
 			logger.debug("Exception :: ", responseException);
-			return RestResponseBuilderImpl.create(responseException.getError().getCode())
+			return RestResponseBuilderImpl.create(responseException.getErrorCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(responseException).toJson())
 					.build();
@@ -589,80 +588,6 @@ public final class HttpUtils {
 
 	}
 
-	@SuppressWarnings("unchecked")
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, UpdateResult update,
-			List<Object> context, int endpoint) {
-		if (update.getNotUpdated().isEmpty()) {
-			return Uni.createFrom().item(RestResponse.noContent());
-		}
-		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
-		Map<String, Object> expanded = update.toJsonMap();
-		Map<String, Object> compacted;
-		try {
-			compacted = JsonLdProcessor.compact(expanded, context, ldContext, opts, AppConstants.UPDATE_REQUEST);
-		} catch (JsonLdError | ResponseException e) {
-			return Uni.createFrom().failure(e);
-		}
-		Object updated = compacted.get(NGSIConstants.NGSI_LD_UPDATED_SHORT);
-		if (updated != null) {
-			List<String> result = new ArrayList<String>();
-			for (String entry : (List<String>) updated) {
-				HashMap<String, Object> tmp = new HashMap<String, Object>();
-				tmp.put(NGSIConstants.JSON_LD_VALUE, entry);
-				result.add((String) ldContext.compactValue("dummy", tmp));
-			}
-			compacted.put(NGSIConstants.NGSI_LD_UPDATED_SHORT, result);
-		}
-		Object resultContext = compacted.get(JsonLdConsts.CONTEXT);
-		Object result;
-		Object graph = compacted.get(JsonLdConsts.GRAPH);
-		if (graph != null) {
-			result = graph;
-		} else {
-			result = compacted;
-		}
-		int sendingContentType = parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
-		ArrayListMultimap<String, String> resultHeaders = ArrayListMultimap.create();
-		String replyBody;
-		switch (sendingContentType) {
-			case 1:
-				resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-				((Map) result).remove(JsonLdConsts.CONTEXT);
-				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e) {
-					return Uni.createFrom().failure(e);
-				}
-				for (Object entry : context) {
-					if (entry instanceof String) {
-						resultHeaders.put(HttpHeaders.LINK, "<" + entry
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					} else {
-						resultHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					}
-
-				}
-				break;
-			case 2:
-				resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e) {
-					return Uni.createFrom().failure(e);
-				}
-				break;
-			default:
-				return Uni.createFrom().failure(
-						new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported"));
-		}
-		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(HttpStatus.SC_MULTI_STATUS).entity(replyBody);
-		for (Entry<String, String> entry : resultHeaders.entries()) {
-			builder = builder.header(entry.getKey(), entry.getValue());
-		}
-		return Uni.createFrom().item(builder.build());
-	}
-
 	public static RestResponse<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
 			Object notificationData, List<Object> context, String geometryProperty)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
@@ -690,18 +615,18 @@ public final class HttpUtils {
 		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
 		for (String key : headers.keySet()) {
 			switch (key.toLowerCase()) {
-				case "postman-token":
-				case "accept-encoding":
-				case "user-agent":
-				case "host":
-				case "connection":
-				case "cache-control":
-				case "content-length":
-					break;
-				default:
-					for (String entry : Sets.newHashSet(headers.get(key))) {
-						builder = builder.header(key, entry);
-					}
+			case "postman-token":
+			case "accept-encoding":
+			case "user-agent":
+			case "host":
+			case "connection":
+			case "cache-control":
+			case "content-length":
+				break;
+			default:
+				for (String entry : Sets.newHashSet(headers.get(key))) {
+					builder = builder.header(key, entry);
+				}
 			}
 		}
 		return builder.build();
@@ -760,21 +685,28 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
-		if(updateResult.getFailures().isEmpty()) {
-			boolean fullSuccess = true;
-			for(CRUDBaseResult success: updateResult.getSuccesses()) {
-				if(!((UpdateResult) success).getNotUpdated().isEmpty()) {
-					fullSuccess = false;
+		if (updateResult.getFailures().isEmpty()) {
+			return Uni.createFrom().item(RestResponse.noContent());
+		}
+		if (updateResult.getSuccesses().isEmpty()) {
+			if (updateResult.getFailures().size() == 1) {
+				ResponseException failure = updateResult.getFailures().get(0);
+				return Uni.createFrom().item(handleControllerExceptions(failure));
+			}
+		} else {
+			boolean only404 = true;
+			for (ResponseException failure : updateResult.getFailures()) {
+				if (failure.getErrorCode() != 404) {
+					only404 = false;
 					break;
 				}
 			}
-			if(fullSuccess) {
+			if (only404) {
 				return Uni.createFrom().item(RestResponse.noContent());
-			}else {
-				//temporary solution
-				return Uni.createFrom().item(new RestResponseBuilderImpl().status(207).entity(updateResult.getJson()).build());  
 			}
 		}
-		return null;
+		return Uni.createFrom()
+				.item(new RestResponseBuilderImpl().status(207).entity(new JsonObject(updateResult.getJson())).build());
+
 	}
 }

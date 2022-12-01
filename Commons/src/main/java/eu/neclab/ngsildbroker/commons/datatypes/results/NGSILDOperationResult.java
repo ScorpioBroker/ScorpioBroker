@@ -51,6 +51,10 @@ public class NGSILDOperationResult {
 		this.failures.add(failure);
 	}
 
+	public String getEntityId() {
+		return entityId;
+	}
+
 	public Map<String, Object> getJson() {
 		Map<String, Object> result = Maps.newHashMap();
 		result.put(NGSIConstants.ERROR_TYPE, getOperationType());
@@ -132,7 +136,7 @@ public class NGSILDOperationResult {
 		}
 		return result;
 	}
-	
+
 	public static Set<Attrib> getAttribs(Map<String, Object> entityAdded, Context context) {
 		Set<Attrib> result = Sets.newHashSet();
 		for (Entry<String, Object> entry : entityAdded.entrySet()) {
