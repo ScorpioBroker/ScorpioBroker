@@ -1,8 +1,11 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -12,26 +15,27 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -121,47 +125,54 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PATCH
 	@Path("/entities/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> partialUpdateEntity(HttpServerRequest request,
-			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId, String payload) {
-
+			@PathParam("entityId") String entityId, @PathParam("attrId") String attrib, String payload) {
+		logger.trace("update entry :: started");
 		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
-				.onItem().transformToUni(n -> {
-					List<Object> atContext = n.getItem2();
+				.onItem().transformToUni(t -> {
+					List<Object> contextHeaders = t.getItem2();
 					boolean atContextAllowed;
 					try {
-						atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
-
-						Object jsonPayload = JsonUtils.fromString(payload);
-						logger.trace("partial-update entity :: started");
-						Map<String, Object> expandedPayload = (Map<String, Object>) JsonLdProcessor.expand(atContext,
-								jsonPayload, opts, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, atContextAllowed).get(0);
-						Context context = JsonLdProcessor.getCoreContextClone();
-						context = context.parse(atContext, true);
-						if (jsonPayload instanceof Map) {
-							Object payloadContext = ((Map<String, Object>) jsonPayload).get(JsonLdConsts.CONTEXT);
-							if (payloadContext != null) {
-								context = context.parse(payloadContext, true);
-							}
-						}
-						String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
-						Tuple3<Map<String, Object>, String, Context> t = Tuple3.of(expandedPayload, expandedAttrib,
-								context);
-						return entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId, t.getItem2(),
-								t.getItem1()).onItem().transform(u -> {
-									return Tuple2.of(u, t.getItem3());
-								}).onItem().transform(Unchecked.function(t1 -> {
-									if (t1.getItem1().getNotUpdated().isEmpty()) {
-										return RestResponse.noContent();
-									} else {
-										throw new ResponseException(ErrorType.BadRequestData,
-												JsonUtils.toPrettyString(JsonLdProcessor.compact(
-														t1.getItem1().getNotUpdated().get(0), t1.getItem2(), opts)));
-
-									}
-								})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-					} catch (Exception e) {
-						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+						atContextAllowed = HttpUtils.doPreflightCheck(request, contextHeaders);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
 					}
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+					List<Object> context = new ArrayList<Object>();
+					context.addAll(contextHeaders);
+					Object bodyContext;
+					Map<String, Object> body;
+					try {
+						body = ((Map<String, Object>) JsonUtils.fromString(payload));
+					} catch (IOException e) {
+						return Uni.createFrom().failure(e);
+					}
+					bodyContext = body.get(JsonLdConsts.CONTEXT);
+					Map<String, Object> resolvedBody;
+					try {
+						resolvedBody = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders, body, opts,
+								AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, atContextAllowed).get(0);
+					} catch (JsonLdError | ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+
+					if (bodyContext instanceof List) {
+						context.addAll((List<Object>) bodyContext);
+					} else {
+						context.add(bodyContext);
+					}
+
+					String expandedAttrib = JsonLdProcessor.getCoreContextClone().parse(context, true).expandIri(attrib,
+							false, true, null, null);
+					return Uni.createFrom().item(Tuple3.of(resolvedBody, context, expandedAttrib));
+				}).onItem()
+				.transformToUni(
+						resolved -> entityService
+								.partialUpdateEntity(HttpUtils.getHeaders(request), entityId, resolved.getItem3(),
+										resolved.getItem1(), resolved.getItem2())
+								.onItem().transformToUni(updateResult -> {
+									logger.trace("update entry :: completed");
+									return HttpUtils.generateUpdateResultResponse(updateResult);
+								}))
+				.onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
@@ -177,7 +188,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Path("/entities/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> deleteAttribute(HttpServerRequest request, @PathParam("entityId") String entityId,
 			@PathParam("attrId") String attrId, @QueryParam("datasetId") String datasetId,
-			@QueryParam("deleteAll") String deleteAll) {
+			@QueryParam("deleteAll") boolean deleteAll) {
 		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
 				.onItem().transformToUni(t -> {
 					logger.trace("delete attribute :: started");
@@ -191,7 +202,7 @@ public class EntityController {// implements EntityHandlerInterface {
 						responseException.printStackTrace();
 					}
 					return entityService
-							.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, null, deleteAll)
+							.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId, deleteAll, links)
 							.onItem().transform(t2 -> {
 								logger.trace("delete attribute :: completed");
 								return RestResponse.noContent();

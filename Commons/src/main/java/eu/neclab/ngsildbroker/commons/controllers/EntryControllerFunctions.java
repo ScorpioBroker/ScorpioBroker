@@ -679,9 +679,10 @@ public interface EntryControllerFunctions {
 					} catch (Exception e) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}
-					return entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved, optionsArray)
+					return entityService
+							.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved, optionsArray, context)
 							.onItem().transformToUni(tResult -> {
-								return HttpUtils.generateReply(request, tResult, context, AppConstants.UPDATE_REQUEST);
+								return HttpUtils.generateUpdateResultResponse(tResult);
 							});
 
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

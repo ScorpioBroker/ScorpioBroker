@@ -408,31 +408,6 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<RowSet<Row>> createEntity(CreateEntityRequest request) {
-		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM INSERTNGSILDENTITY($1::jsonb)";
-			return client.preparedQuery(sql).execute(Tuple.of(new JsonObject(request.getPayload()))).onFailure().retry()
-					.atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
-		});
-
-	}
-
-	public Uni<RowSet<Row>> updateEntity(UpdateEntityRequest request) {
-		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM UPDATENGSILDENTITY($1, $2::jsonb)";
-			return client.preparedQuery(sql).execute(Tuple.of(request.getId(), new JsonObject(request.getPayload())))
-					.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
-		});
-	}
-
-	public Uni<RowSet<Row>> appendEntity(AppendEntityRequest request, boolean noOverwrite) {
-		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM APPENDNGSILDENTITY($1, $2::jsonb, $3)";
-			return client.preparedQuery(sql)
-					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()), noOverwrite)).onFailure()
-					.retry().atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
-		});
-	}
 
 
 }

@@ -658,7 +658,7 @@ SELECT addAttribs(id, entity) FROM public.entity;
 
 
 
-CREATE OR REPLACE FUNCTION INSERTNGSILDENTITY (INSERTENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_CREATEENTITY (INSERTENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
 declare
 	attribName text;
 	templateEntity jsonb;
@@ -748,7 +748,7 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION UPSERTNGSILDENTITY (INSERTENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_UPSERTENTITY (INSERTENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
 declare
 	attribName text;
 	templateEntity jsonb;
@@ -841,7 +841,7 @@ $$ LANGUAGE PLPGSQL;
 
 
 
-CREATE OR REPLACE FUNCTION NOLOCALINFOOPERATION (ENTITYID text, DELTAENTITY JSONB, OPERATIONFIELD smallint) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, c_id text) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_NOLOCALINFOOPERATION (ENTITYID text, DELTAENTITY JSONB, OPERATIONFIELD smallint) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, c_id text) AS $$
 declare
 	attribName text;
 	templateEntity jsonb;
@@ -1007,7 +1007,7 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION LOCALINFOOPERATION (ENTITYID text, DELTAENTITY JSONB, LOCALENTITY JSONB, IID BIGINT, NOOVERWRITE BOOLEAN, OPERATIONFIELD SMALLINT) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_LOCALINFOOPERATION (ENTITYID text, DELTAENTITY JSONB, LOCALENTITY JSONB, IID BIGINT, NOOVERWRITE BOOLEAN, OPERATIONFIELD SMALLINT) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
 declare
 	attribName text;
 	templateEntity jsonb;
@@ -1197,49 +1197,49 @@ END;
 $$ LANGUAGE PLPGSQL;
 
 
-CREATE OR REPLACE FUNCTION APPENDNGSILDENTITY (ENTITYID text, DELTAENTITY JSONB, NOOVERWRITE boolean) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_APPENDENTITY (ENTITYID text, DELTAENTITY JSONB, NOOVERWRITE boolean) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
 declare
 	LOCALENTITY jsonb;
 	IID bigint;
 BEGIN
 	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.E_ID = ENTITYID;
 	IF LOCALENTITY IS NOT NULL THEN
-		RETURN QUERY SELECT * FROM LOCALINFOOPERATION (ENTITYID, DELTAENTITY, LOCALENTITY, IID, NOOVERWRITE, 3);
+		RETURN QUERY SELECT * FROM NGSILD_LOCALINFOOPERATION (ENTITYID, DELTAENTITY, LOCALENTITY, IID, NOOVERWRITE, 3);
 	ELSE	
-		RETURN QUERY SELECT * FROM NOLOCALINFOOPERATION (ENTITYID, DELTAENTITY, 3);
+		RETURN QUERY SELECT * FROM NGSILD_NOLOCALINFOOPERATION (ENTITYID, DELTAENTITY, 3);
 	END IF;	
 END;
 $$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION UPDATENGSILDENTITY (ENTITYID text, DELTAENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_UPDATEENTITY (ENTITYID text, DELTAENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
 declare
 	LOCALENTITY jsonb;
 	IID bigint;
 BEGIN
 	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.e_id = ENTITYID;
 	IF LOCALENTITY IS NOT NULL THEN
-		RETURN QUERY SELECT * FROM LOCALINFOOPERATION (ENTITYID, DELTAENTITY, LOCALENTITY, IID, false, 2);
+		RETURN QUERY SELECT * FROM NGSILD_LOCALINFOOPERATION (ENTITYID, DELTAENTITY, LOCALENTITY, IID, false, 2);
 	ELSE
-		RETURN QUERY SELECT * FROM NOLOCALINFOOPERATION (ENTITYID, DELTAENTITY, 2);
+		RETURN QUERY SELECT * FROM NGSILD_NOLOCALINFOOPERATION (ENTITYID, DELTAENTITY, 2);
 	END IF;	
 END;
 $$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION PARTIALUPDATENGSI (ENTITYID text, DELTAENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_PARTIALUPDATEENTITY (ENTITYID text, DELTAENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
 declare
 	LOCALENTITY jsonb;
 	IID bigint;
 BEGIN
 	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.e_id = ENTITYID;
 	IF LOCALENTITY IS NOT NULL THEN
-		RETURN QUERY SELECT * FROM LOCALINFOOPERATION (ENTITYID, DELTAENTITY, LOCALENTITY, IID, false, 4);
+		RETURN QUERY SELECT * FROM NGSILD_LOCALINFOOPERATION (ENTITYID, DELTAENTITY, LOCALENTITY, IID, false, 4);
 	ELSE	
-		RETURN QUERY SELECT * FROM NOLOCALINFOOPERATION (ENTITYID, DELTAENTITY, 4);
+		RETURN QUERY SELECT * FROM NGSILD_NOLOCALINFOOPERATION (ENTITYID, DELTAENTITY, 4);
 	END IF;	
 END;
 $$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION DELETEENTITY (ENTITYID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_DELETEENTITY (ENTITYID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
 declare
 	LOCALENTITY jsonb;
 	IID bigint;
@@ -1288,7 +1288,7 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION DELETEATTR (ENTITYID text, ATTR text, DATASETID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_DELETEATTR (ENTITYID text, ATTR text, DATASETID text, DELETEALL boolean) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
 DECLARE
 	LOCALENTITY jsonb;
 	IID bigint;
@@ -1303,6 +1303,7 @@ DECLARE
 	tempArray jsonb;
 	EMPTYATTR boolean;
 BEGIN
+    CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE) ON COMMIT DROP;
 	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.e_id = ENTITYID;
 	IF LOCALENTITY IS NOT NULL THEN
 		entityTypes := LOCALENTITY->'@type';
@@ -1323,36 +1324,42 @@ BEGIN
 			insertScopes = NULL;
 		END IF;
 		FOR entityType IN select jsonb_array_elements_text from jsonb_array_elements_text(entityTypes) LOOP
-			FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL OR c.e_prop = ATTR) AND (c.e_rel IS NULL OR c.e_rel = ATTR) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
-				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL) ON CONFLICT DO NOTHING;
+			FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL OR c.e_prop = ATTR) AND (c.e_rel IS NULL OR c.e_rel = ATTR) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id) ON CONFLICT DO NOTHING;
 			END LOOP;
 		END LOOP;
 		BEGIN
 			attribValue := LOCALENTITY->ATTR;
 			IF attribValue IS NOT NULL THEN
 				tempArray = '[]'::jsonb;
-				FOR localAttribValue IN SELECT jsonb_array_elements FROM jsonb_array_elements(attribValue) LOOP
-					localDatasetId := localAttribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
-					IF (localDatasetId IS NULL AND datasetId IS NOT NULL) OR (localDatasetId IS NOT NULL AND datasetId IS NULL) OR (localDatasetId <> datasetId) THEN
-						tempArray = tempArray || localAttribValue;
-					END IF;
-				END LOOP;
-				SELECT COUNT(jsonb_array_elements)=0 FROM jsonb_array_elements(attribValue) INTO EMPTYATTR;
+				IF DELETEALL THEN
+					EMPTYATTR := true;
+				ELSE
+					FOR localAttribValue IN SELECT jsonb_array_elements FROM jsonb_array_elements(attribValue) LOOP
+						localDatasetId := localAttribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
+						IF (localDatasetId IS NULL AND datasetId IS NOT NULL) OR (localDatasetId IS NOT NULL AND datasetId IS NULL) OR (localDatasetId <> datasetId) THEN
+							tempArray = tempArray || localAttribValue;
+						END IF;
+					END LOOP;
+					SELECT COUNT(jsonb_array_elements)=0 FROM jsonb_array_elements(attribValue) INTO EMPTYATTR;
+				END IF;
+				
 				IF EMPTYATTR THEN
 					LOCALENTITY := LOCALENTITY - ATTR;
 				END IF;
 				UPDATE ENTITY SET ENTITY.ENTITY=localEntity||templateEntity WHERE ENTITY.id = iid;
-				INSERT INTO resultTable VALUES ("DELETED ATTRIB", NULL, NULL, '{"attr": ATTR, "datasetId": DATASETID}'::jsonb);
+				INSERT INTO resultTable VALUES ('DELETED ATTRIB', NULL, NULL, '{"attr": ATTR, "datasetId": DATASETID}'::jsonb, 'DELETED ATTRIB');
+				INSERT INTO resultTable VALUES ('RESULT ENTITY', NULL, NULL, localEntity||templateEntity, 'RESULT ENTITY');
 			ELSE 
-				INSERT INTO resultTable VALUES ('ERROR', null, null, ('{"sqlstate": "02000", "sqlmessage": "Not found"}')::jsonb);
+				INSERT INTO resultTable VALUES ('ERROR', "02000", "Not found", localEntity||templateEntity, 'ERROR');
 			END IF;
 			
 		EXCEPTION WHEN OTHERS THEN
-			INSERT INTO resultTable VALUES ('ERROR', null, null, ('{"sqlstate": "' || sqlstate::text || '", "sqlmessage": "'||SQLERRM::text ||'"}')::jsonb);
+			INSERT INTO resultTable VALUES ('ERROR', sqlstate::text, SQLERRM::text, localEntity||templateEntity, 'ERROR');
 		END;
 	ELSE
-		FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteEntity = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL OR c.e_prop = ATTR) AND (c.e_rel IS NULL OR c.e_rel = ATTR)AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
-				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL) ON CONFLICT DO NOTHING;
+		FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteEntity = true AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL OR c.e_prop = ATTR) AND (c.e_rel IS NULL OR c.e_rel = ATTR)AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id) ON CONFLICT DO NOTHING;
 			END LOOP;
 	END IF;
 	RETURN QUERY SELECT * FROM resultTable;	
