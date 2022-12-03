@@ -40,6 +40,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
@@ -103,7 +104,19 @@ public class EntityService implements EntryCRUDService {
 			}
 			return handleDBCreateResult(request, resultTable, originalContext);
 		});
+	}
 
+	public Uni<NGSILDOperationResult> upsertEntry(ArrayListMultimap<String, String> headers,
+			Map<String, Object> resolved, List<Object> originalContext, BatchInfo batchInfo) {
+		logger.debug("createMessage() :: started");
+		CreateEntityRequest request = new CreateEntityRequest(resolved, headers, batchInfo);
+		return entityDAO.upsertEntity(request).onItem().transformToUni(resultTable -> {
+			if (resultTable.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+						"No result from the database this should never happen"));
+			}
+			return handleDBCreateResult(request, resultTable, originalContext);
+		});
 	}
 
 	private Uni<NGSILDOperationResult> handleDBCreateResult(CreateEntityRequest request, RowSet<Row> resultTable,
@@ -140,7 +153,7 @@ public class EntityService implements EntryCRUDService {
 				String host = row.getString(0);
 				String tenant = row.getString(1);
 				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-				MultiMap headers = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
+				MultiMap headers = HttpUtils.getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
 				String cSourceId = row.getString(4);
 				int hash = entityToForward.hashCode();
 				Map<String, Object> compacted = hash2Compacted.get(hash);
@@ -220,33 +233,6 @@ public class EntityService implements EntryCRUDService {
 		return Uni.createFrom().voidItem();
 	}
 
-	private MultiMap getHeaders(JsonArray headerFromReg, ArrayListMultimap<String, String> headerFromRequest,
-			String tenant) {
-		MultiMap result = MultiMap.newInstance(null);
-		Set<String> alreadyRemoved = Sets.newHashSet();
-		headerFromReg.forEach(t -> {
-			JsonObject obj = (JsonObject) t;
-
-			obj.forEach(headerEntry -> {
-				String headerName = headerEntry.getKey();
-				String headerValue = (String) headerEntry.getValue();
-				if (!alreadyRemoved.contains(headerName)) {
-					alreadyRemoved.add(headerName);
-					headerFromRequest.removeAll(headerName);
-				}
-				result.add(headerName, headerValue);
-			});
-		});
-		headerFromRequest.removeAll(NGSIConstants.TENANT_HEADER);
-		if (tenant != null) {
-			result.add(NGSIConstants.TENANT_HEADER, tenant);
-		}
-		for (Entry<String, String> entry : headerFromRequest.entries()) {
-			result.add(entry.getKey(), entry.getValue());
-		}
-		return result;
-	}
-
 	public Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers,
 			Map<String, Object> resolved, List<Object> originalContext) {
 		return createEntry(headers, resolved, originalContext, new BatchInfo(-1, -1));
@@ -318,7 +304,7 @@ public class EntityService implements EntryCRUDService {
 				String host = row.getString(0);
 				String tenant = row.getString(1);
 				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-				MultiMap headers = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
+				MultiMap headers = HttpUtils.getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
 				String cSourceId = ""; // not in the result for now row.getString(4);
 				int hash = entityToForward.hashCode();
 				Map<String, Object> compacted;
@@ -448,7 +434,8 @@ public class EntityService implements EntryCRUDService {
 					// side there is no way of know what has been deleted so ... don't know how to
 					// handle that
 					Map<String, Object> entityToForward = Maps.newHashMap();
-					MultiMap remoteHeaders = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
+					MultiMap remoteHeaders = HttpUtils.getHeaders((JsonArray) row.getJson(2), request.getHeaders(),
+							tenant);
 					String cSourceId = row.getString(4); // not in the result for now row.getString(4);
 
 					StringBuilder url = new StringBuilder(
@@ -540,7 +527,8 @@ public class EntityService implements EntryCRUDService {
 					Map<String, Object> entityToForward = Maps.newHashMap();
 					Map<String, Object> dummy = Maps.newHashMap();
 					entityToForward.put(attribName, Lists.newArrayList(dummy));
-					MultiMap remoteHeaders = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
+					MultiMap remoteHeaders = HttpUtils.getHeaders((JsonArray) row.getJson(2), request.getHeaders(),
+							tenant);
 					String cSourceId = row.getString(4); // not in the result for now row.getString(4);
 
 					StringBuilder url = new StringBuilder(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"

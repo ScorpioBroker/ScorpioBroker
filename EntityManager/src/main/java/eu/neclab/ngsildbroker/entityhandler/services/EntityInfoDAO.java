@@ -20,11 +20,6 @@ import io.vertx.mutiny.sqlclient.Tuple;
 @Singleton
 public class EntityInfoDAO extends StorageDAO {
 
-	@Override
-	protected StorageFunctionsInterface getStorageFunctions() {
-		return new EntityStorageFunctions();
-	}
-
 	public Uni<RowSet<Row>> createEntity(CreateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String sql = "SELECT * FROM NGSILD_CREATEENTITY($1::jsonb)";
@@ -76,6 +71,14 @@ public class EntityInfoDAO extends StorageDAO {
 					.onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
 		});
 
+	}
+
+	public Uni<RowSet<Row>> upsertEntity(CreateEntityRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			String sql = "SELECT * FROM NGSILD_UPSERTENTITY($1::jsonb)";
+			return client.preparedQuery(sql).execute(Tuple.of(new JsonObject(request.getPayload()))).onFailure().retry()
+					.atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+		});
 	}
 
 }

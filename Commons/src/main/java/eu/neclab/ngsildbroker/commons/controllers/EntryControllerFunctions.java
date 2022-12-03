@@ -173,28 +173,12 @@ public interface EntryControllerFunctions {
 			return tmpResult;
 		}).onItem().transformToUni(itemTuple -> {
 			Map<String, Object> expanded;
-			String entityId;
-			if (itemTuple.getItem2().containsKey(NGSIConstants.JSON_LD_ID)) {
-				entityId = (String) itemTuple.getItem2().get(NGSIConstants.JSON_LD_ID);
-			} else if (itemTuple.getItem2().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
-				entityId = (String) itemTuple.getItem2().get(NGSIConstants.QUERY_PARAMETER_ID);
-			} else {
-				entityId = "NO ID PROVIDED";
-			}
 			try {
 				expanded = (Map<String, Object>) JsonLdProcessor
 						.expand(itemTuple.getItem1(), itemTuple.getItem2(), opts, payloadType, itemTuple.getItem3())
 						.get(0);
-			} catch (Exception e1) {
-				NGSIRestResponse response;
-				if (e1 instanceof ResponseException) {
-					response = new NGSIRestResponse((ResponseException) e1);
-				} else {
-					response = new NGSIRestResponse(ErrorType.InvalidRequest,
-							"failed to expand payload because: " + e1.getCause().getLocalizedMessage());
-				}
-				return entityService.sendFail(batchInfo).onItem().transformToUni(
-						t -> Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null)));
+			} catch (Exception e) {
+				return entityService.sendFail(batchInfo).onItem().transformToUni(t -> Uni.createFrom().failure(e));
 			}
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return entityService.createEntry(headers, expanded, batchInfo).onItem()

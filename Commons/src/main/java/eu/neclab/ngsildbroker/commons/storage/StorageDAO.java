@@ -49,14 +49,6 @@ public abstract class StorageDAO {
 	@Inject
 	protected ClientManager clientManager;
 
-	protected abstract StorageFunctionsInterface getStorageFunctions();
-
-	StorageFunctionsInterface storageFunctions;
-
-	@PostConstruct
-	public void init() {
-		storageFunctions = getStorageFunctions();
-	}
 
 	public Uni<ArrayListMultimap<String, String>> getAllIds() {
 		List<Uni<Object>> unis = Lists.newArrayList();
@@ -79,19 +71,7 @@ public abstract class StorageDAO {
 
 	}
 
-	public Uni<Map<String, Object>> getEntity(String entryId, String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(storageFunctions.getEntryQuery()).execute(Tuple.of(entryId)).onItem()
-					.transformToUni(t -> {
-						if (t.rowCount() == 0) {
-							return Uni.createFrom()
-									.failure(new ResponseException(ErrorType.NotFound, entryId + " was not found"));
-						}
-						return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
-					});
-		});
 
-	}
 
 	public Uni<Map<String, List<Map<String, Object>>>> getAllEntities() {
 		List<Uni<Object>> unis = Lists.newArrayList();
@@ -225,51 +205,51 @@ public abstract class StorageDAO {
 //
 //	}
 
-	public Uni<Void> storeRegistryEntry(CSourceRequest request) {
-		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			JsonObject value = request.getResultCSourceRegistrationString();
-			String sql;
-
-			if (value != null) {
-				if (request.getRequestType() == AppConstants.CREATE_REQUEST) {
-
-					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-							+ ") VALUES ($1, $2::jsonb)";
-
-					return client.preparedQuery(sql).execute(Tuple.of(request.getId(), value)).onFailure()
-							.recoverWithUni(e -> {
-								if (e instanceof PgException) {
-									PgException pgE = (PgException) e;
-									if (pgE.getCode().equals("23505")) { // code for unique constraint
-										return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
-												request.getId() + " already exists"));
-									}
-								}
-								return Uni.createFrom().failure(e);
-							}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
-
-				} else if (request.getRequestType() == AppConstants.APPEND_REQUEST) {
-					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
-							+ ") VALUES ($1, $2::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
-							+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
-					return client.preparedQuery(sql).execute(Tuple.of(request.getId(), value)).onFailure()
-							.recoverWithUni(e -> {
-								return Uni.createFrom()
-										.failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
-							}).onItem().ignore().andContinueWithNull();
-				} else {
-					return Uni.createFrom()
-							.failure(new ResponseException(ErrorType.InternalError, "was not executed unknown call"));
-				}
-			} else {
-				sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = $1";
-				return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
-					return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
-				}).onItem().ignore().andContinueWithNull();
-			}
-		});
-
-	}
+//	public Uni<Void> storeRegistryEntry(CSourceRequest request) {
+//		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+//			JsonObject value = request.getResultCSourceRegistrationString();
+//			String sql;
+//
+//			if (value != null) {
+//				if (request.getRequestType() == AppConstants.CREATE_REQUEST) {
+//
+//					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
+//							+ ") VALUES ($1, $2::jsonb)";
+//
+//					return client.preparedQuery(sql).execute(Tuple.of(request.getId(), value)).onFailure()
+//							.recoverWithUni(e -> {
+//								if (e instanceof PgException) {
+//									PgException pgE = (PgException) e;
+//									if (pgE.getCode().equals("23505")) { // code for unique constraint
+//										return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+//												request.getId() + " already exists"));
+//									}
+//								}
+//								return Uni.createFrom().failure(e);
+//							}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
+//
+//				} else if (request.getRequestType() == AppConstants.APPEND_REQUEST) {
+//					sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
+//							+ ") VALUES ($1, $2::jsonb) ON CONFLICT(id) DO UPDATE SET " + DBConstants.DBCOLUMN_DATA
+//							+ " = EXCLUDED." + DBConstants.DBCOLUMN_DATA;
+//					return client.preparedQuery(sql).execute(Tuple.of(request.getId(), value)).onFailure()
+//							.recoverWithUni(e -> {
+//								return Uni.createFrom()
+//										.failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+//							}).onItem().ignore().andContinueWithNull();
+//				} else {
+//					return Uni.createFrom()
+//							.failure(new ResponseException(ErrorType.InternalError, "was not executed unknown call"));
+//				}
+//			} else {
+//				sql = "DELETE FROM " + DBConstants.DBTABLE_CSOURCE + " WHERE id = $1";
+//				return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
+//					return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+//				}).onItem().ignore().andContinueWithNull();
+//			}
+//		});
+//
+//	}
 
 // TODO: Redo this needs some more consideration	
 	

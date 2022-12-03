@@ -10,7 +10,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
-public class QueryResult extends BaseResult {
+public class QueryResult {
 
 	private String qToken;
 	private Integer limit;
@@ -20,9 +20,7 @@ public class QueryResult extends BaseResult {
 	private List<Map<String, Object>> data;
 	private Long count = 0l;
 
-	public QueryResult(List<Map<String, Object>> data, String errorMsg, ErrorType errorType, int shortErrorMsg,
-			boolean success) {
-		super(errorMsg, errorType, shortErrorMsg, success);
+	public QueryResult(List<Map<String, Object>> data) {
 		this.data = data;
 	}
 

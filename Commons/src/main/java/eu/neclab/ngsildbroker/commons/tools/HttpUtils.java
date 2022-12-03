@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,15 +45,16 @@ import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
+
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.MultiMap;
+import io.vertx.mutiny.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -544,31 +546,28 @@ public final class HttpUtils {
 			logger.debug("Exception :: ", responseException);
 			return RestResponseBuilderImpl.create(responseException.getErrorCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(responseException).toJson())
-					.build();
+					.entity(responseException.getJson()).build();
 		}
 		if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.BadRequestData,
-							"Failed to parse provided datetime field.").toJson())
+					.entity(new ResponseException(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+							.getJson())
 					.build();
 		}
 		if (e instanceof JsonProcessingException || e instanceof JsonLdError) {
 			logger.debug("Exception :: ", e);
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InvalidRequest,
-							"There is an error in the provided json document").toJson())
+					.entity(new ResponseException(ErrorType.InvalidRequest,
+							"There is an error in the provided json document").getJson())
 					.build();
 		}
 		logger.error("Exception :: ", e);
 		return RestResponseBuilderImpl.create(HttpStatus.SC_INTERNAL_SERVER_ERROR)
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError,
-						e.getMessage()).toJson())
-				.build();
+				.entity(new ResponseException(ErrorType.InternalError, e.getMessage()).getJson()).build();
 	}
 
 	public static Uni<URI> validateUri(String uri) {
@@ -708,5 +707,32 @@ public final class HttpUtils {
 		return Uni.createFrom()
 				.item(new RestResponseBuilderImpl().status(207).entity(new JsonObject(updateResult.getJson())).build());
 
+	}
+
+	public static MultiMap getHeaders(JsonArray headerFromReg, ArrayListMultimap<String, String> headerFromRequest,
+			String tenant) {
+		MultiMap result = MultiMap.newInstance(null);
+		Set<String> alreadyRemoved = Sets.newHashSet();
+		headerFromReg.forEach(t -> {
+			JsonObject obj = (JsonObject) t;
+
+			obj.forEach(headerEntry -> {
+				String headerName = headerEntry.getKey();
+				String headerValue = (String) headerEntry.getValue();
+				if (!alreadyRemoved.contains(headerName)) {
+					alreadyRemoved.add(headerName);
+					headerFromRequest.removeAll(headerName);
+				}
+				result.add(headerName, headerValue);
+			});
+		});
+		headerFromRequest.removeAll(NGSIConstants.TENANT_HEADER);
+		if (tenant != null) {
+			result.add(NGSIConstants.TENANT_HEADER, tenant);
+		}
+		for (Entry<String, String> entry : headerFromRequest.entries()) {
+			result.add(entry.getKey(), entry.getValue());
+		}
+		return result;
 	}
 }
