@@ -13,7 +13,6 @@ import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
@@ -405,15 +405,67 @@ public class EntityService implements EntryCRUDService {
 	@Override
 	public Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId,
 			List<Object> originalContext) {
-		// TODO Auto-generated method stub
-		return null;
+		return deleteEntry(headers, entryId, originalContext, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId,
+	public Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entityId,
 			List<Object> originalContext, BatchInfo batchInfo) {
-		// TODO Auto-generated method stub
-		return null;
+		DeleteEntityRequest request = new DeleteEntityRequest(headers, entityId, batchInfo);
+		return entityDAO.deleteEntity(request).onItem().transformToUni(resultTable -> {
+			if (resultTable.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+						"No result from the database this should never happen"));
+			}
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, request.getId());
+			List<Uni<Void>> unis = Lists.newArrayList();
+			Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
+			Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
+			resultTable.forEach(row -> {
+
+				switch (row.getString(0)) {
+				case "DELETED ENTITY": {
+					request.setPayload(row.getJsonObject(3).getMap());
+					result.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+					unis.add(kafkaSenderInterface.send(request));
+					break;
+				}
+				case "ERROR": {
+					// [{"attribName": attribName, "datasetId": datasetId}]
+					String errorCode = row.getString(1);
+					if (errorCode.equals(AppConstants.SQL_NOT_FOUND)) {
+						result.addFailure(new ResponseException(ErrorType.NotFound, ErrorType.NotFound.getTitle(),
+								Sets.newHashSet()));
+					} else {
+						result.addFailure(
+								new ResponseException(ErrorType.InternalError, row.getString(2), Sets.newHashSet()));
+					}
+				}
+				default:
+					String host = row.getString(0);
+					String tenant = row.getString(1);
+					// This is not a final solution ... but in the case of full success on the other
+					// side there is no way of know what has been deleted so ... don't know how to
+					// handle that
+					Map<String, Object> entityToForward = Maps.newHashMap();
+					MultiMap remoteHeaders = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
+					String cSourceId = row.getString(4); // not in the result for now row.getString(4);
+
+					StringBuilder url = new StringBuilder(
+							host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId());
+					unis.add(webClient.delete(url.toString()).putHeaders(remoteHeaders).send().onItemOrFailure()
+							.transformToUni((response, failure) -> {
+								return handleWebResponse(result, response, failure, 204, host, remoteHeaders, cSourceId,
+										entityToForward, context);
+							}));
+					break;
+				}
+
+			});
+
+			return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
+
+		});
 	}
 
 	public Uni<NGSILDOperationResult> partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId,
@@ -459,78 +511,57 @@ public class EntityService implements EntryCRUDService {
 			resultTable.forEach(row -> {
 
 				switch (row.getString(0)) {
+				case "DELETED ATTRIB": {
+					result.addSuccess(
+							new CRUDSuccess(null, null, null, Sets.newHashSet(new Attrib(attribName, datasetId))));
+					break;
+				}
+				case "RESULT ENTITY": {
+					// [{"attribName": attribName, "datasetId": datasetId}]
+					Map<String, Object> entity = row.getJsonObject(3).getMap();
+					request.setPayload(entity);
+					unis.add(kafkaSenderInterface.send(request));
+					break;
+				}
 				case "ERROR": {
-					// JsonObject error = ((JsonObject) row.getJson(3));
-					// for now the only "error" in sql would be if someone tries to remove a type
-					// if this changes in sql we need to adapt here
-					result.addFailure(
-							new ResponseException(ErrorType.BadRequestData, "You cannot remove a type from an entity"));
-					break;
-				}
-				case "ADDED": {
 					// [{"attribName": attribName, "datasetId": datasetId}]
-					JsonArray addedAttribs = (JsonArray) row.getJson(3);
-					Set<Attrib> attribs = Sets.newHashSet();
-					addedAttribs.forEach(t -> {
-						JsonObject obj = (JsonObject) t;
-						attribs.add(new Attrib(obj.getString("attribName"), obj.getString("datasetId")));
-					});
-					result.addSuccess(new CRUDSuccess(null, null, null, attribs));
-					break;
-				}
-				case "NOT ADDED": {
-					// [{"attribName": attribName, "datasetId": datasetId}]
-					JsonArray addedAttribs = (JsonArray) row.getJson(3);
-					Set<Attrib> attribs = Sets.newHashSet();
-					addedAttribs.forEach(t -> {
-						JsonObject obj = (JsonObject) t;
-						attribs.add(new Attrib(obj.getString("attribName"), obj.getString("datasetId")));
-					});
-					result.addFailure(new ResponseException(ErrorType.NotFound.getCode(), ErrorType.NotFound.getType(),
-							ErrorType.NotFound.getTitle(), ErrorType.NotFound.getTitle(), null, null, null, attribs));
+					String errorCode = row.getString(1);
+					if (errorCode.equals(AppConstants.SQL_NOT_FOUND)) {
+						result.addFailure(new ResponseException(ErrorType.NotFound, ErrorType.NotFound.getTitle(),
+								Sets.newHashSet(new Attrib(attribName, datasetId))));
+					} else {
+						result.addFailure(new ResponseException(ErrorType.InternalError, row.getString(2),
+								Sets.newHashSet(new Attrib(attribName, datasetId))));
+					}
 				}
 				default:
 					String host = row.getString(0);
 					String tenant = row.getString(1);
-					Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-					MultiMap headers = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
-					String cSourceId = ""; // not in the result for now row.getString(4);
-					int hash = entityToForward.hashCode();
-					Map<String, Object> compacted;
-					if (!hash2Compacted.containsKey(hash)) {
-						try {
-							compacted = JsonLdProcessor.compact(entityToForward, originalContext, opts);
-						} catch (ResponseException e) {
-							// TODO add host info
-							result.addFailure(e);
-							break;
-						} catch (Exception e) {
-							// TODO add host info
-							result.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
-							break;
-						}
-						hash2Compacted.put(hash, compacted);
-					} else {
-						compacted = hash2Compacted.get(hash);
-					}
-					String url;
-					HttpRequest<Buffer> req;
-					if (request.getRequestType() == AppConstants.UPDATE_REQUEST) {
-						if (((UpdateEntityRequest) request).getAttrName() != null) {
-							req = webClient.patch(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
-									+ "/attrs/" + ((UpdateEntityRequest) request).getAttrName());
-						} else {
-							req = webClient.patch(
-									host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId() + "/attrs");
+					Map<String, Object> entityToForward = Maps.newHashMap();
+					Map<String, Object> dummy = Maps.newHashMap();
+					entityToForward.put(attribName, Lists.newArrayList(dummy));
+					MultiMap remoteHeaders = getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
+					String cSourceId = row.getString(4); // not in the result for now row.getString(4);
+
+					StringBuilder url = new StringBuilder(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+							+ request.getId() + "/attrs/" + attribName);
+					if (datasetId != null) {
+
+						dummy.put("datasetId", datasetId);
+						url.append("?datasetId=");
+						url.append(datasetId);
+						if (deleteAll) {
+							url.append("&deleteAll");
 						}
 					} else {
-						req = webClient.post(
-								host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId() + "/attrs");
+						if (deleteAll) {
+							url.append("?deleteAll");
+						}
 					}
 
-					unis.add(req.putHeaders(headers).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+					unis.add(webClient.delete(url.toString()).putHeaders(remoteHeaders).send().onItemOrFailure()
 							.transformToUni((response, failure) -> {
-								return handleWebResponse(result, response, failure, 201, host, headers, cSourceId,
+								return handleWebResponse(result, response, failure, 204, host, remoteHeaders, cSourceId,
 										entityToForward, context);
 							}));
 					break;

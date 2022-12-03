@@ -5,6 +5,7 @@ import javax.inject.Singleton;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
@@ -66,6 +67,15 @@ public class EntityInfoDAO extends StorageDAO {
 							request.deleteAll()))
 					.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
 		});
+	}
+
+	public Uni<RowSet<Row>> deleteEntity(DeleteEntityRequest request) {
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
+			String sql = "SELECT * FROM NGSILD_DELETEENTITY($1)";
+			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3)
+					.onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+		});
+
 	}
 
 }

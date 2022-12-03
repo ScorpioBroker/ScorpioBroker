@@ -698,12 +698,14 @@ public interface EntryControllerFunctions {
 
 	public static Uni<RestResponse<Object>> deleteEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, Logger logger) {
-		return HttpUtils.validateUri(entityId).onItem().transformToUni(t -> {
-			return entityService.deleteEntry(HttpUtils.getHeaders(request), entityId).onItem().transform(t2 -> {
-				logger.trace("delete entity :: completed");
-				return RestResponse.noContent();
-			});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
+				.onItem().transformToUni(t -> {
+					return entityService.deleteEntry(HttpUtils.getHeaders(request), entityId, t.getItem2()).onItem()
+							.transformToUni(t2 -> {
+								logger.trace("delete entity :: completed");
+								return HttpUtils.generateUpdateResultResponse(t2);
+							});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 }

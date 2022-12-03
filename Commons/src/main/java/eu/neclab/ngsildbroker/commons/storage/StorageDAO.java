@@ -197,33 +197,33 @@ public abstract class StorageDAO {
 		});
 	}
 
-	public Uni<CreateResult> storeTemporalEntity(HistoryEntityRequest request) {
-		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-
-			if (request instanceof DeleteHistoryEntityRequest) {
-				return doTemporalSqlAttrInsert(client, JsonObject.mapFrom(null), request.getId(), request.getType(),
-						((DeleteHistoryEntityRequest) request).getResolvedAttrId(), request.getCreatedAt(),
-						request.getModifiedAt(), ((DeleteHistoryEntityRequest) request).getInstanceId(), null);
-			} else {
-				List<Uni<CreateResult>> unis = Lists.newArrayList();
-				for (HistoryAttribInstance entry : request.getAttribs()) {
-					unis.add(doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(),
-							entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
-							entry.getEntityModifiedAt(), entry.getInstanceId(), entry.getOverwriteOp()));
-				}
-				return Uni.combine().all().unis(unis).combinedWith(t -> {
-					CreateResult result = new CreateResult("", false);
-					for (Object entry : t) {
-						CreateResult tmp = (CreateResult) entry;
-						result.setEntityId(tmp.getEntityId());
-						result.setCreatedOrUpdated(result.isCreatedOrUpdated() && tmp.isCreatedOrUpdated());
-					}
-					return result;
-				});
-			}
-		});
-
-	}
+//	public Uni<CreateResult> storeTemporalEntity(HistoryEntityRequest request) {
+//		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+//
+//			if (request instanceof DeleteHistoryEntityRequest) {
+//				return doTemporalSqlAttrInsert(client, JsonObject.mapFrom(null), request.getId(), request.getType(),
+//						((DeleteHistoryEntityRequest) request).getResolvedAttrId(), request.getCreatedAt(),
+//						request.getModifiedAt(), ((DeleteHistoryEntityRequest) request).getInstanceId(), null);
+//			} else {
+//				List<Uni<CreateResult>> unis = Lists.newArrayList();
+//				for (HistoryAttribInstance entry : request.getAttribs()) {
+//					unis.add(doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(),
+//							entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
+//							entry.getEntityModifiedAt(), entry.getInstanceId(), entry.getOverwriteOp()));
+//				}
+//				return Uni.combine().all().unis(unis).combinedWith(t -> {
+//					CreateResult result = new CreateResult("", false);
+//					for (Object entry : t) {
+//						CreateResult tmp = (CreateResult) entry;
+//						result.setEntityId(tmp.getEntityId());
+//						result.setCreatedOrUpdated(result.isCreatedOrUpdated() && tmp.isCreatedOrUpdated());
+//					}
+//					return result;
+//				});
+//			}
+//		});
+//
+//	}
 
 	public Uni<Void> storeRegistryEntry(CSourceRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
@@ -271,142 +271,144 @@ public abstract class StorageDAO {
 
 	}
 
-	private Uni<CreateResult> doTemporalSqlAttrInsert(PgPool client, JsonObject value, String entityId,
-			String entityType, String attributeId, String entityCreatedAt, String entityModifiedAt, String instanceId,
-			Boolean overwriteOp) {
-		if (value != null) {
-			return client.withTransaction(conn -> {
-				String sql;
-				List<Uni<Boolean>> unis = Lists.newArrayList();
-				if (entityId != null && entityType != null && entityCreatedAt != null && entityModifiedAt != null) {
-					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-							+ " (id, type, createdat, modifiedat) VALUES($1, $2, $3::timestamp, $4::timestamp) "
-							+ "ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat RETURNING id";
-					Tuple tValue = Tuple.of(entityId, entityType,
-							SerializationTools.localDateTimeFormatter(entityCreatedAt),
-							SerializationTools.localDateTimeFormatter(entityModifiedAt));
-					unis.add(conn.preparedQuery(sql).execute(tValue).onItem().transform(tmp -> {
-						if (tmp.size() == 0) {
-							return false;
-						}
-						return true;
-					}));
-				}
-				if (entityId != null && attributeId != null) {
-					if (overwriteOp != null && overwriteOp) {
-						sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " WHERE temporalentity_id = $1 AND attributeid = $2";
-						unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)).onItem()
-								.transform(t -> false));
-					}
-					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
-					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId, value)).onItem()
-							.transform(t -> false));
-					// update modifiedat field in temporalentity
-					sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
-							+ " SET modifiedat = $1::timestamp WHERE id = $2";
-					unis.add(conn.preparedQuery(sql)
-							.execute(Tuple.of(SerializationTools.localDateTimeFormatter(entityModifiedAt), entityId))
-							.onItem().transform(t -> false));
-				}
-
-				return Uni.combine().all().unis(unis).combinedWith(list -> {
-					CreateResult result = new CreateResult(entityId, false);
-					for (Object entry : list) {
-						result.setCreatedOrUpdated(result.isCreatedOrUpdated() && (Boolean) entry);
-					}
-					return result;
-				}).onFailure().recoverWithUni(t -> {
-					if (t instanceof SQLIntegrityConstraintViolationException) {
-						List<Uni<Boolean>> recoverUnis = Lists.newArrayList();
-						logger.info("Failed to create attribute instance because of data inconsistency");
-						logger.info("Attempting recovery");
-						String selectSql = "SELECT type, createdat, modifiedat FROM " + DBConstants.DBTABLE_ENTITY
-								+ " WHERE id = $1";
-						return conn.preparedQuery(selectSql).execute(Tuple.of(entityId)).onItem()
-								.transformToUni(rows -> {
-									if (rows.size() == 0) {
-										logger.error("Recovery failed");
-										return Uni.createFrom().failure(t);
-									}
-									Row row = rows.iterator().next();
-									String recoverSql;
-									recoverSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-											+ " (id, type, createdat, modifiedat) VALUES ($1, $2, $3::timestamp, $4::timestamp) ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat RETURNING id";
-									recoverUnis.add(conn.preparedQuery(recoverSql)
-											.execute(Tuple.of(entityId, row.getString("type"),
-													row.getString("createdat"), row.getString("modifiedat")))
-											.onItem().transform(tmp -> {
-												if (tmp.size() == 0) {
-													return false;
-												}
-												return true;
-											}));
-									recoverSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-											+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, '" + value
-											+ "'::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
-									recoverUnis.add(conn.preparedQuery(recoverSql)
-											.execute(Tuple.of(entityId, attributeId)).onItem().transform(t2 -> false));
-									// update modifiedat field in temporalentity
-									recoverSql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = '"
-											+ entityModifiedAt + "'::timestamp WHERE id = $1";
-									recoverUnis.add(conn.preparedQuery(recoverSql).execute(Tuple.of(entityId)).onItem()
-											.transform(t2 -> false));
-									logger.info("Recovery successful");
-									return Uni.combine().all().unis(recoverUnis).combinedWith(list -> {
-										CreateResult result = new CreateResult(entityId, false);
-										for (Object entry : list) {
-											result.setCreatedOrUpdated(result.isCreatedOrUpdated() && (Boolean) entry);
-										}
-										return result;
-									});
-								});
-					} else {
-						logger.error("Recovery failed", t);
-						return Uni.createFrom().failure(t);
-					}
-
-				});
-			});
-		} else {
-			String sql;
-			if (entityId != null && attributeId != null && instanceId != null) {
-				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-						+ " WHERE temporalentity_id = $1 AND attributeid = $2 AND instanceid = $3";
-				return client.preparedQuery(sql).execute(Tuple.of(entityId, attributeId, instanceId)).onItem()
-						.transformToUni(t -> {
-							if (t.rowCount() == 0) {
-								return Uni.createFrom().failure(
-										new ResponseException(ErrorType.NotFound, instanceId + " was not found"));
-							}
-							return Uni.createFrom().nullItem();
-						});
-
-			} else if (entityId != null && attributeId != null) {
-				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-						+ " WHERE temporalentity_id = $1 AND attributeid = $2";
-				return client.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)).onItem().transformToUni(t -> {
-					if (t.rowCount() == 0) {
-						return Uni.createFrom()
-								.failure(new ResponseException(ErrorType.NotFound, attributeId + " was not found"));
-					}
-					return Uni.createFrom().nullItem();
-				});
-			} else if (entityId != null) {
-				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1";
-				return client.preparedQuery(sql).execute(Tuple.of(entityId)).onItem().transformToUni(t -> {
-					if (t.rowCount() == 0) {
-						return Uni.createFrom()
-								.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
-					}
-					return Uni.createFrom().nullItem();
-				});
-			}
-			return Uni.createFrom().nullItem();
-		}
-
-	}
+// TODO: Redo this needs some more consideration	
+	
+//	private Uni<CreateResult> doTemporalSqlAttrInsert(PgPool client, JsonObject value, String entityId,
+//			String entityType, String attributeId, String entityCreatedAt, String entityModifiedAt, String instanceId,
+//			Boolean overwriteOp) {
+//		if (value != null) {
+//			return client.withTransaction(conn -> {
+//				String sql;
+//				List<Uni<Boolean>> unis = Lists.newArrayList();
+//				if (entityId != null && entityType != null && entityCreatedAt != null && entityModifiedAt != null) {
+//					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
+//							+ " (id, type, createdat, modifiedat) VALUES($1, $2, $3::timestamp, $4::timestamp) "
+//							+ "ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat RETURNING id";
+//					Tuple tValue = Tuple.of(entityId, entityType,
+//							SerializationTools.localDateTimeFormatter(entityCreatedAt),
+//							SerializationTools.localDateTimeFormatter(entityModifiedAt));
+//					unis.add(conn.preparedQuery(sql).execute(tValue).onItem().transform(tmp -> {
+//						if (tmp.size() == 0) {
+//							return false;
+//						}
+//						return true;
+//					}));
+//				}
+//				if (entityId != null && attributeId != null) {
+//					if (overwriteOp != null && overwriteOp) {
+//						sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+//								+ " WHERE temporalentity_id = $1 AND attributeid = $2";
+//						unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)).onItem()
+//								.transform(t -> false));
+//					}
+//					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+//							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
+//					unis.add(conn.preparedQuery(sql).execute(Tuple.of(entityId, attributeId, value)).onItem()
+//							.transform(t -> false));
+//					// update modifiedat field in temporalentity
+//					sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
+//							+ " SET modifiedat = $1::timestamp WHERE id = $2";
+//					unis.add(conn.preparedQuery(sql)
+//							.execute(Tuple.of(SerializationTools.localDateTimeFormatter(entityModifiedAt), entityId))
+//							.onItem().transform(t -> false));
+//				}
+//
+//				return Uni.combine().all().unis(unis).combinedWith(list -> {
+//					CreateResult result = new CreateResult(entityId, false);
+//					for (Object entry : list) {
+//						result.setCreatedOrUpdated(result.isCreatedOrUpdated() && (Boolean) entry);
+//					}
+//					return result;
+//				}).onFailure().recoverWithUni(t -> {
+//					if (t instanceof SQLIntegrityConstraintViolationException) {
+//						List<Uni<Boolean>> recoverUnis = Lists.newArrayList();
+//						logger.info("Failed to create attribute instance because of data inconsistency");
+//						logger.info("Attempting recovery");
+//						String selectSql = "SELECT type, createdat, modifiedat FROM " + DBConstants.DBTABLE_ENTITY
+//								+ " WHERE id = $1";
+//						return conn.preparedQuery(selectSql).execute(Tuple.of(entityId)).onItem()
+//								.transformToUni(rows -> {
+//									if (rows.size() == 0) {
+//										logger.error("Recovery failed");
+//										return Uni.createFrom().failure(t);
+//									}
+//									Row row = rows.iterator().next();
+//									String recoverSql;
+//									recoverSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
+//											+ " (id, type, createdat, modifiedat) VALUES ($1, $2, $3::timestamp, $4::timestamp) ON CONFLICT(id) DO UPDATE SET type = EXCLUDED.type, createdat = EXCLUDED.createdat, modifiedat = EXCLUDED.modifiedat RETURNING id";
+//									recoverUnis.add(conn.preparedQuery(recoverSql)
+//											.execute(Tuple.of(entityId, row.getString("type"),
+//													row.getString("createdat"), row.getString("modifiedat")))
+//											.onItem().transform(tmp -> {
+//												if (tmp.size() == 0) {
+//													return false;
+//												}
+//												return true;
+//											}));
+//									recoverSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+//											+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, '" + value
+//											+ "'::jsonb) ON CONFLICT(temporalentity_id, attributeid, instanceid) DO UPDATE SET data = EXCLUDED.data";
+//									recoverUnis.add(conn.preparedQuery(recoverSql)
+//											.execute(Tuple.of(entityId, attributeId)).onItem().transform(t2 -> false));
+//									// update modifiedat field in temporalentity
+//									recoverSql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = '"
+//											+ entityModifiedAt + "'::timestamp WHERE id = $1";
+//									recoverUnis.add(conn.preparedQuery(recoverSql).execute(Tuple.of(entityId)).onItem()
+//											.transform(t2 -> false));
+//									logger.info("Recovery successful");
+//									return Uni.combine().all().unis(recoverUnis).combinedWith(list -> {
+//										CreateResult result = new CreateResult(entityId, false);
+//										for (Object entry : list) {
+//											result.setCreatedOrUpdated(result.isCreatedOrUpdated() && (Boolean) entry);
+//										}
+//										return result;
+//									});
+//								});
+//					} else {
+//						logger.error("Recovery failed", t);
+//						return Uni.createFrom().failure(t);
+//					}
+//
+//				});
+//			});
+//		} else {
+//			String sql;
+//			if (entityId != null && attributeId != null && instanceId != null) {
+//				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+//						+ " WHERE temporalentity_id = $1 AND attributeid = $2 AND instanceid = $3";
+//				return client.preparedQuery(sql).execute(Tuple.of(entityId, attributeId, instanceId)).onItem()
+//						.transformToUni(t -> {
+//							if (t.rowCount() == 0) {
+//								return Uni.createFrom().failure(
+//										new ResponseException(ErrorType.NotFound, instanceId + " was not found"));
+//							}
+//							return Uni.createFrom().nullItem();
+//						});
+//
+//			} else if (entityId != null && attributeId != null) {
+//				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+//						+ " WHERE temporalentity_id = $1 AND attributeid = $2";
+//				return client.preparedQuery(sql).execute(Tuple.of(entityId, attributeId)).onItem().transformToUni(t -> {
+//					if (t.rowCount() == 0) {
+//						return Uni.createFrom()
+//								.failure(new ResponseException(ErrorType.NotFound, attributeId + " was not found"));
+//					}
+//					return Uni.createFrom().nullItem();
+//				});
+//			} else if (entityId != null) {
+//				sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1";
+//				return client.preparedQuery(sql).execute(Tuple.of(entityId)).onItem().transformToUni(t -> {
+//					if (t.rowCount() == 0) {
+//						return Uni.createFrom()
+//								.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
+//					}
+//					return Uni.createFrom().nullItem();
+//				});
+//			}
+//			return Uni.createFrom().nullItem();
+//		}
+//
+//	}
 
 
 

@@ -6,9 +6,7 @@ import java.util.Map;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
@@ -34,10 +32,11 @@ public interface EntryCRUDService {
 	Uni<NGSILDOperationResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> entry, String[] options, List<Object> originalContext, BatchInfo batchInfo);
 
-	Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, List<Object> originalContext);
+	Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId,
+			List<Object> originalContext);
 
-	Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, List<Object> originalContext,
-			BatchInfo batchInfo);
+	Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId,
+			List<Object> originalContext, BatchInfo batchInfo);
 
 	Uni<Void> sendFail(BatchInfo batchInfo);
 
