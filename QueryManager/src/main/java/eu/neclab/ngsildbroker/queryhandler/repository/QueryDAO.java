@@ -57,7 +57,19 @@ public class QueryDAO extends StorageDAO {
 
 	public Uni<RowSet<Row>> getTypesWithDetails(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("WITH T as (SELECT e_type, iid FROM etype2iid) SELECT DISTINCT(T.e_type, A.attr) FROM T LEFT JOIN attr2iid as A ON A.iid=T.iid").execute();
+			return client.preparedQuery(
+					"WITH T as (SELECT e_type, iid FROM etype2iid) SELECT DISTINCT T.e_type, A.attr FROM T LEFT JOIN attr2iid as A ON A.iid=T.iid")
+					.execute();
+		});
+	}
+
+	public Uni<RowSet<Row>> getType(String tenantId, String type) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					// needs type, entitycount for type, attribs with entitycount attributetype (isRel, isGeo),  
+					// typeNames of types where the attrib is used this is stupidly expensive for this and is optional in the spec i tend to not have it
+					"WITH T as (SELECT e_type, iid FROM etype2iid WHERE e_type = $1) SELECT DISTINCT T.e_type, A.attr FROM T LEFT JOIN attr2iid as A ON A.iid=T.iid")
+					.execute(Tuple.of(type));
 		});
 	}
 
