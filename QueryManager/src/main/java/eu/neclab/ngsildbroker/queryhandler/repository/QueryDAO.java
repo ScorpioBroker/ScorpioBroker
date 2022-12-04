@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,8 +24,7 @@ public class QueryDAO extends StorageDAO {
 			return client.preparedQuery("SELECT ENTITY FROM ENTITY WHERE E_ID=$1").execute(Tuple.of(entryId)).onItem()
 					.transformToUni(t -> {
 						if (t.rowCount() == 0) {
-							return Uni.createFrom()
-									.failure(new ResponseException(ErrorType.NotFound, entryId + " was not found"));
+							return Uni.createFrom().item(new HashMap<String, Object>());
 						}
 						return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
 					});
