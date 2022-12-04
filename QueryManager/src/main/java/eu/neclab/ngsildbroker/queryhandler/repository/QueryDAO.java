@@ -44,20 +44,20 @@ public class QueryDAO extends StorageDAO {
 
 	public Uni<List<Map<String, Object>>> query(Set<String> id, String typeQuery, String idPattern, Set<String> attrs,
 			String q, String csf, String geometry, String georel, String coordinates, String geoproperty, String lang,
-			String scopeQ, int limit, int offSet, boolean count, String tenantFromHeaders) {
+			String scopeQ, int limit, int offSet, boolean count, String tenantId) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	public Uni<RowSet<Row>> getTypes(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT UNIQUE e_type FROM etype2iid").execute();
+			return client.preparedQuery("SELECT DISTINCT e_type FROM etype2iid").execute();
 		});
 	}
 
 	public Uni<RowSet<Row>> getTypesWithDetails(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT UNIQUE e_type FROM etype2iid").execute();
+			return client.preparedQuery("WITH T as (SELECT e_type, iid FROM etype2iid) SELECT DISTINCT(T.e_type, A.attr) FROM T LEFT JOIN attr2iid as A ON A.iid=T.iid").execute();
 		});
 	}
 

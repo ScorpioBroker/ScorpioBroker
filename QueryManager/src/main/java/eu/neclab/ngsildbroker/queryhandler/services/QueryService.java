@@ -2,10 +2,12 @@ package eu.neclab.ngsildbroker.queryhandler.services;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -33,6 +35,7 @@ import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.core.MultiMap;
@@ -41,6 +44,11 @@ import io.vertx.mutiny.core.MultiMap;
 public class QueryService {
 
 	private static String REG_MODE_KEY = "!@#$%";
+	private static List<String> ENTITY_TYPE_LIST_TYPE = Lists.newArrayList();
+	{
+		ENTITY_TYPE_LIST_TYPE.add(NGSIConstants.NGSI_LD_ENTITY_LIST);
+	}
+
 	@Inject
 	QueryDAO queryDAO;
 
@@ -50,6 +58,7 @@ public class QueryService {
 	protected WebClient webClient;
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	private Random random = new Random();
 
 	private static final Set<String> DO_NOT_MERGE_KEYS = Sets.newHashSet(NGSIConstants.JSON_LD_ID,
 			NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_OBSERVED_AT,
@@ -76,8 +85,99 @@ public class QueryService {
 		return null;
 	}
 
-	public Uni<Map<String, Object>> getTypes(ArrayListMultimap<String, String> headers, boolean localOnly) {
+	public Uni<Map<String, Object>> getTypesWithDetail(ArrayListMultimap<String, String> headers, boolean localOnly) {
 		return null;
+	}
+
+	public Uni<Map<String, Object>> getTypes(ArrayListMultimap<String, String> headers, boolean localOnly) {
+		Uni<Tuple2<Map<String, Object>, Set<String>>> queryRemoteTypes;
+		String tenantId = HttpUtils.getTenantFromHeaders(headers);
+		if (localOnly) {
+			Map<String, Object> tmp = Maps.newHashMap();
+			tmp.put(NGSIConstants.NGSI_LD_TYPE_LIST, new ArrayList<Map<String, Object>>());
+			queryRemoteTypes = Uni.createFrom().item(Tuple2.of(tmp, new HashSet<String>()));
+		} else {
+			queryRemoteTypes = queryDAO.getRemoteSourcesForTypes(tenantId).onItem().transformToUni(rows -> {
+				List<Uni<Map<String, Object>>> unis = Lists.newArrayList();
+				rows.forEach(row -> {
+					// C.endpoint C.tenant_id, c.headers, c.reg_mode
+					MultiMap remoteHeaders = HttpUtils.getHeaders(row.getJsonArray(2), headers, row.getString(1));
+					unis.add(webClient.get(row.getString(0) + NGSIConstants.NGSI_LD_TYPES_ENDPOINT)
+							.putHeaders(remoteHeaders).send().onFailure().recoverWithNull().onItem()
+							.transform(response -> {
+								Map<String, Object> responseTypes;
+								if (response == null || response.statusCode() != 200) {
+									responseTypes = null;
+								} else {
+									responseTypes = response.bodyAsJsonObject().getMap();
+									try {
+										responseTypes = (Map<String, Object>) JsonLdProcessor
+												.expand(getContextFromHeader(remoteHeaders), responseTypes, opts, -1,
+														false)
+												.get(0);
+									} catch (JsonLdError e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									} catch (ResponseException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+								}
+								return responseTypes;
+							}));
+				});
+				return Uni.combine().all().unis(unis).combinedWith(list -> {
+					Map<String, Object> result = Maps.newHashMap();
+					Set<String> currentTypes = Sets.newHashSet();
+					result.put(NGSIConstants.NGSI_LD_TYPE_LIST, new ArrayList<Map<String, Object>>());
+					for (Object entry : list) {
+						if (entry == null) {
+							continue;
+						}
+						Map<String, Object> typeMap = (Map<String, Object>) entry;
+						List<Map<String, String>> typeList = (List<Map<String, String>>) result
+								.get(NGSIConstants.NGSI_LD_TYPE_LIST);
+						mergeTypeList(typeList, typeMap.get(NGSIConstants.NGSI_LD_TYPE_LIST), currentTypes);
+					}
+					return Tuple2.of(result, currentTypes);
+				});
+			});
+		}
+		return Uni.combine().all().unis(queryRemoteTypes, queryDAO.getTypes(tenantId)).asTuple().onItem()
+				.transform(t -> {
+					Map<String, Object> result = t.getItem1().getItem1();
+					Set<String> currentTypes = t.getItem1().getItem2();
+					List<Map<String, String>> types = (List<Map<String, String>>) result
+							.get(NGSIConstants.NGSI_LD_TYPE_LIST);
+					t.getItem2().forEach(row -> {
+						String type = row.getString(0);
+						if (!currentTypes.contains(type)) {
+							currentTypes.add(type);
+							Map<String, String> tmp = Maps.newHashMap();
+							tmp.put(NGSIConstants.JSON_LD_ID, type);
+							types.add(tmp);
+						}
+					});
+					result.put(NGSIConstants.JSON_LD_ID, "urn:ngsi-ld:EntityTypeList:" + random.nextInt());
+					result.put(NGSIConstants.JSON_LD_TYPE, ENTITY_TYPE_LIST_TYPE);
+					return result;
+				});
+	}
+
+	private void mergeTypeList(List<Map<String, String>> typeList, Object newTypeListObj, Set<String> currentTypes) {
+		if (newTypeListObj == null) {
+			return;
+		}
+		List<Map<String, String>> newTypeList = ((List<Map<String, String>>) newTypeListObj);
+		String type;
+		for (Map<String, String> entry : newTypeList) {
+			type = entry.get(NGSIConstants.JSON_LD_ID);
+			if (!currentTypes.contains(type)) {
+				currentTypes.add(type);
+				typeList.add(entry);
+			}
+		}
+
 	}
 
 	public Uni<Map<String, Object>> getType(ArrayListMultimap<String, String> headers, String type, boolean localOnly) {

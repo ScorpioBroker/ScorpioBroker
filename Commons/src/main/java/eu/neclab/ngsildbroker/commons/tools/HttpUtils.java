@@ -74,9 +74,9 @@ public final class HttpUtils {
 
 	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND)
-			.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-			.entity(new NGSIRestResponse(ErrorType.NotFound, "Resource not found.").toJson()).build();
+//	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND)
+//			.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//			.entity(new NGSIRestResponse(ErrorType.NotFound, "Resource not found.").toJson()).build();
 
 	public static boolean doPreflightCheck(HttpServerRequest req, List<Object> atContextLinks)
 			throws ResponseException {
@@ -634,7 +634,7 @@ public final class HttpUtils {
 	@SuppressWarnings("unchecked")
 	public static MultiMap getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
 			List<String> accept) {
-		HeadersMultiMap result = HeadersMultiMap.headers();
+		MultiMap result = MultiMap.newInstance(null);
 
 		// Context myContext = JsonLdProcessor.getCoreContextClone().parse(context,
 		// true);
@@ -727,6 +727,8 @@ public final class HttpUtils {
 			});
 		});
 		headerFromRequest.removeAll(NGSIConstants.TENANT_HEADER);
+		headerFromRequest.removeAll("Accept");
+		result.add("Accept", "application/json");
 		if (tenant != null) {
 			result.add(NGSIConstants.TENANT_HEADER, tenant);
 		}
