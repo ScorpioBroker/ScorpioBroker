@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -21,6 +22,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
@@ -58,105 +60,147 @@ public class QueryService {
 		webClient = WebClient.create(vertx);
 	}
 
+	public Uni<QueryResult> query(ArrayListMultimap<String, String> headers, Set<String> id, String typeQuery,
+			String idPattern, Set<String> attrs, String q, String csf, String geometry, String georel,
+			String coordinates, String geoproperty, String lang, String scopeQ, int limit, int offSet, boolean count,
+			boolean localOnly) {
+		Uni<List<Map<String, Object>>> queryEntities = queryDAO.query(id, typeQuery, idPattern, attrs, q, csf, geometry,
+				georel, coordinates, geoproperty, lang, scopeQ, limit, offSet, count,
+				HttpUtils.getTenantFromHeaders(headers));
+		Uni<List<Map<String, Object>>> queryRemoteEntities;
+		if (localOnly) {
+			queryRemoteEntities = Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
+		} else {
+
+		}
+		return null;
+	}
+
+	public Uni<Map<String, Object>> getTypes(ArrayListMultimap<String, String> headers, boolean localOnly) {
+		return null;
+	}
+
+	public Uni<Map<String, Object>> getType(ArrayListMultimap<String, String> headers, String type, boolean localOnly) {
+		return null;
+	}
+
+	public Uni<Map<String, Object>> getAttribs(ArrayListMultimap<String, String> headers, boolean localOnly) {
+		return null;
+	}
+
+	public Uni<Map<String, Object>> getAttrib(ArrayListMultimap<String, String> headers, String attrib,
+			boolean localOnly) {
+		return null;
+	}
+
 	public Uni<Map<String, Object>> retrieveEntity(ArrayListMultimap<String, String> headers, String entityId,
-			Set<String> attrs, Set<String> expandedAttrs, String geometryProperty, String lang) {
-
+			Set<String> attrs, Set<String> expandedAttrs, String geometryProperty, String lang, boolean localOnly) {
 		Uni<Map<String, Object>> getEntity = queryDAO.getEntity(entityId, HttpUtils.getTenantFromHeaders(headers));
-		Uni<Map<String, Object>> getRemoteEntities = queryDAO
-				.getRemoteSourcesForEntity(entityId, expandedAttrs, HttpUtils.getTenantFromHeaders(headers)).onItem()
-				.transformToUni(rows -> {
-					List<Uni<Map<String, Object>>> tmp = Lists.newArrayList();
-					// C.endpoint C.tenant_id, c.headers, c.reg_mode
-					rows.forEach(row -> {
-						StringBuilder url = new StringBuilder(
-								row.getString(0) + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId);
-						url.append("?");
+		Uni<Map<String, Object>> getRemoteEntities;
+		if (localOnly) {
+			getRemoteEntities = Uni.createFrom().item(new HashMap<String, Object>(0));
+		} else {
+			getRemoteEntities = queryDAO
+					.getRemoteSourcesForEntity(entityId, expandedAttrs, HttpUtils.getTenantFromHeaders(headers))
+					.onItem().transformToUni(rows -> {
+						List<Uni<Map<String, Object>>> tmp = Lists.newArrayList();
+						// C.endpoint C.tenant_id, c.headers, c.reg_mode
+						rows.forEach(row -> {
+							StringBuilder url = new StringBuilder(
+									row.getString(0) + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId);
+							url.append("?");
 
-						if (attrs != null && !attrs.isEmpty()) {
-							url.append("attrs=" + String.join(",", attrs) + "&");
-						}
-						if (geometryProperty != null) {
-							url.append("geometryProperty=" + geometryProperty + "&");
-						}
-						if (lang != null) {
-							url.append("lang=" + lang + "&");
-						}
-						url.append("options=sysAttrs");
-						MultiMap remoteHeaders = HttpUtils.getHeaders(row.getJsonArray(2), headers, row.getString(1));
-						tmp.add(webClient.get(url.toString()).putHeaders(remoteHeaders).send().onFailure()
-								.recoverWithNull().onItem().transform(response -> {
-									Map<String, Object> responseEntity;
-									if (response == null || response.statusCode() != 200) {
-										responseEntity = null;
-									} else {
-										responseEntity = response.bodyAsJsonObject().getMap();
-										try {
-											responseEntity = (Map<String, Object>) JsonLdProcessor
-													.expand(getContextFromHeader(remoteHeaders), responseEntity, opts,
-															-1, false)
-													.get(0);
-										} catch (JsonLdError e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-										} catch (ResponseException e) {
-											// TODO Auto-generated catch block
-											e.printStackTrace();
-										}
-										responseEntity.put(REG_MODE_KEY, row.getInteger(3));
-
-									}
-									return responseEntity;
-								}));
-					});
-					return Uni.combine().all().unis(tmp).combinedWith(list -> {
-						Map<String, Object> result = Maps.newHashMap();
-						for (Object entry : list) {
-							if (entry == null) {
-								continue;
+							if (attrs != null && !attrs.isEmpty()) {
+								url.append("attrs=" + String.join(",", attrs) + "&");
 							}
-							Map<String, Object> entityMap = (Map<String, Object>) entry;
-							int regMode = (int) entityMap.remove(REG_MODE_KEY);
-							for (Entry<String, Object> attrib : entityMap.entrySet()) {
-								String key = attrib.getKey();
-								if (DO_NOT_MERGE_KEYS.contains(key)) {
-									if (!result.containsKey(key)) {
-										result.put(key, attrib.getValue());
-									} else {
-										if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
-											List<String> newType = (List<String>) attrib.getValue();
-											List<String> currentType = (List<String>) result.get(key);
-											if (!newType.equals(currentType)) {
-												Set<String> tmpSet = Sets.newHashSet();
-												tmpSet.addAll(newType);
-												tmpSet.addAll(currentType);
-												result.put(key, Lists.newArrayList(tmpSet));
+							if (geometryProperty != null) {
+								url.append("geometryProperty=" + geometryProperty + "&");
+							}
+							if (lang != null) {
+								url.append("lang=" + lang + "&");
+							}
+							url.append("options=sysAttrs");
+							MultiMap remoteHeaders = HttpUtils.getHeaders(row.getJsonArray(2), headers,
+									row.getString(1));
+							tmp.add(webClient.get(url.toString()).putHeaders(remoteHeaders).send().onFailure()
+									.recoverWithNull().onItem().transform(response -> {
+										Map<String, Object> responseEntity;
+										if (response == null || response.statusCode() != 200) {
+											responseEntity = null;
+										} else {
+											responseEntity = response.bodyAsJsonObject().getMap();
+											try {
+												responseEntity = (Map<String, Object>) JsonLdProcessor
+														.expand(getContextFromHeader(remoteHeaders), responseEntity,
+																opts, -1, false)
+														.get(0);
+											} catch (JsonLdError e) {
+												// TODO Auto-generated catch block
+												e.printStackTrace();
+											} catch (ResponseException e) {
+												// TODO Auto-generated catch block
+												e.printStackTrace();
 											}
+											responseEntity.put(REG_MODE_KEY, row.getInteger(3));
+
 										}
-									}
+										return responseEntity;
+									}));
+						});
+						return Uni.combine().all().unis(tmp).combinedWith(list -> {
+							Map<String, Object> result = Maps.newHashMap();
+							for (Object entry : list) {
+								if (entry == null) {
 									continue;
 								}
-								Object currentValue = result.get(key);
-								List<Map<String, Object>> newValue = (List<Map<String, Object>>) attrib.getValue();
-								addRegModeToValue(newValue, regMode);
-								if (currentValue == null) {
+								Map<String, Object> entityMap = (Map<String, Object>) entry;
+								int regMode = (int) entityMap.remove(REG_MODE_KEY);
+								for (Entry<String, Object> attrib : entityMap.entrySet()) {
+									String key = attrib.getKey();
+									if (DO_NOT_MERGE_KEYS.contains(key)) {
+										if (!result.containsKey(key)) {
+											result.put(key, attrib.getValue());
+										} else {
+											if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
+												List<String> newType = (List<String>) attrib.getValue();
+												List<String> currentType = (List<String>) result.get(key);
+												if (!newType.equals(currentType)) {
+													Set<String> tmpSet = Sets.newHashSet();
+													tmpSet.addAll(newType);
+													tmpSet.addAll(currentType);
+													result.put(key, Lists.newArrayList(tmpSet));
+												}
+											}
+										}
+										continue;
+									}
+									Object currentValue = result.get(key);
+									List<Map<String, Object>> newValue = (List<Map<String, Object>>) attrib.getValue();
+									addRegModeToValue(newValue, regMode);
+									if (currentValue == null) {
 
-									result.put(key, newValue);
-								} else {
-									mergeValues((List<Map<String, Object>>) currentValue, newValue);
+										result.put(key, newValue);
+									} else {
+										mergeValues((List<Map<String, Object>>) currentValue, newValue);
+									}
+
 								}
 
 							}
-
-						}
-						return result;
-					}).onFailure().recoverWithItem(new HashMap<String, Object>());
-				});
+							return result;
+						}).onFailure().recoverWithItem(new HashMap<String, Object>());
+					});
+		}
 		return Uni.combine().all().unis(getEntity, getRemoteEntities).asTuple().onItem().transformToUni(t -> {
 			Map<String, Object> localEntity = t.getItem1();
 			Map<String, Object> remoteEntity = t.getItem2();
+			if (attrs != null && !attrs.isEmpty()) {
+				removeAttrs(localEntity, attrs);
+			}
 			if (localEntity.isEmpty() && remoteEntity.isEmpty()) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
 			}
+
 			if (remoteEntity.isEmpty()) {
 				return Uni.createFrom().item(localEntity);
 			}
@@ -192,6 +236,27 @@ public class QueryService {
 			return Uni.createFrom().item(localEntity);
 
 		});
+
+	}
+
+	private void removeAttrs(Map<String, Object> localEntity, Set<String> attrs) {
+		Set<String> entityAttrs = localEntity.keySet();
+		boolean attrsFound = false;
+		for (String attr : attrs) {
+			if (entityAttrs.contains(attr)) {
+				attrsFound = true;
+				break;
+			}
+		}
+		entityAttrs.removeAll(attrs);
+		entityAttrs.removeAll(DO_NOT_MERGE_KEYS);
+		if (entityAttrs.isEmpty() && !attrsFound) {
+			localEntity.clear();
+		} else {
+			for (String attr : entityAttrs) {
+				localEntity.remove(attr);
+			}
+		}
 
 	}
 
