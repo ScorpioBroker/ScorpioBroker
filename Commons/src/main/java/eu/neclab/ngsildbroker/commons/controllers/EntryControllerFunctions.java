@@ -34,12 +34,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDBaseResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -181,18 +183,24 @@ public interface EntryControllerFunctions {
 				return entityService.sendFail(batchInfo).onItem().transformToUni(t -> Uni.createFrom().failure(e));
 			}
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			return entityService.createEntry(headers, expanded, batchInfo).onItem()
-					.transform(i -> Tuple2.of(new BatchFailure("dummy", null), i)).onFailure().recoverWithUni(e -> {
-						NGSIRestResponse response;
-						if (e instanceof ResponseException) {
-							response = new NGSIRestResponse((ResponseException) e);
-						} else {
-							response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-						}
-						return entityService.sendFail(batchInfo).onItem().transformToUni(
-								t -> Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null)));
-					});
+			List<Object> context = itemTuple.getItem1();
+			Object bodyContext = itemTuple.getItem2().get(JsonLdConsts.CONTEXT);
+			if (bodyContext instanceof List) {
+				context.addAll((List<Object>) bodyContext);
+			} else {
+				context.add(bodyContext);
+			}
+			return entityService.createEntry(headers, expanded, context, batchInfo).onFailure().recoverWithUni(e -> {
+				return entityService.sendFail(batchInfo).onItem().transformToUni(v -> Uni.createFrom().failure(e));
+			});
 		}).collectFailures().concatenate().collect().asList().onItemOrFailure().transform((results, fails) -> {
+			List<NGSILDOperationResult> result = Lists.newArrayList();
+			if(fails != null) {
+				
+				CompositeException exceptions = (CompositeException) fails;
+				exceptions.getCauses()	
+			}
+			
 			if (results == null) {
 				return HttpUtils.handleControllerExceptions(fails);
 			}
@@ -529,14 +537,14 @@ public interface EntryControllerFunctions {
 					}
 					List<Object> context = new ArrayList<Object>();
 					context.addAll(contextHeaders);
-					Object bodyContext;
+					
 					Map<String, Object> body;
 					try {
 						body = ((Map<String, Object>) JsonUtils.fromString(payload));
 					} catch (IOException e) {
 						return Uni.createFrom().failure(e);
 					}
-					bodyContext = body.get(JsonLdConsts.CONTEXT);
+					
 					Map<String, Object> resolvedBody;
 					try {
 						resolvedBody = (Map<String, Object>) JsonLdProcessor
@@ -544,7 +552,7 @@ public interface EntryControllerFunctions {
 					} catch (JsonLdError | ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
-
+					Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 					if (bodyContext instanceof List) {
 						context.addAll((List<Object>) bodyContext);
 					} else {

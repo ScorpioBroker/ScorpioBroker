@@ -7,11 +7,13 @@ import java.util.PrimitiveIterator.OfInt;
 import java.util.regex.Pattern;
 
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
@@ -235,4 +237,55 @@ public class QueryParser {
 		return result;
 	}
 
+	public static TypeQueryTerm parseTypeQuery(String input, Context context) throws ResponseException {
+		TypeQueryTerm root = new TypeQueryTerm(context);
+		TypeQueryTerm current = root;
+		StringBuilder type = new StringBuilder();
+		try {
+			input = URLDecoder.decode(input, "utf-8");
+		} catch (UnsupportedEncodingException e) {
+			throw new ResponseException(ErrorType.InternalError, e.getMessage());
+		}
+		OfInt it = input.chars().iterator();
+		while (it.hasNext()) {
+			char b = (char) it.next().intValue();
+			if (b == '(') {
+				TypeQueryTerm child = new TypeQueryTerm(context);
+				current.setFirstChild(child);
+				current = child;
+			} else if (b == ';') {
+				TypeQueryTerm next = new TypeQueryTerm(context);
+				current.setType(type.toString());
+				current.setNext(next);
+				current.setNextAnd(true);
+				current = next;
+				type.setLength(0);
+
+			} else if (b == '|' || b == ',') {
+				TypeQueryTerm next = new TypeQueryTerm(context);
+				current.setType(type.toString());
+				current.setNext(next);
+				current.setNextAnd(false);
+				current = next;
+				type.setLength(0);
+
+			} else if (b == ')') {
+				current.setType(type.toString());
+				current = current.getParent();
+				type.setLength(0);
+
+			} else {
+				type.append((char) b);
+			}
+
+		}
+		if (!type.isEmpty()) {
+			current.setType(type.toString());
+		}
+		return root;
+	}
+	public static void main(String[] args) throws Exception {
+		JsonLdProcessor.init("https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld");
+		System.out.println(parseTypeQuery("a;b|(c;d)", JsonLdProcessor.getCoreContextClone()).toSql());
+	}
 }

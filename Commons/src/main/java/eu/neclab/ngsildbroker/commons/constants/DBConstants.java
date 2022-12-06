@@ -13,10 +13,8 @@ public class DBConstants {
 	public final static String DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE = "temporalentityattrinstance";
 
 	public final static String DBCOLUMN_DATA = "data";
-	public final static String DBCOLUMN_KVDATA = "kvdata";
-	public final static String DBCOLUMN_DATA_WITHOUT_SYSATTRS = "data_without_sysattrs";
-	public final static String DBCOLUMN_ID = "id";
-	public final static String DBCOLUMN_TYPE = "type";
+	public final static String DBCOLUMN_ID = "e_id";
+	public final static String DBCOLUMN_TYPE = "e_type";
 	public final static String DBCOLUMN_CREATED_AT = "createdat";
 	public final static String DBCOLUMN_MODIFIED_AT = "modifiedat";
 	public final static String DBCOLUMN_OBSERVED_AT = "observedat";

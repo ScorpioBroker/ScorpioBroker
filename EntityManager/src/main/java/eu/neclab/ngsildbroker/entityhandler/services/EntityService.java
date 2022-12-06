@@ -53,6 +53,7 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 
 @Singleton
@@ -125,8 +126,10 @@ public class EntityService implements EntryCRUDService {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
 		Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
-		resultTable.forEach(row -> {
-
+		boolean internalSend = false;
+		RowIterator<Row> it = resultTable.iterator();
+		while (it.hasNext()) {
+			Row row = it.next();
 			switch (row.getString(0)) {
 			case "ERROR": {
 				String sqlState = row.getString(1);
@@ -142,7 +145,7 @@ public class EntityService implements EntryCRUDService {
 			case "ADDED ENTITY": {
 				Map<String, Object> entityAdded = ((JsonObject) row.getJson(3)).getMap();
 				request.setPayload(entityAdded);
-
+				internalSend = true;
 				unis.add(kafkaSenderInterface.send(request).onItem().transform(t -> {
 					result.addSuccess(new CRUDSuccess(null, null, null, entityAdded, context));
 					return t;
@@ -178,8 +181,10 @@ public class EntityService implements EntryCRUDService {
 				break;
 			}
 
-		});
-
+		}
+		if (!internalSend) {
+			unis.add(sendFail(request.getBatchInfo()));
+		}
 		return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
 	}
 
@@ -266,8 +271,11 @@ public class EntityService implements EntryCRUDService {
 		NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, request.getId());
 		List<Uni<Void>> unis = Lists.newArrayList();
 		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
+		boolean internalSend = false;
 		Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
-		resultTable.forEach(row -> {
+		RowIterator<Row> it = resultTable.iterator();
+		while (it.hasNext()) {
+			Row row = it.next();
 
 			switch (row.getString(0)) {
 			case "ERROR": {
@@ -287,6 +295,8 @@ public class EntityService implements EntryCRUDService {
 					attribs.add(new Attrib(obj.getString("attribName"), obj.getString("datasetId")));
 				});
 				result.addSuccess(new CRUDSuccess(null, null, null, attribs));
+				internalSend = true;
+				unis.add(kafkaSenderInterface.send(request));
 				break;
 			}
 			case "NOT ADDED": {
@@ -347,8 +357,10 @@ public class EntityService implements EntryCRUDService {
 				break;
 			}
 
-		});
-
+		}
+		if (!internalSend) {
+			unis.add(sendFail(request.getBatchInfo()));
+		}
 		return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
 	}
 
