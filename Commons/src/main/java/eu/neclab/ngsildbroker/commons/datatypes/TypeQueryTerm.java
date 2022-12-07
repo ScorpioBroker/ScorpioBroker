@@ -8,6 +8,7 @@ import java.util.List;
 import com.github.jsonldjava.core.Context;
 
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 public class TypeQueryTerm {
 
@@ -17,7 +18,7 @@ public class TypeQueryTerm {
 	private boolean nextAnd = true;
 	private TypeQueryTerm firstChild = null;
 	private TypeQueryTerm parent = null;
-	private String type = "";
+	private String type = null;
 
 	public TypeQueryTerm(Context context) {
 		this.linkHeaders = context;
@@ -429,56 +430,96 @@ public class TypeQueryTerm {
 //		return equals(obj, false);
 //	}
 
-	public String toSql() throws ResponseException {
+	public Tuple2<Character,String> toSql() {
 		StringBuilder builder = new StringBuilder();
 		StringBuilder builderFinalLine = new StringBuilder();
 		builder.append("WITH ");
-		char finalChar = toSql(builder, builderFinalLine, false, 'a', 0);
+		char finalChar = toSql(builder, builderFinalLine, 'a');
+		if(finalChar != 'a') {
+			finalChar++;
+			builder.append(',');
+			builder.append(finalChar);
+			builder.append(" as (SELECT etype2iid.iid FROM etype2iid,");
+			char temp = finalChar;
+			temp--;
+			while(temp >= 'a') {
+				builder.append(temp);
+				builder.append(',');
+				temp--;
+			}
+			builder.setCharAt(builder.length() - 1, ' ');
+			builder.append("WHERE ");
+			builder.append(builderFinalLine.toString());
+			
+		}
+		System.out.println(finalChar);
+		System.out.println(builderFinalLine.toString());
 		// builder.append(";");
-		return builder.toString();
+		return Tuple2.of(finalChar, builder.toString());
 	}
 
-	private char toSql(StringBuilder result, StringBuilder resultFinalLine, boolean operatorChange, char currentChar,
-			int andCounter) throws ResponseException {
-
-		if (prev == null || operatorChange) {
-
-			if (operatorChange) {
-				if (prev != null && prev.nextAnd) {
-					result.append(" GROUP BY ");
-					result.append((char)(currentChar - 1));
-					result.append(".iid HAVING count(");
-					result.append((char)(currentChar -1));
-					result.append("e_type)=");
-					result.append(andCounter + 1);
-				}
-				result.append("),");
-				andCounter = 0;
-				currentChar++;
+	private char toSql(StringBuilder result, StringBuilder resultFinalLine, char currentChar) {
+		if (type == null || type.isEmpty()) {
+			TypeQueryTerm current = this;
+			while (current.firstChild != null) {
+				current = current.firstChild;
 			}
-			result.append(currentChar);
-			result.append(" as (SELECT iid FROM etype2iid WHERE ");
-		}
-		if (firstChild == null) {
-			result.append("e_type='");
-			result.append(this.type);
-			result.append("'");
+			return current.next.toSql(result, resultFinalLine, currentChar);
 		} else {
-			
-			currentChar = firstChild.toSql(result, resultFinalLine, true, currentChar, andCounter);
-		}
-		boolean didOperatorChange = false;
-		if (hasNext()) {
-			result.append(" or ");
-			char charToSend;
-			if (firstChild != null || (prev != null && this.nextAnd != prev.nextAnd)) {
-				didOperatorChange = true;
-			} else {
-				didOperatorChange = false;
+			int andCounter = 1;
+			result.append(currentChar);
+			result.append(" as (SELECT iid FROM etype2iid WHERE e_type='");
+			result.append(type);
+			result.append('\'');
+			TypeQueryTerm current = this;
+
+			while (current.hasNext() || current.firstChild != null) {
+				if (current.firstChild != null) {
+					resultFinalLine.append('(');
+					currentChar = current.firstChild.toSql(result, resultFinalLine, currentChar);
+					resultFinalLine.append(')');
+					break;
+				}
+				current = current.getNext();
+				if (current.type != null && !current.type.isEmpty()) {
+					result.append(" or e_type='");
+					result.append(current.getType());
+					result.append('\'');
+					andCounter++;
+					if ((current.getPrev() != null && current.isNextAnd() != current.getPrev().isNextAnd())
+							|| current.firstChild != null) {
+						if (current.getPrev() != null && current.getPrev().isNextAnd()) {
+							result.append(" GROUP BY iid HAVING COUNT(e_type)=");
+							result.append(andCounter);
+						}
+						resultFinalLine.append("etype2iid.iid=");
+						resultFinalLine.append(currentChar);
+						resultFinalLine.append(".iid");
+						if (current.nextAnd) {
+							resultFinalLine.append(" and ");
+						} else {
+							resultFinalLine.append(" or ");
+						}
+						result.append("),");
+						andCounter = 1;
+						currentChar++;
+					}
+				}
+
 			}
-			currentChar = next.toSql(result, resultFinalLine, didOperatorChange, currentChar, andCounter++);
+			if (current.getPrev() != null && current.getPrev().isNextAnd()) {
+				result.append(" GROUP BY iid HAVING COUNT(e_type)=");
+				result.append(andCounter);
+			}
+			if (current.type != null) {
+				resultFinalLine.append("etype2iid.iid=");
+				resultFinalLine.append(currentChar);
+				resultFinalLine.append(".iid");
+				result.append(')');
+			}
+			return currentChar;
+
 		}
-		return currentChar;
 	}
 
 	private void getTypeQuery(StringBuilder result) {
