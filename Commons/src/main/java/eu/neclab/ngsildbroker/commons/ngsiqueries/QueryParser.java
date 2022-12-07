@@ -286,6 +286,8 @@ public class QueryParser {
 	}
 	public static void main(String[] args) throws Exception {
 		JsonLdProcessor.init("https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld");
-		System.out.println(parseTypeQuery("a;b|(c;d)", JsonLdProcessor.getCoreContextClone()).toSql());
+		Object temp = JsonLdProcessor.getCoreContextClone().expandValue("http://dasdasd.asdas", 123);
+		System.out.println(temp.getClass());
+		//System.out.println(parseTypeQuery("a;b|(c;d)", JsonLdProcessor.getCoreContextClone()).toSql());
 	}
 }

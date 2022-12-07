@@ -430,19 +430,19 @@ public class TypeQueryTerm {
 //		return equals(obj, false);
 //	}
 
-	public Tuple2<Character,String> toSql() {
+	public Tuple2<Character, String> toSql() {
 		StringBuilder builder = new StringBuilder();
 		StringBuilder builderFinalLine = new StringBuilder();
 		builder.append("WITH ");
 		char finalChar = toSql(builder, builderFinalLine, 'a');
-		if(finalChar != 'a') {
+		if (finalChar != 'a') {
 			finalChar++;
 			builder.append(',');
 			builder.append(finalChar);
 			builder.append(" as (SELECT etype2iid.iid FROM etype2iid,");
 			char temp = finalChar;
 			temp--;
-			while(temp >= 'a') {
+			while (temp >= 'a') {
 				builder.append(temp);
 				builder.append(',');
 				temp--;
@@ -451,7 +451,7 @@ public class TypeQueryTerm {
 			builder.append("WHERE ");
 			builder.append(builderFinalLine);
 			builder.append(')');
-			
+
 		}
 		System.out.println(finalChar);
 		System.out.println(builderFinalLine.toString());
@@ -521,16 +521,6 @@ public class TypeQueryTerm {
 			return currentChar;
 
 		}
-	}
-
-	private void getTypeQuery(StringBuilder result) {
-		// TODO Auto-generated method stub
-
-	}
-
-	private void getTypeQueryForTemporalEntity(StringBuilder result) {
-		// TODO Auto-generated method stub
-
 	}
 
 //	private void getAttribQueryV2(StringBuilder result) throws ResponseException {
