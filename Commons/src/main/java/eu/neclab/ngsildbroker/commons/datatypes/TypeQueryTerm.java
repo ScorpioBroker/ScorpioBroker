@@ -449,7 +449,8 @@ public class TypeQueryTerm {
 			}
 			builder.setCharAt(builder.length() - 1, ' ');
 			builder.append("WHERE ");
-			builder.append(builderFinalLine.toString());
+			builder.append(builderFinalLine);
+			builder.append(')');
 			
 		}
 		System.out.println(finalChar);
