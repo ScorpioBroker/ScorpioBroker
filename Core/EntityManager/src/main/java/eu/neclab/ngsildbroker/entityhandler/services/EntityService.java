@@ -56,7 +56,7 @@ public class EntityService implements EntryCRUDService {
 
 	@Autowired
 	EntityService entityService;
-	
+
 	@Autowired
 	EntityInfoDAO entityInfoDAO;
 
@@ -267,13 +267,9 @@ public class EntityService implements EntryCRUDService {
 		// get entity details
 		Map<String, Object> entityBody = validateIdAndGetBody(entityId, tenantid);
 
-		System.out.println("Print EntityBody ---- " + entityBody);
-		System.out.println("Print expandedPayload ---- " + expandedPayload);
-		
 		// JsonNode originalJsonNode = objectMapper.readTree(originalJson);
-		
 		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, expandedPayload, attrId);
-		// pubilsh merged message
+		// publish merged message
 		// check if anything is changed.
 		if (!request.getUpdateResult().getUpdated().isEmpty()) {
 			handleRequest(request);
@@ -282,39 +278,29 @@ public class EntityService implements EntryCRUDService {
 		return request.getUpdateResult();
 	}
 
-	public ResponseEntity<String> patchtoEndpoint(String entityId, ArrayListMultimap<String, String> headers, String payload,
-			String attrId) throws ResponseException, Exception {
+	public ResponseEntity<String> patchtoEndpoint(String entityId, ArrayListMultimap<String, String> headers,
+			String payload, String attrId) throws ResponseException, Exception {
 		String tenantid = HttpUtils.getInternalTenant(headers);
 		String endpoint = entityInfoDAO.getEndpoint(entityId, tenantid);
-		
-		System.out.println("Print EndPoint ---- " + endpoint);
-		
-		ResponseEntity<String> res = null;
+
+		ResponseEntity<String> response = null;
 		if (endpoint != null) {
 			HttpHeaders header = new HttpHeaders();
 			header.set(NGSIConstants.TENANT_HEADER, tenantid);
-			header.set(NGSIConstants.CONTENT_TYPE_HEADER, AppConstants.NGB_APPLICATION_JSON);
+			header.set(AppConstants.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
 
-			
-			
 			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
 			RestTemplate restTemplate = new RestTemplate(requestFactory);
 
 			logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/" + entityId + "attrs" + attrId);
 			HttpEntity<String> httpEntity = new HttpEntity<>(payload, header);
 			String patchuri = endpoint + "/ngsi-ld/v1/entities/" + entityId + "/attrs/" + attrId;
-			
-			System.out.println("Print PatchURI --- " + patchuri);
-			
-			res = restTemplate.exchange(patchuri, HttpMethod.PATCH, httpEntity,
-					String.class);
 
-			
-			
+			response = restTemplate.exchange(patchuri, HttpMethod.PATCH, httpEntity, String.class);
 		}
-		return res;
+		return response;
 	}
-	
+
 	public boolean deleteAttribute(ArrayListMultimap<String, String> headers, String entityId, String attrId,
 			String datasetId, String deleteAll) throws ResponseException, Exception {
 		logger.trace("deleteAttribute() :: started");

@@ -146,23 +146,20 @@ public class EntityController {// implements EntityHandlerInterface {
 				}
 			}
 			String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
-			
-			ResponseEntity<String> up = entityService.patchtoEndpoint(entityId, HttpUtils.getHeaders(request), payload, attrId);
-			
-			System.out.println("resp --- " + up);
-			
-			if (up == null) {
+
+			ResponseEntity<String> updateResponse = entityService.patchtoEndpoint(entityId,
+					HttpUtils.getHeaders(request), payload, attrId);
+			if (updateResponse == null) {
 				UpdateResult update = entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId,
-					expandedAttrib, expandedPayload);
+						expandedAttrib, expandedPayload);
 				logger.trace("partial-update entity :: completed");
-					
-				
-				
+
 				if (update.getNotUpdated().isEmpty()) {
 					return ResponseEntity.noContent().build();
 				} else {
-					return HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, JsonUtils
-							.toPrettyString(JsonLdProcessor.compact(update.getNotUpdated().get(0), context, opts))));
+					return HttpUtils.handleControllerExceptions(
+							new ResponseException(ErrorType.BadRequestData, JsonUtils.toPrettyString(
+									JsonLdProcessor.compact(update.getNotUpdated().get(0), context, opts))));
 				}
 			}
 			/*
@@ -174,7 +171,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception exception) {
 			return HttpUtils.handleControllerExceptions(exception);
 		}
-		return null;
+		return ResponseEntity.noContent().build();
 	}
 
 	/**

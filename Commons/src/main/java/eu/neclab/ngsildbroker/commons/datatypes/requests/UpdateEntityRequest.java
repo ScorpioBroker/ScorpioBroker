@@ -61,12 +61,7 @@ public class UpdateEntityRequest extends EntityRequest {
 		String now = SerializationTools.formatter.format(Instant.now());
 		UpdateResult updateResult = new UpdateResult();
 
-		System.out.println("Print Data --- " + attrId);
-		System.out.println("Print Body --- " + entityBody.containsKey(attrId));
-		System.out.println("Print Body1 --- " + entityBody);
-		
 		if (attrId != null) {
-//			if(!isResponseNull) {
 			Object datasetId = resolved.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			if (!entityBody.containsKey(attrId)) {
 				throw new ResponseException(ErrorType.NotFound, "Provided attribute is not present");
@@ -76,7 +71,6 @@ public class UpdateEntityRequest extends EntityRequest {
 			Map<String, Object> tmp = new HashMap<String, Object>();
 			tmp.put(attrId, getRequestPayload());
 			setRequestPayload(tmp);
-//			}
 		} else {
 			Object bodyId = resolved.get(NGSIConstants.JSON_LD_ID);
 			if (bodyId != null && !getId().equals(bodyId)) {
