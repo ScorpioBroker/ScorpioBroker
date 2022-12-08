@@ -793,19 +793,6 @@ public class QueryTerm {
 			}
 			useRelClause = !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME));
 			break;
-		/*
-		 * case NGSIConstants.QUERY_UNEQUAL: if (operant.matches(LIST)) {
-		 * attributeFilterProperty.append(" not in ("); for (String listItem :
-		 * operant.split(",")) { attributeFilterProperty.append("'" + listItem + "'::" +
-		 * typecast + ","); }
-		 * attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
-		 * } else if (operant.matches(RANGE)) { String[] myRange =
-		 * operant.split("\\.\\."); attributeFilterProperty.append( " not between '" +
-		 * myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast); }
-		 * else { attributeFilterProperty.append(" <> '" + operant + "'::" + typecast);
-		 * } useRelClause = !(operant.matches(DATE) || operant.matches(TIME) ||
-		 * operant.matches(DATETIME)); break;
-		 */
 		case NGSIConstants.QUERY_GREATEREQ:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater equal");

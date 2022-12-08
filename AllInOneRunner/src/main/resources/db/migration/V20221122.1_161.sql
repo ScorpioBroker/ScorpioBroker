@@ -363,11 +363,14 @@ CREATE TABLE public.attr2iid
     attr text,
     iid bigint,
 	is_rel boolean,
+	is_geo boolean,
+	is_lang boolean,
 	dataset_id text,
-	attr_value jsonb,
-	created timestamp without time zone,
-	observed timestamp without time zone,
-	modified timestamp without time zone
+	text_value text,
+	number_value numeric,
+	boolean_value boolean,
+	date_value timestamp without time zone,
+	geo_value GEOMETRY(Geometry, 4326)
 );
 
 ALTER TABLE IF EXISTS public.attr2iid
@@ -499,7 +502,91 @@ END;
 $operations$ LANGUAGE PLPGSQL;
 
 
-
+CREATE OR REPLACE FUNCTION addAttribValue(attribName text, entityIid bigint, isRel boolean, isGeo boolean, isLang boolean, datasetId text, attrValue jsonb, rootLevel boolean) RETURNS void AS $$
+declare
+	entry jsonb;
+	entryKey text;
+	entryValue jsonb;
+	numberValue numeric;
+	textValue text;
+	geoValue GEOMETRY(Geometry, 4326);
+	booleanValue boolean;
+	dateValue timestamp without time zone;
+	attrType text;
+	temp text;
+BEGIN
+	FOR entry IN SELECT jsonb_array_elements FROM jsonb_array_elements(attrValue) LOOP
+		FOR entryKey IN SELECT jsonb_object_keys FROM jsonb_object_keys(entry) LOOP
+			IF isRel THEN
+				IF entryKey = '@id' THEN
+					IF NOT rootLevel THEN
+						temp := temp + ']';
+					END IF;
+					attrType := jsonb_typeof(entryValue);
+					IF attrType = 'number' THEN
+						numberValue := entryValue::numeric;
+					ELSIF attrType = 'boolean' THEN
+						booleanValue := entryValue::boolean;
+					ELSE
+						textValue := entryValue::text;
+					END IF;
+					INSERT INTO attr2iid VALUES (temp, entityIid, isRel, isGeo, isLang, datasetId, textValue, numberValue, booleanValue, null, null);
+				ELSE
+					IF rootLevel THEN
+						temp := temp || '[' || attribName;
+					ELSE
+						temp := temp || '.' || attribName;
+					END IF;
+					PERFORM addAttribValue(temp,entityIid, isRel, isGeo, isLang, datasetId, entryValue,false);
+				END IF;
+			ELSIF isGeo THEN
+				IF entryKey = '@value' THEN
+					geoValue = ST_SetSRID( ST_GeomFromGeoJSON( getGeoJson(entry->entryKey)::text ), 4326);
+				END IF;
+			ELSIF isLang THEN
+				IF entryKey = '@value' THEN
+					temp:= attribName || '[' || entry->>'@language' || ']';
+					entryValue := entry->entryKey;
+					attrType = jsonb_typeof(entryValue);
+					IF attrType = 'number' THEN
+						numberValue := entryValue::numeric;
+					ELSIF attrType = 'boolean' THEN
+						booleanValue := entryValue::boolean;
+					ELSE
+						textValue := entryValue::text;
+					END IF;
+					INSERT INTO attr2iid VALUES (temp, entityIid, isRel, isGeo, isLang, datasetId, textValue, numberValue, booleanValue, geoValue, dateValue);
+				END IF;
+			ELSE
+				temp := attribName;
+				entryValue := entry->entryKey;
+				IF entryKey = '@value' THEN
+					IF NOT rootLevel THEN
+						temp := temp + ']';
+					END IF;
+					attrType := jsonb_typeof(entryValue);
+					IF attrType = 'number' THEN
+						numberValue := entryValue::numeric;
+					ELSIF attrType = 'boolean' THEN
+						booleanValue := entryValue::boolean;
+					ELSE
+						textValue := entryValue::text;
+					END IF;
+					INSERT INTO attr2iid VALUES (temp, entityIid, isRel, isGeo, isLang, datasetId, textValue, numberValue, booleanValue, geoValue, dateValue);
+				ELSE
+					IF rootLevel THEN
+						temp := temp || '[' || attribName;
+					ELSE
+						temp := temp || '.' || attribName;
+					END IF;
+					PERFORM addAttribValue(temp,entityIid, isRel, isGeo, isLang, datasetId, entryValue,false);
+				END IF;
+			END IF;
+		END LOOP;
+	END LOOP;
+	RETURN;
+END;
+$$ LANGUAGE PLPGSQL;
 
 
 
@@ -514,19 +601,41 @@ declare
 	subAttribName text;
 	subAttribValue jsonb;
 	isRel boolean;
+	isGeo boolean;
+	isLang boolean;
+	attribType text;
 BEGIN
-	IF attribValue#>>'{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
+    attribType := attribValue#>>'{@type,0}';
+	IF attribType = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
 		attrValue := attribValue#>'{https://uri.etsi.org/ngsi-ld/hasObject}';
 		isRel := true;
+		isGeo := false;
+		isLang := false;
+	ELSIF attribType = 'https://uri.etsi.org/ngsi-ld/LanguageProperty' THEN
+		attrValue := attribValue#>'{https://uri.etsi.org/ngsi-ld/hasLanguageMap}';
+		isRel := false;
+		isGeo := false;
+		isLang := true;
+	ELSIF attribType = 'https://uri.etsi.org/ngsi-ld/GeoProperty' THEN
+		attrValue := attribValue#>'{https://uri.etsi.org/ngsi-ld/hasValue}';
+		isRel := false;
+		isGeo := true;
+		isLang := false;
 	ELSE
 		attrValue := attribValue#>'{https://uri.etsi.org/ngsi-ld/hasValue}';
 		isRel := false;
+		isGeo := false;
+		isLang := false;
 	END IF;
+	
 	datasetId := attribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
 	created := (attribValue#>>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}')::TIMESTAMP;
 	observed := (attribValue#>>'{https://uri.etsi.org/ngsi-ld/observedAt,0,@value}')::TIMESTAMP;
 	modified := (attribValue#>>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP;
-	INSERT INTO attr2iid VALUES (attribName, entityIid, isRel, datasetId, attrValue, created, observed, modified);
+	INSERT INTO attr2iid VALUES (attribName + "., entityIid, isRel, isGeo, isLang, datasetId, textValue, numberValue, booleanValue, geoValue, dateValue);
+	INSERT INTO attr2iid VALUES (temp, entityIid, isRel, isGeo, isLang, datasetId, textValue, numberValue, booleanValue, geoValue, dateValue);
+	INSERT INTO attr2iid VALUES (temp, entityIid, isRel, isGeo, isLang, datasetId, textValue, numberValue, booleanValue, geoValue, dateValue);
+	PERFORM addAttribValue(attribName, entityIid, isRel, isGeo, isLang, datasetId, attrValue);
 	tempJson := attribValue - '@type';
 	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/datasetId';
 	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/createdAt';
@@ -542,6 +651,8 @@ BEGIN
 	RETURN;
 END;
 $$ LANGUAGE PLPGSQL;
+
+
 
 CREATE OR REPLACE FUNCTION addAttribs(entity_iid bigint, entity jsonb) RETURNS void AS $$
 declare

@@ -3,11 +3,13 @@ package eu.neclab.ngsildbroker.commons.ngsiqueries;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.regex.Pattern;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
@@ -284,10 +286,22 @@ public class QueryParser {
 		}
 		return root;
 	}
+
 	public static void main(String[] args) throws Exception {
 		JsonLdProcessor.init("https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld");
+		List<Object> expanded = JsonLdProcessor.expand(JsonUtils
+				.fromString("{\"@context\": \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\",\r\n"
+						+ " \"id\": \"a:b\",\r\n" + " \"type\": \"c\",\r\n" + " \"bla\": {\r\n"
+						+ "   \"type\": \"Property\",\r\n"
+						+ "   \"value\": [[[123,456],[123,456],[123,456],[123,456],[123,456]]]\r\n" + " },\r\n"
+						+ " \"blub\": {\r\n" + "   \"type\": \"GeoProperty\",\r\n" + "   \"value\": {\r\n"
+						+ "     \"type\": \"Polygon\",\r\n"
+						+ "     \"coordinates\": [[[123,456],[123,456],[123,456],[123,456],[123,456]]]\r\n"
+						+ "     \r\n" + "   }\r\n" + " }\r\n" + "}"));
+		System.out.println(JsonUtils.toPrettyString(expanded));
 		Object temp = JsonLdProcessor.getCoreContextClone().expandValue("http://dasdasd.asdas", 123);
 		System.out.println(temp.getClass());
-		//System.out.println(parseTypeQuery("a;b|(c;d)", JsonLdProcessor.getCoreContextClone()).toSql());
+		// System.out.println(parseTypeQuery("a;b|(c;d)",
+		// JsonLdProcessor.getCoreContextClone()).toSql());
 	}
 }
