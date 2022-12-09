@@ -33,8 +33,8 @@ public class QueryTerm {
 	private QueryTerm firstChild = null;
 	private QueryTerm parent = null;
 	private String attribute = null;
-	private String operator = "";
-	private String operant = "";
+	private String operator = null;
+	private String operant = null;
 
 	public QueryTerm(Context context) {
 		this.linkHeaders = context;
@@ -438,7 +438,7 @@ public class QueryTerm {
 	}
 
 	public void setAttribute(String attribute) {
-		this.attribute = attribute.strip();
+		this.attribute = linkHeaders.expandIri(attribute, false, true, null, null);
 	}
 
 	public String getOperator() {
@@ -455,7 +455,7 @@ public class QueryTerm {
 
 	public void setOperant(String operant) {
 		operant = operant.strip();
-		if (operant.matches(URI) && !operant.matches(TIME)) { // uri and time patterns are ambiguous in the abnf grammar
+		if (operant.matches(URI) || operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
 			this.operant = "\"" + operant + "\"";
 		} else if (operant.startsWith("'") && operant.endsWith("'")) {
 			this.operant = "\"" + operant.substring(1, operant.length() - 1) + "\"";
@@ -762,147 +762,65 @@ public class QueryTerm {
 		return attribPath;
 	}
 
-	private boolean applyOperator(StringBuilder attributeFilterProperty) throws ResponseException {
-		boolean useRelClause = false;
-
-		String typecast = "jsonb";
-		if (operant.matches(DATETIME)) {
-			typecast = "timestamp";
-		} else if (operant.matches(DATE)) {
-			typecast = "date";
-		} else if (operant.matches(TIME)) {
-			typecast = "time";
-		}
-
+	private void applyOperator(StringBuilder attrQuery) throws ResponseException {
 		switch (operator) {
 		case NGSIConstants.QUERY_UNEQUAL:
 		case NGSIConstants.QUERY_EQUAL:
 			if (operant.matches(LIST)) {
-				attributeFilterProperty.append(" in (");
+				attrQuery.append(" in (");
 				for (String listItem : operant.split(",")) {
-					attributeFilterProperty.append("'" + listItem + "'::" + typecast + ",");
+					attrQuery.append("'" + listItem + "'::jsonb,");
 				}
-				attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
+				attrQuery.setCharAt(attrQuery.length() - 1, ')');
 			} else if (operant.matches(RANGE)) {
 				String[] myRange = operant.split("\\.\\.");
-				attributeFilterProperty.append(
-						" between '" + myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast);
+				attrQuery.append(" between '" + myRange[0] + "'::jsonb and '" + myRange[1] + "'::jsonb");
 			} else {
-				attributeFilterProperty.append(" = '" + operant + "'::" + typecast);
+				attrQuery.append(" = '" + operant + "'::jsonb");
 
 			}
-			useRelClause = !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME));
 			break;
 		case NGSIConstants.QUERY_GREATEREQ:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater equal");
 			}
-			attributeFilterProperty.append(" >= '" + operant + "'::" + typecast);
+			attrQuery.append(" >= '" + operant + "'::jsonb");
 			break;
 		case NGSIConstants.QUERY_LESSEQ:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less equal");
 			}
-			attributeFilterProperty.append(" <= '" + operant + "'::" + typecast);
+			attrQuery.append(" <= '" + operant + "'::jsonb");
 			break;
 		case NGSIConstants.QUERY_GREATER:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater");
 			}
-			attributeFilterProperty.append(" > '" + operant + "'::" + typecast);
+			attrQuery.append(" > '" + operant + "'::jsonb");
 			break;
 		case NGSIConstants.QUERY_LESS:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
 			}
-			attributeFilterProperty.append(" < '" + operant + "'::" + typecast);
+			attrQuery.append(" < '" + operant + "'::jsonb");
 			break;
 		case NGSIConstants.QUERY_PATTERNOP:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
 			}
-			attributeFilterProperty.append(" ~ '" + operant + "'");
+			attrQuery.append("::text ~ '" + operant + "'");
 			break;
 		case NGSIConstants.QUERY_NOTPATTERNOP:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
 			}
-			attributeFilterProperty.append(" !~ '" + operant + "'");
+			attrQuery.append("::text !~ '" + operant + "'");
 			break;
 		default:
 			throw new ResponseException(ErrorType.BadRequestData, "Bad operator in query");
 		}
-		return useRelClause;
 	}
 
-	// Not used anymore
-	/*
-	 * private boolean applyOperator(StringBuilder attributeFilterProperty,
-	 * StringBuilder attributeFilterRelationship) throws BadRequestException {
-	 * boolean useRelClause = false;
-	 * 
-	 * String typecast = "jsonb"; if (operant.matches(DATETIME)) { typecast =
-	 * "timestamp"; } else if (operant.matches(DATE)) { typecast = "date"; } else if
-	 * (operant.matches(TIME)) { typecast = "time"; }
-	 * 
-	 * switch (operator) { case NGSIConstants.QUERY_EQUAL: if
-	 * (operant.matches(LIST)) { attributeFilterProperty.append(" in (");
-	 * attributeFilterRelationship.append(" in ("); for (String listItem :
-	 * operant.split(",")) { attributeFilterProperty.append("'" + listItem + "'::" +
-	 * typecast + ","); attributeFilterRelationship.append("'" + listItem + "'::" +
-	 * typecast + ","); }
-	 * attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
-	 * attributeFilterRelationship.setCharAt(attributeFilterRelationship.length() -
-	 * 1, ')'); } else if (operant.matches(RANGE)) { String[] myRange =
-	 * operant.split("\\.\\."); attributeFilterProperty.append( " between '" +
-	 * myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast);
-	 * attributeFilterRelationship.append( " between '" + myRange[0] + "'::" +
-	 * typecast + " and '" + myRange[1] + "'::" + typecast); } else {
-	 * attributeFilterProperty.append(" = '" + operant + "'::" + typecast);
-	 * attributeFilterRelationship.append(" = '" + operant + "'::" + typecast);
-	 * 
-	 * } useRelClause = !(operant.matches(DATE) || operant.matches(TIME) ||
-	 * operant.matches(DATETIME)); break; case NGSIConstants.QUERY_UNEQUAL: if
-	 * (operant.matches(LIST)) { attributeFilterProperty.append(" not in (");
-	 * attributeFilterRelationship.append(" not in ("); for (String listItem :
-	 * operant.split(",")) { attributeFilterProperty.append("'" + listItem + "'::" +
-	 * typecast + ","); attributeFilterRelationship.append("'" + listItem + "'::" +
-	 * typecast + ","); }
-	 * attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
-	 * attributeFilterRelationship.setCharAt(attributeFilterRelationship.length() -
-	 * 1, ')'); } else if (operant.matches(RANGE)) { String[] myRange =
-	 * operant.split("\\.\\."); attributeFilterProperty.append( " not between '" +
-	 * myRange[0] + "'::" + typecast + " and '" + myRange[1] + "'::" + typecast);
-	 * attributeFilterRelationship.append( " not between '" + myRange[0] + "'::" +
-	 * typecast + " and '" + myRange[1] + "'::" + typecast); } else {
-	 * attributeFilterProperty.append(" <> '" + operant + "'::" + typecast);
-	 * attributeFilterRelationship.append(" <> '" + operant + "'::" + typecast);
-	 * 
-	 * } useRelClause = !(operant.matches(DATE) || operant.matches(TIME) ||
-	 * operant.matches(DATETIME)); break; case NGSIConstants.QUERY_GREATEREQ: if
-	 * (operant.matches(LIST)) { throw new BadRequestException(); } if
-	 * (operant.matches(RANGE)) { throw new BadRequestException(); }
-	 * attributeFilterProperty.append(" >= '" + operant + "'::" + typecast); break;
-	 * case NGSIConstants.QUERY_LESSEQ: if (operant.matches(LIST)) { throw new
-	 * BadRequestException(); } if (operant.matches(RANGE)) { throw new
-	 * BadRequestException(); } attributeFilterProperty.append(" <= '" + operant +
-	 * "'::" + typecast); break; case NGSIConstants.QUERY_GREATER: if
-	 * (operant.matches(LIST)) { throw new BadRequestException(); } if
-	 * (operant.matches(RANGE)) { throw new BadRequestException(); }
-	 * attributeFilterProperty.append(" > '" + operant + "'::" + typecast); break;
-	 * case NGSIConstants.QUERY_LESS: if (operant.matches(LIST)) { throw new
-	 * BadRequestException(); } if (operant.matches(RANGE)) { throw new
-	 * BadRequestException(); } attributeFilterProperty.append(" < '" + operant +
-	 * "'::" + typecast); break; case NGSIConstants.QUERY_PATTERNOP: if
-	 * (operant.matches(LIST)) { throw new BadRequestException(); } if
-	 * (operant.matches(RANGE)) { throw new BadRequestException(); }
-	 * attributeFilterProperty.append(" ~ '" + operant + "'"); break; case
-	 * NGSIConstants.QUERY_NOTPATTERNOP: if (operant.matches(LIST)) { throw new
-	 * BadRequestException(); } if (operant.matches(RANGE)) { throw new
-	 * BadRequestException(); } attributeFilterProperty.append(" !~ '" + operant +
-	 * "'"); break; default: throw new BadRequestException(); } return useRelClause;
-	 * }
-	 */
 	private void getAttribQueryForTemporalEntity(StringBuilder result) throws ResponseException {
 		ArrayList<String> attribPath = getAttribPathArray(this.attribute);
 		// https://uri.etsi.org/ngsi-ld/default-context/abstractionLevel,0
@@ -1008,52 +926,69 @@ public class QueryTerm {
 
 	}
 
-	private char toSql(StringBuilder result, StringBuilder resultFinalLine, char currentChar) {
+	private char toSql(StringBuilder result, StringBuilder resultFinalLine, char currentChar, String sqlTable)
+			throws ResponseException {
 		if (attribute == null) {
 			QueryTerm current = this;
 			while (current.firstChild != null) {
 				current = current.firstChild;
 			}
-			return current.next.toSql(result, resultFinalLine, currentChar);
+			return current.next.toSql(result, resultFinalLine, currentChar, sqlTable);
 		} else {
-//			attr text,
-//		    iid bigint,
-//			is_rel boolean,
-//			is_geo boolean,
-//			dataset_id text,
-//			attr_value jsonb,
-//			created timestamp without time zone,
-//			observed timestamp without time zone,
-//			modified timestamp without time zone
 			int andCounter = 1;
 			result.append(currentChar);
-			result.append(" as (SELECT iid FROM etype2iid WHERE (attr='");
+			result.append(" as (SELECT ");
+			result.append(sqlTable);
+			result.append(".iid");
+			result.append(sqlTable);
+			result.append(".attr");
+			result.append(sqlTable);
+			result.append(".attr_value FROM ");
+			result.append(sqlTable);
+			result.append("WHERE ");
+			result.append(sqlTable);
+			result.append(".attr='");
 			result.append(attribute);
 			result.append('\'');
-			if(operator != null) {
-				result.append(" and attr_value");
+			if (operator != null) {
+				result.append(" and ");
+				result.append(sqlTable);
+				result.append(".attr_value");
 				applyOperator(result);
-				result.append("");
 			}
+			result.append(')');
 			QueryTerm current = this;
 
 			while (current.hasNext() || current.firstChild != null) {
 				if (current.firstChild != null) {
 					resultFinalLine.append('(');
-					currentChar = current.firstChild.toSql(result, resultFinalLine, currentChar);
+					currentChar = current.firstChild.toSql(result, resultFinalLine, currentChar, sqlTable);
 					resultFinalLine.append(')');
 					break;
 				}
 				current = current.getNext();
-				if (current.type != null && !current.type.isEmpty()) {
-					result.append(" or e_type='");
-					result.append(current.getType());
+				if (current.attribute != null) {
+					result.append(sqlTable);
+					result.append(".attr='");
+					result.append(current.attribute);
 					result.append('\'');
+					if (operator != null) {
+						result.append(" and ");
+						result.append(sqlTable);
+						result.append(".attr_value");
+						current.applyOperator(result);
+					}
+					result.append(')');
 					andCounter++;
 					if ((current.getPrev() != null && current.isNextAnd() != current.getPrev().isNextAnd())
 							|| current.firstChild != null) {
 						if (current.getPrev() != null && current.getPrev().isNextAnd()) {
-							result.append(" GROUP BY iid HAVING COUNT(e_type)=");
+							result.append(" GROUP BY ");
+							result.append(sqlTable);
+							result.append(".iid");
+							result.append(" HAVING COUNT(");
+							result.append(sqlTable);
+							result.append(")=");
 							result.append(andCounter);
 						}
 						resultFinalLine.append("etype2iid.iid=");
@@ -1061,21 +996,45 @@ public class QueryTerm {
 						resultFinalLine.append(".iid");
 						if (current.nextAnd) {
 							resultFinalLine.append(" and ");
+							sqlTable = currentChar + "";
 						} else {
 							resultFinalLine.append(" or ");
+							sqlTable = "attr2iid";
 						}
 						result.append("),");
 						andCounter = 1;
 						currentChar++;
+						if (current.hasNext()) {
+							result.append(currentChar);
+							result.append(" as (SELECT ");
+							result.append(sqlTable);
+							result.append(".iid");
+							result.append(sqlTable);
+							result.append(".attr");
+							result.append(sqlTable);
+							result.append(".attr_value FROM ");
+							result.append(sqlTable);
+							result.append("WHERE ");
+						}
+					} else {
+						if (current.hasNext()) {
+							result.append(" or ");
+						}
 					}
+
 				}
 
 			}
 			if (current.getPrev() != null && current.getPrev().isNextAnd()) {
-				result.append(" GROUP BY iid HAVING COUNT(e_type)=");
+				result.append(" GROUP BY ");
+				result.append(sqlTable);
+				result.append(".iid");
+				result.append(" HAVING COUNT(");
+				result.append(sqlTable);
+				result.append(")=");
 				result.append(andCounter);
 			}
-			if (current.type != null) {
+			if (current.attribute != null) {
 				resultFinalLine.append("etype2iid.iid=");
 				resultFinalLine.append(currentChar);
 				resultFinalLine.append(".iid");
