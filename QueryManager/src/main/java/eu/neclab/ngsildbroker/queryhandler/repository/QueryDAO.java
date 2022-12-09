@@ -7,12 +7,18 @@ import java.util.Set;
 
 import javax.inject.Singleton;
 
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -42,11 +48,126 @@ public class QueryDAO extends StorageDAO {
 		});
 	}
 
-	public Uni<List<Map<String, Object>>> query(Set<String> id, String typeQuery, String idPattern, Set<String> attrs,
-			String q, String csf, String geometry, String georel, String coordinates, String geoproperty, String lang,
-			String scopeQ, int limit, int offSet, boolean count, String tenantId) {
-		// TODO Auto-generated method stub
-		return null;
+	public Uni<RowSet<Row>> query(String tenantId, Set<String> ids, TypeQueryTerm typeQuery, String idPattern,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int limit,
+			int offSet, boolean count) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			StringBuilder query = new StringBuilder("WITH ");
+			char currentChar = 'a';
+			boolean sqlAdded = false;
+			Tuple2<Character, String> tmp;
+			if (typeQuery != null) {
+				tmp = typeQuery.toSql(currentChar);
+				currentChar = tmp.getItem1();
+				query.append(tmp.getItem2());
+				sqlAdded = true;
+			}
+			if (attrsQuery != null) {
+				if (sqlAdded) {
+					query.append("),");
+					try {
+						tmp = attrsQuery.toSql((char) (currentChar + 1), currentChar);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+				} else {
+					try {
+						tmp = attrsQuery.toSql((char) (currentChar + 1), null);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+				}
+
+				currentChar = tmp.getItem1();
+				query.append(tmp.getItem2());
+				sqlAdded = true;
+			}
+			if (geoQuery != null) {
+				if (sqlAdded) {
+					query.append("),");
+					try {
+						tmp = geoQuery.toSql((char) (currentChar + 1), currentChar);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+				} else {
+					try {
+						tmp = geoQuery.toSql((char) (currentChar + 1), null);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+				}
+				currentChar = tmp.getItem1();
+				query.append(tmp.getItem2());
+				sqlAdded = true;
+			}
+			if (qQuery != null) {
+				if (sqlAdded) {
+					query.append("),");
+					try {
+						tmp = qQuery.toSql((char) (currentChar + 1), currentChar);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+				} else {
+					try {
+						tmp = qQuery.toSql((char) (currentChar + 1), null);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+				}
+				currentChar = tmp.getItem1();
+				query.append(tmp.getItem2());
+				sqlAdded = true;
+			}
+			if (ids == null && idPattern == null) {
+				if (limit == 0 && count) {
+					query.append("), SELECT count(");
+					query.append(currentChar);
+					query.append(".iid) as count, null as entity FROM ");
+					query.append(currentChar);
+					query.append(';');
+				} else {
+					query.append(" LIMIT ");
+					query.append(limit);
+					query.append(" OFFSET ");
+					query.append(offSet);
+					query.append("), SELECT count(");
+					query.append(currentChar);
+					query.append(".iid) as count, entity.entity as entity FROM ");
+					query.append(currentChar);
+					query.append(" LEFT JOIN ENTITY ON ");
+					query.append(currentChar);
+					query.append(".iid = ENTITY.ID;");
+				}
+			} else {
+				query.append("), SELECT count(entity.id) as count, entity.entity as entity FROM ");
+				query.append(currentChar);
+				query.append(" LEFT JOIN ENTITY ON ");
+				query.append(currentChar);
+				query.append(".iid = ENTITY.ID WHERE ");
+				if (ids != null) {
+					for (String id : ids) {
+						query.append("ENTITY.E_ID = '");
+						query.append(id);
+						query.append("' or ");
+					}
+					query.setLength(query.length() - 4);
+				}
+				if (idPattern != null) {
+					query.append(idPattern);
+					query.append(" ~ ENTITY.E_ID");
+				}
+				query.append(" LIMIT ");
+				query.append(limit);
+				query.append(" OFFSET ");
+				query.append(offSet);
+				query.append(';');
+			}
+			// TODO at the moment this does no sql escaping toSql method should return tuple
+			// with respective values
+			return client.preparedQuery(query.toString()).execute();
+		});
 	}
 
 	public Uni<RowSet<Row>> getTypes(String tenantId) {
@@ -66,8 +187,10 @@ public class QueryDAO extends StorageDAO {
 	public Uni<RowSet<Row>> getType(String tenantId, String type) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					// needs type, entitycount for type, attribs with entitycount attributetype (isRel, isGeo),  
-					// typeNames of types where the attrib is used this is stupidly expensive for this and is optional in the spec i tend to not have it
+					// needs type, entitycount for type, attribs with entitycount attributetype
+					// (isRel, isGeo),
+					// typeNames of types where the attrib is used this is stupidly expensive for
+					// this and is optional in the spec i tend to not have it
 					"WITH T as (SELECT e_type, iid FROM etype2iid WHERE e_type = $1) SELECT DISTINCT T.e_type, A.attr FROM T LEFT JOIN attr2iid as A ON A.iid=T.iid")
 					.execute(Tuple.of(type));
 		});

@@ -21,12 +21,21 @@ public class AttrsQueryTerm {
 		attrs.add(context.expandIri(attr, false, true, null, null));
 	}
 
-	public Tuple2<Character, String> toSql(char startChar) throws ResponseException {
+	public Tuple2<Character, String> toSql(Character startChar, Character prevResult) throws ResponseException {
 		StringBuilder builder = new StringBuilder();
 		builder.append(startChar);
-		builder.append(" as (SELECT iid FROM attr2iid WHERE ");
+		builder.append(" as (SELECT attr2iid.iid FROM ");
+		if(prevResult != null) {
+			builder.append(prevResult);
+			builder.append(" LEFT JOIN attr2iid ON ");
+			builder.append(prevResult);
+			builder.append(".iid = attr2iid.iid WHERE ");
+			
+		}else {
+			builder.append(" attr2iid WHERE ");
+		}
 		for (String attr : attrs) {
-			builder.append("attr = '");
+			builder.append("attr2iid.attr = '");
 			builder.append(attr);
 			builder.append("' OR ");
 		}

@@ -307,7 +307,7 @@ public class QueryParser {
 //		Object temp = JsonLdProcessor.getCoreContextClone().expandValue("http://dasdasd.asdas", 123);
 //		System.out.println(temp.getClass());
 		System.out.println(parseQuery("a==123|b>44|c=='dsadsd';d=='dfgfdgdfgdf'", JsonLdProcessor.getCoreContextClone())
-				.toSql('a').getItem2());
+				.toSql('a', null).getItem2());
 		System.out.println(parseTypeQuery("a;b|(c;d)", JsonLdProcessor.getCoreContextClone()).toSql('a').getItem2());
 	}
 }

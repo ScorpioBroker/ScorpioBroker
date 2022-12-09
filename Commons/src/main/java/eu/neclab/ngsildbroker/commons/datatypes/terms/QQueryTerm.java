@@ -548,10 +548,21 @@ public class QQueryTerm {
 		return equals(obj, false);
 	}
 
-	public Tuple2<Character, String> toSql(char startChar) throws ResponseException {
+	public Tuple2<Character, String> toSql(char startChar, Character prevChar) throws ResponseException {
 		StringBuilder builder = new StringBuilder();
 		StringBuilder builderFinalLine = new StringBuilder();
 		StringBuilder finalTables = new StringBuilder();
+		builder.append(startChar);
+		builder.append(" as (SELECT attr2iid.iid, attr2iid.attr, attr2iid.attr_value FROM ");
+		if (prevChar != null) {
+			builder.append(prevChar);
+			builder.append(" LEFT JOIN attr2iid ON ");
+			builder.append(prevChar);
+			builder.append(".iid = attr2iid.iid");
+		} else {
+			builder.append("attr2iid");
+		}
+		builder.append(" WHERE (");
 		char finalChar = toSql(builder, builderFinalLine, finalTables, startChar, "attr2iid");
 		if (!finalTables.isEmpty()) {
 			finalChar++;
@@ -561,7 +572,7 @@ public class QQueryTerm {
 			builder.append(finalTables);
 			builder.append(" WHERE ");
 			builder.append(builderFinalLine);
-		}else {
+		} else {
 			finalChar++;
 			builder.append(',');
 			builder.append(finalChar);
@@ -640,16 +651,6 @@ public class QQueryTerm {
 			return current.next.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable);
 		} else {
 			int andCounter = 1;
-			result.append(currentChar);
-			result.append(" as (SELECT ");
-			result.append(sqlTable);
-			result.append(".iid, ");
-			result.append(sqlTable);
-			result.append(".attr, ");
-			result.append(sqlTable);
-			result.append(".attr_value FROM ");
-			result.append(sqlTable);
-			result.append(" WHERE (");
 			result.append(sqlTable);
 			result.append(".attr='");
 			result.append(attribute);
@@ -717,7 +718,7 @@ public class QQueryTerm {
 						result.append("),");
 						andCounter = 0;
 						currentChar++;
-						if (current.hasNext() && current.next.getFirstChild() == null) {
+						if (current.hasNext()) {
 							result.append(currentChar);
 							result.append(" as (SELECT ");
 							result.append(sqlTable);

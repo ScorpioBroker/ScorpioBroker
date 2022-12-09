@@ -25,6 +25,11 @@ import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
@@ -38,6 +43,8 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.core.MultiMap;
 
 @Singleton
@@ -73,18 +80,16 @@ public class QueryService {
 		webClient = WebClient.create(vertx);
 	}
 
-	public Uni<QueryResult> query(ArrayListMultimap<String, String> headers, Set<String> id, String typeQuery,
-			String idPattern, Set<String> attrs, String q, String csf, String geometry, String georel,
-			String coordinates, String geoproperty, String lang, String scopeQ, int limit, int offSet, boolean count,
-			boolean localOnly) {
-		Uni<List<Map<String, Object>>> queryEntities = queryDAO.query(id, typeQuery, idPattern, attrs, q, csf, geometry,
-				georel, coordinates, geoproperty, lang, scopeQ, limit, offSet, count,
-				HttpUtils.getTenantFromHeaders(headers));
+	public Uni<QueryResult> query(ArrayListMultimap<String, String> headers, Set<String> id, TypeQueryTerm typeQuery,
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, String csf, GeoQueryTerm geoQuery,
+			String lang, ScopeQueryTerm scopeQuery, int limit, int offSet, boolean count, boolean localOnly) {
+		Uni<RowSet<Row>> queryEntities = queryDAO.query(HttpUtils.getTenantFromHeaders(headers), id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery,
+				scopeQuery, limit, offSet, count);
 		Uni<List<Map<String, Object>>> queryRemoteEntities;
 		if (localOnly) {
 			queryRemoteEntities = Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
 		} else {
-
+			
 		}
 		return null;
 	}
