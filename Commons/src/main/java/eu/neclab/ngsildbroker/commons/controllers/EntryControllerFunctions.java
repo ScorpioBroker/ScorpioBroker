@@ -15,11 +15,12 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.net.HttpHeaders;
-import com.google.gson.JsonObject;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
+import org.checkerframework.checker.units.qual.t;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
@@ -31,17 +32,13 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDBaseResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -194,25 +191,64 @@ public interface EntryControllerFunctions {
 				return entityService.sendFail(batchInfo).onItem().transformToUni(v -> Uni.createFrom().failure(e));
 			});
 		}).collectFailures().concatenate().collect().asList().onItemOrFailure().transform((results, fails) -> {
-			List<NGSILDOperationResult> result = Lists.newArrayList();
-			if(fails != null) {
-				
-				CompositeException exceptions = (CompositeException) fails;
-				exceptions.getCauses()	
-			}
 			
 			if (results == null) {
 				return HttpUtils.handleControllerExceptions(fails);
-			}
-			BatchResult result = new BatchResult();
+			}			
+			
+			List<ResponseException> resFailures = new ArrayList<>();
+			List<String> resSuccesses =new ArrayList<>();			
+
+			int httpStatus=HttpStatus.SC_CREATED;
+
 			results.forEach(i -> {
-				if (i.getItem2() != null) {
-					result.addSuccess(((CreateResult) i.getItem2()).getEntityId());
+				List<ResponseException> failures = i.getFailures();
+				List<CRUDSuccess> successes = i.getSuccesses();
+				if (failures.isEmpty()) {
+					resSuccesses.add(i.getEntityId());
+				} else if (successes.isEmpty() && failures.size() == 1) {
+					failures.addAll(i.getFailures());
+					httpStatus=HttpStatus.SC_MULTI_STATUS;
 				} else {
-					result.addFail(i.getItem1());
+					failures.addAll(i.getFailures());
+					httpStatus=HttpStatus.SC_MULTI_STATUS;
 				}
+
 			});
-			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
+			
+			String body=null;
+			
+			if(httpStatus==HttpStatus.SC_CREATED) {
+				body=JsonUtils.toPrettyString(resSuccesses);				
+			}else {				
+				Map<String, Object> resMap = Maps.newHashMap();
+				resMap.put("success", resSuccesses);
+				resMap.put("errors",resFailures);				
+				body=JsonUtils.toPrettyString(resMap);
+			}
+			
+
+			return RestResponseBuilderImpl.create(httpStatus).entity(body)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
+
+//			List<NGSILDOperationResult> result = Lists.newArrayList();
+//			if(fails != null) {
+//				
+//				CompositeException exceptions = (CompositeException) fails;
+//				exceptions.getCauses();	
+//			}
+//			
+//			if (results == null) {
+//				return HttpUtils.handleControllerExceptions(fails);
+//			}
+//			results.forEach(i -> {
+//				if (i.getSuccesses()!=null && !i.getSuccesses().isEmpty() ) {
+//					result.addSuccess(((CreateResult) i.getItem2()).getEntityId());
+//				} else {
+//					result.addFail(i.getItem1());
+//				}
+//			});
+//			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
 		});
 
 //				t -> {
@@ -537,14 +573,14 @@ public interface EntryControllerFunctions {
 					}
 					List<Object> context = new ArrayList<Object>();
 					context.addAll(contextHeaders);
-					
+
 					Map<String, Object> body;
 					try {
 						body = ((Map<String, Object>) JsonUtils.fromString(payload));
 					} catch (IOException e) {
 						return Uni.createFrom().failure(e);
 					}
-					
+
 					Map<String, Object> resolvedBody;
 					try {
 						resolvedBody = (Map<String, Object>) JsonLdProcessor
