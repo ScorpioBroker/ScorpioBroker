@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.commons.datatypes;
+package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,6 +7,8 @@ import java.util.List;
 
 import com.github.jsonldjava.core.Context;
 
+import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple2;
 
@@ -430,101 +432,131 @@ public class TypeQueryTerm {
 //		return equals(obj, false);
 //	}
 
-	public Tuple2<Character, String> toSql() {
+	public Tuple2<Character, String> toSql(char startChar) {
 		StringBuilder builder = new StringBuilder();
 		StringBuilder builderFinalLine = new StringBuilder();
-		builder.append("WITH ");
-		char finalChar = toSql(builder, builderFinalLine, 'a');
-		if (finalChar != 'a') {
+		StringBuilder finalTables = new StringBuilder();
+		char finalChar = toSql(builder, builderFinalLine, finalTables, startChar, "etype2iid");
+		if (!finalTables.isEmpty()) {
 			finalChar++;
 			builder.append(',');
 			builder.append(finalChar);
-			builder.append(" as (SELECT etype2iid.iid FROM etype2iid,");
-			char temp = finalChar;
-			temp--;
-			while (temp >= 'a') {
-				builder.append(temp);
-				builder.append(',');
-				temp--;
-			}
-			builder.setCharAt(builder.length() - 1, ' ');
-			builder.append("WHERE ");
+			builder.append(" as (SELECT etype2iid.iid AS iid FROM etype2iid,");
+			builder.append(finalTables);
+			builder.append(" WHERE ");
 			builder.append(builderFinalLine);
-			builder.append(')');
 
+		} else {
+			finalChar++;
+			builder.append(',');
+			builder.append(finalChar);
+			builder.append(" as (SELECT iid FROM ");
+			builder.append((char) (finalChar - 1));
 		}
-		System.out.println(finalChar);
-		System.out.println(builderFinalLine.toString());
-		// builder.append(";");
 		return Tuple2.of(finalChar, builder.toString());
 	}
 
-	private char toSql(StringBuilder result, StringBuilder resultFinalLine, char currentChar) {
+	private char toSql(StringBuilder result, StringBuilder resultFinalLine, StringBuilder finalTables, char currentChar,
+			String sqlTable) {
 		if (type == null || type.isEmpty()) {
 			TypeQueryTerm current = this;
 			while (current.firstChild != null) {
 				current = current.firstChild;
 			}
-			return current.next.toSql(result, resultFinalLine, currentChar);
+			return current.next.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable);
 		} else {
 			int andCounter = 1;
 			result.append(currentChar);
-			result.append(" as (SELECT iid FROM etype2iid WHERE e_type='");
+			result.append(" as (SELECT ");
+			result.append(sqlTable);
+			result.append(".iid, ");
+			result.append(sqlTable);
+			result.append(".e_type FROM ");
+			result.append(sqlTable);
+			result.append(" WHERE ");
+			result.append(sqlTable);
+			result.append(".e_type='");
 			result.append(type);
 			result.append('\'');
+			if (hasNext()) {
+				result.append(" or ");
+			}
 			TypeQueryTerm current = this;
 
 			while (current.hasNext() || current.firstChild != null) {
 				if (current.firstChild != null) {
 					resultFinalLine.append('(');
-					currentChar = current.firstChild.toSql(result, resultFinalLine, currentChar);
+					currentChar = current.firstChild.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable);
 					resultFinalLine.append(')');
 					break;
 				}
 				current = current.getNext();
 				if (current.type != null && !current.type.isEmpty()) {
-					result.append("e_type='");
-					result.append(current.getType());
+					result.append(sqlTable);
+					result.append(".e_type='");
+					result.append(current.type);
 					result.append('\'');
 					andCounter++;
 					if ((current.getPrev() != null && current.isNextAnd() != current.getPrev().isNextAnd())
 							|| current.firstChild != null) {
 						if (current.getPrev() != null && current.getPrev().isNextAnd()) {
-							result.append(" GROUP BY iid HAVING COUNT(e_type)=");
+							result.append(" GROUP BY ");
+							result.append(sqlTable);
+							result.append(".iid, ");
+							result.append(sqlTable);
+							result.append(".e_type HAVING COUNT(");
+							result.append(sqlTable);
+							result.append(".e_type)=");
 							result.append(andCounter);
 						}
-
-						resultFinalLine.append("etype2iid.iid=");
-						resultFinalLine.append(currentChar);
-						resultFinalLine.append(".iid");
 						if (current.nextAnd) {
-							resultFinalLine.append(" and ");
+							sqlTable = currentChar + "";
 						} else {
+							resultFinalLine.append("etype2iid.iid=");
+							resultFinalLine.append(currentChar);
+							resultFinalLine.append(".iid");
 							resultFinalLine.append(" or ");
+							finalTables.append(currentChar);
+							finalTables.append(',');
+							sqlTable = "etype2iid";
 						}
 						result.append("),");
-						andCounter = 1;
+						andCounter = 0;
 						currentChar++;
-						if (current.hasNext()) {
+						if (current.hasNext() && current.next.getFirstChild() == null) {
 							result.append(currentChar);
-							result.append(" as (SELECT iid FROM etype2iid WHERE 1=1");
+							result.append(" as (SELECT ");
+							result.append(sqlTable);
+							result.append(".iid, ");
+							result.append(sqlTable);
+							result.append(".e_type FROM ");
+							result.append(sqlTable);
+							result.append(" WHERE ");
+						}
+					} else {
+						if (current.hasNext()) {
+							result.append(" or ");
 						}
 					}
-				} else {
-					if (current.hasNext()) {
-						result.append(" or ");
-					}
+
 				}
 
 			}
 			if (current.getPrev() != null && current.getPrev().isNextAnd()) {
-				result.append(" GROUP BY iid HAVING COUNT(e_type)=");
+				result.append(" GROUP BY ");
+				result.append(sqlTable);
+				result.append(".iid, ");
+				result.append(sqlTable);
+				result.append(".e_type HAVING COUNT(");
+				result.append(sqlTable);
+				result.append(".e_type)=");
 				result.append(andCounter);
 			}
 			if (current.type != null) {
 				resultFinalLine.append("etype2iid.iid=");
 				resultFinalLine.append(currentChar);
 				resultFinalLine.append(".iid");
+				finalTables.append(currentChar);
 				result.append(')');
 			}
 			return currentChar;

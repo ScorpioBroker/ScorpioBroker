@@ -331,6 +331,20 @@ ALTER TABLE PUBLIC.ENTITY DROP COLUMN DATA_WITHOUT_SYSATTRS;
 
 ALTER TABLE PUBLIC.ENTITY DROP COLUMN KVDATA;
 
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN LOCATION;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN OBSERVATIONSPACE;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN OPERATIONSPACE;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN SCOPES;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN MODIFIEDAT;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN CREATEDAT;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN CONTEXT;
+
 ALTER TABLE PUBLIC.ENTITY DROP CONSTRAINT entity_pkey;
 
 ALTER TABLE PUBLIC.ENTITY RENAME COLUMN id TO E_ID;
@@ -357,6 +371,17 @@ CREATE TABLE public.etype2iid
     iid bigint,
     CONSTRAINT "prKey" PRIMARY KEY (e_type, iid)
 );
+
+CREATE TABLE public.escope2iid
+(
+    e_scope text,
+    iid bigint
+);
+ALTER TABLE IF EXISTS public.escope2iid
+    ADD CONSTRAINT iid_fkey FOREIGN KEY (iid)
+    REFERENCES public.entity (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
 
 CREATE TABLE public.attr2iid
 (
@@ -623,11 +648,24 @@ declare
 	attribValueEntry jsonb;
 	tempJson jsonb;
 BEGIN
+	IF entity ? 'https://uri.etsi.org/ngsi-ld/scope' THEN
+		FOR tempJson IN SELECT jsonb_array_elements FROM jsonb_array_elements(entity->'https://uri.etsi.org/ngsi-ld/scope') LOOP
+			INSERT INTO escope2iid VALUES (entity_iid, tempJson->>'@value')
+		END LOOP;
+		
+	END IF;
+	
 	tempJson := entity - '@id';
 	tempJson := tempJson - '@type';
 	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/createdAt';
 	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/observedAt';
-	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/modifiedAt';
+	INSERT INTO attr2iid VALUES ('https://uri.etsi.org/ngsi-ld/createdAt' , entity_iid, false, false, false, null, entity#>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}', null);
+	INSERT INTO attr2iid VALUES ('https://uri.etsi.org/ngsi-ld/modifiedAt' , entity_iid, false, false, false, null, entity#>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}', null);
+	IF entity ? 'https://uri.etsi.org/ngsi-ld/observedAt' THEN
+		INSERT INTO attr2iid VALUES ('https://uri.etsi.org/ngsi-ld/observedAt', entity_iid, false, false, false, null, entity#>'{https://uri.etsi.org/ngsi-ld/observedAt,0,@value}', null);
+		tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/observedAt';
+	END IF;
+	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/scope';
 	FOR attribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(tempJson) LOOP
 		FOR attribValueEntry IN SELECT jsonb_array_elements FROM jsonb_array_elements(tempJson->attribName) LOOP
 			PERFORM addAttrib(attribName, attribValueEntry, entity_iid);
@@ -638,69 +676,8 @@ END;
 $$ LANGUAGE PLPGSQL;
 
 CREATE OR REPLACE FUNCTION public.entity_extract_jsonb_fields() RETURNS trigger LANGUAGE plpgsql AS $function$
-	DECLARE
-		eUpdate boolean;
-		tempOld jsonb;
-		tempNew jsonb;
 	BEGIN
 		NEW.e_id = NEW.ENTITY->>'@id';
-		NEW.createdat = (NEW.ENTITY#>>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}')::TIMESTAMP;
-		NEW.modifiedat = (NEW.ENTITY#>>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP;
-		eUpdate := TG_OP = 'UPDATE';
-		tempNew := NEW.ENTITY->'https://uri.etsi.org/ngsi-ld/location';
-		tempOld := NULL;
-		IF eUpdate THEN
-			tempOld := OLD.ENTITY->'https://uri.etsi.org/ngsi-ld/location';
-		END IF;
-		IF tempNew IS NOT NULL AND (NOT eUpdate OR tempOld IS NULL OR tempOld<>tempNew) THEN
-			NEW.location = ST_SetSRID( ST_GeomFromGeoJSON( getGeoJson(tempNew#>'{0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
-		ELSE 
-			NEW.location = NULL;
-		END IF;
-		tempNew := NEW.ENTITY->'https://uri.etsi.org/ngsi-ld/observationSpace';
-		tempOld := NULL;
-		IF eUpdate THEN
-			tempOld := OLD.ENTITY->'https://uri.etsi.org/ngsi-ld/observationSpace';
-		END IF;
-		
-		IF tempNew IS NOT NULL AND (NOT eUpdate OR tempOld IS NULL OR tempOld<>tempNew) THEN
-			NEW.observationSpace = ST_SetSRID( ST_GeomFromGeoJSON( getGeoJson(tempNew#>'{0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
-		ELSE 
-			NEW.observationSpace = NULL;
-		END IF;
-		
-		tempNew := NEW.ENTITY->'https://uri.etsi.org/ngsi-ld/operationSpace';
-		tempOld := NULL;
-		IF eUpdate THEN
-			tempOld := OLD.ENTITY->'https://uri.etsi.org/ngsi-ld/operationSpace';
-		END IF;
-		IF tempNew IS NOT NULL AND (NOT eUpdate OR tempOld IS NULL OR tempOld<>tempNew) THEN
-			NEW.operationSpace = ST_SetSRID( ST_GeomFromGeoJSON( getGeoJson(tempNew#>'{0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
-		ELSE
-			NEW.operationSpace = NULL;
-		END IF;
-		
-		tempNew := NEW.ENTITY->'https://uri.etsi.org/ngsi-ld/scope';
-		tempOld := NULL;
-		IF eUpdate THEN
-			tempOld := OLD.ENTITY->'https://uri.etsi.org/ngsi-ld/scope';
-		END IF;
-		IF tempNew IS NOT NULL AND (NOT eUpdate OR tempOld IS NULL OR tempOld<>tempNew) THEN
-			NEW.scopes = getScopes(tempNew);
-		ELSE
-			NEW.scopes = NULL;
-		END IF;
-		tempNew := NEW.ENTITY->'https://uri.etsi.org/ngsi-ld/default-context/scope';
-		tempOld := NULL;
-		IF eUpdate THEN
-			tempOld := OLD.ENTITY->'https://uri.etsi.org/ngsi-ld/default-context/scope';
-		END IF;
-		
-		IF NEW.scopes IS NULL AND tempNew IS NOT NULL AND (NOT eUpdate OR tempOld IS NULL OR tempOld<>tempNew) THEN
-			NEW.scopes = getScopes(tempNew);
-		ELSE
-			NEW.scopes = NULL;
-		END IF;
 		RETURN NEW;
 	END;
 $function$;
@@ -715,6 +692,7 @@ AS $function$
 		IF TG_OP = 'UPDATE' THEN
 			DELETE FROM etype2iid WHERE iid = NEW.id;
 			DELETE FROM attr2iid WHERE iid = NEW.id;
+			DELETE FROM escope2iid WHERE iid = NEW.id;
 		END IF;
 		FOR entityType IN SELECT jsonb_array_elements_text FROM jsonb_array_elements_text(NEW.ENTITY->'@type') LOOP
 			INSERT INTO etype2iid VALUES (entityType, NEW.id);

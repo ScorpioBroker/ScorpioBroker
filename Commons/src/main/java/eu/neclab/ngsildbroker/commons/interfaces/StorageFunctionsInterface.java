@@ -4,8 +4,8 @@ import java.util.ArrayList;
 
 import com.google.common.collect.Lists;
 
-import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -20,7 +20,7 @@ public interface StorageFunctionsInterface {
 
 	Uni<RowSet<Row>> typesAndAttributeQuery(QueryParams qp, SqlConnection conn);
 
-	Tuple3<String, ArrayList<Object>, Integer> translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel,
+	Tuple3<String, ArrayList<Object>, Integer> translateNgsildGeoqueryToPostgisQuery(GeoQueryTerm georel,
 			String geometry, String coordinates, String geoproperty, int currentCount) throws ResponseException;
 
 	String getAllIdsQuery();

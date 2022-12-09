@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
@@ -156,7 +156,7 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 
 		// geoquery
 		if (qp.getGeorel() != null) {
-			GeoqueryRel gqr = qp.getGeorel();
+			GeoQueryTerm gqr = qp.getGeorel();
 			logger.debug("Georel value " + gqr.getGeorelOp());
 
 			Tuple3<String, ArrayList<Object>, Integer> tmp = translateNgsildGeoqueryToPostgisQuery(gqr,
@@ -359,7 +359,7 @@ public class RegistryStorageFunctions implements StorageFunctionsInterface {
 	}
 
 	@Override
-	public Tuple3<String, ArrayList<Object>, Integer> translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel,
+	public Tuple3<String, ArrayList<Object>, Integer> translateNgsildGeoqueryToPostgisQuery(GeoQueryTerm georel,
 			String geometry, String coordinates, String geoproperty, int currentCount) throws ResponseException {
 		if (georel.getGeorelOp().isEmpty() || geometry == null || coordinates == null || geometry.isEmpty()
 				|| coordinates.isEmpty()) {

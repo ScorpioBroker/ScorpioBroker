@@ -6,6 +6,8 @@ import java.util.Map;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+
 public class QueryParams {
 
 	@SerializedName("tenant")
@@ -29,7 +31,7 @@ public class QueryParams {
 	private String csf;
 	@SerializedName("georel")
 	@Expose
-	private GeoqueryRel georel;
+	private GeoQueryTerm georel;
 	@SerializedName("geometry")
 	@Expose
 	private String geometry;
@@ -128,15 +130,15 @@ public class QueryParams {
 		return this;
 	}
 
-	public GeoqueryRel getGeorel() {
+	public GeoQueryTerm getGeorel() {
 		return georel;
 	}
 
-	public void setGeorel(GeoqueryRel georel) {
+	public void setGeorel(GeoQueryTerm georel) {
 		this.georel = georel;
 	}
 
-	public QueryParams withGeorel(GeoqueryRel georel) {
+	public QueryParams withGeorel(GeoQueryTerm georel) {
 		this.georel = georel;
 		return this;
 	}

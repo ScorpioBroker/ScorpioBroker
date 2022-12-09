@@ -15,12 +15,13 @@ import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
-import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import io.vertx.core.MultiMap;
 
 public class ParamsResolver {
@@ -74,7 +75,7 @@ public class ParamsResolver {
 			if (subscription.getLdGeoQuery() != null) {
 				temp.setGeometry(subscription.getLdGeoQuery().getGeometry().name());
 				temp.setGeoproperty(subscription.getLdGeoQuery().getGeoProperty());
-				temp.setGeorel(new GeoqueryRel(subscription.getLdGeoQuery().getGeoRelation()));
+				temp.setGeorel(new GeoQueryTerm(subscription.getLdGeoQuery().getGeoRelation()));
 				StringBuilder builder = new StringBuilder();
 				List<Double> coordinates = subscription.getLdGeoQuery().getCoordinates();
 				for (int i = 0; i < coordinates.size(); i += 2) {
@@ -371,7 +372,7 @@ public class ParamsResolver {
 		if (geoproperty == null) {
 			geoproperty = NGSIConstants.QUERY_PARAMETER_DEFAULT_GEOPROPERTY;
 		}
-		GeoqueryRel geoqueryTokens = QueryParser.parseGeoRel(georel);
+		GeoQueryTerm geoqueryTokens = QueryParser.parseGeoQuery(georel);
 		logger.debug("  Geoquery term georelOp: " + geoqueryTokens.getGeorelOp());
 		if (geoqueryTokens.getGeorelOp().isEmpty() || geometry == null || geometry.isEmpty() || coordinates == null
 				|| coordinates.isEmpty()) {
@@ -386,7 +387,7 @@ public class ParamsResolver {
 		} catch (IOException e) {
 			throw new ResponseException(ErrorType.BadRequestData, "Failed to parse coordinates");
 		}
-		GeoqueryRel gr = new GeoqueryRel();
+		GeoQueryTerm gr = new GeoQueryTerm();
 		gr.setGeorelOp(geoqueryTokens.getGeorelOp());
 		gr.setDistanceType(geoqueryTokens.getDistanceType());
 		gr.setDistanceValue(geoqueryTokens.getDistanceValue());

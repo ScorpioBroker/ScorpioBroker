@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
@@ -99,7 +99,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 	// TODO: property of property
 	// [SPEC] spec is not clear on how to define a "property of property" in
 	// the geoproperty field. (probably using dots)
-	public Tuple3<String, ArrayList<Object>, Integer> translateNgsildGeoqueryToPostgisQuery(GeoqueryRel georel,
+	public Tuple3<String, ArrayList<Object>, Integer> translateNgsildGeoqueryToPostgisQuery(GeoQueryTerm georel,
 			String geometry, String coordinates, String geoproperty, int currentCount) throws ResponseException {
 		StringBuilder sqlWhere = new StringBuilder(50);
 		String georelOp = georel.getGeorelOp();
@@ -237,7 +237,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			fullSqlWhereProperty.append(sqlWhereProperty);
 		}
 		if (qp.getGeorel() != null) {
-			GeoqueryRel gqr = qp.getGeorel();
+			GeoQueryTerm gqr = qp.getGeorel();
 			logger.trace("Georel value " + gqr.getGeorelOp());
 
 			Tuple3<String, ArrayList<Object>, Integer> tmp = translateNgsildGeoqueryToPostgisQuery(gqr,

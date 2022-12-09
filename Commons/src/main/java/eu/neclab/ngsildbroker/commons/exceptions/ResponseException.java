@@ -64,12 +64,14 @@ public class ResponseException extends Exception {
 		json.put(NGSIConstants.ERROR_TYPE, type);
 		json.put(NGSIConstants.ERROR_TITLE, title);
 		json.put(NGSIConstants.ERROR_CODE, errorCode);
-		List<Map<String, String>> tmp = Lists.newArrayList();
-		for (Attrib attrib : attribs) {
-			tmp.add(attrib.getJson());
-		}
 		Map<String, Object> temp = Maps.newHashMap();
-		temp.put(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT, tmp);
+		if (attribs != null) {
+			List<Map<String, String>> tmp = Lists.newArrayList();
+			for (Attrib attrib : attribs) {
+				tmp.add(attrib.getJson());
+			}
+			temp.put(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT, tmp);
+		}
 		temp.put(NGSIConstants.ERROR_DETAIL_MESSAGE, detail);
 		temp.put(NGSIConstants.ERROR_DETAIL_ENDPOINT, endpoint);
 		temp.put(NGSIConstants.ERROR_DETAIL_CSOURCE_ID, cSourceId);

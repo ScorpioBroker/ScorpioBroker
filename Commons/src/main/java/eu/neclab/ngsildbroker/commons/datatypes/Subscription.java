@@ -24,11 +24,13 @@ import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
+import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 /**
@@ -65,9 +67,9 @@ public class Subscription implements Serializable {
 	private LDTemporalQuery ldTempQuery;
 
 	@JsonIgnore
-	private QueryTerm ldQuery;
+	private QQueryTerm ldQuery;
 	@JsonIgnore
-	private QueryTerm csfQuery;
+	private QQueryTerm csfQuery;
 	@JsonIgnore
 	private ScopeQueryTerm scopeQuery;
 
@@ -292,7 +294,7 @@ public class Subscription implements Serializable {
 		this.type = type;
 	}
 
-	public QueryTerm getLdQuery() {
+	public QQueryTerm getLdQuery() {
 		return ldQuery;
 	}
 
@@ -315,7 +317,7 @@ public class Subscription implements Serializable {
 		}
 	}
 
-	public QueryTerm getCsf() {
+	public QQueryTerm getCsf() {
 		return csfQuery;
 	}
 
@@ -368,7 +370,7 @@ public class Subscription implements Serializable {
 		return isActive;
 	}
 
-	public QueryTerm getCsfQuery() {
+	public QQueryTerm getCsfQuery() {
 		return csfQuery;
 	}
 

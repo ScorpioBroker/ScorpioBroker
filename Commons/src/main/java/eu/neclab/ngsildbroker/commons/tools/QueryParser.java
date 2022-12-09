@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.commons.ngsiqueries;
+package eu.neclab.ngsildbroker.commons.tools;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -12,10 +12,11 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.GeoqueryRel;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.ScopeQueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
@@ -74,19 +75,9 @@ public class QueryParser {
 	// TODO validate queries still not working ... rework regex ???
 	private static Pattern p = Pattern.compile(query);
 
-	public static QueryTerm parseQuery(String input, Context context) throws ResponseException {
-//		Matcher matcher = p.matcher(input);
-//		if (!matcher.matches()) {
-//			throw new BadRequestException();
-//		}
-//		Matcher matcher = p.matcher(input);
-//		if (!matcher.matches()) {
-//			throw new ResponseException(ErrorType.BadRequestData, "");
-//		}
-
-		// TODO: regex doesn't validate brackets queries for some reason
-		QueryTerm root = new QueryTerm(context);
-		QueryTerm current = root;
+	public static QQueryTerm parseQuery(String input, Context context) throws ResponseException {
+		QQueryTerm root = new QQueryTerm(context);
+		QQueryTerm current = root;
 		boolean readingAttrib = true;
 		String attribName = "";
 		String operator = "";
@@ -100,13 +91,13 @@ public class QueryParser {
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
 			if (b == '(') {
-				QueryTerm child = new QueryTerm(context);
+				QQueryTerm child = new QQueryTerm(context);
 				current.setFirstChild(child);
 				current = child;
 				readingAttrib = true;
 
 			} else if (b == ';') {
-				QueryTerm next = new QueryTerm(context);
+				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
 				current.setNext(next);
 				current.setNextAnd(true);
@@ -116,7 +107,7 @@ public class QueryParser {
 				operant = "";
 
 			} else if (b == '|') {
-				QueryTerm next = new QueryTerm(context);
+				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
 				current.setNext(next);
 				current.setNextAnd(false);
@@ -159,13 +150,14 @@ public class QueryParser {
 		return root;
 	}
 
-	public static GeoqueryRel parseGeoRel(String georel) throws ResponseException {
+	public static GeoQueryTerm parseGeoQuery(String georel, String coordinates, String geometry, String geoproperty,
+			Context context) throws ResponseException {
 		if (georel == null || georel.isEmpty()) {
 			throw new ResponseException(ErrorType.BadRequestData, "georel needs to be provided");
 		}
 		String[] temp = georel.split(";");
-		GeoqueryRel result = new GeoqueryRel();
-		result.setGeorelOp(temp[0]);
+		GeoQueryTerm result = new GeoQueryTerm(context);
+		result.setGeorel(temp[0]);
 		if (temp[0].equals(NGSIConstants.GEO_REL_NEAR)) {
 			if (temp.length < 2) {
 				throw new ResponseException(ErrorType.BadRequestData, "Georelation is not valid");
@@ -173,6 +165,19 @@ public class QueryParser {
 			String[] maxMin = temp[1].split("==");
 			result.setDistanceType(maxMin[0]);
 			result.setDistanceValue(maxMin[1]);
+		}
+		result.setCoordinates(coordinates);
+		result.setGeometry(geometry);
+		if (geoproperty != null) {
+			result.setGeoproperty(geoproperty);
+		}
+		return result;
+	}
+
+	public static AttrsQueryTerm parseAttrs(String attrs, Context context) throws ResponseException {
+		AttrsQueryTerm result = new AttrsQueryTerm(context);
+		for (String attr : attrs.split(",")) {
+			result.addAttr(attr);
 		}
 		return result;
 	}
@@ -289,19 +294,20 @@ public class QueryParser {
 
 	public static void main(String[] args) throws Exception {
 		JsonLdProcessor.init("https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld");
-		List<Object> expanded = JsonLdProcessor.expand(JsonUtils
-				.fromString("{\"@context\": \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\",\r\n"
-						+ " \"id\": \"a:b\",\r\n" + " \"type\": \"c\",\r\n" + " \"bla\": {\r\n"
-						+ "   \"type\": \"Property\",\r\n"
-						+ "   \"value\": [[[123,456],[123,456],[123,456],[123,456],[123,456]]]\r\n" + " },\r\n"
-						+ " \"blub\": {\r\n" + "   \"type\": \"GeoProperty\",\r\n" + "   \"value\": {\r\n"
-						+ "     \"type\": \"Polygon\",\r\n"
-						+ "     \"coordinates\": [[[123,456],[123,456],[123,456],[123,456],[123,456]]]\r\n"
-						+ "     \r\n" + "   }\r\n" + " }\r\n" + "}"));
-		System.out.println(JsonUtils.toPrettyString(expanded));
-		Object temp = JsonLdProcessor.getCoreContextClone().expandValue("http://dasdasd.asdas", 123);
-		System.out.println(temp.getClass());
-		// System.out.println(parseTypeQuery("a;b|(c;d)",
-		// JsonLdProcessor.getCoreContextClone()).toSql());
+//		List<Object> expanded = JsonLdProcessor.expand(JsonUtils
+//				.fromString("{\"@context\": \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\",\r\n"
+//						+ " \"id\": \"a:b\",\r\n" + " \"type\": \"c\",\r\n" + " \"bla\": {\r\n"
+//						+ "   \"type\": \"Property\",\r\n"
+//						+ "   \"value\": [[[123,456],[123,456],[123,456],[123,456],[123,456]]]\r\n" + " },\r\n"
+//						+ " \"blub\": {\r\n" + "   \"type\": \"GeoProperty\",\r\n" + "   \"value\": {\r\n"
+//						+ "     \"type\": \"Polygon\",\r\n"
+//						+ "     \"coordinates\": [[[123,456],[123,456],[123,456],[123,456],[123,456]]]\r\n"
+//						+ "     \r\n" + "   }\r\n" + " }\r\n" + "}"));
+//		System.out.println(JsonUtils.toPrettyString(expanded));
+//		Object temp = JsonLdProcessor.getCoreContextClone().expandValue("http://dasdasd.asdas", 123);
+//		System.out.println(temp.getClass());
+		System.out.println(parseQuery("a==123|b>44|c=='dsadsd';d=='dfgfdgdfgdf'", JsonLdProcessor.getCoreContextClone())
+				.toSql('a').getItem2());
+		System.out.println(parseTypeQuery("a;b|(c;d)", JsonLdProcessor.getCoreContextClone()).toSql('a').getItem2());
 	}
 }
