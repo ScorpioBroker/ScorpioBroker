@@ -79,9 +79,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			return Uni.createFrom().failure(e);
 		}
 		return historyDAO.isTempEntityExist(request.getId(), HttpUtils.getInternalTenant(headers)).onItem()
-				.transform(Unchecked.function(t -> {
-					return t;
-				})).onItem().transformToUni(t2 -> {
+				.transformToUni(t2 -> {
 					return handleRequest(request).combinedWith((t, u) -> {
 						logger.debug("createMessage() :: completed");
 						return new CreateResult(request.getId(), Boolean.parseBoolean(t2.toString()));
@@ -130,9 +128,13 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
 			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) {
 		String tenantId = HttpUtils.getInternalTenant(headers);
-		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transform(Unchecked.function(t -> {
-			return new AppendHistoryEntityRequest(headers, resolved, entityId);
-		})).onItem().transformToUni(t2 -> {
+		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transformToUni(t -> {
+			try {
+				return Uni.createFrom().item(new AppendHistoryEntityRequest(headers, resolved, entityId));
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+			}
+		}).onItem().transformToUni(t2 -> {
 			return handleRequest(t2).combinedWith((t, u) -> {
 				logger.debug("appendToEntry() :: completed");
 				return t2.getUpdateResult();
@@ -161,15 +163,20 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		qp.setIncludeSysAttrs(true);
 		qp.setTenant(HttpUtils.getTenantFromHeaders(headers));
 
-		return historyDAO.query(qp).onItem().transformToUni(Unchecked.function(queryResult -> {
+		return historyDAO.query(qp).onItem().transformToUni(queryResult -> {
 			List<Map<String, Object>> entityList = ((QueryResult) queryResult).getData();
 			if (entityList.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Entity not found"));
 			}
-			UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, resolved, entityId,
-					resolvedAttrId, instanceId, entityList);
+			UpdateHistoryEntityRequest request;
+			try {
+				request = new UpdateHistoryEntityRequest(headers, resolved, entityId, resolvedAttrId, instanceId,
+						entityList);
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+			}
 			return handleRequest(request).combinedWith(t -> null);
-		}));
+		});
 
 	}
 
@@ -187,7 +194,15 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	}
 
 	public UniAndGroup2<CreateResult, Void> handleRequest(HistoryEntityRequest request) {
-		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request), kafkaSenderInterface.send(request));
+		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request), sendToKafka(request));
+	}
+
+	private Uni<Void> sendToKafka(HistoryEntityRequest request) {
+		if (historyToKafkaEnabled) {
+			return kafkaSenderInterface.send(request);
+		} else {
+			return Uni.createFrom().voidItem();
+		}
 	}
 
 	@Override

@@ -275,7 +275,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 
 				if (sendInitialNotification) {
-					subscriptionInfoDAO.getEntriesFromSub(t).onItem().transform(Unchecked.function(t2 -> {
+					subscriptionInfoDAO.getEntriesFromSub(t).onItem().transform(t2 -> {
 						if (!t2.isEmpty()) {
 							List<Map<String, Object>> notifcation = new ArrayList<Map<String, Object>>();
 							for (Map<String, Object> entry : t2) {
@@ -285,7 +285,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 									new BatchInfo(-1, -1));
 						}
 						return null;
-					})).onFailure().recoverWithItem(e -> {
+					}).onFailure().recoverWithItem(e -> {
 						logger.error("Failed to send initial notifcation", e);
 						return null;
 					}).await().indefinitely();
@@ -554,7 +554,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 			int triggerReason, BatchInfo batchInfo) {
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
-		if (batchInfo.getBatchId() == -1 || !batchHandling) {
+		if (!batchHandling || batchInfo == null || batchInfo.getBatchId() == -1) {
 			handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
 		} else {
 			batchNotificationHandler.addDataToBatch(batchInfo, handler, subscription, dataList, triggerReason);

@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -16,8 +17,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -148,16 +152,22 @@ public class EntityController {// implements EntityHandlerInterface {
 						return entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId, t.getItem2(),
 								t.getItem1()).onItem().transform(u -> {
 									return Tuple2.of(u, t.getItem3());
-								}).onItem().transform(Unchecked.function(t1 -> {
+								}).onItem().transformToUni(t1 -> {
 									if (t1.getItem1().getNotUpdated().isEmpty()) {
-										return RestResponse.noContent();
+										return Uni.createFrom().item(RestResponse.noContent());
 									} else {
-										throw new ResponseException(ErrorType.BadRequestData,
-												JsonUtils.toPrettyString(JsonLdProcessor.compact(
-														t1.getItem1().getNotUpdated().get(0), t1.getItem2(), opts)));
+										try {
+											return Uni.createFrom()
+													.failure(new ResponseException(ErrorType.BadRequestData,
+															JsonUtils.toPrettyString(JsonLdProcessor.compact(
+																	t1.getItem1().getNotUpdated().get(0), t1.getItem2(),
+																	opts))));
+										} catch (Exception e) {
+											return Uni.createFrom().failure(e);
+										}
 
 									}
-								})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+								}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 					} catch (Exception e) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}

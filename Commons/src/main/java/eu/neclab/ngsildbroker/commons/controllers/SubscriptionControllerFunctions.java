@@ -8,6 +8,7 @@ import java.util.Map;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -120,7 +121,7 @@ public interface SubscriptionControllerFunctions {
 		boolean count = qp.getCountResult();
 
 		return subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request)).onItem()
-				.transformToUni(Unchecked.function(result -> {
+				.transformToUni(result -> {
 					int toIndex = offset + actualLimit;
 					ArrayList<Object> additionalLinks = new ArrayList<Object>();
 					if (limit == 0 || toIndex > result.size() - 1) {
@@ -157,7 +158,7 @@ public interface SubscriptionControllerFunctions {
 
 					return HttpUtils.generateReply(request, getSubscriptions(realResult), additionalHeaders,
 							AppConstants.SUBSCRIPTION_ENDPOINT);
-				})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -175,9 +176,9 @@ public interface SubscriptionControllerFunctions {
 			logger.trace("call getSubscriptions() ::");
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return subscriptionService.getSubscription(id, headers);
-		}).onItem().transformToUni(Unchecked.function(t -> {
+		}).onItem().transformToUni(t -> {
 			return HttpUtils.generateReply(request, t.getSubscription().toJson(), AppConstants.SUBSCRIPTION_ENDPOINT);
-		})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -196,7 +197,7 @@ public interface SubscriptionControllerFunctions {
 			HttpServerRequest request, String id, String payload, Logger logger) {
 		logger.trace("call updateSubscription() ::");
 		return HttpUtils.validateUri(id).onItem().transformToUni(t -> HttpUtils.getAtContext(request)).onItem()
-				.transformToUni(Unchecked.function(linkHeaders -> {
+				.transformToUni(linkHeaders -> {
 					boolean atContextAllowed;
 					try {
 						atContextAllowed = HttpUtils.doPreflightCheck(request, linkHeaders);
@@ -205,7 +206,12 @@ public interface SubscriptionControllerFunctions {
 					}
 					List<Object> context = new ArrayList<Object>();
 					context.addAll(linkHeaders);
-					Map<String, Object> body = ((Map<String, Object>) JsonUtils.fromString(payload));
+					Map<String, Object> body;
+					try {
+						body = ((Map<String, Object>) JsonUtils.fromString(payload));
+					} catch (Exception e) {
+						return Uni.createFrom().failure(e);
+					}
 					Object bodyContext = body.get(JsonLdConsts.CONTEXT);
 					try {
 						body = (Map<String, Object>) JsonLdProcessor.expand(linkHeaders, body, opts,
@@ -221,8 +227,13 @@ public interface SubscriptionControllerFunctions {
 							context.add(bodyContext);
 						}
 					}
-					Subscription subscription = Subscription.expandSubscription(body,
-							JsonLdProcessor.getCoreContextClone().parse(context, true), true);
+					Subscription subscription;
+					try {
+						subscription = Subscription.expandSubscription(body,
+								JsonLdProcessor.getCoreContextClone().parse(context, true), true);
+					} catch (Exception e) {
+						return Uni.createFrom().failure(e);
+					}
 					if (subscription.getId() == null) {
 						subscription.setId(id);
 					}
@@ -234,7 +245,7 @@ public interface SubscriptionControllerFunctions {
 					}
 					return subscriptionService.updateSubscription(subscriptionRequest).onItem()
 							.transform(t -> RestResponse.noContent());
-				})).onFailure().recoverWithItem(t -> HttpUtils.handleControllerExceptions(t));
+				}).onFailure().recoverWithItem(t -> HttpUtils.handleControllerExceptions(t));
 
 	}
 

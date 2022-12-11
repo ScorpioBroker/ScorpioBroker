@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,6 +18,8 @@ import javax.el.MethodNotFoundException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
@@ -183,9 +186,14 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		// get entity details
 		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
-				.transform(
-						Unchecked.function(t -> new AppendCSourceRequest(headers, registrationId, t, entry, options)))
-				.onItem().transformToUni(t -> {
+				.transformToUni(t -> {
+					try {
+						return Uni.createFrom()
+								.item(new AppendCSourceRequest(headers, registrationId, t, entry, options));
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+				}).onItem().transformToUni(t -> {
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
 						return Uni.createFrom().nullItem();
 					}
@@ -245,10 +253,14 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
-				.transform(Unchecked.function(t -> {
-					return Tuple2.of(new DeleteCSourceRequest(null, headers, registrationId),
-							new DeleteCSourceRequest(t, headers, registrationId));
-				})).onItem().transformToUni(t -> cSourceInfoDAO.storeRegistryEntry(t.getItem1()).onItem()
+				.transformToUni(t -> {
+					try {
+						return Uni.createFrom().item(Tuple2.of(new DeleteCSourceRequest(null, headers, registrationId),
+								new DeleteCSourceRequest(t, headers, registrationId)));
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+				}).onItem().transformToUni(t -> cSourceInfoDAO.storeRegistryEntry(t.getItem1()).onItem()
 						.transformToUni(i -> kafkaSenderInterface.send(t.getItem2()).onItem().transform(k -> true)));
 
 	}
@@ -465,7 +477,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				}).onFailure().recoverWithItem(e -> {
 					logger.error("Failed to store internal regentry", e);
 					return false;
-				}).onItem().transformToUni(Unchecked.function(t -> {
+				}).onItem().transformToUni(t -> {
 					if (t && !fedBrokers.equals(AppConstants.INTERNAL_NULL_KEY) && !fedBrokers.isBlank()) {
 						List<Uni<Object>> unis = Lists.newArrayList();
 						for (String fedBroker : fedBrokers.split(",")) {
@@ -478,7 +490,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 							HashMap<String, Object> copyToSend = Maps.newHashMap(regEntry.getFinalPayload());
 							String csourceId = microServiceUtils.getGatewayURL().toString();
 							copyToSend.put(NGSIConstants.JSON_LD_ID, csourceId);
-							String body = JsonUtils.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts));
+							String body;
+							try {
+								body = JsonUtils.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts));
+							} catch (Exception e) {
+								return Uni.createFrom().failure(e);
+							}
 							unis.add(UniHelper.toUni(webClient
 									.patchAbs(finalFedBroker + "csourceRegistrations/" + csourceId)
 									.putHeader("Content-Type", "application/json").sendBuffer(Buffer.buffer(body)))
@@ -507,7 +524,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 					}
 					return Uni.createFrom().nullItem();
-				})).onFailure().recoverWithUni(e -> {
+				}).onFailure().recoverWithUni(e -> {
 					logger.error("Failed to register with fed broker", e);
 					return Uni.createFrom().nullItem();
 				}).await().indefinitely();

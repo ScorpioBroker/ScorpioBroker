@@ -34,7 +34,7 @@ public interface NGSIConstants {
 	public final static String CSOURCE_DESCRIPTION = "description";
 	public final static String CSOURCE_ENDPOINT = "endpoint";
 	public final static String CSOURCE_EXPIRES = "expiresAt";
-	public final static String CSOURCE_NAME = "name";
+	//public final static String CSOURCE_NAME = "name";
 	public final static String CSOURCE_TYPE = "type";
 	public final static String CSOURCE_TIMESTAMP = "timestamp";
 	public final static String CSOURCE_COORDINATES = "coordinates";

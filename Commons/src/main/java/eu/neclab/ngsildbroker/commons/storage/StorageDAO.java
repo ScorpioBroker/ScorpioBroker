@@ -165,7 +165,15 @@ public abstract class StorageDAO {
 						return queryResult;
 					});
 				} else {
-					return storageFunctions.translateNgsildQueryToSql(qp, conn).onItem().transform(t -> {
+					return storageFunctions.translateNgsildQueryToSql(qp, conn).onFailure().recoverWithUni(t -> {
+						String sqlCode = ((PgException) t).getCode();
+						if (sqlCode.equals("2201B")) {
+							return Uni.createFrom().failure(
+									new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
+						} else {
+							return Uni.createFrom().failure(t);
+						}
+					}).onItem().transform(t -> {
 						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 						List<Map<String, Object>> list = Lists.newArrayList();
 						t.forEach(e -> {
@@ -205,6 +213,9 @@ public abstract class StorageDAO {
 					unis.add(doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(),
 							entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
 							entry.getEntityModifiedAt(), entry.getInstanceId(), entry.getOverwriteOp()));
+				}
+				if (unis.isEmpty()) {
+					return Uni.createFrom().item(new CreateResult(request.getId(), false));
 				}
 				return Uni.combine().all().unis(unis).combinedWith(t -> {
 					CreateResult result = new CreateResult("", false);

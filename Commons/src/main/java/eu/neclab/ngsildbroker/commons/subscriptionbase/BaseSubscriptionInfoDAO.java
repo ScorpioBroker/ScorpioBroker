@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
@@ -14,6 +16,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import io.smallrye.mutiny.Uni;
@@ -86,7 +89,14 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 	public Uni<List<Map<String, Object>>> getEntriesFromSub(SubscriptionRequest subscriptionRequest) {
 		String tenant = subscriptionRequest.getTenant();
 		Subscription subscription = subscriptionRequest.getSubscription();
-		List<QueryParams> qps = ParamsResolver.getQueryParamsFromSubscription(subscription);
+
+		List<QueryParams> qps;
+		try {
+			qps = ParamsResolver.getQueryParamsFromSubscription(subscription,
+					JsonLdProcessor.getCoreContextClone().parse(subscriptionRequest.getContext(), true));
+		} catch (Exception e) {
+			return Uni.createFrom().failure(e);
+		}
 		return query(qps, tenant);
 	}
 
@@ -116,8 +126,7 @@ public abstract class BaseSubscriptionInfoDAO extends StorageDAO implements Subs
 		return clientManager.getClient(tenant, true).onItem()
 				.transformToUni(client -> client.preparedQuery("INSERT INTO " + dbname
 						+ " (subscription_id, subscription_request) VALUES ($1, $2) ON CONFLICT(subscription_id) DO UPDATE SET subscription_request = EXCLUDED.subscription_request")
-						.execute(Tuple.of(sub.getId(), sub.toJsonString())).onItem().ignore()
-						.andContinueWithNull());
+						.execute(Tuple.of(sub.getId(), sub.toJsonString())).onItem().ignore().andContinueWithNull());
 	}
 
 	@Override

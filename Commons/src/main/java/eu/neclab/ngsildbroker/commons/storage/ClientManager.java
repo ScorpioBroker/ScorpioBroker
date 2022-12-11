@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
+import java.sql.SQLException;
 import java.util.HashMap;
 
 import javax.annotation.PostConstruct;
@@ -99,21 +100,23 @@ public class ClientManager {
 	}
 
 	private Uni<Tuple2<DataSource, String>> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
-		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
-				.transform(Unchecked.function(tenantDatabaseName -> {
-					// TODO this needs to be from the config not hardcoded!!!
-					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
-					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
-							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
-							.connectionPoolConfiguration(
-									cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
-											.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
-													.connectionProviderClassName(jdbcDriver).autoCommit(false)
-													.principal(new NamePrincipal(username))
-													.credential(new SimplePassword(password))));
-					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
-					return Tuple2.of(agroaldataSource, tenantDatabaseName);
-				}));
+		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem().transformToUni(tenantDatabaseName -> {
+			// TODO this needs to be from the config not hardcoded!!!
+			String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
+			AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
+					.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
+					.connectionPoolConfiguration(cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
+							.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
+									.connectionProviderClassName(jdbcDriver).autoCommit(false)
+									.principal(new NamePrincipal(username)).credential(new SimplePassword(password))));
+			AgroalDataSource agroaldataSource;
+			try {
+				agroaldataSource = AgroalDataSource.from(configuration);
+			} catch (SQLException e) {
+				return Uni.createFrom().failure(e);
+			}
+			return Uni.createFrom().item(Tuple2.of(agroaldataSource, tenantDatabaseName));
+		});
 
 	}
 
@@ -122,10 +125,10 @@ public class ClientManager {
 	}
 
 	public Uni<String> findDataBaseNameByTenantId(String tenant, boolean create) {
-		String databasename = "ngb"+tenant.hashCode();
-		String databasenameWithoutHash = "ngb"+tenant;
+		String databasename = "ngb" + tenant.hashCode();
+		String databasenameWithoutHash = "ngb" + tenant;
 		return pgClient.preparedQuery("SELECT datname FROM pg_database where datname = $1 OR datname = $2")
-				.execute(Tuple.of(databasename,databasenameWithoutHash)).onItem().transformToUni(pgRowSet -> {
+				.execute(Tuple.of(databasename, databasenameWithoutHash)).onItem().transformToUni(pgRowSet -> {
 					if (pgRowSet.size() == 0) {
 						if (create) {
 							return pgClient.preparedQuery("create database \"" + databasename + "\"").execute().onItem()

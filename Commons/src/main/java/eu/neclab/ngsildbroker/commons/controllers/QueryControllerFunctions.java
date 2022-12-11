@@ -1,11 +1,14 @@
 package eu.neclab.ngsildbroker.commons.controllers;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -181,11 +184,27 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	public static Uni<RestResponse<Object>> postQuery(EntryQueryService queryService, HttpServerRequest request,
 			String payload, Integer limit, Integer offset, String qToken, List<String> options, boolean count,
 			int defaultLimit, int maxLimit, int payloadType, PayloadQueryParamParser queryParser) {
-		return HttpUtils.getAtContext(request).onItem().transform(Unchecked.function(t -> {
-			boolean atContextAllowed = HttpUtils.doPreflightCheck(request, t);
-			Map<String, Object> rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
-			Map<String, Object> queries = (Map<String, Object>) JsonLdProcessor
-					.expand(t, rawPayload, opts, payloadType, atContextAllowed).get(0);
+		return HttpUtils.getAtContext(request).onItem().transformToUni(t -> {
+			boolean atContextAllowed;
+			try {
+				atContextAllowed = HttpUtils.doPreflightCheck(request, t);
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+			}
+			Map<String, Object> rawPayload;
+			try {
+				rawPayload = (Map<String, Object>) JsonUtils.fromString(payload);
+			} catch (Exception e) {
+				return Uni.createFrom().failure(e);
+			}
+
+			Map<String, Object> queries;
+			try {
+				queries = (Map<String, Object>) JsonLdProcessor
+						.expand(t, rawPayload, opts, payloadType, atContextAllowed).get(0);
+			} catch (Exception e) {
+				return Uni.createFrom().failure(e);
+			}
 
 			if (rawPayload.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				Object payloadContext = rawPayload.get(NGSIConstants.JSON_LD_CONTEXT);
@@ -199,15 +218,19 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 
 			context = context.parse(t, true);
 
-			QueryParams params = queryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options,
-					context);
+			QueryParams params;
+			try {
+				params = queryParser.parse(queries, limit, offset, defaultLimit, maxLimit, count, options, context);
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+			}
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			String tenant = HttpUtils.getTenantFromHeaders(headers);
 			if (tenant != null) {
 				params.setTenant(tenant);
 			}
-			return Tuple4.of(params, t, headers, context);
-		})).onItem()
+			return Uni.createFrom().item(Tuple4.of(params, t, headers, context));
+		}).onItem()
 				.transformToUni(
 						t -> queryService.getData(t.getItem1(), payload, t.getItem2(), t.getItem3(), true).onItem()
 								.transformToUni(t2 -> HttpUtils.generateReply(request, t2, true, count, t.getItem4(),
