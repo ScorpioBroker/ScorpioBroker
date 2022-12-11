@@ -136,18 +136,22 @@ public class EntityService implements EntryCRUDService {
 
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		// get entity details
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
-				.transform(Unchecked.function(t -> new AppendEntityRequest(headers, entityId, t, resolved, options)))
-				.onItem().transformToUni(t -> {
-					if (t.getUpdateResult().getUpdated().isEmpty()) {
-						return Uni.createFrom().item(t.getUpdateResult());
-					}
-					t.setBatchInfo(batchInfo);
-					return handleRequest(t).onItem().transform(v -> {
-						logger.trace("partialUpdateEntity() :: completed");
-						return t.getUpdateResult();
-					});
-				});
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem().transformToUni(t -> {
+			AppendEntityRequest req;
+			try {
+				req = new AppendEntityRequest(headers, entityId, t, resolved, options);
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+			}
+			if (req.getUpdateResult().getUpdated().isEmpty()) {
+				return Uni.createFrom().item(req.getUpdateResult());
+			}
+			req.setBatchInfo(batchInfo);
+			return handleRequest(req).onItem().transform(v -> {
+				logger.trace("partialUpdateEntity() :: completed");
+				return req.getUpdateResult();
+			});
+		});
 	}
 
 	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,

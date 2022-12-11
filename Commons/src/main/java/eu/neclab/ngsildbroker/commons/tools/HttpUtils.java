@@ -257,14 +257,23 @@ public final class HttpUtils {
 	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
 			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
 			Context ldContext, List<Object> contextLinks, String geometryProperty) {
+		try {
+			return Uni.createFrom().item(getReplyBodyNoUni(acceptHeader, endPoint, additionalHeaders, expanded,
+					forceArrayResult, ldContext, contextLinks, geometryProperty));
+		} catch (Exception e) {
+			return Uni.createFrom().failure(e);
+		}
+	}
+
+	private static String getReplyBodyNoUni(List<String> acceptHeader, int endPoint,
+			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
+			Context ldContext, List<Object> contextLinks, String geometryProperty) throws Exception {
 		String replyBody;
 		int sendingContentType = parseAcceptHeader(acceptHeader);
 		Map<String, Object> compacted;
-		try {
-			compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
-		} catch (JsonLdError | ResponseException e4) {
-			return Uni.createFrom().failure(e4);
-		}
+
+		compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
+
 		Object context = compacted.get(JsonLdConsts.CONTEXT);
 		Object result;
 		Object graph = compacted.get(JsonLdConsts.GRAPH);
@@ -293,11 +302,8 @@ public final class HttpUtils {
 						entry.remove(JsonLdConsts.CONTEXT);
 					}
 				}
-				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e3) {
-					return Uni.createFrom().failure(e3);
-				}
+
+				replyBody = JsonUtils.toPrettyString(result);
 				if (contextLinks != null) {
 					for (Object entry : contextLinks) {
 						if (entry instanceof String) {
@@ -319,41 +325,30 @@ public final class HttpUtils {
 						entry.put(JsonLdConsts.CONTEXT, context);
 					}
 				}
-				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e2) {
-					return Uni.createFrom().failure(e2);
-				}
+
+				replyBody = JsonUtils.toPrettyString(result);
 				break;
 			case 3:
 				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-				try {
-					replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
-				} catch (JsonLdError | ResponseException e1) {
-					return Uni.createFrom().failure(e1);
-				}
+				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
 				break;
 			case 4:// geo+json
 				switch (endPoint) {
 					case AppConstants.QUERY_ENDPOINT:
 						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-						try {
-							replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
-						} catch (IOException e) {
-							return Uni.createFrom().failure(e);
-						}
+						replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
 						break;
 					default:
-						return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
-								"Provided accept types " + acceptHeader + " are not supported"));
+						throw new ResponseException(ErrorType.NotAcceptable,
+								"Provided accept types " + acceptHeader + " are not supported");
 				}
 				break;
 			case -1:
 			default:
-				return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
-						"Provided accept types " + acceptHeader + " are not supported"));
+				throw new ResponseException(ErrorType.NotAcceptable,
+						"Provided accept types " + acceptHeader + " are not supported");
 		}
-		return Uni.createFrom().item(replyBody);
+		return replyBody;
 
 	}
 
@@ -663,7 +658,7 @@ public final class HttpUtils {
 
 	public static RestResponse<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
 			Object notificationData, List<Object> context, String geometryProperty)
-			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
+			throws ResponseException, JsonGenerationException, JsonParseException, IOException, Exception {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
 		ArrayListMultimap<String, String> headers;
@@ -677,8 +672,8 @@ public final class HttpUtils {
 			acceptHeader = new ArrayList<String>();
 			acceptHeader.add("application/json");
 		}
-		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
-				ldContext, context, geometryProperty).await().indefinitely();
+		String body = getReplyBodyNoUni(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
+				ldContext, context, geometryProperty);
 		// need to clean context for subscriptions. This is a bit bad practice but reply
 		// generation relies on side effects so clean up here
 		HashSet<Object> temp = Sets.newHashSet(context);

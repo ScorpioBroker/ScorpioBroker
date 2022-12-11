@@ -76,7 +76,9 @@ public class MicroServiceUtils {
 		for (Entry<String, Object> entry : original.entrySet()) {
 			Object copiedValue;
 			Object originalValue = entry.getValue();
-			if (originalValue instanceof List) {
+			if (originalValue == null) {
+				copiedValue = null;
+			} else if (originalValue instanceof List) {
 				copiedValue = deppCopyList((List<Object>) originalValue);
 			} else if (originalValue instanceof Map) {
 				copiedValue = deepCopyMap((Map<String, Object>) originalValue);

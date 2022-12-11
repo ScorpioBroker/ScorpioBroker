@@ -66,6 +66,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
@@ -142,7 +143,10 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		kafkaSender = getSyncChannelSender();
 		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
-		webClient = WebClient.create(vertx);
+		
+		WebClientOptions options = new WebClientOptions();
+		options.setFollowRedirects(true);
+		webClient = WebClient.create(vertx, options);
 		subscriptionInfoDAO = getSubscriptionInfoDao();
 		this.tenant2Ids2Type = subscriptionInfoDAO.getIds2Type().await().indefinitely();
 		sendInitialNotification = sendInitialNotification();
