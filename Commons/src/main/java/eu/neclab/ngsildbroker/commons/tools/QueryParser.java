@@ -155,6 +155,12 @@ public class QueryParser {
 		if (georel == null || georel.isEmpty()) {
 			throw new ResponseException(ErrorType.BadRequestData, "georel needs to be provided");
 		}
+		if (coordinates == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "coordinates needs to be provided");
+		}
+		if (geometry == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "geometry needs to be provided");
+		}
 		String[] temp = georel.split(";");
 		GeoQueryTerm result = new GeoQueryTerm(context);
 		result.setGeorel(temp[0]);
@@ -292,22 +298,4 @@ public class QueryParser {
 		return root;
 	}
 
-	public static void main(String[] args) throws Exception {
-		JsonLdProcessor.init("https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld");
-//		List<Object> expanded = JsonLdProcessor.expand(JsonUtils
-//				.fromString("{\"@context\": \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\",\r\n"
-//						+ " \"id\": \"a:b\",\r\n" + " \"type\": \"c\",\r\n" + " \"bla\": {\r\n"
-//						+ "   \"type\": \"Property\",\r\n"
-//						+ "   \"value\": [[[123,456],[123,456],[123,456],[123,456],[123,456]]]\r\n" + " },\r\n"
-//						+ " \"blub\": {\r\n" + "   \"type\": \"GeoProperty\",\r\n" + "   \"value\": {\r\n"
-//						+ "     \"type\": \"Polygon\",\r\n"
-//						+ "     \"coordinates\": [[[123,456],[123,456],[123,456],[123,456],[123,456]]]\r\n"
-//						+ "     \r\n" + "   }\r\n" + " }\r\n" + "}"));
-//		System.out.println(JsonUtils.toPrettyString(expanded));
-//		Object temp = JsonLdProcessor.getCoreContextClone().expandValue("http://dasdasd.asdas", 123);
-//		System.out.println(temp.getClass());
-		System.out.println(parseQuery("a==123|b>44|c=='dsadsd';d=='dfgfdgdfgdf'", JsonLdProcessor.getCoreContextClone())
-				.toSql('a', null).getItem2());
-		System.out.println(parseTypeQuery("a;b|(c;d)", JsonLdProcessor.getCoreContextClone()).toSql('a').getItem2());
-	}
 }

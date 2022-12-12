@@ -324,6 +324,18 @@ $_$ LANGUAGE PLPGSQL;
 
 CREATE TRIGGER csource_extract_jsonb_fields_to_information_table AFTER INSERT OR UPDATE ON csource
     FOR EACH ROW EXECUTE PROCEDURE CSOURCEINFORMATION_EXTRACT_JSONB_FIELDS();	
+	
+CREATE TABLE temp (
+	c_id text,
+	reg jsonb
+);
+INSERT INTO temp SELECT c_id, reg FROM csource;
+
+DELETE FROM csource;
+
+INSERT INTO csource SELECT c_id, reg FROM temp;
+
+drop table temp;
 
 ALTER TABLE PUBLIC.ENTITY RENAME COLUMN DATA TO ENTITY;
 
@@ -392,8 +404,11 @@ CREATE TABLE public.attr2iid
 	is_lang boolean,
 	dataset_id text,
 	attr_value jsonb,
-	geoValue GEOMETRY(Geometry, 4326)
+	geo_value GEOMETRY(Geometry, 4326)
 );
+CREATE INDEX i_attr_geo_value
+    ON public.attr2iid USING gist
+    (geo_value gist_geometry_ops_nd);
 
 ALTER TABLE IF EXISTS public.attr2iid
     ADD CONSTRAINT iid_fkey FOREIGN KEY (iid)
@@ -650,7 +665,7 @@ declare
 BEGIN
 	IF entity ? 'https://uri.etsi.org/ngsi-ld/scope' THEN
 		FOR tempJson IN SELECT jsonb_array_elements FROM jsonb_array_elements(entity->'https://uri.etsi.org/ngsi-ld/scope') LOOP
-			INSERT INTO escope2iid VALUES (entity_iid, tempJson->>'@value')
+			INSERT INTO escope2iid VALUES (entity_iid, tempJson->>'@value');
 		END LOOP;
 		
 	END IF;

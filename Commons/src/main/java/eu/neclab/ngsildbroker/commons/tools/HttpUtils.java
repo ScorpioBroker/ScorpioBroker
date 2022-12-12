@@ -737,4 +737,86 @@ public final class HttpUtils {
 		}
 		return result;
 	}
+
+
+	
+	public static RestResponse<Object> generateEntityResult(List<Object> contextHeader, Context context,
+			int acceptHeader, Map<String, Object> entity, String geometryProperty, Set<String> options) {
+		String replyBody;
+		String contentType;
+		Object result;
+		Map<String, Object> compacted;
+		ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
+		switch (acceptHeader) {
+		case 1:
+			try {
+				// todo add options to compact
+				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1);
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+			Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+			if (contextHeader.isEmpty()) {
+				contextHeader.add(((List<Object>) bodyContext).get(0));
+			}
+			try {
+				replyBody = JsonUtils.toPrettyString(compacted);
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+			for (Object entry : contextHeader) {
+				resp.header(NGSIConstants.LINK_HEADER, getLinkHeader(entry));
+			}
+			contentType = AppConstants.NGB_APPLICATION_JSON;
+		case 2:
+			try {
+				// todo add options to compact
+				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1);
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+			contentType = AppConstants.NGB_APPLICATION_JSONLD;
+			try {
+				replyBody = JsonUtils.toPrettyString(compacted);
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+			break;
+		case 3:
+
+			try {
+				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(entity));
+			} catch (JsonLdError | ResponseException e) {
+				return HttpUtils.handleControllerExceptions(e);
+			}
+			contentType = AppConstants.NGB_APPLICATION_NQUADS;
+			break;
+		case 4:// geo+json
+			try {
+				// todo add options to compact
+				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1);
+				replyBody = JsonUtils.toPrettyString(generateGeoJson(compacted, geometryProperty, contextHeader));
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+
+			contentType = AppConstants.NGB_APPLICATION_GEO_JSON;
+			break;
+		default:
+			return handleControllerExceptions(new ResponseException(ErrorType.InternalError));
+		}
+		if (options.contains("compress")) {
+			result = zipResult(replyBody);
+			contentType = AppConstants.NGB_APPLICATION_ZIP;
+		} else {
+			result = replyBody;
+		}
+		return resp.header(HttpHeaders.CONTENT_TYPE, contentType).entity(result).build();
+	}
+
+	private static String getLinkHeader(Object entry) {
+		return "<" + entry + ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"";
+	}
+
+
 }

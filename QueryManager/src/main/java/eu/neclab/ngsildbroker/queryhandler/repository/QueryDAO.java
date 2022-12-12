@@ -7,7 +7,10 @@ import java.util.Set;
 
 import javax.inject.Singleton;
 
+import com.google.common.collect.Sets;
+
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
@@ -41,9 +44,8 @@ public class QueryDAO extends StorageDAO {
 
 	public Uni<RowSet<Row>> getRemoteSourcesForEntity(String entityId, Set<String> expandedAttrs, String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			// TODO add expires < now to where
 			return client.preparedQuery(
-					"SELECT C.endpoint C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntity=true AND (C.E_ID=$1 OR C.E_ID=NULL) AND (C.e_prop=NULL OR C.e_prop IN $2) AND (C.e_rel=NULL OR C.e_rel IN $2)")
+					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode, (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntity=true AND (C.E_ID=$1 OR C.E_ID=NULL) AND (C.e_prop=NULL OR C.e_prop IN $2) AND (C.e_rel=NULL OR C.e_rel IN $2) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') GROUP BY C.endpoint, C.tenant_id, c.headers, c.reg_mode")
 					.execute(Tuple.of(entityId, expandedAttrs));
 		});
 	}
@@ -242,6 +244,20 @@ public class QueryDAO extends StorageDAO {
 					"SELECT C.endpoint C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeInfo=true AND (C.e_prop=NULL OR C.e_prop=$1) AND (C.e_rel=NULL OR C.e_rel=$1)")
 					.execute(Tuple.of(attrib));
 		});
+	}
+
+	public Uni<RowSet<Row>> getRemoteSourcesForQuery(String tenantId, Set<String> id, TypeQueryTerm typeQuery, String idPattern,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			Set<String> attribs = Sets.newHashSet();
+			if(attrsQuery != null) {
+				attribs.addAll(attrsQuery.getAttrs());
+			}
+			if()
+			"SELECT C.endpoint C.tenant_id, c.headers, c.reg_mode, c.queryEntity, c.queryBatch FROM CSOURCEINFORMATION AS C WHERE (c.queryEntity OR c.queryBatch) AND (C.e_prop=NULL OR C.e_prop=$1) AND (C.e_rel=NULL OR C.e_rel=$1)"
+		});
+		
 	}
 
 }

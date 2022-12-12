@@ -117,5 +117,6 @@ public class AppConstants {
 	public static final int BATCH_ERROR_REQUEST = 99;
 	public static final String SQL_ALREADY_EXISTS = "DONTKNOWLOOKUP";
 	public static final String SQL_NOT_FOUND = "02000";
+	public static final String NGB_APPLICATION_ZIP = "application/zip";
 
 }

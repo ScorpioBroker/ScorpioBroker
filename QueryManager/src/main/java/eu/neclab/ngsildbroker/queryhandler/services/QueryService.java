@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
@@ -81,15 +82,16 @@ public class QueryService {
 	}
 
 	public Uni<QueryResult> query(ArrayListMultimap<String, String> headers, Set<String> id, TypeQueryTerm typeQuery,
-			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, String csf, GeoQueryTerm geoQuery,
-			String lang, ScopeQueryTerm scopeQuery, int limit, int offSet, boolean count, boolean localOnly) {
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
+			String lang, int limit, int offSet, boolean count, boolean localOnly) {
 		Uni<RowSet<Row>> queryEntities = queryDAO.query(HttpUtils.getTenantFromHeaders(headers), id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery,
 				scopeQuery, limit, offSet, count);
 		Uni<List<Map<String, Object>>> queryRemoteEntities;
 		if (localOnly) {
 			queryRemoteEntities = Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
 		} else {
-			
+//			queryRemoteEntities= queryDAO.getRemoteSourcesForQuery(HttpUtils.getTenantFromHeaders(headers), id, typeQuery,
+//					idPattern, attrsQuery, qQuery, csf, geoQuery, scopeQuery).onItem();
 		}
 		return null;
 	}
@@ -316,12 +318,14 @@ public class QueryService {
 							StringBuilder url = new StringBuilder(
 									row.getString(0) + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId);
 							url.append("?");
-
-							if (attrs != null && !attrs.isEmpty()) {
-								url.append("attrs=" + String.join(",", attrs) + "&");
-							}
-							if (geometryProperty != null) {
-								url.append("geometryProperty=" + geometryProperty + "&");
+							String[] callAttrs = row.getArrayOfStrings(4);
+							//TODO remove the unneeded checks ... don't know how the db [null] will be returne
+							if (callAttrs != null && callAttrs.length > 0 && callAttrs[0] !=null) {
+								url.append("attrs=" + String.join(",", callAttrs) + "&");
+							}else {
+								if (attrs != null && !attrs.isEmpty()) {
+									url.append("attrs=" + String.join(",", attrs) + "&");
+								}
 							}
 							if (lang != null) {
 								url.append("lang=" + lang + "&");
@@ -385,7 +389,6 @@ public class QueryService {
 									List<Map<String, Object>> newValue = (List<Map<String, Object>>) attrib.getValue();
 									addRegModeToValue(newValue, regMode);
 									if (currentValue == null) {
-
 										result.put(key, newValue);
 									} else {
 										mergeValues((List<Map<String, Object>>) currentValue, newValue);

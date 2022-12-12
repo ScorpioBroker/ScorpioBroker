@@ -21,17 +21,21 @@ public class AttrsQueryTerm {
 		attrs.add(context.expandIri(attr, false, true, null, null));
 	}
 
+	public Set<String> getAttrs() {
+		return attrs;
+	}
+
 	public Tuple2<Character, String> toSql(Character startChar, Character prevResult) throws ResponseException {
 		StringBuilder builder = new StringBuilder();
 		builder.append(startChar);
 		builder.append(" as (SELECT attr2iid.iid FROM ");
-		if(prevResult != null) {
+		if (prevResult != null) {
 			builder.append(prevResult);
 			builder.append(" LEFT JOIN attr2iid ON ");
 			builder.append(prevResult);
 			builder.append(".iid = attr2iid.iid WHERE ");
-			
-		}else {
+
+		} else {
 			builder.append(" attr2iid WHERE ");
 		}
 		for (String attr : attrs) {
