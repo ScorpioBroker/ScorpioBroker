@@ -344,36 +344,47 @@ public interface EntryControllerFunctions {
 						return Uni.createFrom().failure(e);
 					}
 				}
-				return Uni.createFrom().item(Tuple2.of(entityId, headers));
+				return Uni.createFrom().item(Tuple3.of(entityId, headers, t));
 			}).concatenate();
 		}).onItem().transformToUni(
-				t -> entityService.deleteEntry(t.getItem2(), t.getItem1(), batchInfo).onItem().transform(i -> {
-					if (i) {
-						return Tuple2.of(new BatchFailure("dummy", null), t.getItem1());
+				t -> entityService.deleteEntry(t.getItem2(), t.getItem1(), t.getItem3()).onItem().transform(i -> {
+					return i;
+				})).collectFailures().concatenate().collect().asList().onItem().transform(results -> {
+
+					List<ResponseException> resFailures = new ArrayList<>();
+					List<String> resSuccesses = new ArrayList<>();
+
+					int httpStatus = HttpStatus.SC_NO_CONTENT;
+
+					results.forEach(i -> {
+						List<ResponseException> failures = i.getFailures();
+						List<CRUDSuccess> successes = i.getSuccesses();
+						if (failures.isEmpty()) {
+							resSuccesses.add(i.getEntityId());
+						} else if (successes.isEmpty() && failures.size() == 1) {
+							failures.addAll(i.getFailures());
+							httpStatus = HttpStatus.SC_MULTI_STATUS;
+						} else {
+							failures.addAll(i.getFailures());
+							httpStatus = HttpStatus.SC_MULTI_STATUS;
+						}
+
+					});
+
+					String body = null;
+
+					if (httpStatus == HttpStatus.SC_NO_CONTENT) {
+						body = JsonUtils.toPrettyString(resSuccesses);
 					} else {
-						return Tuple2.of(
-								new BatchFailure(t.getItem1(), new NGSIRestResponse(ErrorType.InternalError, "")),
-								null);
-					}
-				}).onFailure().recoverWithItem(e -> {
-					NGSIRestResponse response;
-					if (e instanceof ResponseException) {
-						response = new NGSIRestResponse((ResponseException) e);
-					} else {
-						response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
+						Map<String, Object> resMap = Maps.newHashMap();
+						resMap.put("success", resSuccesses);
+						resMap.put("errors", resFailures);
+						body = JsonUtils.toPrettyString(resMap);
 					}
 
-					return Tuple2.of(new BatchFailure(t.getItem1(), response), null);
-				})).collectFailures().concatenate().collect().asList().onItem().transform(t -> {
-					BatchResult result = new BatchResult();
-					t.forEach(i -> {
-						if (i.getItem2() != null) {
-							result.addSuccess((String) i.getItem2());
-						} else {
-							result.addFail(i.getItem1());
-						}
-					});
-					return generateBatchResultReply(result, HttpStatus.SC_NO_CONTENT);
+					return RestResponseBuilderImpl.create(httpStatus).entity(body)
+							.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
+
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
