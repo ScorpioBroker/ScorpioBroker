@@ -315,6 +315,7 @@ public class QueryService {
 						List<Uni<Map<String, Object>>> tmp = Lists.newArrayList();
 						// C.endpoint C.tenant_id, c.headers, c.reg_mode
 						rows.forEach(row -> {
+							
 							StringBuilder url = new StringBuilder(
 									row.getString(0) + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId);
 							url.append("?");

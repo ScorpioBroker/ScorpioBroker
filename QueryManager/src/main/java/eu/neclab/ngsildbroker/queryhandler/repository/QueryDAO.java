@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,6 +8,7 @@ import java.util.Set;
 
 import javax.inject.Singleton;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -126,24 +128,37 @@ public class QueryDAO extends StorageDAO {
 				if (limit == 0 && count) {
 					query.append("), SELECT count(");
 					query.append(currentChar);
-					query.append(".iid) as count, null as entity FROM ");
+					query.append(".iid) as count FROM ");
 					query.append(currentChar);
 					query.append(';');
 				} else {
+					query.append("), entityCount as (SELECT count(");
+					query.append(currentChar);
+					query.append(".iid) as count FROM ");
+					query.append(currentChar);
+					query.append("), ");
+					query.append((char) (currentChar + 1));
+					query.append(" as (SELECT ");
+					query.append(currentChar);
+					query.append(".iid FROM ");
+					query.append(currentChar);
 					query.append(" LIMIT ");
 					query.append(limit);
 					query.append(" OFFSET ");
 					query.append(offSet);
-					query.append("), SELECT count(");
-					query.append(currentChar);
-					query.append(".iid) as count, entity.entity as entity FROM ");
+					currentChar++;
+					query.append("), SELECT entityCount.count As count, entity.entity as entity FROM entityCount, ");
 					query.append(currentChar);
 					query.append(" LEFT JOIN ENTITY ON ");
 					query.append(currentChar);
 					query.append(".iid = ENTITY.ID;");
 				}
 			} else {
-				query.append("), SELECT count(entity.id) as count, entity.entity as entity FROM ");
+				query.append("), SELECT count(entity.id) as count");
+				if (limit != 0 && count) {
+					query.append(", entity.entity as entity");
+				}
+				query.append(" FROM ");
 				query.append(currentChar);
 				query.append(" LEFT JOIN ENTITY ON ");
 				query.append(currentChar);
@@ -166,7 +181,8 @@ public class QueryDAO extends StorageDAO {
 				query.append(offSet);
 				query.append(';');
 			}
-			// TODO at the moment this does no sql escaping toSql method should return tuple
+			// TODO at the moment this does no sql escaping. toSql method should return
+			// tuple
 			// with respective values
 			return client.preparedQuery(query.toString()).execute();
 		});
@@ -246,18 +262,124 @@ public class QueryDAO extends StorageDAO {
 		});
 	}
 
-	public Uni<RowSet<Row>> getRemoteSourcesForQuery(String tenantId, Set<String> id, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+	public Uni<RowSet<Row>> getRemoteSourcesForQuery(String tenantId, Set<String> id, TypeQueryTerm typeQuery,
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			Set<String> attribs = Sets.newHashSet();
-			if(attrsQuery != null) {
+			if (attrsQuery != null) {
 				attribs.addAll(attrsQuery.getAttrs());
 			}
-			if()
-			"SELECT C.endpoint C.tenant_id, c.headers, c.reg_mode, c.queryEntity, c.queryBatch FROM CSOURCEINFORMATION AS C WHERE (c.queryEntity OR c.queryBatch) AND (C.e_prop=NULL OR C.e_prop=$1) AND (C.e_rel=NULL OR C.e_rel=$1)"
+			if (qQuery != null && attrsQuery == null && typeQuery == null) {
+				Set<String> result = Sets.newHashSet();
+				getAttribsFromQuery(qQuery, result);
+				attribs.addAll(result);
+			}
+			Set<String> types = Sets.newHashSet();
+			if (typeQuery != null) {
+				getTypesFromQuery(typeQuery, types);
+			}
+			List<Object> prepareObjects = Lists.newArrayList();
+			StringBuilder queryFront = new StringBuilder(
+					"SELECT C.endpoint C.tenant_id, c.headers, c.reg_mode, c.queryEntity, c.queryBatch");
+			StringBuilder wherePart = new StringBuilder(" WHERE ");
+			int dollarCount = 1;
+			if (!types.isEmpty()) {
+				queryFront.append(", array_agg(DISTINCT C.e_type) FILTER (WHERE C.e_type is not null) as entityType");
+				wherePart.append("(C.e_type is NULL OR C.e_type in $");
+				wherePart.append(dollarCount);
+				wherePart.append(") AND ");
+				prepareObjects.add(types);
+				dollarCount++;
+			} else {
+				queryFront.append(", null as entityType");
+			}
+			if (id != null) {
+				queryFront.append(", array_agg(DISTINCT C.e_id) FILTER (WHERE C.e_id is not null) as entityId");
+				wherePart.append("(C.e_id is NULL OR C.e_id in $");
+				wherePart.append(dollarCount);
+				wherePart.append(") AND (C.e_id_p is NULL OR C.e_id_p ~ ANY($");
+				wherePart.append(dollarCount);
+				wherePart.append(")) AND ");
+				prepareObjects.add(id);
+				dollarCount++;
+			} else {
+				queryFront.append(", null as entityId");
+			}
+			if (idPattern != null) {
+				queryFront.append(", array_agg(DISTINCT C.e_id) FILTER (WHERE C.e_id is not null) as entityId");
+				wherePart.append("(C.e_id is NULL OR $");
+				wherePart.append(dollarCount);
+				wherePart.append(" ~ C.e_id) AND (C.e_id_p is NULL OR $");
+				wherePart.append(dollarCount);
+				wherePart.append(" ~ C.e_id_p) AND ");
+				prepareObjects.add(id);
+				dollarCount++;
+			} else {
+				queryFront.append(", null as entityId");
+			}
+			if (attribs.isEmpty()) {
+				queryFront.append(
+						", (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs");
+				wherePart.append("(C.e_prop=NULL OR C.e_prop IN $");
+				wherePart.append(dollarCount);
+				wherePart.append(") AND (C.e_rel=NULL OR C.e_rel IN $");
+				wherePart.append(dollarCount);
+				wherePart.append(")) AND ");
+			} else {
+				queryFront.append(", null as attrs");
+			}
+			if (geoQuery != null) {
+				// TODO user intersect between search area and registration area
+			}else {
+				queryFront.append(", null as geoq");
+			}
+			if (scopeQuery != null) {
+				// TODO array check between scopes from query and reg query
+			}else {
+				queryFront.append(", null as scopeq");
+			}
+			if (csf != null) {
+				// TODO talk with martin to understand csf better
+			}
+			// remove last " AND "
+			wherePart.setLength(wherePart.length() - 5);
+			queryFront.append(" FROM CSOURCEINFORMATION AS C");
+			queryFront.append(wherePart);
+
+			return client.preparedQuery(queryFront.toString()).execute(Tuple.from(prepareObjects));
 		});
-		
+
+	}
+
+	private void getTypesFromQuery(TypeQueryTerm typeQuery, Set<String> result) {
+		String type = typeQuery.getType();
+		if (type != null) {
+			result.add(type);
+		}
+		TypeQueryTerm child = typeQuery.getFirstChild();
+		if (child != null) {
+			getTypesFromQuery(child, result);
+		}
+
+		while (typeQuery.hasNext()) {
+			getTypesFromQuery(typeQuery.getNext(), result);
+		}
+	}
+
+	private void getAttribsFromQuery(QQueryTerm qQuery, Set<String> result) {
+		String attrib = qQuery.getAttribute();
+		if (attrib != null) {
+			result.add(attrib);
+		}
+		QQueryTerm child = qQuery.getFirstChild();
+		if (child != null) {
+			getAttribsFromQuery(child, result);
+		}
+
+		while (qQuery.hasNext()) {
+			getAttribsFromQuery(qQuery.getNext(), result);
+		}
 	}
 
 }
