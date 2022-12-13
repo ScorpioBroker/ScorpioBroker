@@ -58,7 +58,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 					maxLimit, null);
 		}).onItem().transform(t -> {
 			if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
-				return HttpUtils.NOT_FOUND_REPLY;
+				return RestResponse.notFound();
 			} else {
 				return t;
 			}
@@ -75,7 +75,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 	 */
 	public static Uni<RestResponse<Object>> queryForEntries(EntryQueryService queryService, HttpServerRequest request,
 			boolean temporal, int defaultLimit, int maxLimit, boolean typeRequired) {
-		return getQueryData(queryService, request, request.query(), HttpUtils.getQueryParamMap(request), typeRequired,
+		return getQueryData(queryService, request, request.query(), (MultiMap) HttpUtils.getQueryParamMap(request), typeRequired,
 				true, temporal, defaultLimit, maxLimit, null).onFailure()
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -89,7 +89,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		return getQueryData(queryService, request, "", request.params(), false, false, false, defaultLimit, maxLimit,
 				check).onItem().transform(t -> {
 					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
-						return HttpUtils.NOT_FOUND_REPLY;
+						return RestResponse.notFound();
 					} else {
 						return t;
 					}
@@ -104,7 +104,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		return getQueryData(queryService, request, "", params, false, false, false, defaultLimit, maxLimit, check)
 				.onItem().transform(t -> {
 					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
-						return HttpUtils.NOT_FOUND_REPLY;
+						return RestResponse.notFound();
 					} else {
 						return t;
 					}
@@ -121,7 +121,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		return getQueryData(queryService, request, "", request.params(), false, false, false, defaultLimit, maxLimit,
 				check).onItem().transform(t -> {
 					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
-						return HttpUtils.NOT_FOUND_REPLY;
+						return RestResponse.notFound();
 					} else {
 						return t;
 					}
@@ -136,7 +136,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 		return getQueryData(queryService, request, "", params, false, false, false, defaultLimit, maxLimit, check)
 				.onItem().transform(t -> {
 					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
-						return HttpUtils.NOT_FOUND_REPLY;
+						return RestResponse.notFound();
 					} else {
 						return t;
 					}
