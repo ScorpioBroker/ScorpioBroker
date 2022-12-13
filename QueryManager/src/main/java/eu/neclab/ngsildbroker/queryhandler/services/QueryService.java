@@ -268,7 +268,7 @@ public class QueryService {
 									responseTypes = response.bodyAsJsonObject().getMap();
 									try {
 										responseTypes = (Map<String, Object>) JsonLdProcessor
-						/						.expand(getContextFromHeader(remoteHeaders), responseTypes, opts, -1,
+												.expand(getContextFromHeader(remoteHeaders), responseTypes, opts, -1,
 														false)
 												.get(0);
 									} catch (JsonLdError e) {
