@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
+import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
@@ -562,5 +564,59 @@ public class TypeQueryTerm {
 			return currentChar;
 
 		}
+	}
+
+	public TypeQueryTerm getDuplicateAndRemoveNotKnownTypes(String[] entityTypes) {
+		Set<String> lookup = Sets.newHashSet(entityTypes);
+		return getDuplicateAndRemoveNotKnownTypes(lookup);
+	}
+
+	public TypeQueryTerm getDuplicateAndRemoveNotKnownTypes(Set<String> lookup) {
+		TypeQueryTerm result = new TypeQueryTerm(linkHeaders);
+		if (this.type == null || lookup.contains(this.type)) {
+			result.type = this.type;
+			result.linkHeaders = this.linkHeaders;
+			result.nextAnd = this.nextAnd;
+			if (this.firstChild != null) {
+				result.firstChild = firstChild.getDuplicateAndRemoveNotKnownTypes(lookup);
+			}
+			if (this.hasNext()) {
+				result.next = next.getDuplicateAndRemoveNotKnownTypes(lookup);
+			}
+			return result;
+		} else {
+			if (hasNext()) {
+				return next.getDuplicateAndRemoveNotKnownTypes(lookup);
+			} else {
+				return null;
+			}
+		}
+	}
+
+	public String getTypeQuery() {
+		StringBuilder result = new StringBuilder();
+		getTypeQuery(result);
+		return result.toString();
+	}
+
+	public void getTypeQuery(StringBuilder result) {
+		if (type != null) {
+			result.append(linkHeaders.compactIri(type));
+		} else {
+			if (firstChild != null && firstChild.hasNext()) {
+				result.append('(');
+				firstChild.next.getTypeQuery(result);
+				result.append(')');
+			}
+		}
+		if (hasNext()) {
+			if (nextAnd) {
+				result.append(';');
+			} else {
+				result.append('|');
+			}
+			next.getTypeQuery(result);
+		}
+
 	}
 }
