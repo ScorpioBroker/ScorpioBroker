@@ -897,6 +897,14 @@ public class Subscription {
 								HashMultimap<String, String> receiverInfo = HashMultimap.create();
 								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null,
 										context, opts, 999);
+								
+								if(!compacted.containsKey(JsonLdConsts.GRAPH)) {
+									List<Map<String, Object>> ls = new ArrayList<>();
+									ls.add(compacted);
+									compacted = new HashMap<String, Object>();
+									compacted.put("@graph", ls);
+								}
+								
 								for (Map<String, Object> headerEntry : (List<Map<String, Object>>) compacted
 										.get(JsonLdConsts.GRAPH)) {
 									headerEntry.forEach((t, u) -> {
