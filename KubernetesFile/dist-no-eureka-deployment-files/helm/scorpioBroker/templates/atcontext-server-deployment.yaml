@@ -53,23 +53,7 @@ spec:
               - -c
               - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/ATCONTEXT-SERVER/$HOSTNAME:atcontext-server:27015/status?value=OUT_OF_SERVICE"
         {{ end }}
-        readinessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 27015
-          initialDelaySeconds: {{ .Values.atContextServer.readinessProbe.initialDelaySeconds }}
-          failureThreshold: {{ .Values.atContextServer.readinessProbe.failureThreshold }}
-          periodSeconds: {{ .Values.atContextServer.readinessProbe.periodSeconds }}
-         
-      
-        livenessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 27015
-          initialDelaySeconds: {{ .Values.atContextServer.livenessProbe.initialDelaySeconds }}
-          failureThreshold: {{ .Values.atContextServer.readinessProbe.failureThreshold }}
-          periodSeconds: {{ .Values.atContextServer.livenessProbe.periodSeconds }}
-          
+
 
         resources:
 {{ toYaml .Values.atContextServer.resources | indent 10 }}

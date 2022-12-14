@@ -21,7 +21,7 @@ spec:
         service: registry-subscription-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:RegistrySubscriptionManager-no-eureka_latest
+      - image: scorpiobroker/registry-subscription-manager:spring-kafka-latest
         imagePullPolicy: Always
         name: registry-subscription-manager
         ports:
@@ -29,25 +29,19 @@ spec:
           protocol: TCP
 
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:2025/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
+          httpGet:
+            path: /actuator/health
+            port: 2025
+          initialDelaySeconds: 60
           periodSeconds: 5
+          successThreshold: 1
         livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:2025/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
+          httpGet:
+            path: /actuator/health
+            port: 2025
+          initialDelaySeconds: 60
           periodSeconds: 5
+          successThreshold: 1
 
         resources:
           limits:

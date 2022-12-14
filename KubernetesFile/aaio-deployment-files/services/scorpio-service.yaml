@@ -4,6 +4,7 @@ metadata:
   labels:
       component: scorpio
   name: scorpio
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "9090"

@@ -22,7 +22,7 @@ spec:
         service: entity-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:EntityManager-no-eureka_latest
+      - image: scorpiobroker/entity-manager:spring-kafka-latest
         imagePullPolicy: Always
         name: entity-manager
         ports:
@@ -30,26 +30,19 @@ spec:
           protocol: TCP
       
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1025/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
+          httpGet:
+            path: /actuator/health
+            port: 1025
+          initialDelaySeconds: 50
           periodSeconds: 5
+          successThreshold: 1
         livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1025/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
+          httpGet:
+            path: /actuator/health
+            port: 1025
+          initialDelaySeconds: 50
           periodSeconds: 5
-          
+          successThreshold: 1    
   
         resources:
           limits:
