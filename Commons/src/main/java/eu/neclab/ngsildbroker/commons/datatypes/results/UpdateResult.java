@@ -7,44 +7,46 @@ import java.util.Map;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class UpdateResult {
-//	[
-//	  {
-//	    "https://uri.etsi.org/ngsi-ld/default-context/notUpdated": [
-//	      {
-//	        "https://uri.etsi.org/ngsi-ld/attributeName": [
-//	          {
-//	            "@id": "https://uri.etsi.org/ngsi-ld/default-context/attrib3"
-//	          }
-//	        ],
-//	        "https://uri.etsi.org/ngsi-ld/reason": [
-//	          {
-//	            "@value": "already exists"
-//	          }
-//	        ]
-//	      },
-//	      {
-//	        "https://uri.etsi.org/ngsi-ld/attributeName": [
-//	          {
-//	            "@id": "https://uri.etsi.org/ngsi-ld/default-context/attrib4"
-//	          }
-//	        ],
-//	        "https://uri.etsi.org/ngsi-ld/reason": [
-//	          {
-//	            "@value": "already exists"
-//	          }
-//	        ]
-//	      }
-//	    ],
-//	    "https://uri.etsi.org/ngsi-ld/updated": [
-//	      {
-//	        "@value": "attrib1"
-//	      },
-//	      {
-//	        "@value": "attrib2"
-//	      }
-//	    ]
-//	  }
-//	]
+	/*
+	 * [
+	 * {
+	 * "https://uri.etsi.org/ngsi-ld/default-context/notUpdated": [
+	 * {
+	 * "https://uri.etsi.org/ngsi-ld/attributeName": [
+	 * {
+	 * "@id": "https://uri.etsi.org/ngsi-ld/default-context/attrib3"
+	 * }
+	 * ],
+	 * "https://uri.etsi.org/ngsi-ld/reason": [
+	 * {
+	 * "@value": "already exists"
+	 * }
+	 * ]
+	 * },
+	 * {
+	 * "https://uri.etsi.org/ngsi-ld/attributeName": [
+	 * {
+	 * "@id": "https://uri.etsi.org/ngsi-ld/default-context/attrib4"
+	 * }
+	 * ],
+	 * "https://uri.etsi.org/ngsi-ld/reason": [
+	 * {
+	 * "@value": "already exists"
+	 * }
+	 * ]
+	 * }
+	 * ],
+	 * "https://uri.etsi.org/ngsi-ld/updated": [
+	 * {
+	 * "@value": "attrib1"
+	 * },
+	 * {
+	 * "@value": "attrib2"
+	 * }
+	 * ]
+	 * }
+	 * ]
+	 */
 	private List<Map<String, Object>> updated = new ArrayList<Map<String, Object>>();
 	private List<Map<String, Object>> notUpdated = new ArrayList<Map<String, Object>>();
 

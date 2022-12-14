@@ -26,10 +26,6 @@ public class QueryResult extends BaseResult {
 		this.data = data;
 	}
 
-	public Long getResultsLeftBefore() {
-		return resultsLeftBefore;
-	}
-
 	public void setResultsLeftBefore(Long resultsLeftBefore) {
 		this.resultsLeftBefore = resultsLeftBefore;
 	}
@@ -38,16 +34,16 @@ public class QueryResult extends BaseResult {
 		return resultsLeftAfter;
 	}
 
+	public Long getResultsLeftBefore() {
+		return resultsLeftBefore;
+	}
+
 	public void setResultsLeftAfter(Long resultsLeft) {
 		this.resultsLeftAfter = resultsLeft;
 	}
 
 	public String getqToken() {
 		return qToken;
-	}
-
-	public void setqToken(String qToken) {
-		this.qToken = qToken;
 	}
 
 	public Integer getLimit() {
@@ -72,6 +68,10 @@ public class QueryResult extends BaseResult {
 
 	public void setData(List<Map<String, Object>> data) {
 		this.data = data;
+	}
+
+	public void setqToken(String qToken) {
+		this.qToken = qToken;
 	}
 
 	public Long getCount() {
