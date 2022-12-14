@@ -20,6 +20,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
@@ -35,6 +36,13 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+
 @Service
 @EnableAutoConfiguration
 @EnableKafka
@@ -45,6 +53,9 @@ public class EntityService implements EntryCRUDService {
 	@Value("${scorpio.directDB}")
 	boolean directDB;
 	public static boolean checkEntity = false;
+
+	@Autowired
+	EntityService entityService;
 
 	@Autowired
 	EntityInfoDAO entityInfoDAO;
@@ -258,13 +269,36 @@ public class EntityService implements EntryCRUDService {
 
 		// JsonNode originalJsonNode = objectMapper.readTree(originalJson);
 		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, entityBody, expandedPayload, attrId);
-		// pubilsh merged message
+		// publish merged message
 		// check if anything is changed.
 		if (!request.getUpdateResult().getUpdated().isEmpty()) {
 			handleRequest(request);
 		}
 		logger.trace("partialUpdateEntity() :: completed");
 		return request.getUpdateResult();
+	}
+
+	public ResponseEntity<String> patchtoEndpoint(String entityId, ArrayListMultimap<String, String> headers,
+			String payload, String attrId) throws ResponseException, Exception {
+		String tenantid = HttpUtils.getInternalTenant(headers);
+		String endpoint = entityInfoDAO.getEndpoint(entityId, tenantid);
+
+		ResponseEntity<String> response = null;
+		if (endpoint != null) {
+			HttpHeaders header = new HttpHeaders();
+			header.set(NGSIConstants.TENANT_HEADER, tenantid);
+			header.set(AppConstants.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+
+			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+			RestTemplate restTemplate = new RestTemplate(requestFactory);
+
+			logger.debug("url " + endpoint + "/ngsi-ld/v1/entities/" + entityId + "attrs" + attrId);
+			HttpEntity<String> httpEntity = new HttpEntity<>(payload, header);
+			String patchuri = endpoint + "/ngsi-ld/v1/entities/" + entityId + "/attrs/" + attrId;
+
+			response = restTemplate.exchange(patchuri, HttpMethod.PATCH, httpEntity, String.class);
+		}
+		return response;
 	}
 
 	public boolean deleteAttribute(ArrayListMultimap<String, String> headers, String entityId, String attrId,

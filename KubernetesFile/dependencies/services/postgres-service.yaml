@@ -4,6 +4,7 @@ metadata:
   labels:
       component: postgres
   name: postgres
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "5432"

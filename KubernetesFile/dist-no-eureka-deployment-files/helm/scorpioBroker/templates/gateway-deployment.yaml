@@ -49,23 +49,7 @@ spec:
               - -c
               - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/GATEWAY/$HOSTNAME:gateway:9090/status?value=OUT_OF_SERVICE"
         
-        readinessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 9090
-          failureThreshold: {{ .Values.gateway.readinessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.gateway.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.gateway.readinessProbe.periodSeconds }}
-          
-        
-        livenessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 9090
-          failureThreshold: {{ .Values.gateway.livenessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.gateway.livenessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.gateway.livenessProbe.periodSeconds }}
-              
+
         resources:
 {{ toYaml .Values.gateway.resources | indent 10 }}
       restartPolicy: {{ .Values.gateway.restartPolicy }}

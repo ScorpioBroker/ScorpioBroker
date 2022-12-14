@@ -42,7 +42,7 @@ spec:
         imagePullPolicy: {{ .Values.subscriptionManager.image.pullPolicy }}
         name: {{ include "subscriptionManager.fullname" . }}
         ports:
-        - containerPort: 2026
+        - containerPort: 2027
           protocol: TCP
         {{- if eq .Values.profile "dist"}}
         lifecycle:
@@ -57,19 +57,19 @@ spec:
         readinessProbe:
           httpGet:
             path: /actuator/health
-            port: 2026
-          failureThreshold: {{ .Values.subscriptionManager.readinessProbe.failureThreshold }}
+            port: 2027
           initialDelaySeconds: {{ .Values.subscriptionManager.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.subscriptionManager.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.subscriptionManager.readinessProbe.successThreshold }}
          
-          
+      
         livenessProbe:
           httpGet:
             path: /actuator/health
-            port: 2026
-          failureThreshold: {{ .Values.subscriptionManager.livenessProbe.failureThreshold }}
+            port: 2027
           initialDelaySeconds: {{ .Values.subscriptionManager.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.subscriptionManager.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.subscriptionManager.livenessProbe.successThreshold }}
             
         resources:
 {{ toYaml .Values.subscriptionManager.resources | indent 10 }}

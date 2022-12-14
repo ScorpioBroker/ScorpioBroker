@@ -4,6 +4,7 @@ metadata:
   name: {{ include "scorpioBroker-aaio.fullname" . }}
   labels:
     {{- include "scorpioBroker-aaio.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}

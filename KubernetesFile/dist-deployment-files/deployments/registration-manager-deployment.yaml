@@ -21,7 +21,7 @@ spec:
         service: registry-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:RegistryManager_latest
+      - image: scorpiobroker/registry-manager:spring-kafka-eureka-latest
         imagePullPolicy: Always
         name: registry-manager
         ports:
@@ -35,15 +35,12 @@ spec:
               - -c
               - curl -X PUT "http://eureka:8761/eureka/apps/REGISTRY-MANAGER/$HOSTNAME:registry-manager:1030/status?value=OUT_OF_SERVICE"
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1030/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
+          httpGet:
+            path: /actuator/health
+            port: 1030
+          initialDelaySeconds: 60
           periodSeconds: 5
+          successThreshold: 1
         resources:
           limits:
             cpu: 500m

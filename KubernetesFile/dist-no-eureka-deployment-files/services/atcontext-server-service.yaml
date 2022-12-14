@@ -13,4 +13,3 @@ spec:
   selector:
     service: atcontext-server
 status: {}
-

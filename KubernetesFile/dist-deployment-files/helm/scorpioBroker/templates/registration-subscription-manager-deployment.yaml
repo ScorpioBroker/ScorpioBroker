@@ -58,18 +58,18 @@ spec:
           httpGet:
             path: /actuator/health
             port: 2025
-          failureThreshold: {{ .Values.registrySubscriptionManager.readinessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.registrySubscriptionManager.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.registrySubscriptionManager.readinessProbe.periodSeconds }}
-
-
+          successThreshold: {{ .Values.registrySubscriptionManager.readinessProbe.successThreshold }}
+         
+      
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 2025
-          failureThreshold: {{ .Values.registrySubscriptionManager.livenessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.registrySubscriptionManager.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.registrySubscriptionManager.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.registrySubscriptionManager.livenessProbe.successThreshold }}
 
         resources:
 {{ toYaml .Values.registrySubscriptionManager.resources | indent 10 }}

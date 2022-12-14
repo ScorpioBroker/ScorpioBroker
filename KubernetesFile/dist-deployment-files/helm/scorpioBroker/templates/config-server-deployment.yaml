@@ -49,22 +49,6 @@ spec:
               - -c
               - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}eureka/apps/CONFIGSERVER/$HOSTNAME:configserver:8888/status?value=OUT_OF_SERVICE"
         
-        readinessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 8888
-          failureThreshold: {{ .Values.configServer.readinessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.configServer.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.configServer.readinessProbe.periodSeconds }}
-          
-        livenessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 8888
-          failureThreshold: {{ .Values.configServer.livenessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.configServer.livenessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.configServer.livenessProbe.periodSeconds }}
-         
         resources:
 {{ toYaml .Values.configServer.resources | indent 10 }}
       restartPolicy: {{ .Values.configServer.restartPolicy }}

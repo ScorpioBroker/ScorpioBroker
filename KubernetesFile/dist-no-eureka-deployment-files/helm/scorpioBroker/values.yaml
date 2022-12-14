@@ -41,8 +41,8 @@ eureka:
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ## Please use only latest version of docker images as few older images might not work with kubernetes. 
   image:        
-   repository: scorpiobroker/scorpio
-   tag: eureka-server_2.1.0
+   repository: scorpiobroker/eureka-server
+   tag: latest
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 # -- specification of the image pull policy
    pullPolicy: Always
@@ -74,22 +74,6 @@ eureka:
   # requests: 
   #   cpu: 250m
   #   memory: 256Mi
- 
-   ## containers'  readiness probes. Evaluated as a template.
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-  ##
-  readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
-
-  ## containers'  liveness probes. Evaluated as a template.
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-  ##
-  livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
 
 ## Pod Security Context
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -148,8 +132,8 @@ gateway:
 ## ref: https://hub.docker.com/r/scorpiobroker/scorpio
 ## Please use only latest version of docker images as few older images might not work with kubernetes.
   image:       
-   repository: scorpiobroker/scorpio
-   tag: gateway_2.1.0
+   repository: scorpiobroker/gateway
+   tag: latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -183,22 +167,6 @@ gateway:
   # requests: 
   #   cpu: 250m
   #   memory: 256M
- 
-   ## containers'  readiness probes. Evaluated as a template.
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-  ##
-  readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
-
-  ## containers'  liveness probes. Evaluated as a template.
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-  ##
-  livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
 
 ## Pod Security Context
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -251,10 +219,10 @@ atContextServer:
   image:
    ## -- scorpiobroker image name
    # ref: https://hub.docker.com/r/scorpiobroker/scorpio       
-   repository: scorpiobroker/scorpio
+   repository: scorpiobroker/at-context-server
    # -- tag of the image to be used
-   tag: AtContextServer_2.1.0
-   no_eureka_tag: AtContextServer-no-eureka_2.1.0
+   tag: spring-kafka-eureka-latest
+   no_eureka_tag: spring-kafka-latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -288,23 +256,6 @@ atContextServer:
   # requests: 
   #   cpu: 250m
   #   memory: 256Mi
-
-   ## containers'  readiness probes. Evaluated as a template.
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-  ##
-  readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
-
-  ## containers'  liveness probes. Evaluated as a template.
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-  ##
-  livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
-
  
 ## Pod Security Context
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -362,7 +313,7 @@ configServer:
    # ref: https://hub.docker.com/r/scorpiobroker/scorpio       
    repository: scorpiobroker/scorpio
    # -- tag of the image to be used
-   tag: config-server_1.1.0
+   tag: config-server_latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -396,24 +347,6 @@ configServer:
   # requests: 
   #   cpu: 250m
   #   memory: 256Mi
-
-
-   ## containers'  readiness probes. Evaluated as a template.
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-  ##
-  readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
-
-  ## containers'  liveness probes. Evaluated as a template.
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
-  ##
-  livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
-
  
 ## Pod Security Context
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
@@ -469,10 +402,10 @@ entityManager:
   image:
    ## -- scorpiobroker image name
    # ref: https://hub.docker.com/r/scorpiobroker/scorpio       
-   repository: scorpiobroker/scorpio
+   repository: scorpiobroker/entity-manager
    # -- tag of the image to be used
-   tag: EntityManager_2.1.0
-   no_eureka_tag: EntityManager-no-eureka_2.1.0
+   tag: spring-kafka-eureka-latest
+   no_eureka_tag: spring-kafka-latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -511,17 +444,17 @@ entityManager:
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 50
+    periodSeconds: 5
+    successThreshold: 1
 
   ## containers'  liveness probes. Evaluated as a template.
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 50
+    periodSeconds: 5
+    successThreshold: 1
  
  
 ## Pod Security Context
@@ -578,10 +511,10 @@ historyManager:
   image:
    ## -- scorpiobroker image name
    # ref: https://hub.docker.com/r/scorpiobroker/scorpio        
-   repository: scorpiobroker/scorpio
+   repository: scorpiobroker/history-manager
    # -- tag of the image to be used
-   tag: HistoryManager_2.1.0
-   no_eureka_tag: HistoryManager-no-eureka_2.1.0
+   tag: spring-kafka-eureka-latest
+   no_eureka_tag: spring-kafka-latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -620,17 +553,17 @@ historyManager:
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
   ## containers'  liveness probes. Evaluated as a template.
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
  
 ## Pod Security Context
@@ -687,10 +620,10 @@ queryManager:
   image:
    ## -- scorpiobroker image name
    # ref: https://hub.docker.com/r/scorpiobroker/scorpio       
-   repository: scorpiobroker/scorpio
+   repository: scorpiobroker/query-manager
    # -- tag of the image to be used
-   tag: QueryManager_2.1.0
-   no_eureka_tag: QueryManager-no-eureka_2.1.0
+   tag: spring-kafka-eureka-latest
+   no_eureka_tag: spring-kafka-latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -730,17 +663,17 @@ queryManager:
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
   ## containers'  liveness probes. Evaluated as a template.
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
  
 ## Pod Security Context
@@ -797,10 +730,10 @@ registryManager:
   image:
    ## -- scorpiobroker image name
    # ref: https://hub.docker.com/r/scorpiobroker/scorpio       
-   repository: scorpiobroker/scorpio
+   repository: scorpiobroker/registry-manager
    # -- tag of the image to be used
-   tag: RegistryManager_2.1.0
-   no_eureka_tag: RegistryManager-no-eureka_2.1.0
+   tag: spring-kafka-eureka-latest
+   no_eureka_tag: spring-kafka-latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -840,17 +773,17 @@ registryManager:
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
   ## containers'  liveness probes. Evaluated as a template.
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
  
 ## Pod Security Context
@@ -907,10 +840,10 @@ registrySubscriptionManager:
   image:
    ## -- scorpiobroker image name
    # ref: https://hub.docker.com/r/scorpiobroker/scorpio
-   repository: scorpiobroker/scorpio
+   repository: scorpiobroker/registry-subscription-manager
    # -- tag of the image to be used
-   tag: RegistrySubscriptionManager_2.1.0
-   no_eureka_tag: RegistrySubscriptionManager_2.1.0
+   tag: spring-kafka-eureka-latest
+   no_eureka_tag: spring-kafka-latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -950,17 +883,17 @@ registrySubscriptionManager:
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
   ## containers'  liveness probes. Evaluated as a template.
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
 
 ## Pod Security Context
@@ -1017,10 +950,10 @@ subscriptionManager:
   image:
    ## -- scorpiobroker image name
    # ref: https://hub.docker.com/r/scorpiobroker/scorpio       
-   repository: scorpiobroker/scorpio
+   repository: scorpiobroker/subscription-manager
    # -- tag of the image to be used
-   tag: SubscriptionManager_2.1.0
-   no_eureka_tag: SubscriptionManager-no-eureka_2.1.0
+   tag: spring-kafka-eureka-latest
+   no_eureka_tag: spring-kafka-latest
 ## Specify a imagePullPolicy
 ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
 ##
@@ -1059,17 +992,17 @@ subscriptionManager:
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   readinessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
   ## containers'  liveness probes. Evaluated as a template.
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-probes
   ##
   livenessProbe:
-    initialDelaySeconds: 40
-    failureThreshold: 6
-    periodSeconds: 10
+    initialDelaySeconds: 60
+    periodSeconds: 5
+    successThreshold: 1
 
   
   

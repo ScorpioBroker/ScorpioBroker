@@ -11,6 +11,7 @@ metadata:
   name: {{ $fullName }}
   labels:
     {{- include "scorpioBroker-aaio.labels" . | nindent 4 }}
+  namespace: scorpio-broker
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
