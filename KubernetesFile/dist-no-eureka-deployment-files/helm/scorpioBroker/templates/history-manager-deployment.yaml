@@ -58,18 +58,18 @@ spec:
           httpGet:
             path: /actuator/health
             port: 1040
-          failureThreshold: {{ .Values.historyManager.readinessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.historyManager.readinessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.historyManager.readinessProbe.periodSeconds }}
-          
-        
+          successThreshold: {{ .Values.historyManager.readinessProbe.successThreshold }}
+         
+      
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 1040
-          failureThreshold: {{ .Values.historyManager.livenessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.historyManager.livenessProbe.initialDelaySeconds }}
           periodSeconds: {{ .Values.historyManager.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.historyManager.livenessProbe.successThreshold }}
           
         resources:
 {{ toYaml .Values.historyManager.resources | indent 10 }}

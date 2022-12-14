@@ -23,7 +23,7 @@ spec:
         service: subscription-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:SubscriptionManager-no-eureka_latest
+      - image: scorpiobroker/subscription-manager:spring-kafka-latest
         imagePullPolicy: Always
         name: subscription-manager
         ports:
@@ -31,25 +31,19 @@ spec:
           protocol: TCP
         
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:2027/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
+          httpGet:
+            path: /actuator/health
+            port: 2027
+          initialDelaySeconds: 60
           periodSeconds: 5
+          successThreshold: 1
         livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:2027/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
+          httpGet:
+            path: /actuator/health
+            port: 2027
+          initialDelaySeconds: 60
           periodSeconds: 5
+          successThreshold: 1
   
         resources:
           limits:

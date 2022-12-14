@@ -41,23 +41,7 @@ spec:
         ports:
         - containerPort: 8761
           protocol: TCP
-       
-        readinessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 8761
-          failureThreshold: {{ .Values.eureka.readinessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.eureka.readinessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.eureka.readinessProbe.periodSeconds }}
-          
-        livenessProbe:
-          httpGet:
-            path: /actuator/health
-            port: 8761
-          failureThreshold: {{ .Values.eureka.livenessProbe.failureThreshold }}
-          initialDelaySeconds: {{ .Values.eureka.livenessProbe.initialDelaySeconds }}
-          periodSeconds: {{ .Values.eureka.livenessProbe.periodSeconds }}
-           
+
         resources:
 {{ toYaml .Values.eureka.resources | indent 10 }}
       restartPolicy: {{ .Values.eureka.restartPolicy }}

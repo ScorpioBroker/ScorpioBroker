@@ -10,7 +10,7 @@ spec:
   ports:
   - port: 9090
     targetPort: 9090
-    nodePort : 32297
+    nodePort : 30001
   selector:
     service: gateway
 

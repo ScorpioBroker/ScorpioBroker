@@ -30,15 +30,12 @@ spec:
               - -c
               - curl -X PUT "http://eureka:8761/eureka/apps/CONFIGSERVER/$HOSTNAME:configserver:8888/status?value=OUT_OF_SERVICE"
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:8888/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
-          failureThreshold: 10
-          initialDelaySeconds: 20
+          httpGet:
+            path: /actuator/health
+            port: 8888
+          initialDelaySeconds: 50
           periodSeconds: 5
+          successThreshold: 1
         resources:
           limits:
             cpu: 575m

@@ -78,14 +78,14 @@ spec:
           service:
             name: {{ .Values.subscriptionManager.name }}
             port:
-              number: 2026
+              number: 2027
       - path: /ngsi-ld/v1/subscriptions/
         pathType: Prefix
         backend:
           service:
             name: {{ .Values.subscriptionManager.name }}
             port:
-              number: 2026
+              number: 2027
   {{- if .Values.ingress.tls }}
   tls:
 {{ toYaml .Values.ingress.tls | indent 4 }}
