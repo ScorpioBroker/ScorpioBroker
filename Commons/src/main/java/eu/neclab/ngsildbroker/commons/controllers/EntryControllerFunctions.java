@@ -434,14 +434,7 @@ public interface EntryControllerFunctions {
 				expanded = (Map<String, Object>) JsonLdProcessor
 						.expand((List<Object>) tt.getItem2(), tt.getItem3(), opts, payloadType, tt.getItem1()).get(0);
 			} catch (Exception e) {
-				NGSIRestResponse response;
-				if (e instanceof ResponseException) {
-					response = new NGSIRestResponse((ResponseException) e);
-				} else {
-					response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-				}
-				return entityService.sendFail(batchInfo).onItem().transformToUni(
-						t -> Uni.createFrom().item(Tuple3.of(new BatchFailure(entityIdTmp, response), null, false)));
+				return entityService.sendFail(batchInfo).onItem().transformToUni(t -> Uni.createFrom().failure(e));
 			}
 			Tuple4<Map<String, Object>, Object, ArrayListMultimap<String, String>, String[]> t = Tuple4.of(expanded,
 					tt.getItem2(), HttpUtils.getHeaders(request), getOptionsArray(options));
@@ -455,117 +448,76 @@ public interface EntryControllerFunctions {
 						.failure(new ResponseException(ErrorType.BadRequestData, "No Entity Id provided")));
 			}
 			if (replace) {
-				return entityService.deleteEntry(t.getItem3(), entityId).onFailure().recoverWithUni(e -> {
-					NGSIRestResponse response;
-					if (e instanceof ResponseException) {
-						response = new NGSIRestResponse((ResponseException) e);
-						if (response.getStatus().equals(HttpResponseStatus.NOT_FOUND)) {
-							return Uni.createFrom().item(false);
-						}
-					}
-					return Uni.createFrom().failure(e);
-				}).onItem().transformToUni(t2 -> {
-					return entityService.createEntry(t.getItem3(), t.getItem1(), batchInfo).onItem().transform(i -> {
-						boolean inserted;
-						if (t2) {
-							inserted = false;
-						} else {
-							inserted = true;
-						}
-						return Tuple3.of(new BatchFailure("", null), entityId, inserted);
-					});
-				}).onFailure().recoverWithUni(e -> {
-					NGSIRestResponse response;
-					if (e instanceof ResponseException) {
-						response = new NGSIRestResponse((ResponseException) e);
-					} else {
-						response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
-					}
-					return entityService.sendFail(batchInfo).onItem()
-							.transform(v -> Tuple3.of(new BatchFailure(entityId, response), null, false));
-				});
-			} else {
-				return entityService.appendToEntry(t.getItem3(), entityId, entry, t.getItem4(), batchInfo).onItem()
-						.transformToUni(i -> {
-							if (i.getNotUpdated().isEmpty()) {
-								return Uni.createFrom().item(Tuple3.of(new BatchFailure("", null), entityId, false));
-							} else {
-								return entityService.sendFail(batchInfo).onItem().transform(v -> {
-									try {
-										return Tuple3.of(new BatchFailure(entityId, new NGSIRestResponse(
-												ErrorType.MultiStatus,
-												JsonUtils.toPrettyString(i.getNotUpdated()) + " was not added")), null,
-												false);
-									} catch (Exception e) {
-										return Tuple3.of(new BatchFailure(entityId,
-												new NGSIRestResponse(ErrorType.MultiStatus, e.getLocalizedMessage())),
-												null, false);
-									}
-								});
-							}
+				return entityService.deleteEntry(t.getItem3(), entityId, tt.getItem2()).onFailure()
+						.recoverWithUni(e -> {
+							return Uni.createFrom().failure(e);
+						}).onItem().transformToUni(t2 -> {
+							return entityService.createEntry(t.getItem3(), t.getItem1(), tt.getItem2(), batchInfo)
+									.onItem().transform(i -> {
+										return i;
+									});
 						}).onFailure().recoverWithUni(e -> {
-							NGSIRestResponse response;
-							if (e instanceof ResponseException) {
-								response = new NGSIRestResponse((ResponseException) e);
-								if (response.getStatus().equals(HttpResponseStatus.NOT_FOUND)) {
-									return entityService.createEntry(t.getItem3(), entry, batchInfo).onItem()
-											.transform(i -> Tuple3.of(new BatchFailure("", null), entityId, true))
-											.onFailure().recoverWithUni(e1 -> {
-												NGSIRestResponse response1;
-												if (e1 instanceof ResponseException) {
-													response1 = new NGSIRestResponse((ResponseException) e1);
-												} else {
-													response1 = new NGSIRestResponse(ErrorType.InternalError,
-															e1.getLocalizedMessage());
-												}
-												return entityService.sendFail(batchInfo).onItem().transform(v -> Tuple3
-														.of(new BatchFailure(entityId, response1), null, false));
-											});
+							return entityService.sendFail(batchInfo).onItem()
+									.transformToUni(v -> Uni.createFrom().failure(e));
+						});
+			} else {
+				return entityService
+						.appendToEntry(t.getItem3(), entityId, entry, t.getItem4(), tt.getItem2(), batchInfo).onItem()
+						.transform(i -> {
+							List<ResponseException> failures = i.getFailures();
+							if (failures != null && !failures.isEmpty()) {
+								for (ResponseException p : failures) {
+									if (p.getErrorCode() == ErrorType.NotFound.getCode()) {
+										entityService.createEntry(t.getItem3(), t.getItem1(), tt.getItem2(), batchInfo)
+												.onItem().transform(i2 -> {
+													return i2;
+												});
+										break;
+									}
 								}
-							} else {
-								response = new NGSIRestResponse(ErrorType.InternalError, e.getLocalizedMessage());
 							}
-							return entityService.sendFail(batchInfo).onItem().transformToUni(v -> Uni.createFrom()
-									.item(Tuple3.of(new BatchFailure(entityId, response), null, false)));
+							return i;
+						}).onFailure().recoverWithUni(e -> {
+							return entityService.sendFail(batchInfo).onItem()
+									.transformToUni(v -> Uni.createFrom().failure(e));
 						});
 			}
-		}).collectFailures().concatenate().collect().asList().onItem().transform(t -> {
-			BatchResult result = new BatchResult();
-			boolean insertedOneEntity = false;
-			boolean appendedOneEntity = false;
-			for (Tuple3<BatchFailure, ? extends Object, Boolean> i : t) {
-				if (i.getItem2() != null) {
-					if (i.getItem3()) {
-						insertedOneEntity = true;
-					} else {
-						appendedOneEntity = true;
-					}
-					result.addSuccess((String) i.getItem2());
+		}).collectFailures().concatenate().collect().asList().onItem().transform(results -> {
+
+			List<ResponseException> resFailures = new ArrayList<>();
+			List<String> resSuccesses = new ArrayList<>();
+
+			int httpStatus = HttpStatus.SC_CREATED;
+
+			results.forEach(i -> {
+				List<ResponseException> failures = i.getFailures();
+				List<CRUDSuccess> successes = i.getSuccesses();
+				if (failures.isEmpty()) {
+					resSuccesses.add(i.getEntityId());
+				} else if (successes.isEmpty() && failures.size() == 1) {
+					failures.addAll(i.getFailures());
+					httpStatus = HttpStatus.SC_MULTI_STATUS;
 				} else {
-					result.addFail(i.getItem1());
+					failures.addAll(i.getFailures());
+					httpStatus = HttpStatus.SC_MULTI_STATUS;
 				}
-			}
-			boolean failedOnce = !result.getFails().isEmpty();
-			int status;
-			// for 1.5.1 update no more bad request on fail only multi status
-			if (failedOnce) {
-				if (insertedOneEntity || appendedOneEntity) {
-					status = HttpStatus.SC_MULTI_STATUS;
-				} else {
-					status = HttpStatus.SC_BAD_REQUEST;
-				}
+
+			});
+
+			String body = null;
+
+			if (httpStatus == HttpStatus.SC_CREATED) {
+				body = JsonUtils.toPrettyString(resSuccesses);
 			} else {
-				if (insertedOneEntity && appendedOneEntity) {
-					status = HttpStatus.SC_CREATED;
-				} else {
-					if (insertedOneEntity) {
-						status = HttpStatus.SC_CREATED;
-					} else {
-						status = HttpStatus.SC_NO_CONTENT;
-					}
-				}
+				Map<String, Object> resMap = Maps.newHashMap();
+				resMap.put("success", resSuccesses);
+				resMap.put("errors", resFailures);
+				body = JsonUtils.toPrettyString(resMap);
 			}
-			return generateBatchResultReply(result, status);
+
+			return RestResponseBuilderImpl.create(httpStatus).entity(body)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
+
 		});
 	}
 
