@@ -20,7 +20,6 @@ import com.google.common.net.HttpHeaders;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
-import org.checkerframework.checker.units.qual.t;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
@@ -29,16 +28,13 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
-import eu.neclab.ngsildbroker.commons.datatypes.results.BatchFailure;
 import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -196,40 +192,8 @@ public interface EntryControllerFunctions {
 				return HttpUtils.handleControllerExceptions(fails);
 			}			
 			
-			List<ResponseException> resFailures = new ArrayList<>();
-			List<String> resSuccesses =new ArrayList<>();			
-
-			int httpStatus=HttpStatus.SC_CREATED;
-
-			results.forEach(i -> {
-				List<ResponseException> failures = i.getFailures();
-				List<CRUDSuccess> successes = i.getSuccesses();
-				if (failures.isEmpty()) {
-					resSuccesses.add(i.getEntityId());
-				} else if (successes.isEmpty() && failures.size() == 1) {
-					failures.addAll(i.getFailures());
-					httpStatus=HttpStatus.SC_MULTI_STATUS;
-				} else {
-					failures.addAll(i.getFailures());
-					httpStatus=HttpStatus.SC_MULTI_STATUS;
-				}
-
-			});
+			return generateBatchResultReply(results, HttpStatus.SC_CREATED);
 			
-			String body=null;
-			
-			if(httpStatus==HttpStatus.SC_CREATED) {
-				body=JsonUtils.toPrettyString(resSuccesses);				
-			}else {				
-				Map<String, Object> resMap = Maps.newHashMap();
-				resMap.put("success", resSuccesses);
-				resMap.put("errors",resFailures);				
-				body=JsonUtils.toPrettyString(resMap);
-			}
-			
-
-			return RestResponseBuilderImpl.create(httpStatus).entity(body)
-					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
 
 //			List<NGSILDOperationResult> result = Lists.newArrayList();
 //			if(fails != null) {
@@ -273,26 +237,42 @@ public interface EntryControllerFunctions {
 		return (List<Map<String, Object>>) jsonPayload;
 	}
 
-	private static RestResponse<Object> generateBatchResultReply(BatchResult result, int okStatus) {
-		int status = HttpStatus.SC_MULTI_STATUS;
-		String body = result.toJsonString();
-		if (result.getFails().isEmpty()) {
-			status = okStatus;
-			body = null;
-		}
-		if (result.getSuccess().isEmpty()) {
-			status = HttpStatus.SC_BAD_REQUEST;
-		}
-		if (result.getFails().isEmpty() && !result.getSuccess().isEmpty()) {
-			status = okStatus;
-			try {
-				body = JsonUtils.toPrettyString(result.getSuccess());
-			} catch (Exception e) {
-				logger.error("Failed to generate reply body for batch operation.", e);
+	private static RestResponse<Object> generateBatchResultReply(List<NGSILDOperationResult> results, int okStatus) {
+		List<ResponseException> resFailures = new ArrayList<>();
+		List<String> resSuccesses = new ArrayList<>();
+
+		int httpStatus = okStatus;
+
+		for (NGSILDOperationResult i : results) {
+			List<ResponseException> failures = i.getFailures();
+			List<CRUDSuccess> successes = i.getSuccesses();
+			if (failures.isEmpty()) {
+				resSuccesses.add(i.getEntityId());
+			} else if (successes.isEmpty() && failures.size() == 1) {
+				failures.addAll(i.getFailures());
+				httpStatus = HttpStatus.SC_MULTI_STATUS;
+			} else {
+				failures.addAll(i.getFailures());
+				httpStatus = HttpStatus.SC_MULTI_STATUS;
 			}
 		}
 
-		return RestResponseBuilderImpl.create(status).entity(body)
+		String body = null;
+
+		try {
+			if (httpStatus == okStatus) {
+				body = JsonUtils.toPrettyString(resSuccesses);
+			} else {
+				Map<String, Object> resMap = Maps.newHashMap();
+				resMap.put("success", resSuccesses);
+				resMap.put("errors", resFailures);
+				body = JsonUtils.toPrettyString(resMap);
+			}
+		} catch (IOException e) {
+			logger.error("Failed to generate reply body for batch operation.", e);
+		}
+
+		return RestResponseBuilderImpl.create(httpStatus).entity(body)
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
 	}
 
@@ -350,41 +330,7 @@ public interface EntryControllerFunctions {
 				t -> entityService.deleteEntry(t.getItem2(), t.getItem1(), t.getItem3()).onItem().transform(i -> {
 					return i;
 				})).collectFailures().concatenate().collect().asList().onItem().transform(results -> {
-
-					List<ResponseException> resFailures = new ArrayList<>();
-					List<String> resSuccesses = new ArrayList<>();
-
-					int httpStatus = HttpStatus.SC_NO_CONTENT;
-
-					results.forEach(i -> {
-						List<ResponseException> failures = i.getFailures();
-						List<CRUDSuccess> successes = i.getSuccesses();
-						if (failures.isEmpty()) {
-							resSuccesses.add(i.getEntityId());
-						} else if (successes.isEmpty() && failures.size() == 1) {
-							failures.addAll(i.getFailures());
-							httpStatus = HttpStatus.SC_MULTI_STATUS;
-						} else {
-							failures.addAll(i.getFailures());
-							httpStatus = HttpStatus.SC_MULTI_STATUS;
-						}
-
-					});
-
-					String body = null;
-
-					if (httpStatus == HttpStatus.SC_NO_CONTENT) {
-						body = JsonUtils.toPrettyString(resSuccesses);
-					} else {
-						Map<String, Object> resMap = Maps.newHashMap();
-						resMap.put("success", resSuccesses);
-						resMap.put("errors", resFailures);
-						body = JsonUtils.toPrettyString(resMap);
-					}
-
-					return RestResponseBuilderImpl.create(httpStatus).entity(body)
-							.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
-
+					return generateBatchResultReply(results, HttpStatus.SC_NO_CONTENT);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
@@ -483,41 +429,7 @@ public interface EntryControllerFunctions {
 						});
 			}
 		}).collectFailures().concatenate().collect().asList().onItem().transform(results -> {
-
-			List<ResponseException> resFailures = new ArrayList<>();
-			List<String> resSuccesses = new ArrayList<>();
-
-			int httpStatus = HttpStatus.SC_CREATED;
-
-			results.forEach(i -> {
-				List<ResponseException> failures = i.getFailures();
-				List<CRUDSuccess> successes = i.getSuccesses();
-				if (failures.isEmpty()) {
-					resSuccesses.add(i.getEntityId());
-				} else if (successes.isEmpty() && failures.size() == 1) {
-					failures.addAll(i.getFailures());
-					httpStatus = HttpStatus.SC_MULTI_STATUS;
-				} else {
-					failures.addAll(i.getFailures());
-					httpStatus = HttpStatus.SC_MULTI_STATUS;
-				}
-
-			});
-
-			String body = null;
-
-			if (httpStatus == HttpStatus.SC_CREATED) {
-				body = JsonUtils.toPrettyString(resSuccesses);
-			} else {
-				Map<String, Object> resMap = Maps.newHashMap();
-				resMap.put("success", resSuccesses);
-				resMap.put("errors", resFailures);
-				body = JsonUtils.toPrettyString(resMap);
-			}
-
-			return RestResponseBuilderImpl.create(httpStatus).entity(body)
-					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
-
+			return generateBatchResultReply(results, HttpStatus.SC_CREATED);
 		});
 	}
 
