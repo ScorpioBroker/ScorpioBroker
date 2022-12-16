@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -28,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-import eu.neclab.ngsildbroker.commons.datatypes.results.BatchResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -50,92 +50,94 @@ public interface EntryControllerFunctions {
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> updateMultiple(EntryCRUDService entityService, HttpServerRequest request,
 			String payload, int maxUpdateBatch, String options, int payloadType, Random random) {
-		List<Map<String, Object>> jsonPayload;
-		try {
-			jsonPayload = getJsonPayload(payload);
-		} catch (Exception exception) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
-		}
-		if (maxUpdateBatch != -1 && jsonPayload.size() > maxUpdateBatch) {
-			ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
-					"Maximum allowed number of entities for this operation is " + maxUpdateBatch);
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
-		}
-		BatchInfo batchInfo = new BatchInfo(random.nextInt(), jsonPayload.size());
+	 
+	    List<Map<String, Object>> jsonPayload;
+	    try {
+	        jsonPayload = getJsonPayload(payload);
+	    } catch (Exception exception) {
+	        return Uni.createFrom().item(HttpUtils.handleControllerExceptions(exception));
+	    }
+	    if (maxUpdateBatch != -1 && jsonPayload.size() > maxUpdateBatch) {
+	        ResponseException responseException = new ResponseException(ErrorType.RequestEntityTooLarge,
+	                "Maximum allowed number of entities for this operation is " + maxUpdateBatch);
+	        return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
+	    }
+	    BatchInfo batchInfo = new BatchInfo(random.nextInt(), jsonPayload.size());
 
-		return HttpUtils.getAtContext(request).onItem().transformToMulti(t -> {
-			boolean preFlight;
-			try {
-				preFlight = HttpUtils.doPreflightCheck(request, t);
-			} catch (ResponseException e) {
-				return Multi.createFrom().failure(e);
-			}
-			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem()
-					.transform(i -> Tuple3.of(preFlight, t, i));
-		}).onItem().transformToUni(tupleItem -> {
-			String entityId;
-			if (tupleItem.getItem3().containsKey(NGSIConstants.JSON_LD_ID)) {
-				entityId = (String) tupleItem.getItem3().get(NGSIConstants.JSON_LD_ID);
-			} else if (tupleItem.getItem3().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
-				entityId = (String) tupleItem.getItem3().get(NGSIConstants.QUERY_PARAMETER_ID);
-			} else {
-				return entityService.sendFail(batchInfo).onItem()
-						.transformToUni(
-								t -> Uni.createFrom()
-										.item(Tuple2.of(
-												new BatchFailure("NO ID PROVIDED",
-														new NGSIRestResponse(new ResponseException(
-																ErrorType.BadRequestData, "No Entity Id provided"))),
-												null)));
+	    return HttpUtils.getAtContext(request).onItem().transformToMulti(t -> {
+	                boolean preFlight;
+	                try {
+	                    preFlight = HttpUtils.doPreflightCheck(request, t);
+	                } catch (ResponseException e) {
+	                    return Multi.createFrom().failure(e);
+	                }
+	                return Multi.createFrom().items(jsonPayload.parallelStream()).onItem()
+	                        .transform(i -> Tuple3.of(preFlight, t, i));
+	            })
+	            .onItem()
+	            .transformToUni(tupleItem -> {
+	                String entityId;
+	                NGSILDOperationResult ngsildOperationResult;
+	                if (tupleItem.getItem3().containsKey(NGSIConstants.JSON_LD_ID)) {
+	                    entityId = (String) tupleItem.getItem3().get(NGSIConstants.JSON_LD_ID);
+	                } else if (tupleItem.getItem3().containsKey(NGSIConstants.QUERY_PARAMETER_ID)) {
+	                    entityId = (String) tupleItem.getItem3().get(NGSIConstants.QUERY_PARAMETER_ID);
+	                } else {
+	                    entityId = "No id provided";
+	                    ngsildOperationResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId);
+	                    ngsildOperationResult.addFailure(new ResponseException(
+	                            ErrorType.BadRequestData, "No Entity Id provided"));
+	                    return Uni.createFrom().item(ngsildOperationResult);
+	                }
 
-			}
-			Map<String, Object> entry;
-			try {
-				entry = (Map<String, Object>) JsonLdProcessor.expand((List<Object>) tupleItem.getItem2(),
-						tupleItem.getItem3(), opts, payloadType, tupleItem.getItem1()).get(0);
-			} catch (Exception e1) {
-				NGSIRestResponse response;
-				if (e1 instanceof ResponseException) {
-					response = new NGSIRestResponse((ResponseException) e1);
-				} else {
-					response = new NGSIRestResponse(ErrorType.InvalidRequest,
-							"failed to expand payload because: " + e1.getCause().getLocalizedMessage());
-				}
-				return entityService.sendFail(batchInfo).onItem().transformToUni(
-						t -> Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null)));
-			}
+	                Map<String, Object> entry;
+	                ngsildOperationResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId);
+	                try {
+	                    entry = (Map<String, Object>) JsonLdProcessor.expand(tupleItem.getItem2(),
+	                            tupleItem.getItem3(), opts, payloadType, tupleItem.getItem1()).get(0);
+	                } catch (Exception e1) {
+	                    ResponseException response;
+	                    if (e1 instanceof ResponseException rException) {
+	                        response = rException;
+	                    } else {
+	                        response = new ResponseException(ErrorType.InvalidRequest,
+	                                "failed to expand payload because: " + e1.getCause().getLocalizedMessage());
+	                    }
+	                    ngsildOperationResult.addFailure(response);
+	                    return Uni.createFrom().item(ngsildOperationResult);
 
-			return entityService
-					.appendToEntry(HttpUtils.getHeaders(request), entityId, entry, getOptionsArray(options), batchInfo)
-					.onFailure().recoverWithItem(t -> new UpdateResult()).onItem().transformToUni(i -> {
-						if (i.getNotUpdated().isEmpty()) {
-							return Uni.createFrom().item(Tuple2.of(new BatchFailure("", null), entityId));
-						} else {
-							return entityService.sendFail(batchInfo).onItem().transformToUni(t -> {
-								try {
-									return Uni.createFrom().item(Tuple2.of(
-											new BatchFailure(entityId, new NGSIRestResponse(ErrorType.MultiStatus,
-													JsonUtils.toPrettyString(i.getNotUpdated()) + " was not added")),
-											null));
-								} catch (Exception e) {
-									return Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId,
-											new NGSIRestResponse(ErrorType.MultiStatus, e.getLocalizedMessage())),
-											null));
-								}
-							});
-						}
-					});
-		}).collectFailures().concatenate().collect().asList().onItem().transform(t -> {
-			BatchResult result = new BatchResult();
-			t.forEach(i -> {
-				if (i.getItem2() != null) {
-					result.addSuccess((String) i.getItem2());
-				} else {
-					result.addFail(i.getItem1());
-				}
-			});
-			return generateBatchResultReply(result, HttpStatus.SC_NO_CONTENT);
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+	                }
+
+	                return entityService
+	                        .appendToEntry(HttpUtils.getHeaders(request), entityId, entry,
+	                                getOptionsArray(options), tupleItem.getItem2(), batchInfo);
+	            })
+	            .concatenate().collect().asList().onItem()
+	            .transform(resultList -> {
+	                Map<String, Object> responseJson = new HashMap<>();
+	                List<String> successList = new ArrayList<>();
+	                List<Map<String, Object>> failureList = new ArrayList<>();
+	                for (NGSILDOperationResult result : resultList) {
+	                    if (!result.getFailures().isEmpty()) {
+	                        Map<String, Object> problem = new HashMap<>();
+	                        problem.put(result.getEntityId(), result.getFailures());
+	                        failureList.add(problem);
+	                    }
+	                    if (!result.getSuccesses().isEmpty()) {
+	                        successList.add(result.getEntityId());
+	                    }
+	                }
+	                if (!successList.isEmpty() && !failureList.isEmpty()) {
+	                    responseJson.put("success", successList);
+	                    responseJson.put("errors", failureList);
+	                    return RestResponseBuilderImpl.create(HttpStatus.SC_MULTI_STATUS).entity(responseJson).build();
+	                } else if (failureList.isEmpty()) {
+	                    responseJson.put("success", successList);
+	                    return RestResponseBuilderImpl.create(HttpStatus.SC_NO_CONTENT).build();
+	                } else
+	                    return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST).entity(responseJson).build();
+	            })
+	            .onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
