@@ -188,7 +188,7 @@ communications protocol to be used.
 .. code-block:: console 
 
 	curl -L -X GET 'http://<scorpio-brokerIP>:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Device:water001' \
-   	-H 'NGSILD-Tenant: openiot' \
+   	-H 'ngsild-tenant: openiot' \
    	-H 'Link: <https://fiware.github.io/data-models/context.jsonld>; rel="https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; type="application/ld+json"' \
         -H 'Content-Type: application/json' 
 
@@ -279,7 +279,7 @@ To verify the status of entity **urn:ngsi-ld:Device:water001** open the device d
 .. code-block:: console 
 
 	curl -L -X GET 'http://<scorpio-brokerIP>:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Device:water001' \
-   	-H 'NGSILD-Tenant: openiot' \
+   	-H 'ngsild-tenant: openiot' \
    	-H 'Link: <https://fiware.github.io/data-models/context.jsonld>; rel="https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; type="application/ld+json"' \
         -H 'Content-Type: application/json' 
 
@@ -356,7 +356,7 @@ Response
 .. code-block:: console 
 
 	curl -L -X PATCH 'http://<scorpio-brokerIP>:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Device:water001/attrs/off' \
-	-H 'NGSILD-Tenant: openiot' \
+	-H 'ngsild-tenant: openiot' \
 	-H 'Accept: application/ld+json' \
 	-H 'Link: <https://fiware.github.io/data-models/context.jsonld>; rel="https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"; type="application/ld+json"' \
 	-H 'Content-Type: application/json' \

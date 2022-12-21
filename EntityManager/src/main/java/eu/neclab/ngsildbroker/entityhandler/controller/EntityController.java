@@ -20,12 +20,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -42,8 +40,6 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Inject
 	EntityService entityService;
 
-	LocalDateTime startAt;
-	LocalDateTime endAt;
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
