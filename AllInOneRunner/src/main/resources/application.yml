@@ -131,7 +131,7 @@ scorpio:
     allowall: true
   directDB: true
   history:
-    autorecording: active
+    autorecording: notactive
     max-limit: 1000
     default-limit: 50
     batch-operations:
@@ -163,7 +163,7 @@ scorpio:
     max-limit: 1000
     default-limit: 50
 #    autoregmode: attributes
-    autorecording: active
+    autorecording: notactive
     batch-operations:
       create:
         max: 1000

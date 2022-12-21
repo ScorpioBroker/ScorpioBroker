@@ -164,8 +164,13 @@ public class SubscriptionService extends BaseSubscriptionService {
 					ResponseEntity<String> response = restTemplate.exchange(temp.toString(), HttpMethod.POST, entity,
 							String.class);
 					if (response.getStatusCode().is2xxSuccessful()) {
+						String locationHeader = response.getHeaders().getFirst(HttpHeaders.LOCATION);
+						//check if it's a relative path
+						if(locationHeader.charAt(0) == '/') {
+							locationHeader = remoteEndpoint + locationHeader;
+						}
 						internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
-								response.getHeaders().getFirst(HttpHeaders.LOCATION));
+								locationHeader);
 					}
 				}
 			}
