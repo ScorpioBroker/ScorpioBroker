@@ -40,6 +40,9 @@ public abstract class BaseSubscriptionSyncManager {
 	@ConfigProperty(name = "scorpio.sync.check-time", defaultValue = "1000")
 	int checkTime;
 
+	@ConfigProperty(name = "scorpio.sync.enabled", defaultValue = "false")
+	boolean shouldSync;
+
 	protected String syncId;
 
 	AliveAnnouncement INSTANCE_ID;
@@ -60,26 +63,28 @@ public abstract class BaseSubscriptionSyncManager {
 	protected abstract void setSyncId();
 
 	private void startSyncing() {
-		executor.scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				kafkaSender.send(INSTANCE_ID);
-			}
-		}, 0, announcementTime);
-
-		executor.scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				synchronized (currentInstances) {
-					if (!currentInstances.equals(lastInstances)) {
-						recalculateSubscriptions();
-					}
-					lastInstances.clear();
-					lastInstances.addAll(currentInstances);
-					currentInstances.clear();
+		if (shouldSync) {
+			executor.scheduleAtFixedRate(new TimerTask() {
+				@Override
+				public void run() {
+					kafkaSender.send(INSTANCE_ID);
 				}
-			}
-		}, 0, checkTime);
+			}, 0, announcementTime);
+
+			executor.scheduleAtFixedRate(new TimerTask() {
+				@Override
+				public void run() {
+					synchronized (currentInstances) {
+						if (!currentInstances.equals(lastInstances)) {
+							recalculateSubscriptions();
+						}
+						lastInstances.clear();
+						lastInstances.addAll(currentInstances);
+						currentInstances.clear();
+					}
+				}
+			}, 0, checkTime);
+		}
 
 	}
 
