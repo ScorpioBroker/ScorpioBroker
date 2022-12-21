@@ -75,6 +75,7 @@ jobs:
           docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up > dockerlog.out&
           sleep 120
       - name: newman action
+        continue-on-error: true
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
