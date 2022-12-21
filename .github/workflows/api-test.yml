@@ -80,8 +80,10 @@ jobs:
           collection: api-test.json
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
+        if: always()
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
       - name: Print Scorpio Log
+        if: always()
         run: cat dockerlog.out
 #      - name: start docker dist 
 #        run: |
