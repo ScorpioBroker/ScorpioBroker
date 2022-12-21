@@ -54,7 +54,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			List<String> attrs, List<String> options, String entityId, boolean temporal, int defaultLimit,
 			int maxLimit) {
 		return HttpUtils.validateUri(entityId).onItem().transformToUni(t -> {
-			String originalQuery = NGSIConstants.QUERY_PARAMETER_ID + "=" + entityId;
+			String originalQuery = entityId;
 			MultiMap paramMap = request.params();
 			paramMap.add(NGSIConstants.QUERY_PARAMETER_ID, entityId);
 			return getQueryData(queryService, request, originalQuery, paramMap, false, false, temporal, defaultLimit,

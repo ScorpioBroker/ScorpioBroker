@@ -141,7 +141,14 @@ public class ClientManager {
 									new ResponseException(ErrorType.TenantNotFound, tenant + " tenant was not found"));
 						}
 					} else {
-						return Uni.createFrom().item(databasenameWithoutHash);
+						return pgClient.preparedQuery("SELECT datname FROM pg_database where datname = $1")
+								.execute(Tuple.of(databasenameWithoutHash)).onItem().transformToUni(rowSet -> {
+									if (rowSet.size() != 0) {
+										return Uni.createFrom().item(databasenameWithoutHash);
+									} else
+										return Uni.createFrom().item(databasename);
+								});
+
 					}
 				});
 	}
