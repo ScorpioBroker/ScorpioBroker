@@ -28,7 +28,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.RegistrySubscriptionSyncService;
+//import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.RegistrySubscriptionSyncService;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
@@ -191,7 +191,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	protected void setSyncId() {
-		this.syncIdentifier = RegistrySubscriptionSyncService.SYNC_ID;
+		this.syncIdentifier = "";//RegistrySubscriptionSyncService.SYNC_ID;
 	}
 
 	@Override

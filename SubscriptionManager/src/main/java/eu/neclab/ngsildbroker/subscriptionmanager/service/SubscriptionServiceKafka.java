@@ -14,13 +14,14 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 @UnlessBuildProfile("in-memory")
 public class SubscriptionServiceKafka extends SubscriptionService{
 	
-	@Inject
-	@Channel(AppConstants.SUB_SYNC_CHANNEL)
-	MutinyEmitter<SyncMessage> syncEmitter;
+//	@Inject
+//	@Channel(AppConstants.SUB_SYNC_CHANNEL)
+//	MutinyEmitter<SyncMessage> syncEmitter;
 
 	@Override
 	protected MutinyEmitter<SyncMessage> getSyncChannelSender() {
-		return syncEmitter;
+		return null;
+//		return syncEmitter;
 	}
 
 

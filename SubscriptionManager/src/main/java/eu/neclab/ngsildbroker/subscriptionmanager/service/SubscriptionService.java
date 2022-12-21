@@ -36,7 +36,7 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterf
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SubscriptionSyncService;
+//import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SubscriptionSyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
@@ -271,7 +271,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	protected void setSyncId() {
-		this.syncIdentifier = SubscriptionSyncService.SYNC_ID;
+		this.syncIdentifier = "";//SubscriptionSyncService.SYNC_ID;
 	}
 
 	@Override
