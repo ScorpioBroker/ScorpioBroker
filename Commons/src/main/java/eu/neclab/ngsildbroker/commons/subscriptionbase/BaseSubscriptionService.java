@@ -23,16 +23,6 @@ import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
-import com.github.filosganga.geogson.model.LineString;
-import com.github.filosganga.geogson.model.Point;
-import com.github.filosganga.geogson.model.Polygon;
-import com.github.filosganga.geogson.model.positions.SinglePosition;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Table;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
@@ -43,6 +33,16 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.filosganga.geogson.model.LineString;
+import com.github.filosganga.geogson.model.Point;
+import com.github.filosganga.geogson.model.Polygon;
+import com.github.filosganga.geogson.model.positions.SinglePosition;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -64,7 +64,6 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
@@ -134,6 +133,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@ConfigProperty(name = "scorpio.subscription.batchevactime", defaultValue = "300000")
 	int waitTimeForEvac;
 
+	@ConfigProperty(name = "scorpio.subscription.maxretries", defaultValue = "5")
+	int maxRetries;
+
 	BatchNotificationHandler batchNotificationHandler;
 
 	@PostConstruct
@@ -141,9 +143,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		JsonLdProcessor.init(coreContext);
 		setSyncId();
 		kafkaSender = getSyncChannelSender();
-		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac);
+		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac, maxRetries);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
-		
+
 		WebClientOptions options = new WebClientOptions();
 		options.setFollowRedirects(true);
 		webClient = WebClient.create(vertx, options);
@@ -156,12 +158,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		temp.setId("invalid:base");
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
-						AppConstants.UPDATE_REQUEST));
+						AppConstants.UPDATE_REQUEST),
+				maxRetries);
 
 		notificationHandlerMQTT = new NotificationHandlerMQTT();
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
-						AppConstants.UPDATE_REQUEST));
+						AppConstants.UPDATE_REQUEST),
+				maxRetries);
 		logger.trace("call loadStoredSubscriptions() ::");
 		loadStoredSubscriptions();
 
@@ -559,7 +563,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
 		if (!batchHandling || batchInfo == null || batchInfo.getBatchId() == -1) {
-			handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+			handler.notify(getNotification(subscription, dataList, triggerReason), subscription, maxRetries);
 		} else {
 			batchNotificationHandler.addDataToBatch(batchInfo, handler, subscription, dataList, triggerReason);
 		}

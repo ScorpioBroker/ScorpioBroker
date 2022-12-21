@@ -22,7 +22,7 @@ public class InternalNotificationHandler extends BaseNotificationHandler {
 	}
 
 	@Override
-	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
+	protected void sendReply(Notification notification, SubscriptionRequest request, int maxRetries) throws Exception {
 		notification.setSubscriptionId(notification.getSubscriptionId());
 		cleanNotificationFromInternal(notification);
 		if (notification.getData().isEmpty()) {

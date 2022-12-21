@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +19,7 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
 public abstract class BaseNotificationHandler implements NotificationHandler {
 
-	protected abstract void sendReply(Notification notification, SubscriptionRequest request) throws Exception;
+	protected abstract void sendReply(Notification notification, SubscriptionRequest request, int maxRetries) throws Exception;
 
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 	private HashMap<String, Long> subId2LastReport = new HashMap<String, Long>();
@@ -26,7 +27,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 	private Timer executor = new Timer(true);
 
 	@Override
-	public void notify(Notification notification, SubscriptionRequest subscriptionRequest) {
+	public void notify(Notification notification, SubscriptionRequest subscriptionRequest, int maxRetries) {
 		if (subscriptionRequest.getSubscription().isActive() != null && !subscriptionRequest.getSubscription().isActive()) {
 			return;
 		}
@@ -57,7 +58,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 							reportNotification(subscription, now);
 							try {
 								logger.trace("Sending notification");
-								sendReply(sendOutNotification, subscriptionRequest);
+								sendReply(sendOutNotification, subscriptionRequest, maxRetries);
 								reportSuccessfulNotification(subscription, now);
 							} catch (Exception e) {
 								logger.error("Exception ::", e);
@@ -68,7 +69,7 @@ public abstract class BaseNotificationHandler implements NotificationHandler {
 			}
 		} else {
 			try {
-				sendReply(notification, subscriptionRequest);
+				sendReply(notification, subscriptionRequest, maxRetries);
 				reportSuccessfulNotification(subscription, now);
 			} catch (Exception e) {
 				logger.error("Exception ::", e);
