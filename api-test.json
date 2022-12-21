@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "463d99cc-2b7e-445a-a314-bb1328e29edd",
+		"_postman_id": "095f5ac6-70e2-406a-8695-9056750e9af4",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -9170,10 +9170,10 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(4);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"    pm.expect(jsonData[3]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created4levelnotfound\"));\r",
 																	"    pm.expect(jsonData[2]).to.eql(pm.collectionVariables.get(\"created2levelnotfound\"));\r",
-																	"    pm.expect(jsonData[3]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
+																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
 																	"});"
 																],
 																"type": "text/javascript"
@@ -37042,6 +37042,64 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created4level",
+			"value": ""
+		},
+		{
+			"key": "entityId4level",
+			"value": ""
+		},
+		{
+			"key": "created4levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "entityId4levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "created2level",
+			"value": ""
+		},
+		{
+			"key": "entityId2level",
+			"value": ""
+		},
+		{
+			"key": "created2levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "entityId2levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "created1level",
+			"value": ""
+		},
+		{
+			"key": "entityId1level",
+			"value": ""
+		},
+		{
+			"key": "created1levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "entityId1levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "createdmulti",
+			"value": ""
+		},
+		{
+			"key": "entityIdmulti",
+			"value": ""
 		}
 	]
 }
