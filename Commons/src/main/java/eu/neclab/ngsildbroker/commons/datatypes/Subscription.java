@@ -387,8 +387,8 @@ public class Subscription implements Serializable {
 			for (EntityInfo info : getEntities()) {
 				Map<String, Object> entityObj = Maps.newHashMap();
 				if (info.getId() != null) {
-//					List<Object> temp2 = Lists.newArrayList();
-//					temp2.add(info.getId().toString());
+					// List<Object> temp2 = Lists.newArrayList();
+					// temp2.add(info.getId().toString());
 					entityObj.put(NGSIConstants.JSON_LD_ID, info.getId().toString());// temp2);
 				}
 				if (info.getType() != null) {

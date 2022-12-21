@@ -156,7 +156,7 @@ public interface SubscriptionControllerFunctions {
 					logger.trace("getAllSubscriptions() :: completed");
 
 					return HttpUtils.generateReply(request, getSubscriptions(realResult), additionalHeaders,
-							AppConstants.SUBSCRIPTION_ENDPOINT,null);
+							AppConstants.SUBSCRIPTION_ENDPOINT, null);
 				})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
@@ -176,7 +176,8 @@ public interface SubscriptionControllerFunctions {
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return subscriptionService.getSubscription(id, headers);
 		}).onItem().transformToUni(Unchecked.function(t -> {
-			return HttpUtils.generateReply(request, t.getSubscription().toJson(), AppConstants.SUBSCRIPTION_ENDPOINT,null);
+			return HttpUtils.generateReply(request, t.getSubscription().toJson(), AppConstants.SUBSCRIPTION_ENDPOINT,
+					null);
 		})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}

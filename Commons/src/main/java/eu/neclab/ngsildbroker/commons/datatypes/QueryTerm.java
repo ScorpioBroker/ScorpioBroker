@@ -546,7 +546,6 @@ public class QueryTerm {
 		return builder.toString();
 	}
 
-
 	private void getAttribQueryV2(StringBuilder result) throws ResponseException {
 		ArrayList<String> attribPath = getAttribPathArray(this.attribute);
 		StringBuilder attributeFilterProperty = new StringBuilder("");
@@ -725,7 +724,7 @@ public class QueryTerm {
 			next.toSql(result, temporalEntityMode);
 		}
 	}
-	
+
 	private ArrayList<String> getAttribPathArray(String attribute) throws ResponseException {
 		ArrayList<String> attribPath = new ArrayList<String>();
 		if (attribute.contains("[") && attribute.contains(".")) {

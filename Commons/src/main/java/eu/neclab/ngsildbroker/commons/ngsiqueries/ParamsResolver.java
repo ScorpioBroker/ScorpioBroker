@@ -49,9 +49,10 @@ public class ParamsResolver {
 
 	private final static Logger logger = LoggerFactory.getLogger(ParamsResolver.class);
 
-//TODO REWORK THIS COMPLETELY 
+	// TODO REWORK THIS COMPLETELY
 	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
-//TODO check if this can be changed now since a list of entityinfos is in queryparam
+		// TODO check if this can be changed now since a list of entityinfos is in
+		// queryparam
 		ArrayList<QueryParams> result = new ArrayList<QueryParams>();
 		for (EntityInfo entityInfo : subscription.getEntities()) {
 			QueryParams temp = new QueryParams();
@@ -230,7 +231,7 @@ public class ParamsResolver {
 		handleTimeQuery(timerel, timeAt, timeproperty, endTimeAt, qp);
 		List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
 		HashMap<String, String> temp = new HashMap<String, String>();
-		if (typeRequired && type == null && attrs == null && qp.getQ()==null) {
+		if (typeRequired && type == null && attrs == null && qp.getQ() == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "Missing mandatory minimum parameter "
 					+ NGSIConstants.QUERY_PARAMETER_TYPE + " or " + NGSIConstants.QUERY_PARAMETER_ATTRS);
 		}
