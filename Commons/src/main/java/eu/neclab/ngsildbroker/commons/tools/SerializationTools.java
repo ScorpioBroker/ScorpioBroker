@@ -52,6 +52,9 @@ public class SerializationTools {
 //			.create();
 
 	public static LocalDateTime localDateTimeFormatter(String dateTimeValue) {
+		if (dateTimeValue == null || dateTimeValue.isBlank()) {
+			return LocalDateTime.now();
+		}
 		return LocalDateTime.parse(dateTimeValue, SerializationTools.informatter);
 	}
 
