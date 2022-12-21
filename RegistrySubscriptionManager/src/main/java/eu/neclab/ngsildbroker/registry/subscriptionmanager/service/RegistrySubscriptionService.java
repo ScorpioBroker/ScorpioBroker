@@ -47,7 +47,6 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	@Broadcast
 	MutinyEmitter<InternalNotification> internalNotificationSender;
 
-
 	private NotificationHandler internalHandler;
 
 	private HashMap<String, SubscriptionRequest> id2InternalSubscriptions = new HashMap<String, SubscriptionRequest>();
@@ -90,10 +89,11 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	public Uni<Void> subscribeInternal(SubscriptionRequest request) {
 		makeSubscriptionInternal(request);
-		return subscribe(request).onItem().ignore().andContinueWithNull().onFailure().call(e -> {
-			logger.debug("Failed to subscribe internally", e);
-			return null;
-		});
+		return subscribe(request).onItem().transformToUni(t -> Uni.createFrom().voidItem()).onFailure()
+				.recoverWithUni(e -> {
+					logger.debug("Failed to subscribe internally", e);
+					return Uni.createFrom().voidItem();
+				});
 	}
 
 	public Uni<Void> unsubscribeInternal(String subId) {
@@ -101,7 +101,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		if (request != null) {
 			return unsubscribe(subId, request.getHeaders());
 		}
-		return Uni.createFrom().nullItem();
+		return Uni.createFrom().voidItem();
 	}
 
 	@PreDestroy
@@ -191,7 +191,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	@Override
 	protected void setSyncId() {
-		this.syncIdentifier = "";//RegistrySubscriptionSyncService.SYNC_ID;
+		this.syncIdentifier = "";// RegistrySubscriptionSyncService.SYNC_ID;
 	}
 
 	@Override
