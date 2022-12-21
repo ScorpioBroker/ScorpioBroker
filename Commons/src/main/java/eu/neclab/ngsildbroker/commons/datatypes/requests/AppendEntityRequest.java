@@ -57,6 +57,9 @@ public class AppendEntityRequest extends EntityRequest {
 				if (option.isBlank()) {
 					continue;
 				}
+				if (option.equals(NGSIConstants.UPDATE_OPTION)) {
+					continue;
+				}
 				if (option.equalsIgnoreCase(NGSIConstants.NO_OVERWRITE_OPTION)) {
 					overwrite = false;
 				} else {
