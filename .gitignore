@@ -14,3 +14,4 @@ Go/pkg/
 /*/*/bin
 *.iml
 .idea
+.vscode
