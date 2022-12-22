@@ -41,6 +41,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple4;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 
 public interface EntryControllerFunctions {
@@ -192,7 +193,7 @@ public interface EntryControllerFunctions {
 				return entityService.sendFail(batchInfo).onItem().transformToUni(
 						t -> Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null)));
 			}
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
+			MultiMap headers = HttpUtils.getHeaders(request);
 			return entityService.createEntry(headers, expanded, batchInfo).onItem()
 					.transform(i -> Tuple2.of(new BatchFailure("dummy", null), i)).onFailure().recoverWithUni(e -> {
 						NGSIRestResponse response;
@@ -298,8 +299,8 @@ public interface EntryControllerFunctions {
 
 			}
 
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem().transformToUni(t2 -> {
+				MultiMap headers = HttpUtils.getHeaders(request);
 				String entityId = "NO ENTITY ID FOUND";
 				if (t2 instanceof String) {
 					entityId = (String) t2;
@@ -400,8 +401,8 @@ public interface EntryControllerFunctions {
 				return entityService.sendFail(batchInfo).onItem().transformToUni(
 						t -> Uni.createFrom().item(Tuple3.of(new BatchFailure(entityIdTmp, response), null, false)));
 			}
-			Tuple4<Map<String, Object>, Object, ArrayListMultimap<String, String>, String[]> t = Tuple4.of(expanded,
-					tt.getItem2(), HttpUtils.getHeaders(request), getOptionsArray(options));
+			Tuple4<Map<String, Object>, List<Object>, MultiMap, String[]> t = Tuple4.of(expanded, tt.getItem2(),
+					HttpUtils.getHeaders(request), getOptionsArray(options));
 
 			Map<String, Object> entry = expanded;// t.getItem1();
 			String entityId;

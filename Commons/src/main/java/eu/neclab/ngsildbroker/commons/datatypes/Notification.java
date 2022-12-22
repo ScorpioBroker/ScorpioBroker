@@ -16,6 +16,8 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**
  * @author hebgen
@@ -30,14 +32,14 @@ public class Notification {
 	private int triggerReason;
 	private List<Object> context;
 	private String type;
-	private ArrayListMultimap<String, String> headers;
+	private MultiMap headers;
 
 	public Notification() {
 		// for serialization
 	}
 
 	public Notification(String id, String type, Long notifiedAt, String subscriptionId, List<Map<String, Object>> data,
-			int triggerReason, List<Object> context, ArrayListMultimap<String, String> headers) {
+			int triggerReason, List<Object> context, MultiMap headers) {
 		super();
 		this.id = id;
 		this.notifiedAt = notifiedAt;
@@ -152,11 +154,11 @@ public class Notification {
 		this.type = type;
 	}
 
-	public ArrayListMultimap<String, String> getHeaders() {
+	public MultiMap getHeaders() {
 		return headers;
 	}
 
-	public void setHeaders(ArrayListMultimap<String, String> headers) {
+	public void setHeaders(MultiMap headers) {
 		this.headers = headers;
 	}
 
@@ -170,7 +172,7 @@ public class Notification {
 			result.data = List.copyOf(baseNotification.data);
 		}
 		if (baseNotification.headers != null) {
-			result.headers = ArrayListMultimap.create(baseNotification.headers);
+			result.headers = HeadersMultiMap.headers().addAll(baseNotification.headers);
 		}
 		result.notifiedAt = baseNotification.notifiedAt;
 		result.subscriptionId = baseNotification.subscriptionId;

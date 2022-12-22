@@ -4,6 +4,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.vertx.core.MultiMap;
 
 public class DeleteHistoryEntityRequest extends HistoryEntityRequest {
 
@@ -13,7 +14,7 @@ public class DeleteHistoryEntityRequest extends HistoryEntityRequest {
 	public DeleteHistoryEntityRequest() {
 	}
 
-	public DeleteHistoryEntityRequest(ArrayListMultimap<String, String> headers, String resolvedAttrId,
+	public DeleteHistoryEntityRequest(MultiMap headers, String resolvedAttrId,
 			String instanceId, String entityId) throws ResponseException {
 		super(headers, null, entityId, AppConstants.DELETE_REQUEST);
 		this.resolvedAttrId = resolvedAttrId;

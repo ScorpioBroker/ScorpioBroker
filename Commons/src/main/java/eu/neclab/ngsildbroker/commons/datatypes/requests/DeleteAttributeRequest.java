@@ -11,11 +11,12 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class DeleteAttributeRequest extends EntityRequest {
 
-	public DeleteAttributeRequest(ArrayListMultimap<String, String> headers, String entityId,
+	public DeleteAttributeRequest(MultiMap headers, String entityId,
 			Map<String, Object> entityBody, String attrId, String datasetId, String deleteAll)
 			throws ResponseException {
 		super(headers, entityId, entityBody, AppConstants.DELETE_ATTRIBUTE_REQUEST);

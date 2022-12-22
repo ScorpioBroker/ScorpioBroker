@@ -38,6 +38,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniAndGroup2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.MultiMap;
 
 @Singleton
 public class HistoryService extends BaseQueryService implements EntryCRUDService {
@@ -60,17 +61,16 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Channel(AppConstants.HISTORY_CHANNEL)
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+	public Uni<CreateResult> createEntry(MultiMap headers, Map<String, Object> resolved) {
 		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			BatchInfo batchInfo) {
+	public Uni<CreateResult> createEntry(MultiMap headers, Map<String, Object> resolved, BatchInfo batchInfo) {
 		return createTemporalEntity(headers, resolved, false, batchInfo);
 	}
 
-	Uni<CreateResult> createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			boolean fromEntity, BatchInfo batchInfo) {
+	Uni<CreateResult> createTemporalEntity(MultiMap headers, Map<String, Object> resolved, boolean fromEntity,
+			BatchInfo batchInfo) {
 		logger.trace("creating temporal entity");
 		CreateHistoryEntityRequest request;
 		try {
@@ -87,16 +87,16 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 				});
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
+	public Uni<Boolean> deleteEntry(MultiMap headers, String entityId) {
 		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo) {
+	public Uni<Boolean> deleteEntry(MultiMap headers, String entityId, BatchInfo batchInfo) {
 		return delete(headers, entityId, null, null, null);
 	}
 
-	public Uni<Boolean> delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
-			String instanceId, Context linkHeaders) {
+	public Uni<Boolean> delete(MultiMap headers, String entityId, String attributeId, String instanceId,
+			Context linkHeaders) {
 		if (entityId == null) {
 			return Uni.createFrom()
 					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
@@ -120,13 +120,13 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 				});
 	}
 
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options) {
+	public Uni<UpdateResult> appendToEntry(MultiMap headers, String entityId, Map<String, Object> resolved,
+			String[] options) {
 		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
 	}
 
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) {
+	public Uni<UpdateResult> appendToEntry(MultiMap headers, String entityId, Map<String, Object> resolved,
+			String[] options, BatchInfo batchInfo) {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transformToUni(t -> {
 			try {
@@ -143,8 +143,8 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	}
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
-	public Uni<Void> modifyAttribInstanceTemporalEntity(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String attribId, String instanceId, Context linkHeaders) {
+	public Uni<Void> modifyAttribInstanceTemporalEntity(MultiMap headers, String entityId, Map<String, Object> resolved,
+			String attribId, String instanceId, Context linkHeaders) {
 
 		String resolvedAttrId;
 		try {
@@ -181,14 +181,13 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry) {
+	public Uni<UpdateResult> updateEntry(MultiMap headers, String entityId, Map<String, Object> entry) {
 		return updateEntry(headers, entityId, entry, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, BatchInfo batchInfo) {
+	public Uni<UpdateResult> updateEntry(MultiMap headers, String entityId, Map<String, Object> entry,
+			BatchInfo batchInfo) {
 		// History can't do this
 		throw new MethodNotFoundException();
 	}

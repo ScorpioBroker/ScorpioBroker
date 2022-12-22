@@ -11,28 +11,25 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
 
 public interface EntryCRUDService {
-	Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry);
+	Uni<UpdateResult> updateEntry(MultiMap headers, String entityId, Map<String, Object> entry);
 
-	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, String[] options);
+	Uni<UpdateResult> appendToEntry(MultiMap headers, String entityId, Map<String, Object> entry, String[] options);
 
-	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved);
+	Uni<CreateResult> createEntry(MultiMap headers, Map<String, Object> resolved);
 
-	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId);
+	Uni<Boolean> deleteEntry(MultiMap headers, String entryId);
 
-	Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> entry,
+	Uni<UpdateResult> updateEntry(MultiMap headers, String entityId, Map<String, Object> entry, BatchInfo batchInfo);
+
+	Uni<UpdateResult> appendToEntry(MultiMap headers, String entityId, Map<String, Object> entry, String[] options,
 			BatchInfo batchInfo);
 
-	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, String[] options, BatchInfo batchInfo);
+	Uni<CreateResult> createEntry(MultiMap headers, Map<String, Object> resolved, BatchInfo batchInfo);
 
-	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			BatchInfo batchInfo);
-
-	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, BatchInfo batchInfo);
+	Uni<Boolean> deleteEntry(MultiMap headers, String entryId, BatchInfo batchInfo);
 
 	Uni<Void> sendFail(BatchInfo batchInfo);
 

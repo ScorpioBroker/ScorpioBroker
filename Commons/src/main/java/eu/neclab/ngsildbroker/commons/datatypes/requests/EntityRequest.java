@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class EntityRequest extends BaseRequest {
@@ -20,7 +21,7 @@ public class EntityRequest extends BaseRequest {
 
 	}
 
-	EntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
+	EntityRequest(MultiMap headers, String id, Map<String, Object> requestPayload,
 			int requestType) {
 		super(headers, id, requestPayload, requestType);
 	}

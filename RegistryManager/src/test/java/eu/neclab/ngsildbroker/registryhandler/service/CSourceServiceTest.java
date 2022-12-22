@@ -34,6 +34,8 @@ import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 @QuarkusTest
 @TestMethodOrder(OrderAnnotation.class)
@@ -70,7 +72,7 @@ public class CSourceServiceTest {
 	String headers;
 	JsonNode blankNode;
 	JsonNode payloadNode;
-	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
+	MultiMap multimaparr = HeadersMultiMap.headers();
 
 	@BeforeEach
 	public void setup() throws Exception {
@@ -193,7 +195,7 @@ public class CSourceServiceTest {
 	@Test
 	public void registerCSourceTest() throws Exception {
 
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		CSourceRequest request = new CreateCSourceRequest(resolved, multimaparr,
@@ -209,7 +211,7 @@ public class CSourceServiceTest {
 	 */
 	@Test
 	public void registerCSourceIdNotProvideTest() throws Exception {
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		resolved.put(NGSIConstants.JSON_LD_ID, null);
@@ -226,7 +228,7 @@ public class CSourceServiceTest {
 	 */
 	@Test
 	public void registerCSourceIdNullFoundTest() throws Exception {
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payloadNotFound, Map.class);
 		CSourceRequest request = new CreateCSourceRequest(resolved, multimaparr,
@@ -248,7 +250,7 @@ public class CSourceServiceTest {
 			HashMap<String, List<Map<String, Object>>> result = new HashMap<String, List<Map<String, Object>>>();
 			List<Map<String, Object>> entities = new ArrayList<Map<String, Object>>();
 			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			UpdateResult updateResult = new UpdateResult();
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
@@ -279,7 +281,7 @@ public class CSourceServiceTest {
 		HashMap<String, List<Map<String, Object>>> result = new HashMap<String, List<Map<String, Object>>>();
 		List<Map<String, Object>> entities = new ArrayList<Map<String, Object>>();
 		result.put(AppConstants.INTERNAL_NULL_KEY, entities);
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		UpdateResult updateResult = new UpdateResult();
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
@@ -309,7 +311,7 @@ public class CSourceServiceTest {
 			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
 			Gson gson = new Gson();
 			Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			Mockito.when(csourceDAO.getRegistrationById(any(), any()))
 					.thenReturn(Uni.createFrom().item(originalresolved));
 			Map<String, Object> getresult = csourceService
@@ -329,7 +331,7 @@ public class CSourceServiceTest {
 	public void updateCSourceEntrybyIdTest() throws Exception {
 		ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
 		csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		UpdateResult updateResult = new UpdateResult();
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
@@ -358,7 +360,7 @@ public class CSourceServiceTest {
      		Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
 			Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
 			boolean deleteresult = csourceService.deleteEntry(multimaparr, "urn:ngsi-ld:ContextSourceRegistration:csr3")
 					.await().indefinitely();
@@ -380,7 +382,7 @@ public class CSourceServiceTest {
  		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
 		Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
 		try {
 			csourceService.deleteEntry(multimaparr, null).await().indefinitely();
@@ -404,7 +406,7 @@ public class CSourceServiceTest {
 			BaseRequest br = new BaseRequest();
 			br.setFinalPayload(originalresolved);
 			br.setHeaders(multimaparr);
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
 			csourceService.handleEntityDelete(br);
 			Mockito.verify(csourceService).handleEntityDelete(any());
@@ -425,7 +427,7 @@ public class CSourceServiceTest {
 		HashMap<String, List<Map<String, Object>>> result = new HashMap<String, List<Map<String, Object>>>();
 		List<Map<String, Object>> entities = new ArrayList<Map<String, Object>>();
 		result.put(AppConstants.INTERNAL_NULL_KEY, entities);
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
 		originalresolved.put(NGSIConstants.NGSI_LD_EXPIRES, "https://uri.etsi.org/ngsi-ld/expiresAt");

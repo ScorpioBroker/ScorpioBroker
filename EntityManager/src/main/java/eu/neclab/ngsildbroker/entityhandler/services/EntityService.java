@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.vertx.core.MultiMap;
 
 @Singleton
 public class EntityService implements EntryCRUDService {
@@ -59,8 +60,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			BatchInfo batchInfo) {
+	public Uni<CreateResult> createEntry(MultiMap headers, Map<String, Object> resolved, BatchInfo batchInfo) {
 		logger.debug("createMessage() :: started");
 		EntityRequest request;
 		try {
@@ -75,7 +75,7 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+	public Uni<CreateResult> createEntry(MultiMap headers, Map<String, Object> resolved) {
 		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
@@ -89,7 +89,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+	public Uni<UpdateResult> updateEntry(MultiMap headers, String entityId,
 			Map<String, Object> resolved, BatchInfo batchInfo) {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
@@ -110,7 +110,7 @@ public class EntityService implements EntryCRUDService {
 				});
 	}
 
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+	public Uni<UpdateResult> updateEntry(MultiMap headers, String entityId,
 			Map<String, Object> resolved) {
 		return updateEntry(headers, entityId, resolved, new BatchInfo(-1, -1));
 	}
@@ -124,7 +124,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+	public Uni<UpdateResult> appendToEntry(MultiMap headers, String entityId,
 			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
@@ -154,12 +154,12 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+	public Uni<UpdateResult> appendToEntry(MultiMap headers, String entityId,
 			Map<String, Object> resolved, String[] options) {
 		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo) {
+	public Uni<Boolean> deleteEntry(MultiMap headers, String entityId, BatchInfo batchInfo) {
 		logger.trace("deleteEntity() :: started");
 		if (entityId == null) {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
@@ -185,11 +185,11 @@ public class EntityService implements EntryCRUDService {
 				});
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
+	public Uni<Boolean> deleteEntry(MultiMap headers, String entityId) {
 		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
 	}
 
-	public Uni<UpdateResult> partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId,
+	public Uni<UpdateResult> partialUpdateEntity(MultiMap headers, String entityId,
 			String attrId, Map<String, Object> expandedPayload) {
 		logger.trace("partialUpdateEntity() :: started");
 		// get message channel for ENTITY_APPEND topic
@@ -220,7 +220,7 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<Boolean> deleteAttribute(ArrayListMultimap<String, String> headers, String entityId, String attrId,
+	public Uni<Boolean> deleteAttribute(MultiMap headers, String entityId, String attrId,
 			String datasetId, String deleteAll) {
 		logger.trace("deleteAttribute() :: started");
 		// get message channel for ENTITY_APPEND topic

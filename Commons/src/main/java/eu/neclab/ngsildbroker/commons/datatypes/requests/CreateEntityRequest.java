@@ -9,6 +9,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class CreateEntityRequest extends EntityRequest {
@@ -20,8 +21,7 @@ public class CreateEntityRequest extends EntityRequest {
 
 	}
 
-	public CreateEntityRequest(Map<String, Object> resolved, ArrayListMultimap<String, String> headers)
-			throws ResponseException {
+	public CreateEntityRequest(Map<String, Object> resolved, MultiMap headers) throws ResponseException {
 		super(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, AppConstants.CREATE_REQUEST);
 		generatePayloadVersions(resolved);
 	}

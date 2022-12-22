@@ -10,14 +10,14 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.vertx.core.MultiMap;
 
 public class AppendCSourceRequest extends CSourceRequest {
 
 	private UpdateResult updateResult = new UpdateResult();
 
-	public AppendCSourceRequest(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> originalRegistration, Map<String, Object> update, String[] options)
-			throws ResponseException {
+	public AppendCSourceRequest(MultiMap headers, String registrationId, Map<String, Object> originalRegistration,
+			Map<String, Object> update, String[] options) throws ResponseException {
 		super(headers, registrationId, update, AppConstants.APPEND_REQUEST);
 		setFinalPayload(appendRequest(originalRegistration, update, options));
 	}

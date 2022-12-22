@@ -16,13 +16,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class AppendEntityRequest extends EntityRequest {
 
 	private UpdateResult updateResult;
 
-	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
+	public AppendEntityRequest(MultiMap headers, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String[] options) throws ResponseException {
 		super(headers, id, resolved, AppConstants.APPEND_REQUEST);
 		generateAppend(resolved, entityBody, options);

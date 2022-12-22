@@ -41,6 +41,8 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.pgclient.PgPool;
 
 @QuarkusTest
@@ -95,7 +97,7 @@ public class HistoryServiceTest {
 	JsonNode updatePartialAttributesNode;
 	JsonNode updatePartialDefaultAttributesNode;
 
-	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
+	MultiMap multimaparr = HeadersMultiMap.headers();
 
 	@BeforeEach
 	public void setUp() throws Exception {
@@ -205,15 +207,14 @@ public class HistoryServiceTest {
 	}
 
 	/**
-	 * this method is use for create temporal entity 
-	 * HistoryService
+	 * this method is use for create temporal entity HistoryService
 	 */
 
 	@Test
- 	public void createTemporalEntityTest() throws Exception {
-	 	try {
-			ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
-			multimaparr.put("content-type", "application/json");
+	public void createTemporalEntityTest() throws Exception {
+		try {
+			MultiMap multimaparr = HeadersMultiMap.headers();
+			multimaparr.add("content-type", "application/json");
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(temporalPayload, Map.class);
 			CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(multimaparr, resolved, false);
@@ -233,8 +234,8 @@ public class HistoryServiceTest {
 	 */
 	@Test
 	public void createTemporalEntityThrowsAlreadyExistTest() throws ResponseException, Exception {
-		ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
-		multimaparr.put("content-type", "application/json");
+		MultiMap multimaparr = HeadersMultiMap.headers();
+		multimaparr.add("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(temporalPayload, Map.class);
 		EntityRequest request = new CreateEntityRequest(resolved, multimaparr);
@@ -255,7 +256,7 @@ public class HistoryServiceTest {
 	 */
 	@Test
 	public void appendTemporalFieldTest() throws Exception {
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		UpdateResult updateResult = new UpdateResult();
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
@@ -279,7 +280,7 @@ public class HistoryServiceTest {
 
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		String[] optionsArray = new String[0];
 		Map<String, Object> resolved = gson.fromJson(tempAppendPayload, Map.class);
@@ -303,7 +304,7 @@ public class HistoryServiceTest {
 
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> OdlResolved = gson.fromJson(olddata, Map.class);
 		Map<String, Object> tempResolved = gson.fromJson(tempupdatePayload, Map.class);
@@ -335,7 +336,7 @@ public class HistoryServiceTest {
 	@Test
 	public void deleteTemporalByIdTest() {
 		try {
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
@@ -354,7 +355,7 @@ public class HistoryServiceTest {
 	@Test
 	public void deleteTemporalByIdNullTest() {
 		try {
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
@@ -378,7 +379,7 @@ public class HistoryServiceTest {
 		try {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2");
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			ResponseException responseException = new ResponseException(ErrorType.NotFound,
 					"urn:ngsi-ld:Vehicle:2 was not found");
 			Mockito.when(historyDAO.getTemporalEntity(any(), any()))

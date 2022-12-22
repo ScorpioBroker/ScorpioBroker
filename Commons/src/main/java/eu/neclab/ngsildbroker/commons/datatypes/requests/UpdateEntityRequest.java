@@ -14,13 +14,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class UpdateEntityRequest extends EntityRequest {
 
 	private UpdateResult updateResult;
 
-	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
+	public UpdateEntityRequest(MultiMap headers, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String attrName) throws ResponseException {
 		super(headers, id, resolved, AppConstants.UPDATE_REQUEST);
 		generateUpdate(resolved, entityBody, attrName);
@@ -186,7 +187,7 @@ public class UpdateEntityRequest extends EntityRequest {
 				break;
 		}
 	}
-	
+
 	public UpdateResult getUpdateResult() {
 		return updateResult;
 	}

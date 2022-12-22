@@ -10,6 +10,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
@@ -18,7 +19,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	private String instanceId;
 	private String resolvedAttrId;
 
-	public UpdateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	public UpdateHistoryEntityRequest(MultiMap headers, Map<String, Object> resolved,
 			String entityId, String resolvedAttrId, String instanceId, List<Map<String, Object>> oldEntry)
 			throws ResponseException {
 		super(headers, resolved, entityId, AppConstants.UPDATE_REQUEST);

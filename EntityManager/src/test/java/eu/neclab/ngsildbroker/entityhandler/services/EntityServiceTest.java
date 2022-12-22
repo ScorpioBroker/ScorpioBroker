@@ -4,6 +4,8 @@ import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.pgclient.PgPool;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import static org.mockito.ArgumentMatchers.any;
@@ -81,7 +83,7 @@ public class EntityServiceTest {
 	private String entityAttrPayload;
 	private String updateAttrPayload;
 	private String entityPayloadIdNotFound;
-	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
+	MultiMap multimaparr = HeadersMultiMap.headers();
 	ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 
 	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
@@ -221,12 +223,12 @@ public class EntityServiceTest {
 	@Order(1)
 	public void createMessageIdTest() {
 		try {
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(entityPayload, Map.class);
 			CreateResult result = entityService.createEntry(multimaparr, resolved).await().indefinitely();
 			Assertions.assertEquals("urn:ngsi-ld:Vehicle:A103", result.getEntityId());
-			Mockito.verify(entityService).createEntry(any(),any());
+			Mockito.verify(entityService).createEntry(any(), any());
 		} catch (Exception e) {
 			Assertions.fail();
 			e.printStackTrace();
@@ -240,13 +242,13 @@ public class EntityServiceTest {
 	@Order(2)
 	public void createMessageNullTest() {
 		try {
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(enitityIdNotPayload, Map.class);
-		CreateResult s = entityService.createEntry(multimaparr, resolved).await().indefinitely();
-		Assertions.assertEquals(null, s.getEntityId());
-		Mockito.verify(entityService).createEntry(any(),any());
-		}catch(Exception e) {
+			multimaparr.set("content-type", "application/json");
+			Gson gson = new Gson();
+			Map<String, Object> resolved = gson.fromJson(enitityIdNotPayload, Map.class);
+			CreateResult s = entityService.createEntry(multimaparr, resolved).await().indefinitely();
+			Assertions.assertEquals(null, s.getEntityId());
+			Mockito.verify(entityService).createEntry(any(), any());
+		} catch (Exception e) {
 			e.printStackTrace();
 			Assertions.fail();
 		}
@@ -259,19 +261,19 @@ public class EntityServiceTest {
 	@Order(3)
 	public void updateMessageAttrIdNotExistTest() throws Exception {
 		try {
-			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
+
+			//entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
 			UpdateResult updateResult = new UpdateResult();
 			Map<String, Object> m = new HashMap<String, Object>();
 			m.put(appendPayload, entityIds);
 			Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(updatePayloadforwrongattr, Map.class);
 			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
 			UpdateEntityRequest request = new UpdateEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
 					resolved, null);
-			updateResult = entityService.updateEntry(entityIds, entityPayload, resolved).await().indefinitely();
+			updateResult = entityService.updateEntry(multimaparr, entityPayload, resolved).await().indefinitely();
 			Assertions.assertEquals(request.getUpdateResult().getNotUpdated(), updateResult.getNotUpdated());
 			Mockito.verify(entityService).updateEntry(any(), any(), any());
 		} catch (Exception ex) {
@@ -292,7 +294,7 @@ public class EntityServiceTest {
 			Map<String, Object> m = new HashMap<String, Object>();
 			m.put("@value", entityPayload);
 			Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-			multimaparr.put("content-type", "application/json");
+			multimaparr.set("content-type", "application/json");
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
 			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
@@ -312,27 +314,27 @@ public class EntityServiceTest {
 	 * this method is use for append the field Attribute
 	 */
 	@Test
-	public void appendFieldTest()  {
+	public void appendFieldTest() {
 		try {
-		MockitoAnnotations.initMocks(this);
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-		UpdateResult updateResult = new UpdateResult();
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put("@id", entityIds);
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(appendPayload, Map.class);
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		AppendEntityRequest request = new AppendEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
-				resolved, null);
-		String[] options = null;
-		updateResult = entityService.appendToEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved, options).await()
-				.indefinitely();
-		Assertions.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
-		Mockito.verify(entityService).appendToEntry(any(), any(), any(), any());
-		}catch(Exception e) {
+			MockitoAnnotations.initMocks(this);
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
+			UpdateResult updateResult = new UpdateResult();
+			Map<String, Object> m = new HashMap<String, Object>();
+			m.put("@id", entityIds);
+			Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
+			multimaparr.set("content-type", "application/json");
+			Gson gson = new Gson();
+			Map<String, Object> resolved = gson.fromJson(appendPayload, Map.class);
+			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
+			AppendEntityRequest request = new AppendEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
+					resolved, null);
+			String[] options = null;
+			updateResult = entityService.appendToEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved, options)
+					.await().indefinitely();
+			Assertions.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
+			Mockito.verify(entityService).appendToEntry(any(), any(), any(), any());
+		} catch (Exception e) {
 			Assertions.fail();
 		}
 
@@ -350,7 +352,7 @@ public class EntityServiceTest {
 		Map<String, Object> m = new HashMap<String, Object>();
 		m.put("@id", entityIds);
 		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(appendPayload, Map.class);
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayloadIdNotFound);
@@ -379,7 +381,7 @@ public class EntityServiceTest {
 		Map<String, Object> m = new HashMap<String, Object>();
 		m.put("@id", entityIds);
 		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(updatePartialAttributesPayload, Map.class);
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
@@ -408,7 +410,7 @@ public class EntityServiceTest {
 		Map<String, Object> m = new HashMap<String, Object>();
 		m.put("@id", entityIds);
 		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(updatePartialAttributesPayload, Map.class);
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
@@ -435,7 +437,7 @@ public class EntityServiceTest {
 		m.put("attrs", "http://example.org/vehicle/speed");
 		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		try {
 			entityService.deleteAttribute(multimaparr, "urn:ngsi-ld:Vehicle:A103", "http://example.org/vehicle/speed",
 					null, null).await().indefinitely();
@@ -457,7 +459,7 @@ public class EntityServiceTest {
 		m.put("attrs", "http://example.org/vehicle/speed");
 		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		try {
 			entityService.deleteAttribute(multimaparr, null, "http://example.org/vehicle/speed", null, null).await()
 					.indefinitely();
@@ -473,17 +475,17 @@ public class EntityServiceTest {
 	@Test
 	public void deleteEntityTest() throws Exception {
 		try {
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.REQUEST_ID, "urn:ngsi-ld:Vehicle:A103");
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put(entityPayload, entityIds);
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		multimaparr.put("content-type", "application/json");
-		boolean result = entityService.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103").await().indefinitely();
-		Assertions.assertEquals(true, result);
-		Mockito.verify(entityService).deleteEntry(any(), any());
-		}catch(Exception e) {
+			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+			entityIds.put(AppConstants.REQUEST_ID, "urn:ngsi-ld:Vehicle:A103");
+			Map<String, Object> m = new HashMap<String, Object>();
+			m.put(entityPayload, entityIds);
+			Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
+			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
+			multimaparr.set("content-type", "application/json");
+			boolean result = entityService.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103").await().indefinitely();
+			Assertions.assertEquals(true, result);
+			Mockito.verify(entityService).deleteEntry(any(), any());
+		} catch (Exception e) {
 			Assertions.fail();
 		}
 	}
@@ -499,7 +501,7 @@ public class EntityServiceTest {
 		m.put(entityPayload, entityIds);
 		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		try {
 			entityService.deleteEntry(multimaparr, null).await().indefinitely();
 		} catch (Exception e) {

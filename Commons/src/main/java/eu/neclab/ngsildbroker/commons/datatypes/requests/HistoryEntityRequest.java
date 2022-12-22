@@ -11,6 +11,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class HistoryEntityRequest extends BaseRequest {
@@ -59,7 +60,7 @@ public class HistoryEntityRequest extends BaseRequest {
 	public HistoryEntityRequest() {
 	}
 
-	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	public HistoryEntityRequest(MultiMap headers, Map<String, Object> resolved,
 			String entityId, int requestType) throws ResponseException {
 		super(headers, entityId, resolved, requestType);
 		this.now = SerializationTools.formatter.format(Instant.now());

@@ -13,6 +13,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class CreateHistoryEntityRequest extends HistoryEntityRequest {
@@ -58,7 +59,7 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 		this(entityRequest.getHeaders(), entityRequest.getFinalPayload(), true);
 	}
 
-	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	public CreateHistoryEntityRequest(MultiMap headers, Map<String, Object> resolved,
 			boolean fromEntity) throws ResponseException {
 		super(headers, resolved, (String) resolved.get(NGSIConstants.JSON_LD_ID), AppConstants.CREATE_REQUEST);
 		this.fromEntity = fromEntity;

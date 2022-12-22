@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -18,6 +19,7 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import io.vertx.core.MultiMap;
 import io.vertx.mutiny.core.http.HttpHeaders;
 
 class NotificationHandlerMQTT extends BaseNotificationHandler {
@@ -30,8 +32,8 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		URI callback = request.getSubscription().getNotification().getEndPoint().getUri();
 		Map<String, String> clientSettings = request.getSubscription().getNotification().getEndPoint()
 				.getNotifierInfo();
-		
-		ArrayListMultimap<String, String> headers = request.getHeaders();
+
+		MultiMap headers = request.getHeaders();
 		Object client = getClient(callback, clientSettings);
 		String qosString = null;
 		if (clientSettings != null) {
@@ -55,24 +57,25 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 			MqttMessage message = new MqttMessage(payload.getBytes());
 			message.setQos(qos);
 			if (message.getProperties() != null)
-				message.getProperties().setContentType(headers.get(HttpHeaders.CONTENT_TYPE.toString()).get(0));
+				message.getProperties().setContentType(headers.get(HttpHeaders.CONTENT_TYPE.toString()));
 			client5.publish(callback.getPath().substring(1), message);
 		}
 
 	}
 
-	private String getPayload(Notification notification, ArrayListMultimap<String, String> headers) throws Exception {
+	private String getPayload(Notification notification, MultiMap headers) throws Exception {
 
 		// Map<String, String> metaData = new HashMap<String, String>();
 		StringBuilder result = new StringBuilder("{\"" + NGSIConstants.METADATA + "\":{");
-		for (Entry<String, Collection<String>> entry : headers.asMap().entrySet()) {
-			ArrayList<String> value = new ArrayList<String>(entry.getValue());
+		for (String name : headers.names()) {
+
+			List<String> value = headers.getAll(name);
 			result.append("\"");
-			result.append(entry.getKey());
+			result.append(name);
 			result.append("\":");
-			if (entry.getValue().size() != 1) {
+			if (value.size() != 1) {
 				result.append("[");
-				for (String headerValue : entry.getValue()) {
+				for (String headerValue : value) {
 					result.append(headerValue + ",");
 				}
 				result.setCharAt(result.length() - 1, ']');

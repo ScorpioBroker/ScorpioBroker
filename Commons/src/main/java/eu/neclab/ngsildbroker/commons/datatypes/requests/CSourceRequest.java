@@ -3,10 +3,11 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests;
 import java.util.Map;
 import com.google.common.collect.ArrayListMultimap;
 
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class CSourceRequest extends BaseRequest {
-	CSourceRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
+	CSourceRequest(MultiMap headers, String id, Map<String, Object> requestPayload,
 			int requestType) {
 		super(headers, id, requestPayload, requestType);
 	}

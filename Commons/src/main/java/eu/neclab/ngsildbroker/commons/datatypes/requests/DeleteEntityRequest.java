@@ -6,6 +6,7 @@ import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class DeleteEntityRequest extends EntityRequest {
@@ -14,8 +15,8 @@ public class DeleteEntityRequest extends EntityRequest {
 	public DeleteEntityRequest() {
 	}
 
-	public DeleteEntityRequest(String entityId, ArrayListMultimap<String, String> headers,
-			Map<String, Object> oldEntity) throws ResponseException {
+	public DeleteEntityRequest(String entityId, MultiMap headers, Map<String, Object> oldEntity)
+			throws ResponseException {
 		super(headers, entityId, null, AppConstants.DELETE_REQUEST);
 		setFinalPayload(null);
 		this.keyValue = JsonObject.mapFrom(null);

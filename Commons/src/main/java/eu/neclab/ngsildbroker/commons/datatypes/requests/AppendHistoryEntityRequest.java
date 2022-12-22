@@ -11,13 +11,14 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 
 	private UpdateResult updateResult = new UpdateResult();
 
-	public AppendHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	public AppendHistoryEntityRequest(MultiMap headers, Map<String, Object> resolved,
 			String entityId) throws ResponseException {
 		super(headers, resolved, entityId, AppConstants.APPEND_REQUEST);
 		setFinalPayload(resolved);

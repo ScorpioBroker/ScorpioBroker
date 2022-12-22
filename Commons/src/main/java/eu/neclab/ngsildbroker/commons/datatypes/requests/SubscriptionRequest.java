@@ -19,10 +19,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 public class SubscriptionRequest extends BaseRequest implements Serializable {
-	
-	
+
 	/**
 	 *
 	 */
@@ -45,8 +46,7 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 		// default constructor for serialization
 	}
 
-	public SubscriptionRequest(Subscription subscription, List<Object> context2,
-			ArrayListMultimap<String, String> headers, int type) {
+	public SubscriptionRequest(Subscription subscription, List<Object> context2, MultiMap headers, int type) {
 		super(headers, subscription.getId(), null, type);
 		this.active = true;
 		this.context = context2;
@@ -69,11 +69,11 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 		this.subscription = subscription;
 	}
 
-	public ArrayListMultimap<String, String> getHeaders() {
+	public MultiMap getHeaders() {
 		return headers;
 	}
 
-	public void setHeaders(ArrayListMultimap<String, String> headers) {
+	public void setHeaders(MultiMap headers) {
 		this.headers = headers;
 	}
 
@@ -115,15 +115,14 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 
 	}
 
-	private Map<String, List<String>> getHeaders(ArrayListMultimap<String, String> headers) {
+	private Map<String, List<String>> getHeaders(MultiMap headers) {
 		Map<String, List<String>> top = Maps.newHashMap();
-		for (Entry<String, Collection<String>> entry : headers.asMap().entrySet()) {
-			String key = entry.getKey();
+		for (String name : headers.names()) {
 			List<String> value = Lists.newArrayList();
-			for (String element : entry.getValue()) {
+			for (String element : headers.getAll(name)) {
 				value.add(element);
 			}
-			top.put(key, value);
+			top.put(name, value);
 		}
 		return top;
 	}
@@ -172,18 +171,17 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 		return result;
 	}
 
-	private static List<Object> getAtContext(ArrayListMultimap<String, String> headers) {
-		return HttpUtils.parseLinkHeaderNoUni(headers.get(NGSIConstants.LINK_HEADER),
+	private static List<Object> getAtContext(MultiMap headers) {
+		return HttpUtils.parseLinkHeaderNoUni(headers.getAll(NGSIConstants.LINK_HEADER),
 				NGSIConstants.HEADER_REL_LDCONTEXT);
 	}
 
-	private static ArrayListMultimap<String, String> getMultiListHeaders(Map<String, List<String>> value) {
-		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-
+	private static MultiMap getMultiListHeaders(Map<String, List<String>> value) {
+		MultiMap result = HeadersMultiMap.headers();
 		for (Entry<String, List<String>> entry : value.entrySet()) {
 			Iterator<String> it = entry.getValue().iterator();
 			while (it.hasNext()) {
-				result.put(entry.getKey(), it.next());
+				result.add(entry.getKey(), it.next());
 			}
 		}
 		return result;

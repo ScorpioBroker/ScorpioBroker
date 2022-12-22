@@ -7,6 +7,8 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -95,7 +97,7 @@ public class RegistrySubscriptionServiceTest {
 	@Mock
 	RegistrySubscriptionInfoDAO subService;
 
-	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
+	MultiMap multimaparr = HeadersMultiMap.headers();
 
 	// resolved payload of a subscription.
 
@@ -148,13 +150,13 @@ public class RegistrySubscriptionServiceTest {
 		List<Object> context = new ArrayList<>();
 		Context context1 = new Context();
 		Subscription subscription = null;
-		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-		multimaparr.put("content-type", "application/json");
+
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, subIds, 0);
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		Void result = subscriptionService.subscribeInternal(subRequest).await().indefinitely();
 		Assertions.assertEquals(null, result);
 		Mockito.verify(subscriptionService).subscribeInternal(any());
@@ -170,13 +172,13 @@ public class RegistrySubscriptionServiceTest {
 		List<Object> context = new ArrayList<>();
 		Context context1 = new Context();
 		Subscription subscription = null;
-		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-		multimaparr.put("content-type", "application/json");
+
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payload1, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, subIds, 0);
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		Void result = subscriptionService.subscribeInternal(subRequest).await().indefinitely();
 		Assertions.assertEquals(null, result);
 		Mockito.verify(subscriptionService).subscribeInternal(any());
@@ -193,13 +195,13 @@ public class RegistrySubscriptionServiceTest {
 		List<Object> context = new ArrayList<>();
 		Context context1 = new Context();
 		Subscription subscription = null;
-		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-		multimaparr.put("content-type", "application/json");
+
+		multimaparr.set("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		subscriptionRequest = new SubscriptionRequest(s, context, subIds, 0);
+		subscriptionRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		Mockito.when(baseService.updateSubscription(any())).thenReturn(Uni.createFrom().voidItem());
 		try {
 			subscriptionService.updateInternal(subscriptionRequest).await().indefinitely();
@@ -216,8 +218,8 @@ public class RegistrySubscriptionServiceTest {
 	@Order(4)
 	public void getAllSubscriptionsTest() {
 
-		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-		List<SubscriptionRequest> result = subscriptionService.getAllSubscriptions(subIds).await().indefinitely();
+		List<SubscriptionRequest> result = subscriptionService.getAllSubscriptions(HeadersMultiMap.headers()).await()
+				.indefinitely();
 		assertNotNull(result);
 		Mockito.verify(subscriptionService).getAllSubscriptions(any());
 	}
@@ -244,7 +246,7 @@ public class RegistrySubscriptionServiceTest {
 	@Order(6)
 	public void deconstructorTest() throws URISyntaxException, ResponseException {
 
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		MockitoAnnotations.initMocks(this);
 		Subscription removedSub = new Subscription();
 		String id = new String("urn:ngsi-ld:Subscription:173224");
@@ -259,12 +261,11 @@ public class RegistrySubscriptionServiceTest {
 	@Order(7)
 	public void getSubscriptionTest() throws ResponseException {
 
-		multimaparr.put("content-type", "application/json");
+		multimaparr.set("content-type", "application/json");
 		MockitoAnnotations.initMocks(this);
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Subscription:173223");
+
 		try {
-			subscriptionService.getSubscription("urn:ngsi-ld:Subscription:173223", entityIds).await().indefinitely();
+			subscriptionService.getSubscription("urn:ngsi-ld:Subscription:173223", multimaparr).await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("urn:ngsi-ld:Subscription:173223 not found", e.getMessage());
 			Mockito.verify(subscriptionService).getSubscription(any(), any());

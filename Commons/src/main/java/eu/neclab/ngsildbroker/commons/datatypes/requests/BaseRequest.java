@@ -11,10 +11,11 @@ import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
+import io.vertx.core.MultiMap;
 
 public class BaseRequest {
 
-	ArrayListMultimap<String, String> headers;
+	MultiMap headers;
 	private String id;
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
@@ -26,8 +27,7 @@ public class BaseRequest {
 
 	}
 
-	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
-			int requestType) {
+	BaseRequest(MultiMap headers, String id, Map<String, Object> requestPayload, int requestType) {
 		super();
 		this.headers = headers;
 		this.id = id;
@@ -59,11 +59,11 @@ public class BaseRequest {
 		this.requestType = requestType;
 	}
 
-	public ArrayListMultimap<String, String> getHeaders() {
+	public MultiMap getHeaders() {
 		return headers;
 	}
 
-	public void setHeaders(ArrayListMultimap<String, String> headers) {
+	public void setHeaders(MultiMap headers) {
 		this.headers = headers;
 	}
 
@@ -128,8 +128,8 @@ public class BaseRequest {
 	 * @return the internal null value if the tenant is not present
 	 */
 	public String getTenant() {
-		if (headers != null && headers.containsKey(NGSIConstants.TENANT_HEADER)) {
-			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
+		if (headers != null && headers.contains(NGSIConstants.TENANT_HEADER)) {
+			return headers.get(NGSIConstants.TENANT_HEADER);
 		}
 		return AppConstants.INTERNAL_NULL_KEY;
 	}

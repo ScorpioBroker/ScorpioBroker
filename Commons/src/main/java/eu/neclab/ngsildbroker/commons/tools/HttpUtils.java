@@ -148,17 +148,17 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply, int endPoint) {
-		return generateReply(request, reply, ArrayListMultimap.create(), endPoint);
+		return generateReply(request, reply, HeadersMultiMap.headers(), endPoint);
 
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, int endPoint) {
+			MultiMap additionalHeaders, int endPoint) {
 		return generateReply(request, reply, additionalHeaders, null, endPoint);
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint) {
+			MultiMap additionalHeaders, List<Object> context, int endPoint) {
 		return generateReply(request, reply, additionalHeaders, context, false, endPoint);
 	}
 
@@ -209,8 +209,7 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
-			boolean forceArrayResult, int endPoint) {
+			MultiMap additionalHeaders, List<Object> additionalContext, boolean forceArrayResult, int endPoint) {
 		return getAtContext(request).onItem().transform(t -> {
 			List<Object> result = Lists.newArrayList();
 
@@ -229,8 +228,8 @@ public final class HttpUtils {
 	}
 
 	private static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
-			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint) {
+			MultiMap additionalHeaders, Context ldContext, List<Object> contextLinks, boolean forceArrayResult,
+			int endPoint) {
 		try {
 			return generateReply(request, JsonUtils.fromString(reply), additionalHeaders, ldContext, contextLinks,
 					forceArrayResult, endPoint);
@@ -240,8 +239,8 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
-			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint) {
+			MultiMap additionalHeaders, Context ldContext, List<Object> contextLinks, boolean forceArrayResult,
+			int endPoint) {
 		return getReplyBody(request.headers().getAll(HttpHeaders.ACCEPT), endPoint, additionalHeaders, expanded,
 				forceArrayResult, ldContext, contextLinks, getGeometry(request)).onItem().transformToUni(t -> {
 					boolean compress = false;
@@ -254,9 +253,9 @@ public final class HttpUtils {
 
 	}
 
-	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
-			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
-			Context ldContext, List<Object> contextLinks, String geometryProperty) {
+	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint, MultiMap additionalHeaders,
+			Object expanded, boolean forceArrayResult, Context ldContext, List<Object> contextLinks,
+			String geometryProperty) {
 		try {
 			return Uni.createFrom().item(getReplyBodyNoUni(acceptHeader, endPoint, additionalHeaders, expanded,
 					forceArrayResult, ldContext, contextLinks, geometryProperty));
@@ -265,9 +264,9 @@ public final class HttpUtils {
 		}
 	}
 
-	private static String getReplyBodyNoUni(List<String> acceptHeader, int endPoint,
-			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
-			Context ldContext, List<Object> contextLinks, String geometryProperty) throws Exception {
+	private static String getReplyBodyNoUni(List<String> acceptHeader, int endPoint, MultiMap additionalHeaders,
+			Object expanded, boolean forceArrayResult, Context ldContext, List<Object> contextLinks,
+			String geometryProperty) throws Exception {
 		String replyBody;
 		int sendingContentType = parseAcceptHeader(acceptHeader);
 		Map<String, Object> compacted;
@@ -288,11 +287,11 @@ public final class HttpUtils {
 			result = temp;
 		}
 		if (additionalHeaders == null) {
-			additionalHeaders = ArrayListMultimap.create();
+			additionalHeaders = HeadersMultiMap.headers();
 		}
 		switch (sendingContentType) {
 			case 1:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+				additionalHeaders.set(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
 				if (result instanceof Map) {
 					((Map) result).remove(JsonLdConsts.CONTEXT);
 				}
@@ -307,10 +306,10 @@ public final class HttpUtils {
 				if (contextLinks != null) {
 					for (Object entry : contextLinks) {
 						if (entry instanceof String) {
-							additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
+							additionalHeaders.add(com.google.common.net.HttpHeaders.LINK, "<" + entry
 									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 						} else {
-							additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+							additionalHeaders.add(HttpHeaders.LINK, "<" + getAtContextServing(entry)
 									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 						}
 
@@ -318,7 +317,7 @@ public final class HttpUtils {
 				}
 				break;
 			case 2:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+				additionalHeaders.set(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
 				if (result instanceof List) {
 					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
 					for (Map<String, Object> entry : list) {
@@ -329,13 +328,13 @@ public final class HttpUtils {
 				replyBody = JsonUtils.toPrettyString(result);
 				break;
 			case 3:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
+				additionalHeaders.set(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
 				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
 				break;
 			case 4:// geo+json
 				switch (endPoint) {
 					case AppConstants.QUERY_ENDPOINT:
-						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
+						additionalHeaders.set(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
 						replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
 						break;
 					default:
@@ -393,16 +392,16 @@ public final class HttpUtils {
 		return "http change this";
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(String replyBody,
-			ArrayListMultimap<String, String> additionalHeaders, boolean compress) {
+	public static Uni<RestResponse<Object>> generateReply(String replyBody, MultiMap additionalHeaders,
+			boolean compress) {
 		return generateReply(replyBody, additionalHeaders, HttpStatus.SC_OK, compress);
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, QueryResult qResult,
 			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint) {
-		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
+		MultiMap additionalHeaders = HeadersMultiMap.headers();
 		if (count == true) {
-			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
+			additionalHeaders.set(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 		}
 		if (qResult == null || qResult.getData() == null || qResult.getData().size() == 0) {
 			return HttpUtils.generateReply(request, Lists.newArrayList(), additionalHeaders, endPoint);
@@ -419,15 +418,15 @@ public final class HttpUtils {
 
 		if (!additionalLinks.isEmpty()) {
 			for (Object entry : additionalLinks) {
-				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
+				additionalHeaders.add(HttpHeaders.LINK, (String) entry);
 			}
 		}
 		return HttpUtils.generateReply(request, qResult.getData(), additionalHeaders, context, contextLinks, forceArray,
 				endPoint);
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(String replyBody,
-			ArrayListMultimap<String, String> additionalHeaders, int status, boolean compress) {
+	public static Uni<RestResponse<Object>> generateReply(String replyBody, MultiMap additionalHeaders, int status,
+			boolean compress) {
 
 		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(status);
 
@@ -464,22 +463,25 @@ public final class HttpUtils {
 		return baos.toByteArray();
 	}
 
-	public static ArrayListMultimap<String, String> getHeaders(HttpServerRequest request) {
-		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		for (Entry<String, String> entry : request.headers()) {
-			result.put(entry.getKey(), entry.getValue());
-		}
-		return result;
+//	public static ArrayListMultimap<String, String> getHeaders(HttpServerRequest request) {
+//		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
+//		for (Entry<String, String> entry : request.headers()) {
+//			result.put(entry.getKey(), entry.getValue());
+//		}
+//		return result;
+//	}
+	public static MultiMap getHeaders(HttpServerRequest request) {
+		return request.headers();
 	}
 
-	public static String getTenantFromHeaders(ArrayListMultimap<String, String> headers) {
-		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
-			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
+	public static String getTenantFromHeaders(MultiMap headers) {
+		if (headers.contains(NGSIConstants.TENANT_HEADER)) {
+			return headers.get(NGSIConstants.TENANT_HEADER);
 		}
 		return null;
 	}
 
-	public static String getInternalTenant(ArrayListMultimap<String, String> headers) {
+	public static String getInternalTenant(MultiMap headers) {
 		String tenantId = getTenantFromHeaders(headers);
 		if (tenantId == null) {
 			return AppConstants.INTERNAL_NULL_KEY;
@@ -656,18 +658,18 @@ public final class HttpUtils {
 		return Uni.createFrom().item(builder.build());
 	}
 
-	public static RestResponse<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
-			Object notificationData, List<Object> context, String geometryProperty)
+	public static RestResponse<String> generateNotification(MultiMap origHeaders, Object notificationData,
+			List<Object> context, String geometryProperty)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException, Exception {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
-		ArrayListMultimap<String, String> headers;
+		MultiMap headers;
 		if (origHeaders == null) {
-			headers = ArrayListMultimap.create();
+			headers = HeadersMultiMap.headers();
 		} else {
-			headers = ArrayListMultimap.create(origHeaders);
+			headers = HeadersMultiMap.headers().addAll(origHeaders);
 		}
-		List<String> acceptHeader = headers.get(io.vertx.mutiny.core.http.HttpHeaders.ACCEPT.toString());
+		List<String> acceptHeader = headers.getAll(io.vertx.mutiny.core.http.HttpHeaders.ACCEPT.toString());
 		if (acceptHeader == null || acceptHeader.isEmpty()) {
 			acceptHeader = new ArrayList<String>();
 			acceptHeader.add("application/json");
@@ -681,7 +683,7 @@ public final class HttpUtils {
 		context.addAll(temp);
 
 		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
-		for (String key : headers.keySet()) {
+		for (String key : headers.names()) {
 			switch (key.toLowerCase()) {
 				case "postman-token":
 				case "accept-encoding":

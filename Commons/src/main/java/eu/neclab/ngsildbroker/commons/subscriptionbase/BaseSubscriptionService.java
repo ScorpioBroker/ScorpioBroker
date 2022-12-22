@@ -65,6 +65,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.MultiMap;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -355,11 +356,11 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected abstract String generateUniqueSubId(Subscription subscription);
 
-	public Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers) {
+	public Uni<Void> unsubscribe(String id, MultiMap headers) {
 		return unsubscribe(id, headers, false);
 	}
 
-	Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers, boolean internal) {
+	Uni<Void> unsubscribe(String id, MultiMap headers, boolean internal) {
 		String tenant = HttpUtils.getInternalTenant(headers);
 		SubscriptionRequest removedSub;
 		synchronized (tenant2subscriptionId2Subscription) {
@@ -455,7 +456,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 	}
 
-	public Uni<List<SubscriptionRequest>> getAllSubscriptions(ArrayListMultimap<String, String> headers) {
+	public Uni<List<SubscriptionRequest>> getAllSubscriptions(MultiMap headers) {
 		String tenantId = HttpUtils.getInternalTenant(headers);
 		Uni<List<SubscriptionRequest>> result;
 		synchronized (tenant2subscriptionId2Subscription) {
@@ -465,7 +466,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		return result;
 	}
 
-	public Uni<SubscriptionRequest> getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers) {
+	public Uni<SubscriptionRequest> getSubscription(String subscriptionId, MultiMap headers) {
 		SubscriptionRequest sub;
 		synchronized (tenant2subscriptionId2Subscription) {
 			sub = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers), subscriptionId);
@@ -524,8 +525,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected abstract Set<String> getTypesFromEntry(BaseRequest createRequest);
 
-	private void addAllTypeSubscriptions(ArrayListMultimap<String, String> entityOpHeaders,
-			List<SubscriptionRequest> subsToCheck) {
+	private void addAllTypeSubscriptions(MultiMap entityOpHeaders, List<SubscriptionRequest> subsToCheck) {
 		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE,
 				HttpUtils.getInternalTenant(entityOpHeaders));
 		if (subs == null) {

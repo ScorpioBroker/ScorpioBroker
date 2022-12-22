@@ -61,7 +61,9 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.mutiny.vertx.UniHelper;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 @Singleton
 public class CSourceService extends BaseQueryService implements EntryCRUDService {
@@ -135,7 +137,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 //		}
 //	}
 
-	public void csourceTimerTask(ArrayListMultimap<String, String> headers, Map<String, Object> registration) {
+	public void csourceTimerTask(MultiMap headers, Map<String, Object> registration) {
 		Object expiresAt = registration.get(NGSIConstants.NGSI_LD_EXPIRES);
 		String regId = (String) registration.get(NGSIConstants.JSON_LD_ID);
 		if (expiresAt != null) {
@@ -156,25 +158,24 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 	}
 
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry) {
+	public Uni<UpdateResult> updateEntry(MultiMap headers, String registrationId, Map<String, Object> entry) {
 		return updateEntry(headers, registrationId, entry, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, BatchInfo batchInfo) {
+	public Uni<UpdateResult> updateEntry(MultiMap headers, String registrationId, Map<String, Object> entry,
+			BatchInfo batchInfo) {
 		throw new MethodNotFoundException("not supported in registry");
 	}
 
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options) {
+	public Uni<UpdateResult> appendToEntry(MultiMap headers, String registrationId, Map<String, Object> entry,
+			String[] options) {
 		return appendToEntry(headers, registrationId, entry, options, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options, BatchInfo batchInfo) {
+	public Uni<UpdateResult> appendToEntry(MultiMap headers, String registrationId, Map<String, Object> entry,
+			String[] options, BatchInfo batchInfo) {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
@@ -209,13 +210,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				});
 	}
 
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
+	public Uni<CreateResult> createEntry(MultiMap headers, Map<String, Object> resolved) {
 		return createEntry(headers, resolved, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			BatchInfo batchInfo) {
+	public Uni<CreateResult> createEntry(MultiMap headers, Map<String, Object> resolved, BatchInfo batchInfo) {
 
 		logger.debug("createMessage() :: started");
 		CSourceRequest request;
@@ -239,13 +239,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId) {
+	public Uni<Boolean> deleteEntry(MultiMap headers, String registrationId) {
 		return deleteEntry(headers, registrationId, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			BatchInfo batchInfo) {
+	public Uni<Boolean> deleteEntry(MultiMap headers, String registrationId, BatchInfo batchInfo) {
 		logger.trace("deleteEntity() :: started");
 		if (registrationId == null) {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
@@ -356,10 +355,10 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	private CSourceRequest createInternalRegEntry(String tenant) {
 		String id = AppConstants.INTERNAL_REGISTRATION_ID;
-		ArrayListMultimap<String, String> headers = ArrayListMultimap.create();
+		MultiMap headers = HeadersMultiMap.headers();
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
 			id += ":" + tenant;
-			headers.put(NGSIConstants.TENANT_HEADER, tenant);
+			headers.set(NGSIConstants.TENANT_HEADER, tenant);
 		}
 		Map<String, Object> resolved = new HashMap<String, Object>();
 		resolved.put(NGSIConstants.JSON_LD_ID, id);
