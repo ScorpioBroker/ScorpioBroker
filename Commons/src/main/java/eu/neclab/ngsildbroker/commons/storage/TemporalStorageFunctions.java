@@ -27,6 +27,8 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.SqlConnection;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.pgclient.PgException;
+
 import static eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface.getSQLList;
 
 public class TemporalStorageFunctions implements StorageFunctionsInterface {
@@ -65,7 +67,16 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 		if (offSet > 0) {
 			query += "OFFSET " + offSet + " ";
 		}
-		return conn.preparedQuery(query).execute(Tuple.from(fullSqlWhereProperty.getItem2()));
+		return conn.preparedQuery(query).execute(Tuple.from(fullSqlWhereProperty.getItem2())).onFailure()
+				.recoverWithUni(e -> {
+					switch (((PgException) e).getCode()) {
+						case "22P02":
+							return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+									"You have a format error in your request maybe you missed a quote on a string"));
+						default:
+							return Uni.createFrom().failure(e);
+					}
+				});
 	}
 
 	private Tuple3<String, ArrayList<Object>, Integer> getSqlWhereForField(String dbColumn, String value,

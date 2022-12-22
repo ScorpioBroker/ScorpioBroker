@@ -253,26 +253,35 @@ public final class HttpUtils {
 
 	}
 
-/// modifiying coding 
+	/// modifiying coding
 	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
 			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
 			Context ldContext, List<Object> contextLinks, String geometryProperty, String option) {
+		try {
+			return Uni.createFrom().item(getReplyBodyNoUni(acceptHeader, endPoint, additionalHeaders, expanded,
+					forceArrayResult, ldContext, contextLinks, geometryProperty, option));
+		} catch (Exception e) {
+			return Uni.createFrom().failure(e);
+		}
+	}
+
+	private static String getReplyBodyNoUni(List<String> acceptHeader, int endPoint,
+			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
+			Context ldContext, List<Object> contextLinks, String geometryProperty, String option) throws Exception {
 		String replyBody;
 		String s = null;
 		int sendingContentType = parseAcceptHeader(acceptHeader);
 		Map<String, Object> compacted;
-		try {
-			compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
-			
-			if (option != null && option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-				conciseRepresentation(compacted, null, "");
-			} else if (option != null && !option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)&& !option.isEmpty()) {
-				throw new ResponseException(ErrorType.BadRequestData, "option is invalid");
 
-			}
-		} catch (JsonLdError | ResponseException e4) {
-			return Uni.createFrom().failure(e4);
+		compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
+
+		if (option != null && option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+			conciseRepresentation(compacted, null, "");
+		} else if (option != null && !option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE) && !option.isEmpty()) {
+			throw new ResponseException(ErrorType.BadRequestData, "option is invalid");
+
 		}
+
 		Object context = compacted.get(JsonLdConsts.CONTEXT);
 		Object result;
 		Object graph = compacted.get(JsonLdConsts.GRAPH);
@@ -302,11 +311,8 @@ public final class HttpUtils {
 						entry.remove(JsonLdConsts.CONTEXT);
 					}
 				}
-				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e3) {
-					return Uni.createFrom().failure(e3);
-				}
+
+				replyBody = JsonUtils.toPrettyString(result);
 				if (contextLinks != null) {
 					for (Object entry : contextLinks) {
 						if (entry instanceof String) {
@@ -328,43 +334,32 @@ public final class HttpUtils {
 						entry.put(JsonLdConsts.CONTEXT, context);
 					}
 				}
-				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e2) {
-					return Uni.createFrom().failure(e2);
-				}
+
+				replyBody = JsonUtils.toPrettyString(result);
 				break;
 			case 3:
 				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-				try {
-					replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
-				} catch (JsonLdError | ResponseException e1) {
-					return Uni.createFrom().failure(e1);
-				}
+				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
 				break;
 			case 4:// geo+json
 				switch (endPoint) {
 					case AppConstants.QUERY_ENDPOINT:
 						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-						try {
-							replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
 
-						} catch (IOException e) {
-							return Uni.createFrom().failure(e);
-						}
+						replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
+
 						break;
 					default:
-						return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
-								"Provided accept types " + acceptHeader + " are not supported"));
+						throw new ResponseException(ErrorType.NotAcceptable,
+								"Provided accept types " + acceptHeader + " are not supported");
 				}
 				break;
 			case -1:
 			default:
-				return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
-						"Provided accept types " + acceptHeader + " are not supported"));
+				throw new ResponseException(ErrorType.NotAcceptable,
+						"Provided accept types " + acceptHeader + " are not supported");
 		}
-
-		return Uni.createFrom().item(replyBody);
+		return replyBody;
 
 	}
 
@@ -379,13 +374,14 @@ public final class HttpUtils {
 			});
 		} else if (compacted instanceof Map<?, ?> map) {
 			if (!map.containsKey(NGSIConstants.ID)) {
-				if (map.containsKey(NGSIConstants.TYPE) && !map.get(NGSIConstants.TYPE).equals(NGSIConstants.GEO_TYPE_POINT))
+				if (map.containsKey(NGSIConstants.TYPE)
+						&& !map.get(NGSIConstants.TYPE).equals(NGSIConstants.GEO_TYPE_POINT))
 					map.remove(NGSIConstants.TYPE); // if object is top element then type should not be removed
 				if (map.size() == 1 && map.containsKey(NGSIConstants.VALUE)) {
 					((Map<String, Object>) parent).put(key, map.get(NGSIConstants.VALUE));
 				}
 			}
-    		map.forEach((str, nestedObj) -> {
+			map.forEach((str, nestedObj) -> {
 				if (nestedObj instanceof Map<?, ?> || nestedObj instanceof ArrayList<?>) {
 					conciseRepresentation(nestedObj, map, str.toString());
 				}
@@ -702,7 +698,7 @@ public final class HttpUtils {
 
 	public static RestResponse<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
 			Object notificationData, List<Object> context, String geometryProperty)
-			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
+			throws ResponseException, JsonGenerationException, JsonParseException, IOException, Exception {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
 		ArrayListMultimap<String, String> headers;
@@ -716,8 +712,8 @@ public final class HttpUtils {
 			acceptHeader = new ArrayList<String>();
 			acceptHeader.add("application/json");
 		}
-		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
-				ldContext, context, geometryProperty, null).await().indefinitely();
+		String body = getReplyBodyNoUni(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
+				ldContext, context, geometryProperty, null);
 		// need to clean context for subscriptions. This is a bit bad practice but reply
 		// generation relies on side effects so clean up here
 		HashSet<Object> temp = Sets.newHashSet(context);
@@ -795,10 +791,10 @@ public final class HttpUtils {
 		return null;
 
 	}
-	
+
 	/*
 	 * Return double to int if possible otherwise input is not changed 13.0 -> 13
-	 */	
+	 */
 	public static Object doubleToInt(Object object) {
 		if (object instanceof Double) {
 			double d = ((Double) object).doubleValue();

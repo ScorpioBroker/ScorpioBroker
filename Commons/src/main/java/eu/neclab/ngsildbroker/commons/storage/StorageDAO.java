@@ -1,20 +1,8 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
-import java.sql.SQLIntegrityConstraintViolationException;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
@@ -37,16 +25,24 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public abstract class StorageDAO {
 	private final static Logger logger = LoggerFactory.getLogger(StorageDAO.class);
 
 	@Inject
 	protected ClientManager clientManager;
+	StorageFunctionsInterface storageFunctions;
 
 	protected abstract StorageFunctionsInterface getStorageFunctions();
-
-	StorageFunctionsInterface storageFunctions;
 
 	@PostConstruct
 	public void init() {
@@ -86,6 +82,18 @@ public abstract class StorageDAO {
 					});
 		});
 
+	}
+
+	public Uni<String> getEndpoint(String entityId, String tenantId) {
+		String query = "SELECT endpoint FROM csource cs, csourceinformation csi WHERE cs.id=csi.csource_id AND csi.entity_id='"
+				+ entityId + "'";
+		return clientManager.getClient(tenantId, false).onItem()
+				.transformToUni(client -> client.preparedQuery(query).execute().onItem().transform((rowSet) -> {
+					if (rowSet.rowCount() == 0) {
+						return null;
+					}
+					return rowSet.iterator().next().getString("endpoint");
+				}).onFailure().recoverWithUni(Uni.createFrom().item("")));
 	}
 
 	public Uni<Map<String, List<Map<String, Object>>>> getAllEntities() {
@@ -165,7 +173,15 @@ public abstract class StorageDAO {
 						return queryResult;
 					});
 				} else {
-					return storageFunctions.translateNgsildQueryToSql(qp, conn).onItem().transform(t -> {
+					return storageFunctions.translateNgsildQueryToSql(qp, conn).onFailure().recoverWithUni(t -> {
+						String sqlCode = ((PgException) t).getCode();
+						if (sqlCode.equals("2201B")) {
+							return Uni.createFrom().failure(
+									new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
+						} else {
+							return Uni.createFrom().failure(t);
+						}
+					}).onItem().transform(t -> {
 						QueryResult queryResult = new QueryResult(null, null, ErrorType.None, -1, true);
 						List<Map<String, Object>> list = Lists.newArrayList();
 						t.forEach(e -> {
@@ -205,6 +221,9 @@ public abstract class StorageDAO {
 					unis.add(doTemporalSqlAttrInsert(client, entry.getElementValue(), entry.getEntityId(),
 							entry.getEntityType(), entry.getAttributeId(), entry.getEntityCreatedAt(),
 							entry.getEntityModifiedAt(), entry.getInstanceId(), entry.getOverwriteOp()));
+				}
+				if (unis.isEmpty()) {
+					return Uni.createFrom().item(new CreateResult(request.getId(), false));
 				}
 				return Uni.combine().all().unis(unis).combinedWith(t -> {
 					CreateResult result = new CreateResult("", false);

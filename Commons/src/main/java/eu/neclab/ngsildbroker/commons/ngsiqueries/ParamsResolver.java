@@ -50,7 +50,8 @@ public class ParamsResolver {
 	private final static Logger logger = LoggerFactory.getLogger(ParamsResolver.class);
 
 	// TODO REWORK THIS COMPLETELY
-	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription) {
+	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription, Context context)
+			throws ResponseException {
 		// TODO check if this can be changed now since a list of entityinfos is in
 		// queryparam
 		ArrayList<QueryParams> result = new ArrayList<QueryParams>();
@@ -101,7 +102,7 @@ public class ParamsResolver {
 				temp.setCoordinates(coordinatesString);
 			}
 			if (subscription.getLdQuery() != null && !subscription.getLdQueryString().isEmpty()) {
-				temp.setQ(subscription.getLdQueryString());
+				temp.setQ(QueryParser.parseQuery(subscription.getLdQueryString(), context).toSql());
 			}
 			result.add(temp);
 		}

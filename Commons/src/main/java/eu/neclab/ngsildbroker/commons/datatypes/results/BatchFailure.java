@@ -35,7 +35,7 @@ public class BatchFailure {
 
 	public Map<String, Object> toJson() {
 		Map<String, Object> result = Maps.newHashMap();
-		result.put(NGSIConstants.JSON_LD_ID, entityId);
+		result.put("entityId", entityId);
 		//TODO replace with constant
 		result.put("ProblemDetails", ProblemDetails.toJson());
 		return result;

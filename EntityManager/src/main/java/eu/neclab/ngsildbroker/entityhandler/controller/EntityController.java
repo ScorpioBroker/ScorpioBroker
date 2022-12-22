@@ -1,21 +1,5 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.PATCH;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.RestResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -31,11 +15,19 @@ import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpServerRequest;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.*;
+import java.util.List;
+import java.util.Map;
 
 /**
- * 
  * @version 1.0
  * @date 10-Jul-2018
  */
@@ -48,24 +40,21 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Inject
 	EntityService entityService;
 
-	LocalDateTime startAt;
-	LocalDateTime endAt;
-
-	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
+	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+
+	public EntityController() {
+	}
 
 	@PostConstruct
 	public void init() {
 		JsonLdProcessor.init(coreContext);
 	}
 
-	public EntityController() {
-	}
-
 	/**
 	 * Method(POST) for "/ngsi-ld/v1/entities/" rest endpoint.
-	 * 
+	 *
 	 * @param payload jsonld message
 	 * @return ResponseEntity object
 	 */
@@ -78,7 +67,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @param payload  json ld message
 	 * @return ResponseEntity object
@@ -94,7 +83,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(POST) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @param payload  jsonld message
 	 * @return ResponseEntity object
@@ -111,7 +100,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}" rest
 	 * endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @param attrId
 	 * @param payload
@@ -145,19 +134,35 @@ public class EntityController {// implements EntityHandlerInterface {
 						String expandedAttrib = ParamsResolver.expandAttribute(attrId, context);
 						Tuple3<Map<String, Object>, String, Context> t = Tuple3.of(expandedPayload, expandedAttrib,
 								context);
+
 						return entityService.partialUpdateEntity(HttpUtils.getHeaders(request), entityId, t.getItem2(),
 								t.getItem1()).onItem().transform(u -> {
 									return Tuple2.of(u, t.getItem3());
-								}).onItem().transform(Unchecked.function(t1 -> {
+								}).onItem().transformToUni(t1 -> {
 									if (t1.getItem1().getNotUpdated().isEmpty()) {
-										return RestResponse.noContent();
+										return Uni.createFrom().item(RestResponse.noContent());
 									} else {
-										throw new ResponseException(ErrorType.BadRequestData,
-												JsonUtils.toPrettyString(JsonLdProcessor.compact(
-														t1.getItem1().getNotUpdated().get(0), t1.getItem2(), opts)));
+										try {
+											return Uni.createFrom()
+													.failure(new ResponseException(ErrorType.BadRequestData,
+															JsonUtils.toPrettyString(JsonLdProcessor.compact(
+																	t1.getItem1().getNotUpdated().get(0), t1.getItem2(),
+																	opts))));
+										} catch (Exception e) {
+											return Uni.createFrom().failure(e);
+										}
 
 									}
-								})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+								}).onFailure()
+								.recoverWithUni(throwable -> entityService
+										.patchToEndPoint(entityId, HttpUtils.getHeaders(request), payload, attrId)
+										.onItem().transform(endPointExist -> {
+											if (endPointExist)
+												return RestResponse.noContent();
+											else {
+												return HttpUtils.handleControllerExceptions(throwable);
+											}
+										}));
 					} catch (Exception e) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}
@@ -167,7 +172,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	/**
 	 * Method(DELETE) for "/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}" rest
 	 * endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @param attrId
 	 * @return
@@ -204,7 +209,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(DELETE) for "/ngsi-ld/v1/entities/{entityId}" rest endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @return
 	 */

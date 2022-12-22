@@ -32,7 +32,9 @@ class S(BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
         post_data = self.rfile.read(content_length) # <--- Gets the data itself
+        
         notification = json.loads(post_data)
+        print(json.dumps(notification))
         subId = notification["subscriptionId"]
         if subId in self.receivedNotifications:
           notifications = self.receivedNotifications[subId]

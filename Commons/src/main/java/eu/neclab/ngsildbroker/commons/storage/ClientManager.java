@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
+import java.sql.SQLException;
 import java.util.HashMap;
 
 import javax.annotation.PostConstruct;
@@ -99,21 +100,23 @@ public class ClientManager {
 	}
 
 	private Uni<Tuple2<DataSource, String>> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
-		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
-				.transform(Unchecked.function(tenantDatabaseName -> {
-					// TODO this needs to be from the config not hardcoded!!!
-					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
-					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
-							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
-							.connectionPoolConfiguration(
-									cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
-											.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
-													.connectionProviderClassName(jdbcDriver).autoCommit(false)
-													.principal(new NamePrincipal(username))
-													.credential(new SimplePassword(password))));
-					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
-					return Tuple2.of(agroaldataSource, tenantDatabaseName);
-				}));
+		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem().transformToUni(tenantDatabaseName -> {
+			// TODO this needs to be from the config not hardcoded!!!
+			String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
+			AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
+					.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
+					.connectionPoolConfiguration(cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
+							.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
+									.connectionProviderClassName(jdbcDriver).autoCommit(false)
+									.principal(new NamePrincipal(username)).credential(new SimplePassword(password))));
+			AgroalDataSource agroaldataSource;
+			try {
+				agroaldataSource = AgroalDataSource.from(configuration);
+			} catch (SQLException e) {
+				return Uni.createFrom().failure(e);
+			}
+			return Uni.createFrom().item(Tuple2.of(agroaldataSource, tenantDatabaseName));
+		});
 
 	}
 
