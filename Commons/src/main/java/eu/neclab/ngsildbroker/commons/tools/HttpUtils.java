@@ -520,6 +520,9 @@ public final class HttpUtils {
 	}
 
 	public static String getInternalTenant(ArrayListMultimap<String, String> headers) {
+		if (headers == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
 		String tenantId = getTenantFromHeaders(headers);
 		if (tenantId == null) {
 			return AppConstants.INTERNAL_NULL_KEY;
