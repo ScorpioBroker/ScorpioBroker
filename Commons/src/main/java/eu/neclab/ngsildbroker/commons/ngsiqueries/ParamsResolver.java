@@ -49,9 +49,11 @@ public class ParamsResolver {
 
 	private final static Logger logger = LoggerFactory.getLogger(ParamsResolver.class);
 
-//TODO REWORK THIS COMPLETELY 
-	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription, Context context) throws ResponseException {
-//TODO check if this can be changed now since a list of entityinfos is in queryparam
+	// TODO REWORK THIS COMPLETELY
+	public static List<QueryParams> getQueryParamsFromSubscription(Subscription subscription, Context context)
+			throws ResponseException {
+		// TODO check if this can be changed now since a list of entityinfos is in
+		// queryparam
 		ArrayList<QueryParams> result = new ArrayList<QueryParams>();
 		for (EntityInfo entityInfo : subscription.getEntities()) {
 			QueryParams temp = new QueryParams();
@@ -131,14 +133,13 @@ public class ParamsResolver {
 			String queryParameter = entry.getKey();
 			String queryValue = HttpUtils.utfDecoder(entry.getValue());
 			logger.debug("Query parameter:" + queryParameter + ", value=" + queryValue);
-			
 			switch (queryParameter) {
 				case NGSIConstants.QUERY_PARAMETER_ID:
 					id = queryValue;
-                    if(HttpUtils.validateUri(queryValue).getClass().getName().contains("UniCreateFromKnownFailure")) {
-                    	throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
-                    }
-                	 break;
+					if (HttpUtils.validateUri(queryValue).getClass().getName().contains("UniCreateFromKnownFailure")) {
+						throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+					}
+					break;
 				case NGSIConstants.QUERY_PARAMETER_IDPATTERN:
 					idPattern = queryValue;
 					break;
@@ -211,6 +212,9 @@ public class ParamsResolver {
 				case NGSIConstants.QUERY_PARAMETER_CSF:
 					qp.setCsf(QueryParser.parseQuery(queryValue, context).toSql(temporalEntityFormat));
 					break;
+				case NGSIConstants.QUERY_PARAMETER_CONCISE:
+					qp.setConcise(queryValue);
+					break;
 				default:
 					throw new ResponseException(ErrorType.BadRequestData, queryParameter + " is unknown");
 			}
@@ -228,7 +232,7 @@ public class ParamsResolver {
 		handleTimeQuery(timerel, timeAt, timeproperty, endTimeAt, qp);
 		List<Map<String, String>> entities = new ArrayList<Map<String, String>>();
 		HashMap<String, String> temp = new HashMap<String, String>();
-		if (typeRequired && type == null && attrs == null) {
+		if (typeRequired && type == null && attrs == null && qp.getQ() == null) {
 			throw new ResponseException(ErrorType.BadRequestData, "Missing mandatory minimum parameter "
 					+ NGSIConstants.QUERY_PARAMETER_TYPE + " or " + NGSIConstants.QUERY_PARAMETER_ATTRS);
 		}

@@ -546,31 +546,8 @@ public class QueryTerm {
 		return builder.toString();
 	}
 
-	private void toSql(StringBuilder result, boolean temporalEntityMode) throws ResponseException {
-		if (firstChild != null) {
-			result.append("(");
-			firstChild.toSql(result, temporalEntityMode);
-			result.append(")");
-		} else {
-			if (temporalEntityMode) {
-				getAttribQueryForTemporalEntity(result);
-			} else {
-				getAttribQueryV2(result);
-			}
-		}
-		if (hasNext()) {
-			if (nextAnd) {
-				result.append(" and ");
-			} else {
-				result.append(" or ");
-			}
-			next.toSql(result, temporalEntityMode);
-		}
-	}
-
 	private void getAttribQueryV2(StringBuilder result) throws ResponseException {
 		ArrayList<String> attribPath = getAttribPathArray(this.attribute);
-
 		StringBuilder attributeFilterProperty = new StringBuilder("");
 
 		String reservedDbColumn = null;
@@ -603,6 +580,11 @@ public class QueryTerm {
 			String currentSet = "data";
 			char charcount = 'a';
 			String lastAttrib = null;
+			if (operator.isEmpty()) {
+				result.append(" (EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{" + attribPath.get(0)
+						+ "}') as a))");
+				return;
+			}
 			for (String subPath : attribPath) {
 				attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
 				attributeFilterProperty.append(subPath);
@@ -718,6 +700,29 @@ public class QueryTerm {
 			result.append("NOT ");
 		}
 		result.append("(" + attributeFilterProperty.toString() + ")");
+
+	}
+
+	private void toSql(StringBuilder result, boolean temporalEntityMode) throws ResponseException {
+		if (firstChild != null) {
+			result.append("(");
+			firstChild.toSql(result, temporalEntityMode);
+			result.append(")");
+		} else {
+			if (temporalEntityMode) {
+				getAttribQueryForTemporalEntity(result);
+			} else {
+				getAttribQueryV2(result);
+			}
+		}
+		if (hasNext()) {
+			if (nextAnd) {
+				result.append(" and ");
+			} else {
+				result.append(" or ");
+			}
+			next.toSql(result, temporalEntityMode);
+		}
 	}
 
 	private ArrayList<String> getAttribPathArray(String attribute) throws ResponseException {
@@ -763,7 +768,6 @@ public class QueryTerm {
 		} else if (operant.matches(TIME)) {
 			typecast = "time";
 		}
-
 		switch (operator) {
 			case NGSIConstants.QUERY_UNEQUAL:
 			case NGSIConstants.QUERY_EQUAL:

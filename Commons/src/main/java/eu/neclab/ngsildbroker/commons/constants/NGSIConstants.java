@@ -293,4 +293,14 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_GEOPROPERTY_GEOQ_ATTRIB = "https://uri.etsi.org/ngsi-ld/geoproperty";
 	public static final String NGSI_LD_SCOPE = "https://uri.etsi.org/ngsi-ld/default-context/scope";
 	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/default-context/scopeQ";
+	public static final List<String> GEO_KEYWORDS = Arrays.asList(NGSIConstants.GEO_TYPE_POINT,
+			NGSIConstants.GEO_TYPE_POLYGON, NGSIConstants.GEO_TYPE_LINESTRING, NGSIConstants.GEO_TYPE_MULTI_POLYGON);
+	public final static String TYPE = "type";
+	public final static String RELATIONSHIP = "Relationship";
+	public final static String PROPERTY = "Property";
+	public final static String ID = "id";
+	public final static String INSTANCE_ID = "instanceId";
+	public final static String QUERY_PARAMETER_CONCISE_VALUE = "concise";
+	public final static String QUERY_PARAMETER_CONCISE = "option";
+
 }

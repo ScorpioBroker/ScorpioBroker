@@ -83,14 +83,13 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
-	public static Uni<RestResponse<Object>> getAllTypes(EntryQueryService queryService, HttpServerRequest request,
-			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
-		String check = "NonDeatilsType";
-		if (details == true) {
-			check = "deatilsType";
-		}
-		return getQueryData(queryService, request, "", request.params(), false, false, false, defaultLimit, maxLimit,
-				check).onItem().transform(t -> {
+	public static Uni<RestResponse<Object>> getType(EntryQueryService queryService, HttpServerRequest request,
+			String type, boolean details, boolean temporal, int defaultLimit, int maxLimit) {
+		String check = "type";
+		MultiMap params = request.params();
+		params.add(NGSIConstants.QUERY_PARAMETER_ATTRS, type);
+		return getQueryData(queryService, request, "", params, false, false, false, defaultLimit, maxLimit, check)
+				.onItem().transform(t -> {
 					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
 						return HttpUtils.NOT_FOUND_REPLY;
 					} else {
@@ -99,13 +98,14 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
-	public static Uni<RestResponse<Object>> getType(EntryQueryService queryService, HttpServerRequest request,
-			String type, boolean details, boolean temporal, int defaultLimit, int maxLimit) {
-		String check = "type";
-		MultiMap params = request.params();
-		params.add(NGSIConstants.QUERY_PARAMETER_ATTRS, type);
-		return getQueryData(queryService, request, "", params, false, false, false, defaultLimit, maxLimit, check)
-				.onItem().transform(t -> {
+	public static Uni<RestResponse<Object>> getAllTypes(EntryQueryService queryService, HttpServerRequest request,
+			boolean details, boolean temporal, int defaultLimit, int maxLimit) {
+		String check = "NonDeatilsType";
+		if (details == true) {
+			check = "deatilsType";
+		}
+		return getQueryData(queryService, request, "", request.params(), false, false, false, defaultLimit, maxLimit,
+				check).onItem().transform(t -> {
 					if (t.getEntity().equals(emptyResult1) || t.getEntity().equals(emptyResult2)) {
 						return HttpUtils.NOT_FOUND_REPLY;
 					} else {
@@ -174,7 +174,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 			qp.setCheck(check);
 			return queryService.getData(qp, decodedQueryParams, t, headers, false).onItem()
 					.transformToUni(t2 -> HttpUtils.generateReply(request, t2, forceArray, qp.getCountResult(), context,
-							t, AppConstants.QUERY_ENDPOINT))
+							t, AppConstants.QUERY_ENDPOINT, qp.getConcise()))
 					.runSubscriptionOn(Infrastructure.getDefaultExecutor());
 
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -234,7 +234,7 @@ public interface QueryControllerFunctions {// implements QueryHandlerInterface {
 				.transformToUni(
 						t -> queryService.getData(t.getItem1(), payload, t.getItem2(), t.getItem3(), true).onItem()
 								.transformToUni(t2 -> HttpUtils.generateReply(request, t2, true, count, t.getItem4(),
-										t.getItem2(), AppConstants.QUERY_ENDPOINT)))
+										t.getItem2(), AppConstants.QUERY_ENDPOINT, null)))
 				.onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}

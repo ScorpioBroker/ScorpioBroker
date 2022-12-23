@@ -68,6 +68,7 @@ public class MicroServiceUtils {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static Map<String, Object> deepCopyMap(Map<String, Object> original) {
 		if (original == null) {
 			return null;
@@ -82,15 +83,14 @@ public class MicroServiceUtils {
 				copiedValue = deppCopyList((List<Object>) originalValue);
 			} else if (originalValue instanceof Map) {
 				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
-			} else if (originalValue instanceof Integer) {
-				copiedValue = ((Integer) originalValue).intValue();
-			} else if (originalValue instanceof Double) {
-				copiedValue = ((Double) originalValue).doubleValue();
-			} else if (originalValue instanceof Float) {
-				copiedValue = ((Float) originalValue).floatValue();
+
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
-			} else {
+			} else if (originalValue instanceof Number) {
+				copiedValue = originalValue;
+			}
+
+			else {
 				copiedValue = originalValue.toString();
 			}
 			result.put(entry.getKey(), copiedValue);
@@ -99,6 +99,7 @@ public class MicroServiceUtils {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static List<Object> deppCopyList(List<Object> original) {
 		if (original == null) {
 			return null;
@@ -110,12 +111,8 @@ public class MicroServiceUtils {
 				copiedValue = deppCopyList((List<Object>) originalValue);
 			} else if (originalValue instanceof Map) {
 				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
-			} else if (originalValue instanceof Integer) {
-				copiedValue = ((Integer) originalValue).intValue();
-			} else if (originalValue instanceof Double) {
-				copiedValue = ((Double) originalValue).doubleValue();
-			} else if (originalValue instanceof Float) {
-				copiedValue = ((Float) originalValue).floatValue();
+			} else if (originalValue instanceof Number) {
+				copiedValue = originalValue;
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
 			} else {

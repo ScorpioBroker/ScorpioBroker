@@ -12,3 +12,6 @@ Go/pkg/
 /*.db
 /*/bin
 /*/*/bin
+*.iml
+.idea
+.vscode

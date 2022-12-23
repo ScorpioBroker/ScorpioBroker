@@ -71,14 +71,14 @@ public class QueryParser {
 	private static Pattern p = Pattern.compile(query);
 
 	public static QueryTerm parseQuery(String input, Context context) throws ResponseException {
-//		Matcher matcher = p.matcher(input);
-//		if (!matcher.matches()) {
-//			throw new BadRequestException();
-//		}
-//		Matcher matcher = p.matcher(input);
-//		if (!matcher.matches()) {
-//			throw new ResponseException(ErrorType.BadRequestData, "");
-//		}
+		// Matcher matcher = p.matcher(input);
+		// if (!matcher.matches()) {
+		// throw new BadRequestException();
+		// }
+		// Matcher matcher = p.matcher(input);
+		// if (!matcher.matches()) {
+		// throw new ResponseException(ErrorType.BadRequestData, "");
+		// }
 
 		// TODO: regex doesn't validate brackets queries for some reason
 		QueryTerm root = new QueryTerm(context);
@@ -93,6 +93,12 @@ public class QueryParser {
 			throw new ResponseException(ErrorType.InternalError, e.getMessage());
 		}
 		OfInt it = input.chars().iterator();
+
+		if (Pattern.matches("\\w*", input)) {
+			current.setAttribute(input);
+			return root;
+		}
+
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
 			if (b == '(') {

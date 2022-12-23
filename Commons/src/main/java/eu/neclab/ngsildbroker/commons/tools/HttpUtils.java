@@ -25,7 +25,6 @@ import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -41,7 +40,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
@@ -147,19 +145,20 @@ public final class HttpUtils {
 
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply, int endPoint) {
-		return generateReply(request, reply, ArrayListMultimap.create(), endPoint);
+	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply, int endPoint,
+			String option) {
+		return generateReply(request, reply, ArrayListMultimap.create(), endPoint, option);
 
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, int endPoint) {
-		return generateReply(request, reply, additionalHeaders, null, endPoint);
+			ArrayListMultimap<String, String> additionalHeaders, int endPoint, String option) {
+		return generateReply(request, reply, additionalHeaders, null, endPoint, option);
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint) {
-		return generateReply(request, reply, additionalHeaders, context, false, endPoint);
+			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint, String option) {
+		return generateReply(request, reply, additionalHeaders, context, false, endPoint, option);
 	}
 
 	public static int parseAcceptHeader(List<String> acceptHeaders) {
@@ -210,7 +209,7 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
 			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
-			boolean forceArrayResult, int endPoint) {
+			boolean forceArrayResult, int endPoint, String option) {
 		return getAtContext(request).onItem().transform(t -> {
 			List<Object> result = Lists.newArrayList();
 
@@ -223,17 +222,17 @@ public final class HttpUtils {
 			return result;
 		}).onItem().transformToUni(t -> {
 			Context context = JsonLdProcessor.getCoreContextClone().parse(t, true);
-			return generateReply(request, reply, additionalHeaders, context, t, forceArrayResult, endPoint);
+			return generateReply(request, reply, additionalHeaders, context, t, forceArrayResult, endPoint, option);
 		});
 
 	}
 
 	private static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint) {
+			boolean forceArrayResult, int endPoint, String option) {
 		try {
 			return generateReply(request, JsonUtils.fromString(reply), additionalHeaders, ldContext, contextLinks,
-					forceArrayResult, endPoint);
+					forceArrayResult, endPoint, option);
 		} catch (IOException e) {
 			return Uni.createFrom().failure(e);
 		}
@@ -241,9 +240,9 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
 			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint) {
+			boolean forceArrayResult, int endPoint, String option) {
 		return getReplyBody(request.headers().getAll(HttpHeaders.ACCEPT), endPoint, additionalHeaders, expanded,
-				forceArrayResult, ldContext, contextLinks, getGeometry(request)).onItem().transformToUni(t -> {
+				forceArrayResult, ldContext, contextLinks, getGeometry(request), option).onItem().transformToUni(t -> {
 					boolean compress = false;
 					String options = request.params().get(NGSIConstants.QUERY_PARAMETER_OPTIONS);
 					if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
@@ -254,12 +253,13 @@ public final class HttpUtils {
 
 	}
 
+	/// modifiying coding
 	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
 			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
-			Context ldContext, List<Object> contextLinks, String geometryProperty) {
+			Context ldContext, List<Object> contextLinks, String geometryProperty, String option) {
 		try {
 			return Uni.createFrom().item(getReplyBodyNoUni(acceptHeader, endPoint, additionalHeaders, expanded,
-					forceArrayResult, ldContext, contextLinks, geometryProperty));
+					forceArrayResult, ldContext, contextLinks, geometryProperty, option));
 		} catch (Exception e) {
 			return Uni.createFrom().failure(e);
 		}
@@ -267,16 +267,25 @@ public final class HttpUtils {
 
 	private static String getReplyBodyNoUni(List<String> acceptHeader, int endPoint,
 			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
-			Context ldContext, List<Object> contextLinks, String geometryProperty) throws Exception {
+			Context ldContext, List<Object> contextLinks, String geometryProperty, String option) throws Exception {
 		String replyBody;
+		String s = null;
 		int sendingContentType = parseAcceptHeader(acceptHeader);
 		Map<String, Object> compacted;
 
 		compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
 
+		if (option != null && option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+			conciseRepresentation(compacted, null, "");
+		} else if (option != null && !option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE) && !option.isEmpty()) {
+			throw new ResponseException(ErrorType.BadRequestData, "option is invalid");
+
+		}
+
 		Object context = compacted.get(JsonLdConsts.CONTEXT);
 		Object result;
 		Object graph = compacted.get(JsonLdConsts.GRAPH);
+
 		if (graph != null) {
 			result = graph;
 		} else {
@@ -336,7 +345,9 @@ public final class HttpUtils {
 				switch (endPoint) {
 					case AppConstants.QUERY_ENDPOINT:
 						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
+
 						replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
+
 						break;
 					default:
 						throw new ResponseException(ErrorType.NotAcceptable,
@@ -349,6 +360,33 @@ public final class HttpUtils {
 						"Provided accept types " + acceptHeader + " are not supported");
 		}
 		return replyBody;
+
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void conciseRepresentation(Object compacted, Map<?, ?> parent, String key) {
+		// First Situation : if compacted have array
+		if (compacted instanceof ArrayList<?> list) {
+			list.forEach(item -> {
+				if (item instanceof Map<?, ?> mapItem) {
+					conciseRepresentation(mapItem, null, "");
+				}
+			});
+		} else if (compacted instanceof Map<?, ?> map) {
+			if (!map.containsKey(NGSIConstants.ID)) {
+				if (map.containsKey(NGSIConstants.TYPE)
+						&& !map.get(NGSIConstants.TYPE).equals(NGSIConstants.GEO_TYPE_POINT))
+					map.remove(NGSIConstants.TYPE); // if object is top element then type should not be removed
+				if (map.size() == 1 && map.containsKey(NGSIConstants.VALUE)) {
+					((Map<String, Object>) parent).put(key, map.get(NGSIConstants.VALUE));
+				}
+			}
+			map.forEach((str, nestedObj) -> {
+				if (nestedObj instanceof Map<?, ?> || nestedObj instanceof ArrayList<?>) {
+					conciseRepresentation(nestedObj, map, str.toString());
+				}
+			});
+		}
 
 	}
 
@@ -399,13 +437,15 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, QueryResult qResult,
-			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint) {
+			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint,
+			String option) {
 		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
+
 		if (count == true) {
 			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
 		}
 		if (qResult == null || qResult.getData() == null || qResult.getData().size() == 0) {
-			return HttpUtils.generateReply(request, Lists.newArrayList(), additionalHeaders, endPoint);
+			return HttpUtils.generateReply(request, Lists.newArrayList(), additionalHeaders, endPoint, option);
 		}
 		String nextLink = HttpUtils.generateNextLink(request, qResult);
 		String prevLink = HttpUtils.generatePrevLink(request, qResult);
@@ -423,7 +463,7 @@ public final class HttpUtils {
 			}
 		}
 		return HttpUtils.generateReply(request, qResult.getData(), additionalHeaders, context, contextLinks, forceArray,
-				endPoint);
+				endPoint, option);
 	}
 
 	public static Uni<RestResponse<Object>> generateReply(String replyBody,
@@ -673,7 +713,7 @@ public final class HttpUtils {
 			acceptHeader.add("application/json");
 		}
 		String body = getReplyBodyNoUni(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
-				ldContext, context, geometryProperty);
+				ldContext, context, geometryProperty, null);
 		// need to clean context for subscriptions. This is a bit bad practice but reply
 		// generation relies on side effects so clean up here
 		HashSet<Object> temp = Sets.newHashSet(context);
@@ -750,5 +790,20 @@ public final class HttpUtils {
 		}
 		return null;
 
+	}
+
+	/*
+	 * Return double to int if possible otherwise input is not changed 13.0 -> 13
+	 */
+	public static Object doubleToInt(Object object) {
+		if (object instanceof Double) {
+			double d = ((Double) object).doubleValue();
+			int i = (int) d;
+			if (d == i)
+				return i;
+			else
+				return d;
+		} else
+			return object;
 	}
 }

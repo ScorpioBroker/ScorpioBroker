@@ -68,6 +68,18 @@ public class QueryParams {
 	@SerializedName("offSet")
 	@Expose
 	private int offSet = 0;
+	@SerializedName("concise")
+	@Expose
+	private String concise;
+
+	public String getConcise() {
+		return concise;
+	}
+
+	public void setConcise(String concise) {
+		this.concise = concise;
+	}
+
 	private String check;
 	private int lastN;
 

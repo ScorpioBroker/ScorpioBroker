@@ -8,7 +8,6 @@ import java.util.Map;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -157,7 +156,7 @@ public interface SubscriptionControllerFunctions {
 					logger.trace("getAllSubscriptions() :: completed");
 
 					return HttpUtils.generateReply(request, getSubscriptions(realResult), additionalHeaders,
-							AppConstants.SUBSCRIPTION_ENDPOINT);
+							AppConstants.SUBSCRIPTION_ENDPOINT, null);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
@@ -177,7 +176,8 @@ public interface SubscriptionControllerFunctions {
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return subscriptionService.getSubscription(id, headers);
 		}).onItem().transformToUni(t -> {
-			return HttpUtils.generateReply(request, t.getSubscription().toJson(), AppConstants.SUBSCRIPTION_ENDPOINT);
+			return HttpUtils.generateReply(request, t.getSubscription().toJson(), AppConstants.SUBSCRIPTION_ENDPOINT,
+					null);
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}

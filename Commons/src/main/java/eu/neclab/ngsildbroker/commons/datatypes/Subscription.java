@@ -387,8 +387,8 @@ public class Subscription implements Serializable {
 			for (EntityInfo info : getEntities()) {
 				Map<String, Object> entityObj = Maps.newHashMap();
 				if (info.getId() != null) {
-//					List<Object> temp2 = Lists.newArrayList();
-//					temp2.add(info.getId().toString());
+					// List<Object> temp2 = Lists.newArrayList();
+					// temp2.add(info.getId().toString());
 					entityObj.put(NGSIConstants.JSON_LD_ID, info.getId().toString());// temp2);
 				}
 				if (info.getType() != null) {
@@ -901,6 +901,13 @@ public class Subscription implements Serializable {
 								ArrayListMultimap<String, String> receiverInfo = ArrayListMultimap.create();
 								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null,
 										context, opts, 999);
+								if (!compacted.containsKey(JsonLdConsts.GRAPH)) {
+									List<Map<String, Object>> ls = new ArrayList<>();
+									compacted.remove(JsonLdConsts.CONTEXT);
+									ls.add(compacted);
+									compacted = new HashMap<String, Object>();
+									compacted.put(JsonLdConsts.GRAPH, ls);
+								}
 								for (Map<String, Object> headerEntry : (List<Map<String, Object>>) compacted
 										.get(JsonLdConsts.GRAPH)) {
 									headerEntry.forEach((t, u) -> {
