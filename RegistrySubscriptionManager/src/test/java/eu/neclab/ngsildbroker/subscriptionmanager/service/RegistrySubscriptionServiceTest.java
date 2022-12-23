@@ -154,7 +154,7 @@ public class RegistrySubscriptionServiceTest {
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, AppConstants.INTERNAL_NULL_KEY, 0);
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		Void result = subscriptionService.subscribeInternal(subRequest).await().indefinitely();
 		Assertions.assertEquals(null, result);
 		Mockito.verify(subscriptionService).subscribeInternal(any());
@@ -176,7 +176,7 @@ public class RegistrySubscriptionServiceTest {
 		Map<String, Object> resolved = gson.fromJson(payload1, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, AppConstants.INTERNAL_NULL_KEY, 0);
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		Void result = subscriptionService.subscribeInternal(subRequest).await().indefinitely();
 		Assertions.assertEquals(null, result);
 		Mockito.verify(subscriptionService).subscribeInternal(any());
@@ -199,7 +199,7 @@ public class RegistrySubscriptionServiceTest {
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		subscriptionRequest = new SubscriptionRequest(s, context, AppConstants.INTERNAL_NULL_KEY, 0);
+		subscriptionRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		Mockito.when(baseService.updateSubscription(any())).thenReturn(Uni.createFrom().voidItem());
 		try {
 			subscriptionService.updateInternal(subscriptionRequest).await().indefinitely();

@@ -80,7 +80,7 @@ public interface SubscriptionControllerFunctions {
 				subscription.setActive(true);
 			}
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
-					HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), AppConstants.CREATE_REQUEST);
+					HttpUtils.getHeaders(request), AppConstants.CREATE_REQUEST);
 			return subscriptionService.subscribe(subRequest);
 		}).onItem().transform(Unchecked.function(t -> {
 			logger.trace("subscribeRest() :: completed");
@@ -239,7 +239,7 @@ public interface SubscriptionControllerFunctions {
 						subscription.setId(id);
 					}
 					SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, linkHeaders,
-							HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), AppConstants.UPDATE_REQUEST);
+							HttpUtils.getHeaders(request), AppConstants.UPDATE_REQUEST);
 					if (body == null || subscription == null || !id.equals(subscription.getId())) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 								new ResponseException(ErrorType.BadRequestData, "empty subscription body")));

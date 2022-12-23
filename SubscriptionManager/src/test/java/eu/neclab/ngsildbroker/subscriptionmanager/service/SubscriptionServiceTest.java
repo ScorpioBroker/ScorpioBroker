@@ -118,7 +118,7 @@ public class SubscriptionServiceTest {
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, AppConstants.INTERNAL_NULL_KEY, 0);
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		String subId = subscriptionService.subscribe(subRequest).await().indefinitely();
 		Assertions.assertEquals("urn:ngsi-ld:Subscription:173223", subId);
 		Mockito.verify(subscriptionService).subscribe(any());
@@ -140,7 +140,7 @@ public class SubscriptionServiceTest {
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, AppConstants.INTERNAL_NULL_KEY, 0);
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		try {
 			subscriptionService.updateSubscription(subRequest).await().indefinitely();
 		} catch (Exception e) {
@@ -179,7 +179,7 @@ public class SubscriptionServiceTest {
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, AppConstants.INTERNAL_NULL_KEY, 0);
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
 		subscriptionService.subscribeToRemote(subRequest, notify);
 		Mockito.verify(subscriptionService).subscribeToRemote(any(), any());
 

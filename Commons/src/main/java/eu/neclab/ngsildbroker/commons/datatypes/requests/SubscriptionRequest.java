@@ -30,7 +30,7 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 	private static final String CONTEXT = "context";
 	private static final String ACTIVE = "active";
 	private static final String TYPE = "type";
-	private static final String TENANT = "tenant";
+	private static final String HEADERS = "headers";
 	private static final String ID = "id";
 	private static final String REQUEST_TYPE = "requestType";
 	private Subscription subscription;
@@ -39,16 +39,19 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 	private boolean active;
 
 	private int type;
+	private ArrayListMultimap<String, String> headers;
 
 	public SubscriptionRequest() {
 		// default constructor for serialization
 	}
 
-	public SubscriptionRequest(Subscription subscription, List<Object> context2, String tenant, int type) {
-		super(tenant, subscription.getId(), null, type);
+	public SubscriptionRequest(Subscription subscription, List<Object> context2,
+			ArrayListMultimap<String, String> headers, int type) {
+		super(HttpUtils.getInternalTenant(headers), subscription.getId(), null, type);
 		this.active = true;
 		this.context = context2;
 		this.subscription = subscription;
+		this.headers = headers;
 	}
 
 	public List<Object> getContext() {
@@ -98,7 +101,7 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 		top.put(CONTEXT, getContext());
 		top.put(ACTIVE, isActive());
 		top.put(TYPE, getType());
-		top.put(TENANT, getTenant());
+		top.put(HEADERS, getHeaders(headers));
 		top.put(ID, getId());
 		top.put(REQUEST_TYPE, getRequestType());
 		return top;
@@ -140,8 +143,8 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 			case TYPE:
 				result.setType((int) value);
 				break;
-			case TENANT:
-				result.setTenant((String) value);
+			case HEADERS:
+				result.headers = getMultiListHeaders((Map<String, List<String>>) value);
 				break;
 			case ID:
 				result.setId((String) value);
@@ -155,7 +158,7 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 		}
 		try {
 			result.setSubscription(Subscription.expandSubscription(sub,
-					JsonLdProcessor.getCoreContextClone().parse(getAtContext(result.getHeaders()), true), update));
+					JsonLdProcessor.getCoreContextClone().parse(getAtContext(result.headers), true), update));
 		} catch (JsonLdError e) {
 			throw new ResponseException(ErrorType.InvalidRequest, "failed to parse at context");
 		}
