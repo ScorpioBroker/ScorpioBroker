@@ -89,10 +89,11 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	public Uni<Void> subscribeInternal(SubscriptionRequest request) {
 		makeSubscriptionInternal(request);
-		return subscribe(request).onItem().ignore().andContinueWithNull().onFailure().call(e -> {
-			logger.debug("Failed to subscribe internally", e);
-			return null;
-		});
+		return subscribe(request).onItem().transformToUni(t -> Uni.createFrom().voidItem()).onFailure()
+				.recoverWithUni(e -> {
+					logger.debug("Failed to subscribe internally", e);
+					return Uni.createFrom().voidItem();
+				});
 	}
 
 	public Uni<Void> unsubscribeInternal(String subId) {
@@ -100,7 +101,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 		if (request != null) {
 			return unsubscribe(subId, request.getTenant());
 		}
-		return Uni.createFrom().nullItem();
+		return Uni.createFrom().voidItem();
 	}
 
 	@PreDestroy
@@ -114,10 +115,11 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 
 	public Uni<Void> updateInternal(SubscriptionRequest request) {
 		makeSubscriptionInternal(request);
-		return updateSubscription(request).onItem().ignore().andContinueWithNull().onFailure().call(e -> {
-			logger.debug("Failed to subscribe internally", e);
-			return null;
-		});
+		return updateSubscription(request).onItem().transformToUni(t -> Uni.createFrom().voidItem()).onFailure()
+				.recoverWithUni(e -> {
+					logger.debug("Failed to subscribe internally", e);
+					return Uni.createFrom().voidItem();
+				});
 	}
 
 	private void makeSubscriptionInternal(SubscriptionRequest request) {
