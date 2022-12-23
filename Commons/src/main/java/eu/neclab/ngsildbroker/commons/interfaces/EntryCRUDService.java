@@ -13,26 +13,26 @@ import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import io.smallrye.mutiny.Uni;
 
 public interface EntryCRUDService {
-	Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
+	Uni<UpdateResult> updateEntry(String tenant, String entityId,
 			Map<String, Object> entry);
 
-	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+	Uni<UpdateResult> appendToEntry(String tenant, String entityId,
 			Map<String, Object> entry, String[] options);
 
-	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved);
+	Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved);
 
-	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId);
+	Uni<Boolean> deleteEntry(String tenant, String entryId);
 
-	Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId, Map<String, Object> entry,
+	Uni<UpdateResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
 			BatchInfo batchInfo);
 
-	Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
+	Uni<UpdateResult> appendToEntry(String tenant, String entityId,
 			Map<String, Object> entry, String[] options, BatchInfo batchInfo);
 
-	Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved,
 			BatchInfo batchInfo);
 
-	Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entryId, BatchInfo batchInfo);
+	Uni<Boolean> deleteEntry(String tenant, String entryId, BatchInfo batchInfo);
 
 	Uni<Void> sendFail(BatchInfo batchInfo);
 

@@ -60,25 +60,24 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Channel(AppConstants.HISTORY_CHANNEL)
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
-		return createEntry(headers, resolved, new BatchInfo(-1, -1));
+	public Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved) {
+		return createEntry(tenant, resolved, new BatchInfo(-1, -1));
 	}
 
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	public Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved, BatchInfo batchInfo) {
+		return createTemporalEntity(tenant, resolved, false, batchInfo);
+	}
+
+	Uni<CreateResult> createTemporalEntity(String tenant, Map<String, Object> resolved, boolean fromEntity,
 			BatchInfo batchInfo) {
-		return createTemporalEntity(headers, resolved, false, batchInfo);
-	}
-
-	Uni<CreateResult> createTemporalEntity(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			boolean fromEntity, BatchInfo batchInfo) {
 		logger.trace("creating temporal entity");
 		CreateHistoryEntityRequest request;
 		try {
-			request = new CreateHistoryEntityRequest(headers, resolved, fromEntity);
+			request = new CreateHistoryEntityRequest(tenant, resolved, fromEntity);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		return historyDAO.isTempEntityExist(request.getId(), HttpUtils.getInternalTenant(headers)).onItem()
+		return historyDAO.isTempEntityExist(request.getId(), tenant).onItem()
 				.transformToUni(t2 -> {
 					return handleRequest(request).combinedWith((t, u) -> {
 						logger.debug("createMessage() :: completed");
@@ -87,30 +86,30 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 				});
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
-		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
+	public Uni<Boolean> deleteEntry(String tenant, String entityId) {
+		return deleteEntry(tenant, entityId, new BatchInfo(-1, -1));
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo) {
-		return delete(headers, entityId, null, null, null);
+	public Uni<Boolean> deleteEntry(String tenant, String entityId, BatchInfo batchInfo) {
+		return delete(tenant, entityId, null, null, null);
 	}
 
-	public Uni<Boolean> delete(ArrayListMultimap<String, String> headers, String entityId, String attributeId,
-			String instanceId, Context linkHeaders) {
+	public Uni<Boolean> delete(String tenant, String entityId, String attributeId, String instanceId,
+			Context linkHeaders) {
 		if (entityId == null) {
 			return Uni.createFrom()
 					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
-		String tenantId = HttpUtils.getInternalTenant(headers);
+
 		return Uni.combine().all()
-				.unis(historyDAO.getTemporalEntity(entityId, tenantId), historyDAO
-						.temporalEntityAttrInstanceExist(entityId, tenantId, attributeId, instanceId, linkHeaders))
+				.unis(historyDAO.getTemporalEntity(entityId, tenant), historyDAO
+						.temporalEntityAttrInstanceExist(entityId, tenant, attributeId, instanceId, linkHeaders))
 				.asTuple().onItem().transform(Unchecked.function(t -> {
 					String resolvedAttrId = null;
 					if (attributeId != null) {
 						resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
 					}
-					return new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
+					return new DeleteHistoryEntityRequest(tenant, resolvedAttrId, instanceId, entityId);
 
 				})).onItem().transformToUni(t2 -> {
 					return handleRequest(t2).combinedWith((t, u) -> {
@@ -120,17 +119,16 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 				});
 	}
 
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options) {
-		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
+	public Uni<UpdateResult> appendToEntry(String tenant, String entityId, Map<String, Object> resolved,
+			String[] options) {
+		return appendToEntry(tenant, entityId, resolved, options, new BatchInfo(-1, -1));
 	}
 
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) {
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transformToUni(t -> {
+	public Uni<UpdateResult> appendToEntry(String tenant, String entityId, Map<String, Object> resolved,
+			String[] options, BatchInfo batchInfo) {
+		return historyDAO.getTemporalEntity(entityId, tenant).onItem().transformToUni(t -> {
 			try {
-				return Uni.createFrom().item(new AppendHistoryEntityRequest(headers, resolved, entityId));
+				return Uni.createFrom().item(new AppendHistoryEntityRequest(tenant, resolved, entityId));
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -143,8 +141,8 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	}
 
 	// for endpoint "entities/{entityId}/attrs/{attrId}/{instanceId}")
-	public Uni<Void> modifyAttribInstanceTemporalEntity(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String attribId, String instanceId, Context linkHeaders) {
+	public Uni<Void> modifyAttribInstanceTemporalEntity(String tenant, String entityId, Map<String, Object> resolved,
+			String attribId, String instanceId, Context linkHeaders) {
 
 		String resolvedAttrId;
 		try {
@@ -161,7 +159,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
 		qp.setIncludeSysAttrs(true);
-		qp.setTenant(HttpUtils.getTenantFromHeaders(headers));
+		qp.setTenant(tenant);
 
 		return historyDAO.query(qp).onItem().transformToUni(queryResult -> {
 			List<Map<String, Object>> entityList = ((QueryResult) queryResult).getData();
@@ -170,7 +168,7 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			}
 			UpdateHistoryEntityRequest request;
 			try {
-				request = new UpdateHistoryEntityRequest(headers, resolved, entityId, resolvedAttrId, instanceId,
+				request = new UpdateHistoryEntityRequest(tenant, resolved, entityId, resolvedAttrId, instanceId,
 						entityList);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
@@ -181,14 +179,13 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	}
 
 	@Override
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry) {
-		return updateEntry(headers, entityId, entry, new BatchInfo(-1, -1));
+	public Uni<UpdateResult> updateEntry(String tenant, String entityId, Map<String, Object> entry) {
+		return updateEntry(tenant, entityId, entry, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, BatchInfo batchInfo) {
+	public Uni<UpdateResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
+			BatchInfo batchInfo) {
 		// History can't do this
 		throw new MethodNotFoundException();
 	}

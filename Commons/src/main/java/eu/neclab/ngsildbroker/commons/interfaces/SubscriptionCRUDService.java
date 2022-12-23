@@ -11,11 +11,11 @@ public interface SubscriptionCRUDService {
 
 	Uni<String> subscribe(SubscriptionRequest subRequest);
 
-	Uni<List<SubscriptionRequest>> getAllSubscriptions(ArrayListMultimap<String, String> headers);
+	Uni<List<SubscriptionRequest>> getAllSubscriptions(String tenant);
 
-	Uni<SubscriptionRequest> getSubscription(String id, ArrayListMultimap<String, String> headers);
+	Uni<SubscriptionRequest> getSubscription(String id, String tenant);
 
-	Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers);
+	Uni<Void> unsubscribe(String id, String tenant);
 
 	Uni<Void> updateSubscription(SubscriptionRequest subscriptionRequest);
 

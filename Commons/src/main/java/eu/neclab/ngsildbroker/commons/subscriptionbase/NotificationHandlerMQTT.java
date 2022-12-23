@@ -31,7 +31,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		Map<String, String> clientSettings = request.getSubscription().getNotification().getEndPoint()
 				.getNotifierInfo();
 		
-		ArrayListMultimap<String, String> headers = request.getHeaders();
+		
 		Object client = getClient(callback, clientSettings);
 		String qosString = null;
 		if (clientSettings != null) {
@@ -44,7 +44,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 		if (qosString != null) {
 			qos = Integer.parseInt(qosString);
 		}
-		String payload = getPayload(notification, headers);
+		String payload = getPayload(notification, request.getSubscription().getNotification().getEndPoint().getReceiverInfo());
 		if (client instanceof MqttClient) {
 			// resources are closed in predestroy
 			@SuppressWarnings("resource")
@@ -55,7 +55,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 			MqttMessage message = new MqttMessage(payload.getBytes());
 			message.setQos(qos);
 			if (message.getProperties() != null)
-				message.getProperties().setContentType(headers.get(HttpHeaders.CONTENT_TYPE.toString()).get(0));
+				message.getProperties().setContentType(request.getSubscription().getNotification().getEndPoint().getAccept());
 			client5.publish(callback.getPath().substring(1), message);
 		}
 

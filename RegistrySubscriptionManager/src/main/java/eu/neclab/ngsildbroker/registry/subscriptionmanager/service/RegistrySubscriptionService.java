@@ -47,7 +47,6 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	@Broadcast
 	MutinyEmitter<InternalNotification> internalNotificationSender;
 
-
 	private NotificationHandler internalHandler;
 
 	private HashMap<String, SubscriptionRequest> id2InternalSubscriptions = new HashMap<String, SubscriptionRequest>();
@@ -72,7 +71,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 			int triggerReason) {
 		return new Notification(EntityTools.getRandomID("notification:"), NGSIConstants.CSOURCE_NOTIFICATION,
 				System.currentTimeMillis(), request.getSubscription().getId(), dataList, triggerReason,
-				request.getContext(), request.getHeaders());
+				request.getContext(), request.getTenant());
 	}
 
 	@Override
@@ -99,7 +98,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	public Uni<Void> unsubscribeInternal(String subId) {
 		SubscriptionRequest request = id2InternalSubscriptions.remove(subId);
 		if (request != null) {
-			return unsubscribe(subId, request.getHeaders());
+			return unsubscribe(subId, request.getTenant());
 		}
 		return Uni.createFrom().nullItem();
 	}
@@ -108,7 +107,7 @@ public class RegistrySubscriptionService extends BaseSubscriptionService {
 	public void deconstructor() {
 		destroy();
 		for (Entry<String, SubscriptionRequest> entry : id2InternalSubscriptions.entrySet()) {
-			unsubscribe(entry.getKey(), entry.getValue().getHeaders()).await().atMost(Duration.ofMillis(500));
+			unsubscribe(entry.getKey(), entry.getValue().getTenant()).await().atMost(Duration.ofMillis(500));
 		}
 
 	}

@@ -99,27 +99,27 @@ public abstract class BaseSubscriptionSyncManager {
 			return;
 		}
 		switch (sub.getType()) {
-			case AppConstants.DELETE_REQUEST:
-				subscriptionService.unsubscribe(sub.getId(), sub.getHeaders(), true).onFailure().transform(e -> {
-					logger.debug("Failed to forward delete request", e);
-					return null;
-				}).await().indefinitely();
-				break;
-			case AppConstants.UPDATE_REQUEST:
-				subscriptionService.updateSubscription(sub, true).onFailure().transform(e -> {
-					logger.debug("Failed to forward delete request", e);
-					return null;
-				}).await().indefinitely();
-				break;
-			case AppConstants.CREATE_REQUEST:
-				sub.setActive(false);
-				subscriptionService.subscribe(sub, true).onFailure().transform(e -> {
-					logger.debug("Failed to forward delete request", e);
-					return null;
-				}).await().indefinitely();
-				break;
-			default:
-				break;
+		case AppConstants.DELETE_REQUEST:
+			subscriptionService.unsubscribe(sub.getId(), sub.getTenant(), true).onFailure().transform(e -> {
+				logger.debug("Failed to forward delete request", e);
+				return null;
+			}).await().indefinitely();
+			break;
+		case AppConstants.UPDATE_REQUEST:
+			subscriptionService.updateSubscription(sub, true).onFailure().transform(e -> {
+				logger.debug("Failed to forward delete request", e);
+				return null;
+			}).await().indefinitely();
+			break;
+		case AppConstants.CREATE_REQUEST:
+			sub.setActive(false);
+			subscriptionService.subscribe(sub, true).onFailure().transform(e -> {
+				logger.debug("Failed to forward delete request", e);
+				return null;
+			}).await().indefinitely();
+			break;
+		default:
+			break;
 		}
 	}
 

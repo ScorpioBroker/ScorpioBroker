@@ -21,8 +21,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 public class SubscriptionRequest extends BaseRequest implements Serializable {
-	
-	
+
 	/**
 	 *
 	 */
@@ -31,7 +30,7 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 	private static final String CONTEXT = "context";
 	private static final String ACTIVE = "active";
 	private static final String TYPE = "type";
-	private static final String HEADERS = "headers";
+	private static final String TENANT = "tenant";
 	private static final String ID = "id";
 	private static final String REQUEST_TYPE = "requestType";
 	private Subscription subscription;
@@ -45,9 +44,8 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 		// default constructor for serialization
 	}
 
-	public SubscriptionRequest(Subscription subscription, List<Object> context2,
-			ArrayListMultimap<String, String> headers, int type) {
-		super(headers, subscription.getId(), null, type);
+	public SubscriptionRequest(Subscription subscription, List<Object> context2, String tenant, int type) {
+		super(tenant, subscription.getId(), null, type);
 		this.active = true;
 		this.context = context2;
 		this.subscription = subscription;
@@ -67,14 +65,6 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 
 	public void setSubscription(Subscription subscription) {
 		this.subscription = subscription;
-	}
-
-	public ArrayListMultimap<String, String> getHeaders() {
-		return headers;
-	}
-
-	public void setHeaders(ArrayListMultimap<String, String> headers) {
-		this.headers = headers;
 	}
 
 	public boolean isActive() {
@@ -108,7 +98,7 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 		top.put(CONTEXT, getContext());
 		top.put(ACTIVE, isActive());
 		top.put(TYPE, getType());
-		top.put(HEADERS, getHeaders(getHeaders()));
+		top.put(TENANT, getTenant());
 		top.put(ID, getId());
 		top.put(REQUEST_TYPE, getRequestType());
 		return top;
@@ -138,29 +128,29 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 			String key = entry.getKey();
 			Object value = entry.getValue();
 			switch (key) {
-				case SUBSCRIPTION:
-					sub = (Map<String, Object>) value;
-					break;
-				case CONTEXT:
-					result.setContext((List<Object>) value);
-					break;
-				case ACTIVE:
-					result.setActive((boolean) value);
-					break;
-				case TYPE:
-					result.setType((int) value);
-					break;
-				case HEADERS:
-					result.setHeaders(getMultiListHeaders((Map<String, List<String>>) value));
-					break;
-				case ID:
-					result.setId((String) value);
-					break;
-				case REQUEST_TYPE:
-					result.setRequestType((int) value);
-					break;
-				default:
-					break;
+			case SUBSCRIPTION:
+				sub = (Map<String, Object>) value;
+				break;
+			case CONTEXT:
+				result.setContext((List<Object>) value);
+				break;
+			case ACTIVE:
+				result.setActive((boolean) value);
+				break;
+			case TYPE:
+				result.setType((int) value);
+				break;
+			case TENANT:
+				result.setTenant((String) value);
+				break;
+			case ID:
+				result.setId((String) value);
+				break;
+			case REQUEST_TYPE:
+				result.setRequestType((int) value);
+				break;
+			default:
+				break;
 			}
 		}
 		try {

@@ -20,9 +20,9 @@ public class UpdateEntityRequest extends EntityRequest {
 
 	private UpdateResult updateResult;
 
-	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
+	public UpdateEntityRequest(String tenant, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String attrName) throws ResponseException {
-		super(headers, id, resolved, AppConstants.UPDATE_REQUEST);
+		super(tenant, id, resolved, AppConstants.UPDATE_REQUEST);
 		generateUpdate(resolved, entityBody, attrName);
 
 	}

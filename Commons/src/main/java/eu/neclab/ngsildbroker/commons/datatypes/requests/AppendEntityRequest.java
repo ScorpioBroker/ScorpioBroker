@@ -22,9 +22,9 @@ public class AppendEntityRequest extends EntityRequest {
 
 	private UpdateResult updateResult;
 
-	public AppendEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> entityBody,
+	public AppendEntityRequest(String tenant, String id, Map<String, Object> entityBody,
 			Map<String, Object> resolved, String[] options) throws ResponseException {
-		super(headers, id, resolved, AppConstants.APPEND_REQUEST);
+		super(tenant, id, resolved, AppConstants.APPEND_REQUEST);
 		generateAppend(resolved, entityBody, options);
 	}
 

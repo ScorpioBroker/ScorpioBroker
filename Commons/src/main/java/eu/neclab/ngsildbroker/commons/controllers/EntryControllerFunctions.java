@@ -105,7 +105,8 @@ public interface EntryControllerFunctions {
 			}
 
 			return entityService
-					.appendToEntry(HttpUtils.getHeaders(request), entityId, entry, getOptionsArray(options), batchInfo)
+					.appendToEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), entityId, entry,
+							getOptionsArray(options), batchInfo)
 					.onFailure().recoverWithItem(t -> new UpdateResult()).onItem().transformToUni(i -> {
 						if (i.getNotUpdated().isEmpty()) {
 							return Uni.createFrom().item(Tuple2.of(new BatchFailure("", null), entityId));
@@ -191,9 +192,10 @@ public interface EntryControllerFunctions {
 				return entityService.sendFail(batchInfo).onItem().transformToUni(
 						t -> Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null)));
 			}
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			return entityService.createEntry(headers, expanded, batchInfo).onItem()
-					.transform(i -> Tuple2.of(new BatchFailure("dummy", null), i)).onFailure().recoverWithUni(e -> {
+			return entityService
+					.createEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), expanded, batchInfo)
+					.onItem().transform(i -> Tuple2.of(new BatchFailure("dummy", null), i)).onFailure()
+					.recoverWithUni(e -> {
 						NGSIRestResponse response;
 						if (e instanceof ResponseException) {
 							response = new NGSIRestResponse((ResponseException) e);
@@ -286,7 +288,6 @@ public interface EntryControllerFunctions {
 
 			}
 
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			return Multi.createFrom().items(jsonPayload.parallelStream()).onItem().transformToUni(t2 -> {
 				String entityId = "NO ENTITY ID FOUND";
 				if (t2 instanceof String) {
@@ -300,7 +301,8 @@ public interface EntryControllerFunctions {
 						return Uni.createFrom().failure(e);
 					}
 				}
-				return Uni.createFrom().item(Tuple2.of(entityId, headers));
+				return Uni.createFrom()
+						.item(Tuple2.of(entityId, HttpUtils.getInternalTenant(HttpUtils.getHeaders(request))));
 			}).concatenate();
 		}).onItem().transformToUni(
 				t -> entityService.deleteEntry(t.getItem2(), t.getItem1(), batchInfo).onItem().transform(i -> {
@@ -389,8 +391,8 @@ public interface EntryControllerFunctions {
 				return entityService.sendFail(batchInfo).onItem().transformToUni(
 						t -> Uni.createFrom().item(Tuple3.of(new BatchFailure(entityIdTmp, response), null, false)));
 			}
-			Tuple4<Map<String, Object>, Object, ArrayListMultimap<String, String>, String[]> t = Tuple4.of(expanded,
-					tt.getItem2(), HttpUtils.getHeaders(request), getOptionsArray(options));
+			Tuple4<Map<String, Object>, Object, String, String[]> t = Tuple4.of(expanded, tt.getItem2(),
+					HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), getOptionsArray(options));
 
 			Map<String, Object> entry = expanded;// t.getItem1();
 			String entityId;
@@ -555,8 +557,9 @@ public interface EntryControllerFunctions {
 					return Uni.createFrom().item(Tuple2.of(resolvedBody, context));
 				}).onItem()
 				.transformToUni(resolved -> entityService
-						.updateEntry(HttpUtils.getHeaders(request), entityId, resolved.getItem1()).onItem()
-						.transformToUni(updateResult -> {
+						.updateEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), entityId,
+								resolved.getItem1())
+						.onItem().transformToUni(updateResult -> {
 							logger.trace("update entry :: completed");
 							return HttpUtils.generateReply(request, updateResult, resolved.getItem2(),
 									AppConstants.UPDATE_REQUEST);
@@ -565,8 +568,7 @@ public interface EntryControllerFunctions {
 	}
 
 	/*
-	 * This method convert concise representation to normal representation
-	 * Usage:
+	 * This method convert concise representation to normal representation Usage:
 	 * noConcise(object of List or Map, null, null)
 	 */
 	@SuppressWarnings("unchecked")
@@ -608,8 +610,8 @@ public interface EntryControllerFunctions {
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_COORDINATES)
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
 						&& !key.equals(NGSIConstants.INSTANCE_ID)
-						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)
-						&& !key.equals(NGSIConstants.OBJECT) && !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)) {
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)) {
 					noConcise(map.get(key), (Map<String, Object>) map, key.toString());
 				}
 			}
@@ -623,8 +625,7 @@ public interface EntryControllerFunctions {
 		// Object is String or Number value
 		else if (object instanceof String || object instanceof Number) {
 			/*
-			 * if keyofobject is value then just need
-			 * convert double to int if possible
+			 * if keyofobject is value then just need convert double to int if possible
 			 */
 			if (keyOfObject != null && keyOfObject.equals(NGSIConstants.VALUE)) {
 				parentMap.put(keyOfObject, HttpUtils.doubleToInt(object));
@@ -667,8 +668,8 @@ public interface EntryControllerFunctions {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			return entityService.createEntry(HttpUtils.getHeaders(request), resolved).onItem()
-					.transform(createResult -> {
+			return entityService.createEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), resolved)
+					.onItem().transform(createResult -> {
 						logger.trace("create entity :: completed");
 						String entityId = createResult.getEntityId();
 						try {
@@ -726,8 +727,8 @@ public interface EntryControllerFunctions {
 					} catch (Exception e) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}
-					return entityService.appendToEntry(HttpUtils.getHeaders(request), entityId, resolved, optionsArray)
-							.onItem().transformToUni(tResult -> {
+					return entityService.appendToEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)),
+							entityId, resolved, optionsArray).onItem().transformToUni(tResult -> {
 								return HttpUtils.generateReply(request, tResult, context, AppConstants.UPDATE_REQUEST);
 							});
 
@@ -745,10 +746,11 @@ public interface EntryControllerFunctions {
 	public static Uni<RestResponse<Object>> deleteEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, Logger logger) {
 		return HttpUtils.validateUri(entityId).onItem().transformToUni(t -> {
-			return entityService.deleteEntry(HttpUtils.getHeaders(request), entityId).onItem().transform(t2 -> {
-				logger.trace("delete entity :: completed");
-				return RestResponse.noContent();
-			});
+			return entityService.deleteEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), entityId)
+					.onItem().transform(t2 -> {
+						logger.trace("delete entity :: completed");
+						return RestResponse.noContent();
+					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 

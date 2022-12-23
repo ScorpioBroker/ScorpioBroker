@@ -80,7 +80,7 @@ public interface SubscriptionControllerFunctions {
 				subscription.setActive(true);
 			}
 			SubscriptionRequest subRequest = new SubscriptionRequest(subscription, context,
-					HttpUtils.getHeaders(request), AppConstants.CREATE_REQUEST);
+					HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), AppConstants.CREATE_REQUEST);
 			return subscriptionService.subscribe(subRequest);
 		}).onItem().transform(Unchecked.function(t -> {
 			logger.trace("subscribeRest() :: completed");
@@ -119,8 +119,8 @@ public interface SubscriptionControllerFunctions {
 		}
 		boolean count = qp.getCountResult();
 
-		return subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request)).onItem()
-				.transformToUni(result -> {
+		return subscriptionService.getAllSubscriptions(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)))
+				.onItem().transformToUni(result -> {
 					int toIndex = offset + actualLimit;
 					ArrayList<Object> additionalLinks = new ArrayList<Object>();
 					if (limit == 0 || toIndex > result.size() - 1) {
@@ -173,8 +173,8 @@ public interface SubscriptionControllerFunctions {
 			HttpServerRequest request, String id, int limit, Logger logger) {
 		return HttpUtils.validateUri(id).onItem().transformToUni(t -> {
 			logger.trace("call getSubscriptions() ::");
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			return subscriptionService.getSubscription(id, headers);
+
+			return subscriptionService.getSubscription(id, HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)));
 		}).onItem().transformToUni(t -> {
 			return HttpUtils.generateReply(request, t.getSubscription().toJson(), AppConstants.SUBSCRIPTION_ENDPOINT,
 					null);
@@ -186,8 +186,9 @@ public interface SubscriptionControllerFunctions {
 			HttpServerRequest request, String id, Logger logger) {
 		logger.trace("call deleteSubscription() ::");
 		return HttpUtils.validateUri(id).onItem()
-				.transformToUni(t -> subscriptionService.unsubscribe(id, HttpUtils.getHeaders(request))).onItem()
-				.transform(t -> RestResponse.noContent()).onFailure()
+				.transformToUni(t -> subscriptionService.unsubscribe(id,
+						HttpUtils.getInternalTenant(HttpUtils.getHeaders(request))))
+				.onItem().transform(t -> RestResponse.noContent()).onFailure()
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
@@ -238,7 +239,7 @@ public interface SubscriptionControllerFunctions {
 						subscription.setId(id);
 					}
 					SubscriptionRequest subscriptionRequest = new SubscriptionRequest(subscription, linkHeaders,
-							HttpUtils.getHeaders(request), AppConstants.UPDATE_REQUEST);
+							HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), AppConstants.UPDATE_REQUEST);
 					if (body == null || subscription == null || !id.equals(subscription.getId())) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 								new ResponseException(ErrorType.BadRequestData, "empty subscription body")));

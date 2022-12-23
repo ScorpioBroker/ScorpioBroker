@@ -154,7 +154,7 @@ public class RegistrySubscriptionServiceTest {
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, subIds, 0);
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, AppConstants.INTERNAL_NULL_KEY, 0);
 		Void result = subscriptionService.subscribeInternal(subRequest).await().indefinitely();
 		Assertions.assertEquals(null, result);
 		Mockito.verify(subscriptionService).subscribeInternal(any());
@@ -176,7 +176,7 @@ public class RegistrySubscriptionServiceTest {
 		Map<String, Object> resolved = gson.fromJson(payload1, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, subIds, 0);
+		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, AppConstants.INTERNAL_NULL_KEY, 0);
 		Void result = subscriptionService.subscribeInternal(subRequest).await().indefinitely();
 		Assertions.assertEquals(null, result);
 		Mockito.verify(subscriptionService).subscribeInternal(any());
@@ -199,7 +199,7 @@ public class RegistrySubscriptionServiceTest {
 		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
 		Subscription s = Subscription.expandSubscription(resolved, context1, true);
 		subscription = new Subscription();
-		subscriptionRequest = new SubscriptionRequest(s, context, subIds, 0);
+		subscriptionRequest = new SubscriptionRequest(s, context, AppConstants.INTERNAL_NULL_KEY, 0);
 		Mockito.when(baseService.updateSubscription(any())).thenReturn(Uni.createFrom().voidItem());
 		try {
 			subscriptionService.updateInternal(subscriptionRequest).await().indefinitely();
@@ -216,8 +216,8 @@ public class RegistrySubscriptionServiceTest {
 	@Order(4)
 	public void getAllSubscriptionsTest() {
 
-		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-		List<SubscriptionRequest> result = subscriptionService.getAllSubscriptions(subIds).await().indefinitely();
+		List<SubscriptionRequest> result = subscriptionService.getAllSubscriptions(AppConstants.INTERNAL_NULL_KEY)
+				.await().indefinitely();
 		assertNotNull(result);
 		Mockito.verify(subscriptionService).getAllSubscriptions(any());
 	}
@@ -262,9 +262,10 @@ public class RegistrySubscriptionServiceTest {
 		multimaparr.put("content-type", "application/json");
 		MockitoAnnotations.initMocks(this);
 		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Subscription:173223");
+
 		try {
-			subscriptionService.getSubscription("urn:ngsi-ld:Subscription:173223", entityIds).await().indefinitely();
+			subscriptionService.getSubscription("urn:ngsi-ld:Subscription:173223", AppConstants.INTERNAL_NULL_KEY)
+					.await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("urn:ngsi-ld:Subscription:173223 not found", e.getMessage());
 			Mockito.verify(subscriptionService).getSubscription(any(), any());

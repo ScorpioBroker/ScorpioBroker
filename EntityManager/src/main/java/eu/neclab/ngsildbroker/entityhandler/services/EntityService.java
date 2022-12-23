@@ -60,12 +60,11 @@ public class EntityService implements EntryCRUDService {
 	 * @throws Exception
 	 * @throws ResponseException
 	 */
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			BatchInfo batchInfo) {
+	public Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved, BatchInfo batchInfo) {
 		logger.debug("createMessage() :: started");
 		EntityRequest request;
 		try {
-			request = new CreateEntityRequest(resolved, headers);
+			request = new CreateEntityRequest(resolved, tenant);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
@@ -76,8 +75,8 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
-		return createEntry(headers, resolved, new BatchInfo(-1, -1));
+	public Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved) {
+		return createEntry(tenant, resolved, new BatchInfo(-1, -1));
 	}
 
 	/**
@@ -90,14 +89,14 @@ public class EntityService implements EntryCRUDService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, BatchInfo batchInfo) {
+	public Uni<UpdateResult> updateEntry(String tenant, String entityId, Map<String, Object> resolved,
+			BatchInfo batchInfo) {
 		logger.trace("updateMessage() :: started");
 		// get message channel for ENTITY_UPDATE topic
-		String tenantid = HttpUtils.getInternalTenant(headers);
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantid, entityInfoDAO).onItem()
+
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenant, entityInfoDAO).onItem()
 				.transform(Unchecked.function(t -> {
-					return new UpdateEntityRequest(headers, entityId, t, resolved, null);
+					return new UpdateEntityRequest(tenant, entityId, t, resolved, null);
 				})).onItem().transformToUni(t -> {
 					// if nothing changed just return the result and no publish.
 					if (t.getUpdateResult().getUpdated().isEmpty()) {
@@ -111,9 +110,8 @@ public class EntityService implements EntryCRUDService {
 				});
 	}
 
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved) {
-		return updateEntry(headers, entityId, resolved, new BatchInfo(-1, -1));
+	public Uni<UpdateResult> updateEntry(String tenant, String entityId, Map<String, Object> resolved) {
+		return updateEntry(tenant, entityId, resolved, new BatchInfo(-1, -1));
 	}
 
 	/**
@@ -125,8 +123,8 @@ public class EntityService implements EntryCRUDService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options, BatchInfo batchInfo) {
+	public Uni<UpdateResult> appendToEntry(String tenant, String entityId, Map<String, Object> resolved,
+			String[] options, BatchInfo batchInfo) {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
@@ -135,12 +133,11 @@ public class EntityService implements EntryCRUDService {
 					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id is not allowed"));
 		}
 
-		String tenantId = HttpUtils.getInternalTenant(headers);
 		// get entity details
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem().transformToUni(t -> {
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenant, entityInfoDAO).onItem().transformToUni(t -> {
 			AppendEntityRequest req;
 			try {
-				req = new AppendEntityRequest(headers, entityId, t, resolved, options);
+				req = new AppendEntityRequest(tenant, entityId, t, resolved, options);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -155,24 +152,24 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> resolved, String[] options) {
-		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
+	public Uni<UpdateResult> appendToEntry(String tenant, String entityId, Map<String, Object> resolved,
+			String[] options) {
+		return appendToEntry(tenant, entityId, resolved, options, new BatchInfo(-1, -1));
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo) {
+	public Uni<Boolean> deleteEntry(String tenant, String entityId, BatchInfo batchInfo) {
 		logger.trace("deleteEntity() :: started");
 		if (entityId == null) {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
+
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenant, entityInfoDAO).onItem()
 				.transform(Unchecked.function(t -> {
-					return new DeleteEntityRequest(entityId, headers, t);
+					return new DeleteEntityRequest(entityId, tenant, t);
 				})).onItem().transformToUni(t -> {
 					Uni<Void> store = entityInfoDAO.storeEntity(t);
 					BaseRequest temp = new BaseRequest();
-					temp.setHeaders(t.getHeaders());
+					temp.setTenant(t.getTenant());
 					temp.setId(t.getId());
 					temp.setRequestPayload(t.getOldEntity());
 					temp.setFinalPayload(t.getOldEntity());
@@ -186,12 +183,12 @@ public class EntityService implements EntryCRUDService {
 				});
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String entityId) {
-		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
+	public Uni<Boolean> deleteEntry(String tenant, String entityId) {
+		return deleteEntry(tenant, entityId, new BatchInfo(-1, -1));
 	}
 
-	public Uni<UpdateResult> partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId,
-			String attrId, Map<String, Object> expandedPayload) {
+	public Uni<UpdateResult> partialUpdateEntity(String tenant, String entityId, String attrId,
+			Map<String, Object> expandedPayload) {
 		logger.trace("partialUpdateEntity() :: started");
 		// get message channel for ENTITY_APPEND topic
 		if (entityId == null) {
@@ -199,13 +196,11 @@ public class EntityService implements EntryCRUDService {
 					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
 
-		String tenantId = HttpUtils.getInternalTenant(headers);
-
 		// get entity details
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem().transformToUni(t2 -> {
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenant, entityInfoDAO).onItem().transformToUni(t2 -> {
 			UpdateEntityRequest updateEntityRequest;
 			try {
-				updateEntityRequest = new UpdateEntityRequest(headers, entityId, t2, expandedPayload, attrId);
+				updateEntityRequest = new UpdateEntityRequest(tenant, entityId, t2, expandedPayload, attrId);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 
@@ -241,18 +236,18 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<Boolean> deleteAttribute(ArrayListMultimap<String, String> headers, String entityId, String attrId,
-			String datasetId, String deleteAll) {
+	public Uni<Boolean> deleteAttribute(String tenant, String entityId, String attrId, String datasetId,
+			String deleteAll) {
 		logger.trace("deleteAttribute() :: started");
 		// get message channel for ENTITY_APPEND topic
 		if (entityId == null) {
 			return Uni.createFrom()
 					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		return EntryCRUDService.validateIdAndGetBody(entityId, tenantId, entityInfoDAO).onItem()
+
+		return EntryCRUDService.validateIdAndGetBody(entityId, tenant, entityInfoDAO).onItem()
 				.transform(Unchecked.function(t -> {
-					return new DeleteAttributeRequest(headers, entityId, t, attrId, datasetId, deleteAll);
+					return new DeleteAttributeRequest(tenant, entityId, t, attrId, datasetId, deleteAll);
 				})).onItem().transformToUni(this::handleRequest).onItem().transform(t -> true).onFailure()
 				.transform(t -> {
 					if (t.getMessage().equals("Attribute is not present"))

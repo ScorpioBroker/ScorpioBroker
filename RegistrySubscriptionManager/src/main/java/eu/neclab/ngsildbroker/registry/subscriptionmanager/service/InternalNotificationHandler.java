@@ -30,7 +30,7 @@ public class InternalNotificationHandler extends BaseNotificationHandler {
 		}
 		kafkaSender.send(new InternalNotification(notification.getId(), notification.getType(),
 				notification.getNotifiedAt(), notification.getSubscriptionId(), notification.getData(),
-				notification.getTriggerReason(), notification.getContext(), request.getTenant(), request.getHeaders()));
+				notification.getTriggerReason(), notification.getContext(), request.getTenant(), request.getTenant()));
 	}
 
 	private void cleanNotificationFromInternal(Notification notification) {

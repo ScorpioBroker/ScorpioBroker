@@ -81,7 +81,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 			int triggerReason) {
 		return new Notification(EntityTools.getRandomID("notification:"), NGSIConstants.NOTIFICATION,
 				System.currentTimeMillis(), request.getSubscription().getId(), dataList, -1, request.getContext(),
-				request.getHeaders());
+				request.getTenant());
 	}
 
 	@Override
@@ -98,9 +98,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	@Override
-	public Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers) {
+	public Uni<Void> unsubscribe(String id, String tenant) {
 		unsubscribeRemote(id);
-		SubscriptionRequest request = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers), id);
+		SubscriptionRequest request = tenant2subscriptionId2Subscription.get(tenant, id);
 		Uni<Void> kafkaSent = Uni.createFrom().nullItem();
 		if (request != null) {
 			// let super unsubscribe take care of further error handling
@@ -108,7 +108,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 			kafkaSent = internalSubEmitter.send(request);
 		}
 
-		return Uni.combine().all().unis(super.unsubscribe(id, headers), kafkaSent).combinedWith((t, u) -> null);
+		return Uni.combine().all().unis(super.unsubscribe(id, tenant), kafkaSent).combinedWith((t, u) -> null);
 
 	}
 

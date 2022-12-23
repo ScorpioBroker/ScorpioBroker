@@ -20,9 +20,9 @@ public class CreateEntityRequest extends EntityRequest {
 
 	}
 
-	public CreateEntityRequest(Map<String, Object> resolved, ArrayListMultimap<String, String> headers)
+	public CreateEntityRequest(Map<String, Object> resolved, String tenant)
 			throws ResponseException {
-		super(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, AppConstants.CREATE_REQUEST);
+		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, AppConstants.CREATE_REQUEST);
 		generatePayloadVersions(resolved);
 	}
 

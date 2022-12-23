@@ -60,8 +60,8 @@ public class MicroServiceUtils {
 		result.setId(originalPayload.getId());
 		result.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
 		result.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
-		if (originalPayload.getHeaders() != null) {
-			result.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+		if (originalPayload.getTenant() != null) {
+			result.setTenant(originalPayload.getTenant());
 		}
 		result.setRequestType(originalPayload.getRequestType());
 		result.setBatchInfo(originalPayload.getBatchInfo());
@@ -128,7 +128,7 @@ public class MicroServiceUtils {
 		tmp.setActive(originalPayload.isActive());
 		tmp.setContext(deppCopyList(originalPayload.getContext()));
 		tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
-		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+		tmp.setTenant(originalPayload.getTenant());
 		tmp.setId(originalPayload.getId());
 		tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
 		tmp.setType(originalPayload.getRequestType());
@@ -150,7 +150,7 @@ public class MicroServiceUtils {
 		tmp.setActive(originalPayload.isActive());
 		tmp.setContext(deppCopyList(originalPayload.getContext()));
 		tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
-		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+		tmp.setTenant(originalPayload.getTenant());
 		tmp.setId(originalPayload.getId());
 		tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
 		tmp.setType(originalPayload.getRequestType());
