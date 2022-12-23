@@ -72,15 +72,20 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-latest
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up &
+          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up > dockerlog.out&
           sleep 120
       - name: newman action
+        continue-on-error: true
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
+        if: always()
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
+      - name: Print Scorpio Log
+        if: always()
+        run: cat dockerlog.out
 #      - name: start docker dist 
 #        run: |
 #          docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
@@ -126,12 +131,16 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml up &
+          docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml up > dockerlog.out&
           sleep 120
       - name: newman action
+        continue-on-error: true
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml down 
+      - name: Print Scorpio Log
+        if: always()
+        run: cat dockerlog.out
