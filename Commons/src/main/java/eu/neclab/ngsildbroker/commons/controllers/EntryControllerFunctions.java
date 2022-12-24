@@ -105,7 +105,7 @@ public interface EntryControllerFunctions {
 			}
 
 			return entityService
-					.appendToEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), entityId, entry,
+					.appendToEntry(HttpUtils.getInternalTenant(request), entityId, entry,
 							getOptionsArray(options), batchInfo)
 					.onFailure().recoverWithItem(t -> new UpdateResult()).onItem().transformToUni(i -> {
 						if (i.getNotUpdated().isEmpty()) {
@@ -193,7 +193,7 @@ public interface EntryControllerFunctions {
 						t -> Uni.createFrom().item(Tuple2.of(new BatchFailure(entityId, response), null)));
 			}
 			return entityService
-					.createEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), expanded, batchInfo)
+					.createEntry(HttpUtils.getInternalTenant(request), expanded, batchInfo)
 					.onItem().transform(i -> Tuple2.of(new BatchFailure("dummy", null), i)).onFailure()
 					.recoverWithUni(e -> {
 						NGSIRestResponse response;
@@ -302,7 +302,7 @@ public interface EntryControllerFunctions {
 					}
 				}
 				return Uni.createFrom()
-						.item(Tuple2.of(entityId, HttpUtils.getInternalTenant(HttpUtils.getHeaders(request))));
+						.item(Tuple2.of(entityId, HttpUtils.getInternalTenant(request)));
 			}).concatenate();
 		}).onItem().transformToUni(
 				t -> entityService.deleteEntry(t.getItem2(), t.getItem1(), batchInfo).onItem().transform(i -> {
@@ -392,7 +392,7 @@ public interface EntryControllerFunctions {
 						t -> Uni.createFrom().item(Tuple3.of(new BatchFailure(entityIdTmp, response), null, false)));
 			}
 			Tuple4<Map<String, Object>, Object, String, String[]> t = Tuple4.of(expanded, tt.getItem2(),
-					HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), getOptionsArray(options));
+					HttpUtils.getInternalTenant(request), getOptionsArray(options));
 
 			Map<String, Object> entry = expanded;// t.getItem1();
 			String entityId;
@@ -559,7 +559,7 @@ public interface EntryControllerFunctions {
 					return Uni.createFrom().item(Tuple2.of(resolvedBody, context));
 				}).onItem()
 				.transformToUni(resolved -> entityService
-						.updateEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), entityId,
+						.updateEntry(HttpUtils.getInternalTenant(request), entityId,
 								resolved.getItem1())
 						.onItem().transformToUni(updateResult -> {
 							logger.trace("update entry :: completed");
@@ -672,7 +672,7 @@ public interface EntryControllerFunctions {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			return entityService.createEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), resolved)
+			return entityService.createEntry(HttpUtils.getInternalTenant(request), resolved)
 					.onItem().transform(createResult -> {
 						logger.trace("create entity :: completed");
 						String entityId = createResult.getEntityId();
@@ -733,7 +733,7 @@ public interface EntryControllerFunctions {
 					} catch (Exception e) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}
-					return entityService.appendToEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)),
+					return entityService.appendToEntry(HttpUtils.getInternalTenant(request),
 							entityId, resolved, optionsArray).onItem().transformToUni(tResult -> {
 								return HttpUtils.generateReply(request, tResult, context, AppConstants.UPDATE_REQUEST);
 							});
@@ -752,7 +752,7 @@ public interface EntryControllerFunctions {
 	public static Uni<RestResponse<Object>> deleteEntry(EntryCRUDService entityService, HttpServerRequest request,
 			String entityId, Logger logger) {
 		return HttpUtils.validateUri(entityId).onItem().transformToUni(t -> {
-			return entityService.deleteEntry(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)), entityId)
+			return entityService.deleteEntry(HttpUtils.getInternalTenant(request), entityId)
 					.onItem().transform(t2 -> {
 						logger.trace("delete entity :: completed");
 						return RestResponse.noContent();

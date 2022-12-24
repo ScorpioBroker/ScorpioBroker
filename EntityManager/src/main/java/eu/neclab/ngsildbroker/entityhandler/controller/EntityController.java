@@ -136,7 +136,7 @@ public class EntityController {// implements EntityHandlerInterface {
 								context);
 
 						return entityService
-								.partialUpdateEntity(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)),
+								.partialUpdateEntity(HttpUtils.getInternalTenant(request),
 										entityId, t.getItem2(), t.getItem1())
 								.onItem().transform(u -> {
 									return Tuple2.of(u, t.getItem3());
@@ -197,7 +197,7 @@ public class EntityController {// implements EntityHandlerInterface {
 					} catch (ResponseException responseException) {
 						responseException.printStackTrace();
 					}
-					return entityService.deleteAttribute(HttpUtils.getInternalTenant(HttpUtils.getHeaders(request)),
+					return entityService.deleteAttribute(HttpUtils.getInternalTenant(request),
 							entityId, expandedAttrib, null, deleteAll).onItem().transform(t2 -> {
 								logger.trace("delete attribute :: completed");
 								return RestResponse.noContent();

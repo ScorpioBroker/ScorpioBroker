@@ -48,6 +48,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -528,6 +529,14 @@ public final class HttpUtils {
 			return AppConstants.INTERNAL_NULL_KEY;
 		}
 		return tenantId;
+	}
+
+	public static String getInternalTenant(HttpServerRequest request) {
+		String tenant = request.headers().get(NGSIConstants.TENANT_HEADER);
+		if (tenant == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
+		return tenant;
 	}
 
 	static String generateNextLink(HttpServerRequest request, QueryResult qResult) {
