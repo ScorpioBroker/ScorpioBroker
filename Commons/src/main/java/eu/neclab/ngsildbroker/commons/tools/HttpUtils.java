@@ -51,7 +51,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.core.MultiMap;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonArray;
@@ -634,7 +634,7 @@ public final class HttpUtils {
 	@SuppressWarnings("unchecked")
 	public static MultiMap getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
 			List<String> accept) {
-		MultiMap result = MultiMap.newInstance(null);
+		MultiMap result = HeadersMultiMap.headers();
 
 		// Context myContext = JsonLdProcessor.getCoreContextClone().parse(context,
 		// true);
@@ -709,37 +709,21 @@ public final class HttpUtils {
 
 	}
 
-	public static MultiMap getHeaders(JsonArray headerFromReg, ArrayListMultimap<String, String> headerFromRequest,
-			String tenant) {
-		MultiMap result = MultiMap.newInstance(null);
-		Set<String> alreadyRemoved = Sets.newHashSet();
+	public static MultiMap getHeadersForRemoteCall(JsonArray headerFromReg, String tenant) {
+		MultiMap result = HeadersMultiMap.headers();
 		headerFromReg.forEach(t -> {
 			JsonObject obj = (JsonObject) t;
-
 			obj.forEach(headerEntry -> {
-				String headerName = headerEntry.getKey();
-				String headerValue = (String) headerEntry.getValue();
-				if (!alreadyRemoved.contains(headerName)) {
-					alreadyRemoved.add(headerName);
-					headerFromRequest.removeAll(headerName);
-				}
-				result.add(headerName, headerValue);
+				result.add(headerEntry.getKey(), (String) headerEntry.getValue());
 			});
 		});
-		headerFromRequest.removeAll(NGSIConstants.TENANT_HEADER);
-		headerFromRequest.removeAll("Accept");
 		result.add("Accept", "application/json");
 		if (tenant != null) {
 			result.add(NGSIConstants.TENANT_HEADER, tenant);
 		}
-		for (Entry<String, String> entry : headerFromRequest.entries()) {
-			result.add(entry.getKey(), entry.getValue());
-		}
 		return result;
 	}
 
-
-	
 	public static RestResponse<Object> generateEntityResult(List<Object> contextHeader, Context context,
 			int acceptHeader, Map<String, Object> entity, String geometryProperty, Set<String> options) {
 		String replyBody;
@@ -818,5 +802,12 @@ public final class HttpUtils {
 		return "<" + entry + ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"";
 	}
 
+	public static String getTenant(HttpServerRequest request) {
+		String tenant = request.headers().get(NGSIConstants.TENANT_HEADER);
+		if (tenant == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
+		return tenant;
+	}
 
 }

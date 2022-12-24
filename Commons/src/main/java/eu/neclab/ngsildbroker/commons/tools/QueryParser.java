@@ -5,11 +5,13 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PrimitiveIterator.OfInt;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -251,6 +253,7 @@ public class QueryParser {
 	}
 
 	public static TypeQueryTerm parseTypeQuery(String input, Context context) throws ResponseException {
+		Set<String> allTypes = Sets.newHashSet();
 		TypeQueryTerm root = new TypeQueryTerm(context);
 		TypeQueryTerm current = root;
 		StringBuilder type = new StringBuilder();
@@ -269,6 +272,7 @@ public class QueryParser {
 			} else if (b == ';') {
 				TypeQueryTerm next = new TypeQueryTerm(context);
 				current.setType(type.toString());
+				allTypes.add(type.toString());
 				current.setNext(next);
 				current.setNextAnd(true);
 				current = next;
@@ -277,6 +281,7 @@ public class QueryParser {
 			} else if (b == '|' || b == ',') {
 				TypeQueryTerm next = new TypeQueryTerm(context);
 				current.setType(type.toString());
+				allTypes.add(type.toString());
 				current.setNext(next);
 				current.setNextAnd(false);
 				current = next;
@@ -284,6 +289,7 @@ public class QueryParser {
 
 			} else if (b == ')') {
 				current.setType(type.toString());
+				allTypes.add(type.toString());
 				current = current.getParent();
 				type.setLength(0);
 
@@ -294,7 +300,9 @@ public class QueryParser {
 		}
 		if (!type.isEmpty()) {
 			current.setType(type.toString());
+			allTypes.add(type.toString());
 		}
+		root.setAllTypes(allTypes);
 		return root;
 	}
 

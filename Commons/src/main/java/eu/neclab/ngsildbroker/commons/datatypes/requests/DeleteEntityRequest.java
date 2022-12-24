@@ -10,8 +10,8 @@ public class DeleteEntityRequest extends EntityRequest {
 	public DeleteEntityRequest() {
 	}
 
-	public DeleteEntityRequest(ArrayListMultimap<String, String> headers, String entityId, BatchInfo batchInfo) {
-		super(headers, entityId, null, batchInfo, AppConstants.DELETE_REQUEST);
+	public DeleteEntityRequest(String tenant, String entityId, BatchInfo batchInfo) {
+		super(tenant, entityId, null, batchInfo, AppConstants.DELETE_REQUEST);
 	}
 
 }

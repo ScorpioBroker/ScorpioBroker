@@ -11,9 +11,8 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class CreateCSourceRequest extends CSourceRequest {
 
-	public CreateCSourceRequest(Map<String, Object> resolved, ArrayListMultimap<String, String> headers)
-			throws ResponseException {
-		super(headers, (String) resolved.get(NGSIConstants.JSON_LD_ID), addSysAttrs(resolved), new BatchInfo(-1, -1),
+	public CreateCSourceRequest(String tenant, Map<String, Object> resolved) throws ResponseException {
+		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), addSysAttrs(resolved), new BatchInfo(-1, -1),
 				AppConstants.CREATE_REQUEST);
 	}
 

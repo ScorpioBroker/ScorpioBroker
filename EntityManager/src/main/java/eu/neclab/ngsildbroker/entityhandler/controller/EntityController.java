@@ -166,7 +166,7 @@ public class EntityController {// implements EntityHandlerInterface {
 				}).onItem()
 				.transformToUni(
 						resolved -> entityService
-								.partialUpdateEntity(HttpUtils.getHeaders(request), entityId, resolved.getItem3(),
+								.partialUpdateEntity(HttpUtils.getTenant(request), entityId, resolved.getItem3(),
 										resolved.getItem1(), resolved.getItem2())
 								.onItem().transformToUni(updateResult -> {
 									logger.trace("update entry :: completed");
@@ -201,9 +201,8 @@ public class EntityController {// implements EntityHandlerInterface {
 					} catch (ResponseException responseException) {
 						responseException.printStackTrace();
 					}
-					return entityService
-							.deleteAttribute(HttpUtils.getHeaders(request), entityId, expandedAttrib, datasetId, deleteAll, links)
-							.onItem().transform(t2 -> {
+					return entityService.deleteAttribute(HttpUtils.getTenant(request), entityId, expandedAttrib,
+							datasetId, deleteAll, links).onItem().transform(t2 -> {
 								logger.trace("delete attribute :: completed");
 								return RestResponse.noContent();
 

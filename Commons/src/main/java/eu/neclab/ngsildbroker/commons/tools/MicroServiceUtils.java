@@ -60,9 +60,9 @@ public class MicroServiceUtils {
 		result.setId(originalPayload.getId());
 		result.setPayload(deepCopyMap(originalPayload.getPayload()));
 		result.setPayload(deepCopyMap(originalPayload.getPayload()));
-		if (originalPayload.getHeaders() != null) {
-			result.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
-		}
+
+		result.setTenant(originalPayload.getTenant());
+
 		result.setRequestType(originalPayload.getRequestType());
 		result.setBatchInfo(originalPayload.getBatchInfo());
 		return result;

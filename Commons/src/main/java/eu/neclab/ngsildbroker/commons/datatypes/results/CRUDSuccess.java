@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.commons.datatypes.results;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
@@ -12,7 +11,7 @@ import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import io.vertx.mutiny.core.MultiMap;
+import io.vertx.core.MultiMap;
 
 public class CRUDSuccess {
 	private String endpoint;

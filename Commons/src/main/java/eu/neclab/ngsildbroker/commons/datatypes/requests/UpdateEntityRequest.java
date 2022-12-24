@@ -11,9 +11,9 @@ public class UpdateEntityRequest extends EntityRequest {
 
 	private String attrName;
 
-	public UpdateEntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> payload,
-			String attrName, BatchInfo batchInfo) {
-		super(headers, id, payload, batchInfo, AppConstants.UPDATE_REQUEST);
+	public UpdateEntityRequest(String tenant, String id, Map<String, Object> payload, String attrName,
+			BatchInfo batchInfo) {
+		super(tenant, id, payload, batchInfo, AppConstants.UPDATE_REQUEST);
 		this.attrName = attrName;
 	}
 

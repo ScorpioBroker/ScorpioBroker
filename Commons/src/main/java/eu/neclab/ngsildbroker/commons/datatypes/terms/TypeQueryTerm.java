@@ -23,6 +23,7 @@ public class TypeQueryTerm {
 	private TypeQueryTerm firstChild = null;
 	private TypeQueryTerm parent = null;
 	private String type = null;
+	private Set<String> allTypes = null;
 
 	public TypeQueryTerm(Context context) {
 		this.linkHeaders = context;
@@ -433,7 +434,21 @@ public class TypeQueryTerm {
 //	public boolean equals(Object obj) {
 //		return equals(obj, false);
 //	}
+	public String toBroadSql(char startChar) {
+		StringBuilder result = new StringBuilder(39 + (allTypes.size() * 14));
+		result.append(startChar);
+		result.append(" as (SELECT iid FROM etype2iid WHERE ");
+		allTypes.forEach(t -> {
+			result.append("e_type='");
+			result.append(t);
+			result.append("' or ");
+		});
+		result.setLength(result.length() - 4);
+		result.append(')');
+		return result.toString();
+	}
 
+	
 	public Tuple2<Character, String> toSql(char startChar) {
 		StringBuilder builder = new StringBuilder();
 		StringBuilder builderFinalLine = new StringBuilder();
@@ -619,4 +634,13 @@ public class TypeQueryTerm {
 		}
 
 	}
+
+	public Set<String> getAllTypes() {
+		return allTypes;
+	}
+
+	public void setAllTypes(Set<String> allTypes) {
+		this.allTypes = allTypes;
+	}
+
 }

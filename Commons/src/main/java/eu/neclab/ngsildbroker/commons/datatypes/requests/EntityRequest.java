@@ -14,11 +14,10 @@ public class EntityRequest extends BaseRequest {
 
 	}
 
-	EntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
-			BatchInfo batchInfo, int requestType) {
-		super(headers, id, requestPayload, batchInfo, requestType);
+	EntityRequest(String tenant, String id, Map<String, Object> requestPayload, BatchInfo batchInfo, int requestType) {
+		super(tenant, id, requestPayload, batchInfo, requestType);
 	}
-	
+
 	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved) {
 		String now = SerializationTools.formatter.format(Instant.now());
 		setTemporalProperties(resolved, now, now, false);

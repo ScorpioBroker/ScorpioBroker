@@ -44,9 +44,10 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.core.MultiMap;
+
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
@@ -94,10 +95,10 @@ public class EntityService implements EntryCRUDService {
 	 * @throws KafkaWriteException,Exception
 	 * @throws ResponseException
 	 */
-	public Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers,
-			Map<String, Object> resolved, List<Object> originalContext, BatchInfo batchInfo) {
+	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
+			List<Object> originalContext, BatchInfo batchInfo) {
 		logger.debug("createMessage() :: started");
-		CreateEntityRequest request = new CreateEntityRequest(resolved, headers, batchInfo);
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, batchInfo);
 		return entityDAO.createEntity(request).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
@@ -107,10 +108,10 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<NGSILDOperationResult> upsertEntry(ArrayListMultimap<String, String> headers,
-			Map<String, Object> resolved, List<Object> originalContext, BatchInfo batchInfo) {
+	public Uni<NGSILDOperationResult> upsertEntry(String tenant, Map<String, Object> resolved,
+			List<Object> originalContext, BatchInfo batchInfo) {
 		logger.debug("createMessage() :: started");
-		CreateEntityRequest request = new CreateEntityRequest(resolved, headers, batchInfo);
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, batchInfo);
 		return entityDAO.upsertEntity(request).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
@@ -156,7 +157,7 @@ public class EntityService implements EntryCRUDService {
 				String host = row.getString(0);
 				String tenant = row.getString(1);
 				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-				MultiMap headers = HttpUtils.getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
+				MultiMap headers = HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant);
 				String cSourceId = row.getString(4);
 				int hash = entityToForward.hashCode();
 				Map<String, Object> compacted = hash2Compacted.get(hash);
@@ -172,7 +173,8 @@ public class EntityService implements EntryCRUDService {
 					}
 					hash2Compacted.put(hash, compacted);
 				}
-				unis.add(webClient.post(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT).putHeaders(headers)
+				unis.add(webClient.post(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+						.putHeaders(io.vertx.mutiny.core.MultiMap.newInstance(headers))
 						.sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 						.transformToUni((response, failure) -> {
 							return handleWebResponse(result, response, failure, 201, host, headers, cSourceId,
@@ -238,9 +240,9 @@ public class EntityService implements EntryCRUDService {
 		return Uni.createFrom().voidItem();
 	}
 
-	public Uni<NGSILDOperationResult> createEntry(ArrayListMultimap<String, String> headers,
-			Map<String, Object> resolved, List<Object> originalContext) {
-		return createEntry(headers, resolved, originalContext, new BatchInfo(-1, -1));
+	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
+			List<Object> originalContext) {
+		return createEntry(tenant, resolved, originalContext, new BatchInfo(-1, -1));
 	}
 
 	/**
@@ -253,10 +255,10 @@ public class EntityService implements EntryCRUDService {
 	 * @throws ResponseException
 	 * @throws IOException
 	 */
-	public Uni<NGSILDOperationResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> payload, List<Object> originalContext, BatchInfo batchInfo) {
+	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> payload,
+			List<Object> originalContext, BatchInfo batchInfo) {
 		logger.trace("updateMessage() :: started");
-		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, payload, null, batchInfo);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, null, batchInfo);
 		return entityDAO.updateEntity(request).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
@@ -314,7 +316,7 @@ public class EntityService implements EntryCRUDService {
 				String host = row.getString(0);
 				String tenant = row.getString(1);
 				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-				MultiMap headers = HttpUtils.getHeaders((JsonArray) row.getJson(2), request.getHeaders(), tenant);
+				MultiMap headers = HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant);
 				String cSourceId = ""; // not in the result for now row.getString(4);
 				int hash = entityToForward.hashCode();
 				Map<String, Object> compacted;
@@ -349,7 +351,8 @@ public class EntityService implements EntryCRUDService {
 							.post(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId() + "/attrs");
 				}
 
-				unis.add(req.putHeaders(headers).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+				unis.add(req.putHeaders(io.vertx.mutiny.core.MultiMap.newInstance(headers))
+						.sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 						.transformToUni((response, failure) -> {
 							return handleWebResponse(result, response, failure, 201, host, headers, cSourceId,
 									entityToForward, context);
@@ -374,22 +377,22 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	@Override
-	public Uni<NGSILDOperationResult> updateEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, List<Object> originalContext) {
-		return updateEntry(headers, entityId, entry, originalContext, new BatchInfo(-1, -1));
+	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
+			List<Object> originalContext) {
+		return updateEntry(tenant, entityId, entry, originalContext, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<NGSILDOperationResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, String[] options, List<Object> originalContext) {
-		return appendToEntry(headers, entityId, entry, options, originalContext, new BatchInfo(-1, -1));
+	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
+			String[] options, List<Object> originalContext) {
+		return appendToEntry(tenant, entityId, entry, options, originalContext, new BatchInfo(-1, -1));
 
 	}
 
 	@Override
-	public Uni<NGSILDOperationResult> appendToEntry(ArrayListMultimap<String, String> headers, String entityId,
-			Map<String, Object> entry, String[] options, List<Object> originalContext, BatchInfo batchInfo) {
-		AppendEntityRequest request = new AppendEntityRequest(headers, entityId, entry, batchInfo);
+	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
+			String[] options, List<Object> originalContext, BatchInfo batchInfo) {
+		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, entry, batchInfo);
 		boolean noOverwrite = Arrays.stream(options).anyMatch(NGSIConstants.NO_OVERWRITE_OPTION::equals);
 		return entityDAO.appendEntity(request, noOverwrite).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
@@ -401,15 +404,14 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	@Override
-	public Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entryId,
-			List<Object> originalContext) {
-		return deleteEntry(headers, entryId, originalContext, new BatchInfo(-1, -1));
+	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entryId, List<Object> originalContext) {
+		return deleteEntry(tenant, entryId, originalContext, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<NGSILDOperationResult> deleteEntry(ArrayListMultimap<String, String> headers, String entityId,
-			List<Object> originalContext, BatchInfo batchInfo) {
-		DeleteEntityRequest request = new DeleteEntityRequest(headers, entityId, batchInfo);
+	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, List<Object> originalContext,
+			BatchInfo batchInfo) {
+		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, batchInfo);
 		return entityDAO.deleteEntity(request).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
@@ -441,19 +443,19 @@ public class EntityService implements EntryCRUDService {
 				}
 				default:
 					String host = row.getString(0);
-					String tenant = row.getString(1);
+					String tenantHost = row.getString(1);
 					// This is not a final solution ... but in the case of full success on the other
 					// side there is no way of know what has been deleted so ... don't know how to
 					// handle that
 					Map<String, Object> entityToForward = Maps.newHashMap();
-					MultiMap remoteHeaders = HttpUtils.getHeaders((JsonArray) row.getJson(2), request.getHeaders(),
-							tenant);
+					MultiMap remoteHeaders = HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant);
 					String cSourceId = row.getString(4); // not in the result for now row.getString(4);
 
 					StringBuilder url = new StringBuilder(
 							host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId());
-					unis.add(webClient.delete(url.toString()).putHeaders(remoteHeaders).send().onItemOrFailure()
-							.transformToUni((response, failure) -> {
+					unis.add(webClient.delete(url.toString())
+							.putHeaders(io.vertx.mutiny.core.MultiMap.newInstance(remoteHeaders)).send()
+							.onItemOrFailure().transformToUni((response, failure) -> {
 								return handleWebResponse(result, response, failure, 204, host, remoteHeaders, cSourceId,
 										entityToForward, context);
 							}));
@@ -467,8 +469,8 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<NGSILDOperationResult> partialUpdateEntity(ArrayListMultimap<String, String> headers, String entityId,
-			String attribName, Map<String, Object> payload, List<Object> originalContext) {
+	public Uni<NGSILDOperationResult> partialUpdateEntity(String tenant, String entityId, String attribName,
+			Map<String, Object> payload, List<Object> originalContext) {
 		logger.trace("updateMessage() :: started");
 		// place the id in the payload to be sure
 
@@ -480,7 +482,7 @@ public class EntityService implements EntryCRUDService {
 			effectivePayload.put(attribName, payload);
 		}
 		effectivePayload.put(NGSIConstants.JSON_LD_ID, entityId);
-		UpdateEntityRequest request = new UpdateEntityRequest(headers, entityId, effectivePayload, attribName,
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName,
 				new BatchInfo(-1, -1));
 		return entityDAO.partialUpdateEntity(request).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
@@ -491,13 +493,12 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<NGSILDOperationResult> deleteAttribute(ArrayListMultimap<String, String> headers, String entityId,
-			String attribName, String datasetId, boolean deleteAll, List<Object> originalContext) {
+	public Uni<NGSILDOperationResult> deleteAttribute(String tenant, String entityId, String attribName,
+			String datasetId, boolean deleteAll, List<Object> originalContext) {
 		logger.trace("updateMessage() :: started");
 		// place the id in the payload to be sure
 
-		DeleteAttributeRequest request = new DeleteAttributeRequest(headers, entityId, attribName, datasetId,
-				deleteAll);
+		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, attribName, datasetId, deleteAll);
 		return entityDAO.deleteAttribute(request).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
@@ -535,12 +536,11 @@ public class EntityService implements EntryCRUDService {
 				}
 				default:
 					String host = row.getString(0);
-					String tenant = row.getString(1);
+					String forwardTenant = row.getString(1);
 					Map<String, Object> entityToForward = Maps.newHashMap();
 					Map<String, Object> dummy = Maps.newHashMap();
 					entityToForward.put(attribName, Lists.newArrayList(dummy));
-					MultiMap remoteHeaders = HttpUtils.getHeaders((JsonArray) row.getJson(2), request.getHeaders(),
-							tenant);
+					MultiMap remoteHeaders = HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant);
 					String cSourceId = row.getString(4); // not in the result for now row.getString(4);
 
 					StringBuilder url = new StringBuilder(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
@@ -559,8 +559,9 @@ public class EntityService implements EntryCRUDService {
 						}
 					}
 
-					unis.add(webClient.delete(url.toString()).putHeaders(remoteHeaders).send().onItemOrFailure()
-							.transformToUni((response, failure) -> {
+					unis.add(webClient.delete(url.toString())
+							.putHeaders(io.vertx.mutiny.core.MultiMap.newInstance(remoteHeaders)).send()
+							.onItemOrFailure().transformToUni((response, failure) -> {
 								return handleWebResponse(result, response, failure, 204, host, remoteHeaders, cSourceId,
 										entityToForward, context);
 							}));

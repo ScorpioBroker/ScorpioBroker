@@ -52,7 +52,7 @@ public class QueryDAO extends StorageDAO {
 		});
 	}
 
-	public Uni<RowSet<Row>> query(String tenantId, Set<String> ids, TypeQueryTerm typeQuery, String idPattern,
+	public Uni<RowSet<Row>> queryLocalOnly(String tenantId, Set<String> ids, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int limit,
 			int offSet, boolean count) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {

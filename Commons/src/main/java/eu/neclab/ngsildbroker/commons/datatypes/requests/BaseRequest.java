@@ -16,7 +16,7 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 public class BaseRequest {
 
-	ArrayListMultimap<String, String> headers;
+	private String tenant;
 	protected Map<String, Object> payload;
 	private int requestType;
 	private long sendTimestamp;
@@ -27,10 +27,9 @@ public class BaseRequest {
 
 	}
 
-	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
-			BatchInfo batchInfo, int requestType) {
+	BaseRequest(String tenant, String id, Map<String, Object> requestPayload, BatchInfo batchInfo, int requestType) {
 		super();
-		this.headers = headers;
+		this.tenant = tenant;
 		this.requestType = requestType;
 		this.batchInfo = batchInfo;
 		this.id = id;
@@ -50,14 +49,6 @@ public class BaseRequest {
 
 	public void setRequestType(int requestType) {
 		this.requestType = requestType;
-	}
-
-	public ArrayListMultimap<String, String> getHeaders() {
-		return headers;
-	}
-
-	public void setHeaders(ArrayListMultimap<String, String> headers) {
-		this.headers = headers;
 	}
 
 	public BatchInfo getBatchInfo() {
@@ -117,19 +108,16 @@ public class BaseRequest {
 		return tmp;
 	}
 
-	/**
-	 * 
-	 * @return the internal null value if the tenant is not present
-	 */
-	public String getTenant() {
-		if (headers != null && headers.containsKey(NGSIConstants.TENANT_HEADER)) {
-			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
-		}
-		return AppConstants.INTERNAL_NULL_KEY;
-	}
-
 	public Map<String, Object> getPayload() {
 		return payload;
+	}
+
+	public String getTenant() {
+		return tenant;
+	}
+
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
 	}
 
 	public void setPayload(Map<String, Object> payload) {

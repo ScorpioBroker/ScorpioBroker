@@ -3,13 +3,11 @@ package eu.neclab.ngsildbroker.queryhandler.services;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -34,20 +32,16 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
-import eu.neclab.ngsildbroker.queryhandler.repository.CSourceDAO;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
-import io.vertx.mutiny.core.MultiMap;
 
 @Singleton
 public class QueryService {
@@ -86,8 +80,36 @@ public class QueryService {
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, String lang, int limit, int offSet, boolean count, boolean localOnly,
 			Context context) {
-		Uni<RowSet<Row>> queryEntities = queryDAO.query(HttpUtils.getTenantFromHeaders(headers), id, typeQuery,
-				idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, limit, offSet, count);
+		if (localOnly) {
+			return queryDAO.query(HttpUtils.getTenantFromHeaders(headers), id, typeQuery,
+				idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, limit, offSet, count).onItem().transform(rows -> {
+					QueryResult result = new QueryResult();
+					if(limit == 0 && count) {
+						result.setCount(rows.iterator().next().getLong(0));
+					}else {
+						RowIterator<Row> it = rows.iterator();
+						Row next = null;
+						
+						List<Map<String, Object>> resultData = new ArrayList<Map<String,Object>>(rows.size());
+						while(it.hasNext()) {
+							next = it.next();
+							resultData.add(next.getJsonObject(1).getMap());
+						}
+						Long resultCount = next.getLong(0);
+						result.setCount(resultCount);
+						long leftAfter = resultCount - (offSet+limit);
+						long leftBefore = offSet;
+						result.setResultsLeftAfter(leftAfter);
+						result.setResultsLeftBefore(leftBefore);
+						result.setLimit(limit);
+						result.setOffset(offSet);
+					}
+					
+					return result;
+				});
+		}else {
+			
+		}
 		Uni<List<Map<String, Object>>> queryRemoteEntities;
 		if (localOnly) {
 			queryRemoteEntities = Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
@@ -101,7 +123,8 @@ public class QueryService {
 
 						rows.forEach(row -> {
 							String[] entityTypes = row.getArrayOfStrings(6);
-							String[] entityIdss = row.getArrayOfStrings(7);
+							String[] entityIds = row.getArrayOfStrings(7);
+							String[] attrs = row.getArrayOfStrings(7);
 							StringBuilder url = new StringBuilder();
 							TypeQueryTerm callTypeQuery;
 							if (entityTypes != null && entityTypes.length > 0 && entityTypes[0] != null) {
@@ -125,6 +148,50 @@ public class QueryService {
 								url.append("type=");
 								url.append(callTypeQuery.getTypeQuery());
 								url.append('&');
+							}
+							if (entityIds != null && entityIds.length > 0 && entityIds[0] != null) {
+								url.append("id=");
+								for (String entityId : entityIds) {
+									url.append(context.compactIri(entityId));
+									url.append(',');
+								}
+								url.setLength(url.length() - 1);
+								url.append('&');
+
+							} else {
+								if (id != null) {
+									url.append("id=");
+									for (String entityId : id) {
+										url.append(context.compactIri(entityId));
+										url.append(',');
+									}
+									url.setLength(url.length() - 1);
+									url.append('&');
+								} else if (idPattern != null) {
+									url.append("idPattern=");
+									url.append(idPattern);
+									url.append('&');
+								}
+							}
+
+							if (attrs != null && attrs.length > 0 && attrs[0] != null) {
+								url.append("attrs=");
+								for (String attr : attrs) {
+									url.append(context.compactIri(attr));
+									url.append(',');
+								}
+								url.setLength(url.length() - 1);
+								url.append('&');
+							} else {
+								if (attrsQuery != null) {
+									url.append("attrs=");
+									for (String attr : attrsQuery.getAttrs()) {
+										url.append(context.compactIri(attr));
+										url.append(',');
+									}
+									url.setLength(url.length() - 1);
+									url.append('&');
+								}
 							}
 
 						});

@@ -18,9 +18,9 @@ public class DeleteAttributeRequest extends EntityRequest {
 
 	}
 
-	public DeleteAttributeRequest(ArrayListMultimap<String, String> headers, String entityId, String attribName,
-			String datasetId, boolean deleteAll) {
-		super(headers, entityId, null, new BatchInfo(-1, -1), AppConstants.DELETE_ATTRIBUTE_REQUEST);
+	public DeleteAttributeRequest(String tenant, String entityId, String attribName, String datasetId,
+			boolean deleteAll) {
+		super(tenant, entityId, null, new BatchInfo(-1, -1), AppConstants.DELETE_ATTRIBUTE_REQUEST);
 		this.attribName = attribName;
 		this.datasetId = datasetId;
 		this.deleteAll = deleteAll;

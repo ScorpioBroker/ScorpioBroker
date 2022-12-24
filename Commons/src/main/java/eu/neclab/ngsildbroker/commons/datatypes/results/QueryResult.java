@@ -20,8 +20,7 @@ public class QueryResult {
 	private List<Map<String, Object>> data;
 	private Long count = 0l;
 
-	public QueryResult(List<Map<String, Object>> data) {
-		this.data = data;
+	public QueryResult() {
 	}
 
 	public Long getResultsLeftBefore() {

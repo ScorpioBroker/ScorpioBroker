@@ -764,4 +764,9 @@ public class QQueryTerm {
 		}
 	}
 
+	public QQueryTerm getDuplicateAndRemoveNotKnownAttrs(String[] attrs) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
