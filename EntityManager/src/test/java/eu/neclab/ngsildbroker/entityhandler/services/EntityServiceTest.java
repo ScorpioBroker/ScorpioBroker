@@ -226,7 +226,7 @@ public class EntityServiceTest {
 			multimaparr.put("content-type", "application/json");
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(entityPayload, Map.class);
-			NGSILDOperationResult result = entityService.createEntry(multimaparr, resolved, Lists.newArrayList())
+			NGSILDOperationResult result = entityService.createEntry(AppConstants.INTERNAL_NULL_KEY, resolved, Lists.newArrayList())
 					.await().indefinitely();
 			Assertions.assertEquals("urn:ngsi-ld:Vehicle:A103", result.getEntityId());
 			Mockito.verify(entityService).createEntry(any(), any(), any());
@@ -246,7 +246,7 @@ public class EntityServiceTest {
 			multimaparr.put("content-type", "application/json");
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(enitityIdNotPayload, Map.class);
-			NGSILDOperationResult s = entityService.createEntry(multimaparr, resolved, Lists.newArrayList()).await()
+			NGSILDOperationResult s = entityService.createEntry(AppConstants.INTERNAL_NULL_KEY, resolved, Lists.newArrayList()).await()
 					.indefinitely();
 			Assertions.assertEquals(null, s.getEntityId());
 			Mockito.verify(entityService).createEntry(any(), any(), any());
@@ -273,7 +273,7 @@ public class EntityServiceTest {
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(updatePayloadforwrongattr, Map.class);
 			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-			UpdateEntityRequest request = new UpdateEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
+			UpdateEntityRequest request = new UpdateEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
 					resolved, null);
 			updateResult = entityService.updateEntry(entityIds, entityPayload, resolved).await().indefinitely();
 			Assertions.assertEquals(request.getUpdateResult().getNotUpdated(), updateResult.getNotUpdated());
@@ -300,9 +300,9 @@ public class EntityServiceTest {
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
 			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-			UpdateEntityRequest request = new UpdateEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
+			UpdateEntityRequest request = new UpdateEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
 					resolved, null);
-			updateResult = entityService.updateEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved).await()
+			updateResult = entityService.updateEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", resolved).await()
 					.indefinitely();
 			Assertions.assertNotEquals(request.getUpdateResult().getUpdated(), updateResult.getNotUpdated());
 			Mockito.verify(entityService, Mockito.times(1)).updateEntry(any(), any(), any());
@@ -329,10 +329,10 @@ public class EntityServiceTest {
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(appendPayload, Map.class);
 			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-			AppendEntityRequest request = new AppendEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
+			AppendEntityRequest request = new AppendEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
 					resolved, null);
 			String[] options = null;
-			updateResult = entityService.appendToEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", resolved, options)
+			updateResult = entityService.appendToEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", resolved, options)
 					.await().indefinitely();
 			Assertions.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
 			Mockito.verify(entityService).appendToEntry(any(), any(), any(), any());
@@ -358,9 +358,9 @@ public class EntityServiceTest {
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(appendPayload, Map.class);
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayloadIdNotFound);
-		AppendEntityRequest request = new AppendEntityRequest(multimaparr, " ", entityBody, resolved, null);
+		AppendEntityRequest request = new AppendEntityRequest(AppConstants.INTERNAL_NULL_KEY, " ", entityBody, resolved, null);
 		try {
-			entityService.appendToEntry(multimaparr, null, resolved, null).await().indefinitely();
+			entityService.appendToEntry(AppConstants.INTERNAL_NULL_KEY, null, resolved, null).await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("empty entity id is not allowed", e.getMessage());
 			Mockito.verify(entityService).appendToEntry(any(), any(), any(), any());
@@ -387,11 +387,11 @@ public class EntityServiceTest {
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(updatePartialAttributesPayload, Map.class);
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		UpdateEntityRequest request = new UpdateEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
+		UpdateEntityRequest request = new UpdateEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
 				resolved, "http://example.org/vehicle/speed");
 
 		try {
-			entityService.partialUpdateEntity(multimaparr, "urn:ngsi-ld:Vehicle:A103",
+			entityService.partialUpdateEntity(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103",
 					"http://example.org/vehicle/speed", resolved).await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("Provided attribute is not present", e.getMessage());
@@ -416,11 +416,11 @@ public class EntityServiceTest {
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(updatePartialAttributesPayload, Map.class);
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		UpdateEntityRequest request = new UpdateEntityRequest(multimaparr, "urn:ngsi-ld:Vehicle:A103", entityBody,
+		UpdateEntityRequest request = new UpdateEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
 				resolved, "http://example.org/vehicle/speed");
 
 		try {
-			entityService.partialUpdateEntity(multimaparr, null, "http://example.org/vehicle/speed", resolved).await()
+			entityService.partialUpdateEntity(AppConstants.INTERNAL_NULL_KEY, null, "http://example.org/vehicle/speed", resolved).await()
 					.indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("empty entity id not allowed", e.getMessage());
@@ -441,7 +441,7 @@ public class EntityServiceTest {
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
 		multimaparr.put("content-type", "application/json");
 		try {
-			entityService.deleteAttribute(multimaparr, "urn:ngsi-ld:Vehicle:A103", "http://example.org/vehicle/speed",
+			entityService.deleteAttribute(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", "http://example.org/vehicle/speed",
 					null, false, Lists.newArrayList()).await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("Attribute is not present", e.getMessage());
@@ -463,7 +463,7 @@ public class EntityServiceTest {
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
 		multimaparr.put("content-type", "application/json");
 		try {
-			entityService.deleteAttribute(multimaparr, null, "http://example.org/vehicle/speed", null, null).await()
+			entityService.deleteAttribute(AppConstants.INTERNAL_NULL_KEY, null, "http://example.org/vehicle/speed", null, null).await()
 					.indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("empty entity id not allowed", e.getMessage());
@@ -485,7 +485,7 @@ public class EntityServiceTest {
 			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
 			multimaparr.put("content-type", "application/json");
 			NGSILDOperationResult result = entityService
-					.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:A103", Lists.newArrayList()).await().indefinitely();
+					.deleteEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", Lists.newArrayList()).await().indefinitely();
 			Assertions.assertEquals(true, result);
 			Mockito.verify(entityService).deleteEntry(any(), any(), any());
 		} catch (Exception e) {
@@ -506,7 +506,7 @@ public class EntityServiceTest {
 		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
 		multimaparr.put("content-type", "application/json");
 		try {
-			entityService.deleteEntry(multimaparr, null, Lists.newArrayList()).await().indefinitely();
+			entityService.deleteEntry(AppConstants.INTERNAL_NULL_KEY, null, Lists.newArrayList()).await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("empty entity id not allowed", e.getMessage());
 			Mockito.verify(entityService).deleteEntry(any(), any(), any());

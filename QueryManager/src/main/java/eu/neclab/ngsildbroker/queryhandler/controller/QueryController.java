@@ -77,7 +77,8 @@ public class QueryController {
 			}
 
 			return queryService
-					.retrieveEntity(context, headers, entityId, attrs, expandedAttrs, geometryProperty, lang, localOnly)
+					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrs, expandedAttrs,
+							geometryProperty, lang, localOnly)
 					.onItem()
 					.transform(entity -> HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 							geometryProperty, options))
@@ -127,10 +128,9 @@ public class QueryController {
 			GeoQueryTerm geoQueryTerm = new GeoQueryTerm(context);
 			ScopeQueryTerm scopeQueryTerm = new ScopeQueryTerm();
 			scopeQueryTerm.setScopeLevels(scopeQ.split(","));
-			return queryService
-					.query(headers, id, typeQueryTerm, idPattern, attrsQueryTerm, qQueryTerm, csfQueryTerm,
-							geoQueryTerm, scopeQueryTerm, lang, limit.get(), offset, count, localOnly, context)
-					.onItem().transform(t -> {
+			return queryService.query(HttpUtils.getTenant(request), id, typeQueryTerm, idPattern, attrsQueryTerm,
+					qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, lang, limit.get(), offset, count, localOnly,
+					context).onItem().transform(t -> {
 						if (t.getData().isEmpty()) {
 							return RestResponse.notFound();
 						} else {
@@ -154,7 +154,7 @@ public class QueryController {
 				return INVALID_HEADER;
 			}
 			if (details) {
-				return queryService.getTypesWithDetail(HttpUtils.getHeaders(request), localOnly).onItem()
+				return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
 						.transform(types -> {
 							if (types.isEmpty()) {
 								return RestResponse.notFound();
@@ -162,7 +162,7 @@ public class QueryController {
 								return RestResponse.ok(types);
 						});
 			} else
-				return queryService.getTypes(HttpUtils.getHeaders(request), localOnly).onItem().transform(types -> {
+				return queryService.getTypes(HttpUtils.getTenant(request), localOnly).onItem().transform(types -> {
 					if (types.isEmpty()) {
 						return RestResponse.notFound();
 					} else
@@ -181,7 +181,7 @@ public class QueryController {
 			if (acceptHeader == -1) {
 				return INVALID_HEADER;
 			}
-			return queryService.getType(HttpUtils.getHeaders(request), type, localOnly).onItem().transform(map -> {
+			return queryService.getType(HttpUtils.getTenant(request), type, localOnly).onItem().transform(map -> {
 				if (map.isEmpty()) {
 					return RestResponse.notFound();
 				} else
@@ -200,7 +200,7 @@ public class QueryController {
 			if (acceptHeader == -1) {
 				return INVALID_HEADER;
 			}
-			return queryService.getAttribs(HttpUtils.getHeaders(request), localOnly).onItem().transform(map -> {
+			return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transform(map -> {
 				if (map.isEmpty()) {
 					return RestResponse.notFound();
 				} else
@@ -219,7 +219,7 @@ public class QueryController {
 			if (acceptHeader == -1) {
 				return INVALID_HEADER;
 			}
-			return queryService.getAttrib(HttpUtils.getHeaders(request), attribute, localOnly).onItem()
+			return queryService.getAttrib(HttpUtils.getTenant(request), attribute, localOnly).onItem()
 					.transform(map -> {
 						if (map.isEmpty()) {
 							return RestResponse.notFound();

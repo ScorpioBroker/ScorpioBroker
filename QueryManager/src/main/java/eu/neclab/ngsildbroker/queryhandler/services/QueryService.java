@@ -76,45 +76,39 @@ public class QueryService {
 		webClient = WebClient.create(vertx);
 	}
 
-	public Uni<QueryResult> query(ArrayListMultimap<String, String> headers, Set<String> id, TypeQueryTerm typeQuery,
-			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+	public Uni<QueryResult> query(String tenant, Set<String> id, TypeQueryTerm typeQuery, String idPattern,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, String lang, int limit, int offSet, boolean count, boolean localOnly,
 			Context context) {
 		if (localOnly) {
-			return queryDAO.query(HttpUtils.getTenantFromHeaders(headers), id, typeQuery,
-				idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, limit, offSet, count).onItem().transform(rows -> {
-					QueryResult result = new QueryResult();
-					if(limit == 0 && count) {
-						result.setCount(rows.iterator().next().getLong(0));
-					}else {
-						RowIterator<Row> it = rows.iterator();
-						Row next = null;
-						
-						List<Map<String, Object>> resultData = new ArrayList<Map<String,Object>>(rows.size());
-						while(it.hasNext()) {
-							next = it.next();
-							resultData.add(next.getJsonObject(1).getMap());
+			return queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+					limit, offSet, count).onItem().transform(rows -> {
+						QueryResult result = new QueryResult();
+						if (limit == 0 && count) {
+							result.setCount(rows.iterator().next().getLong(0));
+						} else {
+							RowIterator<Row> it = rows.iterator();
+							Row next = null;
+
+							List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+							while (it.hasNext()) {
+								next = it.next();
+								resultData.add(next.getJsonObject(1).getMap());
+							}
+							Long resultCount = next.getLong(0);
+							result.setCount(resultCount);
+							long leftAfter = resultCount - (offSet + limit);
+							long leftBefore = offSet;
+							result.setResultsLeftAfter(leftAfter);
+							result.setResultsLeftBefore(leftBefore);
+							result.setLimit(limit);
+							result.setOffset(offSet);
 						}
-						Long resultCount = next.getLong(0);
-						result.setCount(resultCount);
-						long leftAfter = resultCount - (offSet+limit);
-						long leftBefore = offSet;
-						result.setResultsLeftAfter(leftAfter);
-						result.setResultsLeftBefore(leftBefore);
-						result.setLimit(limit);
-						result.setOffset(offSet);
-					}
-					
-					return result;
-				});
-		}else {
-			
-		}
-		Uni<List<Map<String, Object>>> queryRemoteEntities;
-		if (localOnly) {
-			queryRemoteEntities = Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
+
+						return result;
+					});
 		} else {
-			queryRemoteEntities = queryDAO.getRemoteSourcesForQuery(HttpUtils.getTenantFromHeaders(headers), id,
+			Uni<List<Map<String, Object>>> queryRemoteEntities = queryDAO.getRemoteSourcesForQuery(tenant, id,
 					typeQuery, idPattern, attrsQuery, qQuery, csf, geoQuery, scopeQuery).onItem()
 					.transformToUni(rows -> {
 						// 0 C.endpoint 1C.tenant_id, 2c.headers, 3c.reg_mode,4 c.queryEntity,
@@ -201,20 +195,20 @@ public class QueryService {
 		return null;
 	}
 
-	public Uni<List<Map<String, Object>>> getTypesWithDetail(ArrayListMultimap<String, String> headers,
-			boolean localOnly) {
+	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly) {
 		Uni<Map<String, Set<String>>> queryRemoteTypes;
-		String tenantId = HttpUtils.getTenantFromHeaders(headers);
+
 		if (localOnly) {
 			Map<String, Object> tmp = Maps.newHashMap();
 			tmp.put(NGSIConstants.NGSI_LD_TYPE_LIST, new ArrayList<Map<String, Object>>());
 			queryRemoteTypes = Uni.createFrom().item(new HashMap<String, Set<String>>());
 		} else {
-			queryRemoteTypes = queryDAO.getRemoteSourcesForTypesWithDetails(tenantId).onItem().transformToUni(rows -> {
+			queryRemoteTypes = queryDAO.getRemoteSourcesForTypesWithDetails(tenant).onItem().transformToUni(rows -> {
 				List<Uni<Map<String, Object>>> unis = Lists.newArrayList();
 				rows.forEach(row -> {
 					// C.endpoint C.tenant_id, c.headers, c.reg_mode
-					MultiMap remoteHeaders = HttpUtils.getHeaders(row.getJsonArray(2), headers, row.getString(1));
+					MultiMap remoteHeaders = MultiMap
+							.newInstance(HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
 					unis.add(webClient.get(row.getString(0) + NGSIConstants.NGSI_LD_TYPES_ENDPOINT)
 							.putHeaders(remoteHeaders).send().onFailure().recoverWithNull().onItem()
 							.transform(response -> {
@@ -254,43 +248,42 @@ public class QueryService {
 				});
 			});
 		}
-		return Uni.combine().all().unis(queryRemoteTypes, queryDAO.getTypes(tenantId)).asTuple().onItem()
-				.transform(t -> {
-					List<Map<String, Object>> result = Lists.newArrayList();
-					Map<String, Set<String>> currentType2Attr = t.getItem1();
-					t.getItem2().forEach(row -> {
-						// T.e_type, A.attr
-						String type = row.getString(0);
-						String attr = row.getString(1);
-						Set<String> currentAttribs;
-						if (currentType2Attr.containsKey(type)) {
-							currentAttribs = currentType2Attr.get(type);
-						} else {
-							currentAttribs = Sets.newHashSet();
-							currentType2Attr.put(type, currentAttribs);
-						}
-						currentAttribs.add(attr);
-					});
-					currentType2Attr.entrySet().forEach(entry -> {
-						Map<String, Object> resultEntry = Maps.newHashMap();
-						String type = entry.getKey();
-						resultEntry.put(NGSIConstants.JSON_LD_ID, type);
-						List<Map<String, String>> typeName = Lists.newArrayList();
-						Map<String, String> typeEntry = Maps.newHashMap();
-						typeEntry.put(NGSIConstants.JSON_LD_ID, type);
-						resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, typeName);
-						resultEntry.put(NGSIConstants.JSON_LD_TYPE, ENTITY_TYPE_TYPE);
-						List<Map<String, String>> attribList = Lists.newArrayList();
-						for (String attrib : entry.getValue()) {
-							Map<String, String> attribValue = Maps.newHashMap();
-							attribValue.put(NGSIConstants.JSON_LD_ID, attrib);
-							attribList.add(attribValue);
-						}
-						resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, attribList);
-						result.add(resultEntry);
-					});
-					return result;
-				});
+		return Uni.combine().all().unis(queryRemoteTypes, queryDAO.getTypes(tenant)).asTuple().onItem().transform(t -> {
+			List<Map<String, Object>> result = Lists.newArrayList();
+			Map<String, Set<String>> currentType2Attr = t.getItem1();
+			t.getItem2().forEach(row -> {
+				// T.e_type, A.attr
+				String type = row.getString(0);
+				String attr = row.getString(1);
+				Set<String> currentAttribs;
+				if (currentType2Attr.containsKey(type)) {
+					currentAttribs = currentType2Attr.get(type);
+				} else {
+					currentAttribs = Sets.newHashSet();
+					currentType2Attr.put(type, currentAttribs);
+				}
+				currentAttribs.add(attr);
+			});
+			currentType2Attr.entrySet().forEach(entry -> {
+				Map<String, Object> resultEntry = Maps.newHashMap();
+				String type = entry.getKey();
+				resultEntry.put(NGSIConstants.JSON_LD_ID, type);
+				List<Map<String, String>> typeName = Lists.newArrayList();
+				Map<String, String> typeEntry = Maps.newHashMap();
+				typeEntry.put(NGSIConstants.JSON_LD_ID, type);
+				resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, typeName);
+				resultEntry.put(NGSIConstants.JSON_LD_TYPE, ENTITY_TYPE_TYPE);
+				List<Map<String, String>> attribList = Lists.newArrayList();
+				for (String attrib : entry.getValue()) {
+					Map<String, String> attribValue = Maps.newHashMap();
+					attribValue.put(NGSIConstants.JSON_LD_ID, attrib);
+					attribList.add(attribValue);
+				}
+				resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, attribList);
+				result.add(resultEntry);
+			});
+			return result;
+		});
 	}
 
 	private void mergeTypeListWithDetails(List<Map<String, Object>> typeList,
@@ -314,17 +307,18 @@ public class QueryService {
 
 	}
 
-	public Uni<Map<String, Object>> getTypes(ArrayListMultimap<String, String> headers, boolean localOnly) {
+	public Uni<Map<String, Object>> getTypes(String tenant, boolean localOnly) {
 		Uni<Set<String>> queryRemoteTypes;
-		String tenantId = HttpUtils.getTenantFromHeaders(headers);
+
 		if (localOnly) {
 			queryRemoteTypes = Uni.createFrom().item(new HashSet<String>());
 		} else {
-			queryRemoteTypes = queryDAO.getRemoteSourcesForTypes(tenantId).onItem().transformToUni(rows -> {
+			queryRemoteTypes = queryDAO.getRemoteSourcesForTypes(tenant).onItem().transformToUni(rows -> {
 				List<Uni<Map<String, Object>>> unis = Lists.newArrayList();
 				rows.forEach(row -> {
 					// C.endpoint C.tenant_id, c.headers, c.reg_mode
-					MultiMap remoteHeaders = HttpUtils.getHeaders(row.getJsonArray(2), headers, row.getString(1));
+					MultiMap remoteHeaders = MultiMap
+							.newInstance(HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
 					unis.add(webClient.get(row.getString(0) + NGSIConstants.NGSI_LD_TYPES_ENDPOINT)
 							.putHeaders(remoteHeaders).send().onFailure().recoverWithNull().onItem()
 							.transform(response -> {
@@ -362,24 +356,23 @@ public class QueryService {
 				});
 			});
 		}
-		return Uni.combine().all().unis(queryRemoteTypes, queryDAO.getTypes(tenantId)).asTuple().onItem()
-				.transform(t -> {
-					Map<String, Object> result = Maps.newHashMap();
-					Set<String> currentTypes = t.getItem1();
-					List<Map<String, String>> types = Lists.newArrayList();
-					result.put(NGSIConstants.NGSI_LD_TYPE_LIST, types);
-					t.getItem2().forEach(row -> {
-						currentTypes.add(row.getString(0));
-					});
-					currentTypes.forEach(type -> {
-						Map<String, String> tmp = Maps.newHashMap();
-						tmp.put(NGSIConstants.JSON_LD_ID, type);
-						types.add(tmp);
-					});
-					result.put(NGSIConstants.JSON_LD_ID, "urn:ngsi-ld:EntityTypeList:" + random.nextInt());
-					result.put(NGSIConstants.JSON_LD_TYPE, ENTITY_TYPE_LIST_TYPE);
-					return result;
-				});
+		return Uni.combine().all().unis(queryRemoteTypes, queryDAO.getTypes(tenant)).asTuple().onItem().transform(t -> {
+			Map<String, Object> result = Maps.newHashMap();
+			Set<String> currentTypes = t.getItem1();
+			List<Map<String, String>> types = Lists.newArrayList();
+			result.put(NGSIConstants.NGSI_LD_TYPE_LIST, types);
+			t.getItem2().forEach(row -> {
+				currentTypes.add(row.getString(0));
+			});
+			currentTypes.forEach(type -> {
+				Map<String, String> tmp = Maps.newHashMap();
+				tmp.put(NGSIConstants.JSON_LD_ID, type);
+				types.add(tmp);
+			});
+			result.put(NGSIConstants.JSON_LD_ID, "urn:ngsi-ld:EntityTypeList:" + random.nextInt());
+			result.put(NGSIConstants.JSON_LD_TYPE, ENTITY_TYPE_LIST_TYPE);
+			return result;
+		});
 	}
 
 	private void mergeTypeList(Object newTypeListObj, Set<String> currentTypes) {
@@ -394,30 +387,27 @@ public class QueryService {
 
 	}
 
-	public Uni<Map<String, Object>> getType(ArrayListMultimap<String, String> headers, String type, boolean localOnly) {
+	public Uni<Map<String, Object>> getType(String tenant, String type, boolean localOnly) {
 		return null;
 	}
 
-	public Uni<Map<String, Object>> getAttribs(ArrayListMultimap<String, String> headers, boolean localOnly) {
+	public Uni<Map<String, Object>> getAttribs(String tenant, boolean localOnly) {
 		return null;
 	}
 
-	public Uni<Map<String, Object>> getAttrib(ArrayListMultimap<String, String> headers, String attrib,
-			boolean localOnly) {
+	public Uni<Map<String, Object>> getAttrib(String tenant, String attrib, boolean localOnly) {
 		return null;
 	}
 
-	public Uni<Map<String, Object>> retrieveEntity(Context context, ArrayListMultimap<String, String> headers,
-			String entityId, Set<String> attrs, Set<String> expandedAttrs, String geometryProperty, String lang,
-			boolean localOnly) {
-		Uni<Map<String, Object>> getEntity = queryDAO.getEntity(entityId, HttpUtils.getTenantFromHeaders(headers));
+	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId, Set<String> attrs,
+			Set<String> expandedAttrs, String geometryProperty, String lang, boolean localOnly) {
+		Uni<Map<String, Object>> getEntity = queryDAO.getEntity(entityId, tenant);
 		Uni<Map<String, Object>> getRemoteEntities;
 		if (localOnly) {
 			getRemoteEntities = Uni.createFrom().item(new HashMap<String, Object>(0));
 		} else {
-			getRemoteEntities = queryDAO
-					.getRemoteSourcesForEntity(entityId, expandedAttrs, HttpUtils.getTenantFromHeaders(headers))
-					.onItem().transformToUni(rows -> {
+			getRemoteEntities = queryDAO.getRemoteSourcesForEntity(entityId, expandedAttrs, tenant).onItem()
+					.transformToUni(rows -> {
 						List<Uni<Map<String, Object>>> tmp = Lists.newArrayList();
 						// C.endpoint C.tenant_id, c.headers, c.reg_mode
 						rows.forEach(row -> {
@@ -446,8 +436,8 @@ public class QueryService {
 								url.append("lang=" + lang + "&");
 							}
 							url.append("options=sysAttrs");
-							MultiMap remoteHeaders = HttpUtils.getHeaders(row.getJsonArray(2), headers,
-									row.getString(1));
+							MultiMap remoteHeaders = MultiMap.newInstance(
+									HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
 							tmp.add(webClient.get(url.toString()).putHeaders(remoteHeaders).send().onFailure()
 									.recoverWithNull().onItem().transform(response -> {
 										Map<String, Object> responseEntity;

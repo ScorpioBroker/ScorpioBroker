@@ -3,23 +3,21 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class AppendCSourceRequest extends CSourceRequest {
 
-	private UpdateResult updateResult = new UpdateResult();
+	private NGSILDOperationResult updateResult;
 
-	public AppendCSourceRequest(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> originalRegistration, Map<String, Object> update, String[] options)
-			throws ResponseException {
-		super(headers, registrationId, update, AppConstants.APPEND_REQUEST);
-		setFinalPayload(appendRequest(originalRegistration, update, options));
+	public AppendCSourceRequest(String tenant, String registrationId, Map<String, Object> originalRegistration,
+			Map<String, Object> update, String[] options) throws ResponseException {
+		super(tenant, registrationId, update, null, AppConstants.APPEND_REQUEST);
+		updateResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, registrationId);
 	}
 
 	private Map<String, Object> appendRequest(Map<String, Object> originalRegistration, Map<String, Object> update,
@@ -59,7 +57,7 @@ public class AppendCSourceRequest extends CSourceRequest {
 		return originalRegistration;
 	}
 
-	public UpdateResult getUpdateResult() {
+	public NGSILDOperationResult getUpdateResult() {
 		return updateResult;
 	}
 
