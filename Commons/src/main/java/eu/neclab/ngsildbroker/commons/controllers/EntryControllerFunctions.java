@@ -573,7 +573,6 @@ public interface EntryControllerFunctions {
 	 */
 	@SuppressWarnings("unchecked")
 	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject) {
-
 		// Object is Map
 		if (object instanceof Map<?, ?> map) {
 			// Map have object but not type
@@ -610,7 +609,8 @@ public interface EntryControllerFunctions {
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_COORDINATES)
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
 						&& !key.equals(NGSIConstants.INSTANCE_ID)
-						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)
+						&& !key.equals(NGSIConstants.OBJECT)
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)) {
 					noConcise(map.get(key), (Map<String, Object>) map, key.toString());
 				}
@@ -623,7 +623,7 @@ public interface EntryControllerFunctions {
 			}
 		}
 		// Object is String or Number value
-		else if (object instanceof String || object instanceof Number) {
+		else if ((object instanceof String || object instanceof Number) && parentMap != null) {
 			/*
 			 * if keyofobject is value then just need convert double to int if possible
 			 */
