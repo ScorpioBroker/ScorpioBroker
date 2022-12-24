@@ -62,7 +62,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	@POST
 	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, String payload) {
 		return EntryControllerFunctions.createEntry(entityService, req, payload, AppConstants.ENTITY_CREATE_PAYLOAD,
-				AppConstants.ENTITES_URL, logger);
+				AppConstants.ENTITES_URL, logger, true);
 	}
 
 	/**
@@ -78,7 +78,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> updateEntity(HttpServerRequest request, @PathParam("entityId") String entityId,
 			String payload) {
 		return EntryControllerFunctions.updateEntry(entityService, request, entityId, payload,
-				AppConstants.ENTITY_UPDATE_PAYLOAD, logger);
+				AppConstants.ENTITY_UPDATE_PAYLOAD, logger, true);
 	}
 
 	/**
@@ -94,7 +94,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> appendEntity(HttpServerRequest request, @PathParam("entityId") String entityId,
 			String payload, @QueryParam("options") String options) {
 		return EntryControllerFunctions.appendToEntry(entityService, request, entityId, payload, options,
-				AppConstants.ENTITY_UPDATE_PAYLOAD, logger);
+				AppConstants.ENTITY_UPDATE_PAYLOAD, logger, true);
 	}
 
 	/**

@@ -519,7 +519,7 @@ public interface EntryControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> updateEntry(EntryCRUDService entityService, HttpServerRequest request,
-			String entityId, String payload, int payloadType, Logger logger) {
+			String entityId, String payload, int payloadType, Logger logger, boolean supportConcise) {
 		logger.trace("update entry :: started");
 		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
 				.onItem().transformToUni(t -> {
@@ -536,7 +536,9 @@ public interface EntryControllerFunctions {
 					Map<String, Object> body;
 					try {
 						body = ((Map<String, Object>) JsonUtils.fromString(payload));
-						noConcise(body, null, null);
+						if (supportConcise) {
+							noConcise(body, null, null);
+						}
 					} catch (IOException e) {
 						return Uni.createFrom().failure(e);
 					}
@@ -609,10 +611,8 @@ public interface EntryControllerFunctions {
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_COORDINATES)
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
 						&& !key.equals(NGSIConstants.INSTANCE_ID)
-						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)
-						&& !key.equals(NGSIConstants.OBJECT)
-						&& !key.equals(NGSIConstants.VALUE)
-						&& !key.equals(NGSIConstants.SCOPE)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
+						&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)) {
 					noConcise(map.get(key), (Map<String, Object>) map, key.toString());
 				}
@@ -643,7 +643,7 @@ public interface EntryControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> createEntry(EntryCRUDService entityService, HttpServerRequest request,
-			String payload, int payloadType, String baseUrl, Logger logger) {
+			String payload, int payloadType, String baseUrl, Logger logger, boolean supportConcise) {
 		logger.trace("create entity :: started");
 		return HttpUtils.getAtContext(request).onItem().transformToUni(t -> {
 			boolean atContextAllowed;
@@ -659,7 +659,9 @@ public interface EntryControllerFunctions {
 			Map<String, Object> body;
 			try {
 				body = ((Map<String, Object>) JsonUtils.fromString(payload));
-				noConcise(body, null, null);
+				if (supportConcise) {
+					noConcise(body, null, null);
+				}
 			} catch (IOException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -690,7 +692,7 @@ public interface EntryControllerFunctions {
 
 	@SuppressWarnings("unchecked")
 	public static Uni<RestResponse<Object>> appendToEntry(EntryCRUDService entityService, HttpServerRequest request,
-			String entityId, String payload, String options, int payloadType, Logger logger) {
+			String entityId, String payload, String options, int payloadType, Logger logger, boolean supportConcise) {
 		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
 				.onItem().transformToUni(t -> {
 					logger.trace("append entity :: started");
@@ -711,7 +713,9 @@ public interface EntryControllerFunctions {
 					Map<String, Object> body;
 					try {
 						body = ((Map<String, Object>) JsonUtils.fromString(payload));
-						noConcise(body, null, null);
+						if (supportConcise) {
+							noConcise(body, null, null);
+						}
 					} catch (Exception e) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}

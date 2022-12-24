@@ -145,6 +145,7 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 				break;
 			case HEADERS:
 				result.headers = getMultiListHeaders((Map<String, List<String>>) value);
+				result.setTenant(HttpUtils.getInternalTenant(result.headers));
 				break;
 			case ID:
 				result.setId((String) value);
