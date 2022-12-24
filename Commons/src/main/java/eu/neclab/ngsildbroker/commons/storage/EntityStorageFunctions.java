@@ -70,7 +70,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			dataColumn = "(SELECT jsonb_object_agg(key, value) FROM jsonb_each(" + tableDataColumn + ") WHERE key IN ( "
 					+ expandedAttributeList + "))";
 		}
-		String sqlQuery = "SELECT DISTINCT " + dataColumn + " as data";
+		String sqlQuery = "SELECT " + dataColumn + " as data";
 		if (qp.getCountResult()) {
 			sqlQuery += ", count(*) OVER() AS count";
 		}
@@ -363,7 +363,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 
 	@Override
 	public String getAllIdsQuery() {
-		return "SELECT DISTINCT id FROM entity";
+		return "SELECT id FROM entity";
 	}
 
 	@Override
