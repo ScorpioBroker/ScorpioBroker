@@ -135,7 +135,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 //		}
 //	}
 
-	public void csourceTimerTask(ArrayListMultimap<String, String> headers, Map<String, Object> registration) {
+	public void csourceTimerTask(String tenant, Map<String, Object> registration) {
 		Object expiresAt = registration.get(NGSIConstants.NGSI_LD_EXPIRES);
 		String regId = (String) registration.get(NGSIConstants.JSON_LD_ID);
 		if (expiresAt != null) {
@@ -144,7 +144,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				public void run() {
 					try {
 						synchronized (this) {
-							deleteEntry(headers, regId);
+							deleteEntry(tenant, regId);
 						}
 					} catch (Exception e) {
 						logger.error("Timer Task -> Exception while expiring residtration :: ", e);
@@ -156,25 +156,24 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 	}
 
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry) {
-		return updateEntry(headers, registrationId, entry, new BatchInfo(-1, -1));
+	public Uni<UpdateResult> updateEntry(String tenant, String registrationId, Map<String, Object> entry) {
+		return updateEntry(tenant, registrationId, entry, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, BatchInfo batchInfo) {
+	public Uni<UpdateResult> updateEntry(String tenant, String registrationId, Map<String, Object> entry,
+			BatchInfo batchInfo) {
 		throw new MethodNotFoundException("not supported in registry");
 	}
 
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options) {
-		return appendToEntry(headers, registrationId, entry, options, new BatchInfo(-1, -1));
+	public Uni<UpdateResult> appendToEntry(String tenant, String registrationId, Map<String, Object> entry,
+			String[] options) {
+		return appendToEntry(tenant, registrationId, entry, options, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options, BatchInfo batchInfo) {
+	public Uni<UpdateResult> appendToEntry(String tenant, String registrationId, Map<String, Object> entry,
+			String[] options, BatchInfo batchInfo) {
 		logger.trace("appendMessage() :: started");
 		// get message channel for ENTITY_APPEND topic
 		// payload validation
@@ -183,13 +182,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id is not allowed"));
 		}
 
-		String tenantId = HttpUtils.getInternalTenant(headers);
 		// get entity details
-		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
+		return EntryCRUDService.validateIdAndGetBody(registrationId, tenant, cSourceInfoDAO).onItem()
 				.transformToUni(t -> {
 					try {
 						return Uni.createFrom()
-								.item(new AppendCSourceRequest(headers, registrationId, t, entry, options));
+								.item(new AppendCSourceRequest(tenant, registrationId, t, entry, options));
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
@@ -201,7 +199,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 					if (task != null) {
 						task.cancel();
 					}
-					csourceTimerTask(headers, t.getFinalPayload());
+					csourceTimerTask(tenant, t.getFinalPayload());
 					return handleRequest(t).onItem().transform(t2 -> {
 						logger.trace("appendMessage() :: completed");
 						return t.getUpdateResult();
@@ -209,13 +207,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 				});
 	}
 
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
-		return createEntry(headers, resolved, new BatchInfo(-1, -1));
+	public Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved) {
+		return createEntry(tenant, resolved, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			BatchInfo batchInfo) {
+	public Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved, BatchInfo batchInfo) {
 
 		logger.debug("createMessage() :: started");
 		CSourceRequest request;
@@ -228,7 +225,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			id = (String) idObj;
 		}
 		try {
-			request = new CreateCSourceRequest(resolved, headers, id);
+			request = new CreateCSourceRequest(resolved, tenant, id);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
@@ -239,24 +236,23 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId) {
-		return deleteEntry(headers, registrationId, new BatchInfo(-1, -1));
+	public Uni<Boolean> deleteEntry(String tenant, String registrationId) {
+		return deleteEntry(tenant, registrationId, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			BatchInfo batchInfo) {
+	public Uni<Boolean> deleteEntry(String tenant, String registrationId, BatchInfo batchInfo) {
 		logger.trace("deleteEntity() :: started");
 		if (registrationId == null) {
 			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
 					"Invalid delete for registration. No ID provided."));
 		}
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
+
+		return EntryCRUDService.validateIdAndGetBody(registrationId, tenant, cSourceInfoDAO).onItem()
 				.transformToUni(t -> {
 					try {
-						return Uni.createFrom().item(Tuple2.of(new DeleteCSourceRequest(null, headers, registrationId),
-								new DeleteCSourceRequest(t, headers, registrationId)));
+						return Uni.createFrom().item(Tuple2.of(new DeleteCSourceRequest(null, tenant, registrationId),
+								new DeleteCSourceRequest(t, tenant, registrationId)));
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
@@ -308,7 +304,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			try {
 				CSourceRequest regEntry = createInternalRegEntry(tenant);
 				if (regEntry.getFinalPayload() == null) {
-					deleteEntry(regEntry.getHeaders(), regEntry.getId()).await().indefinitely();
+					deleteEntry(regEntry.getTenant(), regEntry.getId()).await().indefinitely();
 				} else {
 					storeInternalEntry(regEntry);
 				}
@@ -343,7 +339,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			try {
 				CSourceRequest regEntry = createInternalRegEntry(tenant);
 				if (regEntry.getFinalPayload() == null) {
-					deleteEntry(regEntry.getHeaders(), regEntry.getId()).await().indefinitely();
+					deleteEntry(regEntry.getTenant(), regEntry.getId()).await().indefinitely();
 				} else {
 					storeInternalEntry(regEntry);
 				}
@@ -356,10 +352,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	private CSourceRequest createInternalRegEntry(String tenant) {
 		String id = AppConstants.INTERNAL_REGISTRATION_ID;
-		ArrayListMultimap<String, String> headers = ArrayListMultimap.create();
+
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
 			id += ":" + tenant;
-			headers.put(NGSIConstants.TENANT_HEADER, tenant);
 		}
 		Map<String, Object> resolved = new HashMap<String, Object>();
 		resolved.put(NGSIConstants.JSON_LD_ID, id);
@@ -379,11 +374,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 		try {
 			if (tmp.isEmpty()) {
-				return new DeleteCSourceRequest(null, headers, id);
+				return new DeleteCSourceRequest(null, tenant, id);
 			}
 			resolved.put(NGSIConstants.NGSI_LD_INFORMATION, tmp);
 
-			return new CreateCSourceRequest(resolved, headers, id);
+			return new CreateCSourceRequest(resolved, tenant, id);
 		} catch (ResponseException e) {
 			logger.error("failed to create internal registry entry", e);
 			return null;
@@ -430,15 +425,15 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 							HashMap<String, Object> tmp = new HashMap<String, Object>();
 							tmp.put(NGSIConstants.JSON_LD_ID, entry.getKey());
 							switch (typeString) {
-								case NGSIConstants.NGSI_LD_GEOPROPERTY:
-								case NGSIConstants.NGSI_LD_PROPERTY:
-									propertyNames.add(tmp);
-									break;
-								case NGSIConstants.NGSI_LD_RELATIONSHIP:
-									relationshipNames.add(tmp);
-									break;
-								default:
-									continue;
+							case NGSIConstants.NGSI_LD_GEOPROPERTY:
+							case NGSIConstants.NGSI_LD_PROPERTY:
+								propertyNames.add(tmp);
+								break;
+							case NGSIConstants.NGSI_LD_RELATIONSHIP:
+								relationshipNames.add(tmp);
+								break;
+							default:
+								continue;
 							}
 						}
 					}
@@ -464,12 +459,12 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	private void storeInternalEntry(CSourceRequest regEntry) {
 
-		appendToEntry(regEntry.getHeaders(), regEntry.getId(), regEntry.getFinalPayload(), null).onItem()
+		appendToEntry(regEntry.getTenant(), regEntry.getId(), regEntry.getFinalPayload(), null).onItem()
 				.transform(t -> true).onFailure().recoverWithUni(e -> {
 					if (e instanceof ResponseException) {
 						ResponseException e1 = (ResponseException) e;
 						if (e1.getHttpStatus().equals(HttpResponseStatus.NOT_FOUND)) {
-							return createEntry(regEntry.getHeaders(), regEntry.getFinalPayload()).onItem()
+							return createEntry(regEntry.getTenant(), regEntry.getFinalPayload()).onItem()
 									.transform(i -> true);
 						}
 					}

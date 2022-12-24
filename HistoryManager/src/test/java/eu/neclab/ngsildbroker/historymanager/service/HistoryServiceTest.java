@@ -205,21 +205,22 @@ public class HistoryServiceTest {
 	}
 
 	/**
-	 * this method is use for create temporal entity 
-	 * HistoryService
+	 * this method is use for create temporal entity HistoryService
 	 */
 
 	@Test
- 	public void createTemporalEntityTest() throws Exception {
-	 	try {
+	public void createTemporalEntityTest() throws Exception {
+		try {
 			ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
 			multimaparr.put("content-type", "application/json");
 			Gson gson = new Gson();
 			Map<String, Object> resolved = gson.fromJson(temporalPayload, Map.class);
-			CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(multimaparr, resolved, false);
+			CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(AppConstants.INTERNAL_NULL_KEY,
+					resolved, false);
 			CreateResult cr = new CreateResult(request.getId(), Boolean.parseBoolean(toString()));
 			Mockito.when(historyDAO.isTempEntityExist(any(), any())).thenReturn(Uni.createFrom().item(cr));
-			CreateResult result = historyService.createEntry(multimaparr, resolved).await().indefinitely();
+			CreateResult result = historyService.createEntry(AppConstants.INTERNAL_NULL_KEY, resolved).await()
+					.indefinitely();
 			Assertions.assertEquals("urn:ngsi-ld:Vehicle:1", result.getEntityId());
 			Mockito.verify(historyService).createEntry(any(), any());
 		} catch (Exception e) {
@@ -237,12 +238,12 @@ public class HistoryServiceTest {
 		multimaparr.put("content-type", "application/json");
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(temporalPayload, Map.class);
-		EntityRequest request = new CreateEntityRequest(resolved, multimaparr);
+		EntityRequest request = new CreateEntityRequest(resolved, AppConstants.INTERNAL_NULL_KEY);
 		CreateResult cr = new CreateResult(request.getId(), Boolean.parseBoolean(toString()));
 		ResponseException re = new ResponseException(ErrorType.AlreadyExists, request.getId() + "already exists");
 		Mockito.when(historyDAO.isTempEntityExist(any(), any())).thenReturn(Uni.createFrom().failure(re));
 		try {
-			historyService.createEntry(multimaparr, resolved).await().indefinitely();
+			historyService.createEntry(AppConstants.INTERNAL_NULL_KEY, resolved).await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals(request.getId() + "already exists", e.getMessage());
 			Mockito.verify(historyService).createEntry(any(), any());
@@ -262,10 +263,11 @@ public class HistoryServiceTest {
 		Gson gson = new Gson();
 		Map<String, Object> resolved = gson.fromJson(tempAppendPayload, Map.class);
 		String[] optionsArray = new String[0];
-		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(multimaparr, resolved,
+		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(AppConstants.INTERNAL_NULL_KEY, resolved,
 				"urn:ngsi-ld:Vehicle:1");
-		updateResult = historyService.appendToEntry(multimaparr, "urn:ngsi-ld:Vehicle:1", resolved, optionsArray)
-				.await().indefinitely();
+		updateResult = historyService
+				.appendToEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1", resolved, optionsArray).await()
+				.indefinitely();
 		Assertions.assertEquals(updateResult.getUpdated(), request.getUpdateResult().getUpdated());
 		Mockito.verify(historyService).handleRequest(any());
 	}
@@ -288,8 +290,9 @@ public class HistoryServiceTest {
 		Mockito.when(historyDAO.getTemporalEntity(any(), any()))
 				.thenReturn(Uni.createFrom().failure(responseException));
 		try {
-			historyService.appendToEntry(multimaparr, "urn:ngsi-ld:Vehicle:1", resolved, optionsArray).await()
-					.indefinitely();
+			historyService
+					.appendToEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1", resolved, optionsArray)
+					.await().indefinitely();
 		} catch (Exception e) {
 			Assertions.assertEquals("urn:ngsi-ld:Vehicle:2 was not found", e.getMessage());
 		}
@@ -323,8 +326,8 @@ public class HistoryServiceTest {
 		Context context = Mockito.mock(Context.class);
 		Mockito.when(historyDAO.query(any())).thenReturn(Uni.createFrom().item(queryResult));
 
-		historyService.modifyAttribInstanceTemporalEntity(multimaparr, "urn:ngsi-ld:Vehicle:1", tempResolved,
-				"https://uri.etsi.org/ngsi-ld/default-context/brandName",
+		historyService.modifyAttribInstanceTemporalEntity(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1",
+				tempResolved, "https://uri.etsi.org/ngsi-ld/default-context/brandName",
 				"urn:ngsi-ld:9c7690ed-eba4-4d95-a28b-4584f953f8ab", context);
 		Mockito.verify(historyService).modifyAttribInstanceTemporalEntity(any(), any(), any(), any(), any(), any());
 	}
@@ -339,7 +342,8 @@ public class HistoryServiceTest {
 			MockitoAnnotations.initMocks(this);
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
-			boolean result = historyService.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:1").await().indefinitely();
+			boolean result = historyService.deleteEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1").await()
+					.indefinitely();
 			Assertions.assertEquals(result, true);
 			Mockito.verify(historyService).handleRequest(any());
 		} catch (Exception e) {
@@ -359,7 +363,7 @@ public class HistoryServiceTest {
 			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
 			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:1");
 			try {
-				historyService.deleteEntry(multimaparr, null).await().indefinitely();
+				historyService.deleteEntry(AppConstants.INTERNAL_NULL_KEY, null).await().indefinitely();
 			} catch (Exception e) {
 				Assertions.assertEquals("empty entity id not allowed", e.getMessage());
 				Mockito.verify(historyService).deleteEntry(any(), any());
@@ -385,7 +389,8 @@ public class HistoryServiceTest {
 					.thenReturn(Uni.createFrom().failure(responseException));
 
 			try {
-				historyService.deleteEntry(multimaparr, "urn:ngsi-ld:Vehicle:2").await().indefinitely();
+				historyService.deleteEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:2").await()
+						.indefinitely();
 			} catch (Exception e) {
 				Assertions.assertEquals("urn:ngsi-ld:Vehicle:2" + " was not found", e.getMessage());
 				Mockito.verify(historyService).deleteEntry(any(), any());

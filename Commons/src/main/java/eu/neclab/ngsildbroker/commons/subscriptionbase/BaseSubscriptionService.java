@@ -134,6 +134,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@ConfigProperty(name = "scorpio.subscription.batchevactime", defaultValue = "300000")
 	int waitTimeForEvac;
 
+	@ConfigProperty(name = "scorpio.subscription.maxretries", defaultValue = "5")
+	int maxRetries;
+
 	BatchNotificationHandler batchNotificationHandler;
 
 	@PostConstruct
@@ -141,9 +144,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		JsonLdProcessor.init(coreContext);
 		setSyncId();
 		kafkaSender = getSyncChannelSender();
-		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac);
+		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac, maxRetries);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
-		
+
 		WebClientOptions options = new WebClientOptions();
 		options.setFollowRedirects(true);
 		webClient = WebClient.create(vertx, options);
@@ -156,12 +159,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		temp.setId("invalid:base");
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
-						AppConstants.UPDATE_REQUEST));
+						AppConstants.UPDATE_REQUEST),
+				maxRetries);
 
 		notificationHandlerMQTT = new NotificationHandlerMQTT();
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
-						AppConstants.UPDATE_REQUEST));
+						AppConstants.UPDATE_REQUEST),
+				maxRetries);
 		logger.trace("call loadStoredSubscriptions() ::");
 		loadStoredSubscriptions();
 
@@ -351,12 +356,11 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 	protected abstract String generateUniqueSubId(Subscription subscription);
 
-	public Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers) {
-		return unsubscribe(id, headers, false);
+	public Uni<Void> unsubscribe(String id, String tenant) {
+		return unsubscribe(id, tenant, false);
 	}
 
-	Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers, boolean internal) {
-		String tenant = HttpUtils.getInternalTenant(headers);
+	Uni<Void> unsubscribe(String id, String tenant, boolean internal) {
 		SubscriptionRequest removedSub;
 		synchronized (tenant2subscriptionId2Subscription) {
 			if (!this.tenant2subscriptionId2Subscription.contains(tenant, id)) {
@@ -451,20 +455,20 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		}
 	}
 
-	public Uni<List<SubscriptionRequest>> getAllSubscriptions(ArrayListMultimap<String, String> headers) {
-		String tenantId = HttpUtils.getInternalTenant(headers);
+	public Uni<List<SubscriptionRequest>> getAllSubscriptions(String tenant) {
+
 		Uni<List<SubscriptionRequest>> result;
 		synchronized (tenant2subscriptionId2Subscription) {
-			result = Uni.createFrom().item(
-					new ArrayList<SubscriptionRequest>(tenant2subscriptionId2Subscription.row(tenantId).values()));
+			result = Uni.createFrom()
+					.item(new ArrayList<SubscriptionRequest>(tenant2subscriptionId2Subscription.row(tenant).values()));
 		}
 		return result;
 	}
 
-	public Uni<SubscriptionRequest> getSubscription(String subscriptionId, ArrayListMultimap<String, String> headers) {
+	public Uni<SubscriptionRequest> getSubscription(String subscriptionId, String tenant) {
 		SubscriptionRequest sub;
 		synchronized (tenant2subscriptionId2Subscription) {
-			sub = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers), subscriptionId);
+			sub = tenant2subscriptionId2Subscription.get(tenant, subscriptionId);
 		}
 		if (sub == null) {
 			return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, subscriptionId + " not found"));
@@ -514,16 +518,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 			}
 		}
-		addAllTypeSubscriptions(request.getHeaders(), subsToCheck);
+		addAllTypeSubscriptions(request.getTenant(), subsToCheck);
 		checkSubscriptions(subsToCheck, request, messageType, messageTime);
 	}
 
 	protected abstract Set<String> getTypesFromEntry(BaseRequest createRequest);
 
-	private void addAllTypeSubscriptions(ArrayListMultimap<String, String> entityOpHeaders,
-			List<SubscriptionRequest> subsToCheck) {
-		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE,
-				HttpUtils.getInternalTenant(entityOpHeaders));
+	private void addAllTypeSubscriptions(String tenant, List<SubscriptionRequest> subsToCheck) {
+		List<SubscriptionRequest> subs = this.type2EntitiesSubscriptions.get(ALL_TYPES_TYPE, tenant);
 		if (subs == null) {
 			return;
 		}
@@ -559,7 +561,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
 		if (!batchHandling || batchInfo == null || batchInfo.getBatchId() == -1) {
-			handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+			handler.notify(getNotification(subscription, dataList, triggerReason), subscription, maxRetries);
 		} else {
 			batchNotificationHandler.addDataToBatch(batchInfo, handler, subscription, dataList, triggerReason);
 		}
@@ -678,30 +680,30 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 				Shape queryShape;
 				switch (geoQuery.getGeometry()) {
-					case Point: {
-						queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
-						break;
+				case Point: {
+					queryShape = shapeFactory.pointXY(coordinates.get(0), coordinates.get(1));
+					break;
+				}
+				case Polygon: {
+					PolygonBuilder polygonBuilder = shapeFactory.polygon();
+					for (int i = 0; i < coordinates.size(); i = i + 2) {
+						polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
 					}
-					case Polygon: {
-						PolygonBuilder polygonBuilder = shapeFactory.polygon();
-						for (int i = 0; i < coordinates.size(); i = i + 2) {
-							polygonBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
-						}
 
-						queryShape = polygonBuilder.build();
-						break;
+					queryShape = polygonBuilder.build();
+					break;
+				}
+				case LineString: {
+					LineStringBuilder lineStringBuilder = shapeFactory.lineString();
+					for (int i = 0; i < coordinates.size(); i = i + 2) {
+						lineStringBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
 					}
-					case LineString: {
-						LineStringBuilder lineStringBuilder = shapeFactory.lineString();
-						for (int i = 0; i < coordinates.size(); i = i + 2) {
-							lineStringBuilder.pointXY(coordinates.get(i), coordinates.get(i + 1));
-						}
-						queryShape = lineStringBuilder.build();
-						break;
-					}
-					default: {
-						return false;
-					}
+					queryShape = lineStringBuilder.build();
+					break;
+				}
+				default: {
+					return false;
+				}
 				}
 				if (GEO_REL_CONTAINS.equals(relation)) {
 					return SpatialPredicate.Contains.evaluate(entityShape, queryShape);
@@ -771,7 +773,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 				}
 			}
 		}
-		addAllTypeSubscriptions(appendRequest.getHeaders(), subsToCheck);
+		addAllTypeSubscriptions(appendRequest.getTenant(), subsToCheck);
 		checkSubscriptions(subsToCheck, appendRequest, messageType, messageTime);
 
 	}
@@ -814,7 +816,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 
 		@Override
 		public void run() {
-			unsubscribe(request.getSubscription().getId(), request.getHeaders()).await().indefinitely();
+			unsubscribe(request.getSubscription().getId(), request.getTenant()).await().indefinitely();
 		}
 	}
 

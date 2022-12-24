@@ -23,12 +23,14 @@ public class IntervalNotificationHandler {
 	private Timer executor = new Timer(true);
 	private SubscriptionInfoDAOInterface infoDAO;
 	private Notification baseNotification;
-	
+	private int maxRetries;
+
 	public IntervalNotificationHandler(NotificationHandler notificationHandler, SubscriptionInfoDAOInterface infoDAO,
-			Notification baseNotification) {
+			Notification baseNotification, int maxRetries) {
 		this.notificationHandler = notificationHandler;
 		this.infoDAO = infoDAO;
 		this.baseNotification = baseNotification;
+		this.maxRetries = maxRetries;
 	}
 
 	public void addSub(SubscriptionRequest subscriptionRequest) {
@@ -64,9 +66,9 @@ public class IntervalNotificationHandler {
 			if (!subscriptionRequest.isActive()) {
 				return;
 			}
-			
-			List<Map<String, Object>> data = infoDAO.getEntriesFromSub(subscriptionRequest).runSubscriptionOn(Infrastructure.getDefaultExecutor())
-					.onItem().transform(entries -> {
+
+			List<Map<String, Object>> data = infoDAO.getEntriesFromSub(subscriptionRequest)
+					.runSubscriptionOn(Infrastructure.getDefaultExecutor()).onItem().transform(entries -> {
 						List<Map<String, Object>> dataList = new ArrayList<Map<String, Object>>();
 						for (Map<String, Object> entry : entries) {
 							dataList.add(entry);
@@ -75,8 +77,8 @@ public class IntervalNotificationHandler {
 					}).await().indefinitely();
 			notification.setNotifiedAt(System.currentTimeMillis());
 			notification.setData(data);
-			notificationHandler.notify(notification, subscriptionRequest);
-			
+			notificationHandler.notify(notification, subscriptionRequest, maxRetries);
+
 //						
 //						return true;
 //					})).runSubscriptionOn(Infrastructure.getDefaultExecutor()).onFailure().recoverWithItem(e -> {

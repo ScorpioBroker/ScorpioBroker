@@ -20,9 +20,9 @@ public class EntityRequest extends BaseRequest {
 
 	}
 
-	EntityRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
+	EntityRequest(String tenant, String id, Map<String, Object> requestPayload,
 			int requestType) {
-		super(headers, id, requestPayload, requestType);
+		super(tenant, id, requestPayload, requestType);
 	}
 
 	public JsonObject getWithSysAttrs() {

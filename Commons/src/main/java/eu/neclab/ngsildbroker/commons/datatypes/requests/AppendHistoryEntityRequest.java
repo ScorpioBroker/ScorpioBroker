@@ -17,15 +17,15 @@ public class AppendHistoryEntityRequest extends HistoryEntityRequest {
 
 	private UpdateResult updateResult = new UpdateResult();
 
-	public AppendHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
+	public AppendHistoryEntityRequest(String tenant, Map<String, Object> resolved,
 			String entityId) throws ResponseException {
-		super(headers, resolved, entityId, AppConstants.APPEND_REQUEST);
+		super(tenant, resolved, entityId, AppConstants.APPEND_REQUEST);
 		setFinalPayload(resolved);
 		createAppend();
 	}
 
 	public AppendHistoryEntityRequest(BaseRequest entityRequest) throws ResponseException, IOException {
-		this(entityRequest.getHeaders(), entityRequest.getRequestPayload(), entityRequest.getId());
+		this(entityRequest.getTenant(), entityRequest.getRequestPayload(), entityRequest.getId());
 
 	}
 

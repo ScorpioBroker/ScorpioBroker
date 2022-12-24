@@ -14,7 +14,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 
 public class BaseRequest {
 
-	ArrayListMultimap<String, String> headers;
+	private String tenant;
 	private String id;
 	protected Map<String, Object> requestPayload;
 	protected Map<String, Object> finalPayload;
@@ -26,10 +26,9 @@ public class BaseRequest {
 
 	}
 
-	BaseRequest(ArrayListMultimap<String, String> headers, String id, Map<String, Object> requestPayload,
-			int requestType) {
+	BaseRequest(String tenant, String id, Map<String, Object> requestPayload, int requestType) {
 		super();
-		this.headers = headers;
+		this.tenant = tenant;
 		this.id = id;
 		this.requestPayload = requestPayload;
 		this.requestType = requestType;
@@ -59,12 +58,12 @@ public class BaseRequest {
 		this.requestType = requestType;
 	}
 
-	public ArrayListMultimap<String, String> getHeaders() {
-		return headers;
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
 	}
 
-	public void setHeaders(ArrayListMultimap<String, String> headers) {
-		this.headers = headers;
+	public String getTenant() {
+		return tenant;
 	}
 
 	public BatchInfo getBatchInfo() {
@@ -121,17 +120,6 @@ public class BaseRequest {
 		tmp2.put(NGSIConstants.JSON_LD_VALUE, createdAt);
 		tmp.add(tmp2);
 		return tmp;
-	}
-
-	/**
-	 * 
-	 * @return the internal null value if the tenant is not present
-	 */
-	public String getTenant() {
-		if (headers != null && headers.containsKey(NGSIConstants.TENANT_HEADER)) {
-			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
-		}
-		return AppConstants.INTERNAL_NULL_KEY;
 	}
 
 	public String getId() {

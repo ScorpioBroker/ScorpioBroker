@@ -52,6 +52,9 @@ public class SerializationTools {
 //			.create();
 
 	public static LocalDateTime localDateTimeFormatter(String dateTimeValue) {
+		if (dateTimeValue == null || dateTimeValue.isBlank()) {
+			return LocalDateTime.now();
+		}
 		return LocalDateTime.parse(dateTimeValue, SerializationTools.informatter);
 	}
 
@@ -399,14 +402,14 @@ public class SerializationTools {
 		List<Map<String, Object>> coordinates = (List<Map<String, Object>>) propValue
 				.get(NGSIConstants.NGSI_LD_COORDINATES);
 		switch (geometry) {
-			case NGSIConstants.NGSI_LD_POINT:
-				return new Point(getSingeLePosition(coordinates));
-			case NGSIConstants.NGSI_LD_POLYOGN:
-				return new Polygon(getAreaPositions(coordinates));
-			case NGSIConstants.NGSI_LD_LINESTRING:
-				return new LineString(getLinearPositions(coordinates));
-			default:
-				return null;
+		case NGSIConstants.NGSI_LD_POINT:
+			return new Point(getSingeLePosition(coordinates));
+		case NGSIConstants.NGSI_LD_POLYOGN:
+			return new Polygon(getAreaPositions(coordinates));
+		case NGSIConstants.NGSI_LD_LINESTRING:
+			return new LineString(getLinearPositions(coordinates));
+		default:
+			return null;
 		}
 
 	}

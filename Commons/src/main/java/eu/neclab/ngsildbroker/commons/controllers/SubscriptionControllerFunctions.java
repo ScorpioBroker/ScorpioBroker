@@ -119,8 +119,8 @@ public interface SubscriptionControllerFunctions {
 		}
 		boolean count = qp.getCountResult();
 
-		return subscriptionService.getAllSubscriptions(HttpUtils.getHeaders(request)).onItem()
-				.transformToUni(result -> {
+		return subscriptionService.getAllSubscriptions(HttpUtils.getInternalTenant(request))
+				.onItem().transformToUni(result -> {
 					int toIndex = offset + actualLimit;
 					ArrayList<Object> additionalLinks = new ArrayList<Object>();
 					if (limit == 0 || toIndex > result.size() - 1) {
@@ -173,8 +173,8 @@ public interface SubscriptionControllerFunctions {
 			HttpServerRequest request, String id, int limit, Logger logger) {
 		return HttpUtils.validateUri(id).onItem().transformToUni(t -> {
 			logger.trace("call getSubscriptions() ::");
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			return subscriptionService.getSubscription(id, headers);
+
+			return subscriptionService.getSubscription(id, HttpUtils.getInternalTenant(request));
 		}).onItem().transformToUni(t -> {
 			return HttpUtils.generateReply(request, t.getSubscription().toJson(), AppConstants.SUBSCRIPTION_ENDPOINT,
 					null);
@@ -186,8 +186,9 @@ public interface SubscriptionControllerFunctions {
 			HttpServerRequest request, String id, Logger logger) {
 		logger.trace("call deleteSubscription() ::");
 		return HttpUtils.validateUri(id).onItem()
-				.transformToUni(t -> subscriptionService.unsubscribe(id, HttpUtils.getHeaders(request))).onItem()
-				.transform(t -> RestResponse.noContent()).onFailure()
+				.transformToUni(t -> subscriptionService.unsubscribe(id,
+						HttpUtils.getInternalTenant(request)))
+				.onItem().transform(t -> RestResponse.noContent()).onFailure()
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}

@@ -9,9 +9,9 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class CreateCSourceRequest extends CSourceRequest {
 
-	public CreateCSourceRequest(Map<String, Object> resolved, ArrayListMultimap<String, String> headers, String id)
+	public CreateCSourceRequest(Map<String, Object> resolved, String tenant, String id)
 			throws ResponseException {
-		super(headers, id, resolved, AppConstants.CREATE_REQUEST);
+		super(tenant, id, resolved, AppConstants.CREATE_REQUEST);
 		setFinalPayload(resolved);
 	}
 

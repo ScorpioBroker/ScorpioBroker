@@ -63,6 +63,9 @@ public class EndPoint implements Serializable {
 	}
 
 	public String getAccept() {
+		if (accept == null) {
+			return "application/json";
+		}
 		return accept;
 	}
 

@@ -48,6 +48,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -192,18 +193,18 @@ public final class HttpUtils {
 			}
 		}
 		switch (appGroup) {
-			case 5:
-				return 2; // application/ld+json
-			case 2:
-			case 3:
-			case 4:
-				return 1; // application/json
-			case 6:
-				return 3;// application/n-quads
-			case 7:
-				return 4;// application/geo+json
-			default:
-				return -1;// error
+		case 5:
+			return 2; // application/ld+json
+		case 2:
+		case 3:
+		case 4:
+			return 1; // application/json
+		case 6:
+			return 3;// application/n-quads
+		case 7:
+			return 4;// application/geo+json
+		default:
+			return -1;// error
 		}
 	}
 
@@ -300,64 +301,64 @@ public final class HttpUtils {
 			additionalHeaders = ArrayListMultimap.create();
 		}
 		switch (sendingContentType) {
-			case 1:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-				if (result instanceof Map) {
-					((Map) result).remove(JsonLdConsts.CONTEXT);
+		case 1:
+			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+			if (result instanceof Map) {
+				((Map) result).remove(JsonLdConsts.CONTEXT);
+			}
+			if (result instanceof List) {
+				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+				for (Map<String, Object> entry : list) {
+					entry.remove(JsonLdConsts.CONTEXT);
 				}
-				if (result instanceof List) {
-					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-					for (Map<String, Object> entry : list) {
-						entry.remove(JsonLdConsts.CONTEXT);
+			}
+
+			replyBody = JsonUtils.toPrettyString(result);
+			if (contextLinks != null) {
+				for (Object entry : contextLinks) {
+					if (entry instanceof String) {
+						additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+					} else {
+						additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 					}
+
 				}
-
-				replyBody = JsonUtils.toPrettyString(result);
-				if (contextLinks != null) {
-					for (Object entry : contextLinks) {
-						if (entry instanceof String) {
-							additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
-									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-						} else {
-							additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-									+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-						}
-
-					}
+			}
+			break;
+		case 2:
+			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+			if (result instanceof List) {
+				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
+				for (Map<String, Object> entry : list) {
+					entry.put(JsonLdConsts.CONTEXT, context);
 				}
-				break;
-			case 2:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-				if (result instanceof List) {
-					List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-					for (Map<String, Object> entry : list) {
-						entry.put(JsonLdConsts.CONTEXT, context);
-					}
-				}
+			}
 
-				replyBody = JsonUtils.toPrettyString(result);
-				break;
-			case 3:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
-				break;
-			case 4:// geo+json
-				switch (endPoint) {
-					case AppConstants.QUERY_ENDPOINT:
-						additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
+			replyBody = JsonUtils.toPrettyString(result);
+			break;
+		case 3:
+			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
+			replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
+			break;
+		case 4:// geo+json
+			switch (endPoint) {
+			case AppConstants.QUERY_ENDPOINT:
+				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
 
-						replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
+				replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
 
-						break;
-					default:
-						throw new ResponseException(ErrorType.NotAcceptable,
-								"Provided accept types " + acceptHeader + " are not supported");
-				}
 				break;
-			case -1:
 			default:
 				throw new ResponseException(ErrorType.NotAcceptable,
 						"Provided accept types " + acceptHeader + " are not supported");
+			}
+			break;
+		case -1:
+		default:
+			throw new ResponseException(ErrorType.NotAcceptable,
+					"Provided accept types " + acceptHeader + " are not supported");
 		}
 		return replyBody;
 
@@ -520,11 +521,22 @@ public final class HttpUtils {
 	}
 
 	public static String getInternalTenant(ArrayListMultimap<String, String> headers) {
+		if (headers == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
 		String tenantId = getTenantFromHeaders(headers);
 		if (tenantId == null) {
 			return AppConstants.INTERNAL_NULL_KEY;
 		}
 		return tenantId;
+	}
+
+	public static String getInternalTenant(HttpServerRequest request) {
+		String tenant = request.headers().get(NGSIConstants.TENANT_HEADER);
+		if (tenant == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
+		return tenant;
 	}
 
 	static String generateNextLink(HttpServerRequest request, QueryResult qResult) {
@@ -658,36 +670,36 @@ public final class HttpUtils {
 		ArrayListMultimap<String, String> resultHeaders = ArrayListMultimap.create();
 		String replyBody;
 		switch (sendingContentType) {
-			case 1:
-				resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-				((Map) result).remove(JsonLdConsts.CONTEXT);
-				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e) {
-					return Uni.createFrom().failure(e);
+		case 1:
+			resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
+			((Map) result).remove(JsonLdConsts.CONTEXT);
+			try {
+				replyBody = JsonUtils.toPrettyString(result);
+			} catch (IOException e) {
+				return Uni.createFrom().failure(e);
+			}
+			for (Object entry : context) {
+				if (entry instanceof String) {
+					resultHeaders.put(HttpHeaders.LINK, "<" + entry
+							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+				} else {
+					resultHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
+							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 				}
-				for (Object entry : context) {
-					if (entry instanceof String) {
-						resultHeaders.put(HttpHeaders.LINK, "<" + entry
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					} else {
-						resultHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					}
 
-				}
-				break;
-			case 2:
-				resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-				try {
-					replyBody = JsonUtils.toPrettyString(result);
-				} catch (IOException e) {
-					return Uni.createFrom().failure(e);
-				}
-				break;
-			default:
-				return Uni.createFrom().failure(
-						new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported"));
+			}
+			break;
+		case 2:
+			resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+			try {
+				replyBody = JsonUtils.toPrettyString(result);
+			} catch (IOException e) {
+				return Uni.createFrom().failure(e);
+			}
+			break;
+		default:
+			return Uni.createFrom()
+					.failure(new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported"));
 		}
 		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(HttpStatus.SC_MULTI_STATUS).entity(replyBody);
 		for (Entry<String, String> entry : resultHeaders.entries()) {
@@ -696,17 +708,13 @@ public final class HttpUtils {
 		return Uni.createFrom().item(builder.build());
 	}
 
-	public static RestResponse<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
-			Object notificationData, List<Object> context, String geometryProperty)
+	public static RestResponse<String> generateNotification(String tenant, Object notificationData,
+			List<Object> context, String geometryProperty)
 			throws ResponseException, JsonGenerationException, JsonParseException, IOException, Exception {
 		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
 
-		ArrayListMultimap<String, String> headers;
-		if (origHeaders == null) {
-			headers = ArrayListMultimap.create();
-		} else {
-			headers = ArrayListMultimap.create(origHeaders);
-		}
+		ArrayListMultimap<String, String> headers = ArrayListMultimap.create();
+
 		List<String> acceptHeader = headers.get(io.vertx.mutiny.core.http.HttpHeaders.ACCEPT.toString());
 		if (acceptHeader == null || acceptHeader.isEmpty()) {
 			acceptHeader = new ArrayList<String>();
@@ -723,18 +731,18 @@ public final class HttpUtils {
 		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
 		for (String key : headers.keySet()) {
 			switch (key.toLowerCase()) {
-				case "postman-token":
-				case "accept-encoding":
-				case "user-agent":
-				case "host":
-				case "connection":
-				case "cache-control":
-				case "content-length":
-					break;
-				default:
-					for (String entry : Sets.newHashSet(headers.get(key))) {
-						builder = builder.header(key, entry);
-					}
+			case "postman-token":
+			case "accept-encoding":
+			case "user-agent":
+			case "host":
+			case "connection":
+			case "cache-control":
+			case "content-length":
+				break;
+			default:
+				for (String entry : Sets.newHashSet(headers.get(key))) {
+					builder = builder.header(key, entry);
+				}
 			}
 		}
 		return builder.build();

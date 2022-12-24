@@ -18,10 +18,9 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	private String instanceId;
 	private String resolvedAttrId;
 
-	public UpdateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			String entityId, String resolvedAttrId, String instanceId, List<Map<String, Object>> oldEntry)
-			throws ResponseException {
-		super(headers, resolved, entityId, AppConstants.UPDATE_REQUEST);
+	public UpdateHistoryEntityRequest(String tenant, Map<String, Object> resolved, String entityId,
+			String resolvedAttrId, String instanceId, List<Map<String, Object>> oldEntry) throws ResponseException {
+		super(tenant, resolved, entityId, AppConstants.UPDATE_REQUEST);
 		this.oldEntry = oldEntry;
 		this.resolvedAttrId = resolvedAttrId;
 		this.instanceId = instanceId;
@@ -30,7 +29,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 
 	@SuppressWarnings("unchecked")
 	public UpdateHistoryEntityRequest(BaseRequest entityRequest) {
-		setHeaders(entityRequest.getHeaders());
+		setTenant(entityRequest.getTenant());
 		Map<String, Object> jsonObject = entityRequest.getRequestPayload();// (Map<String, Object>)
 		// JsonUtils.fromString(entityRequest.getWithSysAttrs());
 		for (Entry<String, Object> entry : jsonObject.entrySet()) {

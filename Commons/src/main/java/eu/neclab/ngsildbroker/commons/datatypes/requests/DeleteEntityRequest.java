@@ -14,9 +14,8 @@ public class DeleteEntityRequest extends EntityRequest {
 	public DeleteEntityRequest() {
 	}
 
-	public DeleteEntityRequest(String entityId, ArrayListMultimap<String, String> headers,
-			Map<String, Object> oldEntity) throws ResponseException {
-		super(headers, entityId, null, AppConstants.DELETE_REQUEST);
+	public DeleteEntityRequest(String entityId, String tenant, Map<String, Object> oldEntity) throws ResponseException {
+		super(tenant, entityId, null, AppConstants.DELETE_REQUEST);
 		setFinalPayload(null);
 		this.keyValue = JsonObject.mapFrom(null);
 		this.entityWithoutSysAttrs = JsonObject.mapFrom(null);

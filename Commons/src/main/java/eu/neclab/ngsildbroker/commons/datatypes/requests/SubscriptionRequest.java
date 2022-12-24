@@ -21,8 +21,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 
 public class SubscriptionRequest extends BaseRequest implements Serializable {
-	
-	
+
 	/**
 	 *
 	 */
@@ -40,6 +39,7 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 	private boolean active;
 
 	private int type;
+	private ArrayListMultimap<String, String> headers;
 
 	public SubscriptionRequest() {
 		// default constructor for serialization
@@ -47,10 +47,11 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 
 	public SubscriptionRequest(Subscription subscription, List<Object> context2,
 			ArrayListMultimap<String, String> headers, int type) {
-		super(headers, subscription.getId(), null, type);
+		super(HttpUtils.getInternalTenant(headers), subscription.getId(), null, type);
 		this.active = true;
 		this.context = context2;
 		this.subscription = subscription;
+		this.headers = headers;
 	}
 
 	public List<Object> getContext() {
@@ -67,14 +68,6 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 
 	public void setSubscription(Subscription subscription) {
 		this.subscription = subscription;
-	}
-
-	public ArrayListMultimap<String, String> getHeaders() {
-		return headers;
-	}
-
-	public void setHeaders(ArrayListMultimap<String, String> headers) {
-		this.headers = headers;
 	}
 
 	public boolean isActive() {
@@ -108,7 +101,7 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 		top.put(CONTEXT, getContext());
 		top.put(ACTIVE, isActive());
 		top.put(TYPE, getType());
-		top.put(HEADERS, getHeaders(getHeaders()));
+		top.put(HEADERS, getHeaders(headers));
 		top.put(ID, getId());
 		top.put(REQUEST_TYPE, getRequestType());
 		return top;
@@ -138,34 +131,35 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 			String key = entry.getKey();
 			Object value = entry.getValue();
 			switch (key) {
-				case SUBSCRIPTION:
-					sub = (Map<String, Object>) value;
-					break;
-				case CONTEXT:
-					result.setContext((List<Object>) value);
-					break;
-				case ACTIVE:
-					result.setActive((boolean) value);
-					break;
-				case TYPE:
-					result.setType((int) value);
-					break;
-				case HEADERS:
-					result.setHeaders(getMultiListHeaders((Map<String, List<String>>) value));
-					break;
-				case ID:
-					result.setId((String) value);
-					break;
-				case REQUEST_TYPE:
-					result.setRequestType((int) value);
-					break;
-				default:
-					break;
+			case SUBSCRIPTION:
+				sub = (Map<String, Object>) value;
+				break;
+			case CONTEXT:
+				result.setContext((List<Object>) value);
+				break;
+			case ACTIVE:
+				result.setActive((boolean) value);
+				break;
+			case TYPE:
+				result.setType((int) value);
+				break;
+			case HEADERS:
+				result.headers = getMultiListHeaders((Map<String, List<String>>) value);
+				result.setTenant(HttpUtils.getInternalTenant(result.headers));
+				break;
+			case ID:
+				result.setId((String) value);
+				break;
+			case REQUEST_TYPE:
+				result.setRequestType((int) value);
+				break;
+			default:
+				break;
 			}
 		}
 		try {
 			result.setSubscription(Subscription.expandSubscription(sub,
-					JsonLdProcessor.getCoreContextClone().parse(getAtContext(result.getHeaders()), true), update));
+					JsonLdProcessor.getCoreContextClone().parse(getAtContext(result.headers), true), update));
 		} catch (JsonLdError e) {
 			throw new ResponseException(ErrorType.InvalidRequest, "failed to parse at context");
 		}

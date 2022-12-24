@@ -13,9 +13,9 @@ public class DeleteHistoryEntityRequest extends HistoryEntityRequest {
 	public DeleteHistoryEntityRequest() {
 	}
 
-	public DeleteHistoryEntityRequest(ArrayListMultimap<String, String> headers, String resolvedAttrId,
+	public DeleteHistoryEntityRequest(String tenant, String resolvedAttrId,
 			String instanceId, String entityId) throws ResponseException {
-		super(headers, null, entityId, AppConstants.DELETE_REQUEST);
+		super(tenant, null, entityId, AppConstants.DELETE_REQUEST);
 		this.resolvedAttrId = resolvedAttrId;
 		this.instanceId = instanceId;
 	}

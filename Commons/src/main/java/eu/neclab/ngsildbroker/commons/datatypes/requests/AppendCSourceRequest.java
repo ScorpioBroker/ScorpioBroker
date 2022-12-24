@@ -15,10 +15,9 @@ public class AppendCSourceRequest extends CSourceRequest {
 
 	private UpdateResult updateResult = new UpdateResult();
 
-	public AppendCSourceRequest(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> originalRegistration, Map<String, Object> update, String[] options)
-			throws ResponseException {
-		super(headers, registrationId, update, AppConstants.APPEND_REQUEST);
+	public AppendCSourceRequest(String tenant, String registrationId, Map<String, Object> originalRegistration,
+			Map<String, Object> update, String[] options) throws ResponseException {
+		super(tenant, registrationId, update, AppConstants.APPEND_REQUEST);
 		setFinalPayload(appendRequest(originalRegistration, update, options));
 	}
 

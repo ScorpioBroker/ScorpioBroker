@@ -81,7 +81,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 			int triggerReason) {
 		return new Notification(EntityTools.getRandomID("notification:"), NGSIConstants.NOTIFICATION,
 				System.currentTimeMillis(), request.getSubscription().getId(), dataList, -1, request.getContext(),
-				request.getHeaders());
+				request.getTenant());
 	}
 
 	@Override
@@ -98,9 +98,9 @@ public class SubscriptionService extends BaseSubscriptionService {
 	}
 
 	@Override
-	public Uni<Void> unsubscribe(String id, ArrayListMultimap<String, String> headers) {
+	public Uni<Void> unsubscribe(String id, String tenant) {
 		unsubscribeRemote(id);
-		SubscriptionRequest request = tenant2subscriptionId2Subscription.get(HttpUtils.getInternalTenant(headers), id);
+		SubscriptionRequest request = tenant2subscriptionId2Subscription.get(tenant, id);
 		Uni<Void> kafkaSent = Uni.createFrom().nullItem();
 		if (request != null) {
 			// let super unsubscribe take care of further error handling
@@ -108,7 +108,7 @@ public class SubscriptionService extends BaseSubscriptionService {
 			kafkaSent = internalSubEmitter.send(request);
 		}
 
-		return Uni.combine().all().unis(super.unsubscribe(id, headers), kafkaSent).combinedWith((t, u) -> null);
+		return Uni.combine().all().unis(super.unsubscribe(id, tenant), kafkaSent).combinedWith((t, u) -> null);
 
 	}
 
@@ -165,15 +165,20 @@ public class SubscriptionService extends BaseSubscriptionService {
 						req = req.putHeader(headersEntry.getKey(), headersEntry.getValue());
 					}
 					req.sendBuffer(Buffer.buffer(body)).onFailure().retry().withBackOff(Duration.ofSeconds(5)).atMost(5)
-							.onItem().transform(response -> {
+							.onItem().transformToUni(response -> {
 								if (response.statusCode() >= 200 && response.statusCode() < 300) {
+									String locationHeader = response.headers().get(HttpHeaders.LOCATION);
+									// check if it's a relative path
+									if (locationHeader.charAt(0) == '/') {
+										locationHeader = remoteEndpoint + locationHeader;
+									}
 									internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
-											response.getHeader(HttpHeaders.LOCATION.toString()));
+											locationHeader);
 								}
-								return null;
-							}).onFailure().call(t -> {
+								return Uni.createFrom().voidItem();
+							}).onFailure().recoverWithUni(t -> {
 								logger.error("Failed to subscribe to remote host " + temp.toString(), t);
-								return null;
+								return Uni.createFrom().voidItem();
 							}).subscribe();
 
 				}

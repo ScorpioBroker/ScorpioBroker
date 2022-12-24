@@ -30,14 +30,14 @@ public class Notification {
 	private int triggerReason;
 	private List<Object> context;
 	private String type;
-	private ArrayListMultimap<String, String> headers;
+	private String tenant;
 
 	public Notification() {
 		// for serialization
 	}
 
 	public Notification(String id, String type, Long notifiedAt, String subscriptionId, List<Map<String, Object>> data,
-			int triggerReason, List<Object> context, ArrayListMultimap<String, String> headers) {
+			int triggerReason, List<Object> context, String tenant) {
 		super();
 		this.id = id;
 		this.notifiedAt = notifiedAt;
@@ -46,7 +46,7 @@ public class Notification {
 		this.triggerReason = triggerReason;
 		this.type = type;
 		this.context = context;
-		this.headers = headers;
+		this.tenant = tenant;
 	}
 
 	public String getId() {
@@ -82,7 +82,7 @@ public class Notification {
 	}
 
 	public RestResponse<String> toCompactedJson() throws Exception {
-		RestResponse<String> dataResponse = HttpUtils.generateNotification(headers, data, context, "location");
+		RestResponse<String> dataResponse = HttpUtils.generateNotification(tenant, data, context, "location");
 		StringBuilder notificationBody = new StringBuilder();
 		notificationBody.append("{\n  \"id\": \"");
 		notificationBody.append(id);
@@ -95,28 +95,28 @@ public class Notification {
 		notificationBody.append("\",\n  \"data\": ");
 		notificationBody.append(dataResponse.getEntity().lines().map(t -> "  " + t).collect(Collectors.joining("\n")));
 		switch (triggerReason) {
-			case AppConstants.CREATE_REQUEST:
-				notificationBody.append(",\n  \"triggerReason\": \"");
-				notificationBody.append(TriggerReason.newlyMatching.toString());
-				notificationBody.append("\"");
-				break;
-			case AppConstants.APPEND_REQUEST:
-				notificationBody.append("\"\n  \"triggerReason\": \"");
-				notificationBody.append(TriggerReason.updated.toString());
-				notificationBody.append("\"");
-				break;
-			case AppConstants.UPDATE_REQUEST:
-				notificationBody.append("\"\n  \"triggerReason\": ");
-				notificationBody.append(TriggerReason.updated.toString());
-				notificationBody.append("\"");
-				break;
-			case AppConstants.DELETE_REQUEST:
-				notificationBody.append("\"\n  \"triggerReason\": ");
-				notificationBody.append(TriggerReason.noLongerMatching.toString());
-				notificationBody.append("\"");
-				break;
-			default:
-				break;
+		case AppConstants.CREATE_REQUEST:
+			notificationBody.append(",\n  \"triggerReason\": \"");
+			notificationBody.append(TriggerReason.newlyMatching.toString());
+			notificationBody.append("\"");
+			break;
+		case AppConstants.APPEND_REQUEST:
+			notificationBody.append("\"\n  \"triggerReason\": \"");
+			notificationBody.append(TriggerReason.updated.toString());
+			notificationBody.append("\"");
+			break;
+		case AppConstants.UPDATE_REQUEST:
+			notificationBody.append("\"\n  \"triggerReason\": ");
+			notificationBody.append(TriggerReason.updated.toString());
+			notificationBody.append("\"");
+			break;
+		case AppConstants.DELETE_REQUEST:
+			notificationBody.append("\"\n  \"triggerReason\": ");
+			notificationBody.append(TriggerReason.noLongerMatching.toString());
+			notificationBody.append("\"");
+			break;
+		default:
+			break;
 		}
 		notificationBody.append("\n}");
 		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(notificationBody.toString());
@@ -152,14 +152,6 @@ public class Notification {
 		this.type = type;
 	}
 
-	public ArrayListMultimap<String, String> getHeaders() {
-		return headers;
-	}
-
-	public void setHeaders(ArrayListMultimap<String, String> headers) {
-		this.headers = headers;
-	}
-
 	public static Notification copy(Notification baseNotification) {
 		Notification result = new Notification();
 		result.id = baseNotification.id;
@@ -169,14 +161,22 @@ public class Notification {
 		if (baseNotification.data != null) {
 			result.data = List.copyOf(baseNotification.data);
 		}
-		if (baseNotification.headers != null) {
-			result.headers = ArrayListMultimap.create(baseNotification.headers);
+		if (baseNotification.tenant != null) {
+			result.tenant = baseNotification.tenant;
 		}
 		result.notifiedAt = baseNotification.notifiedAt;
 		result.subscriptionId = baseNotification.subscriptionId;
 		result.triggerReason = baseNotification.triggerReason;
 		result.type = baseNotification.type;
 		return result;
+	}
+
+	public String getTenant() {
+		return tenant;
+	}
+
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
 	}
 
 }
