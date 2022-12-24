@@ -197,7 +197,8 @@ public class EntityController {// implements EntityHandlerInterface {
 					} catch (ResponseException responseException) {
 						responseException.printStackTrace();
 					}
-					return entityService.deleteAttribute(HttpUtils.getInternalTenant(request),
+					return entityService.deleteAttribute(HttpUtils
+							.getInternalTenant(request),
 							entityId, expandedAttrib, null, deleteAll).onItem().transform(t2 -> {
 								logger.trace("delete attribute :: completed");
 								return RestResponse.noContent();
