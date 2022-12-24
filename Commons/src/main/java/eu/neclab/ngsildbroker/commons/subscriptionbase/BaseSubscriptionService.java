@@ -134,6 +134,9 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 	@ConfigProperty(name = "scorpio.subscription.batchevactime", defaultValue = "300000")
 	int waitTimeForEvac;
 
+	@ConfigProperty(name = "scorpio.subscription.maxretries", defaultValue = "5")
+	int maxRetries;
+
 	BatchNotificationHandler batchNotificationHandler;
 
 	@PostConstruct
@@ -141,7 +144,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		JsonLdProcessor.init(coreContext);
 		setSyncId();
 		kafkaSender = getSyncChannelSender();
-		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac);
+		batchNotificationHandler = new BatchNotificationHandler(this, waitTimeForEvac, maxRetries);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 
 		WebClientOptions options = new WebClientOptions();
@@ -156,12 +159,14 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		temp.setId("invalid:base");
 		intervalHandlerREST = new IntervalNotificationHandler(notificationHandlerREST, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
-						AppConstants.UPDATE_REQUEST));
+						AppConstants.UPDATE_REQUEST),
+				maxRetries);
 
 		notificationHandlerMQTT = new NotificationHandlerMQTT();
 		intervalHandlerMQTT = new IntervalNotificationHandler(notificationHandlerMQTT, subscriptionInfoDAO,
 				getNotification(new SubscriptionRequest(temp, null, null, AppConstants.UPDATE_REQUEST), null,
-						AppConstants.UPDATE_REQUEST));
+						AppConstants.UPDATE_REQUEST),
+				maxRetries);
 		logger.trace("call loadStoredSubscriptions() ::");
 		loadStoredSubscriptions();
 
@@ -556,7 +561,7 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 		String endpointProtocol = subscription.getSubscription().getNotification().getEndPoint().getUri().getScheme();
 		NotificationHandler handler = getNotificationHandler(endpointProtocol);
 		if (!batchHandling || batchInfo == null || batchInfo.getBatchId() == -1) {
-			handler.notify(getNotification(subscription, dataList, triggerReason), subscription);
+			handler.notify(getNotification(subscription, dataList, triggerReason), subscription, maxRetries);
 		} else {
 			batchNotificationHandler.addDataToBatch(batchInfo, handler, subscription, dataList, triggerReason);
 		}

@@ -24,15 +24,12 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 class NotificationHandlerREST extends BaseNotificationHandler {
 	private WebClient webClient;
 
-	@ConfigProperty(name = "scorpio.subscription.maxretries", defaultValue = "5")
-	int maxRetries;
-
 	NotificationHandlerREST(WebClient webClient) {
 		this.webClient = webClient;
 	}
 
 	@Override
-	protected void sendReply(Notification notification, SubscriptionRequest request) throws Exception {
+	protected void sendReply(Notification notification, SubscriptionRequest request, int maxRetries) throws Exception {
 		RestResponse<String> compacted = notification.toCompactedJson();
 		HttpRequest<Buffer> httpReq = webClient
 				.postAbs(request.getSubscription().getNotification().getEndPoint().getUri().toString())
@@ -61,12 +58,12 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 		logger.debug(httpReq.toString());
 		logger.debug("Content length: " + compacted.getEntity().length());
 		sendHttpReq(httpReq, compacted.getEntity(), request.getSubscription().getId(), notification.getId(),
-				request.getSubscription().getNotification(), 0);
+				request.getSubscription().getNotification(), 0, maxRetries);
 
 	}
 
 	private void sendHttpReq(HttpRequest<Buffer> httpReq, String entity, String subId, String notificationId,
-			NotificationParam notification, int retry) {
+			NotificationParam notification, int retry, int maxRetries) {
 		if (retry == maxRetries) {
 			return;
 		}
@@ -84,7 +81,8 @@ class NotificationHandlerREST extends BaseNotificationHandler {
 						HttpRequest<Buffer> followHttpReq = webClient.postAbs(result.getHeader(HttpHeaders.LOCATION))
 								.followRedirects(true);
 						followHttpReq.headers().setAll(httpReq.headers());
-						sendHttpReq(followHttpReq, entity, subId, notificationId, notification, retryCount + 1);
+						sendHttpReq(followHttpReq, entity, subId, notificationId, notification, retryCount + 1,
+								maxRetries);
 					} else {
 						logger.error("Failed to send notification subscription id: " + subId + " notification id: "
 								+ notificationId);

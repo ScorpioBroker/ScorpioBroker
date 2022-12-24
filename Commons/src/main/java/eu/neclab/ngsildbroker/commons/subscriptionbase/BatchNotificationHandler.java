@@ -26,10 +26,12 @@ public class BatchNotificationHandler {
 
 	Table<Integer, SubscriptionRequest, Tuple3<NotificationHandler, List<Map<String, Object>>, Integer>> batches = HashBasedTable
 			.create();
+	private int maxRetries;
 
-	public BatchNotificationHandler(BaseSubscriptionService subService, int waitTimeForEvac) {
+	public BatchNotificationHandler(BaseSubscriptionService subService, int waitTimeForEvac, int maxRetries) {
 		this.subService = subService;
 		this.waitTimeForEvac = waitTimeForEvac;
+		this.maxRetries = maxRetries;
 	}
 
 	public void addFail(BatchInfo batchInfo) {
@@ -88,7 +90,7 @@ public class BatchNotificationHandler {
 				.entrySet()) {
 			Tuple3<NotificationHandler, List<Map<String, Object>>, Integer> value = entry.getValue();
 			value.getItem1().notify(subService.getNotification(entry.getKey(), value.getItem2(), value.getItem3()),
-					entry.getKey());
+					entry.getKey(), maxRetries);
 		}
 		batches.row(batchId).clear();
 		MyTask task = batchId2WatchTask.remove(batchId);
