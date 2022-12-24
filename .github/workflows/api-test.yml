@@ -75,17 +75,16 @@ jobs:
           docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up > dockerlog.out&
           sleep 120
       - name: newman action
-        continue-on-error: true
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
           environment: api-test-aaio-environment.json
-      - name: Stopping Scorpio 
-        if: always()
-        run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
       - name: Print Scorpio Log
-        if: always()
+        if: failure() || success()
         run: cat dockerlog.out
+      - name: Stopping Scorpio 
+        if: failure() || success()
+        run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
 #      - name: start docker dist 
 #        run: |
 #          docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
@@ -134,13 +133,14 @@ jobs:
           docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml up > dockerlog.out&
           sleep 120
       - name: newman action
-        continue-on-error: true
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
           environment: api-test-aaio-environment.json
-      - name: Stopping Scorpio 
-        run: docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml down 
       - name: Print Scorpio Log
-        if: always()
+        if: failure() || success()
         run: cat dockerlog.out
+      - name: Stopping Scorpio 
+        if: failure() || success()
+        run: docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml down 
+
