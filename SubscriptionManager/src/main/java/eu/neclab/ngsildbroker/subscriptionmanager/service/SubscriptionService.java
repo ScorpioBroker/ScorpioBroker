@@ -165,15 +165,20 @@ public class SubscriptionService extends BaseSubscriptionService {
 						req = req.putHeader(headersEntry.getKey(), headersEntry.getValue());
 					}
 					req.sendBuffer(Buffer.buffer(body)).onFailure().retry().withBackOff(Duration.ofSeconds(5)).atMost(5)
-							.onItem().transform(response -> {
+							.onItem().transformToUni(response -> {
 								if (response.statusCode() >= 200 && response.statusCode() < 300) {
+									String locationHeader = response.headers().get(HttpHeaders.LOCATION);
+									// check if it's a relative path
+									if (locationHeader.charAt(0) == '/') {
+										locationHeader = remoteEndpoint + locationHeader;
+									}
 									internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
-											response.getHeader(HttpHeaders.LOCATION.toString()));
+											locationHeader);
 								}
-								return null;
-							}).onFailure().call(t -> {
+								return Uni.createFrom().voidItem();
+							}).onFailure().recoverWithUni(t -> {
 								logger.error("Failed to subscribe to remote host " + temp.toString(), t);
-								return null;
+								return Uni.createFrom().voidItem();
 							}).subscribe();
 
 				}
