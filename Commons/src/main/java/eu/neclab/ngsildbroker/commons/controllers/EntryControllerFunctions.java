@@ -612,6 +612,7 @@ public interface EntryControllerFunctions {
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)
 						&& !key.equals(NGSIConstants.OBJECT)
 						&& !key.equals(NGSIConstants.VALUE)
+						&& !key.equals(NGSIConstants.SCOPE)
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)) {
 					noConcise(map.get(key), (Map<String, Object>) map, key.toString());
 				}

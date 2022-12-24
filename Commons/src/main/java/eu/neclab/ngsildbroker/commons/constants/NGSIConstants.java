@@ -302,5 +302,6 @@ public interface NGSIConstants {
 	public final static String INSTANCE_ID = "instanceId";
 	public final static String QUERY_PARAMETER_CONCISE_VALUE = "concise";
 	public final static String QUERY_PARAMETER_CONCISE = "option";
+	public static final String SCOPE = "scope";
 
 }
