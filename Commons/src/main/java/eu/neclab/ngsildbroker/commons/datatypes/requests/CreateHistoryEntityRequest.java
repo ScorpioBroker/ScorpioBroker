@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import io.vertx.core.json.JsonObject;
@@ -54,15 +55,15 @@ public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 	 * @throws IOException
 	 * @throws JsonParseException
 	 */
-	public CreateHistoryEntityRequest(BaseRequest entityRequest) throws ResponseException {
-		this(entityRequest.getHeaders(), entityRequest.getFinalPayload(), true);
+	public CreateHistoryEntityRequest(BaseRequest entityRequest) {
+		this(entityRequest.getTenant(), entityRequest.getPayload(), true, entityRequest.getBatchInfo());
 	}
 
-	public CreateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			boolean fromEntity) throws ResponseException {
-		super(headers, resolved, (String) resolved.get(NGSIConstants.JSON_LD_ID), AppConstants.CREATE_REQUEST);
+	public CreateHistoryEntityRequest(String tenant, Map<String, Object> payload, boolean fromEntity,
+			BatchInfo batchInfo) {
+		super(tenant, payload, (String) payload.get(NGSIConstants.JSON_LD_ID), batchInfo, AppConstants.CREATE_REQUEST);
 		this.fromEntity = fromEntity;
-		createTemporalEntity(resolved, fromEntity);
+		createTemporalEntity(payload, fromEntity);
 	}
 
 	@SuppressWarnings("unchecked")

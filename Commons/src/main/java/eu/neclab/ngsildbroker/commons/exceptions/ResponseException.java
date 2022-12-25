@@ -10,6 +10,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -87,6 +88,20 @@ public class ResponseException extends Exception {
 			String cSourceId, Map<String, Object> entity, Context context) {
 		this(errorCode, type, title, detail, host, headers, cSourceId,
 				NGSILDOperationResult.getAttribs(entity, context));
+	}
+
+	public ResponseException(ErrorType internalerror, String message, RemoteHost host, Set<Attrib> attribs2) {
+		// TODO Auto-generated constructor stub
+	}
+
+	public ResponseException(int i, String errorUnexpectedResult, String errorUnexpectedResultNullTitle, int statusCode,
+			RemoteHost host, Set<Attrib> attribs2) {
+		// TODO Auto-generated constructor stub
+	}
+
+	public ResponseException(int statusCode, String string, String string2, Object object, RemoteHost host,
+			Set<Attrib> attribs2) {
+		// TODO Auto-generated constructor stub
 	}
 
 	public String getEndpoint() {

@@ -45,7 +45,7 @@ import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-
+import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -73,6 +73,8 @@ public final class HttpUtils {
 			"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads)|(application\\/geo\\+json))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
 
 	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+
+	private static Set<String> DO_NOT_SCAN_ATTRIBS = Sets.newHashSet("id", "type", "createdAt", "scope");
 
 //	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND)
 //			.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -808,6 +810,24 @@ public final class HttpUtils {
 			return AppConstants.INTERNAL_NULL_KEY;
 		}
 		return tenant;
+	}
+
+	public static Set<Attrib> getAttribsFromCompactedPayload(Map<String, Object> value) {
+		Set<Attrib> result = new HashSet<>(value.size() - 2);
+		String datasetId;
+		Map<String, Object> map;
+		for (Entry<String, Object> entry : value.entrySet()) {
+			datasetId = null;
+			if (DO_NOT_SCAN_ATTRIBS.contains(entry.getKey())) {
+				continue;
+			}
+			map = (Map<String, Object>) entry.getValue();
+			if (map.containsKey("datasetId")) {
+				datasetId = (String) map.get("datasetId");
+			}
+			result.add(new Attrib(entry.getKey(), datasetId));
+		}
+		return result;
 	}
 
 }

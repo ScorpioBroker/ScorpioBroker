@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -18,10 +18,10 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 	private String instanceId;
 	private String resolvedAttrId;
 
-	public UpdateHistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			String entityId, String resolvedAttrId, String instanceId, List<Map<String, Object>> oldEntry)
+	public UpdateHistoryEntityRequest(String tenant, Map<String, Object> resolved, String entityId,
+			String resolvedAttrId, String instanceId, List<Map<String, Object>> oldEntry, BatchInfo batchInfo)
 			throws ResponseException {
-		super(headers, resolved, entityId, AppConstants.UPDATE_REQUEST);
+		super(tenant, resolved, entityId, batchInfo, AppConstants.UPDATE_REQUEST);
 		this.oldEntry = oldEntry;
 		this.resolvedAttrId = resolvedAttrId;
 		this.instanceId = instanceId;
@@ -30,8 +30,8 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 
 	@SuppressWarnings("unchecked")
 	public UpdateHistoryEntityRequest(BaseRequest entityRequest) {
-		setHeaders(entityRequest.getHeaders());
-		Map<String, Object> jsonObject = entityRequest.getRequestPayload();// (Map<String, Object>)
+
+		Map<String, Object> jsonObject = entityRequest.getPayload();// (Map<String, Object>)
 		// JsonUtils.fromString(entityRequest.getWithSysAttrs());
 		for (Entry<String, Object> entry : jsonObject.entrySet()) {
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
@@ -59,7 +59,7 @@ public class UpdateHistoryEntityRequest extends HistoryEntityRequest {
 		this.createdAt = now;
 		String instanceIdAdd = null;
 		List<Map<String, Object>> jsonArray = oldEntry;
-		for (Entry<String, Object> entry : getRequestPayload().entrySet()) {
+		for (Entry<String, Object> entry : getPayload().entrySet()) {
 			if (entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_ID)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.JSON_LD_TYPE)
 					|| entry.getKey().equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)

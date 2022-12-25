@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.HistoryAttribInstance;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
@@ -59,9 +59,9 @@ public class HistoryEntityRequest extends BaseRequest {
 	public HistoryEntityRequest() {
 	}
 
-	public HistoryEntityRequest(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			String entityId, int requestType) throws ResponseException {
-		super(headers, entityId, resolved, requestType);
+	public HistoryEntityRequest(String tenant, Map<String, Object> resolved, String entityId, BatchInfo batchInfo,
+			int requestType) {
+		super(tenant, entityId, resolved, batchInfo, requestType);
 		this.now = SerializationTools.formatter.format(Instant.now());
 
 	}

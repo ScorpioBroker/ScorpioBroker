@@ -725,7 +725,7 @@ SELECT addAttribs(id, entity) FROM public.entity;
 
 
 
-CREATE OR REPLACE FUNCTION NGSILD_CREATEENTITY (INSERTENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_CREATEENTITY (INSERTENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
 declare
 	attribName text;
 	templateEntity jsonb;
@@ -739,7 +739,7 @@ declare
 	insertLocation GEOMETRY(Geometry, 4326);
 	insertScopes text[];
 BEGIN
-    CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE) ON COMMIT DROP;
+    CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE, singleOp boolean, batchOp boolean) ON COMMIT DROP;
 	templateEntity := '{}'::jsonb;
 	templateEntity := jsonb_set(templateEntity, '{@id}', insertEntity->'@id');
 	entityId := insertEntity->>'@id';
@@ -776,8 +776,8 @@ BEGIN
 			attribValue := insertEntity->attribName;
 			removeAttrib := false;
 			IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
-				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
-					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity, i_rec.c_id) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id, c.createEntity, c.createBatch FROM csourceinformation AS c WHERE c.reg_mode > 0 AND (c.createEntity = true OR c.createBatch = true) AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
+					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity, i_rec.c_id, i_rec.createEntity, i_rec.createBatch) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
 					IF i_rec.reg_mode > 1 THEN
 						removeAttrib := true;
 						IF i_rec.reg_mode = 3 THEN
@@ -786,8 +786,8 @@ BEGIN
 					END IF;
 				END LOOP;
 			ELSE
-				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.createEntity = true AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
-					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity, i_rec.c_id) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id, c.createEntity, c.createBatch FROM csourceinformation AS c WHERE c.reg_mode > 0 AND (c.createEntity = true OR c.createBatch = true) AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
+					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity, i_rec.c_id, i_rec.createEntity, i_rec.createBatch) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
 					IF i_rec.reg_mode > 1 THEN
 						removeAttrib := true;
 						IF i_rec.reg_mode = 3 THEN
@@ -806,9 +806,9 @@ BEGIN
 		SELECT insertEntity || templateEntity INTO insertEntity;
 		BEGIN
 			INSERT INTO ENTITY (E_ID, ENTITY) VALUES (entityId, insertEntity);
-			INSERT INTO resultTable VALUES ('ADDED ENTITY', null, null, insertEntity, 'ADDED ENTITY');
+			INSERT INTO resultTable VALUES ('ADDED ENTITY', null, null, insertEntity, 'ADDED ENTITY', false, false);
 		EXCEPTION WHEN OTHERS THEN
-			INSERT INTO resultTable VALUES ('ERROR', sqlstate::text, SQLERRM::text, insertEntity, 'ERROR');
+			INSERT INTO resultTable VALUES ('ERROR', sqlstate::text, SQLERRM::text, insertEntity, 'ERROR', false, false);
 		END;
 	END IF;
 	RETURN QUERY SELECT * FROM resultTable;

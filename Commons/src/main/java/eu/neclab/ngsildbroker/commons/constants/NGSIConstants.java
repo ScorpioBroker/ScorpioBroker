@@ -293,7 +293,7 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_GEOPROPERTY_GEOQ_ATTRIB = "https://uri.etsi.org/ngsi-ld/geoproperty";
 	public static final String NGSI_LD_SCOPE = "https://uri.etsi.org/ngsi-ld/default-context/scope";
 	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/default-context/scopeQ";
-	
+
 	public static final String ERROR_TYPE = "type";
 	public static final String ERROR_TITLE = "title";
 	public static final String ERROR_DETAIL_MESSAGE = "message";
@@ -311,4 +311,5 @@ public interface NGSIConstants {
 	public static final String ERROR_CODE = "errorCode";
 	public static final String NGSI_LD_TYPES_ENDPOINT = "/ngsi-ld/v1/types";
 	public static final String NGSI_LD_ENTITIES_ENDPOINT = "/ngsi-ld/v1/entities";
+	public static final String ENDPOINT_BATCH_CREATE = "/ngsi-ld/v1/entityOperations/create";
 }

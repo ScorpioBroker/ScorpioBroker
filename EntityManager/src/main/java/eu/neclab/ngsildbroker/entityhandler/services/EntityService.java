@@ -1,16 +1,19 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
@@ -27,6 +30,7 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -42,9 +46,10 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
-import io.vertx.core.MultiMap;
+import io.vertx.mutiny.core.MultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -81,125 +86,225 @@ public class EntityService implements EntryCRUDService {
 
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
+	private Random random = new Random();
+
 	@PostConstruct
 	void init() {
 		webClient = WebClient.create(vertx);
 	}
 
-	/**
-	 * Method to publish jsonld message to kafka topic
-	 * 
-	 * @param resolved jsonld message
-	 * @param headers
-	 * @return RestResponse
-	 * @throws KafkaWriteException,Exception
-	 * @throws ResponseException
-	 */
 	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
-			List<Object> originalContext, BatchInfo batchInfo) {
+			Context originalContext) {
 		logger.debug("createMessage() :: started");
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, null);
+		return entityDAO.createEntity(request).onItem().transformToUni(resultTable -> {
+			if (resultTable.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+						"No result from the database this should never happen"));
+			}
+			return handleDBCreateResult(request, resultTable, originalContext).onItem().transformToUni(tuple -> {
+				NGSILDOperationResult localResult = tuple.getItem1();
+				Map<RemoteHost, Map<String, Object>> remoteHosts = tuple.getItem2();
+				List<Uni<Void>> unis = new ArrayList<>(remoteHosts.size());
+				for (Entry<RemoteHost, Map<String, Object>> entry : remoteHosts.entrySet()) {
+					RemoteHost remoteHost = entry.getKey();
+					if (remoteHost.canDoSingleOp()) {
+						unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue()))
+								.onItemOrFailure().transformToUni((response, failure) -> {
+									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
+											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+								}));
+					} else {
+						unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+								.putHeaders(remoteHost.headers())
+								.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(entry.getValue()))))
+								.onItemOrFailure().transformToUni((response, failure) -> {
+									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
+											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+								}));
+					}
+				}
+				return Uni.combine().all().unis(unis).combinedWith(t -> localResult);
+			});
+
+		});
+	}
+
+	public Uni<NGSILDOperationResult> createMultipleEntry(String tenant, List<Map<String, Object>> entities,
+			Context originalContext) {
+		logger.debug("createMessage() :: started");
+		BatchInfo batchInfo = new BatchInfo(random.nextInt(), entities.size());
+
+		List<Uni<Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>>>> dbUnis = Lists.newArrayList();
+		for (Map<String, Object> entity : entities) {
+			CreateEntityRequest request = new CreateEntityRequest(tenant, entity, batchInfo);
+			dbUnis.add(entityDAO.createEntity(request).onItem().transformToUni(resultTable -> {
+				if (resultTable.size() == 0) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+							"No result from the database this should never happen"));
+				}
+				return handleDBCreateResult(request, resultTable, originalContext);
+			}));
+			Uni.combine().all().unis(dbUnis).combinedWith(list -> {
+				List<NGSILDOperationResult> opResults = Lists.newArrayList();
+				Map<RemoteHost, List<Map<String, Object>>> remoteHost2Entities = Maps.newHashMap();
+				for (Object obj : list) {
+					Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>> tmp = (Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>>) obj;
+					opResults.add
+				}
+
+				
+
+			});
+		}
 		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, batchInfo);
 		return entityDAO.createEntity(request).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
 						"No result from the database this should never happen"));
 			}
-			return handleDBCreateResult(request, resultTable, originalContext);
+			return handleDBCreateResult(request, resultTable, originalContext).onItem().transformToUni(tuple -> {
+				NGSILDOperationResult localResult = tuple.getItem1();
+				Map<RemoteHost, Map<String, Object>> remoteHosts = tuple.getItem2();
+				List<Uni<Void>> unis = new ArrayList<>(remoteHosts.size());
+				for (Entry<RemoteHost, Map<String, Object>> entry : remoteHosts.entrySet()) {
+					RemoteHost remoteHost = entry.getKey();
+					if (remoteHost.canDoSingleOp()) {
+						unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue()))
+								.onItemOrFailure().transformToUni((response, failure) -> {
+									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
+											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+								}));
+					} else {
+						unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+								.putHeaders(remoteHost.headers())
+								.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(entry.getValue()))))
+								.onItemOrFailure().transformToUni((response, failure) -> {
+									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
+											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+								}));
+					}
+				}
+				return Uni.combine().all().unis(unis).combinedWith(t -> localResult);
+			});
+
 		});
 	}
 
 	public Uni<NGSILDOperationResult> upsertEntry(String tenant, Map<String, Object> resolved,
-			List<Object> originalContext, BatchInfo batchInfo) {
+			Context originalContext) {
 		logger.debug("createMessage() :: started");
-		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, batchInfo);
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, null);
 		return entityDAO.upsertEntity(request).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
 						"No result from the database this should never happen"));
 			}
-			return handleDBCreateResult(request, resultTable, originalContext);
+			return handleDBCreateResult(request, resultTable, originalContext).onItem().transform(tuple -> {
+				NGSILDOperationResult localResult = tuple.getItem1();
+				Map<RemoteHost, Map<String, Object>> remoteHosts = tuple.getItem2();
+				List<Uni> unis = new ArrayList<>(remoteHosts.size());
+				for (Entry<RemoteHost, Map<String, Object>> entry : remoteHosts.entrySet()) {
+					RemoteHost remoteHost = entry.getKey();
+					if (remoteHost.canDoSingleOp()) {
+						unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue()))
+								.onItemOrFailure().transformToUni((response, failure) -> {
+									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
+											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+								}));
+					}
+				}
+
+				return localResult;
+
+			});
 		});
 	}
 
-	private Uni<NGSILDOperationResult> handleDBCreateResult(CreateEntityRequest request, RowSet<Row> resultTable,
-			List<Object> originalContext) {
-		NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
+	/**
+	 * 
+	 * @param request         the reate request
+	 * @param resultTable     the RowSet coming from the DB
+	 * @param originalContext the context used in the original request
+	 * @return a Tuple of the local db result and remote hosts (tenant host headers)
+	 */
+	private Uni<Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>>> handleDBCreateResult(
+			CreateEntityRequest request, RowSet<Row> resultTable, Context originalContext) {
+		NGSILDOperationResult operationResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
+		Map<RemoteHost, Map<String, Object>> remoteResults = Maps.newHashMap();
 		List<Uni<Void>> unis = Lists.newArrayList();
 		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
 		Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
-		boolean internalSend = false;
 		RowIterator<Row> it = resultTable.iterator();
+		Row row;
+		Uni<Void> sendKafka = Uni.createFrom().voidItem();
 		while (it.hasNext()) {
-			Row row = it.next();
+			row = it.next();
 			switch (row.getString(0)) {
 			case "ERROR": {
 				String sqlState = row.getString(1);
 				JsonObject entity = row.getJsonObject(3);
 				if (sqlState.equals(AppConstants.SQL_ALREADY_EXISTS)) {
-					result.addFailure(new ResponseException(ErrorType.AlreadyExists, ErrorType.AlreadyExists.getTitle(),
-							entity.getMap(), context));
+					operationResult.addFailure(new ResponseException(ErrorType.AlreadyExists,
+							ErrorType.AlreadyExists.getTitle(), entity.getMap(), context));
 				} else {
-					result.addFailure(new ResponseException(ErrorType.InternalError, row.getString(2)));
+					operationResult.addFailure(new ResponseException(ErrorType.InternalError, row.getString(2)));
+				}
+				if (request.getBatchInfo() != null) {
+					sendKafka = sendFail(request.getBatchInfo());
 				}
 				break;
 			}
 			case "ADDED ENTITY": {
 				Map<String, Object> entityAdded = ((JsonObject) row.getJson(3)).getMap();
 				request.setPayload(entityAdded);
-				internalSend = true;
-				unis.add(kafkaSenderInterface.send(request).onItem().transform(t -> {
-					result.addSuccess(new CRUDSuccess(null, null, null, entityAdded, context));
-					return t;
-				}));
+				operationResult.addSuccess(new CRUDSuccess(null, null, null, entityAdded, context));
+				sendKafka = kafkaSenderInterface.send(request);
 				break;
 			}
 			default:
 				String host = row.getString(0);
 				String tenant = row.getString(1);
 				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-				MultiMap headers = HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant);
+				MultiMap headers = MultiMap
+						.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant));
 				String cSourceId = row.getString(4);
 				int hash = entityToForward.hashCode();
 				Map<String, Object> compacted = hash2Compacted.get(hash);
 				if (compacted == null) {
 					try {
-						compacted = JsonLdProcessor.compact(entityToForward, originalContext, opts);
+						compacted = JsonLdProcessor.compact(entityToForward, null, originalContext, opts, -1);
+						compacted.remove("@context");
 					} catch (ResponseException e) {
 						// TODO add host info
-						result.addFailure(e);
+						operationResult.addFailure(e);
 					} catch (Exception e) {
 						// TODO add host info
-						result.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+						operationResult.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
 					}
 					hash2Compacted.put(hash, compacted);
 				}
-				unis.add(webClient.post(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
-						.putHeaders(io.vertx.mutiny.core.MultiMap.newInstance(headers))
-						.sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-						.transformToUni((response, failure) -> {
-							return handleWebResponse(result, response, failure, 201, host, headers, cSourceId,
-									entityToForward, context);
-						}));
+				remoteResults.put(new RemoteHost(host, tenant, null, cSourceId, row.getBoolean(5), row.getBoolean(6)),
+						compacted);
 				break;
 			}
 
 		}
-		if (!internalSend) {
-			unis.add(sendFail(request.getBatchInfo()));
-		}
-		return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
+
+		return sendKafka.onItem().transform(v -> Tuple2.of(operationResult, remoteResults));
 	}
 
 	private Uni<Void> handleWebResponse(NGSILDOperationResult result, HttpResponse<Buffer> response, Throwable failure,
-			int successCode, String host, MultiMap headers, String cSourceId, Map<String, Object> entityToForward,
-			Context context) {
+			Integer[] successCode, RemoteHost host, Set<Attrib> attribs) {
 		if (failure != null) {
-			result.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(), host, headers,
-					cSourceId, entityToForward, context));
+			result.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(), host, attribs));
 		} else {
 			int statusCode = response.statusCode();
-			if (statusCode == successCode) {
-				result.addSuccess(new CRUDSuccess(host, headers, cSourceId, entityToForward, context));
+			if (ArrayUtils.contains(successCode, statusCode)) {
+				result.addSuccess(new CRUDSuccess(host, attribs));
 			} else if (statusCode == 207) {
 				JsonObject jsonObj = response.bodyAsJsonObject();
 				if (jsonObj != null) {
@@ -218,8 +323,7 @@ public class EntityService implements EntryCRUDService {
 				JsonObject responseBody = response.bodyAsJsonObject();
 				if (responseBody == null) {
 					result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
-							NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode, host, headers, cSourceId,
-							entityToForward, context));
+							NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode, host, attribs));
 				} else {
 					if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
 							|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)
@@ -227,22 +331,16 @@ public class EntityService implements EntryCRUDService {
 						result.addFailure(
 								new ResponseException(statusCode, responseBody.getString(NGSIConstants.ERROR_TYPE),
 										responseBody.getString(NGSIConstants.ERROR_TITLE),
-										responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), host, headers, cSourceId,
-										entityToForward, context));
+										responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), host, attribs));
 					} else {
 						result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
 								NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE, responseBody.getMap(),
-								host, headers, cSourceId, entityToForward, context));
+								host, attribs));
 					}
 				}
 			}
 		}
 		return Uni.createFrom().voidItem();
-	}
-
-	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
-			List<Object> originalContext) {
-		return createEntry(tenant, resolved, originalContext, new BatchInfo(-1, -1));
 	}
 
 	/**
@@ -256,7 +354,7 @@ public class EntityService implements EntryCRUDService {
 	 * @throws IOException
 	 */
 	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> payload,
-			List<Object> originalContext, BatchInfo batchInfo) {
+			Context originalContext, BatchInfo batchInfo) {
 		logger.trace("updateMessage() :: started");
 		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, null, batchInfo);
 		return entityDAO.updateEntity(request).onItem().transformToUni(resultTable -> {
@@ -269,7 +367,7 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	private Uni<NGSILDOperationResult> handleDBUpdateResult(EntityRequest request, RowSet<Row> resultTable,
-			List<Object> originalContext) {
+			Context originalContext) {
 		NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, request.getId());
 		List<Uni<Void>> unis = Lists.newArrayList();
 		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
@@ -316,7 +414,8 @@ public class EntityService implements EntryCRUDService {
 				String host = row.getString(0);
 				String tenant = row.getString(1);
 				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-				MultiMap headers = HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant);
+				MultiMap headers = MultiMap
+						.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant));
 				String cSourceId = ""; // not in the result for now row.getString(4);
 				int hash = entityToForward.hashCode();
 				Map<String, Object> compacted;
@@ -351,8 +450,7 @@ public class EntityService implements EntryCRUDService {
 							.post(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId() + "/attrs");
 				}
 
-				unis.add(req.putHeaders(io.vertx.mutiny.core.MultiMap.newInstance(headers))
-						.sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+				unis.add(req.putHeaders(headers).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 						.transformToUni((response, failure) -> {
 							return handleWebResponse(result, response, failure, 201, host, headers, cSourceId,
 									entityToForward, context);
@@ -378,21 +476,14 @@ public class EntityService implements EntryCRUDService {
 
 	@Override
 	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
-			List<Object> originalContext) {
+			Context originalContext) {
 		return updateEntry(tenant, entityId, entry, originalContext, new BatchInfo(-1, -1));
 	}
 
 	@Override
 	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
-			String[] options, List<Object> originalContext) {
-		return appendToEntry(tenant, entityId, entry, options, originalContext, new BatchInfo(-1, -1));
-
-	}
-
-	@Override
-	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
-			String[] options, List<Object> originalContext, BatchInfo batchInfo) {
-		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, entry, batchInfo);
+			String[] options, Context originalContext) {
+		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, entry, null);
 		boolean noOverwrite = Arrays.stream(options).anyMatch(NGSIConstants.NO_OVERWRITE_OPTION::equals);
 		return entityDAO.appendEntity(request, noOverwrite).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
@@ -404,14 +495,8 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	@Override
-	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entryId, List<Object> originalContext) {
-		return deleteEntry(tenant, entryId, originalContext, new BatchInfo(-1, -1));
-	}
-
-	@Override
-	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, List<Object> originalContext,
-			BatchInfo batchInfo) {
-		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, batchInfo);
+	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, Context originalContext) {
+		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, null);
 		return entityDAO.deleteEntity(request).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
@@ -448,14 +533,14 @@ public class EntityService implements EntryCRUDService {
 					// side there is no way of know what has been deleted so ... don't know how to
 					// handle that
 					Map<String, Object> entityToForward = Maps.newHashMap();
-					MultiMap remoteHeaders = HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant);
+					MultiMap remoteHeaders = MultiMap
+							.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant));
 					String cSourceId = row.getString(4); // not in the result for now row.getString(4);
 
 					StringBuilder url = new StringBuilder(
 							host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId());
-					unis.add(webClient.delete(url.toString())
-							.putHeaders(io.vertx.mutiny.core.MultiMap.newInstance(remoteHeaders)).send()
-							.onItemOrFailure().transformToUni((response, failure) -> {
+					unis.add(webClient.delete(url.toString()).putHeaders(remoteHeaders).send().onItemOrFailure()
+							.transformToUni((response, failure) -> {
 								return handleWebResponse(result, response, failure, 204, host, remoteHeaders, cSourceId,
 										entityToForward, context);
 							}));
@@ -470,7 +555,7 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	public Uni<NGSILDOperationResult> partialUpdateEntity(String tenant, String entityId, String attribName,
-			Map<String, Object> payload, List<Object> originalContext) {
+			Map<String, Object> payload, Context originalContext) {
 		logger.trace("updateMessage() :: started");
 		// place the id in the payload to be sure
 
@@ -494,7 +579,7 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	public Uni<NGSILDOperationResult> deleteAttribute(String tenant, String entityId, String attribName,
-			String datasetId, boolean deleteAll, List<Object> originalContext) {
+			String datasetId, boolean deleteAll, Context originalContext) {
 		logger.trace("updateMessage() :: started");
 		// place the id in the payload to be sure
 
@@ -540,7 +625,8 @@ public class EntityService implements EntryCRUDService {
 					Map<String, Object> entityToForward = Maps.newHashMap();
 					Map<String, Object> dummy = Maps.newHashMap();
 					entityToForward.put(attribName, Lists.newArrayList(dummy));
-					MultiMap remoteHeaders = HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant);
+					MultiMap remoteHeaders = MultiMap
+							.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant));
 					String cSourceId = row.getString(4); // not in the result for now row.getString(4);
 
 					StringBuilder url = new StringBuilder(host + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
@@ -559,9 +645,8 @@ public class EntityService implements EntryCRUDService {
 						}
 					}
 
-					unis.add(webClient.delete(url.toString())
-							.putHeaders(io.vertx.mutiny.core.MultiMap.newInstance(remoteHeaders)).send()
-							.onItemOrFailure().transformToUni((response, failure) -> {
+					unis.add(webClient.delete(url.toString()).putHeaders(remoteHeaders).send().onItemOrFailure()
+							.transformToUni((response, failure) -> {
 								return handleWebResponse(result, response, failure, 204, host, remoteHeaders, cSourceId,
 										entityToForward, context);
 							}));
