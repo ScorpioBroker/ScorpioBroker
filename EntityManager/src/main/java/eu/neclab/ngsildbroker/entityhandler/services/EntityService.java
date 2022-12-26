@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -47,12 +48,14 @@ import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
+import io.smallrye.mutiny.tuples.Tuple4;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-
+import io.vertx.ext.web.client.impl.HttpResponseImpl;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
@@ -131,7 +134,7 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<NGSILDOperationResult> createMultipleEntry(String tenant, List<Map<String, Object>> entities,
+	public Uni<List<NGSILDOperationResult>> createMultipleEntry(String tenant, List<Map<String, Object>> entities,
 			Context originalContext) {
 		logger.debug("createMessage() :: started");
 		BatchInfo batchInfo = new BatchInfo(random.nextInt(), entities.size());
@@ -146,51 +149,91 @@ public class EntityService implements EntryCRUDService {
 				}
 				return handleDBCreateResult(request, resultTable, originalContext);
 			}));
-			Uni.combine().all().unis(dbUnis).combinedWith(list -> {
-				List<NGSILDOperationResult> opResults = Lists.newArrayList();
-				Map<RemoteHost, List<Map<String, Object>>> remoteHost2Entities = Maps.newHashMap();
-				for (Object obj : list) {
-					Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>> tmp = (Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>>) obj;
-					opResults.add
-				}
-
-				
-
-			});
 		}
-		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, batchInfo);
-		return entityDAO.createEntity(request).onItem().transformToUni(resultTable -> {
-			if (resultTable.size() == 0) {
-				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
-						"No result from the database this should never happen"));
+
+		return Uni.combine().all().unis(dbUnis).combinedWith(list -> {
+
+			ArrayListMultimap<RemoteHost, Map<String, Object>> remoteHost2Entities = ArrayListMultimap.create();
+			Map<String, NGSILDOperationResult> entityId2Result = Maps.newHashMap();
+
+			for (Object obj : list) {
+				Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>> tmp = (Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>>) obj;
+				NGSILDOperationResult result = tmp.getItem1();
+				Map<RemoteHost, Map<String, Object>> remoteHost2Entity = tmp.getItem2();
+				for (Entry<RemoteHost, Map<String, Object>> entry : remoteHost2Entities.entries()) {
+					remoteHost2Entities.put(entry.getKey(), entry.getValue());
+				}
+				entityId2Result.put(tmp.getItem1().getEntityId(), tmp.getItem1());
 			}
-			return handleDBCreateResult(request, resultTable, originalContext).onItem().transformToUni(tuple -> {
-				NGSILDOperationResult localResult = tuple.getItem1();
-				Map<RemoteHost, Map<String, Object>> remoteHosts = tuple.getItem2();
-				List<Uni<Void>> unis = new ArrayList<>(remoteHosts.size());
-				for (Entry<RemoteHost, Map<String, Object>> entry : remoteHosts.entrySet()) {
-					RemoteHost remoteHost = entry.getKey();
-					if (remoteHost.canDoSingleOp()) {
-						unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
-								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue()))
-								.onItemOrFailure().transformToUni((response, failure) -> {
-									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
-											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
-								}));
-					} else {
-						unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
-								.putHeaders(remoteHost.headers())
-								.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(entry.getValue()))))
-								.onItemOrFailure().transformToUni((response, failure) -> {
-									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
-											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+			// collect all single entities for remote batch operations
+			return Tuple2.of(remoteHost2Entities, entityId2Result);
+		}).onItem().transformToUni(tuple -> {
+			ArrayListMultimap<RemoteHost, Map<String, Object>> remoteHost2Entities = tuple.getItem1();
+
+			List<Map<String, Object>> remoteEntities;
+			List<Uni<Tuple3<List<NGSILDOperationResult>, RemoteHost, List<Map<String, Object>>>>> unis = new ArrayList<>(
+					remoteHost2Entities.size());
+			for (RemoteHost remoteHost : remoteHost2Entities.keys()) {
+				remoteEntities = remoteHost2Entities.get(remoteHost);
+				if (remoteHost.canDoBatchOp()) {
+					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(remoteEntities)).onItemOrFailure()
+							.transform((response, failure) -> {
+								return Tuple3.of(handleBatchResponse(response, failure), remoteHost, remoteEntities);
+							}));
+				} else {
+					// backup in case someone can't do batch op
+					List<Uni<Tuple4<HttpResponse, Throwable, RemoteHost, Map<String, Object>>>> unisForHost = new ArrayList<>(
+							remoteHost2Entities.size());
+					for (Map<String, Object> remoteEntity : remoteEntities) {
+						unisForHost.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(remoteEntity))
+								.onItemOrFailure().transform((response, failure) -> {
+									return Tuple4.of(response, failure, remoteHost, remoteEntity);
 								}));
 					}
+					unis.add(Uni.combine().all().unis(unisForHost).combinedWith(hostList -> {
+						Iterator<Tuple4<HttpResponse, Throwable, RemoteHost, Map<String, Object>>> it = (Iterator<Tuple4<HttpResponse, Throwable, RemoteHost, Map<String, Object>>>) hostList
+								.iterator();
+						Tuple4<HttpResponse, Throwable, RemoteHost, Map<String, Object>> next;
+						List<Map<String, Object>> postedEntityList = new ArrayList<>(hostList.size());
+						List<NGSILDOperationResult> opResults = new ArrayList<>(hostList.size());
+						NGSILDOperationResult tmpResult;
+						while (it.hasNext()) {
+							next = it.next();
+							tmpResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+									(String) next.getItem4().get("id"));
+							postedEntityList.add(next.getItem4());
+							handleWebResponse(tmpResult, next.getItem1(), next.getItem2(), ArrayUtils.toArray(201),
+									remoteHost, HttpUtils.getAttribsFromCompactedPayload(next.getItem4()));
+							opResults.add(tmpResult);
+						}
+						return Tuple3.of(opResults, next.getItem3(), postedEntityList);
+					}));
 				}
-				return Uni.combine().all().unis(unis).combinedWith(t -> localResult);
+			}
+			return Uni.combine().all().unis(unis).combinedWith(t -> {
+				Map<String, NGSILDOperationResult> entityId2Result = tuple.getItem2();
+				for (Object obj : t) {
+					Tuple3<List<NGSILDOperationResult>, RemoteHost, List<Map<String, Object>>> tmp = (Tuple3<List<NGSILDOperationResult>, RemoteHost, List<Map<String, Object>>>) obj;
+					mergeRemoteResults(entityId2Result, tmp);
+				}
+				return Lists.newArrayList(entityId2Result.values());
 			});
 
 		});
+
+	}
+
+	private void mergeRemoteResults(Map<String, NGSILDOperationResult> entityId2Result,
+			Tuple3<List<NGSILDOperationResult>, RemoteHost, List<Map<String, Object>>> tmp) {
+		// TODO Auto-generated method stub
+
+	}
+
+	private List<NGSILDOperationResult> handleBatchResponse(HttpResponse<Buffer> response, Throwable failure) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	public Uni<NGSILDOperationResult> upsertEntry(String tenant, Map<String, Object> resolved,
@@ -320,10 +363,23 @@ public class EntityService implements EntryCRUDService {
 				}
 
 			} else {
+
 				JsonObject responseBody = response.bodyAsJsonObject();
+				if (responseBody == null) {
+					// could be from a batch response
+					JsonArray tmp = response.bodyAsJsonArray();
+					if (tmp != null) {
+						try {
+							responseBody = tmp.getJsonObject(0);
+						} catch (ClassCastException e) {
+							responseBody = null;
+						}
+					}
+				}
 				if (responseBody == null) {
 					result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
 							NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode, host, attribs));
+
 				} else {
 					if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
 							|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)

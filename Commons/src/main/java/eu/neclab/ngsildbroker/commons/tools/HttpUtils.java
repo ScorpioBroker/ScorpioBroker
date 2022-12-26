@@ -830,4 +830,9 @@ public final class HttpUtils {
 		return result;
 	}
 
+	public static RestResponse<Object> generateBatchResult(List<NGSILDOperationResult> t) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

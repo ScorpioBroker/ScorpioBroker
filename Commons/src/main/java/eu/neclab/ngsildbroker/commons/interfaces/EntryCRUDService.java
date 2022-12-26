@@ -13,6 +13,9 @@ public interface EntryCRUDService {
 
 	Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved, Context originalContext);
 
+	Uni<List<NGSILDOperationResult>> createMultipleEntry(String tenant, List<Map<String, Object>> entities,
+			Context originalContext);
+
 	Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
 			Context originalContext);
 

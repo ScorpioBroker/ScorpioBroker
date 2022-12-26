@@ -159,10 +159,9 @@ public class EntityController {// implements EntityHandlerInterface {
 					} else {
 						context.add(bodyContext);
 					}
-
-					String expandedAttrib = JsonLdProcessor.getCoreContextClone().parse(context, true).expandIri(attrib,
-							false, true, null, null);
-					return Uni.createFrom().item(Tuple3.of(resolvedBody, context, expandedAttrib));
+					Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
+					String expandedAttrib = ldContext.expandIri(attrib, false, true, null, null);
+					return Uni.createFrom().item(Tuple3.of(resolvedBody, ldContext, expandedAttrib));
 				}).onItem()
 				.transformToUni(
 						resolved -> entityService
@@ -202,7 +201,7 @@ public class EntityController {// implements EntityHandlerInterface {
 						responseException.printStackTrace();
 					}
 					return entityService.deleteAttribute(HttpUtils.getTenant(request), entityId, expandedAttrib,
-							datasetId, deleteAll, links).onItem().transform(t2 -> {
+							datasetId, deleteAll, context).onItem().transform(t2 -> {
 								logger.trace("delete attribute :: completed");
 								return RestResponse.noContent();
 

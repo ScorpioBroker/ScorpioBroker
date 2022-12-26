@@ -11,6 +11,7 @@ import java.util.Random;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -37,6 +38,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import io.smallrye.mutiny.CompositeException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -153,16 +155,16 @@ public interface EntryControllerFunctions {
 					"Maximum allowed number of entities for this operation is " + maxCreateBatch);
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(responseException));
 		}
-		BatchInfo batchInfo = new BatchInfo(random.nextInt(), jsonPayload.size());
+
 		String tenant = HttpUtils.getTenant(request);
 		return HttpUtils.getAtContext(request).onItem().transformToMulti(t -> {
 			boolean preFlight;
-
 			try {
 				preFlight = HttpUtils.doPreflightCheck(request, t);
 			} catch (ResponseException e) {
 				return Multi.createFrom().failure(e);
 			}
+			
 			Multi<Tuple3<List<Object>, Map<String, Object>, Boolean>> tmpResult = Multi.createFrom()
 					.items(jsonPayload.parallelStream()).onItem().transform(i -> Tuple3.of(t, i, preFlight));
 			return tmpResult;
@@ -173,58 +175,29 @@ public interface EntryControllerFunctions {
 						.expand(itemTuple.getItem1(), itemTuple.getItem2(), opts, payloadType, itemTuple.getItem3())
 						.get(0);
 			} catch (Exception e) {
-				return entityService.sendFail(batchInfo).onItem().transformToUni(t -> Uni.createFrom().failure(e));
+				return Uni.createFrom().failure(e);
 			}
 
-			List<Object> context = itemTuple.getItem1();
-			Object bodyContext = itemTuple.getItem2().get(JsonLdConsts.CONTEXT);
-			if (bodyContext instanceof List) {
-				context.addAll((List<Object>) bodyContext);
+			return Uni.createFrom().item(expanded);
+		}).collectFailures().concatenate().collect().asList().onItemOrFailure().transformToUni((results, fails) -> {
+			List<NGSILDOperationResult> opResults = new ArrayList<>(results.size());
+			if (fails instanceof CompositeException) {
+				// these are possible jsonld expansion error
+				CompositeException compFail = (CompositeException) fails;
+
+				for (Throwable fail : compFail.getCauses()) {
+					// TODO collect failures from expanding here
+				}
 			} else {
-				context.add(bodyContext);
+				// unexpected failure abort
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(fails));
+
 			}
-			return entityService.createEntry(tenant, expanded, context, batchInfo).onFailure().recoverWithUni(e -> {
-				return entityService.sendFail(batchInfo).onItem().transformToUni(v -> Uni.createFrom().failure(e));
+			///context 
+			return entityService.createMultipleEntry(tenant, results, null).onItem().transform(t->{
+				return HttpUtils.generateBatchResult(t);
 			});
-		}).collectFailures().concatenate().collect().asList().onItemOrFailure().transform((results, fails) -> {
-
-			if (results == null) {
-				return HttpUtils.handleControllerExceptions(fails);
-			}
-
-			return generateBatchResultReply(results, HttpStatus.SC_CREATED);
-
-//			List<NGSILDOperationResult> result = Lists.newArrayList();
-//			if(fails != null) {
-//				
-//				CompositeException exceptions = (CompositeException) fails;
-//				exceptions.getCauses();	
-//			}
-//			
-//			if (results == null) {
-//				return HttpUtils.handleControllerExceptions(fails);
-//			}
-//			results.forEach(i -> {
-//				if (i.getSuccesses()!=null && !i.getSuccesses().isEmpty() ) {
-//					result.addSuccess(((CreateResult) i.getItem2()).getEntityId());
-//				} else {
-//					result.addFail(i.getItem1());
-//				}
-//			});
-//			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
 		});
-
-//				t -> {
-//			BatchResult result = new BatchResult();
-//			t.forEach(i -> {
-//				if (i.getItem2() != null) {
-//					result.addSuccess(i.getItem2().getEntityId());
-//				} else {
-//					result.addFail(i.getItem1());
-//				}
-//			});
-//			return generateBatchResultReply(result, HttpStatus.SC_CREATED);
-//		});
 	}
 
 	@SuppressWarnings("unchecked")
