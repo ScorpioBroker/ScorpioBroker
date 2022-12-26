@@ -171,15 +171,14 @@ public class EntityService implements EntryCRUDService {
 			ArrayListMultimap<RemoteHost, Map<String, Object>> remoteHost2Entities = tuple.getItem1();
 
 			List<Map<String, Object>> remoteEntities;
-			List<Uni<Tuple3<List<NGSILDOperationResult>, RemoteHost, List<Map<String, Object>>>>> unis = new ArrayList<>(
-					remoteHost2Entities.size());
+			List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>(remoteHost2Entities.size());
 			for (RemoteHost remoteHost : remoteHost2Entities.keys()) {
 				remoteEntities = remoteHost2Entities.get(remoteHost);
 				if (remoteHost.canDoBatchOp()) {
 					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
 							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(remoteEntities)).onItemOrFailure()
 							.transform((response, failure) -> {
-								return Tuple3.of(handleBatchResponse(response, failure), remoteHost, remoteEntities);
+								return handleBatchResponse(response, failure, remoteHost, remoteEntities);
 							}));
 				} else {
 					// backup in case someone can't do batch op
@@ -208,15 +207,14 @@ public class EntityService implements EntryCRUDService {
 									remoteHost, HttpUtils.getAttribsFromCompactedPayload(next.getItem4()));
 							opResults.add(tmpResult);
 						}
-						return Tuple3.of(opResults, next.getItem3(), postedEntityList);
+						return opResults;
 					}));
 				}
 			}
 			return Uni.combine().all().unis(unis).combinedWith(t -> {
 				Map<String, NGSILDOperationResult> entityId2Result = tuple.getItem2();
 				for (Object obj : t) {
-					Tuple3<List<NGSILDOperationResult>, RemoteHost, List<Map<String, Object>>> tmp = (Tuple3<List<NGSILDOperationResult>, RemoteHost, List<Map<String, Object>>>) obj;
-					mergeRemoteResults(entityId2Result, tmp);
+					mergeRemoteResults(entityId2Result, (List<NGSILDOperationResult>) obj);
 				}
 				return Lists.newArrayList(entityId2Result.values());
 			});
@@ -226,12 +224,13 @@ public class EntityService implements EntryCRUDService {
 	}
 
 	private void mergeRemoteResults(Map<String, NGSILDOperationResult> entityId2Result,
-			Tuple3<List<NGSILDOperationResult>, RemoteHost, List<Map<String, Object>>> tmp) {
+			List<NGSILDOperationResult> remoteResults) {
 		// TODO Auto-generated method stub
 
 	}
 
-	private List<NGSILDOperationResult> handleBatchResponse(HttpResponse<Buffer> response, Throwable failure) {
+	private List<NGSILDOperationResult> handleBatchResponse(HttpResponse<Buffer> response, Throwable failure,
+			RemoteHost remoteHost, List<Map<String, Object>> remoteEntities) {
 		// TODO Auto-generated method stub
 		return null;
 	}
