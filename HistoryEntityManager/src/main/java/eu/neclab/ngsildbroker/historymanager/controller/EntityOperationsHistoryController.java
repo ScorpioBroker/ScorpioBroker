@@ -83,15 +83,5 @@ public class EntityOperationsHistoryController {
 				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, random);
 	}
 
-	@Path("/query")
-	@POST
-	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String payload,
-			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") Integer offset,
-			@QueryParam(value = "qtoken") String qToken, @QueryParam(value = "options") List<String> options,
-			@QueryParam(value = "count") boolean count) {
-
-		return QueryControllerFunctions.postQuery(entityService, request, payload, limit, offset, qToken, options,
-				count, defaultLimit, maxLimit, AppConstants.QUERY_PAYLOAD, paramParser);
-	}
 
 }
