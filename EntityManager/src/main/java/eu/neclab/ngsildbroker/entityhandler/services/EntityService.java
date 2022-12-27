@@ -115,16 +115,21 @@ public class EntityService implements EntryCRUDService {
 						unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
 								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue()))
 								.onItemOrFailure().transformToUni((response, failure) -> {
-									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
-											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+									handleWebResponse(localResult, response, failure, 201, remoteHost,
+											HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+									return Uni.createFrom().voidItem();
 								}));
 					} else {
 						unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
 								.putHeaders(remoteHost.headers())
 								.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(entry.getValue()))))
 								.onItemOrFailure().transformToUni((response, failure) -> {
-									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
-											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+									NGSILDOperationResult remoteResult = handleBatchResponse(response, failure,
+											remoteHost, Lists.newArrayList(entry.getValue()), ArrayUtils.toArray(201))
+											.get(0);
+									localResult.getSuccesses().addAll(remoteResult.getSuccesses());
+									localResult.getFailures().addAll(remoteResult.getFailures());
+									return Uni.createFrom().voidItem();
 								}));
 					}
 				}
@@ -178,7 +183,8 @@ public class EntityService implements EntryCRUDService {
 					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
 							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(remoteEntities)).onItemOrFailure()
 							.transform((response, failure) -> {
-								return handleBatchResponse(response, failure, remoteHost, remoteEntities);
+								return handleBatchResponse(response, failure, remoteHost, remoteEntities,
+										ArrayUtils.toArray(201));
 							}));
 				} else {
 					// backup in case someone can't do batch op
@@ -203,8 +209,8 @@ public class EntityService implements EntryCRUDService {
 							tmpResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
 									(String) next.getItem4().get("id"));
 							postedEntityList.add(next.getItem4());
-							handleWebResponse(tmpResult, next.getItem1(), next.getItem2(), ArrayUtils.toArray(201),
-									remoteHost, HttpUtils.getAttribsFromCompactedPayload(next.getItem4()));
+							handleWebResponse(tmpResult, next.getItem1(), next.getItem2(), 201, remoteHost,
+									HttpUtils.getAttribsFromCompactedPayload(next.getItem4()));
 							opResults.add(tmpResult);
 						}
 						return opResults;
@@ -225,14 +231,88 @@ public class EntityService implements EntryCRUDService {
 
 	private void mergeRemoteResults(Map<String, NGSILDOperationResult> entityId2Result,
 			List<NGSILDOperationResult> remoteResults) {
-		// TODO Auto-generated method stub
-
+		for (NGSILDOperationResult remoteResult : remoteResults) {
+			NGSILDOperationResult localResult = entityId2Result.get(remoteResult.getEntityId());
+			if (localResult == null) {
+				entityId2Result.put(remoteResult.getEntityId(), remoteResult);
+			} else {
+				localResult.getSuccesses().addAll(remoteResult.getSuccesses());
+				localResult.getFailures().addAll(remoteResult.getFailures());
+			}
+		}
 	}
 
 	private List<NGSILDOperationResult> handleBatchResponse(HttpResponse<Buffer> response, Throwable failure,
-			RemoteHost remoteHost, List<Map<String, Object>> remoteEntities) {
-		// TODO Auto-generated method stub
-		return null;
+			RemoteHost host, List<Map<String, Object>> remoteEntities, Integer[] successCodes) {
+		List<NGSILDOperationResult> result = Lists.newArrayList();
+		if (failure != null) {
+
+			for (Map<String, Object> entity : remoteEntities) {
+				NGSILDOperationResult tmp = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+						entity.get("id") == null ? "no entityId" : (String) entity.get("id"));
+				tmp.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(), host,
+						HttpUtils.getAttribsFromCompactedPayload(entity)));
+				result.add(tmp);
+			}
+		} else {
+			int statusCode = response.statusCode();
+			if (ArrayUtils.contains(successCodes, statusCode)) {
+				for (Map<String, Object> entity : remoteEntities) {
+					NGSILDOperationResult tmp = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+							entity.get("id") == null ? "no entityId" : (String) entity.get("id"));
+					tmp.addSuccess(new CRUDSuccess(host, HttpUtils.getAttribsFromCompactedPayload(entity)));
+					result.add(tmp);
+				}
+			} else if (statusCode == 207) {
+				JsonArray jsonArray = response.bodyAsJsonArray();
+				if (jsonArray != null) {
+					jsonArray.forEach(i -> {
+						JsonObject jsonObj = (JsonObject) i;
+						NGSILDOperationResult remoteResult;
+						try {
+							remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap());
+						} catch (ResponseException e) {
+							remoteResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+									jsonObj.getMap().get("id") == null ? "no entityId"
+											: (String) jsonObj.getMap().get("id"));
+							remoteResult.addFailure(e);
+						}
+						result.add(remoteResult);
+					});
+				}
+
+			} else {
+				for (Map<String, Object> entity : remoteEntities) {
+					NGSILDOperationResult tmp = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+							entity.get("id") == null ? "no entityId" : (String) entity.get("id"));
+
+					JsonObject responseBody = response.bodyAsJsonObject();
+
+					if (responseBody == null) {
+						tmp.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
+								NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode, host,
+								HttpUtils.getAttribsFromCompactedPayload(entity)));
+
+					} else {
+						if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
+								|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)
+								|| !responseBody.containsKey(NGSIConstants.ERROR_DETAIL)) {
+							tmp.addFailure(
+									new ResponseException(statusCode, responseBody.getString(NGSIConstants.ERROR_TYPE),
+											responseBody.getString(NGSIConstants.ERROR_TITLE),
+											responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), host,
+											HttpUtils.getAttribsFromCompactedPayload(entity)));
+						} else {
+							tmp.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
+									NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE,
+									responseBody.getMap(), host, HttpUtils.getAttribsFromCompactedPayload(entity)));
+						}
+					}
+					result.add(tmp);
+				}
+			}
+		}
+		return result;
 	}
 
 	public Uni<NGSILDOperationResult> upsertEntry(String tenant, Map<String, Object> resolved,
@@ -254,8 +334,9 @@ public class EntityService implements EntryCRUDService {
 						unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
 								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue()))
 								.onItemOrFailure().transformToUni((response, failure) -> {
-									return handleWebResponse(localResult, response, failure, ArrayUtils.toArray(201),
-											remoteHost, HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+									handleWebResponse(localResult, response, failure, 201, remoteHost,
+											HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+									return Uni.createFrom().voidItem();
 								}));
 					}
 				}
@@ -345,13 +426,13 @@ public class EntityService implements EntryCRUDService {
 		return sendKafka.onItem().transform(v -> Tuple2.of(operationResult, remoteResults));
 	}
 
-	private Uni<Void> handleWebResponse(NGSILDOperationResult result, HttpResponse<Buffer> response, Throwable failure,
-			Integer[] successCode, RemoteHost host, Set<Attrib> attribs) {
+	private void handleWebResponse(NGSILDOperationResult result, HttpResponse<Buffer> response, Throwable failure,
+			int successCode, RemoteHost host, Set<Attrib> attribs) {
 		if (failure != null) {
 			result.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(), host, attribs));
 		} else {
 			int statusCode = response.statusCode();
-			if (ArrayUtils.contains(successCode, statusCode)) {
+			if (successCode == statusCode) {
 				result.addSuccess(new CRUDSuccess(host, attribs));
 			} else if (statusCode == 207) {
 				JsonObject jsonObj = response.bodyAsJsonObject();
@@ -361,7 +442,7 @@ public class EntityService implements EntryCRUDService {
 						remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap());
 					} catch (ResponseException e) {
 						result.addFailure(e);
-						return Uni.createFrom().voidItem();
+						return;
 					}
 					result.getFailures().addAll(remoteResult.getFailures());
 					result.getSuccesses().addAll(remoteResult.getSuccesses());
@@ -401,7 +482,6 @@ public class EntityService implements EntryCRUDService {
 				}
 			}
 		}
-		return Uni.createFrom().voidItem();
 	}
 
 	/**
@@ -513,8 +593,9 @@ public class EntityService implements EntryCRUDService {
 
 				unis.add(req.putHeaders(headers).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 						.transformToUni((response, failure) -> {
-							return handleWebResponse(result, response, failure, 201, host, headers, cSourceId,
-									entityToForward, context);
+							handleWebResponse(result, response, failure, 201, host, headers, cSourceId, entityToForward,
+									context);
+							return Uni.createFrom().voidItem();
 						}));
 				break;
 			}
