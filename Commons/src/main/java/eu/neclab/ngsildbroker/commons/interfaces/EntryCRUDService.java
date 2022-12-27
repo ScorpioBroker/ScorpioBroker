@@ -8,13 +8,14 @@ import com.github.jsonldjava.core.Context;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 public interface EntryCRUDService {
 
 	Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved, Context originalContext);
 
-	Uni<List<NGSILDOperationResult>> createMultipleEntry(String tenant, List<Map<String, Object>> entities,
-			Context originalContext);
+	Uni<List<NGSILDOperationResult>> createMultipleEntry(String tenant,
+			List<Tuple2<Context, Map<String, Object>>> entity2Context);
 
 	Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
 			Context originalContext);

@@ -197,6 +197,11 @@ public class JsonLdProcessor {
 			}
 			activeCtx = activeCtx.parse(exCtx, true);
 		}
+		return expand(activeCtx, input, opts, payloadType, atContextAllowed);
+	}
+
+	public static List<Object> expand(Context activeCtx, Object input, JsonLdOptions opts, int payloadType,
+			boolean atContextAllowed) throws JsonLdError, ResponseException {
 
 		// 5)
 		// TODO: add support for getting a context from HTTP when content-type
@@ -241,13 +246,13 @@ public class JsonLdProcessor {
 	 * @throws ResponseException
 	 */
 	public static List<Object> expand(Object input) throws JsonLdError, ResponseException {
-		return expand(null, input, new JsonLdOptions(""), -1, true);
+		return expand(new ArrayList<>(0), input, new JsonLdOptions(""), -1, true);
 	}
 
 	public static Object flatten(Object input, Object context, JsonLdOptions opts)
 			throws JsonLdError, ResponseException {
 		// 2-6) NOTE: these are all the same steps as in expand
-		final Object expanded = expand(null, input, opts, -1, true);
+		final Object expanded = expand(new ArrayList<>(0), input, opts, -1, true);
 		// 7)
 		if (context instanceof Map && ((Map<String, Object>) context).containsKey(JsonLdConsts.CONTEXT)) {
 			context = ((Map<String, Object>) context).get(JsonLdConsts.CONTEXT);
@@ -361,7 +366,7 @@ public class JsonLdProcessor {
 
 		// 2. Set expanded input to the result of using the expand method using
 		// input and options.
-		final Object expandedInput = expand(null, input, opts, -1, true);
+		final Object expandedInput = expand(new ArrayList<>(0), input, opts, -1, true);
 
 		// 3. Set expanded frame to the result of using the expand method using
 		// frame and options with expandContext set to null and the
@@ -369,7 +374,7 @@ public class JsonLdProcessor {
 		final Object savedExpandedContext = opts.getExpandContext();
 		opts.setExpandContext(null);
 		opts.setFrameExpansion(true);
-		final List<Object> expandedFrame = expand(null, frame, opts, -1, true);
+		final List<Object> expandedFrame = expand(new ArrayList<>(0), frame, opts, -1, true);
 		opts.setExpandContext(savedExpandedContext);
 
 		// 4. Set context to the value of @context from frame, if it exists, or
@@ -557,7 +562,7 @@ public class JsonLdProcessor {
 	public static Object toRDF(Object input, JsonLdTripleCallback callback, JsonLdOptions options)
 			throws JsonLdError, ResponseException {
 
-		final Object expandedInput = expand(null, input, options, -1, true);
+		final Object expandedInput = expand(new ArrayList<>(0), input, options, -1, true);
 
 		final JsonLdApi api = new JsonLdApi(expandedInput, options);
 		final RDFDataset dataset = api.toRDF();

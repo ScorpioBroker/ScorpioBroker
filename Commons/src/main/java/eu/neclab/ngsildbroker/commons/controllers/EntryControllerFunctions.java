@@ -164,21 +164,22 @@ public interface EntryControllerFunctions {
 			} catch (ResponseException e) {
 				return Multi.createFrom().failure(e);
 			}
-			
+
 			Multi<Tuple3<List<Object>, Map<String, Object>, Boolean>> tmpResult = Multi.createFrom()
 					.items(jsonPayload.parallelStream()).onItem().transform(i -> Tuple3.of(t, i, preFlight));
 			return tmpResult;
 		}).onItem().transformToUni(itemTuple -> {
 			Map<String, Object> expanded;
+			Context context = HttpUtils.getContextFromPayload(itemTuple.getItem2(), itemTuple.getItem1(),
+					itemTuple.getItem3());
 			try {
 				expanded = (Map<String, Object>) JsonLdProcessor
-						.expand(itemTuple.getItem1(), itemTuple.getItem2(), opts, payloadType, itemTuple.getItem3())
-						.get(0);
+						.expand(context, itemTuple.getItem2(), opts, payloadType, itemTuple.getItem3()).get(0);
 			} catch (Exception e) {
 				return Uni.createFrom().failure(e);
 			}
 
-			return Uni.createFrom().item(expanded);
+			return Uni.createFrom().item(Tuple2.of(context, expanded));
 		}).collectFailures().concatenate().collect().asList().onItemOrFailure().transformToUni((results, fails) -> {
 			List<NGSILDOperationResult> opResults = new ArrayList<>(results.size());
 			if (fails instanceof CompositeException) {
@@ -193,8 +194,8 @@ public interface EntryControllerFunctions {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(fails));
 
 			}
-			///context 
-			return entityService.createMultipleEntry(tenant, results, null).onItem().transform(t->{
+			/// context
+			return entityService.createMultipleEntry(tenant, results).onItem().transform(t -> {
 				return HttpUtils.generateBatchResult(t);
 			});
 		});
@@ -417,8 +418,6 @@ public interface EntryControllerFunctions {
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
-					List<Object> context = new ArrayList<Object>();
-					context.addAll(contextHeaders);
 
 					Map<String, Object> body;
 					try {
@@ -428,18 +427,14 @@ public interface EntryControllerFunctions {
 					}
 
 					Map<String, Object> resolvedBody;
+					Context context = HttpUtils.getContextFromPayload(body, contextHeaders, atContextAllowed);
 					try {
 						resolvedBody = (Map<String, Object>) JsonLdProcessor
-								.expand(contextHeaders, body, opts, payloadType, atContextAllowed).get(0);
+								.expand(context, body, opts, payloadType, atContextAllowed).get(0);
 					} catch (JsonLdError | ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
-					Object bodyContext = body.get(JsonLdConsts.CONTEXT);
-					if (bodyContext instanceof List) {
-						context.addAll((List<Object>) bodyContext);
-					} else {
-						context.add(bodyContext);
-					}
+
 					return Uni.createFrom().item(Tuple2.of(resolvedBody, context));
 				}).onItem()
 				.transformToUni(resolved -> entityService
@@ -466,35 +461,22 @@ public interface EntryControllerFunctions {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload")));
 			}
-			Object originalPayload;
+			Map<String, Object> originalPayload;
 			try {
-				originalPayload = JsonUtils.fromString(payload);
+				originalPayload = (Map<String, Object>) JsonUtils.fromString(payload);
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			List<Object> atContext;
-
 			Map<String, Object> resolved;
+			Context context = HttpUtils.getContextFromPayload(originalPayload, t, atContextAllowed);
 			try {
 				resolved = (Map<String, Object>) JsonLdProcessor
-						.expand(t, originalPayload, opts, payloadType, atContextAllowed).get(0);
+						.expand(context, originalPayload, opts, payloadType, atContextAllowed).get(0);
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			if (atContextAllowed) {
-				Object payloadAtContext = ((Map<String, Object>) originalPayload).get(NGSIConstants.JSON_LD_CONTEXT);
-				if (payloadAtContext == null) {
-					atContext = Lists.newArrayList();
-				} else if (payloadAtContext instanceof List) {
-					atContext = (List<Object>) payloadAtContext;
-				} else {
-					atContext = Lists.newArrayList();
-					atContext.add(payloadAtContext);
-				}
-			} else {
-				atContext = t;
-			}
-			return entityService.createEntry(HttpUtils.getTenant(request), resolved, atContext).onItem()
+
+			return entityService.createEntry(HttpUtils.getTenant(request), resolved, context).onItem()
 					.transform(operationResult -> {
 						logger.trace("create entity :: completed");
 						List<ResponseException> fails = operationResult.getFailures();
@@ -536,8 +518,6 @@ public interface EntryControllerFunctions {
 					} catch (ResponseException e1) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e1));
 					}
-					List<Object> context = new ArrayList<Object>();
-					context.addAll(contextHeaders);
 					if (payload == null || payload.isEmpty()) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 								new ResponseException(ErrorType.InvalidRequest, "An empty payload is not allowed")));
@@ -548,17 +528,12 @@ public interface EntryControllerFunctions {
 					} catch (Exception e) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}
-					Object bodyContext = body.get(JsonLdConsts.CONTEXT);
-
-					if (bodyContext instanceof List) {
-						context.addAll((List<Object>) bodyContext);
-					} else {
-						context.add(bodyContext);
-					}
+					Context context = HttpUtils.getContextFromPayload(body, contextHeaders, atContextAllowed);
 					Map<String, Object> resolved;
 					try {
-						resolved = (Map<String, Object>) JsonLdProcessor.expand(contextHeaders,
-								JsonUtils.fromString(payload), opts, payloadType, atContextAllowed).get(0);
+						resolved = (Map<String, Object>) JsonLdProcessor
+								.expand(context, JsonUtils.fromString(payload), opts, payloadType, atContextAllowed)
+								.get(0);
 					} catch (Exception e) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}
@@ -583,7 +558,11 @@ public interface EntryControllerFunctions {
 			String entityId, Logger logger) {
 		return Uni.combine().all().unis(HttpUtils.validateUri(entityId), HttpUtils.getAtContext(request)).asTuple()
 				.onItem().transformToUni(t -> {
-					return entityService.deleteEntry(HttpUtils.getTenant(request), entityId, t.getItem2()).onItem()
+					Context context = JsonLdProcessor.getCoreContextClone();
+					if (t.getItem2() != null && !t.getItem2().isEmpty()) {
+						context.parse(t.getItem2(), true);
+					}
+					return entityService.deleteEntry(HttpUtils.getTenant(request), entityId, context).onItem()
 							.transformToUni(t2 -> {
 								logger.trace("delete entity :: completed");
 								return HttpUtils.generateUpdateResultResponse(t2);

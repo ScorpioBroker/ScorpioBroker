@@ -134,20 +134,20 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	public Uni<List<NGSILDOperationResult>> createMultipleEntry(String tenant, List<Map<String, Object>> entities,
-			Context originalContext) {
+	public Uni<List<NGSILDOperationResult>> createMultipleEntry(String tenant,
+			List<Tuple2<Context, Map<String, Object>>> entity2Context) {
 		logger.debug("createMessage() :: started");
-		BatchInfo batchInfo = new BatchInfo(random.nextInt(), entities.size());
+		BatchInfo batchInfo = new BatchInfo(random.nextInt(), entity2Context.size());
 
 		List<Uni<Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>>>> dbUnis = Lists.newArrayList();
-		for (Map<String, Object> entity : entities) {
-			CreateEntityRequest request = new CreateEntityRequest(tenant, entity, batchInfo);
+		for (Tuple2<Context, Map<String, Object>> tuple : entity2Context) {
+			CreateEntityRequest request = new CreateEntityRequest(tenant, tuple.getItem2(), batchInfo);
 			dbUnis.add(entityDAO.createEntity(request).onItem().transformToUni(resultTable -> {
 				if (resultTable.size() == 0) {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
 							"No result from the database this should never happen"));
 				}
-				return handleDBCreateResult(request, resultTable, originalContext);
+				return handleDBCreateResult(request, resultTable, tuple.getItem1());
 			}));
 		}
 
