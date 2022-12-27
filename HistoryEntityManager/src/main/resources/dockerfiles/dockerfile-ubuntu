@@ -1,0 +1,9 @@
+FROM ubuntu
+WORKDIR /usr/src/scorpio
+ARG FILE_BUILD
+ARG FILE_RUN
+ENV FILE_RUN=${FILE_RUN}
+ENV DBHOST=postgres
+ENV BUSHOST=kafka
+COPY target/${FILE_BUILD} ./${FILE_RUN}
+CMD ./$FILE_RUN

@@ -1,0 +1,138 @@
+{
+  "@context": [
+    "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
+    {
+      "Vehicle":"http://example.org/vehicle/Vehicle",
+      "brandName": "http://example.org/vehicle/brandName",
+      "color": "http://example.org/vehicle/color",
+      "speed": "http://example.org/vehicle/speed",
+      "speedAccuracy": "http://example.org/vehicle/speedAccuracy",
+      "temperature": "http://example.org/vehicle/temperature",
+      "testedAt": {
+        "@type": "https://uri.etsi.org/ngsi-ld/DateTime",
+        "@id": "http://example.org/vehicle/testedAt"
+      }
+    }
+  ],    
+  "id": "urn:ngsi-ld:Vehicle:B9211",
+  "type": "Vehicle",
+  "createdAt": "2018-08-01T12:03:00Z",
+  "modifiedAt": "2018-08-01T12:03:00Z",
+  "brandName": [
+    {
+      "type": "Property",
+      "value": "Volvo",
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z"
+    }
+  ],
+  "color": [
+    {
+      "type": "Property",
+      "value": "Red",
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z",
+      "observedAt": "2018-06-01T12:03:00Z",
+      "instanceId": "urn:ngsi-ld:91afea8c-23d9-4d6d-9a35-798c28a9db79"
+    }
+  ],
+  "speed": [
+    {
+      "type": "Property",
+      "value": 120,
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z",
+      "observedAt": "2018-06-01T12:03:00Z",
+      "instanceId": "urn:ngsi-ld:be664aaf-a7af-4a99-bebc-e89528238abf"
+    },
+    {
+      "type": "Property",
+      "value": 80,
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z",
+      "observedAt": "2018-08-01T12:05:00Z",
+      "instanceId": "urn:ngsi-ld:d3ac28df-977f-4151-a432-dc088f7400d7"
+    },
+    {
+      "type": "Property",
+      "value": 100,
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z",
+      "observedAt": "2018-08-01T12:07:00Z",
+      "instanceId": "urn:ngsi-ld:70ac695b-52a3-4dde-8d29-d2d5a2b662f7",
+      "speedAccuracy": [
+        {
+          "type": "Property",
+          "value": 5,
+          "createdAt": "2018-08-01T12:03:00Z",
+          "modifiedAt": "2018-08-01T12:03:00Z",
+          "observedAt": "2018-08-01T12:07:01Z",
+          "instanceId": "urn:ngsi-ld:c6db2da4-c9a3-41da-83c1-a9e05c7ebc9c"
+        },
+        {
+          "type": "Property",
+          "value": 7,
+          "createdAt": "2018-08-01T12:03:00Z",
+          "modifiedAt": "2018-08-01T12:03:00Z",
+          "observedAt": "2018-08-01T12:07:02Z",
+          "instanceId": "urn:ngsi-ld:a6158a85-95e8-4cb2-aadd-bf4b79250884"
+        }
+      ]      
+    }
+  ],
+  "temperature": [
+    {
+      "type": "Property",
+      "value": 10,
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z",
+      "testedAt": {
+        "type": "Property",
+        "value": {
+          "@type": "DateTime",
+          "@value": "2018-12-04T12:00:00Z"
+        }
+      }
+    },
+    {
+      "type": "Property",
+      "value": 15,
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z",
+      "testedAt": {
+        "type": "Property",
+        "value": {
+          "@type": "DateTime",
+          "@value": "2019-12-04T12:00:00Z"
+        }
+      }
+    }
+  ],
+  "location": [
+    {
+      "type": "GeoProperty",
+      "value": "{ \"type\":\"Point\", \"coordinates\":[ -8.5, 41.2 ] }",
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z",
+      "observedAt": "2018-07-01T12:03:00Z",
+      "instanceId": "urn:ngsi-ld:cfade4cb-7c71-4135-b69c-24ab83e2afae"
+    },
+    {
+      "type": "GeoProperty",
+      "value": "{ \"type\":\"Point\", \"coordinates\":[ -8.5, 42.2 ] }",
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z",
+      "observedAt": "2018-07-01T12:05:00Z",
+      "instanceId": "urn:ngsi-ld:37192165-11d9-48fa-9952-b6aab55e5046"
+    },
+    {
+      "type": "GeoProperty",
+      "value": "{ \"type\":\"Point\", \"coordinates\":[ -8.5, 43.2 ] }",
+      "createdAt": "2018-08-01T12:03:00Z",
+      "modifiedAt": "2018-08-01T12:03:00Z",
+      "observedAt": "2018-08-01T12:07:00Z",
+      "instanceId": "urn:ngsi-ld:0f978241-7d03-4fa9-96e4-094c2c467395"
+    }
+  ]
+
+}

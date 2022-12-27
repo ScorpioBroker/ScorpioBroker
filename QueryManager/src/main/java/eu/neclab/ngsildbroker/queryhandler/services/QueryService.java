@@ -80,33 +80,34 @@ public class QueryService {
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, String lang, int limit, int offSet, boolean count, boolean localOnly,
 			Context context) {
-		if (localOnly) {
-			return queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-					limit, offSet, count).onItem().transform(rows -> {
-						QueryResult result = new QueryResult();
-						if (limit == 0 && count) {
-							result.setCount(rows.iterator().next().getLong(0));
-						} else {
-							RowIterator<Row> it = rows.iterator();
-							Row next = null;
+		Uni<QueryResult> localQuery = queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+				limit, offSet, count).onItem().transform(rows -> {
+					QueryResult result = new QueryResult();
+					if (limit == 0 && count) {
+						result.setCount(rows.iterator().next().getLong(0));
+					} else {
+						RowIterator<Row> it = rows.iterator();
+						Row next = null;
 
-							List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
-							while (it.hasNext()) {
-								next = it.next();
-								resultData.add(next.getJsonObject(1).getMap());
-							}
-							Long resultCount = next.getLong(0);
-							result.setCount(resultCount);
-							long leftAfter = resultCount - (offSet + limit);
-							long leftBefore = offSet;
-							result.setResultsLeftAfter(leftAfter);
-							result.setResultsLeftBefore(leftBefore);
-							result.setLimit(limit);
-							result.setOffset(offSet);
+						List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+						while (it.hasNext()) {
+							next = it.next();
+							resultData.add(next.getJsonObject(1).getMap());
 						}
+						Long resultCount = next.getLong(0);
+						result.setCount(resultCount);
+						long leftAfter = resultCount - (offSet + limit);
+						long leftBefore = offSet;
+						result.setResultsLeftAfter(leftAfter);
+						result.setResultsLeftBefore(leftBefore);
+						result.setLimit(limit);
+						result.setOffset(offSet);
+					}
 
-						return result;
-					});
+					return result;
+				});
+		if (localOnly) {
+			Uni<List<Map<String, Object>>> queryRemoteEntities = Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
 		} else {
 			Uni<List<Map<String, Object>>> queryRemoteEntities = queryDAO.getRemoteSourcesForQuery(tenant, id,
 					typeQuery, idPattern, attrsQuery, qQuery, csf, geoQuery, scopeQuery).onItem()

@@ -1,0 +1,7 @@
+FROM mcr.microsoft.com/windows:20H2
+WORKDIR c:\\scorpio
+ARG FILE_BUILD
+ARG FILE_RUN
+ENV FILE_RUN=${FILE_RUN}
+COPY target/${FILE_BUILD} ./${FILE_RUN}
+CMD c:\\scorpio\\%FILE_RUN%

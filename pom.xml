@@ -21,7 +21,8 @@
 		<!-- <module>AtContextServer</module>  -->
 		<module>RegistryManager</module>
 		<module>RegistrySubscriptionManager</module>
-		<module>HistoryManager</module>
+		<module>HistoryEntityManager</module>
+		<module>HistoryQueryManager</module>
 		<module>AllInOneRunner</module>
 	</modules>
 </project>
