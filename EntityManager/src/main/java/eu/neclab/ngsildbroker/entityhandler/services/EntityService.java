@@ -282,7 +282,7 @@ public class EntityService implements EntryCRUDService {
 		Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
 		RowIterator<Row> it = resultTable.iterator();
 		Row row;
-		Uni<Void> sendKafka = Uni.createFrom().voidItem();
+		Uni<Void> sendKafka = null;
 		while (it.hasNext()) {
 			row = it.next();
 			switch (row.getString(0)) {
@@ -335,7 +335,13 @@ public class EntityService implements EntryCRUDService {
 			}
 
 		}
-
+		if (sendKafka == null) {
+			if (request.getBatchInfo() != null) {
+				sendKafka = sendFail(request.getBatchInfo());
+			} else {
+				sendKafka = Uni.createFrom().voidItem();
+			}
+		}
 		return sendKafka.onItem().transform(v -> Tuple2.of(operationResult, remoteResults));
 	}
 
