@@ -12,13 +12,9 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import io.vertx.core.MultiMap;
+import io.vertx.mutiny.core.MultiMap;
 
 public class CRUDSuccess {
-	private String endpoint;
-	private MultiMap headers;
-	private String cSourceId;
-	private Set<Attrib> attribs;
 	protected Map<String, Object> json = Maps.newHashMap();
 
 	public CRUDSuccess(String endpoint, MultiMap headers, String cSourceId, Map<String, Object> entityAdded,
@@ -26,12 +22,12 @@ public class CRUDSuccess {
 		this(endpoint, headers, cSourceId, NGSILDOperationResult.getAttribs(entityAdded, context));
 	}
 
+	public CRUDSuccess(RemoteHost host, Set<Attrib> attribs) {
+		this(host.host(), host.headers(), host.cSourceId(), attribs);
+	}
+
 	public CRUDSuccess(String endpoint, MultiMap headers, String cSourceId, Set<Attrib> attribs) {
 		super();
-		this.endpoint = endpoint;
-		this.headers = headers;
-		this.cSourceId = cSourceId;
-		this.attribs = attribs;
 		if (endpoint != null) {
 			json.put(NGSIConstants.ERROR_DETAIL_ENDPOINT, endpoint);
 		}
@@ -44,10 +40,6 @@ public class CRUDSuccess {
 		}
 		json.put(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT, tmp);
 
-	}
-
-	public CRUDSuccess(RemoteHost host, Set<Attrib> attribs2) {
-		// TODO Auto-generated constructor stub
 	}
 
 	public Map<String, Object> getJson() {

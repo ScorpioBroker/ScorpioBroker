@@ -119,6 +119,10 @@ public class QueryController {
 				return Uni.createFrom()
 						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 			}
+			if (typeQuery == null && attrs == null && geometry == null && q == null) {
+				return Uni.createFrom()
+						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
+			}
 			Context context = JsonLdProcessor.getCoreContextClone().parse(headerContext, true);
 			TypeQueryTerm typeQueryTerm = new TypeQueryTerm(context);
 			AttrsQueryTerm attrsQueryTerm = new AttrsQueryTerm(context);
@@ -131,11 +135,7 @@ public class QueryController {
 			return queryService.query(HttpUtils.getTenant(request), id, typeQueryTerm, idPattern, attrsQueryTerm,
 					qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, lang, limit.get(), offset, count, localOnly,
 					context).onItem().transform(t -> {
-						if (t.getData().isEmpty()) {
-							return RestResponse.notFound();
-						} else {
-							return RestResponse.ok(t);
-						}
+						return RestResponse.ok(t);
 					});
 		});
 

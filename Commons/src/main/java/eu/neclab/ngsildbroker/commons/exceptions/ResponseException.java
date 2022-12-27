@@ -14,7 +14,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import io.vertx.core.MultiMap;
+import io.vertx.mutiny.core.MultiMap;
 
 /**
  * @version 1.0
@@ -90,18 +90,18 @@ public class ResponseException extends Exception {
 				NGSILDOperationResult.getAttribs(entity, context));
 	}
 
-	public ResponseException(ErrorType internalerror, String message, RemoteHost host, Set<Attrib> attribs2) {
-		// TODO Auto-generated constructor stub
+	public ResponseException(ErrorType errorType, String message, RemoteHost host, Set<Attrib> attribs) {
+		this(errorType, message, host.host(), host.headers(), host.cSourceId(), attribs);
 	}
 
-	public ResponseException(int i, String errorUnexpectedResult, String errorUnexpectedResultNullTitle, int statusCode,
-			RemoteHost host, Set<Attrib> attribs2) {
-		// TODO Auto-generated constructor stub
+	public ResponseException(int statusCode, String type, String title, int remoteStatusCode, RemoteHost host,
+			Set<Attrib> attribs) {
+		this(statusCode, type, title, remoteStatusCode + "", host, attribs);
 	}
 
-	public ResponseException(int statusCode, String string, String string2, Object object, RemoteHost host,
-			Set<Attrib> attribs2) {
-		// TODO Auto-generated constructor stub
+	public ResponseException(int statusCode, String type, String title, Object detail, RemoteHost host,
+			Set<Attrib> attribs) {
+		this(statusCode, type, title, detail, host.host(), host.headers(), host.cSourceId(), attribs);
 	}
 
 	public String getEndpoint() {
