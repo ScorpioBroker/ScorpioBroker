@@ -175,10 +175,10 @@ public class EntityService implements EntryCRUDService {
 		}).onItem().transformToUni(tuple -> {
 			ArrayListMultimap<RemoteHost, Map<String, Object>> remoteHost2Entities = tuple.getItem1();
 
-			List<Map<String, Object>> remoteEntities;
+
 			List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>(remoteHost2Entities.size());
 			for (RemoteHost remoteHost : remoteHost2Entities.keys()) {
-				remoteEntities = remoteHost2Entities.get(remoteHost);
+			 	List<Map<String, Object>>	remoteEntities = remoteHost2Entities.get(remoteHost);
 				if (remoteHost.canDoBatchOp()) {
 					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
 							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(remoteEntities)).onItemOrFailure()
@@ -593,8 +593,9 @@ public class EntityService implements EntryCRUDService {
 
 				unis.add(req.putHeaders(headers).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 						.transformToUni((response, failure) -> {
-							handleWebResponse(result, response, failure, 201, host, headers, cSourceId, entityToForward,
-									context);
+						//	handleWebResponse(result, response, failure, 201, host, headers, cSourceId, entityToForward,
+						//			context);
+							handleWebResponse(result, response, failure, 201,host,HttpUtils.getAttribsFromCompactedPayload(compacted));
 							return Uni.createFrom().voidItem();
 						}));
 				break;

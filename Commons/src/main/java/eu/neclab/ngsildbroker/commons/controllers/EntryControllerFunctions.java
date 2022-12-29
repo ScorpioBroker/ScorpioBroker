@@ -170,8 +170,13 @@ public interface EntryControllerFunctions {
 			return tmpResult;
 		}).onItem().transformToUni(itemTuple -> {
 			Map<String, Object> expanded;
-			Context context = HttpUtils.getContextFromPayload(itemTuple.getItem2(), itemTuple.getItem1(),
-					itemTuple.getItem3());
+			Context context = null;
+			try {
+				context = HttpUtils.getContextFromPayload(itemTuple.getItem2(), itemTuple.getItem1(),
+						itemTuple.getItem3());
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+			}
 			try {
 				expanded = (Map<String, Object>) JsonLdProcessor
 						.expand(context, itemTuple.getItem2(), opts, payloadType, itemTuple.getItem3()).get(0);
@@ -427,7 +432,12 @@ public interface EntryControllerFunctions {
 					}
 
 					Map<String, Object> resolvedBody;
-					Context context = HttpUtils.getContextFromPayload(body, contextHeaders, atContextAllowed);
+					Context context = null;
+					try {
+						context = HttpUtils.getContextFromPayload(body, contextHeaders, atContextAllowed);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
 					try {
 						resolvedBody = (Map<String, Object>) JsonLdProcessor
 								.expand(context, body, opts, payloadType, atContextAllowed).get(0);
@@ -468,7 +478,12 @@ public interface EntryControllerFunctions {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
 			Map<String, Object> resolved;
-			Context context = HttpUtils.getContextFromPayload(originalPayload, t, atContextAllowed);
+			Context context = null;
+			try {
+				context = HttpUtils.getContextFromPayload(originalPayload, t, atContextAllowed);
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+			}
 			try {
 				resolved = (Map<String, Object>) JsonLdProcessor
 						.expand(context, originalPayload, opts, payloadType, atContextAllowed).get(0);
@@ -528,7 +543,12 @@ public interface EntryControllerFunctions {
 					} catch (Exception e) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 					}
-					Context context = HttpUtils.getContextFromPayload(body, contextHeaders, atContextAllowed);
+					Context context = null;
+					try {
+						context = HttpUtils.getContextFromPayload(body, contextHeaders, atContextAllowed);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
 					Map<String, Object> resolved;
 					try {
 						resolved = (Map<String, Object>) JsonLdProcessor
