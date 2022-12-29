@@ -18,6 +18,8 @@ public class NGSILDOperationResult {
 	private int operationType;
 	private String entityId;
 
+	private boolean wasUpdated = false;
+
 	private List<CRUDSuccess> successes;
 	private List<ResponseException> failures;
 
@@ -162,6 +164,14 @@ public class NGSILDOperationResult {
 		}
 
 		return result;
+	}
+
+	public boolean isWasUpdated() {
+		return wasUpdated;
+	}
+
+	public void setWasUpdated(boolean wasUpdated) {
+		this.wasUpdated = wasUpdated;
 	}
 
 }

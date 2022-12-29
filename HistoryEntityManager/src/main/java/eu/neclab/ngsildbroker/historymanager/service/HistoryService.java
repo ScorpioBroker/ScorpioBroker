@@ -41,7 +41,7 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
-public class HistoryService extends BaseQueryService implements EntryCRUDService {
+public class HistoryService implements EntryCRUDService {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryService.class);
 
