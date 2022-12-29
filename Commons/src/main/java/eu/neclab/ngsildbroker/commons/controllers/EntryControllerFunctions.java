@@ -478,7 +478,7 @@ public interface EntryControllerFunctions {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
 			Map<String, Object> resolved;
-			Context context = null;
+			Context context;
 			try {
 				context = HttpUtils.getContextFromPayload(originalPayload, t, atContextAllowed);
 			} catch (ResponseException e) {
