@@ -66,7 +66,7 @@ import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 
 @Singleton
-public class EntityService implements EntryCRUDService {
+public class EntityService {
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
 
@@ -175,10 +175,9 @@ public class EntityService implements EntryCRUDService {
 		}).onItem().transformToUni(tuple -> {
 			ArrayListMultimap<RemoteHost, Map<String, Object>> remoteHost2Entities = tuple.getItem1();
 
-
 			List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>(remoteHost2Entities.size());
 			for (RemoteHost remoteHost : remoteHost2Entities.keys()) {
-			 	List<Map<String, Object>>	remoteEntities = remoteHost2Entities.get(remoteHost);
+				List<Map<String, Object>> remoteEntities = remoteHost2Entities.get(remoteHost);
 				if (remoteHost.canDoBatchOp()) {
 					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
 							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(remoteEntities)).onItemOrFailure()
@@ -593,9 +592,11 @@ public class EntityService implements EntryCRUDService {
 
 				unis.add(req.putHeaders(headers).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 						.transformToUni((response, failure) -> {
-						//	handleWebResponse(result, response, failure, 201, host, headers, cSourceId, entityToForward,
-						//			context);
-							handleWebResponse(result, response, failure, 201,host,HttpUtils.getAttribsFromCompactedPayload(compacted));
+							// handleWebResponse(result, response, failure, 201, host, headers, cSourceId,
+							// entityToForward,
+							// context);
+							handleWebResponse(result, response, failure, 201, host,
+									HttpUtils.getAttribsFromCompactedPayload(compacted));
 							return Uni.createFrom().voidItem();
 						}));
 				break;
@@ -608,7 +609,7 @@ public class EntityService implements EntryCRUDService {
 		return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
 	}
 
-	@Override
+	
 	public Uni<Void> sendFail(BatchInfo batchInfo) {
 		BaseRequest request = new BaseRequest();
 		request.setRequestType(AppConstants.BATCH_ERROR_REQUEST);
@@ -617,17 +618,16 @@ public class EntityService implements EntryCRUDService {
 		return kafkaSenderInterface.send(request);
 	}
 
-	@Override
+	
 	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
 			Context originalContext) {
 		return updateEntry(tenant, entityId, entry, originalContext, new BatchInfo(-1, -1));
 	}
 
-	@Override
+	
 	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
-			String[] options, Context originalContext) {
+			boolean noOverwrite, Context originalContext) {
 		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, entry, null);
-		boolean noOverwrite = Arrays.stream(options).anyMatch(NGSIConstants.NO_OVERWRITE_OPTION::equals);
 		return entityDAO.appendEntity(request, noOverwrite).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
@@ -637,7 +637,6 @@ public class EntityService implements EntryCRUDService {
 		});
 	}
 
-	@Override
 	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, Context originalContext) {
 		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, null);
 		return entityDAO.deleteEntity(request).onItem().transformToUni(resultTable -> {

@@ -46,11 +46,13 @@ import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -572,20 +574,20 @@ public final class HttpUtils {
 				.entity(new ResponseException(ErrorType.InternalError, e.getMessage()).getJson()).build();
 	}
 
-	public static Uni<URI> validateUri(String uri) {
+	public static URI validateUri(String uri) throws ResponseException {
 		try {
 			return validateUri(new URI(uri));
 		} catch (URISyntaxException e) {
-			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "id is not a URI"));
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 		}
 
 	}
 
-	public static Uni<URI> validateUri(URI uri) {
+	public static URI validateUri(URI uri) throws ResponseException {
 		if (!uri.isAbsolute()) {
-			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "id is not a URI"));
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 		}
-		return Uni.createFrom().item(uri);
+		return uri;
 
 	}
 
@@ -685,14 +687,14 @@ public final class HttpUtils {
 
 	}
 
-	public static Uni<RestResponse<Object>> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
+	public static RestResponse<Object> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
 		if (updateResult.getFailures().isEmpty()) {
-			return Uni.createFrom().item(RestResponse.noContent());
+			return RestResponse.noContent();
 		}
 		if (updateResult.getSuccesses().isEmpty()) {
 			if (updateResult.getFailures().size() == 1) {
 				ResponseException failure = updateResult.getFailures().get(0);
-				return Uni.createFrom().item(handleControllerExceptions(failure));
+				return handleControllerExceptions(failure);
 			}
 		} else {
 			boolean only404 = true;
@@ -703,11 +705,10 @@ public final class HttpUtils {
 				}
 			}
 			if (only404) {
-				return Uni.createFrom().item(RestResponse.noContent());
+				return RestResponse.noContent();
 			}
 		}
-		return Uni.createFrom()
-				.item(new RestResponseBuilderImpl().status(207).entity(new JsonObject(updateResult.getJson())).build());
+		return new RestResponseBuilderImpl().status(207).entity(new JsonObject(updateResult.getJson())).build();
 
 	}
 
@@ -835,7 +836,8 @@ public final class HttpUtils {
 		return null;
 	}
 
-	public static Context getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader, boolean atContextAllowed) throws ResponseException {
+	public static Context getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
+			boolean atContextAllowed) throws ResponseException {
 		Context context = JsonLdProcessor.getCoreContextClone();
 		Object payloadAtContext = originalPayload.remove(NGSIConstants.JSON_LD_CONTEXT);
 		if (payloadAtContext == null) {
@@ -851,6 +853,52 @@ public final class HttpUtils {
 
 		}
 		return null;
+	}
+
+	public static RestResponse<Object> generateDeleteResult(NGSILDOperationResult result) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request, String payload,
+			int payloadType) throws Exception {
+		boolean atContextAllowed;
+		List<Object> atContext = getAtContextNoUni(request);
+		atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
+		if (payload == null || payload.isEmpty()) {
+			throw new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload");
+		}
+		Map<String, Object> originalPayload;
+		originalPayload = (Map<String, Object>) JsonUtils.fromString(payload);
+		Context context = HttpUtils.getContextFromPayload(originalPayload, atContext, atContextAllowed);
+		Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+				.expand(context, originalPayload, opts, payloadType, atContextAllowed).get(0);
+		return Tuple2.of(context, resolved);
+	}
+
+	public static RestResponse<Object> generateCreateResult(NGSILDOperationResult operationResult, String baseUrl) {
+		List<ResponseException> fails = operationResult.getFailures();
+		List<CRUDSuccess> successes = operationResult.getSuccesses();
+		if (fails.isEmpty()) {
+			if (!operationResult.isWasUpdated()) {
+				try {
+					return RestResponse.created(new URI(baseUrl + operationResult.getEntityId()));
+				} catch (URISyntaxException e) {
+					return HttpUtils.handleControllerExceptions(e);
+				}
+			} else {
+				return RestResponse.ok();
+			}
+		} else if (successes.isEmpty() && fails.size() == 1) {
+			return HttpUtils.handleControllerExceptions(fails.get(0));
+		} else {
+			try {
+				return new RestResponseBuilderImpl<Object>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
+						.entity(JsonUtils.toPrettyString(operationResult.getJson())).build();
+			} catch (Exception e) {
+				return HttpUtils.handleControllerExceptions(e);
+			}
+		}
 	}
 
 }

@@ -8,26 +8,25 @@ import javax.inject.Singleton;
 
 import com.github.jsonldjava.core.Context;
 
+import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
-import eu.neclab.ngsildbroker.commons.storage.TemporalStorageFunctions;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 @Singleton
-public class HistoryDAO extends StorageDAO {
+public class HistoryDAO {
 
 	@Inject
 	ClientManager clientManager;
-
-	@Override
-	protected StorageFunctionsInterface getStorageFunctions() {
-		return new TemporalStorageFunctions();
-	}
 
 	public Uni<Object> getTemporalEntity(String entityId, String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
@@ -88,6 +87,28 @@ public class HistoryDAO extends StorageDAO {
 						return Uni.createFrom().item(false);
 					});
 		});
+	}
+
+	public Uni<RowSet<Row>> createHistoryEntity(CreateHistoryEntityRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			String sql = "SELECT * FROM NGSILD_CREATETEMPORALENTITY($1::jsonb)";
+			return client.preparedQuery(sql).execute(Tuple.of(new JsonObject(request.getPayload()))).onFailure().retry()
+					.atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+		});
+	}
+
+	public Uni<RowSet<Row>> deleteHistoryEntity(DeleteHistoryEntityRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			String sql = "SELECT * FROM NGSILD_DELETETEMPORALENTITY($1)";
+			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3)
+					.onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+		});
+
+	}
+
+	public Uni<RowSet<Row>> appendToHistoryEntity(AppendHistoryEntityRequest request) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

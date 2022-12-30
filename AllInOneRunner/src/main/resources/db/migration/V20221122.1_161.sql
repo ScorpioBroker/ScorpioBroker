@@ -901,13 +901,6 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
-
-
-
-
-
-
-
 CREATE OR REPLACE FUNCTION NGSILD_NOLOCALINFOOPERATION (ENTITYID text, DELTAENTITY JSONB, OPERATIONFIELD smallint) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, c_id text) AS $$
 declare
 	attribName text;
@@ -1730,9 +1723,44 @@ BEGIN
 					END IF;
 				END IF;
 				PERFORM addAttribFromTemp(attribName, attribValue, entityIid, true);
+			ELSE
+				insertEntity := insertEntity - attribName;
 			END IF;
 		END LOOP;
 	END LOOP;
+	
+	SELECT count(jsonb_object_keys) FROM jsonb_object_keys(insertEntity) INTO countInt;
+	IF countInt > 0 THEN
+		SELECT insertEntity || templateEntity INTO insertEntity;
+		INSERT INTO resultTable VALUES ('ADDED ENTITY', null, null, insertEntity, 'ADDED ENTITY', false, false);
+	END IF;
+	RETURN QUERY SELECT * FROM resultTable;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION NGSILD_DELETEENTITY (ENTITYID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
+declare
+	LOCALENTITY jsonb;
+	IID bigint;
+	i_rec record;
+	entityType text;
+	entityTypes jsonb;
+	insertLocation GEOMETRY(Geometry, 4326);
+	insertScopes text[];
+BEGIN
+	CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE) ON COMMIT DROP;
+	FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteTemporal AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id) ON CONFLICT DO NOTHING;
+			END LOOP;
+	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.e_id = ENTITYID;
+	IF LOCALENTITY IS NOT NULL THEN
+		BEGIN
+			DELETE FROM TEMPORALENTITY WHERE TEMPORALENTITY.id = IID;
+			INSERT INTO resultTable VALUES ('DELETED ENTITY', NULL, NULL, LOCALENTITY, 'DELETED ENTITY');
+		EXCEPTION WHEN OTHERS THEN
+			INSERT INTO resultTable VALUES ('ERROR', sqlstate::text, SQLERRM::text, null, 'ERROR');
+		END;
+	END IF;
 	RETURN QUERY SELECT * FROM resultTable;
 END;
 $$ LANGUAGE PLPGSQL;

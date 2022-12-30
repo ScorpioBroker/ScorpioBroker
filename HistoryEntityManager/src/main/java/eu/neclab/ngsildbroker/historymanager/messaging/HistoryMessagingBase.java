@@ -27,9 +27,7 @@ public abstract class HistoryMessagingBase {
 	HistoryService historyService;
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
-
 		entityExecutor.execute(new Runnable() {
-
 			@Override
 			public void run() {
 				HistoryEntityRequest request;
@@ -40,8 +38,8 @@ public abstract class HistoryMessagingBase {
 							request = new AppendHistoryEntityRequest(message);
 							break;
 						case AppConstants.CREATE_REQUEST:
-							logger.debug("Create got called: " + message.getId());
-							request = new CreateHistoryEntityRequest(message);
+							logger.debug("Create from entity got called: " + message.getId());
+							historyService.handleInternalCreate(message.getTenant(), message.getPayload());
 							break;
 						case AppConstants.UPDATE_REQUEST:
 							logger.debug("Update got called: " + message.getId());
@@ -55,15 +53,12 @@ public abstract class HistoryMessagingBase {
 							request = null;
 							break;
 					}
-					if (request != null) {
-						historyService.handleRequest(request).discardItems().await().indefinitely();
-					}
 				} catch (Exception e) {
 					logger.error("Internal history recording failed", e.getMessage());
 				}
 			}
 		});
-		return Uni.createFrom().nullItem();
+		return Uni.createFrom().voidItem();
 	}
 
 }

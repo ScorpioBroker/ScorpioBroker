@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import com.github.jsonldjava.core.JsonLdOptions;
+
 /**
  * @version 1.0
  * @date 12-Jul-2018
@@ -118,5 +120,6 @@ public class AppConstants {
 	public static final String SQL_ALREADY_EXISTS = "DONTKNOWLOOKUP";
 	public static final String SQL_NOT_FOUND = "02000";
 	public static final String NGB_APPLICATION_ZIP = "application/zip";
+	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 }
