@@ -8,8 +8,8 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class AppendHistoryEntityRequest extends AppendEntityRequest {
 
-	public AppendHistoryEntityRequest(String tenant, Map<String, Object> resolved, String entityId, BatchInfo batchInfo)
-			throws ResponseException {
+	public AppendHistoryEntityRequest(String tenant, Map<String, Object> resolved, String entityId,
+			BatchInfo batchInfo) {
 		super(tenant, entityId, resolved, batchInfo);
 
 	}

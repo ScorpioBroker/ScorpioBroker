@@ -75,11 +75,14 @@ public class HistoryController {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return historyService.deleteEntry(HttpUtils.getTenant(request), entityId).onItem().transform(result -> {
-			return HttpUtils.generateDeleteResult(result);
-		}).onFailure().recoverWithItem(error -> {
-			return HttpUtils.handleControllerExceptions(error);
-		});
+		return historyService
+				.deleteEntry(HttpUtils.getTenant(request), entityId,
+						JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContextNoUni(request), true))
+				.onItem().transform(result -> {
+					return HttpUtils.generateDeleteResult(result);
+				}).onFailure().recoverWithItem(error -> {
+					return HttpUtils.handleControllerExceptions(error);
+				});
 
 	}
 

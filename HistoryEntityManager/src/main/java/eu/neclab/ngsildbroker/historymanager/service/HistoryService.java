@@ -2,16 +2,12 @@ package eu.neclab.ngsildbroker.historymanager.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.Map.Entry;
 
 import javax.annotation.PostConstruct;
-import javax.el.MethodNotFoundException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -20,9 +16,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -30,7 +26,6 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
@@ -38,27 +33,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
-
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
-
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.groups.UniAndGroup2;
-import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.tuples.Tuple4;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -113,48 +95,363 @@ public class HistoryService {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
 						"No result from the database this should never happen"));
 			}
-			return handleDBCreateResult(request, resultTable, originalContext).onItem().transformToUni(tuple -> {
-				NGSILDOperationResult localResult = tuple.getItem1();
-				Map<RemoteHost, Map<String, Object>> remoteHosts = tuple.getItem2();
-				List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
-				for (Entry<RemoteHost, Map<String, Object>> entry : remoteHosts.entrySet()) {
-					RemoteHost remoteHost = entry.getKey();
-					if (remoteHost.canDoSingleOp()) {
-						unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT)
-								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue()))
-								.onItemOrFailure().transform((response, failure) -> {
-									return handleWebResponse(response, failure, ArrayUtils.toArray(201, 204),
-											remoteHost, AppConstants.CREATE_REQUEST, request.getId(),
-											HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
-
-								}));
-					} else {
-						unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
-								.putHeaders(remoteHost.headers())
-								.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(entry.getValue()))))
-								.onItemOrFailure().transform((response, failure) -> {
-									return handleBatchResponse(response, failure, remoteHost,
-											Lists.newArrayList(entry.getValue()), ArrayUtils.toArray(201)).get(0);
-								}));
-					}
-				}
-				return Uni.combine().all().unis(unis).combinedWith(t -> localResult);
-			});
+			return handleDBCreateResult(request, resultTable, originalContext);
 
 		});
 	}
 
-	private void mergeRemoteResults(Map<String, NGSILDOperationResult> entityId2Result,
-			List<NGSILDOperationResult> remoteResults) {
-		for (NGSILDOperationResult remoteResult : remoteResults) {
-			NGSILDOperationResult localResult = entityId2Result.get(remoteResult.getEntityId());
-			if (localResult == null) {
-				entityId2Result.put(remoteResult.getEntityId(), remoteResult);
+	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> appendEntry,
+			Context originalContext) {
+		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(tenant, appendEntry, entityId, null);
+		return historyDAO.appendToHistoryEntity(request).onItem().transformToUni(resultTable -> {
+			if (resultTable.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+						"No result from the database this should never happen"));
+			}
+			return handleDBAppendResult(request, resultTable, originalContext);
+		});
+
+	}
+
+	public Uni<NGSILDOperationResult> updateInstanceOfAttr(String tenant, String entityId, String attribId,
+			String instanceId, Map<String, Object> payload, Context originalContext) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, Context originalContext) {
+		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(tenant, entityId, null);
+		return historyDAO.deleteHistoryEntity(request).onItem().transformToUni(resultTable -> {
+			if (resultTable.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+						"No result from the database this should never happen"));
+			}
+			return handleDBDeleteResult(request, resultTable, originalContext);
+		});
+	}
+
+	public Uni<NGSILDOperationResult> deleteAttrFromEntry(String tenant, String entityId, String attrId,
+			String datasetId, boolean deleteAll, Context originalContext) {
+
+		return null;
+	}
+
+	public Uni<NGSILDOperationResult> deleteInstanceOfAttr(String tenant, String entityId, String attribId,
+			String instanceId, Context originalContext) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public void handleInternalRequest(BaseRequest request) {
+
+	}
+	
+
+
+	private Uni<NGSILDOperationResult> handleDBCreateResult(CreateEntityRequest request, RowSet<Row> resultTable,
+			Context context) {
+		NGSILDOperationResult operationResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
+		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(resultTable.size());
+		RowIterator<Row> it = resultTable.iterator();
+		Row row;
+		Uni<Void> sendKafka = null;
+		while (it.hasNext()) {
+			row = it.next();
+			switch (row.getString(0)) {
+			case "ERROR": {
+				String sqlState = row.getString(1);
+				JsonObject entity = row.getJsonObject(3);
+				if (sqlState.equals(AppConstants.SQL_ALREADY_EXISTS)) {
+					operationResult.addFailure(new ResponseException(ErrorType.AlreadyExists,
+							ErrorType.AlreadyExists.getTitle(), entity.getMap(), context));
+				} else {
+					operationResult.addFailure(new ResponseException(ErrorType.InternalError, row.getString(2)));
+				}
+				if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+					sendKafka = sendFail(request.getBatchInfo());
+				}
+				break;
+			}
+			case "ADDED ENTITY": {
+				Map<String, Object> entityAdded = ((JsonObject) row.getJson(3)).getMap();
+				request.setPayload(entityAdded);
+				operationResult.addSuccess(new CRUDSuccess(null, null, null, entityAdded, context));
+				if (historyToKafkaEnabled) {
+					sendKafka = kafkaSenderInterface.send(request);
+				}
+				break;
+			}
+			case "UPDATED":
+				operationResult.setWasUpdated(true);
+				break;
+			default:
+				String host = row.getString(0);
+				String tenant = row.getString(1);
+				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
+				String cSourceId = row.getString(4);
+				int hash = entityToForward.hashCode();
+				Map<String, Object> compacted;
+				if (hash2Compacted.containsKey(hash)) {
+					try {
+						compacted = JsonLdProcessor.compact(entityToForward, null, context, AppConstants.opts, -1);
+						compacted.remove("@context");
+						hash2Compacted.put(hash, compacted);
+					} catch (ResponseException e) {
+						// TODO add host info
+						operationResult.addFailure(e);
+						break;
+					} catch (Exception e) {
+						// TODO add host info
+						operationResult.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+						break;
+					}
+				} else {
+					compacted = hash2Compacted.get(hash);
+				}
+				RemoteHost remoteHost = new RemoteHost(host, tenant,
+						MultiMap.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant)),
+						cSourceId, row.getBoolean(5), row.getBoolean(6));
+
+				if (remoteHost.canDoSingleOp()) {
+					unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT)
+							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+							.onItemOrFailure().transform((response, failure) -> {
+								return handleWebResponse(response, failure, ArrayUtils.toArray(201, 204), remoteHost,
+										AppConstants.CREATE_REQUEST, request.getId(),
+										HttpUtils.getAttribsFromCompactedPayload(compacted));
+
+							}));
+				} else {
+					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+							.putHeaders(remoteHost.headers())
+							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+										ArrayUtils.toArray(201)).get(0);
+							}));
+				}
+				break;
+			}
+
+		}
+		if (sendKafka == null) {
+			if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+				sendKafka = sendFail(request.getBatchInfo());
 			} else {
-				localResult.getSuccesses().addAll(remoteResult.getSuccesses());
-				localResult.getFailures().addAll(remoteResult.getFailures());
+				sendKafka = Uni.createFrom().voidItem();
 			}
 		}
+		return sendKafka.onItem().transformToUni(v -> {
+			return Uni.combine().all().unis(unis).combinedWith(list -> {
+				for (Object obj : list) {
+					NGSILDOperationResult tmp = (NGSILDOperationResult) obj;
+					operationResult.getSuccesses().addAll(tmp.getSuccesses());
+					operationResult.getFailures().addAll(tmp.getFailures());
+				}
+				return operationResult;
+			});
+		});
+	}
+
+	private Uni<NGSILDOperationResult> handleDBDeleteResult(DeleteEntityRequest request, RowSet<Row> resultTable,
+			Context originalContext) {
+		NGSILDOperationResult operationResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
+		List<Uni<NGSILDOperationResult>> unis = Lists.newArrayList();
+		RowIterator<Row> it = resultTable.iterator();
+		Row row;
+		Uni<Void> sendKafka = null;
+		while (it.hasNext()) {
+			row = it.next();
+
+			switch (row.getString(0)) {
+			case "ERROR": {
+				// String sqlState = row.getString(1);
+				// TODO ERROR HANDLING
+				if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+					sendKafka = sendFail(request.getBatchInfo());
+				}
+				break;
+			}
+			case "DELETED ENTITY": {
+				Map<String, Object> entityDeleted = ((JsonObject) row.getJson(3)).getMap();
+				request.setPayload(entityDeleted);
+				operationResult.addSuccess(new CRUDSuccess(null, null, null, entityDeleted, originalContext));
+				if (historyToKafkaEnabled) {
+					sendKafka = kafkaSenderInterface.send(request);
+				}
+				break;
+			}
+			default:
+				MultiMap headers = MultiMap
+						.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), row.getString(1)));
+				String cSourceId = row.getString(4);
+				String host = row.getString(0);
+				String tenant = row.getString(1);
+				RemoteHost remoteHost = new RemoteHost(host, tenant, headers, cSourceId, row.getBoolean(5),
+						row.getBoolean(6));
+				String entityId = request.getId();
+				if (row.getBoolean(5)) {
+					unis.add(webClient
+							.delete(row.getString(0) + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
+									+ entityId)
+							.putHeaders(remoteHost.headers()).send().onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
+										AppConstants.DELETE_REQUEST, entityId, Sets.newHashSet());
+							}));
+				} else {
+					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_TEMPORAL_BATCH_DELETE)
+							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(Lists.newArrayList(entityId)))
+							.onItemOrFailure().transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(),
+										ArrayUtils.toArray(204)).get(0);
+
+							}));
+				}
+				break;
+			}
+
+		}
+		if (sendKafka == null) {
+			if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+				sendKafka = sendFail(request.getBatchInfo());
+			} else {
+				sendKafka = Uni.createFrom().voidItem();
+			}
+		}
+		return sendKafka.onItem().transformToUni(v -> {
+			return Uni.combine().all().unis(unis).combinedWith(list -> {
+				for (Object obj : list) {
+					NGSILDOperationResult tmp = (NGSILDOperationResult) obj;
+					operationResult.getSuccesses().addAll(tmp.getSuccesses());
+					operationResult.getFailures().addAll(tmp.getFailures());
+				}
+				return operationResult;
+			});
+		});
+	}
+
+	private Uni<NGSILDOperationResult> handleDBAppendResult(AppendHistoryEntityRequest request, RowSet<Row> resultTable,
+			Context context) {
+		NGSILDOperationResult operationResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, request.getId());
+		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(resultTable.size());
+		RowIterator<Row> it = resultTable.iterator();
+		Row row;
+		Uni<Void> sendKafka = null;
+		while (it.hasNext()) {
+			row = it.next();
+			switch (row.getString(0)) {
+			case "ERROR": {
+				// JsonObject error = ((JsonObject) row.getJson(3));
+				// for now the only "error" in sql would be if someone tries to remove a type
+				// if this changes in sql we need to adapt here
+				operationResult.addFailure(
+						new ResponseException(ErrorType.BadRequestData, "You cannot remove a type from an entity"));
+				if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+					sendKafka = sendFail(request.getBatchInfo());
+				}
+				break;
+			}
+			case "ADDED": {
+				// [{"attribName": attribName, "datasetId": datasetId}]
+				JsonArray addedAttribs = (JsonArray) row.getJson(3);
+				Set<Attrib> attribs = Sets.newHashSet();
+				addedAttribs.forEach(t -> {
+					JsonObject obj = (JsonObject) t;
+					attribs.add(new Attrib(obj.getString("attribName"), obj.getString("datasetId")));
+				});
+				operationResult.addSuccess(new CRUDSuccess(null, null, null, attribs));
+				break;
+			}
+			case "NOT ADDED": {
+				// [{"attribName": attribName, "datasetId": datasetId}]
+				JsonArray addedAttribs = (JsonArray) row.getJson(3);
+				Set<Attrib> attribs = Sets.newHashSet();
+				addedAttribs.forEach(t -> {
+					JsonObject obj = (JsonObject) t;
+					attribs.add(new Attrib(obj.getString("attribName"), obj.getString("datasetId")));
+				});
+				operationResult.addFailure(new ResponseException(ErrorType.NotFound.getCode(),
+						ErrorType.NotFound.getType(), ErrorType.NotFound.getTitle(), ErrorType.NotFound.getTitle(),
+						null, null, null, attribs));
+			}
+			default:
+				String host = row.getString(0);
+				String tenant = row.getString(1);
+				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
+				String cSourceId = row.getString(4);
+				int hash = entityToForward.hashCode();
+				Map<String, Object> compacted;
+				if (hash2Compacted.containsKey(hash)) {
+					try {
+						compacted = JsonLdProcessor.compact(entityToForward, null, context, AppConstants.opts, -1);
+						compacted.remove("@context");
+						hash2Compacted.put(hash, compacted);
+					} catch (ResponseException e) {
+						// TODO add host info
+						operationResult.addFailure(e);
+						break;
+					} catch (Exception e) {
+						// TODO add host info
+						operationResult.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+						break;
+					}
+				} else {
+					compacted = hash2Compacted.get(hash);
+				}
+				RemoteHost remoteHost = new RemoteHost(host, tenant,
+						MultiMap.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant)),
+						cSourceId, row.getBoolean(5), row.getBoolean(6));
+
+				if (remoteHost.canDoSingleOp()) {
+					unis.add(webClient
+							.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
+									+ request.getId() + "/attrs")
+							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+							.onItemOrFailure().transform((response, failure) -> {
+								return handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
+										AppConstants.CREATE_REQUEST, request.getId(),
+										HttpUtils.getAttribsFromCompactedPayload(compacted));
+
+							}));
+				} else {
+					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_TEMPROAL_BATCH_APPEND)
+							.putHeaders(remoteHost.headers())
+							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+										ArrayUtils.toArray(204)).get(0);
+							}));
+				}
+				break;
+			}
+
+		}
+		if (sendKafka == null) {
+			if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+				if (operationResult.getFailures().isEmpty()) {
+					sendKafka = kafkaSenderInterface.send(request);
+				} else if (operationResult.getSuccesses().isEmpty()) {
+					sendKafka = sendFail(request.getBatchInfo());
+				} else {
+					sendKafka = kafkaSenderInterface.send(getFilteredRequest(request, operationResult));
+				}
+			} else {
+				sendKafka = Uni.createFrom().voidItem();
+			}
+		}
+		return sendKafka.onItem().transformToUni(v -> {
+			return Uni.combine().all().unis(unis).combinedWith(list -> {
+				for (Object obj : list) {
+					NGSILDOperationResult tmp = (NGSILDOperationResult) obj;
+					operationResult.getSuccesses().addAll(tmp.getSuccesses());
+					operationResult.getFailures().addAll(tmp.getFailures());
+				}
+				return operationResult;
+			});
+		});
 	}
 
 	private List<NGSILDOperationResult> handleBatchResponse(HttpResponse<Buffer> response, Throwable failure,
@@ -230,70 +527,6 @@ public class HistoryService {
 		return result;
 	}
 
-	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
-			Context originalContext) {
-		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(tenant, entry, entityId, null); 
-		return historyDAO.appendToHistoryEntity(request).onItem().transformToUni(resultTable -> {
-			if (resultTable.size() == 0) {
-				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
-						"No result from the database this should never happen"));
-			}
-			return handleDBUpdateResult(request, resultTable, originalContext);
-		})
-		return null;
-	}
-
-	
-
-	public Uni<NGSILDOperationResult> updateInstanceOfAttr(String tenant, String entityId, String attribId,
-			String instanceId, Map<String, Object> payload, Context originalContext) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, Context originalContext) {
-		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(tenant, entityId, null);
-		return historyDAO.deleteHistoryEntity(request).onItem().transformToUni(resultTable -> {
-			if (resultTable.size() == 0) {
-				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
-						"No result from the database this should never happen"));
-			}
-			return handleDBDeleteResult(request, resultTable, originalContext);
-		}).onItem().transformToUni(tuple -> {
-			List<Uni<NGSILDOperationResult>> unis = Lists.newArrayList();
-			for (RemoteHost remoteHost : tuple.getItem2()) {
-				if (remoteHost.canDoSingleOp()) {
-					unis.add(webClient
-							.delete(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
-									+ entityId)
-							.putHeaders(remoteHost.headers()).send().onItemOrFailure()
-							.transform((response, failure) -> {
-								return handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
-										AppConstants.DELETE_REQUEST, entityId, Sets.newHashSet());
-							}));
-				} else {
-					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_TEMPORAL_BATCH_DELETE)
-							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(Lists.newArrayList(entityId)))
-							.onItemOrFailure().transform((response, failure) -> {
-								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(),
-										ArrayUtils.toArray(204)).get(0);
-
-							}));
-				}
-			}
-
-			return Uni.combine().all().unis(unis).combinedWith(list -> {
-				NGSILDOperationResult result = tuple.getItem1();
-				for (Object obj : list) {
-					NGSILDOperationResult tmp = (NGSILDOperationResult) obj;
-					result.getSuccesses().addAll(tmp.getSuccesses());
-					result.getFailures().addAll(tmp.getFailures());
-				}
-				return result;
-			});
-		});
-	}
-
 	private NGSILDOperationResult handleWebResponse(HttpResponse<Buffer> response, Throwable failure,
 			Integer[] integers, RemoteHost remoteHost, int operationType, String entityId, Set<Attrib> attrs) {
 
@@ -356,162 +589,29 @@ public class HistoryService {
 
 	}
 
-	public Uni<NGSILDOperationResult> deleteAttrFromEntry(String tenant, String entityId, String attrId,
-			String datasetId, boolean deleteAll, Context originalContext) {
-
-		return null;
+	private BaseRequest getFilteredRequest(AppendHistoryEntityRequest request, NGSILDOperationResult operationResult) {
+		// +2 for id and type
+		Map<String, Object> filteredCopy = new HashMap<>(operationResult.getSuccesses().size() + 2);
+		// there is only one success for added
+		Set<Attrib> attribs = operationResult.getSuccesses().get(0).getAttribs();
+		Map<String, Object> originalRequest = request.getPayload();
+		for (Attrib attrib : attribs) {
+			String attribName = attrib.getAttribName();
+			filteredCopy.put(attribName, originalRequest.get(attribName));
+		}
+		filteredCopy.put(NGSIConstants.JSON_LD_ID, request.getId());
+		if (originalRequest.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+			filteredCopy.put(NGSIConstants.JSON_LD_TYPE, originalRequest.get(NGSIConstants.JSON_LD_TYPE));
+		}
+		return new AppendHistoryEntityRequest(request.getTenant(), filteredCopy, request.getId(),
+				request.getBatchInfo());
 	}
 
-	public Uni<NGSILDOperationResult> deleteInstanceOfAttr(String tenant, String entityId, String attribId,
-			String instanceId, Context originalContext) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public Uni<Void> sendFail(BatchInfo batchInfo) {
+	private Uni<Void> sendFail(BatchInfo batchInfo) {
 		// no one is receiving anything history related at the moment
 		// no subscriptions on history so this is empty for now but we leave it in since
 		// this might change
 		return Uni.createFrom().voidItem();
-	}
-
-	private Uni<Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>>> handleDBCreateResult(
-			CreateEntityRequest request, RowSet<Row> resultTable, Context originalContext) {
-		NGSILDOperationResult operationResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
-		Map<RemoteHost, Map<String, Object>> remoteResults = Maps.newHashMap();
-		List<Uni<Void>> unis = Lists.newArrayList();
-		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
-		Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
-		RowIterator<Row> it = resultTable.iterator();
-		Row row;
-		Uni<Void> sendKafka = null;
-		while (it.hasNext()) {
-			row = it.next();
-			switch (row.getString(0)) {
-			case "ERROR": {
-				String sqlState = row.getString(1);
-				JsonObject entity = row.getJsonObject(3);
-				if (sqlState.equals(AppConstants.SQL_ALREADY_EXISTS)) {
-					operationResult.addFailure(new ResponseException(ErrorType.AlreadyExists,
-							ErrorType.AlreadyExists.getTitle(), entity.getMap(), context));
-				} else {
-					operationResult.addFailure(new ResponseException(ErrorType.InternalError, row.getString(2)));
-				}
-				if (request.getBatchInfo() != null && historyToKafkaEnabled) {
-					sendKafka = sendFail(request.getBatchInfo());
-				}
-				break;
-			}
-			case "ADDED ENTITY": {
-				Map<String, Object> entityAdded = ((JsonObject) row.getJson(3)).getMap();
-				request.setPayload(entityAdded);
-				operationResult.addSuccess(new CRUDSuccess(null, null, null, entityAdded, context));
-				if (historyToKafkaEnabled) {
-					sendKafka = kafkaSenderInterface.send(request);
-				}
-				break;
-			}
-			case "UPDATED":
-				operationResult.setWasUpdated(true);
-				break;
-			default:
-				String host = row.getString(0);
-				String tenant = row.getString(1);
-				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-				MultiMap headers = MultiMap
-						.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant));
-				String cSourceId = row.getString(4);
-				int hash = entityToForward.hashCode();
-				Map<String, Object> compacted = hash2Compacted.get(hash);
-				if (compacted == null) {
-					try {
-						compacted = JsonLdProcessor.compact(entityToForward, null, originalContext, AppConstants.opts,
-								-1);
-						compacted.remove("@context");
-					} catch (ResponseException e) {
-						// TODO add host info
-						operationResult.addFailure(e);
-					} catch (Exception e) {
-						// TODO add host info
-						operationResult.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
-					}
-					hash2Compacted.put(hash, compacted);
-				}
-				remoteResults.put(new RemoteHost(host, tenant, null, cSourceId, row.getBoolean(5), row.getBoolean(6)),
-						compacted);
-				break;
-			}
-
-		}
-		if (sendKafka == null) {
-			if (request.getBatchInfo() != null && historyToKafkaEnabled) {
-				sendKafka = sendFail(request.getBatchInfo());
-			} else {
-				sendKafka = Uni.createFrom().voidItem();
-			}
-		}
-		return sendKafka.onItem().transform(v -> Tuple2.of(operationResult, remoteResults));
-	}
-
-	private Uni<Tuple2<NGSILDOperationResult, Set<RemoteHost>>> handleDBDeleteResult(DeleteEntityRequest request,
-			RowSet<Row> resultTable, Context originalContext) {
-		NGSILDOperationResult operationResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
-		Set<RemoteHost> remoteResults = new HashSet<>(resultTable.size());
-		Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
-		RowIterator<Row> it = resultTable.iterator();
-		Row row;
-		Uni<Void> sendKafka = null;
-		while (it.hasNext()) {
-			row = it.next();
-			switch (row.getString(0)) {
-			case "ERROR": {
-				String sqlState = row.getString(1);
-				// TODO ERROR HANDLING
-				if (request.getBatchInfo() != null && historyToKafkaEnabled) {
-					sendKafka = sendFail(request.getBatchInfo());
-				}
-				break;
-			}
-			case "DELETED ENTITY": {
-				Map<String, Object> entityDeleted = ((JsonObject) row.getJson(3)).getMap();
-				request.setPayload(entityDeleted);
-				operationResult.addSuccess(new CRUDSuccess(null, null, null, entityDeleted, context));
-				if (historyToKafkaEnabled) {
-					sendKafka = kafkaSenderInterface.send(request);
-				}
-				break;
-			}
-			default:
-				String host = row.getString(0);
-				String tenant = row.getString(1);
-				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
-				MultiMap headers = MultiMap
-						.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant));
-				String cSourceId = row.getString(4);
-				remoteResults.add(new RemoteHost(host, tenant, null, cSourceId, row.getBoolean(5), row.getBoolean(6)));
-				break;
-			}
-
-		}
-		if (sendKafka == null) {
-			if (request.getBatchInfo() != null && historyToKafkaEnabled) {
-				sendKafka = sendFail(request.getBatchInfo());
-			} else {
-				sendKafka = Uni.createFrom().voidItem();
-			}
-		}
-		return sendKafka.onItem().transform(v -> Tuple2.of(operationResult, remoteResults));
-	}
-	
-	private Uni<? extends NGSILDOperationResult> handleDBUpdateResult(AppendHistoryEntityRequest request,
-			RowSet<Row> resultTable, Context originalContext) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public void handleInternalCreate(String tenant, Map<String, Object> payload) {
-		// TODO Auto-generated method stub
-
 	}
 
 }

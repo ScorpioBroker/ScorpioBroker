@@ -16,6 +16,7 @@ import io.vertx.mutiny.core.MultiMap;
 
 public class CRUDSuccess {
 	protected Map<String, Object> json = Maps.newHashMap();
+	private Set<Attrib> attribs;
 
 	public CRUDSuccess(String endpoint, MultiMap headers, String cSourceId, Map<String, Object> entityAdded,
 			Context context) {
@@ -39,6 +40,7 @@ public class CRUDSuccess {
 			tmp.add(attrib.getJson());
 		}
 		json.put(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT, tmp);
+		this.attribs = attribs;
 
 	}
 
@@ -59,4 +61,9 @@ public class CRUDSuccess {
 		}
 		return result;
 	}
+
+	public Set<Attrib> getAttribs() {
+		return attribs;
+	}
+
 }
