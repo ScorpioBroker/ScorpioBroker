@@ -18,7 +18,7 @@ public class CreateEntityRequest extends EntityRequest {
 	}
 
 	public CreateEntityRequest(String tenant, Map<String, Object> resolved, BatchInfo batchInfo) {
-		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), addSysAttrs(resolved), batchInfo,
+		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, batchInfo,
 				AppConstants.CREATE_REQUEST);
 
 	}

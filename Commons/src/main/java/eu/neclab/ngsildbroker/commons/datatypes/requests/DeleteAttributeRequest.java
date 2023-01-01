@@ -1,11 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.util.Map;
-
-import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 
 public class DeleteAttributeRequest extends EntityRequest {

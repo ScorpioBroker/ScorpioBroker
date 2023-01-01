@@ -14,8 +14,6 @@ import javax.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -30,8 +28,6 @@ import io.vertx.core.http.HttpServerRequest;
 @Singleton
 @Path("/ngsi-ld/v1/temporal/entities")
 public class HistoryController {
-
-	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
 
 	@Inject
 	HistoryService historyService;

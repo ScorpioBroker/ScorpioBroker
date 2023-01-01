@@ -29,10 +29,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttrHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttrInstanceHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateAttrHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
@@ -115,8 +116,15 @@ public class HistoryService {
 
 	public Uni<NGSILDOperationResult> updateInstanceOfAttr(String tenant, String entityId, String attribId,
 			String instanceId, Map<String, Object> payload, Context originalContext) {
-		// TODO Auto-generated method stub
-		return null;
+		UpdateAttrHistoryEntityRequest request = new UpdateAttrHistoryEntityRequest(tenant, entityId, attribId,
+				instanceId, payload, null);
+		return historyDAO.updateAttrInstanceInHistoryEntity(request).onItem().transformToUni(resultTable -> {
+			if (resultTable.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+						"No result from the database this should never happen"));
+			}
+			return handleDBInstanceUpdateResult(request, resultTable, originalContext);
+		});
 	}
 
 	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, Context originalContext) {
@@ -132,23 +140,35 @@ public class HistoryService {
 
 	public Uni<NGSILDOperationResult> deleteAttrFromEntry(String tenant, String entityId, String attrId,
 			String datasetId, boolean deleteAll, Context originalContext) {
-
-		return null;
+		DeleteAttrHistoryEntityRequest request = new DeleteAttrHistoryEntityRequest(tenant, entityId, attrId, datasetId,
+				deleteAll, null);
+		return historyDAO.deleteAttrFromHistoryEntity(request).onItem().transformToUni(resultTable -> {
+			if (resultTable.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+						"No result from the database this should never happen"));
+			}
+			return handleDBDeleteAttrResult(request, resultTable, originalContext);
+		});
 	}
 
 	public Uni<NGSILDOperationResult> deleteInstanceOfAttr(String tenant, String entityId, String attribId,
 			String instanceId, Context originalContext) {
-		// TODO Auto-generated method stub
-		return null;
+		DeleteAttrInstanceHistoryEntityRequest request = new DeleteAttrInstanceHistoryEntityRequest(tenant, entityId,
+				attribId, instanceId, null);
+		return historyDAO.deleteAttrInstanceInHistoryEntity(request).onItem().transformToUni(resultTable -> {
+			if (resultTable.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
+						"No result from the database this should never happen"));
+			}
+			return handleDBInstanceDeleteResult(request, resultTable, originalContext);
+		});
 	}
 
 	public void handleInternalRequest(BaseRequest request) {
 
 	}
-	
 
-
-	private Uni<NGSILDOperationResult> handleDBCreateResult(CreateEntityRequest request, RowSet<Row> resultTable,
+	private Uni<NGSILDOperationResult> handleDBCreateResult(CreateHistoryEntityRequest request, RowSet<Row> resultTable,
 			Context context) {
 		NGSILDOperationResult operationResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
 		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
@@ -254,7 +274,7 @@ public class HistoryService {
 		});
 	}
 
-	private Uni<NGSILDOperationResult> handleDBDeleteResult(DeleteEntityRequest request, RowSet<Row> resultTable,
+	private Uni<NGSILDOperationResult> handleDBDeleteResult(DeleteHistoryEntityRequest request, RowSet<Row> resultTable,
 			Context originalContext) {
 		NGSILDOperationResult operationResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
 		List<Uni<NGSILDOperationResult>> unis = Lists.newArrayList();
@@ -452,6 +472,24 @@ public class HistoryService {
 				return operationResult;
 			});
 		});
+	}
+
+	private Uni<NGSILDOperationResult> handleDBInstanceUpdateResult(UpdateAttrHistoryEntityRequest request,
+			RowSet<Row> resultTable, Context originalContext) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private Uni<NGSILDOperationResult> handleDBDeleteAttrResult(DeleteAttrHistoryEntityRequest request,
+			RowSet<Row> resultTable, Context originalContext) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private Uni<NGSILDOperationResult> handleDBInstanceDeleteResult(DeleteAttrInstanceHistoryEntityRequest request,
+			RowSet<Row> resultTable, Context originalContext) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	private List<NGSILDOperationResult> handleBatchResponse(HttpResponse<Buffer> response, Throwable failure,

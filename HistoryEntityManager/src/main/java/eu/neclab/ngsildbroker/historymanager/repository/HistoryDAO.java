@@ -10,8 +10,10 @@ import com.github.jsonldjava.core.Context;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttrHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttrInstanceHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateAttrHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
@@ -107,6 +109,21 @@ public class HistoryDAO {
 	}
 
 	public Uni<RowSet<Row>> appendToHistoryEntity(AppendHistoryEntityRequest request) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public Uni<RowSet<Row>> updateAttrInstanceInHistoryEntity(UpdateAttrHistoryEntityRequest request) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public Uni<RowSet<Row>> deleteAttrFromHistoryEntity(DeleteAttrHistoryEntityRequest request) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public Uni<RowSet<Row>> deleteAttrInstanceInHistoryEntity(DeleteAttrInstanceHistoryEntityRequest request) {
 		// TODO Auto-generated method stub
 		return null;
 	}
