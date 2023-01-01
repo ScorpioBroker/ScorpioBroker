@@ -1,5 +1,5 @@
 --TEMPORAL SETUP
-
+DROP FUNCTION public.temporalentityattrinstance_extract_jsonb_fields CASCADE;
 ALTER TABLE IF EXISTS public.temporalentity
     RENAME id TO e_id;
 ALTER TABLE IF EXISTS public.temporalentity
@@ -309,25 +309,89 @@ BEGIN
 END;
 $$ LANGUAGE PLPGSQL;
 
-CREATE OR REPLACE FUNCTION NGSILD_DELETETEMPENTITY (ENTITYID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_DELETETEMPENTITY (ENTITYID text) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
 declare
 	LOCALENTITY jsonb;
 	IID bigint;
 	i_rec record;
 BEGIN
-	CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE) ON COMMIT DROP;
+	CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE, singleOp boolean, batchOp boolean) ON COMMIT DROP;
 	FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteTemporal AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
-				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id) ON CONFLICT DO NOTHING;
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id, true, false) ON CONFLICT DO NOTHING;
 			END LOOP;
-	SELECT entity.ENTITY, entity.id INTO LOCALENTITY, IID FROM entity WHERE entity.e_id = ENTITYID;
+	with a as (select id, ('{"@id": "'||e_id||'", "https://uri.etsi.org/ngsi-ld/createdAt": [{"@type": "https://uri.etsi.org/ngsi-ld/DateTime", "@value": "'|| createdat||'"}], "https://uri.etsi.org/ngsi-ld/modifiedAt": [{"@type": "https://uri.etsi.org/ngsi-ld/DateTime", "@value": "'|| modifiedat||'"}]}')::jsonb as entity from temporalentity where e_id =ENTITYID),
+	b as (select '@type' as key, jsonb_agg(e_type) as value from a left join tempetype2iid on a.id = tempetype2iid.iid group by a.entity),
+	c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid group by attributeId),
+	d as (select jsonb_object_agg(c.key, c.value) as attrs FROM c),
+	e as (select 'htttpscope' as key, jsonb_agg(jsonb_build_object('@id', e_scope)) as value from b, a left join tempescope2iid on a.id = tempescope2iid.iid where e_scope is not null)
+	select jsonb_build_object(b.key, b.value, e.key, e.value) || d.attrs || a.entity from a, b, d, e into localentity;
 	IF LOCALENTITY IS NOT NULL THEN
 		BEGIN
 			DELETE FROM TEMPORALENTITY WHERE TEMPORALENTITY.id = IID;
-			INSERT INTO resultTable VALUES ('DELETED ENTITY', NULL, NULL, LOCALENTITY, 'DELETED ENTITY');
+			--not quite sure if we should save this
+			--INSERT INTO TEMPORALENTITY(e_id, deletedAt) VALUES (ENTITYID, now())
+			INSERT INTO resultTable VALUES ('DELETED ENTITY', NULL, NULL, LOCALENTITY, 'DELETED ENTITY', false, false);
 		EXCEPTION WHEN OTHERS THEN
-			INSERT INTO resultTable VALUES ('ERROR', sqlstate::text, SQLERRM::text, null, 'ERROR');
+			INSERT INTO resultTable VALUES ('ERROR', sqlstate::text, SQLERRM::text, null, 'ERROR', false, false);
 		END;
 	END IF;
+	RETURN QUERY SELECT * FROM resultTable;
+END;
+$$ LANGUAGE PLPGSQL;
+
+
+CREATE OR REPLACE FUNCTION NGSILD_APPENDTOTEMPORALENTITY(ENTITYID TEXT, ENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
+declare
+	LOCALENTITY jsonb;
+	IID bigint;
+	i_rec record;
+BEGIN
+	CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE, singleOp boolean, batchOp boolean) ON COMMIT DROP;
+	FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteTemporal AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id, true, false) ON CONFLICT DO NOTHING;
+	END LOOP;
+	RETURN QUERY SELECT * FROM resultTable;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION NGSILD_UPDATETEMPORALATTRINSTANCE(ENTITYID TEXT, ATTRIBID TEXT, INSTANCEID TEXT, ATTRIB JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
+declare
+	LOCALENTITY jsonb;
+	IID bigint;
+	i_rec record;
+BEGIN
+	CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE, singleOp boolean, batchOp boolean) ON COMMIT DROP;
+	FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteTemporal AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id, true, false) ON CONFLICT DO NOTHING;
+	END LOOP;
+	RETURN QUERY SELECT * FROM resultTable;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION NGSILD_DELETEATTRFROMTEMPENTITY(ENTITYID TEXT, ATTRIBID TEXT, DATASETID TEXT, DELETEALL BOOLEAN) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
+declare
+	LOCALENTITY jsonb;
+	IID bigint;
+	i_rec record;
+BEGIN
+	CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE, singleOp boolean, batchOp boolean) ON COMMIT DROP;
+	FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteTemporal AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id, true, false) ON CONFLICT DO NOTHING;
+	END LOOP;
+	RETURN QUERY SELECT * FROM resultTable;
+END;
+$$ LANGUAGE PLPGSQL;
+
+CREATE OR REPLACE FUNCTION NGSILD_DELETEATTRFROMTEMPENTITY(ENTITYID TEXT, ATTRIBID TEXT, INSTANCEID TEXT) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
+declare
+	LOCALENTITY jsonb;
+	IID bigint;
+	i_rec record;
+BEGIN
+	CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE, singleOp boolean, batchOp boolean) ON COMMIT DROP;
+	FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteTemporal AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
+				INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id, true, false) ON CONFLICT DO NOTHING;
+	END LOOP;
 	RETURN QUERY SELECT * FROM resultTable;
 END;
 $$ LANGUAGE PLPGSQL;
