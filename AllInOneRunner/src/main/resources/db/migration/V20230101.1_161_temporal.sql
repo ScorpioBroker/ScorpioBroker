@@ -357,6 +357,7 @@ declare
 	insertScope text;
 	removeAttrib boolean;
 	countInt integer;
+	datasetId text;
 BEGIN
     CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE, singleOp boolean, batchOp boolean) ON COMMIT DROP;
 	templateEntity := '{}'::jsonb;
@@ -395,6 +396,7 @@ BEGIN
 		FOR entityType IN select jsonb_array_elements_text from jsonb_array_elements_text(entityTypes) LOOP
 			FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
 				attribValue := insertEntity->DELTAENTITY;
+				datasetId := attribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
 				removeAttrib := false;
 				IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
 					FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND (c.appendAttrsTemporal) AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
@@ -418,15 +420,19 @@ BEGIN
 					END LOOP;
 				END IF;
 				IF NOT removeAttrib AND entityIid is not null THEN
-					PERFORM addAttribFromTemp(attribName, attribValue, entityIid, true);
-				ELSE
-					DELTAENTITY := DELTAENTITY - attribName;
+					BEGIN
+						PERFORM addAttribFromTemp(attribName, attribValue, entityIid, true);
+						INSERT INTO resultTable VALUES ('ADDED', null, null, '[{"attribName": attribName, "datasetId": datasetId}]'::jsonb, 'ADDED') ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{"attribName": attribName, "datasetId": datasetId}'::jsonb;
+					EXCEPTION WHEN OTHERS THEN
+						INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '[{"attribName": attribName, "datasetId": datasetId}]'::jsonb, 'NOT ADDED') ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{"attribName": attribName, "datasetId": datasetId}'::jsonb;
+					END;
 				END IF;
 			END LOOP;
 		END LOOP;
 	ELSE
 		FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
 			attribValue := insertEntity->DELTAENTITY;
+			datasetId := attribValue->'https://uri.etsi.org/ngsi-ld/datasetId';
 			removeAttrib := false;
 			IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
 				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND (c.appendAttrsTemporal) AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
@@ -450,18 +456,15 @@ BEGIN
 				END LOOP;
 			END IF;
 			IF NOT removeAttrib AND entityIid is not null THEN
-				PERFORM addAttribFromTemp(attribName, attribValue, entityIid, true);
-			ELSE
-				DELTAENTITY := DELTAENTITY - attribName;
+				BEGIN
+					PERFORM addAttribFromTemp(attribName, attribValue, entityIid, true);
+					INSERT INTO resultTable VALUES ('ADDED', null, null, '[{"attribName": attribName, "datasetId": datasetId}]'::jsonb, 'ADDED') ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{"attribName": attribName, "datasetId": datasetId}'::jsonb;
+				EXCEPTION WHEN OTHERS THEN
+					INSERT INTO resultTable VALUES ('NOT ADDED', null, null, '[{"attribName": attribName, "datasetId": datasetId}]'::jsonb, 'NOT ADDED') ON CONFLICT DO UPDATE SET forwardEntity=resultTable.forwardEntity || '{"attribName": attribName, "datasetId": datasetId}'::jsonb;
+				END;
 			END IF;
 		END LOOP;
 	END IF;
-	
-	SELECT count(jsonb_object_keys) FROM jsonb_object_keys(insertEntity) INTO countInt;
-	IF countInt > 0 THEN
-		SELECT DELTAENTITY || templateEntity INTO DELTAENTITY;
-		INSERT INTO resultTable VALUES ('ADDED ENTITY', null, null, DELTAENTITY, 'ADDED ENTITY', false, false);
-	END IF;	
 	RETURN QUERY SELECT * FROM resultTable;
 END;
 $$ LANGUAGE PLPGSQL;
@@ -532,7 +535,7 @@ BEGIN
 	END LOOP;
 	delete from temporalentityattrinstance where temporalentityattrinstance.instanceId = INSTANCEID AND temporalentityattrinstance.attributeId = ATTRIBID RETURNING data INTO LOCALINSTANCE;
 	IF LOCALINSTANCE IS NOT NULL THEN
-		INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS, null, false, false);
+		INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALINSTANCE, null, false, false);
 	END IF;
 	RETURN QUERY SELECT * FROM resultTable;
 END;

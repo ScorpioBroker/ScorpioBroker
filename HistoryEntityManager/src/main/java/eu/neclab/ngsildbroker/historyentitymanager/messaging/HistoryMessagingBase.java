@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.historymanager.messaging;
+package eu.neclab.ngsildbroker.historyentitymanager.messaging;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
+import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
 
 public abstract class HistoryMessagingBase {
@@ -15,7 +15,7 @@ public abstract class HistoryMessagingBase {
 			new LinkedBlockingQueue<Runnable>());
 
 	@Inject
-	HistoryService historyService;
+	HistoryEntityService historyService;
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 		entityExecutor.execute(new Runnable() {

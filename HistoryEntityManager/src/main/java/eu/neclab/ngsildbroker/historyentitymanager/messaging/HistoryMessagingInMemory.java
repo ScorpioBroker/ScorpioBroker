@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.historymanager.messaging;
+package eu.neclab.ngsildbroker.historyentitymanager.messaging;
 
 import javax.inject.Singleton;
 

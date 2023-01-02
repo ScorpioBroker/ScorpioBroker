@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.historymanager.controller;
+package eu.neclab.ngsildbroker.historyentitymanager.controller;
 
 import java.util.Map;
 
@@ -20,7 +20,7 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.historymanager.service.HistoryService;
+import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.http.HttpServerRequest;
@@ -30,7 +30,7 @@ import io.vertx.core.http.HttpServerRequest;
 public class HistoryController {
 
 	@Inject
-	HistoryService historyService;
+	HistoryEntityService historyService;
 	@ConfigProperty(name = "atcontext.url")
 	String atContextServerUrl;
 	@ConfigProperty(name = "scorpio.history.defaultLimit", defaultValue = "50")

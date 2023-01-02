@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.historymanager.service;
+package eu.neclab.ngsildbroker.historyentitymanager.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +40,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
+import eu.neclab.ngsildbroker.historyentitymanager.repository.HistoryDAO;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.core.json.JsonArray;
@@ -55,9 +55,9 @@ import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 
 @Singleton
-public class HistoryService {
+public class HistoryEntityService {
 
-	private final static Logger logger = LoggerFactory.getLogger(HistoryService.class);
+	private final static Logger logger = LoggerFactory.getLogger(HistoryEntityService.class);
 
 	@Inject
 	HistoryDAO historyDAO;
@@ -79,8 +79,6 @@ public class HistoryService {
 	Vertx vertx;
 
 	WebClient webClient;
-
-	private Random random = new Random();
 
 	@PostConstruct
 	void init() {
@@ -476,19 +474,19 @@ public class HistoryService {
 
 	private Uni<NGSILDOperationResult> handleDBInstanceUpdateResult(UpdateAttrHistoryEntityRequest request,
 			RowSet<Row> resultTable, Context originalContext) {
-		// TODO Auto-generated method stub
+		//('UPDATED ATTRS', null, null, LOCALENTITY, null, false, false)
 		return null;
 	}
 
 	private Uni<NGSILDOperationResult> handleDBDeleteAttrResult(DeleteAttrHistoryEntityRequest request,
 			RowSet<Row> resultTable, Context originalContext) {
-		// TODO Auto-generated method stub
+		// INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS, null, false, false);
 		return null;
 	}
 
 	private Uni<NGSILDOperationResult> handleDBInstanceDeleteResult(DeleteAttrInstanceHistoryEntityRequest request,
 			RowSet<Row> resultTable, Context originalContext) {
-		// TODO Auto-generated method stub
+		// ('DELETED ATTRS', null, null, LOCALINSTANCE, null, false, false)
 		return null;
 	}
 
@@ -592,17 +590,6 @@ public class HistoryService {
 			} else {
 
 				JsonObject responseBody = response.bodyAsJsonObject();
-				if (responseBody == null) {
-					// could be from a batch response
-					JsonArray tmp = response.bodyAsJsonArray();
-					if (tmp != null) {
-						try {
-							responseBody = tmp.getJsonObject(0);
-						} catch (ClassCastException e) {
-							responseBody = null;
-						}
-					}
-				}
 				if (responseBody == null) {
 					result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
 							NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode, remoteHost, attrs));

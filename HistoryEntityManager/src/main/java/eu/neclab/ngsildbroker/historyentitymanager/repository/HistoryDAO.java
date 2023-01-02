@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.historymanager.repository;
+package eu.neclab.ngsildbroker.historyentitymanager.repository;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

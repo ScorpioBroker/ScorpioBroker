@@ -40,7 +40,8 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
-import eu.neclab.ngsildbroker.historymanager.repository.HistoryDAO;
+import eu.neclab.ngsildbroker.historyentitymanager.repository.HistoryDAO;
+import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
@@ -78,7 +79,7 @@ public class HistoryServiceTest {
 
 	@InjectMocks
 	@Spy
-	private HistoryService historyService;
+	private HistoryEntityService historyService;
 	@Mock
 	EntityRequest request;
 
