@@ -473,20 +473,125 @@ public class HistoryEntityService {
 	}
 
 	private Uni<NGSILDOperationResult> handleDBInstanceUpdateResult(UpdateAttrHistoryEntityRequest request,
-			RowSet<Row> resultTable, Context originalContext) {
-		//('UPDATED ATTRS', null, null, LOCALENTITY, null, false, false)
-		return null;
+			RowSet<Row> resultTable, Context context) {
+		// ('UPDATED ATTRS', null, null, LOCALENTITY, null, false, false)
+		NGSILDOperationResult operationResult = new NGSILDOperationResult(AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST,
+				request.getId());
+		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(resultTable.size());
+		RowIterator<Row> it = resultTable.iterator();
+		Row row;
+		Uni<Void> sendKafka = null;
+		while (it.hasNext()) {
+			row = it.next();
+			switch (row.getString(0)) {
+			case "ERROR": {
+				// JsonObject error = ((JsonObject) row.getJson(3));
+				// for now the only "error" in sql would be if someone tries to remove a type
+				// if this changes in sql we need to adapt here
+				operationResult.addFailure(
+						new ResponseException(ErrorType.BadRequestData, "You cannot remove a type from an entity"));
+				if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+					sendKafka = sendFail(request.getBatchInfo());
+				}
+				break;
+			}
+			case "UPDATED ATTRS": {
+				// full instance
+				JsonObject addedInstance = row.getJsonObject(3);
+				Set<Attrib> attribs = Sets.newHashSet(
+						new Attrib(request.getAttrId(), addedInstance.getString(NGSIConstants.NGSI_LD_DATA_SET_ID)));
+				operationResult.addSuccess(new CRUDSuccess(null, null, null, attribs));
+				break;
+			}
+			default:
+				String host = row.getString(0);
+				String tenant = row.getString(1);
+				Map<String, Object> entityToForward = ((JsonObject) row.getJson(3)).getMap();
+				String cSourceId = row.getString(4);
+				int hash = entityToForward.hashCode();
+				Map<String, Object> compacted;
+				if (hash2Compacted.containsKey(hash)) {
+					try {
+						compacted = JsonLdProcessor.compact(entityToForward, null, context, AppConstants.opts, -1);
+						compacted.remove("@context");
+						hash2Compacted.put(hash, compacted);
+					} catch (ResponseException e) {
+						// TODO add host info
+						operationResult.addFailure(e);
+						break;
+					} catch (Exception e) {
+						// TODO add host info
+						operationResult.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+						break;
+					}
+				} else {
+					compacted = hash2Compacted.get(hash);
+				}
+				RemoteHost remoteHost = new RemoteHost(host, tenant,
+						MultiMap.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant)),
+						cSourceId, row.getBoolean(5), row.getBoolean(6));
+
+				if (remoteHost.canDoSingleOp()) {
+					unis.add(webClient
+							.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
+									+ request.getId() + "/attrs/" + request.getAttrId() + "/" + request.getInstanceId())
+							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+							.onItemOrFailure().transform((response, failure) -> {
+								return handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
+										AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST, request.getId(),
+										HttpUtils.getAttribsFromCompactedPayload(compacted));
+
+							}));
+				}
+				// TODO clear up with CIM to add batch requests for this
+//				else {
+//					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_TEMPROAL_BATCH_APPEND)
+//							.putHeaders(remoteHost.headers())
+//							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+//							.transform((response, failure) -> {
+//								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+//										ArrayUtils.toArray(204)).get(0);
+//							}));
+//				}
+				break;
+			}
+
+		}
+		if (sendKafka == null) {
+			if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+				if (operationResult.getFailures().isEmpty()) {
+					sendKafka = kafkaSenderInterface.send(request);
+				} else {
+					sendKafka = sendFail(request.getBatchInfo());
+				}
+			} else {
+				sendKafka = Uni.createFrom().voidItem();
+			}
+		}
+		return sendKafka.onItem().transformToUni(v -> {
+			return Uni.combine().all().unis(unis).combinedWith(list -> {
+				for (Object obj : list) {
+					NGSILDOperationResult tmp = (NGSILDOperationResult) obj;
+					operationResult.getSuccesses().addAll(tmp.getSuccesses());
+					operationResult.getFailures().addAll(tmp.getFailures());
+				}
+				return operationResult;
+			});
+		});
 	}
 
 	private Uni<NGSILDOperationResult> handleDBDeleteAttrResult(DeleteAttrHistoryEntityRequest request,
 			RowSet<Row> resultTable, Context originalContext) {
-		// INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS, null, false, false);
+		// INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS,
+		// null, false, false);
 		return null;
 	}
 
 	private Uni<NGSILDOperationResult> handleDBInstanceDeleteResult(DeleteAttrInstanceHistoryEntityRequest request,
 			RowSet<Row> resultTable, Context originalContext) {
 		// ('DELETED ATTRS', null, null, LOCALINSTANCE, null, false, false)
+
 		return null;
 	}
 
