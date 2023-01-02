@@ -69,9 +69,9 @@ public class HistoryDAO {
 
 	public Uni<RowSet<Row>> deleteAttrInstanceInHistoryEntity(DeleteAttrInstanceHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_DELETEATTRFROMTEMPENTITY($1, $2, $3, $4)";
+			String sql = "SELECT * FROM NGSILD_DELETEATTRSTNSTANCEFROMTEMPENTITY($1, $2, $3)";
 			return client.preparedQuery(sql)
-					.execute(Tuple.of(request.getId(), request.getAttrId(), request.getTenant())).onFailure().retry()
+					.execute(Tuple.of(request.getId(), request.getAttrId(), request.getInstanceId())).onFailure().retry()
 					.atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
 		});
 	}
