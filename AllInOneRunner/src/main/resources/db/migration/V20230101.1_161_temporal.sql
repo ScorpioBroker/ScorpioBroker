@@ -85,11 +85,12 @@ ALTER TABLE PUBLIC.temporalentity DROP COLUMN scopes;
 
 ALTER TABLE PUBLIC.temporalentityattrinstance DROP COLUMN temporalentity_id;
 ALTER TABLE PUBLIC.temporalentityattrinstance DROP COLUMN attributetype;
+ALTER TABLE PUBLIC.temporalentityattrinstance ADD COLUMN attrLookup text;
 
 
 --TEMPORAL FUNCTIONS
 
-CREATE OR REPLACE FUNCTION addAttribValueFromTemp(attribName text, entityIid bigint, isRel boolean, isGeo boolean, isLang boolean, datasetId text, attrValue jsonb, rootLevel boolean, createdAt TIMESTAMP, modifiedAt TIMESTAMP, observedAt TIMESTAMP) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION addAttribValueFromTemp(attribName text, attribLookup text, entityIid bigint, isRel boolean, isGeo boolean, isLang boolean, datasetId text, attrValue jsonb, rootLevel boolean, createdAt TIMESTAMP, modifiedAt TIMESTAMP, observedAt TIMESTAMP) RETURNS void AS $$
 declare
 	entry jsonb;
 	entryKey text;
@@ -102,21 +103,21 @@ BEGIN
 		FOR entryKey IN SELECT jsonb_object_keys FROM jsonb_object_keys(entry) LOOP
 			IF isGeo THEN
 				IF entryKey = '@value' THEN
-					INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel) VALUES (temp, instance_id, ST_SetSRID( ST_GeomFromGeoJSON( getGeoJson(entry->entryKey)::text ), 4326), createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, null, isRel, isGeo, isLang, rootLevel);
+					INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, instance_id, ST_SetSRID( ST_GeomFromGeoJSON( getGeoJson(entry->entryKey)::text ), 4326), createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, null, isRel, isGeo, isLang, rootLevel, attribLookup);
 				END IF;
 			ELSIF isLang THEN
 				IF entryKey = '@value' THEN
 					temp:= attribName || '[' || entry->>'@language' || ']';
-					INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel) VALUES (temp, instance_id, null, createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, entry->entryKey, isRel, isGeo, isLang, rootLevel);
+					INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, instance_id, null, createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, entry->entryKey, isRel, isGeo, isLang, rootLevel, attribLookup);
 				END IF;
 			ELSE
 				temp := attribName;
 				IF entryKey = '@value' OR entryKey = '@id' THEN
 					IF NOT rootLevel THEN
 						temp := temp || ']';
-						INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel) VALUES (temp, null, null, createdAt, modifiedAt, observedAt, null, entityIid, null, datasetId, entry->entryKey, isRel, isGeo, isLang, rootLevel);
+						INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, null, null, createdAt, modifiedAt, observedAt, null, entityIid, null, datasetId, entry->entryKey, isRel, isGeo, isLang, rootLevel, attrLookup);
 					ELSE
-						INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel) VALUES (temp, instance_id, null, createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, entry->entryKey, isRel, isGeo, isLang, rootLevel);
+						INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, instance_id, null, createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, entry->entryKey, isRel, isGeo, isLang, rootLevel, attribLookup);
 					END IF;
 				ELSE
 					IF rootLevel THEN
@@ -124,7 +125,7 @@ BEGIN
 					ELSE
 						temp := temp || '.' || attribName;
 					END IF;
-					PERFORM addAttribValueFromTemp(temp,entityIid, isRel, isGeo, isLang, datasetId, entry->entryKey,false, createdAt, modifiedAt, observedAt);
+					PERFORM addAttribValueFromTemp(attribName, temp, entityIid, isRel, isGeo, isLang, datasetId, entry->entryKey,false, createdAt, modifiedAt, observedAt);
 				END IF;
 			END IF;
 		END LOOP;
@@ -192,9 +193,9 @@ BEGIN
 		END IF;
 		INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel) VALUES (attribName || '.https://uri.etsi.org/ngsi-ld/createdAt' , null, null, null, null, null, null, entityIid, null, datasetId, FALSE, FALSE, FALSE, datasetId, createdAt, false);
 		INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel) VALUES (attribName || '.https://uri.etsi.org/ngsi-ld/modifiedAt' , null, null, null, null, null, null, entityIid, null, datasetId, FALSE, FALSE, FALSE, datasetId, modifiedAt, false);
-		PERFORM addAttribValueFromTemp(attribName, entityIid, isRel, isGeo, isLang, datasetId, attrValue, isToplevel, createdAt::TIMESTAMP, modifiedAt::TIMESTAMP, observedAt::TIMESTAMP);
+		PERFORM addAttribValueFromTemp(attribName, attribName, entityIid, isRel, isGeo, isLang, datasetId, attrValue, isToplevel, createdAt::TIMESTAMP, modifiedAt::TIMESTAMP, observedAt::TIMESTAMP);
 		FOR subAttribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(tempJson) LOOP
-			PERFORM addAttribFromTemp(attribName || "." || subAttribName, tempJson->subAttribName, entityIid, false);
+			PERFORM addAttribFromTemp(attribName || "." || subAttribName, attribName || "." || subAttribName, tempJson->subAttribName, entityIid, false);
 		END LOOP;
 	END LOOP;
     RETURN;
@@ -233,9 +234,9 @@ BEGIN
 	entityTypes := insertEntity->'@type';
 	insertEntity := insertEntity - '@type';
 	templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/createdAt}', insertEntity->'https://uri.etsi.org/ngsi-ld/createdAt');
-	createdat := insertEntity->'https://uri.etsi.org/ngsi-ld/createdAt'::TIMESTAMP;
+	createdat := insertEntity#>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}'::TIMESTAMP;
 	insertEntity := insertEntity - 'https://uri.etsi.org/ngsi-ld/createdAt';
-	modifiedat := insertEntity->'https://uri.etsi.org/ngsi-ld/modifiedAt'::TIMESTAMP;
+	modifiedat := insertEntity#>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}'::TIMESTAMP;
 	templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/modifiedAt}', insertEntity->'https://uri.etsi.org/ngsi-ld/modifiedAt');
 	insertEntity := insertEntity - 'https://uri.etsi.org/ngsi-ld/modifiedAt';
 	IF insertEntity ? 'https://uri.etsi.org/ngsi-ld/location' THEN
@@ -340,19 +341,131 @@ END;
 $$ LANGUAGE PLPGSQL;
 
 
-CREATE OR REPLACE FUNCTION NGSILD_APPENDTOTEMPORALENTITY(ENTITYID TEXT, ENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
+CREATE OR REPLACE FUNCTION NGSILD_APPENDTOTEMPORALENTITY(ENTITYID TEXT, DELTAENTITY JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
 declare
-	LOCALENTITY jsonb;
-	IID bigint;
+	entityIid bigint;
 	i_rec record;
+	attribName text;
+	attribValue jsonb;
+	entityType text;
+	entityTypes jsonb;
+	templateEntity jsonb;
+	createdat timestamp without time zone;
+	modifiedat timestamp without time zone;
+	insertLocation GEOMETRY(Geometry, 4326);
+	insertScopes text[];
+	insertScope text;
+	removeAttrib boolean;
+	countInt integer;
 BEGIN
-	CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE, singleOp boolean, batchOp boolean) ON COMMIT DROP;
-	FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND c.deleteTemporal AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') ORDER BY c.reg_mode DESC LOOP
-		INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id, true, false) ON CONFLICT DO NOTHING;
-	END LOOP;
+    CREATE TEMP TABLE resultTable (endPoint text, tenant text, headers jsonb, forwardEntity jsonb, c_id text UNIQUE, singleOp boolean, batchOp boolean) ON COMMIT DROP;
+	templateEntity := '{}'::jsonb;
+	templateEntity := jsonb_set(templateEntity, '{@id}', ENTITYID);
+	DELTAENTITY := DELTAENTITY - '@id';
+	
+	modifiedat := DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}'::TIMESTAMP;
+	templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/modifiedAt}', DELTAENTITY->'https://uri.etsi.org/ngsi-ld/modifiedAt');
+	DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/modifiedAt';
+	IF DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/location' THEN
+		IF (DELTAENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
+			insertLocation = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}')::text ), 4326);
+		ELSE
+			insertLocation = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0}')::text ), 4326);
+		END IF;
+	ELSE
+		insertLocation = null;
+	END IF;
+	IF (DELTAENTITY ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
+		insertScopes = getScopes(DELTAENTITY#>'{https://uri.etsi.org/ngsi-ld/scope}');
+		DELTAENTITY := DELTAENTITY - 'https://uri.etsi.org/ngsi-ld/scope';
+	ELSE
+		insertScopes = NULL;
+	END IF;
+	UPDATE TEMPORALENTITY SET modifiedat = modifiedAt WHERE e_id = ENTITYID RETURNING id, createdat INTO entityIid, createdAt;
+	IF entityIid is not null AND insertScopes is not null THEN
+		templateEntity := jsonb_set(templateEntity, '{https://uri.etsi.org/ngsi-ld/createdAt}', '[{"@type": "https://uri.etsi.org/ngsi-ld/DateTime", "@value": "'|| createdAt ||'"}]'::jsonb);
+		FOREACH insertScope IN ARRAY insertScopes LOOP
+			INSERT INTO tempescope2iid VALUES (insertScope, entityIid) ON CONFLICT DO NOTHING;
+		END LOOP;
+	END IF;
+	IF DELTAENTITY ? '@type' THEN
+		templateEntity := jsonb_set(templateEntity, '{@type}', DELTAENTITY->'@type');
+		entityTypes := DELTAENTITY->'@type';
+		DELTAENTITY := DELTAENTITY - '@type';
+		FOR entityType IN select jsonb_array_elements_text from jsonb_array_elements_text(entityTypes) LOOP
+			FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
+				attribValue := insertEntity->DELTAENTITY;
+				removeAttrib := false;
+				IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
+					FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND (c.appendAttrsTemporal) AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
+						INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity, i_rec.c_id, true, false) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+						IF i_rec.reg_mode > 1 THEN
+							removeAttrib := true;
+							IF i_rec.reg_mode = 3 THEN
+								EXIT;
+							END IF;
+						END IF;
+					END LOOP;
+				ELSE
+					FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND (c.appendAttrsTemporal) AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
+						INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity, i_rec.c_id, true, false) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+						IF i_rec.reg_mode > 1 THEN
+							removeAttrib := true;
+							IF i_rec.reg_mode = 3 THEN
+								EXIT;
+							END IF;
+						END IF;
+					END LOOP;
+				END IF;
+				IF NOT removeAttrib AND entityIid is not null THEN
+					PERFORM addAttribFromTemp(attribName, attribValue, entityIid, true);
+				ELSE
+					DELTAENTITY := DELTAENTITY - attribName;
+				END IF;
+			END LOOP;
+		END LOOP;
+	ELSE
+		FOR attribName IN select jsonb_object_keys from jsonb_object_keys(DELTAENTITY)	LOOP
+			attribValue := insertEntity->DELTAENTITY;
+			removeAttrib := false;
+			IF attribValue->>'{0,@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' THEN
+				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND (c.appendAttrsTemporal) AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_prop IS NULL) AND (c.e_rel IS NULL OR c.e_rel = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
+					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity, i_rec.c_id, true, false) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+					IF i_rec.reg_mode > 1 THEN
+						removeAttrib := true;
+						IF i_rec.reg_mode = 3 THEN
+							EXIT;
+						END IF;
+					END IF;
+				END LOOP;
+			ELSE
+				FOR i_rec IN SELECT c.endpoint, c.tenant_id, c.headers, c.reg_mode, c.c_id FROM csourceinformation AS c WHERE c.reg_mode > 0 AND (c.appendAttrsTemporal) AND (c.e_type = entityType OR c.e_type IS NULL) AND (c.e_id IS NULL OR c.e_id = entityId) AND (c.e_id_p IS NULL OR entityId ~ c.e_id_p) AND (c.e_rel IS NULL) AND (c.e_prop IS NULL OR c.e_prop = attribName) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') AND (c.i_location IS NULL OR ST_INTERSECTS(c.i_location, insertLocation)) AND (c.scopes IS NULL OR c.scopes && insertScopes) ORDER BY c.reg_mode DESC LOOP
+					INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, templateEntity, i_rec.c_id, true, false) ON CONFLICT DO UPDATE SET forwardEntity = jsonb_set(resultTable.forwardEntity, '{attribName}', attribValue);
+					IF i_rec.reg_mode > 1 THEN
+						removeAttrib := true;
+						IF i_rec.reg_mode = 3 THEN
+							EXIT;
+						END IF;
+					END IF;
+				END LOOP;
+			END IF;
+			IF NOT removeAttrib AND entityIid is not null THEN
+				PERFORM addAttribFromTemp(attribName, attribValue, entityIid, true);
+			ELSE
+				DELTAENTITY := DELTAENTITY - attribName;
+			END IF;
+		END LOOP;
+	END IF;
+	
+	SELECT count(jsonb_object_keys) FROM jsonb_object_keys(insertEntity) INTO countInt;
+	IF countInt > 0 THEN
+		SELECT DELTAENTITY || templateEntity INTO DELTAENTITY;
+		INSERT INTO resultTable VALUES ('ADDED ENTITY', null, null, DELTAENTITY, 'ADDED ENTITY', false, false);
+	END IF;	
 	RETURN QUERY SELECT * FROM resultTable;
 END;
 $$ LANGUAGE PLPGSQL;
+
 
 CREATE OR REPLACE FUNCTION NGSILD_UPDATETEMPORALATTRINSTANCE(ENTITYID TEXT, ATTRIBID TEXT, INSTANCEID TEXT, ATTRIB JSONB) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
 declare
@@ -366,7 +479,7 @@ BEGIN
 	END LOOP;
 	--todo reject changes in property type???
 	select id from temporalentity where e_id =ENTITYID INTO IID;
-	UPDATE temporalentityattrinstance SET data = jsonb_set(ATTRIB, '{https://uri.etsi.org/ngsi-ld/createdAt}', '[{"@type": "https://uri.etsi.org/ngsi-ld/DateTime", "@value": "'|| createdat ||'"}]'::jsonb), modifiedat = (ATTRIB#>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP, observedat = (ATTRIB#>'{https://uri.etsi.org/ngsi-ld/observedAt,0,@value}')::TIMESTAMP WHERE iid = IID AND attributeId = attribid AND instanceId = INSTANCEID RETURNING data INTO LOCALENTITY;
+	UPDATE temporalentityattrinstance SET data = jsonb_set(jsonb_set(ATTRIB, '{https://uri.etsi.org/ngsi-ld/createdAt}', '[{"@type": "https://uri.etsi.org/ngsi-ld/DateTime", "@value": "'|| createdat ||'"}]'::jsonb),'{https://uri.etsi.org/ngsi-ld/instanceId}','[{"@value": "'|| instanceid ||'"}]'::jsonb), modifiedat = (ATTRIB#>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP, observedat = (ATTRIB#>'{https://uri.etsi.org/ngsi-ld/observedAt,0,@value}')::TIMESTAMP WHERE iid = IID AND attributeId = attribid AND instanceId = INSTANCEID RETURNING data INTO LOCALENTITY;
 	IF LOCALENTITY IS NOT NULL THEN
 		INSERT INTO resultTable VALUES ('UPDATED ATTRS', null, null, LOCALENTITY, null, false, false);
 	END IF;
@@ -387,7 +500,7 @@ BEGIN
 	IF DELETEALL THEN
 		--returning all might be very expensive ... 
 		with a as (select id from temporalentity where e_id =ENTITYID),
-		with c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID group by temporalentityattrinstance.attributeId),
+		c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID group by temporalentityattrinstance.attributeId)
 		select jsonb_object_agg(c.key, c.value), a.id FROM c, a INTO LOCALATTRS, IID;
 		IF LOCALATTRS IS NOT NULL THEN
 			INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS, null, false, false);
@@ -395,7 +508,7 @@ BEGIN
 		END IF;
 	ELSE
 		with a as (select id from temporalentity where e_id =ENTITYID),
-		with c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID AND temporalentityattrinstance.attributeId = DATASETID group by temporalentityattrinstance.attributeId),
+		c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID AND temporalentityattrinstance.attributeId = DATASETID group by temporalentityattrinstance.attributeId)
 		select jsonb_object_agg(c.key, c.value), a.id FROM c, a INTO LOCALATTRS, IID;
 		IF LOCALATTRS IS NOT NULL THEN
 			INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS, null, false, false);
@@ -405,6 +518,7 @@ BEGIN
 	RETURN QUERY SELECT * FROM resultTable;
 END;
 $$ LANGUAGE PLPGSQL;
+
 
 CREATE OR REPLACE FUNCTION NGSILD_DELETEATTRSTNSTANCEFROMTEMPENTITY(ENTITYID TEXT, ATTRIBID TEXT, INSTANCEID TEXT) RETURNS TABLE (ENDPOINT text, TENANT text, HEADERS jsonb, FORWARDENTITY JSONB, C_ID text, singleOp boolean, batchOp boolean) AS $$
 declare
