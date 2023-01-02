@@ -3,8 +3,8 @@ package eu.neclab.ngsildbroker.registry.subscriptionmanager.repository;
 import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
-import eu.neclab.ngsildbroker.commons.storage.RegistryStorageFunctions;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionInfoDAO;
+import eu.neclab.ngsildbroker.registryhandler.service.RegistryStorageFunctions;
 
 @Singleton
 public class RegistrySubscriptionInfoDAO extends BaseSubscriptionInfoDAO {

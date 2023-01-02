@@ -582,17 +582,197 @@ public class HistoryEntityService {
 	}
 
 	private Uni<NGSILDOperationResult> handleDBDeleteAttrResult(DeleteAttrHistoryEntityRequest request,
-			RowSet<Row> resultTable, Context originalContext) {
+			RowSet<Row> resultTable, Context context) {
 		// INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS,
 		// null, false, false);
-		return null;
+		NGSILDOperationResult operationResult = new NGSILDOperationResult(
+				AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST, request.getId());
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(resultTable.size());
+		RowIterator<Row> it = resultTable.iterator();
+		Row row;
+		Uni<Void> sendKafka = null;
+		while (it.hasNext()) {
+			row = it.next();
+			switch (row.getString(0)) {
+			case "ERROR": {
+				// TODO update error handling
+				operationResult.addFailure(
+						new ResponseException(ErrorType.BadRequestData, "You cannot remove a type from an entity"));
+				if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+					sendKafka = sendFail(request.getBatchInfo());
+				}
+				break;
+			}
+			case "DELETED ATTRS": {
+				// full instance
+				Set<Attrib> attribs = Sets.newHashSet(new Attrib(request.getAttribName(), request.getDatasetId()));
+				operationResult.addSuccess(new CRUDSuccess(null, null, null, attribs));
+				break;
+			}
+			default:
+				String host = row.getString(0);
+				String tenant = row.getString(1);
+				String cSourceId = row.getString(4);
+
+				RemoteHost remoteHost = new RemoteHost(host, tenant,
+						MultiMap.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant)),
+						cSourceId, row.getBoolean(5), row.getBoolean(6));
+
+				if (remoteHost.canDoSingleOp()) {
+					int builderSize = remoteHost.host().length()
+							+ NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT.length() + request.getId().length()
+							+ request.getAttribName().length() + 60; // explaination for 60 it's 9 from the attrs and
+																		// slashes and than datasetid or deleteall
+
+					StringBuilder url = new StringBuilder(builderSize);
+					url.append(remoteHost.host());
+					url.append(NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/");
+					url.append(request.getId());
+					url.append("/attrs/" + request.getAttribName());
+					if (request.isDeleteAll()) {
+						url.append("?deleteAll=1");
+					} else {
+						if (request.getDatasetId() != null) {
+							url.append("?datasetId=" + request.getDatasetId());
+						}
+					}
+					unis.add(webClient.delete(url.toString()).putHeaders(remoteHost.headers()).send().onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
+										AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST, request.getId(),
+										Sets.newHashSet(new Attrib(request.getAttribName(), request.getDatasetId())));
+
+							}));
+				}
+				// TODO clear up with CIM to add batch requests for this
+//				else {
+//					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_TEMPROAL_BATCH_APPEND)
+//							.putHeaders(remoteHost.headers())
+//							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+//							.transform((response, failure) -> {
+//								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+//										ArrayUtils.toArray(204)).get(0);
+//							}));
+//				}
+				break;
+			}
+
+		}
+		if (sendKafka == null) {
+			if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+				if (operationResult.getFailures().isEmpty()) {
+					sendKafka = kafkaSenderInterface.send(request);
+				} else {
+					sendKafka = sendFail(request.getBatchInfo());
+				}
+			} else {
+				sendKafka = Uni.createFrom().voidItem();
+			}
+		}
+		return sendKafka.onItem().transformToUni(v -> {
+			return Uni.combine().all().unis(unis).combinedWith(list -> {
+				for (Object obj : list) {
+					NGSILDOperationResult tmp = (NGSILDOperationResult) obj;
+					operationResult.getSuccesses().addAll(tmp.getSuccesses());
+					operationResult.getFailures().addAll(tmp.getFailures());
+				}
+				return operationResult;
+			});
+		});
 	}
 
 	private Uni<NGSILDOperationResult> handleDBInstanceDeleteResult(DeleteAttrInstanceHistoryEntityRequest request,
 			RowSet<Row> resultTable, Context originalContext) {
 		// ('DELETED ATTRS', null, null, LOCALINSTANCE, null, false, false)
+		NGSILDOperationResult operationResult = new NGSILDOperationResult(
+				AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST, request.getId());
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(resultTable.size());
+		RowIterator<Row> it = resultTable.iterator();
+		Row row;
+		Uni<Void> sendKafka = null;
+		while (it.hasNext()) {
+			row = it.next();
+			switch (row.getString(0)) {
+			case "ERROR": {
+				// TODO update error handling
+				operationResult.addFailure(
+						new ResponseException(ErrorType.BadRequestData, "You cannot remove a type from an entity"));
+				if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+					sendKafka = sendFail(request.getBatchInfo());
+				}
+				break;
+			}
+			case "DELETED ATTRS": {
+				// full instance
+				Set<Attrib> attribs = Sets.newHashSet(new Attrib(request.getAttrId(), request.getInstanceId()));
+				operationResult.addSuccess(new CRUDSuccess(null, null, null, attribs));
+				break;
+			}
+			default:
+				String host = row.getString(0);
+				String tenant = row.getString(1);
+				String cSourceId = row.getString(4);
 
-		return null;
+				RemoteHost remoteHost = new RemoteHost(host, tenant,
+						MultiMap.newInstance(HttpUtils.getHeadersForRemoteCall((JsonArray) row.getJson(2), tenant)),
+						cSourceId, row.getBoolean(5), row.getBoolean(6));
+
+				if (remoteHost.canDoSingleOp()) {
+					int builderSize = remoteHost.host().length()
+							+ NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT.length() + request.getId().length()
+							+ request.getAttrId().length() + request.getInstanceId().length() + 12; // explaination for
+																									// 12 is from the
+																									// attrs and
+																									// slashes
+					StringBuilder url = new StringBuilder(builderSize);
+					url.append(remoteHost.host());
+					url.append(NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/");
+					url.append(request.getId());
+					url.append("/attrs/" + request.getAttrId());
+					url.append("/" + request.getInstanceId());
+					unis.add(webClient.delete(url.toString()).putHeaders(remoteHost.headers()).send().onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
+										AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST, request.getId(),
+										Sets.newHashSet(new Attrib(request.getAttrId(), request.getInstanceId())));
+
+							}));
+				}
+				// TODO clear up with CIM to add batch requests for this
+//				else {
+//					unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_TEMPROAL_BATCH_APPEND)
+//							.putHeaders(remoteHost.headers())
+//							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+//							.transform((response, failure) -> {
+//								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+//										ArrayUtils.toArray(204)).get(0);
+//							}));
+//				}
+				break;
+			}
+
+		}
+		if (sendKafka == null) {
+			if (request.getBatchInfo() != null && historyToKafkaEnabled) {
+				if (operationResult.getFailures().isEmpty()) {
+					sendKafka = kafkaSenderInterface.send(request);
+				} else {
+					sendKafka = sendFail(request.getBatchInfo());
+				}
+			} else {
+				sendKafka = Uni.createFrom().voidItem();
+			}
+		}
+		return sendKafka.onItem().transformToUni(v -> {
+			return Uni.combine().all().unis(unis).combinedWith(list -> {
+				for (Object obj : list) {
+					NGSILDOperationResult tmp = (NGSILDOperationResult) obj;
+					operationResult.getSuccesses().addAll(tmp.getSuccesses());
+					operationResult.getFailures().addAll(tmp.getFailures());
+				}
+				return operationResult;
+			});
+		});
 	}
 
 	private List<NGSILDOperationResult> handleBatchResponse(HttpResponse<Buffer> response, Throwable failure,

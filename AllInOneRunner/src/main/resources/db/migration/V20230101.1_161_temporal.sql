@@ -502,17 +502,20 @@ BEGIN
 	END LOOP;
 	IF DELETEALL THEN
 		--returning all might be very expensive ... 
-		with a as (select id from temporalentity where e_id =ENTITYID),
-		c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID group by temporalentityattrinstance.attributeId)
-		select jsonb_object_agg(c.key, c.value), a.id FROM c, a INTO LOCALATTRS, IID;
+		--with a as (select id from temporalentity where e_id =ENTITYID),
+		--c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID group by temporalentityattrinstance.attributeId)
+		--select jsonb_object_agg(c.key, c.value), a.id FROM c, a INTO LOCALATTRS, IID;
+		select id from temporalentity where e_id=ENTITYID into IID;
 		IF LOCALATTRS IS NOT NULL THEN
 			INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS, null, false, false);
 			DELETE FROM temporalentityattrinstance WHERE temporalentityattrinstance.attributeId = ATTRIBID AND temporalentityattrinstance.iid = IID;
 		END IF;
 	ELSE
-		with a as (select id from temporalentity where e_id =ENTITYID),
-		c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID AND temporalentityattrinstance.attributeId = DATASETID group by temporalentityattrinstance.attributeId)
-		select jsonb_object_agg(c.key, c.value), a.id FROM c, a INTO LOCALATTRS, IID;
+		--returning all might be very expensive ... 
+		--with a as (select id from temporalentity where e_id =ENTITYID),
+		--c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID AND temporalentityattrinstance.attributeId = DATASETID group by temporalentityattrinstance.attributeId)
+		--select jsonb_object_agg(c.key, c.value), a.id FROM c, a INTO LOCALATTRS, IID;
+		select id from temporalentity where e_id=ENTITYID into IID;
 		IF LOCALATTRS IS NOT NULL THEN
 			INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS, null, false, false);
 			DELETE FROM temporalentityattrinstance WHERE temporalentityattrinstance.attributeId = ATTRIBID AND temporalentityattrinstance.iid = IID;

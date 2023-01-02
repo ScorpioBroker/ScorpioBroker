@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.commons.storage;
+package eu.neclab.ngsildbroker.registryhandler.service;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -29,9 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Path("/ngsi-ld/v1")
 public class QueryController {
 
-	private static final Uni<RestResponse<Object>> INVALID_HEADER = Uni.createFrom()
-			.item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported")));;
+	
 	@Inject
 	QueryService queryService;
 
@@ -67,7 +65,7 @@ public class QueryController {
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		int acceptHeader = HttpUtils.parseAcceptHeader(headers.get("Accept"));
 		if (acceptHeader == -1) {
-			return INVALID_HEADER;
+			return HttpUtils.INVALID_HEADER;
 		}
 		return HttpUtils.getAtContext(request).onItem().transformToUni(headerContext -> {
 			Context context = JsonLdProcessor.getCoreContextClone().parse(headerContext, true);

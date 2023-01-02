@@ -69,6 +69,9 @@ import io.vertx.core.json.JsonObject;
 public final class HttpUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
+	public static final Uni<RestResponse<Object>> INVALID_HEADER = Uni.createFrom()
+			.item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported")));;
 	/** Timeout for all requests to respond. */
 
 	private static Pattern headerPattern = Pattern.compile(

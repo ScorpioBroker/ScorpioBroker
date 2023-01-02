@@ -30,7 +30,7 @@ public class ResponseException extends Exception {
 	private String title;
 	private String type;
 	private Set<Attrib> attribs;
-	private Map<String, Object> json = Maps.newHashMap();
+	private Map<String, Object> json = Maps.newLinkedHashMap();
 
 	public ResponseException(ErrorType error) {
 		this(error, error.getTitle());
@@ -60,8 +60,11 @@ public class ResponseException extends Exception {
 		this.attribs = attribs;
 		json.put(NGSIConstants.ERROR_TYPE, type);
 		json.put(NGSIConstants.ERROR_TITLE, title);
+		Map<String, Object> temp = Maps.newLinkedHashMap();
+		temp.put(NGSIConstants.ERROR_DETAIL_MESSAGE, detail);
+		json.put(NGSIConstants.ERROR_DETAIL, temp);
 		json.put(NGSIConstants.ERROR_CODE, errorCode);
-		Map<String, Object> temp = Maps.newHashMap();
+
 		if (attribs != null) {
 			List<Map<String, String>> tmp = Lists.newArrayList();
 			for (Attrib attrib : attribs) {
@@ -69,10 +72,13 @@ public class ResponseException extends Exception {
 			}
 			temp.put(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT, tmp);
 		}
-		temp.put(NGSIConstants.ERROR_DETAIL_MESSAGE, detail);
-		temp.put(NGSIConstants.ERROR_DETAIL_ENDPOINT, endpoint);
-		temp.put(NGSIConstants.ERROR_DETAIL_CSOURCE_ID, cSourceId);
-		json.put(NGSIConstants.ERROR_DETAIL, temp);
+		if (endpoint != null) {
+			temp.put(NGSIConstants.ERROR_DETAIL_ENDPOINT, endpoint);
+		}
+		if (cSourceId != null) {
+			temp.put(NGSIConstants.ERROR_DETAIL_CSOURCE_ID, cSourceId);
+		}
+
 	}
 
 	public ResponseException(ErrorType error, Object detail, Map<String, Object> entity, Context context) {

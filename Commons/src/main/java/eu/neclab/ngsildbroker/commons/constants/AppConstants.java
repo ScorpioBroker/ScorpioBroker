@@ -102,6 +102,7 @@ public class AppConstants {
 	public static final int UPDATE_TEMPORAL_INSTANCE_REQUEST = 7;
 	public static final int DELETE_TEMPORAL_REQUEST = 8;
 	public static final int DELETE_TEMPORAL_ATTRIBUTE_REQUEST = 9;
+	public static final int DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST = 10;
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	public static final String INTERNAL_REGISTRATION_ID = "scorpio:hosted:registryentries";
 	public static final String REGISTRY_CHANNEL = "registry";

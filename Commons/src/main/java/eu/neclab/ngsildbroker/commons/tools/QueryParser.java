@@ -14,6 +14,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
@@ -304,6 +305,11 @@ public class QueryParser {
 		}
 		root.setAllTypes(allTypes);
 		return root;
+	}
+
+	public static AggrTerm parseAggrTerm(String aggrMethods, String aggrPeriodDuration) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
