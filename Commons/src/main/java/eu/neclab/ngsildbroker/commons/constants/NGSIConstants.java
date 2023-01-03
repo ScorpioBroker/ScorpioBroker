@@ -319,12 +319,14 @@ public interface NGSIConstants {
 	public static final String ENDPOINT_TEMPORAL_BATCH_DELETE = "/ngsi-ld/v1/temporal/entityOperations/delete";
 	public static final String ENDPOINT_TEMPORAL_CREATE_DELETE = "/ngsi-ld/v1/temporal/entityOperations/create";
 	public static final String ENDPOINT_TEMPROAL_BATCH_APPEND = "/ngsi-ld/v1/temporal/entityOperations/append";
+	public static final String AGGR_METH_TOTAL_COUNT = "totalCount";
+	public static final String AGGR_METH_DISTINCT_COUNT = "distinctCount";
 	public static final String AGGR_METH_SUM = "sum";
 	public static final String AGGR_METH_AVG = "avg";
 	public static final String AGGR_METH_MIN = "min";
 	public static final String AGGR_METH_MAX = "max";
 	public static final String AGGR_METH_STDDEV = "stddev";
 	public static final String AGGR_METH_SUMSQ = "sumsq";
-	public static final Set<String> ALLOWED_AGGR_METH = Sets.newHashSet(AGGR_METH_SUM, AGGR_METH_AVG, AGGR_METH_MIN,
-			AGGR_METH_MAX, AGGR_METH_STDDEV, AGGR_METH_SUMSQ);
+	public static final Set<String> ALLOWED_AGGR_METH = Sets.newHashSet(AGGR_METH_TOTAL_COUNT, AGGR_METH_DISTINCT_COUNT,
+			AGGR_METH_SUM, AGGR_METH_AVG, AGGR_METH_MIN, AGGR_METH_MAX, AGGR_METH_STDDEV, AGGR_METH_SUMSQ);
 }

@@ -36,11 +36,11 @@ public class HistoryDAO {
 			tupleInput.add(entityId);
 			int dollarCount = 2;
 			if (aggrQuery != null) {
-				
+				sql += "c as (select sum(case)...";
 			} else {
-				sql += "c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid";
+				sql += "c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid where temporalentityattrinstance.is_toplevel";
 				if (attrsQuery != null || tempQuery != null) {
-					sql += "where ";
+					sql += " AND ";
 					if (attrsQuery != null) {
 						sql += "attributeId in ($" + dollarCount + ") ";
 						dollarCount++;

@@ -32,9 +32,22 @@ ALTER TABLE IF EXISTS public.temporalentityattrinstance
 ALTER TABLE IF EXISTS public.temporalentityattrinstance
     ADD COLUMN is_toplevel boolean;
 ALTER TABLE IF EXISTS public.temporalentityattrinstance
+    ADD COLUMN numericValue numeric;
+ALTER TABLE IF EXISTS public.temporalentityattrinstance
+    ADD COLUMN textValue text;
+ALTER TABLE IF EXISTS public.temporalentityattrinstance
+    ADD COLUMN dateTimeValue timestamp without time zone;
+ALTER TABLE IF EXISTS public.temporalentityattrinstance
+    ADD COLUMN dateValue date;
+ALTER TABLE IF EXISTS public.temporalentityattrinstance
+    ADD COLUMN timeValue time;
+ALTER TABLE IF EXISTS public.temporalentityattrinstance
+    ADD COLUMN attrType int4;
+ALTER TABLE IF EXISTS public.temporalentityattrinstance
     DROP COLUMN value;
 ALTER TABLE IF EXISTS public.temporalentityattrinstance
     DROP COLUMN static;
+
 --todo add update to generate the values from existing entries
 
 
@@ -90,6 +103,33 @@ ALTER TABLE PUBLIC.temporalentityattrinstance ADD COLUMN attrLookup text;
 
 --TEMPORAL FUNCTIONS
 
+CREATE OR REPLACE FUNCTION getAttrType(entryValue jsonb) RETURNS int4 AS $$
+DECLARE
+	jsonType text;
+BEGIN
+	jsonType := jsonb_typeof(jsonb)
+	CASE
+		WHEN jsonType = 'string' THEN
+			CASE
+				WHEN entryValue::text ~ '\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?' THEN
+					RETURN 3;
+				WHEN entryValue::text ~ '\d\d\d\d-\d\d-\d\d' THEN
+					RETURN 4;
+				WHEN entryValue::text ~ '\d\d:\d\d:\d\d(\.\d+)?' THEN
+					RETURN 5;
+				ELSE
+					RETURN 0;
+			END CASE;
+		WHEN jsonType = 'number' THEN
+			RETURN 1;
+		WHEN jsonType = 'boolean' THEN
+			RETURN 2;
+		ELSE
+			RETURN -1;
+	END CASE;
+END;
+$$ LANGUAGE PLPGSQL;
+
 CREATE OR REPLACE FUNCTION addAttribValueFromTemp(attribName text, attribLookup text, entityIid bigint, isRel boolean, isGeo boolean, isLang boolean, datasetId text, attrValue jsonb, rootLevel boolean, createdAt TIMESTAMP, modifiedAt TIMESTAMP, observedAt TIMESTAMP) RETURNS void AS $$
 declare
 	entry jsonb;
@@ -97,27 +137,69 @@ declare
 	entryValue jsonb;
 	temp text;
 	instance_Id text;
+	entryValue jsonb;
+	attrType int4;
+	textValue text;
+	numericValue numeric;
+	dateTimeValue TIMESTAMP;
+	dateValue date;
+	timeValue time;
 BEGIN
 	FOR entry IN SELECT jsonb_array_elements FROM jsonb_array_elements(attrValue) LOOP
 		instance_id = gen_random_uuid()::text;
 		FOR entryKey IN SELECT jsonb_object_keys FROM jsonb_object_keys(entry) LOOP
+			entryValue := entry->entryKey;
 			IF isGeo THEN
 				IF entryKey = '@value' THEN
-					INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, instance_id, ST_SetSRID( ST_GeomFromGeoJSON( getGeoJson(entry->entryKey)::text ), 4326), createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, null, isRel, isGeo, isLang, rootLevel, attribLookup);
+					INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, instance_id, ST_SetSRID( ST_GeomFromGeoJSON( getGeoJson(entryValue)::text ), 4326), createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, null, isRel, isGeo, isLang, rootLevel, attribLookup);
 				END IF;
 			ELSIF isLang THEN
 				IF entryKey = '@value' THEN
+					attrType := getAttrType(entryValue);
+					CASE
+						WHEN attrType = 0 THEN
+							textValue := entryValue::text;
+						WHEN attrType = 1 THEN
+							numericValue := entryValue::numeric;
+						WHEN attrType = 2 THEN
+							numericValue := entryValue::int::numeric;
+						WHEN attrType = 3 THEN
+							dateTimeValue := entryValue::TIMESTAMP;
+						WHEN attrType = 4 THEN
+							dateValue := entryValue::date;
+						WHEN attrType = 5 THEN
+							timeValue := entryValue::time;
+						ELSE
+						-- do nothing
+					END CASE;
 					temp:= attribName || '[' || entry->>'@language' || ']';
-					INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, instance_id, null, createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, entry->entryKey, isRel, isGeo, isLang, rootLevel, attribLookup);
+					INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup, textValue, numericValue, dateTimeValue, dateValue, timeValue, attrType) VALUES (temp, instance_id, null, createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, entryValue, isRel, isGeo, isLang, rootLevel, attribLookup, textValue, numericValue, dateTimeValue, dateValue, timeValue, attrType);
 				END IF;
 			ELSE
 				temp := attribName;
 				IF entryKey = '@value' OR entryKey = '@id' THEN
 					IF NOT rootLevel THEN
 						temp := temp || ']';
-						INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, null, null, createdAt, modifiedAt, observedAt, null, entityIid, null, datasetId, entry->entryKey, isRel, isGeo, isLang, rootLevel, attrLookup);
+						INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, null, null, createdAt, modifiedAt, observedAt, null, entityIid, null, datasetId, entryValue, isRel, isGeo, isLang, rootLevel, attrLookup);
 					ELSE
-						INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup) VALUES (temp, instance_id, null, createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, entry->entryKey, isRel, isGeo, isLang, rootLevel, attribLookup);
+						attrType := getAttrType(entryValue);
+						CASE
+							WHEN attrType = 0 THEN
+								textValue := entryValue::text;
+							WHEN attrType = 1 THEN
+								numericValue := entryValue::numeric;
+							WHEN attrType = 2 THEN
+								numericValue := entryValue::int::numeric;
+							WHEN attrType = 3 THEN
+								dateTimeValue := entryValue::TIMESTAMP;
+							WHEN attrType = 4 THEN
+								dateValue := entryValue::date;
+							WHEN attrType = 5 THEN
+								timeValue := entryValue::time;
+							ELSE
+							-- do nothing
+						END CASE;
+						INSERT INTO temporalentityattrinstance(attributeId, instanceId, geovalue, createdat, modifiedat, observedat, data, iid, deletedat, dataset_id, attr_value, is_rel, is_geo, is_lang, is_toplevel, attrLookup, textValue, numericValue, dateTimeValue, dateValue, timeValue, attrType) VALUES (temp, instance_id, null, createdAt, modifiedAt, observedAt, jsonb_set(entry, '{https://uri.etsi.org/ngsi-ld/instanceId}', ('[{"@id":"' || instance_id || '"}]')::jsonb), entityIid, null, datasetId, entryValue, isRel, isGeo, isLang, rootLevel, attribLookup, textValue, numericValue, dateTimeValue, dateValue, timeValue, attrType);
 					END IF;
 				ELSE
 					IF rootLevel THEN
@@ -125,7 +207,7 @@ BEGIN
 					ELSE
 						temp := temp || '.' || attribName;
 					END IF;
-					PERFORM addAttribValueFromTemp(attribName, temp, entityIid, isRel, isGeo, isLang, datasetId, entry->entryKey,false, createdAt, modifiedAt, observedAt);
+					PERFORM addAttribValueFromTemp(attribName, temp, entityIid, isRel, isGeo, isLang, datasetId, entryValue,false, createdAt, modifiedAt, observedAt);
 				END IF;
 			END IF;
 		END LOOP;
