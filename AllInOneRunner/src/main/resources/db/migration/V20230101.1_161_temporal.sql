@@ -322,16 +322,16 @@ BEGIN
 		INSERT INTO resultTable VALUES (i_rec.endPoint, i_rec.tenant_id, i_rec.headers, NULL, i_rec.c_id, true, false) ON CONFLICT DO NOTHING;
 	END LOOP;
 	--very expensive potentially
-	with a as (select id, ('{"@id": "'||e_id||'", "https://uri.etsi.org/ngsi-ld/createdAt": [{"@type": "https://uri.etsi.org/ngsi-ld/DateTime", "@value": "'|| createdat||'"}], "https://uri.etsi.org/ngsi-ld/modifiedAt": [{"@type": "https://uri.etsi.org/ngsi-ld/DateTime", "@value": "'|| modifiedat||'"}]}')::jsonb as entity from temporalentity where e_id =ENTITYID),
-	b as (select '@type' as key, jsonb_agg(e_type) as value from a left join tempetype2iid on a.id = tempetype2iid.iid group by a.entity),
-	c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid group by attributeId),
-	d as (select jsonb_object_agg(c.key, c.value) as attrs FROM c),
-	e as (select 'htttpscope' as key, jsonb_agg(jsonb_build_object('@id', e_scope)) as value from b, a left join tempescope2iid on a.id = tempescope2iid.iid where e_scope is not null)
-	select jsonb_build_object(b.key, b.value, e.key, e.value) || d.attrs || a.entity from a, b, d, e into localentity;
-	IF LOCALENTITY IS NOT NULL THEN
+	--with a as (select id, ('{"@id": "'||e_id||'", "https://uri.etsi.org/ngsi-ld/createdAt": [{"@type": "https://uri.etsi.org/ngsi-ld/DateTime", "@value": "'|| createdat||'"}], "https://uri.etsi.org/ngsi-ld/modifiedAt": [{"@type": "https://uri.etsi.org/ngsi-ld/DateTime", "@value": "'|| modifiedat||'"}]}')::jsonb as entity from temporalentity where e_id =ENTITYID),
+	--b as (select '@type' as key, jsonb_agg(e_type) as value from a left join tempetype2iid on a.id = tempetype2iid.iid group by a.entity),
+	--c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid group by attributeId),
+	--d as (select jsonb_object_agg(c.key, c.value) as attrs FROM c),
+	--e as (select 'htttpscope' as key, jsonb_agg(jsonb_build_object('@id', e_scope)) as value from b, a left join tempescope2iid on a.id = tempescope2iid.iid where e_scope is not null)
+	--select jsonb_build_object(b.key, b.value, e.key, e.value) || d.attrs || a.entity from a, b, d, e into localentity;
+	DELETE FROM TEMPORALENTITY WHERE e_id = ENTITYID RETURNING id INTO IID;
+	IF IID IS NOT NULL THEN
 		BEGIN
-			DELETE FROM TEMPORALENTITY WHERE TEMPORALENTITY.id = IID;
-			INSERT INTO resultTable VALUES ('DELETED ENTITY', NULL, NULL, LOCALENTITY, 'DELETED ENTITY', false, false);
+			INSERT INTO resultTable VALUES ('DELETED ENTITY', NULL, NULL, NULL, 'DELETED ENTITY', false, false);
 		EXCEPTION WHEN OTHERS THEN
 			INSERT INTO resultTable VALUES ('ERROR', sqlstate::text, SQLERRM::text, null, 'ERROR', false, false);
 		END;
@@ -506,8 +506,8 @@ BEGIN
 		--c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID group by temporalentityattrinstance.attributeId)
 		--select jsonb_object_agg(c.key, c.value), a.id FROM c, a INTO LOCALATTRS, IID;
 		select id from temporalentity where e_id=ENTITYID into IID;
-		IF LOCALATTRS IS NOT NULL THEN
-			INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS, null, false, false);
+		IF IID IS NOT NULL THEN
+			INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, null, null, false, false);
 			DELETE FROM temporalentityattrinstance WHERE temporalentityattrinstance.attributeId = ATTRIBID AND temporalentityattrinstance.iid = IID;
 		END IF;
 	ELSE
@@ -516,8 +516,8 @@ BEGIN
 		--c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid WHERE temporalentityattrinstance.attributeId = ATTRIBID AND temporalentityattrinstance.attributeId = DATASETID group by temporalentityattrinstance.attributeId)
 		--select jsonb_object_agg(c.key, c.value), a.id FROM c, a INTO LOCALATTRS, IID;
 		select id from temporalentity where e_id=ENTITYID into IID;
-		IF LOCALATTRS IS NOT NULL THEN
-			INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, LOCALATTRS, null, false, false);
+		IF IID IS NOT NULL THEN
+			INSERT INTO resultTable VALUES ('DELETED ATTRS', null, null, null, null, false, false);
 			DELETE FROM temporalentityattrinstance WHERE temporalentityattrinstance.attributeId = ATTRIBID AND temporalentityattrinstance.iid = IID;
 		END IF;
 	END IF;

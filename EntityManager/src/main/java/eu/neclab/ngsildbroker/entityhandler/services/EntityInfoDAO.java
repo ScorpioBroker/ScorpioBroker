@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
@@ -7,10 +8,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
-import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
-import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
@@ -18,8 +16,10 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 @Singleton
-public class EntityInfoDAO extends StorageDAO {
+public class EntityInfoDAO {
 
+	@Inject
+	ClientManager clientManager;
 	public Uni<RowSet<Row>> createEntity(CreateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String sql = "SELECT * FROM NGSILD_CREATEENTITY($1::jsonb)";
