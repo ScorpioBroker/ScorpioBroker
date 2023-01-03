@@ -185,6 +185,9 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_CREATED_AT = "createdAt";
 	public final static String QUERY_PARAMETER_MODIFIED_AT = "modifiedAt";
 	public final static String QUERY_PARAMETER_OBSERVED_AT = "observedAt";
+	public final static String QUERY_PARAMETER_DELETED_AT = "deletedAt";
+	public final static Set<String> ALLOWED_TIME_PROPERTIES = Sets.newHashSet(QUERY_PARAMETER_CREATED_AT,
+			QUERY_PARAMETER_MODIFIED_AT, QUERY_PARAMETER_OBSERVED_AT, QUERY_PARAMETER_DELETED_AT);
 	public final static String QUERY_PARAMETER_UNIT_CODE = "unitCode";
 	public final static String QUERY_PARAMETER_DATA_SET_ID = "datasetId";
 	public final static String QUERY_PARAMETER_OBSERVATION_SPACE = "observationspace";
@@ -315,5 +318,13 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT = "/ngsi-ld/v1/temporal/entities";
 	public static final String ENDPOINT_TEMPORAL_BATCH_DELETE = "/ngsi-ld/v1/temporal/entityOperations/delete";
 	public static final String ENDPOINT_TEMPORAL_CREATE_DELETE = "/ngsi-ld/v1/temporal/entityOperations/create";
-	public static final String ENDPOINT_TEMPROAL_BATCH_APPEND = "/ngsi-ld/v1/temporal/entityOperations/append";;
+	public static final String ENDPOINT_TEMPROAL_BATCH_APPEND = "/ngsi-ld/v1/temporal/entityOperations/append";
+	public static final String AGGR_METH_SUM = "sum";
+	public static final String AGGR_METH_AVG = "avg";
+	public static final String AGGR_METH_MIN = "min";
+	public static final String AGGR_METH_MAX = "max";
+	public static final String AGGR_METH_STDDEV = "stddev";
+	public static final String AGGR_METH_SUMSQ = "sumsq";
+	public static final Set<String> ALLOWED_AGGR_METH = Sets.newHashSet(AGGR_METH_SUM, AGGR_METH_AVG, AGGR_METH_MIN,
+			AGGR_METH_MAX, AGGR_METH_STDDEV, AGGR_METH_SUMSQ);
 }

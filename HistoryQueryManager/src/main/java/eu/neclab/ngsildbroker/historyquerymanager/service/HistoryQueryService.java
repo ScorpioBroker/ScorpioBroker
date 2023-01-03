@@ -43,7 +43,7 @@ public class HistoryQueryService {
 	}
 
 	public Uni<Map<String, Object>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
-			AggrTerm aggrQuery, String lang, int lastN, boolean localOnly, Context context) {
+			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN, boolean localOnly, Context context) {
 		
 		if(localOnly) {
 			//return historyDAO.retrieveEntity(tenant, entityId, attrsQuery, aggrQuery, lang, lastN)

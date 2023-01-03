@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.historyquerymanager.service.HistoryQueryService;
@@ -71,7 +72,9 @@ public class HistoryController {
 			@QueryParam("aggrMethods") String aggrMethods, @QueryParam("aggrPeriodDuration") String aggrPeriodDuration,
 			@QueryParam("lang") String lang, @QueryParam("lastN") Integer lastN,
 			@QueryParam("localOnly") boolean localOnly, @QueryParam(value = "options") String optionsString,
-			@QueryParam(value = "geometryProperty") String geometryProperty) {
+			@QueryParam(value = "geometryProperty") String geometryProperty,
+			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timeRel,
+			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt) {
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		int acceptHeader = HttpUtils.parseAcceptHeader(headers.get("Accept"));
 		if (acceptHeader == -1) {
@@ -85,16 +88,18 @@ public class HistoryController {
 		List<Object> headerContext;
 		AttrsQueryTerm attrsQuery;
 		AggrTerm aggrQuery;
+		TemporalQueryTerm tempQuery;
 		try {
 			HttpUtils.validateUri(entityId);
 			headerContext = HttpUtils.getAtContextNoUni(request);
 			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
 			attrsQuery = QueryParser.parseAttrs(attrs, context);
 			aggrQuery = QueryParser.parseAggrTerm(aggrMethods, aggrPeriodDuration);
+			tempQuery = QueryParser.parseTempQuery(timeProperty, timeRel, timeAt, endTimeAt);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery, lang,
+		return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery, tempQuery, lang,
 				lastN.intValue(), localOnly, context).onItem().transform(entity -> {
 					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 							geometryProperty, Sets.newHashSet(optionsString.split(",")));

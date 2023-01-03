@@ -2,11 +2,15 @@ package eu.neclab.ngsildbroker.commons.tools;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.Set;
 import java.util.regex.Pattern;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -19,6 +23,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -307,9 +312,99 @@ public class QueryParser {
 		return root;
 	}
 
-	public static AggrTerm parseAggrTerm(String aggrMethods, String aggrPeriodDuration) {
-		// TODO Auto-generated method stub
-		return null;
+	public static AggrTerm parseAggrTerm(String aggrMethods, String aggrPeriodDuration) throws ResponseException {
+		if (aggrMethods == null && aggrPeriodDuration == null) {
+			return null;
+		}
+		if (aggrMethods == null || aggrMethods.isEmpty()) {
+			throw new ResponseException(ErrorType.InvalidRequest,
+					"You must provide a aggrMethods entry when providing aggrPeriodDuration");
+		}
+		AggrTerm result = new AggrTerm();
+		result.setPeriod(aggrPeriodDuration);
+		String[] splitted = aggrMethods.split(",");
+		Set<String> aggrFunctions = new HashSet<>(splitted.length);
+		for (String aggrMethod : splitted) {
+			if (!NGSIConstants.ALLOWED_AGGR_METH.contains(aggrMethod)) {
+				throw new ResponseException(ErrorType.InvalidRequest, aggrMethod + " is not a valid aggrMethod. Use "
+						+ StringUtils.join(NGSIConstants.ALLOWED_AGGR_METH, " or "));
+			}
+			aggrFunctions.add(aggrMethod);
+		}
+		result.setAggrFunctions(aggrFunctions);
+		return result;
+	}
+
+	public static TemporalQueryTerm parseTempQuery(String timeProperty, String timeRel, String timeAt, String endTimeAt)
+			throws ResponseException {
+		if (timeProperty == null && timeRel == null && timeAt == null && endTimeAt == null) {
+			return null;
+		}
+		if (timeProperty == null) {
+			timeProperty = NGSIConstants.QUERY_PARAMETER_OBSERVED_AT;
+		} else if (!NGSIConstants.ALLOWED_TIME_PROPERTIES.contains(timeProperty)) {
+			throw new ResponseException(ErrorType.InvalidRequest, timeProperty + " is not an allowed timeproperty. Use "
+					+ StringUtils.join(NGSIConstants.ALLOWED_TIME_PROPERTIES, " or "));
+		}
+		switch (timeRel) {
+		case NGSIConstants.TIME_REL_AFTER:
+			if (endTimeAt != null) {
+				throw new ResponseException(ErrorType.InvalidRequest,
+						NGSIConstants.TIME_REL_AFTER + " cannot be used with " + NGSIConstants.QUERY_PARAMETER_ENDTIME);
+			}
+			if (timeAt == null) {
+				throw new ResponseException(ErrorType.InvalidRequest,
+						NGSIConstants.TIME_REL_AFTER + " cannot be used without " + NGSIConstants.QUERY_PARAMETER_TIME);
+			}
+			try {
+				SerializationTools.informatter.parse(timeAt);
+			} catch (DateTimeParseException e) {
+				throw new ResponseException(ErrorType.InvalidRequest, "Provided timeAt is not in a valid format");
+			}
+			break;
+		case NGSIConstants.TIME_REL_BEFORE:
+			if (endTimeAt != null) {
+				throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BEFORE
+						+ " cannot be used with " + NGSIConstants.QUERY_PARAMETER_ENDTIME);
+			}
+			if (timeAt == null) {
+				throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BEFORE
+						+ " cannot be used without " + NGSIConstants.QUERY_PARAMETER_TIME);
+			}
+			try {
+				SerializationTools.informatter.parse(timeAt);
+			} catch (DateTimeParseException e) {
+				throw new ResponseException(ErrorType.InvalidRequest, "Provided timeAt is not in a valid format");
+			}
+			break;
+		case NGSIConstants.TIME_REL_BETWEEN:
+			if (endTimeAt == null) {
+				throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BETWEEN
+						+ " cannot be used without " + NGSIConstants.QUERY_PARAMETER_ENDTIME);
+			}
+			if (timeAt == null) {
+				throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BETWEEN
+						+ " cannot be used without " + NGSIConstants.QUERY_PARAMETER_TIME);
+			}
+			try {
+				SerializationTools.informatter.parse(timeAt);
+			} catch (DateTimeParseException e) {
+				throw new ResponseException(ErrorType.InvalidRequest, "Provided timeAt is not in a valid format");
+			}
+			try {
+				SerializationTools.informatter.parse(endTimeAt);
+			} catch (DateTimeParseException e) {
+				throw new ResponseException(ErrorType.InvalidRequest, "Provided endTimeAt is not in a valid format");
+			}
+			break;
+
+		default:
+			throw new ResponseException(ErrorType.InvalidRequest,
+					timeRel + " is not an allowed timerel. Use " + NGSIConstants.TIME_REL_AFTER + " or "
+							+ NGSIConstants.TIME_REL_BEFORE + " or " + NGSIConstants.TIME_REL_BETWEEN);
+		}
+
+		return new TemporalQueryTerm(timeProperty, timeRel, timeAt, endTimeAt);
 	}
 
 }
