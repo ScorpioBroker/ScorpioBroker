@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Path("/ngsi-ld/v1")
 public class QueryController {
 
-	
 	@Inject
 	QueryService queryService;
 
@@ -74,13 +73,12 @@ public class QueryController {
 				expandedAttrs.add(context.expandIri(attr, false, true, null, null));
 			}
 
-			return queryService
-					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrs, expandedAttrs,
-							geometryProperty, lang, localOnly)
-					.onItem()
-					.transform(entity -> HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-							geometryProperty, options))
-					.onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+			return queryService.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrs, expandedAttrs,
+					geometryProperty, lang, localOnly).onItem().transform(entity -> {
+						
+						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
+								geometryProperty, options);
+					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 		});
 	}
 
@@ -108,7 +106,7 @@ public class QueryController {
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			int acceptHeader = HttpUtils.parseAcceptHeader(headers.get(HttpHeaders.ACCEPT));
 			if (acceptHeader == -1) {
-				return INVALID_HEADER;
+				return HttpUtils.INVALID_HEADER;
 			}
 			if (limit.get() == 0) {
 				limit.set(defaultLimit);
@@ -149,7 +147,7 @@ public class QueryController {
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			int acceptHeader = HttpUtils.parseAcceptHeader(headers.get(HttpHeaders.ACCEPT));
 			if (acceptHeader == -1) {
-				return INVALID_HEADER;
+				return HttpUtils.INVALID_HEADER;
 			}
 			if (details) {
 				return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
@@ -177,7 +175,7 @@ public class QueryController {
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			int acceptHeader = HttpUtils.parseAcceptHeader(headers.get(HttpHeaders.ACCEPT));
 			if (acceptHeader == -1) {
-				return INVALID_HEADER;
+				return HttpUtils.INVALID_HEADER;
 			}
 			return queryService.getType(HttpUtils.getTenant(request), type, localOnly).onItem().transform(map -> {
 				if (map.isEmpty()) {
@@ -196,7 +194,7 @@ public class QueryController {
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			int acceptHeader = HttpUtils.parseAcceptHeader(headers.get(HttpHeaders.ACCEPT));
 			if (acceptHeader == -1) {
-				return INVALID_HEADER;
+				return HttpUtils.INVALID_HEADER;
 			}
 			return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transform(map -> {
 				if (map.isEmpty()) {
@@ -215,7 +213,7 @@ public class QueryController {
 			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 			int acceptHeader = HttpUtils.parseAcceptHeader(headers.get(HttpHeaders.ACCEPT));
 			if (acceptHeader == -1) {
-				return INVALID_HEADER;
+				return HttpUtils.INVALID_HEADER;
 			}
 			return queryService.getAttrib(HttpUtils.getTenant(request), attribute, localOnly).onItem()
 					.transform(map -> {

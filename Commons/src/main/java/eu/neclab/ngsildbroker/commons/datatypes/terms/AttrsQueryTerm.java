@@ -10,6 +10,7 @@ import io.smallrye.mutiny.tuples.Tuple2;
 
 public class AttrsQueryTerm {
 
+	Set<String> compactedAttrs = Sets.newHashSet();
 	Set<String> attrs = Sets.newHashSet();
 	Context context;
 
@@ -19,6 +20,7 @@ public class AttrsQueryTerm {
 
 	public void addAttr(String attr) {
 		attrs.add(context.expandIri(attr, false, true, null, null));
+		compactedAttrs.add(attr);
 	}
 
 	public Set<String> getAttrs() {
@@ -44,6 +46,10 @@ public class AttrsQueryTerm {
 			builder.append("' OR ");
 		}
 		return Tuple2.of(startChar, builder.substring(0, builder.length() - 4));
+	}
+
+	public Set<String> getCompactedAttrs() {
+		return compactedAttrs;
 	}
 
 }

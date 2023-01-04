@@ -1,7 +1,7 @@
 package eu.neclab.ngsildbroker.historyquerymanager.repository;
 
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -12,10 +12,9 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.Tuple;
 
 @Singleton
 public class HistoryDAO {
@@ -23,6 +22,17 @@ public class HistoryDAO {
 	@Inject
 	ClientManager clientManager;
 
+	/**
+	 * 
+	 * @param tenant
+	 * @param entityId
+	 * @param attrsQuery
+	 * @param aggrQuery
+	 * @param tempQuery
+	 * @param lang
+	 * @param lastN
+	 * @return a single row with a single column containing the constructed entity. 
+	 */
 	public Uni<RowSet<Row>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
 			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
@@ -87,5 +97,21 @@ public class HistoryDAO {
 		});
 
 	}
+	/**
+	 * 
+	 * @param tenantId
+	 * @param entityId
+	 * @param expandedAttrs
+	 * @return returns a table of remote hosts to be called containing 
+	 * 	endpoint, tenant_id null if default, headers null if empty, reg_mode, attrs null if none are set by the reg 
+	 */
+	public Uni<RowSet<Row>> getRemoteSourcesForEntity(String tenantId, String entityId, Set<String> expandedAttrs) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode, (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs FROM CSOURCEINFORMATION AS C WHERE C.retrieveTemporal AND (C.E_ID=$1 OR C.E_ID=NULL) AND (C.e_prop=NULL OR C.e_prop IN $2) AND (C.e_rel=NULL OR C.e_rel IN $2) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') GROUP BY C.endpoint, C.tenant_id, c.headers, c.reg_mode")
+					.execute(Tuple.of(entityId, expandedAttrs));
+		});
+	}
+
 
 }

@@ -77,7 +77,7 @@ public final class HttpUtils {
 	private static Pattern headerPattern = Pattern.compile(
 			"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads)|(application\\/geo\\+json))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
 
-	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	private static Set<String> DO_NOT_SCAN_ATTRIBS = Sets.newHashSet("id", "type", "createdAt", "scope");
 
@@ -902,6 +902,14 @@ public final class HttpUtils {
 				return HttpUtils.handleControllerExceptions(e);
 			}
 		}
+	}
+
+	public static List<Object> getContextFromHeader(io.vertx.mutiny.core.MultiMap remoteHeaders) {
+		String tmp = remoteHeaders.get("Link").split(";")[0];
+		if (tmp.charAt(0) == '<') {
+			tmp = tmp.substring(1, tmp.length() - 1);
+		}
+		return Lists.newArrayList(tmp);
 	}
 
 }

@@ -1,11 +1,11 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.google.common.collect.Lists;
@@ -17,11 +17,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
-import eu.neclab.ngsildbroker.commons.storage.EntityStorageFunctions;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.sqlclient.Row;
@@ -29,7 +26,10 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 @Singleton
-public class QueryDAO extends StorageDAO {
+public class QueryDAO {
+
+	@Inject
+	ClientManager clientManager;
 
 	public Uni<Map<String, Object>> getEntity(String entryId, String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
@@ -47,7 +47,7 @@ public class QueryDAO extends StorageDAO {
 	public Uni<RowSet<Row>> getRemoteSourcesForEntity(String entityId, Set<String> expandedAttrs, String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode, (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntity=true AND (C.E_ID=$1 OR C.E_ID=NULL) AND (C.e_prop=NULL OR C.e_prop IN $2) AND (C.e_rel=NULL OR C.e_rel IN $2) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') GROUP BY C.endpoint, C.tenant_id, c.headers, c.reg_mode")
+					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode, (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntity AND (C.E_ID=$1 OR C.E_ID=NULL) AND (C.e_prop=NULL OR C.e_prop IN $2) AND (C.e_rel=NULL OR C.e_rel IN $2) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') GROUP BY C.endpoint, C.tenant_id, c.headers, c.reg_mode")
 					.execute(Tuple.of(entityId, expandedAttrs));
 		});
 	}
@@ -331,12 +331,12 @@ public class QueryDAO extends StorageDAO {
 			}
 			if (geoQuery != null) {
 				// TODO user intersect between search area and registration area
-			}else {
+			} else {
 				queryFront.append(", null as geoq");
 			}
 			if (scopeQuery != null) {
 				// TODO array check between scopes from query and reg query
-			}else {
+			} else {
 				queryFront.append(", null as scopeq");
 			}
 			if (csf != null) {

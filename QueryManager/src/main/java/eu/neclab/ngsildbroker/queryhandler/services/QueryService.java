@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
@@ -46,7 +47,6 @@ import io.vertx.mutiny.sqlclient.RowSet;
 @Singleton
 public class QueryService {
 
-	private static String REG_MODE_KEY = "!@#$%";
 	private static List<String> ENTITY_TYPE_LIST_TYPE = Lists.newArrayList();
 	{
 		ENTITY_TYPE_LIST_TYPE.add(NGSIConstants.NGSI_LD_ENTITY_LIST);
@@ -62,14 +62,10 @@ public class QueryService {
 	@Inject
 	Vertx vertx;
 
-	protected WebClient webClient;
+	private WebClient webClient;
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private Random random = new Random();
-
-	private static final Set<String> DO_NOT_MERGE_KEYS = Sets.newHashSet(NGSIConstants.JSON_LD_ID,
-			NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_OBSERVED_AT,
-			NGSIConstants.NGSI_LD_MODIFIED_AT);
 
 	@PostConstruct
 	void setup() {
@@ -80,8 +76,8 @@ public class QueryService {
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, String lang, int limit, int offSet, boolean count, boolean localOnly,
 			Context context) {
-		Uni<QueryResult> localQuery = queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-				limit, offSet, count).onItem().transform(rows -> {
+		Uni<QueryResult> localQuery = queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
+				geoQuery, scopeQuery, limit, offSet, count).onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
 					if (limit == 0 && count) {
 						result.setCount(rows.iterator().next().getLong(0));
@@ -107,7 +103,8 @@ public class QueryService {
 					return result;
 				});
 		if (localOnly) {
-			Uni<List<Map<String, Object>>> queryRemoteEntities = Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
+			Uni<List<Map<String, Object>>> queryRemoteEntities = Uni.createFrom()
+					.item(new ArrayList<Map<String, Object>>(0));
 		} else {
 			Uni<List<Map<String, Object>>> queryRemoteEntities = queryDAO.getRemoteSourcesForQuery(tenant, id,
 					typeQuery, idPattern, attrsQuery, qQuery, csf, geoQuery, scopeQuery).onItem()
@@ -220,8 +217,8 @@ public class QueryService {
 									responseTypes = response.bodyAsJsonObject().getMap();
 									try {
 										responseTypes = (Map<String, Object>) JsonLdProcessor
-												.expand(getContextFromHeader(remoteHeaders), responseTypes, opts, -1,
-														false)
+												.expand(HttpUtils.getContextFromHeader(remoteHeaders), responseTypes,
+														opts, -1, false)
 												.get(0);
 									} catch (JsonLdError e) {
 										// TODO Auto-generated catch block
@@ -330,8 +327,8 @@ public class QueryService {
 									responseTypes = response.bodyAsJsonObject().getMap();
 									try {
 										responseTypes = (Map<String, Object>) JsonLdProcessor
-												.expand(getContextFromHeader(remoteHeaders), responseTypes, opts, -1,
-														false)
+												.expand(HttpUtils.getContextFromHeader(remoteHeaders), responseTypes,
+														opts, -1, false)
 												.get(0);
 									} catch (JsonLdError e) {
 										// TODO Auto-generated catch block
@@ -448,8 +445,8 @@ public class QueryService {
 											responseEntity = response.bodyAsJsonObject().getMap();
 											try {
 												responseEntity = (Map<String, Object>) JsonLdProcessor
-														.expand(getContextFromHeader(remoteHeaders), responseEntity,
-																opts, -1, false)
+														.expand(HttpUtils.getContextFromHeader(remoteHeaders),
+																responseEntity, opts, -1, false)
 														.get(0);
 											} catch (JsonLdError e) {
 												// TODO Auto-generated catch block
@@ -458,7 +455,8 @@ public class QueryService {
 												// TODO Auto-generated catch block
 												e.printStackTrace();
 											}
-											responseEntity.put(REG_MODE_KEY, row.getInteger(3));
+
+											responseEntity.put(EntityTools.REG_MODE_KEY, row.getInteger(3));
 
 										}
 										return responseEntity;
@@ -471,10 +469,10 @@ public class QueryService {
 									continue;
 								}
 								Map<String, Object> entityMap = (Map<String, Object>) entry;
-								int regMode = (int) entityMap.remove(REG_MODE_KEY);
+								int regMode = (int) entityMap.remove(EntityTools.REG_MODE_KEY);
 								for (Entry<String, Object> attrib : entityMap.entrySet()) {
 									String key = attrib.getKey();
-									if (DO_NOT_MERGE_KEYS.contains(key)) {
+									if (EntityTools.DO_NOT_MERGE_KEYS.contains(key)) {
 										if (!result.containsKey(key)) {
 											result.put(key, attrib.getValue());
 										} else {
@@ -493,11 +491,11 @@ public class QueryService {
 									}
 									Object currentValue = result.get(key);
 									List<Map<String, Object>> newValue = (List<Map<String, Object>>) attrib.getValue();
-									addRegModeToValue(newValue, regMode);
+									EntityTools.addRegModeToValue(newValue, regMode);
 									if (currentValue == null) {
 										result.put(key, newValue);
 									} else {
-										mergeValues((List<Map<String, Object>>) currentValue, newValue);
+										EntityTools.mergeValues((List<Map<String, Object>>) currentValue, newValue);
 									}
 
 								}
@@ -510,9 +508,9 @@ public class QueryService {
 		return Uni.combine().all().unis(getEntity, getRemoteEntities).asTuple().onItem().transformToUni(t -> {
 			Map<String, Object> localEntity = t.getItem1();
 			Map<String, Object> remoteEntity = t.getItem2();
-			if (attrs != null && !attrs.isEmpty()) {
-				removeAttrs(localEntity, attrs);
-			}
+//			if (attrs != null && !attrs.isEmpty()) {
+//				EntityTools.removeAttrs(localEntity, attrs);
+//			}
 			if (localEntity.isEmpty() && remoteEntity.isEmpty()) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
 			}
@@ -521,12 +519,12 @@ public class QueryService {
 				return Uni.createFrom().item(localEntity);
 			}
 			if (localEntity.isEmpty()) {
-				removeRegKey(remoteEntity);
+				EntityTools.removeRegKey(remoteEntity);
 				return Uni.createFrom().item(remoteEntity);
 			}
 			for (Entry<String, Object> attrib : remoteEntity.entrySet()) {
 				String key = attrib.getKey();
-				if (DO_NOT_MERGE_KEYS.contains(key)) {
+				if (EntityTools.DO_NOT_MERGE_KEYS.contains(key)) {
 					if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
 						List<String> newType = (List<String>) attrib.getValue();
 						List<String> currentType = (List<String>) localEntity.get(key);
@@ -544,168 +542,15 @@ public class QueryService {
 				if (currentValue == null) {
 					localEntity.put(key, newValue);
 				} else {
-					mergeValues((List<Map<String, Object>>) currentValue, newValue);
+					EntityTools.mergeValues((List<Map<String, Object>>) currentValue, newValue);
 				}
 
 			}
-			removeRegKey(localEntity);
+			EntityTools.removeRegKey(localEntity);
 			return Uni.createFrom().item(localEntity);
 
 		});
 
 	}
 
-	private void removeAttrs(Map<String, Object> localEntity, Set<String> attrs) {
-		Set<String> entityAttrs = localEntity.keySet();
-		boolean attrsFound = false;
-		for (String attr : attrs) {
-			if (entityAttrs.contains(attr)) {
-				attrsFound = true;
-				break;
-			}
-		}
-		entityAttrs.removeAll(attrs);
-		entityAttrs.removeAll(DO_NOT_MERGE_KEYS);
-		if (entityAttrs.isEmpty() && !attrsFound) {
-			localEntity.clear();
-		} else {
-			for (String attr : entityAttrs) {
-				localEntity.remove(attr);
-			}
-		}
-
-	}
-
-	private void removeRegKey(Map<String, Object> remoteEntity) {
-		for (Entry<String, Object> attrib : remoteEntity.entrySet()) {
-			String key = attrib.getKey();
-			if (DO_NOT_MERGE_KEYS.contains(key)) {
-				continue;
-			}
-			List<Map<String, Object>> list = (List<Map<String, Object>>) attrib.getValue();
-			for (Map<String, Object> entry : list) {
-				entry.remove(REG_MODE_KEY);
-			}
-		}
-
-	}
-
-	private void mergeValues(List<Map<String, Object>> currentValue, List<Map<String, Object>> newValue) {
-		long newObservedAt = -1, newModifiedAt = -1, newCreatedAt = -1, currentObservedAt = -1, currentModifiedAt = -1,
-				currentCreatedAt = -1;
-		int currentRegMode = -1;
-		String newDatasetId;
-		int removeIndex = -1;
-		int regMode = -1;
-		boolean found = false;
-		for (Map<String, Object> entry : newValue) {
-			if (entry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-				newDatasetId = ((List<Map<String, String>>) entry.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)
-						.get(NGSIConstants.JSON_LD_ID);
-			} else {
-				newDatasetId = null;
-			}
-			newObservedAt = -1;
-			newModifiedAt = -1;
-			newCreatedAt = -1;
-			try {
-				newCreatedAt = SerializationTools.date2Long((String) entry.get(NGSIConstants.NGSI_LD_CREATED_AT));
-				newModifiedAt = SerializationTools.date2Long((String) entry.get(NGSIConstants.NGSI_LD_MODIFIED_AT));
-				if (entry.containsKey(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
-					newObservedAt = SerializationTools.date2Long((String) entry.get(NGSIConstants.NGSI_LD_OBSERVED_AT));
-				}
-			} catch (Exception e) {
-				// do nothing intentionally
-			}
-			regMode = -1;
-			if (entry.containsKey(REG_MODE_KEY)) {
-				regMode = (int) entry.get(REG_MODE_KEY);
-			}
-			removeIndex = -1;
-			found = false;
-			for (int i = 0; i < currentValue.size(); i++) {
-				Map<String, Object> currentEntry = currentValue.get(i);
-				currentRegMode = -1;
-				if (currentEntry.containsKey(REG_MODE_KEY)) {
-					currentRegMode = (int) currentEntry.get(REG_MODE_KEY);
-				}
-				String currentDatasetId;
-				if (currentEntry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-					currentDatasetId = ((List<Map<String, String>>) currentEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID))
-							.get(0).get(NGSIConstants.JSON_LD_ID);
-				} else {
-					currentDatasetId = null;
-				}
-				if ((currentDatasetId == null && newDatasetId == null) || (currentDatasetId != null
-						&& newDatasetId != null && currentDatasetId.equals(newDatasetId))) {
-					// 0 auxilliary
-					// 1 inclusive
-					// 2 proxy
-					// 3 exclusive
-					found = true;
-					if (currentRegMode == 3 || regMode == 0) {
-						break;
-					}
-					if (regMode == 3 || currentRegMode == 0) {
-						removeIndex = i;
-						break;
-					}
-					currentObservedAt = -1;
-					currentModifiedAt = -1;
-					currentCreatedAt = -1;
-					try {
-						currentCreatedAt = SerializationTools
-								.date2Long((String) currentEntry.get(NGSIConstants.NGSI_LD_CREATED_AT));
-						currentModifiedAt = SerializationTools
-								.date2Long((String) currentEntry.get(NGSIConstants.NGSI_LD_MODIFIED_AT));
-						if (currentEntry.containsKey(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
-							currentObservedAt = SerializationTools
-									.date2Long((String) currentEntry.get(NGSIConstants.NGSI_LD_OBSERVED_AT));
-						}
-					} catch (Exception e) {
-						// do nothing intentionally
-					}
-					// if observedAt is set it will take preference over modifiedAt
-					if (currentObservedAt != -1 || newObservedAt != -1) {
-						if (currentObservedAt >= newObservedAt) {
-							break;
-						} else {
-							removeIndex = i;
-							break;
-						}
-					}
-					if (currentModifiedAt >= newModifiedAt) {
-						break;
-					} else {
-						removeIndex = i;
-						break;
-					}
-
-				}
-			}
-			if (found) {
-				if (removeIndex != -1) {
-					currentValue.remove(removeIndex);
-					currentValue.add(entry);
-				}
-			} else {
-				currentValue.add(entry);
-			}
-		}
-	}
-
-	private void addRegModeToValue(List<Map<String, Object>> newValue, int regMode) {
-		for (Map<String, Object> entry : newValue) {
-			entry.put(REG_MODE_KEY, regMode);
-		}
-
-	}
-
-	private List<Object> getContextFromHeader(MultiMap remoteHeaders) {
-		String tmp = remoteHeaders.get("Link").split(";")[0];
-		if (tmp.charAt(0) == '<') {
-			tmp = tmp.substring(1, tmp.length() - 1);
-		}
-		return Lists.newArrayList(tmp);
-	}
 }
