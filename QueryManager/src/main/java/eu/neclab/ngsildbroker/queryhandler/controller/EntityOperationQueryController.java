@@ -1,21 +1,11 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
-import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.net.HttpHeaders;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.*;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.queryhandler.services.EntityPostQueryParser;
-import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.http.HttpServerRequest;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.RestResponse;
+import static eu.neclab.ngsildbroker.commons.tools.HttpUtils.INVALID_HEADER;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -23,12 +13,22 @@ import javax.inject.Singleton;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static eu.neclab.ngsildbroker.commons.tools.HttpUtils.INVALID_HEADER;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
+
+import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.net.HttpHeaders;
+
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
 @Path("/ngsi-ld/v1/entityOperations")
@@ -46,7 +46,7 @@ public class EntityOperationQueryController {
     @ConfigProperty(name = "scorpio.entity.batch-operations.query.max-limit", defaultValue = "1000")
     String coreContext;
 
-    private PayloadQueryParamParser paramParser = new EntityPostQueryParser();
+    
 
     @PostConstruct
     public void init() {
