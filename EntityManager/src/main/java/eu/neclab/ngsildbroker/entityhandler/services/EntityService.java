@@ -156,7 +156,9 @@ public class EntityService {
 			}));
 		}
 
-		return Uni.combine().all().unis(dbUnis).combinedWith(list -> {
+		return Uni.combine().all()
+				.unis(dbUnis)
+				.combinedWith(list -> {
 
 			ArrayListMultimap<RemoteHost, Map<String, Object>> remoteHost2Entities = ArrayListMultimap.create();
 			Map<String, NGSILDOperationResult> entityId2Result = Maps.newHashMap();

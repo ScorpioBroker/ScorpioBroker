@@ -18,7 +18,7 @@ public class QueryResult {
 	private Long resultsLeftAfter;
 	private Long resultsLeftBefore;
 	private List<Map<String, Object>> data;
-	private Long count = 0l;
+	private Long count = 0L;
 
 	public QueryResult() {
 	}
@@ -79,7 +79,7 @@ public class QueryResult {
 		this.count = count;
 	}
 
-	public void finalize() throws Throwable {
-
-	}
+//	public void finalize() throws Throwable {
+//
+//	}
 }
