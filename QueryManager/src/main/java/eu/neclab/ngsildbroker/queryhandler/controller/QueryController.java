@@ -25,6 +25,8 @@ import javax.ws.rs.QueryParam;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static eu.neclab.ngsildbroker.commons.tools.HttpUtils.INVALID_HEADER;
+
 @Singleton
 @Path("/ngsi-ld/v1")
 public class QueryController {
@@ -65,7 +67,7 @@ public class QueryController {
 		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
 		int acceptHeader = HttpUtils.parseAcceptHeader(headers.get("Accept"));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return INVALID_HEADER;
 		}
 		return HttpUtils.getAtContext(request).onItem().transformToUni(headerContext -> {
 			Context context = JsonLdProcessor.getCoreContextClone().parse(headerContext, true);
@@ -132,9 +134,7 @@ public class QueryController {
 			scopeQueryTerm.setScopeLevels(scopeQ.split(","));
 			return queryService.query(HttpUtils.getTenant(request), id, typeQueryTerm, idPattern, attrsQueryTerm,
 					qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, lang, limit.get(), offset, count, localOnly,
-					context).onItem().transform(t -> {
-						return RestResponse.ok(t);
-					});
+					context).onItem().transform(RestResponse::ok);
 		});
 
 		// return QueryControllerFunctions.queryForEntries(queryService, request, false,

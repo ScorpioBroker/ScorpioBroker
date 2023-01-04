@@ -1,13 +1,7 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -707,5 +701,31 @@ public class QueryService {
 			tmp = tmp.substring(1, tmp.length() - 1);
 		}
 		return Lists.newArrayList(tmp);
+	}
+
+	public Uni<List<QueryResult>> postQuery(String tenant,List<Map<String, Object>> entities,String lang, int limit, int offSet, boolean count, boolean localOnly,
+							   Context context){
+		List<Uni<QueryResult>> listResults = new ArrayList<>();
+		for (Map<String, Object> entity:entities) {
+			Set<String> ids= new HashSet<>();
+			if(entity.get("id") instanceof List<?> idList){
+				ids.addAll((List<String>) idList);
+			}else ids.add((String)entity.get("id"));
+			TypeQueryTerm typeQueryTerm = new TypeQueryTerm(context);
+			typeQueryTerm.setType((String) entity.get("type"));
+			AttrsQueryTerm attrsQueryTerm = new AttrsQueryTerm(context);
+			attrsQueryTerm.addAttr((String)entity.get("attrs"));
+			QQueryTerm qQueryTerm = new QQueryTerm(context);
+			CSFQueryTerm csfQueryTerm =new CSFQueryTerm(context);
+			GeoQueryTerm geoQueryTerm = new GeoQueryTerm(context);
+			geoQueryTerm.setGeometry((String) entity.get("Geometry"));
+			ScopeQueryTerm scopeQueryTerm = new ScopeQueryTerm();
+			scopeQueryTerm.setScopeLevels(((String) entity.get("scopeQ")).split(","));
+
+			listResults.add(query(tenant,ids,typeQueryTerm,(String)entity.get("idPattern"),attrsQueryTerm,qQueryTerm,
+					csfQueryTerm,geoQueryTerm,scopeQueryTerm,lang,limit,offSet,count,localOnly,context));
+
+		}
+		return Uni.join().all(listResults).andCollectFailures();
 	}
 }

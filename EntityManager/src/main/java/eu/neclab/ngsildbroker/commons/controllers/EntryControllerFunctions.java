@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HttpHeaders;
 
+import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -52,7 +53,7 @@ public interface EntryControllerFunctions {
 	static Logger logger = LoggerFactory.getLogger(EntryControllerFunctions.class);
 
 	@SuppressWarnings("unchecked")
-	public static Uni<RestResponse<Object>> updateMultiple(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> updateMultiple(EntityService entityService, HttpServerRequest request,
 			String payload, int maxUpdateBatch, String options, int payloadType, Random random) {
 
 		List<Map<String, Object>> jsonPayload;
@@ -141,8 +142,8 @@ public interface EntryControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Uni<RestResponse<Object>> createMultiple(EntryCRUDService entityService, HttpServerRequest request,
-			String payload, int maxCreateBatch, int payloadType, Random random) {
+	public static Uni<RestResponse<Object>> createMultiple(EntityService entityService, HttpServerRequest request,
+														   String payload, int maxCreateBatch, int payloadType, Random random) {
 		List<Map<String, Object>> jsonPayload;
 
 		try {
@@ -255,7 +256,7 @@ public interface EntryControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Uni<RestResponse<Object>> deleteMultiple(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> deleteMultiple(EntityService entityService, HttpServerRequest request,
 			String payload, int payloadType, Random random) {
 		BatchInfo batchInfo;
 		try {
@@ -312,7 +313,7 @@ public interface EntryControllerFunctions {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Uni<RestResponse<Object>> upsertMultiple(EntryCRUDService entityService, HttpServerRequest request,
+	public static Uni<RestResponse<Object>> upsertMultiple(EntityService entityService, HttpServerRequest request,
 			String payload, String options, int maxCreateBatch, int payloadType, Random random) {
 		List<Map<String, Object>> jsonPayload;
 		try {
