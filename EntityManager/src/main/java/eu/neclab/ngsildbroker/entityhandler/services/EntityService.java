@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -44,21 +43,17 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.client.impl.HttpResponseImpl;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
@@ -349,7 +344,7 @@ public class EntityService {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param request         the reate request
 	 * @param resultTable     the RowSet coming from the DB
 	 * @param originalContext the context used in the original request
@@ -487,7 +482,7 @@ public class EntityService {
 
 	/**
 	 * Method to update a existing Entity in the system/kafka topic
-	 * 
+	 *
 	 * @param entityId - id of entity to be updated
 	 * @param resolved - jsonld message containing fileds to be updated with updated
 	 *                 values
@@ -504,14 +499,57 @@ public class EntityService {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
 						"No result from the database this should never happen"));
 			}
-			return handleDBUpdateResult(request, resultTable, originalContext);
+			return handleDBUpdateResult(request, resultTable, originalContext).onItem().transformToUni(tuple->{
+				NGSILDOperationResult localResult = tuple.getItem1();
+				Map<RemoteHost, Map<String, Object>> remoteHosts = tuple.getItem2();
+				List<Uni<Void>> unis = new ArrayList<>(remoteHosts.size());
+				for (Entry<RemoteHost, Map<String, Object>> entry : remoteHosts.entrySet()) {
+					RemoteHost remoteHost = entry.getKey();
+					if (remoteHost.canDoSingleOp()) {
+						if ( request.getAttrName() != null) {
+							unis.add(webClient.patch(remoteHost + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
+									+ "/attrs/" +  request.getAttrName())
+									 .putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue())).onItemOrFailure()
+									 .transformToUni((response, failure) -> {
+									handleWebResponse(localResult, response, failure, 201, remoteHost,
+											HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+									return Uni.createFrom().voidItem();
+								}));
+						} else {
+							unis.add(webClient.patch(remoteHost + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
+											+ "/attrs/")
+									.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue())).onItemOrFailure()
+									.transformToUni((response, failure) -> {
+										handleWebResponse(localResult, response, failure, 201, remoteHost,
+												HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
+										return Uni.createFrom().voidItem();
+									}));
+						}
+
+					} else {
+						unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
+								.putHeaders(remoteHost.headers())
+								.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(entry.getValue()))))
+								.onItemOrFailure().transformToUni((response, failure) -> {
+									NGSILDOperationResult remoteResult = handleBatchResponse(response, failure,
+											remoteHost, Lists.newArrayList(entry.getValue()), ArrayUtils.toArray(201))
+											.get(0);
+									localResult.getSuccesses().addAll(remoteResult.getSuccesses());
+									localResult.getFailures().addAll(remoteResult.getFailures());
+									return Uni.createFrom().voidItem();
+								}));
+					}
+				}
+				return Uni.combine().all().unis(unis).combinedWith(t -> localResult);
+			});
 		});
 	}
 
-	private Uni<NGSILDOperationResult> handleDBUpdateResult(EntityRequest request, RowSet<Row> resultTable,
+	private Uni<Tuple2<NGSILDOperationResult, Map<RemoteHost, Map<String, Object>>>> handleDBUpdateResult(EntityRequest request, RowSet<Row> resultTable,
 			Context originalContext) {
 		NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, request.getId());
 		List<Uni<Void>> unis = Lists.newArrayList();
+		Map<RemoteHost, Map<String, Object>> remoteResults = Maps.newHashMap();
 		Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
 		boolean internalSend = false;
 		Context context = JsonLdProcessor.getCoreContextClone().parse(originalContext, true);
@@ -577,7 +615,7 @@ public class EntityService {
 				} else {
 					compacted = hash2Compacted.get(hash);
 				}
-				String url;
+				/*String url;
 				HttpRequest<Buffer> req;
 				if (request.getRequestType() == AppConstants.UPDATE_REQUEST) {
 					if (((UpdateEntityRequest) request).getAttrName() != null) {
@@ -598,9 +636,12 @@ public class EntityService {
 							// entityToForward,
 							// context);
 							handleWebResponse(result, response, failure, 201, host,
-									HttpUtils.getAttribsFromCompactedPayload(compacted));
-							return Uni.createFrom().voidItem();
-						}));
+									HttpUtils.getAttribsFromCompactedPayload(compacted));*/
+
+				remoteResults.put(new RemoteHost(host, tenant, null, cSourceId, row.getBoolean(5), row.getBoolean(6)),
+						compacted);
+//							return Uni.createFrom().voidItem();
+//						}));
 				break;
 			}
 
@@ -608,10 +649,11 @@ public class EntityService {
 		if (!internalSend) {
 			unis.add(sendFail(request.getBatchInfo()));
 		}
-		return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
+//		return Uni.combine().all().unis(unis).combinedWith(remoteEntries -> result);
+		return Uni.createFrom().item( Tuple2.of(result, remoteResults));
 	}
 
-	
+
 	public Uni<Void> sendFail(BatchInfo batchInfo) {
 		BaseRequest request = new BaseRequest();
 		request.setRequestType(AppConstants.BATCH_ERROR_REQUEST);
@@ -620,22 +662,24 @@ public class EntityService {
 		return kafkaSenderInterface.send(request);
 	}
 
-	
+
 	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
 			Context originalContext) {
 		return updateEntry(tenant, entityId, entry, originalContext, new BatchInfo(-1, -1));
 	}
 
-	
+
 	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
-			boolean noOverwrite, Context originalContext) {
+																								  boolean noOverwrite, Context originalContext) {
 		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, entry, null);
 		return entityDAO.appendEntity(request, noOverwrite).onItem().transformToUni(resultTable -> {
 			if (resultTable.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
 						"No result from the database this should never happen"));
 			}
-			return handleDBUpdateResult(request, resultTable, originalContext);
+			return handleDBUpdateResult(request, resultTable, originalContext).onItem().transformToUni(tuple->{
+				//TO DO
+			});
 		});
 	}
 
