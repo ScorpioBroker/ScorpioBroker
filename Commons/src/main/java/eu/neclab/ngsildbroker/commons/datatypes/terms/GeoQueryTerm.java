@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.commons.datatypes.terms;
 import java.util.List;
 
 import com.github.jsonldjava.core.Context;
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -10,6 +11,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.GeoRelation;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple4;
 
 public class GeoQueryTerm {
 	private String geometry;
@@ -72,8 +74,10 @@ public class GeoQueryTerm {
 		this.distanceValue = distanceValue;
 	}
 
-	public Tuple2<Character, String> toSql(char startChar, Character prevResult) throws ResponseException {
+	public Tuple4<Character, String, Integer, List<Object>> toSql(char startChar, Character prevResult, int dollar)
+			throws ResponseException {
 		StringBuilder builder = new StringBuilder();
+		List<Object> tupleItems = Lists.newArrayList();
 		builder.append(startChar);
 		builder.append(" as (SELECT attr2iid.iid FROM ");
 		if (prevResult != null) {
@@ -84,14 +88,19 @@ public class GeoQueryTerm {
 		} else {
 			builder.append(" attr2iid WHERE ");
 		}
-		builder.append(" isGeo AND attr='");
-		builder.append(geoproperty);
-		builder.append("' AND ");
-		builder.append(getGeoSQLQuery());
-		return Tuple2.of(startChar, builder.toString());
+		builder.append(" isGeo AND attr=$");
+		builder.append(dollar);
+		dollar++;
+		tupleItems.add(geoproperty);
+		builder.append(" AND ");
+		Tuple2<StringBuilder, Integer> tmp = getGeoSQLQuery(tupleItems, dollar);
+		builder.append(tmp.getItem1());
+
+		return Tuple4.of(startChar, builder.toString(), tmp.getItem2(), tupleItems);
 	}
 
-	private StringBuilder getGeoSQLQuery() throws ResponseException {
+	private Tuple2<StringBuilder, Integer> getGeoSQLQuery(List<Object> tupleItems, int dollar)
+			throws ResponseException {
 		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
 				+ coordinates + " }'), 4326)";
 		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georel);
@@ -119,6 +128,6 @@ public class GeoQueryTerm {
 		default:
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georel);
 		}
-		return result;
+		return Tuple2.of(result, dollar);
 	}
 }

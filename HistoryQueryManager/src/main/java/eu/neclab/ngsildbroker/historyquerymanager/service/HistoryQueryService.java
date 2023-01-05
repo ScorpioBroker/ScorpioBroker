@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.historyquerymanager.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,13 @@ public class HistoryQueryService {
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, String lang, int lastN,
 			int limit, int offSet, boolean count, boolean localOnly, Context context) {
+		Uni<List<Map<String, Object>>> getRemoteEntities;
+		// Uni<List<Map<String, Object>>> getEntities = historyDAO.query
+		if (localOnly) {
+			getRemoteEntities = Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
+		} else {
+
+		}
 		return null;
 	}
 
@@ -104,8 +112,8 @@ public class HistoryQueryService {
 						// C.endpoint C.tenant_id, c.headers, c.reg_mode
 						rows.forEach(row -> {
 
-							StringBuilder url = new StringBuilder(
-									row.getString(0) + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/" + entityId);
+							StringBuilder url = new StringBuilder(row.getString(0)
+									+ NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/" + entityId);
 							url.append("?");
 							String[] callAttrs = row.getArrayOfStrings(4);
 							// TODO remove the unneeded checks ... don't know how the db [null] will be
@@ -127,7 +135,7 @@ public class HistoryQueryService {
 							if (lang != null) {
 								url.append("lang=" + lang + "&");
 							}
-							
+
 							url.append("options=sysAttrs");
 							MultiMap remoteHeaders = MultiMap.newInstance(
 									HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
@@ -140,8 +148,8 @@ public class HistoryQueryService {
 											responseEntity = response.bodyAsJsonObject().getMap();
 											try {
 												responseEntity = (Map<String, Object>) JsonLdProcessor
-														.expand(HttpUtils.getContextFromHeader(remoteHeaders), responseEntity,
-																HttpUtils.opts, -1, false)
+														.expand(HttpUtils.getContextFromHeader(remoteHeaders),
+																responseEntity, HttpUtils.opts, -1, false)
 														.get(0);
 											} catch (JsonLdError e) {
 												// TODO Auto-generated catch block

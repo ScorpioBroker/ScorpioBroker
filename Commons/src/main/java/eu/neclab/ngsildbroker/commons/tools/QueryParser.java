@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
@@ -82,7 +83,10 @@ public class QueryParser {
 	@SuppressWarnings("unused")
 	// TODO validate queries still not working ... rework regex ???
 	private static Pattern p = Pattern.compile(query);
-
+	
+	public static CSFQueryTerm parseCSFQuery(String input, Context context) throws ResponseException {
+		return null;
+	}
 	public static QQueryTerm parseQuery(String input, Context context) throws ResponseException {
 		QQueryTerm root = new QQueryTerm(context);
 		QQueryTerm current = root;

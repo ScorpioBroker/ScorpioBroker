@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.github.jsonldjava.core.Context;
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -19,6 +20,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple4;
 
 public class QQueryTerm {
 
@@ -548,10 +550,12 @@ public class QQueryTerm {
 		return equals(obj, false);
 	}
 
-	public Tuple2<Character, String> toSql(char startChar, Character prevChar) throws ResponseException {
+	public Tuple4<Character, String, Integer, List<Object>> toSql(char startChar, Character prevChar, int dollar)
+			throws ResponseException {
 		StringBuilder builder = new StringBuilder();
 		StringBuilder builderFinalLine = new StringBuilder();
 		StringBuilder finalTables = new StringBuilder();
+		List<Object> tupleItems = Lists.newArrayList();
 		builder.append(startChar);
 		builder.append(" as (SELECT attr2iid.iid, attr2iid.attr, attr2iid.attr_value FROM ");
 		if (prevChar != null) {
@@ -563,7 +567,9 @@ public class QQueryTerm {
 			builder.append("attr2iid");
 		}
 		builder.append(" WHERE (");
-		char finalChar = toSql(builder, builderFinalLine, finalTables, startChar, "attr2iid");
+		Tuple2<Character, Integer> tmp = toSql(builder, builderFinalLine, finalTables, startChar, "attr2iid", dollar,
+				tupleItems);
+		char finalChar = tmp.getItem1();
 		if (!finalTables.isEmpty()) {
 			finalChar++;
 			builder.append(',');
@@ -579,87 +585,108 @@ public class QQueryTerm {
 			builder.append(" as (SELECT iid FROM ");
 			builder.append((char) (finalChar - 1));
 		}
-		return Tuple2.of(finalChar, builder.toString());
+		return Tuple4.of(finalChar, builder.toString(), tmp.getItem2(), tupleItems);
 	}
 
-	private void applyOperator(StringBuilder attrQuery) throws ResponseException {
+	private int applyOperator(StringBuilder attrQuery, List<Object> tupleItems, int dollar) throws ResponseException {
 		switch (operator) {
 		case NGSIConstants.QUERY_UNEQUAL:
 		case NGSIConstants.QUERY_EQUAL:
 			if (operant.matches(LIST)) {
 				attrQuery.append(" in (");
 				for (String listItem : operant.split(",")) {
-					attrQuery.append("'" + listItem + "'::jsonb,");
+					attrQuery.append("'$" + dollar + "'::jsonb,");
+					dollar++;
+					tupleItems.add(listItem);
 				}
 				attrQuery.setCharAt(attrQuery.length() - 1, ')');
 			} else if (operant.matches(RANGE)) {
 				String[] myRange = operant.split("\\.\\.");
-				attrQuery.append(" between '" + myRange[0] + "'::jsonb and '" + myRange[1] + "'::jsonb");
+				attrQuery.append(" between '$" + dollar + "'::jsonb and '$" + (dollar + 1) + "'::jsonb");
+				tupleItems.add(myRange[0]);
+				tupleItems.add(myRange[1]);
+				dollar += 2;
 			} else {
-				attrQuery.append(" = '" + operant + "'::jsonb");
-
+				attrQuery.append(" = '$" + dollar + "'::jsonb");
+				tupleItems.add(operant);
+				dollar++;
 			}
 			break;
 		case NGSIConstants.QUERY_GREATEREQ:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater equal");
 			}
-			attrQuery.append(" >= '" + operant + "'::jsonb");
+			attrQuery.append(" >= '$" + dollar + "'::jsonb");
+			tupleItems.add(operant);
+			dollar++;
 			break;
 		case NGSIConstants.QUERY_LESSEQ:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less equal");
 			}
-			attrQuery.append(" <= '" + operant + "'::jsonb");
+			attrQuery.append(" <= '$" + dollar + "'::jsonb");
+			tupleItems.add(operant);
+			dollar++;
 			break;
 		case NGSIConstants.QUERY_GREATER:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater");
 			}
-			attrQuery.append(" > '" + operant + "'::jsonb");
+			attrQuery.append(" > '$" + dollar + "'::jsonb");
+			tupleItems.add(operant);
+			dollar++;
 			break;
 		case NGSIConstants.QUERY_LESS:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
 			}
-			attrQuery.append(" < '" + operant + "'::jsonb");
+			attrQuery.append(" < '$" + dollar + "'::jsonb");
+			tupleItems.add(operant);
+			dollar++;
 			break;
 		case NGSIConstants.QUERY_PATTERNOP:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
 			}
-			attrQuery.append("::text ~ '" + operant + "'");
+			attrQuery.append("::text ~ '$" + dollar + "'");
+			tupleItems.add(operant);
+			dollar++;
 			break;
 		case NGSIConstants.QUERY_NOTPATTERNOP:
 			if (operant.matches(LIST) || operant.matches(RANGE)) {
 				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
 			}
-			attrQuery.append("::text !~ '" + operant + "'");
+			attrQuery.append("::text !~ '$" + dollar + "'");
+			tupleItems.add(operant);
+			dollar++;
 			break;
 		default:
 			throw new ResponseException(ErrorType.BadRequestData, "Bad operator in query");
 		}
+		return dollar;
 	}
 
-	private char toSql(StringBuilder result, StringBuilder resultFinalLine, StringBuilder finalTables, char currentChar,
-			String sqlTable) throws ResponseException {
+	private Tuple2<Character, Integer> toSql(StringBuilder result, StringBuilder resultFinalLine,
+			StringBuilder finalTables, char currentChar, String sqlTable, int dollar, List<Object> tupleItems)
+			throws ResponseException {
 		if (attribute == null) {
 			QQueryTerm current = this;
 			while (current.firstChild != null) {
 				current = current.firstChild;
 			}
-			return current.next.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable);
+			return current.next.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable, dollar, tupleItems);
 		} else {
 			int andCounter = 1;
 			result.append(sqlTable);
-			result.append(".attr='");
-			result.append(attribute);
-			result.append('\'');
+			result.append(".attr=$");
+			result.append(dollar);
+			dollar++;
+			tupleItems.add(attribute);
 			if (operator != null) {
 				result.append(" and ");
 				result.append(sqlTable);
 				result.append(".attr_value");
-				applyOperator(result);
+				dollar = applyOperator(result, tupleItems, dollar);
 			}
 			result.append(')');
 			if (hasNext()) {
@@ -670,7 +697,10 @@ public class QQueryTerm {
 			while (current.hasNext() || current.firstChild != null) {
 				if (current.firstChild != null) {
 					resultFinalLine.append('(');
-					currentChar = current.firstChild.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable);
+					Tuple2<Character, Integer> tmp = current.firstChild.toSql(result, resultFinalLine, finalTables,
+							currentChar, sqlTable, dollar, tupleItems);
+					currentChar = tmp.getItem1();
+					dollar = tmp.getItem2();
 					resultFinalLine.append(')');
 					break;
 				}
@@ -678,14 +708,15 @@ public class QQueryTerm {
 				if (current.attribute != null) {
 					result.append('(');
 					result.append(sqlTable);
-					result.append(".attr='");
-					result.append(current.attribute);
-					result.append('\'');
+					result.append(".attr=$");
+					result.append(dollar);
+					dollar++;
+					tupleItems.add(current.attribute);
 					if (operator != null) {
 						result.append(" and ");
 						result.append(sqlTable);
 						result.append(".attr_value");
-						current.applyOperator(result);
+						dollar = current.applyOperator(result, tupleItems, dollar);
 					}
 					result.append(')');
 					andCounter++;
@@ -759,7 +790,7 @@ public class QQueryTerm {
 				finalTables.append(currentChar);
 				result.append(')');
 			}
-			return currentChar;
+			return Tuple2.of(currentChar, dollar);
 
 		}
 	}

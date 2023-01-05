@@ -912,4 +912,10 @@ public final class HttpUtils {
 		return Lists.newArrayList(tmp);
 	}
 
+	public static RestResponse<Object> generateQueryResult(List<Object> headerContext, Context context,
+			int acceptHeader, Context context2, String geometryProperty, Set<String> id, String options) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

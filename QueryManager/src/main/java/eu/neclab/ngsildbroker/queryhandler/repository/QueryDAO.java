@@ -20,7 +20,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -59,24 +59,28 @@ public class QueryDAO {
 			StringBuilder query = new StringBuilder("WITH ");
 			char currentChar = 'a';
 			boolean sqlAdded = false;
-			Tuple2<Character, String> tmp;
+			int dollar = 1;
+			List<Object> tupleItems = Lists.newArrayList();
+			Tuple4<Character, String, Integer, List<Object>> tmp;
 			if (typeQuery != null) {
-				tmp = typeQuery.toSql(currentChar);
+				tmp = typeQuery.toSql(currentChar, dollar);
 				currentChar = tmp.getItem1();
 				query.append(tmp.getItem2());
+				dollar = tmp.getItem3();
+				tupleItems.addAll(tmp.getItem4());
 				sqlAdded = true;
 			}
 			if (attrsQuery != null) {
 				if (sqlAdded) {
 					query.append("),");
 					try {
-						tmp = attrsQuery.toSql((char) (currentChar + 1), currentChar);
+						tmp = attrsQuery.toSql((char) (currentChar + 1), currentChar, dollar);
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
 				} else {
 					try {
-						tmp = attrsQuery.toSql((char) (currentChar + 1), null);
+						tmp = attrsQuery.toSql((char) (currentChar + 1), null, dollar);
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
@@ -84,19 +88,21 @@ public class QueryDAO {
 
 				currentChar = tmp.getItem1();
 				query.append(tmp.getItem2());
+				dollar = tmp.getItem3();
+				tupleItems.addAll(tmp.getItem4());
 				sqlAdded = true;
 			}
 			if (geoQuery != null) {
 				if (sqlAdded) {
 					query.append("),");
 					try {
-						tmp = geoQuery.toSql((char) (currentChar + 1), currentChar);
+						tmp = geoQuery.toSql((char) (currentChar + 1), currentChar, dollar);
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
 				} else {
 					try {
-						tmp = geoQuery.toSql((char) (currentChar + 1), null);
+						tmp = geoQuery.toSql((char) (currentChar + 1), null, dollar);
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
@@ -109,13 +115,13 @@ public class QueryDAO {
 				if (sqlAdded) {
 					query.append("),");
 					try {
-						tmp = qQuery.toSql((char) (currentChar + 1), currentChar);
+						tmp = qQuery.toSql((char) (currentChar + 1), currentChar, dollar);
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
 				} else {
 					try {
-						tmp = qQuery.toSql((char) (currentChar + 1), null);
+						tmp = qQuery.toSql((char) (currentChar + 1), null, dollar);
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
@@ -165,14 +171,18 @@ public class QueryDAO {
 				query.append(".iid = ENTITY.ID WHERE ");
 				if (ids != null) {
 					for (String id : ids) {
-						query.append("ENTITY.E_ID = '");
-						query.append(id);
+						query.append("ENTITY.E_ID = '$");
+						query.append(dollar);
+						dollar++;
+						tupleItems.add(id);
 						query.append("' or ");
 					}
 					query.setLength(query.length() - 4);
 				}
 				if (idPattern != null) {
-					query.append(idPattern);
+					query.append("$");
+					query.append(dollar);
+					tupleItems.add(idPattern);
 					query.append(" ~ ENTITY.E_ID");
 				}
 				query.append(" LIMIT ");
@@ -180,11 +190,8 @@ public class QueryDAO {
 				query.append(" OFFSET ");
 				query.append(offSet);
 				query.append(';');
-			}
-			// TODO at the moment this does no sql escaping. toSql method should return
-			// tuple
-			// with respective values
-			return client.preparedQuery(query.toString()).execute();
+			} //
+			return client.preparedQuery(query.toString()).execute(Tuple.from(tupleItems));
 		});
 	}
 

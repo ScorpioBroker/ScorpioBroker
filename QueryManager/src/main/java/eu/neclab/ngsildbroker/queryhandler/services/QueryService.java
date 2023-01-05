@@ -394,14 +394,14 @@ public class QueryService {
 		return null;
 	}
 
-	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId, Set<String> attrs,
-			Set<String> expandedAttrs, String geometryProperty, String lang, boolean localOnly) {
+	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId,
+			AttrsQueryTerm attrsQuery, String lang, boolean localOnly) {
 		Uni<Map<String, Object>> getEntity = queryDAO.getEntity(entityId, tenant);
 		Uni<Map<String, Object>> getRemoteEntities;
 		if (localOnly) {
 			getRemoteEntities = Uni.createFrom().item(new HashMap<String, Object>(0));
 		} else {
-			getRemoteEntities = queryDAO.getRemoteSourcesForEntity(entityId, expandedAttrs, tenant).onItem()
+			getRemoteEntities = queryDAO.getRemoteSourcesForEntity(entityId, attrsQuery.getAttrs(), tenant).onItem()
 					.transformToUni(rows -> {
 						List<Uni<Map<String, Object>>> tmp = Lists.newArrayList();
 						// C.endpoint C.tenant_id, c.headers, c.reg_mode
@@ -423,8 +423,8 @@ public class QueryService {
 								url.setLength(url.length() - 1);
 								url.append('&');
 							} else {
-								if (attrs != null && !attrs.isEmpty()) {
-									url.append("attrs=" + String.join(",", attrs) + "&");
+								if (attrsQuery != null && !attrsQuery.getCompactedAttrs().isEmpty()) {
+									url.append("attrs=" + String.join(",", attrsQuery.getCompactedAttrs()) + "&");
 								}
 							}
 							if (lang != null) {
@@ -550,28 +550,29 @@ public class QueryService {
 
 	}
 
-
-	public Uni<List<QueryResult>> postQuery(String tenant,List<Map<String, Object>> entities,String lang, int limit, int offSet, boolean count, boolean localOnly,
-							   Context context){
+	public Uni<List<QueryResult>> postQuery(String tenant, List<Map<String, Object>> entities, String lang, int limit,
+			int offSet, boolean count, boolean localOnly, Context context) {
 		List<Uni<QueryResult>> listResults = new ArrayList<>();
-		for (Map<String, Object> entity:entities) {
-			Set<String> ids= new HashSet<>();
-			if(entity.get("id") instanceof List<?> idList){
+		for (Map<String, Object> entity : entities) {
+			Set<String> ids = new HashSet<>();
+			if (entity.get("id") instanceof List<?> idList) {
 				ids.addAll((List<String>) idList);
-			}else ids.add((String)entity.get("id"));
+			} else
+				ids.add((String) entity.get("id"));
 			TypeQueryTerm typeQueryTerm = new TypeQueryTerm(context);
 			typeQueryTerm.setType((String) entity.get("type"));
 			AttrsQueryTerm attrsQueryTerm = new AttrsQueryTerm(context);
-			attrsQueryTerm.addAttr((String)entity.get("attrs"));
+			attrsQueryTerm.addAttr((String) entity.get("attrs"));
 			QQueryTerm qQueryTerm = new QQueryTerm(context);
-			CSFQueryTerm csfQueryTerm =new CSFQueryTerm(context);
+			CSFQueryTerm csfQueryTerm = new CSFQueryTerm(context);
 			GeoQueryTerm geoQueryTerm = new GeoQueryTerm(context);
 			geoQueryTerm.setGeometry((String) entity.get("Geometry"));
 			ScopeQueryTerm scopeQueryTerm = new ScopeQueryTerm();
 			scopeQueryTerm.setScopeLevels(((String) entity.get("scopeQ")).split(","));
 
-			listResults.add(query(tenant,ids,typeQueryTerm,(String)entity.get("idPattern"),attrsQueryTerm,qQueryTerm,
-					csfQueryTerm,geoQueryTerm,scopeQueryTerm,lang,limit,offSet,count,localOnly,context));
+			listResults.add(query(tenant, ids, typeQueryTerm, (String) entity.get("idPattern"), attrsQueryTerm,
+					qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, lang, limit, offSet, count, localOnly,
+					context));
 
 		}
 		return Uni.join().all(listResults).andCollectFailures();

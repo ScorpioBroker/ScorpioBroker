@@ -7,12 +7,14 @@ import java.util.List;
 import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple4;
 
 public class TypeQueryTerm {
 
@@ -448,12 +450,14 @@ public class TypeQueryTerm {
 		return result.toString();
 	}
 
-	
-	public Tuple2<Character, String> toSql(char startChar) {
+	public Tuple4<Character, String, Integer, List<Object>> toSql(char startChar, int dollar) {
 		StringBuilder builder = new StringBuilder();
 		StringBuilder builderFinalLine = new StringBuilder();
 		StringBuilder finalTables = new StringBuilder();
-		char finalChar = toSql(builder, builderFinalLine, finalTables, startChar, "etype2iid");
+		List<Object> tupleInput = Lists.newArrayList();
+		Tuple2<Character, Integer> tmp = toSql(builder, builderFinalLine, finalTables, startChar, "etype2iid", dollar,
+				tupleInput);
+		Character finalChar = tmp.getItem1();
 		if (!finalTables.isEmpty()) {
 			finalChar++;
 			builder.append(',');
@@ -470,17 +474,17 @@ public class TypeQueryTerm {
 			builder.append(" as (SELECT iid FROM ");
 			builder.append((char) (finalChar - 1));
 		}
-		return Tuple2.of(finalChar, builder.toString());
+		return Tuple4.of(finalChar, builder.toString(), tmp.getItem2(), tupleInput);
 	}
 
-	private char toSql(StringBuilder result, StringBuilder resultFinalLine, StringBuilder finalTables, char currentChar,
-			String sqlTable) {
+	private Tuple2<Character, Integer> toSql(StringBuilder result, StringBuilder resultFinalLine,
+			StringBuilder finalTables, char currentChar, String sqlTable, int dollar, List<Object> tupleInput) {
 		if (type == null || type.isEmpty()) {
 			TypeQueryTerm current = this;
 			while (current.firstChild != null) {
 				current = current.firstChild;
 			}
-			return current.next.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable);
+			return current.next.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable, dollar, tupleInput);
 		} else {
 			int andCounter = 1;
 			result.append(currentChar);
@@ -492,9 +496,10 @@ public class TypeQueryTerm {
 			result.append(sqlTable);
 			result.append(" WHERE ");
 			result.append(sqlTable);
-			result.append(".e_type='");
-			result.append(type);
-			result.append('\'');
+			result.append(".e_type=$");
+			result.append(dollar);
+			tupleInput.add(type);
+			dollar++;
 			if (hasNext()) {
 				result.append(" or ");
 			}
@@ -503,16 +508,20 @@ public class TypeQueryTerm {
 			while (current.hasNext() || current.firstChild != null) {
 				if (current.firstChild != null) {
 					resultFinalLine.append('(');
-					currentChar = current.firstChild.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable);
+					Tuple2<Character, Integer> tmp = current.firstChild.toSql(result, resultFinalLine, finalTables,
+							currentChar, sqlTable, dollar, tupleInput);
+					currentChar = tmp.getItem1();
+					dollar = tmp.getItem2();
 					resultFinalLine.append(')');
 					break;
 				}
 				current = current.getNext();
 				if (current.type != null && !current.type.isEmpty()) {
 					result.append(sqlTable);
-					result.append(".e_type='");
-					result.append(current.type);
-					result.append('\'');
+					result.append(".e_type=$");
+					result.append(dollar);
+					dollar++;
+					tupleInput.add(current.type);
 					andCounter++;
 					if ((current.getPrev() != null && current.isNextAnd() != current.getPrev().isNextAnd())
 							|| current.firstChild != null) {
@@ -576,7 +585,7 @@ public class TypeQueryTerm {
 				finalTables.append(currentChar);
 				result.append(')');
 			}
-			return currentChar;
+			return Tuple2.of(currentChar, dollar);
 
 		}
 	}
@@ -643,4 +652,36 @@ public class TypeQueryTerm {
 		this.allTypes = allTypes;
 	}
 
+	/**
+	 * 
+	 * @param startChar character to start the X as (Select
+	 * @return a Tuple of the current character for further sql, the sql query, the
+	 *         current int for for the $ in the query, list for prepared query
+	 */
+	public Tuple4<Character, String, Integer, List<Object>> toTemporalSql(char startChar, int dollar) {
+		StringBuilder builder = new StringBuilder();
+		StringBuilder builderFinalLine = new StringBuilder();
+		StringBuilder finalTables = new StringBuilder();
+		List<Object> tupleInput = Lists.newArrayList();
+		Tuple2<Character, Integer> finalChars = toSql(builder, builderFinalLine, finalTables, startChar,
+				"tempetype2iid", dollar, tupleInput);
+		Character finalChar = finalChars.getItem1();
+		if (!finalTables.isEmpty()) {
+			finalChar++;
+			builder.append(',');
+			builder.append(finalChar);
+			builder.append(" as (SELECT tempetype2iid.iid AS iid FROM tempetype2iid,");
+			builder.append(finalTables);
+			builder.append(" WHERE ");
+			builder.append(builderFinalLine);
+
+		} else {
+			finalChar++;
+			builder.append(',');
+			builder.append(finalChar);
+			builder.append(" as (SELECT iid FROM ");
+			builder.append((char) (finalChar - 1));
+		}
+		return Tuple4.of(finalChar, builder.toString(), finalChars.getItem2(), tupleInput);
+	}
 }
