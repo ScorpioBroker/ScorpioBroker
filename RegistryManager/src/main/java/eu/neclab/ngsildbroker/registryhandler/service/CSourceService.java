@@ -32,6 +32,7 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
@@ -108,39 +109,6 @@ public class CSourceService {
 		this.webClient = new WebClient(vertx);
 	}
 
-//	@SuppressWarnings("unused")
-//	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
-//		// this.csourceIds = csourceInfoDAO.getAllIds();
-//		if (AUTO_REG_STATUS.equals("active")) {
-//			Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
-//			for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
-//				String tenant = entry.getKey();
-//				List<String> entityList = entry.getValue();
-//				if (entityList.isEmpty()) {
-//					continue;
-//				}
-//				for (String entityString : entityList) {
-//					Map<String, Object> entity = (Map<String, Object>) JsonUtils.fromString(entityString);
-//					Map<String, Object> informationEntry = getInformationFromEntity(entity);
-//					String id = (String) entity.get(NGSIConstants.JSON_LD_ID);
-//					tenant2EntityId2InformationEntry.put(tenant, id, informationEntry);
-//					Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
-//					if (ids == null) {
-//						ids = new HashSet<String>();
-//					}
-//					ids.add(id);
-//					tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
-//				}
-//				CSourceRequest regEntry = createInternalRegEntry(tenant);
-//				try {
-//					storeInternalEntry(regEntry);
-//				} catch (Exception e) {
-//					logger.error("Failed to create initial internal reg status", e);
-//				}
-//			}
-//		}
-//	}
-
 //TODO handle expiration in the DB this is stupid to do in code
 //	public void csourceTimerTask(ArrayListMultimap<String, String> headers, Map<String, Object> registration) {
 //		Object expiresAt = registration.get(NGSIConstants.NGSI_LD_EXPIRES);
@@ -164,11 +132,14 @@ public class CSourceService {
 //	}
 
 	public Uni<NGSILDOperationResult> createRegistration(String tenant, Map<String, Object> registration) {
-		return cSourceInfoDAO.createRegistration(tenant, registration).onItem().transform(rowset -> {
-			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
-					(String) registration.get(NGSIConstants.JSON_LD_ID));
-			result.addSuccess(new CRUDSuccess(null, null));
-			return result;
+		CreateCSourceRequest request = new CreateCSourceRequest(tenant, registration);
+		return cSourceInfoDAO.createRegistration(request).onItem().transformToUni(rowset -> {
+			return kafkaSenderInterface.send(request).onItem().transform(v -> {
+				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
+						(String) registration.get(NGSIConstants.JSON_LD_ID));
+				result.addSuccess(new CRUDSuccess(null, null));
+				return result;
+			});
 		}).onFailure().recoverWithUni(
 				// TODO do some proper error handling depending on the sql code
 				e -> Uni.createFrom()
@@ -177,12 +148,17 @@ public class CSourceService {
 
 	public Uni<NGSILDOperationResult> updateRegistration(String tenant, String registrationId,
 			Map<String, Object> entry) {
-		return cSourceInfoDAO.updateRegistration(tenant, registrationId, entry).onItem().transformToUni(rowset -> {
+		AppendCSourceRequest request = new AppendCSourceRequest(tenant, registrationId, entry);
+		return cSourceInfoDAO.updateRegistration(request).onItem().transformToUni(rowset -> {
 			if (rowset.rowCount() > 0) {
-				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
-						registrationId);
-				result.addSuccess(new CRUDSuccess(null, null));
-				return Uni.createFrom().item(result);
+				// no need to query regs again they are not distributed
+				request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
+				return kafkaSenderInterface.send(request).onItem().transform(v -> {
+					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
+							registrationId);
+					result.addSuccess(new CRUDSuccess(null, null));
+					return result;
+				});
 			} else {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found"));
 			}
@@ -203,12 +179,17 @@ public class CSourceService {
 	}
 
 	public Uni<NGSILDOperationResult> deleteRegistration(String tenant, String registrationId) {
-		return cSourceInfoDAO.deleteRegistration(tenant, registrationId).onItem().transformToUni(rowset -> {
+		DeleteCSourceRequest request = new DeleteCSourceRequest(tenant, registrationId);
+		return cSourceInfoDAO.deleteRegistration(request).onItem().transformToUni(rowset -> {
 			if (rowset.rowCount() > 0) {
-				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_DELETE_REGISTRATION,
-						registrationId);
-				result.addSuccess(new CRUDSuccess(null, null));
-				return Uni.createFrom().item(result);
+				// add the deleted entry
+				request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
+				return kafkaSenderInterface.send(request).onItem().transform(v -> {
+					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_DELETE_REGISTRATION,
+							registrationId);
+					result.addSuccess(new CRUDSuccess(null, null));
+					return result;
+				});
 			} else {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found"));
 			}
@@ -306,17 +287,13 @@ public class CSourceService {
 		for (Map<String, Object> entry : informationEntries) {
 			tmp.add(entry);
 		}
-		try {
-			if (tmp.isEmpty()) {
-				return new DeleteCSourceRequest(tenant, null, id);
-			}
-			resolved.put(NGSIConstants.NGSI_LD_INFORMATION, tmp);
-
-			return new CreateCSourceRequest(tenant, resolved);
-		} catch (ResponseException e) {
-			logger.error("failed to create internal registry entry", e);
-			return null;
+		if (tmp.isEmpty()) {
+			return new DeleteCSourceRequest(tenant, id);
 		}
+		resolved.put(NGSIConstants.NGSI_LD_INFORMATION, tmp);
+
+		return new CreateCSourceRequest(tenant, resolved);
+
 	}
 
 	@SuppressWarnings("unchecked")
