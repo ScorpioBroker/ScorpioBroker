@@ -1,5 +1,8 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -11,20 +14,19 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.google.common.collect.ArrayListMultimap;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdProcessor;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.controllers.EntryControllerFunctions;
-import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -54,16 +56,30 @@ public class RegistryController {
 	}
 
 	@GET
-	public Uni<RestResponse<Object>> discoverCSource(HttpServerRequest request,
-			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") Integer offset,
-			@QueryParam(value = "qtoken") String qToken, @QueryParam(value = "count") boolean count) {
-		return QueryControllerFunctions.queryForEntries(csourceService, request, false, defaultLimit, maxLimit, false);
+	public Uni<RestResponse<Object>> queryCSource(HttpServerRequest request, @QueryParam(value = "limit") Integer limit,
+			@QueryParam(value = "offset") Integer offset, @QueryParam(value = "qtoken") String qToken,
+			@QueryParam(value = "count") boolean count) {
+		// return QueryControllerFunctions.queryForEntries(csourceService, request,
+		// false, defaultLimit, maxLimit, false);
+		return null;
 	}
 
 	@POST
 	public Uni<RestResponse<Object>> registerCSource(HttpServerRequest request, String payload) {
-		return EntryControllerFunctions.createEntry(csourceService, request, payload,
-				AppConstants.CSOURCE_REG_CREATE_PAYLOAD, AppConstants.CSOURCE_URL, logger);
+
+		Tuple2<Context, Map<String, Object>> tuple;
+		try {
+			tuple = HttpUtils.expandBody(request, payload, AppConstants.CSOURCE_REG_CREATE_PAYLOAD);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return csourceService.createRegistration(HttpUtils.getTenant(request), tuple.getItem2()).onItem()
+				.transform(opResult -> {
+					return HttpUtils.generateCreateResult(opResult, AppConstants.CSOURCE_URL);
+				}).onFailure().recoverWithItem(error -> {
+					return HttpUtils.handleControllerExceptions(error);
+				});
+
 	}
 
 	@Path("/{registrationId}")
@@ -71,28 +87,63 @@ public class RegistryController {
 	public Uni<RestResponse<Object>> getCSourceById(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId) {
 		logger.debug("get CSource() ::" + registrationId);
-		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-		return HttpUtils.validateUri(registrationId).onItem().transformToUni(t1 -> {
-			String tenant = HttpUtils.getTenantFromHeaders(headers);
-			return csourceService.getRegistrationById(registrationId, tenant).onItem().transformToUni(t -> {
-				return HttpUtils.generateReply(request, t, AppConstants.CSOURCE_URL_ID);
-			});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		if (acceptHeader == -1) {
+			return HttpUtils.INVALID_HEADER;
+		}
+
+		Context context;
+		List<Object> headerContext;
+		try {
+			HttpUtils.validateUri(registrationId);
+			headerContext = HttpUtils.getAtContextNoUni(request);
+			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return csourceService.retrieveRegistration(HttpUtils.getTenant(request), registrationId).onItem()
+				.transform(entity -> {
+					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null);
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 
 	@Path("/{registrationId}")
 	@PATCH
 	public Uni<RestResponse<Object>> updateCSource(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId, String payload) {
-		return EntryControllerFunctions.appendToEntry(csourceService, request, registrationId, payload, "",
-				AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, logger);
+		Tuple2<Context, Map<String, Object>> tuple;
+		try {
+			tuple = HttpUtils.expandBody(request, payload, AppConstants.CSOURCE_REG_UPDATE_PAYLOAD);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return csourceService.updateRegistration(HttpUtils.getTenant(request), registrationId, tuple.getItem2())
+				.onItem().transform(opResult -> {
+					return HttpUtils.generateUpdateResultResponse(opResult);
+				}).onFailure().recoverWithItem(error -> {
+					return HttpUtils.handleControllerExceptions(error);
+				});
 	}
 
 	@Path("/{registrationId}")
 	@DELETE
 	public Uni<RestResponse<Object>> deleteCSource(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId) {
-		return EntryControllerFunctions.deleteEntry(csourceService, request, registrationId, logger);
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		if (acceptHeader == -1) {
+			return HttpUtils.INVALID_HEADER;
+		}
+		try {
+			HttpUtils.validateUri(registrationId);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return csourceService.deleteRegistration(HttpUtils.getTenant(request), registrationId).onItem()
+				.transform(opResult -> {
+
+					return HttpUtils.generateDeleteResult(opResult);
+				}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
 	}
 
 }

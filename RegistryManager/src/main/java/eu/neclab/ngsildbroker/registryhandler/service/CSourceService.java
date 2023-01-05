@@ -13,55 +13,54 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.el.MethodNotFoundException;
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Table;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Table;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.EntryCRUDService;
-import eu.neclab.ngsildbroker.commons.querybase.BaseQueryService;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
-import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import io.smallrye.mutiny.vertx.UniHelper;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
-import io.vertx.core.buffer.Buffer;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 @Singleton
-public class CSourceService extends BaseQueryService implements EntryCRUDService {
+public class CSourceService {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 
@@ -91,6 +90,9 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	@ConfigProperty(name = "scorpio.fedbrokers", defaultValue = AppConstants.INTERNAL_NULL_KEY)
 	String fedBrokers;
 
+	@Inject
+	Vertx vertx;
+
 	Map<String, Object> myRegistryInformation;
 	HashMap<String, TimerTask> regId2TimerTask = new HashMap<String, TimerTask>();
 	Timer watchDog = new Timer(true);
@@ -99,186 +101,94 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	private Table<String, Map<String, Object>, Set<String>> tenant2InformationEntry2EntityIds = HashBasedTable.create();
 	private Table<String, String, Map<String, Object>> tenant2EntityId2InformationEntry = HashBasedTable.create();
 
-//	@SuppressWarnings("unused")
-//	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
-//		// this.csourceIds = csourceInfoDAO.getAllIds();
-//		if (AUTO_REG_STATUS.equals("active")) {
-//			Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
-//			for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
-//				String tenant = entry.getKey();
-//				List<String> entityList = entry.getValue();
-//				if (entityList.isEmpty()) {
-//					continue;
-//				}
-//				for (String entityString : entityList) {
-//					Map<String, Object> entity = (Map<String, Object>) JsonUtils.fromString(entityString);
-//					Map<String, Object> informationEntry = getInformationFromEntity(entity);
-//					String id = (String) entity.get(NGSIConstants.JSON_LD_ID);
-//					tenant2EntityId2InformationEntry.put(tenant, id, informationEntry);
-//					Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
-//					if (ids == null) {
-//						ids = new HashSet<String>();
+	private WebClient webClient;
+
+	@PostConstruct
+	void setup() {
+		this.webClient = new WebClient(vertx);
+	}
+
+//TODO handle expiration in the DB this is stupid to do in code
+//	public void csourceTimerTask(ArrayListMultimap<String, String> headers, Map<String, Object> registration) {
+//		Object expiresAt = registration.get(NGSIConstants.NGSI_LD_EXPIRES);
+//		String regId = (String) registration.get(NGSIConstants.JSON_LD_ID);
+//		if (expiresAt != null) {
+//			TimerTask cancel = new TimerTask() {
+//				@Override
+//				public void run() {
+//					try {
+//						synchronized (this) {
+//							deleteEntry(headers, regId);
+//						}
+//					} catch (Exception e) {
+//						logger.error("Timer Task -> Exception while expiring residtration :: ", e);
 //					}
-//					ids.add(id);
-//					tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
 //				}
-//				CSourceRequest regEntry = createInternalRegEntry(tenant);
-//				try {
-//					storeInternalEntry(regEntry);
-//				} catch (Exception e) {
-//					logger.error("Failed to create initial internal reg status", e);
-//				}
-//			}
+//			};
+//			regId2TimerTask.put(regId, cancel);
+//			watchDog.schedule(cancel, getMillisFromDateTime(expiresAt) - System.currentTimeMillis());
 //		}
 //	}
 
-	public void csourceTimerTask(ArrayListMultimap<String, String> headers, Map<String, Object> registration) {
-		Object expiresAt = registration.get(NGSIConstants.NGSI_LD_EXPIRES);
-		String regId = (String) registration.get(NGSIConstants.JSON_LD_ID);
-		if (expiresAt != null) {
-			TimerTask cancel = new TimerTask() {
-				@Override
-				public void run() {
-					try {
-						synchronized (this) {
-							deleteEntry(headers, regId);
-						}
-					} catch (Exception e) {
-						logger.error("Timer Task -> Exception while expiring residtration :: ", e);
-					}
-				}
-			};
-			regId2TimerTask.put(regId, cancel);
-			watchDog.schedule(cancel, getMillisFromDateTime(expiresAt) - System.currentTimeMillis());
-		}
+	public Uni<NGSILDOperationResult> createRegistration(String tenant, Map<String, Object> registration) {
+		return cSourceInfoDAO.createRegistration(tenant, registration).onItem().transform(rowset -> {
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
+					(String) registration.get(NGSIConstants.JSON_LD_ID));
+			result.addSuccess(new CRUDSuccess(null, null));
+			return result;
+		}).onFailure().recoverWithUni(
+				// TODO do some proper error handling depending on the sql code
+				e -> Uni.createFrom()
+						.failure(new ResponseException(ErrorType.AlreadyExists, "Registration already exists")));
 	}
 
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
+	public Uni<NGSILDOperationResult> updateRegistration(String tenant, String registrationId,
 			Map<String, Object> entry) {
-		return updateEntry(headers, registrationId, entry, new BatchInfo(-1, -1));
+		return cSourceInfoDAO.updateRegistration(tenant, registrationId, entry).onItem().transformToUni(rowset -> {
+			if (rowset.rowCount() > 0) {
+				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
+						registrationId);
+				result.addSuccess(new CRUDSuccess(null, null));
+				return Uni.createFrom().item(result);
+			} else {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found"));
+			}
+		}).onFailure().recoverWithUni(
+				// TODO do some proper error handling depending on the sql code
+				e -> Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found")));
 	}
 
-	@Override
-	public Uni<UpdateResult> updateEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, BatchInfo batchInfo) {
-		throw new MethodNotFoundException("not supported in registry");
-	}
-
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options) {
-		return appendToEntry(headers, registrationId, entry, options, new BatchInfo(-1, -1));
-	}
-
-	@Override
-	public Uni<UpdateResult> appendToEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			Map<String, Object> entry, String[] options, BatchInfo batchInfo) {
-		logger.trace("appendMessage() :: started");
-		// get message channel for ENTITY_APPEND topic
-		// payload validation
-		if (registrationId == null) {
-			return Uni.createFrom()
-					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id is not allowed"));
-		}
-
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		// get entity details
-		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
-				.transform(
-						Unchecked.function(t -> new AppendCSourceRequest(headers, registrationId, t, entry, options)))
-				.onItem().transformToUni(t -> {
-					if (t.getUpdateResult().getUpdated().isEmpty()) {
-						return Uni.createFrom().nullItem();
-					}
-					TimerTask task = regId2TimerTask.get(registrationId);
-					if (task != null) {
-						task.cancel();
-					}
-					csourceTimerTask(headers, t.getFinalPayload());
-					return handleRequest(t).onItem().transform(t2 -> {
-						logger.trace("appendMessage() :: completed");
-						return t.getUpdateResult();
-					});
-				});
-	}
-
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved) {
-		return createEntry(headers, resolved, new BatchInfo(-1, -1));
-	}
-
-	@Override
-	public Uni<CreateResult> createEntry(ArrayListMultimap<String, String> headers, Map<String, Object> resolved,
-			BatchInfo batchInfo) {
-
-		logger.debug("createMessage() :: started");
-		CSourceRequest request;
-		String id;
-		Object idObj = resolved.get(NGSIConstants.JSON_LD_ID);
-		if (idObj == null) {
-			id = EntityTools.generateUniqueRegId(resolved);
-			resolved.put(NGSIConstants.JSON_LD_ID, id);
-		} else {
-			id = (String) idObj;
-		}
-		try {
-			request = new CreateCSourceRequest(resolved, headers, id);
-		} catch (ResponseException e) {
-			return Uni.createFrom().failure(e);
-		}
-		return handleRequest(request).onItem().transform(t -> {
-			logger.debug("createMessage() :: completed");
-			return new CreateResult(request.getId(), true);
+	public Uni<Map<String, Object>> retrieveRegistration(String tenant, String registrationId) {
+		return cSourceInfoDAO.getRegistrationById(tenant, registrationId).onItem().transformToUni(rowSet -> {
+			if (rowSet.size() == 0) {
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.NotFound, registrationId + "was not found"));
+			}
+			return Uni.createFrom().item(rowSet.iterator().next().getJsonObject(0).getMap());
 		});
 
 	}
 
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId) {
-		return deleteEntry(headers, registrationId, new BatchInfo(-1, -1));
+	public Uni<NGSILDOperationResult> deleteRegistration(String tenant, String registrationId) {
+		return cSourceInfoDAO.deleteRegistration(tenant, registrationId).onItem().transformToUni(rowset -> {
+			if (rowset.rowCount() > 0) {
+				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_DELETE_REGISTRATION,
+						registrationId);
+				result.addSuccess(new CRUDSuccess(null, null));
+				return Uni.createFrom().item(result);
+			} else {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found"));
+			}
+		}).onFailure().recoverWithUni(
+				// TODO do some proper error handling depending on the sql code
+				e -> Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found")));
 	}
 
-	@Override
-	public Uni<Boolean> deleteEntry(ArrayListMultimap<String, String> headers, String registrationId,
-			BatchInfo batchInfo) {
-		logger.trace("deleteEntity() :: started");
-		if (registrationId == null) {
-			Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
-					"Invalid delete for registration. No ID provided."));
-		}
-		String tenantId = HttpUtils.getInternalTenant(headers);
-		return EntryCRUDService.validateIdAndGetBody(registrationId, tenantId, cSourceInfoDAO).onItem()
-				.transform(Unchecked.function(t -> {
-					return Tuple2.of(new DeleteCSourceRequest(null, headers, registrationId),
-							new DeleteCSourceRequest(t, headers, registrationId));
-				})).onItem().transformToUni(t -> cSourceInfoDAO.storeRegistryEntry(t.getItem1()).onItem()
-						.transformToUni(i -> kafkaSenderInterface.send(t.getItem2()).onItem().transform(k -> true)));
-
-	}
-
-	public Uni<Map<String, Object>> getRegistrationById(String id, String tenant) {
-		return cSourceInfoDAO.getRegistrationById(id, tenant);
-	}
-
-	private long getMillisFromDateTime(Object expiresAt) {
-		@SuppressWarnings("unchecked")
-		String value = (String) ((List<Map<String, Object>>) expiresAt).get(0).get(NGSIConstants.JSON_LD_VALUE);
-		try {
-			return SerializationTools.date2Long(value);
-		} catch (Exception e) {
-			throw new AssertionError("In invalid date time came pass the payload checker");
-		}
-	}
-
-//	public Uni<QueryResult> query(QueryParams qp) {
-//		return csourceInfoDAO.query(qp);
-//	}
-
-	@Override
-	protected StorageDAO getQueryDAO() {
-		return cSourceInfoDAO;
-	}
-
-	@Override
-	protected StorageDAO getCsourceDAO() {
-		// intentional null!!!
+	public Uni<List<Map<String, Object>>> queryRegistrations(String tenant, Set<String> id, TypeQueryTerm typeQuery,
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, String lang, int limit, int offSet, boolean count, boolean localOnly,
+			Context context) {
+		/// well the spec is not that clear so we make this up as we see fit
 		return null;
 	}
 
@@ -295,8 +205,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 			tenant2InformationEntry2EntityIds.remove(tenant, informationEntry);
 			try {
 				CSourceRequest regEntry = createInternalRegEntry(tenant);
-				if (regEntry.getFinalPayload() == null) {
-					deleteEntry(regEntry.getHeaders(), regEntry.getId()).await().indefinitely();
+				if (regEntry.getPayload() == null) {
+					deleteRegistration(regEntry.getTenant(), regEntry.getId()).await().indefinitely();
 				} else {
 					storeInternalEntry(regEntry);
 				}
@@ -309,7 +219,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	public void handleEntityCreateOrUpdate(BaseRequest message) {
-		Map<String, Object> informationEntry = getInformationFromEntity(message.getFinalPayload());
+		Map<String, Object> informationEntry = getInformationFromEntity(message.getPayload());
 		checkInformationEntry(informationEntry, message.getId(), message.getTenant());
 	}
 
@@ -330,8 +240,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		if (update) {
 			try {
 				CSourceRequest regEntry = createInternalRegEntry(tenant);
-				if (regEntry.getFinalPayload() == null) {
-					deleteEntry(regEntry.getHeaders(), regEntry.getId()).await().indefinitely();
+				if (regEntry.getPayload() == null) {
+					deleteRegistration(regEntry.getTenant(), regEntry.getId()).await().indefinitely();
 				} else {
 					storeInternalEntry(regEntry);
 				}
@@ -344,10 +254,8 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	private CSourceRequest createInternalRegEntry(String tenant) {
 		String id = AppConstants.INTERNAL_REGISTRATION_ID;
-		ArrayListMultimap<String, String> headers = ArrayListMultimap.create();
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
 			id += ":" + tenant;
-			headers.put(NGSIConstants.TENANT_HEADER, tenant);
 		}
 		Map<String, Object> resolved = new HashMap<String, Object>();
 		resolved.put(NGSIConstants.JSON_LD_ID, id);
@@ -367,11 +275,11 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 		}
 		try {
 			if (tmp.isEmpty()) {
-				return new DeleteCSourceRequest(null, headers, id);
+				return new DeleteCSourceRequest(tenant, null, id);
 			}
 			resolved.put(NGSIConstants.NGSI_LD_INFORMATION, tmp);
 
-			return new CreateCSourceRequest(resolved, headers, id);
+			return new CreateCSourceRequest(tenant, resolved);
 		} catch (ResponseException e) {
 			logger.error("failed to create internal registry entry", e);
 			return null;
@@ -418,15 +326,15 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 							HashMap<String, Object> tmp = new HashMap<String, Object>();
 							tmp.put(NGSIConstants.JSON_LD_ID, entry.getKey());
 							switch (typeString) {
-								case NGSIConstants.NGSI_LD_GEOPROPERTY:
-								case NGSIConstants.NGSI_LD_PROPERTY:
-									propertyNames.add(tmp);
-									break;
-								case NGSIConstants.NGSI_LD_RELATIONSHIP:
-									relationshipNames.add(tmp);
-									break;
-								default:
-									continue;
+							case NGSIConstants.NGSI_LD_GEOPROPERTY:
+							case NGSIConstants.NGSI_LD_PROPERTY:
+								propertyNames.add(tmp);
+								break;
+							case NGSIConstants.NGSI_LD_RELATIONSHIP:
+								relationshipNames.add(tmp);
+								break;
+							default:
+								continue;
 							}
 						}
 					}
@@ -452,12 +360,13 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 
 	private void storeInternalEntry(CSourceRequest regEntry) {
 
-		appendToEntry(regEntry.getHeaders(), regEntry.getId(), regEntry.getFinalPayload(), null).onItem()
-				.transform(t -> true).onFailure().recoverWithUni(e -> {
+		updateRegistration(regEntry.getTenant(), regEntry.getId(), regEntry.getPayload()).onItem().transform(t -> true)
+				.onFailure().recoverWithUni(e -> {
 					if (e instanceof ResponseException) {
 						ResponseException e1 = (ResponseException) e;
-						if (e1.getHttpStatus().equals(HttpResponseStatus.NOT_FOUND)) {
-							return createEntry(regEntry.getHeaders(), regEntry.getFinalPayload()).onItem()
+
+						if (e1.getErrorCode() == HttpResponseStatus.NOT_FOUND.code()) {
+							return createRegistration(regEntry.getTenant(), regEntry.getPayload()).onItem()
 									.transform(i -> true);
 						}
 					}
@@ -467,7 +376,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 					return false;
 				}).onItem().transformToUni(Unchecked.function(t -> {
 					if (t && !fedBrokers.equals(AppConstants.INTERNAL_NULL_KEY) && !fedBrokers.isBlank()) {
-						List<Uni<Object>> unis = Lists.newArrayList();
+						List<Uni<Void>> unis = Lists.newArrayList();
 						for (String fedBroker : fedBrokers.split(",")) {
 							String finalFedBroker;
 							if (!fedBroker.endsWith("/")) {
@@ -475,20 +384,18 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 							} else {
 								finalFedBroker = fedBroker;
 							}
-							HashMap<String, Object> copyToSend = Maps.newHashMap(regEntry.getFinalPayload());
+							HashMap<String, Object> copyToSend = Maps.newHashMap(regEntry.getPayload());
 							String csourceId = microServiceUtils.getGatewayURL().toString();
 							copyToSend.put(NGSIConstants.JSON_LD_ID, csourceId);
-							String body = JsonUtils.toPrettyString(JsonLdProcessor.compact(copyToSend, null, opts));
-							unis.add(UniHelper.toUni(webClient
-									.patchAbs(finalFedBroker + "csourceRegistrations/" + csourceId)
-									.putHeader("Content-Type", "application/json").sendBuffer(Buffer.buffer(body)))
+							String body = JsonUtils
+									.toPrettyString(JsonLdProcessor.compact(copyToSend, null, HttpUtils.opts));
+							unis.add(webClient.patchAbs(finalFedBroker + "csourceRegistrations/" + csourceId)
+									.putHeader("Content-Type", "application/json").sendBuffer(Buffer.buffer(body))
 									.onItem().transformToUni(i -> {
 										if (i.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
-											return UniHelper
-													.toUni(webClient.postAbs(finalFedBroker + "csourceRegistrations/")
-															.putHeader("Content-Type", "application/json")
-															.sendBuffer(Buffer.buffer(body)))
-													.onItem().transformToUni(r -> {
+											return webClient.postAbs(finalFedBroker + "csourceRegistrations/")
+													.putHeader("Content-Type", "application/json")
+													.sendBuffer(Buffer.buffer(body)).onItem().transformToUni(r -> {
 														if (r.statusCode() >= 200 && r.statusCode() < 300) {
 															return Uni.createFrom().nullItem();
 														}
@@ -496,34 +403,21 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 																ErrorType.InternalError, r.bodyAsString()));
 													});
 										}
-										return Uni.createFrom().nullItem();
+										return Uni.createFrom().voidItem();
 									}).onFailure().retry().atMost(5).onFailure().recoverWithUni(e -> {
 										logger.error("Failed to register with fed broker", e);
-										return Uni.createFrom().nullItem();
+										return Uni.createFrom().voidItem();
 									}));
 						}
 						return Uni.combine().all().unis(unis).collectFailures()
-								.combinedWith(l -> Uni.createFrom().nullItem());
-
+								.combinedWith(l -> Uni.createFrom().voidItem());
 					}
-					return Uni.createFrom().nullItem();
+					return Uni.createFrom().voidItem();
 				})).onFailure().recoverWithUni(e -> {
 					logger.error("Failed to register with fed broker", e);
 					return Uni.createFrom().nullItem();
 				}).await().indefinitely();
 
-	}
-
-	private Uni<Void> handleRequest(CSourceRequest request) {
-		return cSourceInfoDAO.storeRegistryEntry(request).onItem().transformToUni(t -> {
-			request.setSendTimestamp(System.currentTimeMillis());
-			return kafkaSenderInterface.send(request);
-		});
-	}
-
-	@Override
-	public Uni<Void> sendFail(BatchInfo batchInfo) {
-		return Uni.createFrom().voidItem();
 	}
 
 }

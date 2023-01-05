@@ -70,8 +70,7 @@ public class QueryController {
 			@QueryParam(value = "options") Set<String> options, @QueryParam(value = "lang") String lang,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId) {
-		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-		int acceptHeader = HttpUtils.parseAcceptHeader(headers.get("Accept"));
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.INVALID_HEADER;
 		}
