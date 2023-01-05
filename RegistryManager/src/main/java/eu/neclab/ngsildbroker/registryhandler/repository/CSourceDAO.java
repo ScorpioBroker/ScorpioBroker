@@ -4,20 +4,28 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.StorageFunctionsInterface;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
 import eu.neclab.ngsildbroker.registryhandler.service.RegistryStorageFunctions;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.pgclient.PgException;
 
 @Singleton
 public class CSourceDAO extends StorageDAO {
+	
+	@Inject
+	ClientManager clientManager;
 
 	protected final static String DBCOLUMN_CSOURCE_INFO_ENTITY_ID = "entity_id";
 	protected final static String DBCOLUMN_CSOURCE_INFO_ENTITY_IDPATTERN = "entity_idpattern";
@@ -65,5 +73,24 @@ public class CSourceDAO extends StorageDAO {
 		});
 
 	}
+	public Uni<Void> createRegistry(CSourceRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			JsonObject value = new JsonObject(request.getPayload());
+			String sql;
 
+			sql = "INSERT INTO " + DBConstants.DBTABLE_CSOURCE + " (id, " + DBConstants.DBCOLUMN_DATA
+					+ ") VALUES ($1, $2::jsonb)";
+
+			return client.preparedQuery(sql).execute(Tuple.of(request.getId(), value)).onFailure().recoverWithUni(e -> {
+				if (e instanceof PgException) {
+					PgException pgE = (PgException) e;
+					if (pgE.getCode().equals("23505")) { // code for unique constraint
+						return Uni.createFrom().failure(
+								new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists"));
+					}
+				}
+				return Uni.createFrom().failure(e);
+			}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
+		});
+	}
 }

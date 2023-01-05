@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
+import java.util.Map;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -11,6 +13,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 
@@ -25,6 +28,7 @@ import eu.neclab.ngsildbroker.commons.controllers.QueryControllerFunctions;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -62,8 +66,19 @@ public class RegistryController {
 
 	@POST
 	public Uni<RestResponse<Object>> registerCSource(HttpServerRequest request, String payload) {
-		return EntryControllerFunctions.createEntry(csourceService, request, payload,
-				AppConstants.CSOURCE_REG_CREATE_PAYLOAD, AppConstants.CSOURCE_URL, logger);
+		Tuple2<Context, Map<String, Object>> tuple;
+		try {
+			tuple = HttpUtils.expandBody(request, payload, AppConstants.CSOURCE_REG_CREATE_PAYLOAD);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return csourceService.createEntry(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1()).onItem()
+				.transform(opResult -> {
+					return HttpUtils.generateCreateResult(opResult, AppConstants.CSOURCE_URL);
+				}).onFailure().recoverWithItem(error -> {
+					return HttpUtils.handleControllerExceptions(error);
+				});
+	
 	}
 
 	@Path("/{registrationId}")

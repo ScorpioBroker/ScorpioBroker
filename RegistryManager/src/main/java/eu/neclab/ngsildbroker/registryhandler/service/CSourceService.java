@@ -17,14 +17,15 @@ import javax.el.MethodNotFoundException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 
+import org.checkerframework.checker.units.qual.t;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -58,7 +60,6 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.mutiny.vertx.UniHelper;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
-import io.vertx.core.buffer.Buffer;
 
 @Singleton
 public class CSourceService extends BaseQueryService implements EntryCRUDService {
@@ -515,7 +516,7 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	}
 
 	private Uni<Void> handleRequest(CSourceRequest request) {
-		return cSourceInfoDAO.storeRegistryEntry(request).onItem().transformToUni(t -> {
+		return cSourceInfoDAO.createRegistry(request).onItem().transformToUni(t -> {
 			request.setSendTimestamp(System.currentTimeMillis());
 			return kafkaSenderInterface.send(request);
 		});
@@ -525,5 +526,22 @@ public class CSourceService extends BaseQueryService implements EntryCRUDService
 	public Uni<Void> sendFail(BatchInfo batchInfo) {
 		return Uni.createFrom().voidItem();
 	}
+	
+	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
+			Context originalContext) {
+		logger.debug("createMessage() :: started");
+		CSourceRequest request = new CSourceRequest(tenant, ((String) resolved.get(NGSIConstants.JSON_LD_ID)), resolved,
+				null, AppConstants.CREATE_REQUEST);
 
+		request.setSendTimestamp(System.currentTimeMillis());
+		return cSourceInfoDAO.createRegistry(request).onItem().transformToUni(t -> {
+
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
+			List<Uni<Void>> unis = new ArrayList<>();
+			unis.add(kafkaSenderInterface.send(request));
+
+			return Uni.combine().all().unis(unis).combinedWith(t1 -> result);
+		});
+	}
+	
 }
