@@ -93,13 +93,13 @@ public class GeoQueryTerm {
 		dollar++;
 		tupleItems.add(geoproperty);
 		builder.append(" AND ");
-		Tuple2<StringBuilder, Integer> tmp = getGeoSQLQuery(tupleItems, dollar);
+		Tuple2<StringBuilder, Integer> tmp = getGeoSQLQuery(tupleItems, dollar, "geo_value");
 		builder.append(tmp.getItem1());
 
 		return Tuple4.of(startChar, builder.toString(), tmp.getItem2(), tupleItems);
 	}
 
-	private Tuple2<StringBuilder, Integer> getGeoSQLQuery(List<Object> tupleItems, int dollar)
+	public Tuple2<StringBuilder, Integer> getGeoSQLQuery(List<Object> tupleItems, int dollar, String fieldName)
 			throws ResponseException {
 		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
 				+ coordinates + " }'), 4326)";
@@ -110,7 +110,7 @@ public class GeoQueryTerm {
 			if (distanceValue != null && distanceType != null) {
 				if (distanceType.equals(NGSIConstants.GEO_REL_MIN_DISTANCE))
 					result.append("NOT ");
-				result.append(sqlPostgisFunction + "( geo_value::geography, " + referenceValue + "::geography, "
+				result.append(sqlPostgisFunction + "( " + fieldName + "::geography, " + referenceValue + "::geography, "
 						+ distanceValue + ") ");
 			} else {
 				throw new ResponseException(ErrorType.BadRequestData,
@@ -123,7 +123,7 @@ public class GeoQueryTerm {
 		case NGSIConstants.GEO_REL_INTERSECTS:
 		case NGSIConstants.GEO_REL_EQUALS:
 		case NGSIConstants.GEO_REL_DISJOINT:
-			result.append(sqlPostgisFunction + "(geo_value, " + referenceValue + ") ");
+			result.append(sqlPostgisFunction + "(" + fieldName + ", " + referenceValue + ") ");
 			break;
 		default:
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid georel operator: " + georel);

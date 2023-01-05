@@ -119,7 +119,7 @@ public class ScopeQueryTerm {
 			result.append(sqlTable);
 			result.append(" WHERE ");
 			result.append(sqlTable);
-			result.append(".e_scope");
+			result.append(".e_scope ~ ");
 			result.append(getSQLScopeQuery());
 			if (hasNext()) {
 				result.append(" or ");
@@ -206,8 +206,8 @@ public class ScopeQueryTerm {
 		}
 	}
 
-	private String getSQLScopeQuery() {
-		StringBuilder result = new StringBuilder(" ~ '^");
+	public String getSQLScopeQuery() {
+		StringBuilder result = new StringBuilder("'^");
 		for (String entry : scopeLevels) {
 			switch (entry) {
 			case "+":

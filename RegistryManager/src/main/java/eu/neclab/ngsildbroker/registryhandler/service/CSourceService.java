@@ -39,6 +39,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -59,6 +60,8 @@ import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowIterator;
 
 @Singleton
 public class CSourceService {
@@ -198,12 +201,38 @@ public class CSourceService {
 				e -> Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found")));
 	}
 
-	public Uni<List<Map<String, Object>>> queryRegistrations(String tenant, Set<String> id, TypeQueryTerm typeQuery,
-			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, String lang, int limit, int offSet, boolean count, boolean localOnly,
-			Context context) {
-		/// well the spec is not that clear so we make this up as we see fit
-		return null;
+	public Uni<QueryResult> queryRegistrations(String tenant, Set<String> ids, TypeQueryTerm typeQuery,
+			String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, int limit, int offset, boolean count) {
+		return cSourceInfoDAO
+				.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery, limit, offset, count)
+				.onItem().transform(rows -> {
+					QueryResult result = new QueryResult();
+					if (limit == 0 && count) {
+						result.setCount(rows.iterator().next().getLong(0));
+					} else {
+						RowIterator<Row> it = rows.iterator();
+						Row next = null;
+						List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+						while (it.hasNext()) {
+							next = it.next();
+							resultData.add(next.getJsonObject(1).getMap());
+						}
+						Long resultCount = next.getLong(0);
+						result.setCount(resultCount);
+						long leftAfter = resultCount - (offset + limit);
+						if (leftAfter < 0) {
+							leftAfter = 0;
+						}
+						long leftBefore = offset;
+						result.setResultsLeftAfter(leftAfter);
+						result.setResultsLeftBefore(leftBefore);
+						result.setLimit(limit);
+						result.setOffset(offset);
+					}
+					return result;
+				});
+
 	}
 
 	public void handleEntityDelete(BaseRequest message) {
@@ -428,6 +457,11 @@ public class CSourceService {
 					return Uni.createFrom().nullItem();
 				}).await().indefinitely();
 
+	}
+
+	public void handleEntityOperation(BaseRequest message) {
+		
+		
 	}
 
 }

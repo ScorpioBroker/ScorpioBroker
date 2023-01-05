@@ -90,6 +90,9 @@ public class QueryService {
 						Long resultCount = next.getLong(0);
 						result.setCount(resultCount);
 						long leftAfter = resultCount - (offSet + limit);
+						if (leftAfter < 0) {
+							leftAfter = 0;
+						}
 						long leftBefore = offSet;
 						result.setResultsLeftAfter(leftAfter);
 						result.setResultsLeftBefore(leftBefore);
