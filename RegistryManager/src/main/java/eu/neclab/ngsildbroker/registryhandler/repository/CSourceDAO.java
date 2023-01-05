@@ -42,8 +42,10 @@ public class CSourceDAO {
 	}
 
 	public Uni<RowSet<Row>> deleteRegistration(String tenant, String registrationId) {
-		// TODO Auto-generated method stub
-		return null;
+		return clientManager.getClient(tenant, true).onItem().transformToUni(client -> {
+			return client.preparedQuery("DELETE FROM csource WHERE c_id=$1").execute(Tuple.of(registrationId))
+					.onFailure().retry().atMost(3);
+		});
 	}
 
 }

@@ -108,6 +108,39 @@ public class CSourceService {
 		this.webClient = new WebClient(vertx);
 	}
 
+//	@SuppressWarnings("unused")
+//	private void loadStoredEntitiesDetails() throws IOException, ResponseException {
+//		// this.csourceIds = csourceInfoDAO.getAllIds();
+//		if (AUTO_REG_STATUS.equals("active")) {
+//			Map<String, List<String>> tenant2Entity = csourceInfoDAO.getAllEntities();
+//			for (Entry<String, List<String>> entry : tenant2Entity.entrySet()) {
+//				String tenant = entry.getKey();
+//				List<String> entityList = entry.getValue();
+//				if (entityList.isEmpty()) {
+//					continue;
+//				}
+//				for (String entityString : entityList) {
+//					Map<String, Object> entity = (Map<String, Object>) JsonUtils.fromString(entityString);
+//					Map<String, Object> informationEntry = getInformationFromEntity(entity);
+//					String id = (String) entity.get(NGSIConstants.JSON_LD_ID);
+//					tenant2EntityId2InformationEntry.put(tenant, id, informationEntry);
+//					Set<String> ids = tenant2InformationEntry2EntityIds.get(tenant, informationEntry);
+//					if (ids == null) {
+//						ids = new HashSet<String>();
+//					}
+//					ids.add(id);
+//					tenant2InformationEntry2EntityIds.put(tenant, informationEntry, ids);
+//				}
+//				CSourceRequest regEntry = createInternalRegEntry(tenant);
+//				try {
+//					storeInternalEntry(regEntry);
+//				} catch (Exception e) {
+//					logger.error("Failed to create initial internal reg status", e);
+//				}
+//			}
+//		}
+//	}
+
 //TODO handle expiration in the DB this is stupid to do in code
 //	public void csourceTimerTask(ArrayListMultimap<String, String> headers, Map<String, Object> registration) {
 //		Object expiresAt = registration.get(NGSIConstants.NGSI_LD_EXPIRES);
