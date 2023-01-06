@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.google.common.collect.ArrayListMultimap;
 
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import io.smallrye.mutiny.Uni;
 
 public interface SubscriptionCRUDService {

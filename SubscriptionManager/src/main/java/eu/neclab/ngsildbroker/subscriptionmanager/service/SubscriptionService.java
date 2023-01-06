@@ -30,7 +30,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;

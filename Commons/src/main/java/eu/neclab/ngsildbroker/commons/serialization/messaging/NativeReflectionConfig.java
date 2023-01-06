@@ -11,7 +11,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.LDTemporalQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection(targets = { ArrayListMultimap.class, SubscriptionRequest.class, Subscription.class,

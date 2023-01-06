@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.commons.datatypes.requests;
+package eu.neclab.ngsildbroker.commons.datatypes.requests.subscription;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -16,6 +17,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -53,6 +55,10 @@ public class SubscriptionRequest extends BaseRequest implements Serializable {
 		this.context = context2;
 		this.subscription = subscription;
 		this.headers = headers;
+	}
+
+	public SubscriptionRequest(String tenant, Map<String, Object> subscription2, Context context2) {
+		// TODO Auto-generated constructor stub
 	}
 
 	public List<Object> getContext() {

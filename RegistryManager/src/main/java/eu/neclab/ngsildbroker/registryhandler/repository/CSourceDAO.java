@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler.repository;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -10,7 +9,6 @@ import javax.inject.Singleton;
 import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
@@ -23,9 +21,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;

@@ -15,7 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.oldRegistrySubscriptionService;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.smallrye.mutiny.Uni;
 
@@ -33,7 +33,7 @@ public class RegistrySubscriptionSyncService extends BaseSubscriptionSyncManager
 	Emitter<AliveAnnouncement> aliveEmitter;
 
 	@Inject
-	RegistrySubscriptionService subService;
+	oldRegistrySubscriptionService subService;
 
 	@Incoming(AppConstants.REG_SUB_SYNC_RETRIEVE_CHANNEL)
 	Uni<Void> listenForSubs(SyncMessage message) {

@@ -8,8 +8,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseNotificationHandler;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 

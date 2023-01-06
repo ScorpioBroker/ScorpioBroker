@@ -918,4 +918,20 @@ public final class HttpUtils {
 		return null;
 	}
 
+	public static RestResponse<Object> generateSubscriptionResult(NGSILDOperationResult t, Context context) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static RestResponse<Object> generateQueryResult(QueryResult subscriptions, int acceptHeader, Context parse) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static RestResponse<Object> generateSubscriptionResult(Map<String, Object> subscription, int acceptHeader,
+			Context parse) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

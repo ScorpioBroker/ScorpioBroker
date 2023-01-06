@@ -38,12 +38,12 @@ import eu.neclab.ngsildbroker.subscriptionmanager.controller.CustomProfile;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.IntervalNotificationHandler;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.oldRegistrySubscriptionService;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionServiceKafka;
 import groovy.util.logging.Slf4j;
 
@@ -72,7 +72,7 @@ public class RegistrySubscriptionServiceTest {
 
 	@InjectMocks
 	@Spy
-	RegistrySubscriptionService subscriptionService;
+	oldRegistrySubscriptionService subscriptionService;
 
 	@Mock
 	NotificationParam param;

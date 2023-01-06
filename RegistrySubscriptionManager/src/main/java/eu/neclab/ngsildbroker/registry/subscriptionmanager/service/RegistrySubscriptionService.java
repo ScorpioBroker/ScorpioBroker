@@ -1,202 +1,101 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Duration;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.eclipse.microprofile.reactive.messaging.Channel;
+import com.github.jsonldjava.core.Context;
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.InternalNotification;
-import eu.neclab.ngsildbroker.commons.datatypes.Notification;
-import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.interfaces.NotificationHandler;
-import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
-import eu.neclab.ngsildbroker.commons.subscriptionbase.SubscriptionInfoDAOInterface;
-import eu.neclab.ngsildbroker.commons.tools.EntityTools;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.RegistrySubscriptionSyncService;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
-import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowIterator;
 
 @Singleton
-@IfBuildProfile("in-memory")
-public class RegistrySubscriptionService extends BaseSubscriptionService {
+public class RegistrySubscriptionService {
 
 	@Inject
-	RegistrySubscriptionInfoDAO subService;
+	RegistrySubscriptionInfoDAO regDAO;
 
-	@Inject
-	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
-	@Broadcast
-	MutinyEmitter<InternalNotification> internalNotificationSender;
-
-
-	private NotificationHandler internalHandler;
-
-	private HashMap<String, SubscriptionRequest> id2InternalSubscriptions = new HashMap<String, SubscriptionRequest>();
-
-	@PostConstruct
-	void notificationHandlerSetup() {
-		this.internalHandler = new InternalNotificationHandler(internalNotificationSender);
-	}
-
-	@Override
-	protected SubscriptionInfoDAOInterface getSubscriptionInfoDao() {
-		return subService;
-	}
-
-	@Override
-	protected Set<String> getTypesFromEntry(BaseRequest createRequest) {
-		return EntityTools.getRegisteredTypes(createRequest.getFinalPayload());
-	}
-
-	@Override
-	protected Notification getNotification(SubscriptionRequest request, List<Map<String, Object>> dataList,
-			int triggerReason) {
-		return new Notification(EntityTools.getRandomID("notification:"), NGSIConstants.CSOURCE_NOTIFICATION,
-				System.currentTimeMillis(), request.getSubscription().getId(), dataList, triggerReason,
-				request.getContext(), request.getHeaders());
-	}
-
-	@Override
-	protected boolean sendInitialNotification() {
-		return true;
-	}
-
-	@Override
-	protected NotificationHandler getNotificationHandler(String endpointProtocol) {
-		if (endpointProtocol.equals("internal")) {
-			return internalHandler;
-		}
-		return super.getNotificationHandler(endpointProtocol);
-	}
-
-	public Uni<Void> subscribeInternal(SubscriptionRequest request) {
-		makeSubscriptionInternal(request);
-		return subscribe(request).onItem().ignore().andContinueWithNull().onFailure().call(e -> {
-			logger.debug("Failed to subscribe internally", e);
-			return null;
+	public Uni<NGSILDOperationResult> createSubscription(String tenant, Map<String, Object> subscription,
+			Context context) {
+		SubscriptionRequest request = new SubscriptionRequest(tenant, subscription, context);
+		return regDAO.createSubscription(request).onItem().transform(t -> {
+			return new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+		}).onFailure().recoverWithUni(e -> {
+			// TODO sql check
+			return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+					"Subscription with id " + request.getId() + " exists"));
 		});
 	}
 
-	public Uni<Void> unsubscribeInternal(String subId) {
-		SubscriptionRequest request = id2InternalSubscriptions.remove(subId);
-		if (request != null) {
-			return unsubscribe(subId, request.getHeaders());
-		}
-		return Uni.createFrom().nullItem();
-	}
-
-	@PreDestroy
-	public void deconstructor() {
-		destroy();
-		for (Entry<String, SubscriptionRequest> entry : id2InternalSubscriptions.entrySet()) {
-			unsubscribe(entry.getKey(), entry.getValue().getHeaders()).await().atMost(Duration.ofMillis(500));
-		}
-
-	}
-
-	public Uni<Void> updateInternal(SubscriptionRequest request) {
-		makeSubscriptionInternal(request);
-		return updateSubscription(request).onItem().ignore().andContinueWithNull().onFailure().call(e -> {
-			logger.debug("Failed to subscribe internally", e);
-			return null;
+	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
+			Map<String, Object> update, Context context) {
+		UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(tenant, subscriptionId, update, context);
+		return regDAO.updateSubscription(request).onItem().transformToUni(t -> {
+			if (t.rowCount() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
+			}
+			return Uni.createFrom()
+					.item(new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, subscriptionId));
 		});
 	}
 
-	private void makeSubscriptionInternal(SubscriptionRequest request) {
-		Subscription sub = request.getSubscription();
-		try {
-			if (sub.getNotification() != null) {
-				sub.getNotification().getEndPoint().setUri(new URI("internal://kafka"));
+	public Uni<NGSILDOperationResult> deleteSubscription(String tenant, String subscriptionId) {
+		DeleteSubscriptionRequest request = new DeleteSubscriptionRequest(tenant, subscriptionId);
+		return regDAO.deleteSubscription(request).onItem().transform(t -> {
+			return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, subscriptionId);
+		});
+	}
+
+	public Uni<QueryResult> getAllSubscriptions(String tenant, int limit, int offset) {
+		return regDAO.getAllSubscriptions(tenant, limit, offset).onItem().transform(rows -> {
+			QueryResult result = new QueryResult();
+			Row next = null;
+			RowIterator<Row> it = rows.iterator();
+			List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+			while (it.hasNext()) {
+				next = it.next();
+				resultData.add(next.getJsonObject(1).getMap());
 			}
-		} catch (URISyntaxException e) {
-			logger.debug("Failed to set internal sub endpoint", e);
-		}
-		sub.setTimeInterval(0);
-		id2InternalSubscriptions.put(sub.getId(), request);
-	}
-
-	@Override
-	protected String generateUniqueSubId(Subscription subscription) {
-		return "urn:ngsi-ld:Registry:Subscription:" + subscription.hashCode();
-	}
-
-	@Override
-	protected boolean sendDeleteNotification() {
-		return true;
-	}
-
-	@Override
-	protected boolean evaluateQ() {
-		return false;
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	protected boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {
-		List<String> attribs = subscription.getSubscription().getAttributeNames();
-		if (attribs == null || attribs.isEmpty()) {
-			return true;
-		}
-		List<Map<String, Object>> information = (List<Map<String, Object>>) entry
-				.get(NGSIConstants.NGSI_LD_INFORMATION);
-		for (Map<String, Object> informationEntry : information) {
-			Object propertyNames = informationEntry.get(NGSIConstants.NGSI_LD_PROPERTIES);
-			Object relationshipNames = informationEntry.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
-			if (relationshipNames == null && relationshipNames == null) {
-				return true;
+			result.setData(resultData);
+			if (next == null) {
+				return result;
 			}
-			if (relationshipNames != null) {
-				List<Map<String, String>> list = (List<Map<String, String>>) relationshipNames;
-				for (Map<String, String> relationshipEntry : list) {
-					if (attribs.contains(relationshipEntry.get(NGSIConstants.JSON_LD_ID))) {
-						return true;
-					}
-				}
+			Long resultCount = next.getLong(0);
+			result.setCount(resultCount);
+			long leftAfter = resultCount - (offset + limit);
+			if (leftAfter < 0) {
+				leftAfter = 0;
 			}
-			if (propertyNames != null) {
-				List<Map<String, String>> list = (List<Map<String, String>>) propertyNames;
-				for (Map<String, String> propertyEntry : list) {
-					if (attribs.contains(propertyEntry.get(NGSIConstants.JSON_LD_ID))) {
-						return true;
-					}
-				}
+			long leftBefore = offset;
+			result.setResultsLeftAfter(leftAfter);
+			result.setResultsLeftBefore(leftBefore);
+			result.setLimit(limit);
+			result.setOffset(offset);
+			return result;
+		});
+	}
+
+	public Uni<Map<String, Object>> getSubscription(String tenant, String subscriptionId) {
+		return regDAO.getSubscription(tenant, subscriptionId).onItem().transformToUni(rows -> {
+			if (rows.size() == 0) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
-		}
-		return false;
-	}
-
-	@Override
-	protected boolean evaluateCSF() {
-		return true;
-	}
-
-	@Override
-	protected void setSyncId() {
-		this.syncIdentifier = RegistrySubscriptionSyncService.SYNC_ID;
-	}
-
-	@Override
-	protected MutinyEmitter<SyncMessage> getSyncChannelSender() {
-		return null;
+			return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+		});
 	}
 
 }

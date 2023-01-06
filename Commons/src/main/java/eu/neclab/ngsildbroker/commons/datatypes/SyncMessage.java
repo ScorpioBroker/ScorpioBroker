@@ -2,7 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.Serializable;
 
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 
 public class SyncMessage implements Serializable {
 

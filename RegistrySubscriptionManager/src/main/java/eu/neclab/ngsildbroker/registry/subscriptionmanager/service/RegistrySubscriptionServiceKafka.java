@@ -12,7 +12,7 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
 @UnlessBuildProfile("in-memory")
-public class RegistrySubscriptionServiceKafka extends RegistrySubscriptionService {
+public class RegistrySubscriptionServiceKafka extends oldRegistrySubscriptionService {
 
 	@Inject
 	@Channel(AppConstants.REG_SUB_SYNC_CHANNEL)

@@ -103,11 +103,15 @@ public class AppConstants {
 	public static final int DELETE_TEMPORAL_REQUEST = 8;
 	public static final int DELETE_TEMPORAL_ATTRIBUTE_REQUEST = 9;
 	public static final int DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST = 10;
-	
+
 	public static final int OPERATION_CREATE_REGISTRATION = 11;
 	public static final int OPERATION_UPDATE_REGISTRATION = 12;
 	public static final int OPERATION_DELETE_REGISTRATION = 13;
-	
+
+	public static final int DELETE_SUBSCRIPTION_REQUEST = 14;
+	public static final int UPDATE_SUBSCRIPTION_REQUEST = 15;
+	public static final int CREATE_SUBSCRIPTION_REQUEST = 16;
+
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	public static final String INTERNAL_TYPE_REGISTRATION_ID = "scorpio:hosted:types";
 	public static final String INTERNAL_ATTRS_REGISTRATION_ID = "scorpio:hosted:attrs";
@@ -135,7 +139,7 @@ public class AppConstants {
 	public static final String SQL_ALREADY_EXISTS = "DONTKNOWLOOKUP";
 	public static final String SQL_NOT_FOUND = "02000";
 	public static final String NGB_APPLICATION_ZIP = "application/zip";
-	
+
 	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 }

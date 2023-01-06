@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +23,7 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -262,7 +264,7 @@ public class CSourceService {
 //						.combinedWith(l -> Uni.createFrom().voidItem());
 //			});
 //		});
-		
+
 		return null;
 	}
 

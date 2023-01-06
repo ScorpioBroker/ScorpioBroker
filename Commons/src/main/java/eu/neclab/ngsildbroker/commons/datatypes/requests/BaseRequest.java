@@ -27,7 +27,7 @@ public class BaseRequest {
 
 	}
 
-	BaseRequest(String tenant, String id, Map<String, Object> requestPayload, BatchInfo batchInfo, int requestType) {
+	protected BaseRequest(String tenant, String id, Map<String, Object> requestPayload, BatchInfo batchInfo, int requestType) {
 		super();
 		this.tenant = tenant;
 		this.requestType = requestType;
