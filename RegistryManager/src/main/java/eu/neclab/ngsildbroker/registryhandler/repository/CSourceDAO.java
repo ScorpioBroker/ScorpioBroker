@@ -9,6 +9,8 @@ import javax.inject.Singleton;
 
 import com.google.common.collect.Lists;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
@@ -21,7 +23,9 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -34,8 +38,22 @@ public class CSourceDAO {
 
 	public Uni<RowSet<Row>> getRegistrationById(String tenant, String id) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT reg FROM csource WHERE id = $1").execute(Tuple.of(id)).onFailure()
-					.retry().atMost(3);
+			switch (id) {
+
+//			case AppConstants.INTERNAL_TYPE_REGISTRATION_ID:
+//				break;
+//			case AppConstants.INTERNAL_ATTRS_REGISTRATION_ID:
+//				break;
+//			case AppConstants.INTERNAL_TYPE_ATTRS_REGISTRATION_ID:
+//				break;
+//			case AppConstants.INTERNAL_ID_REGISTRATION_ID:
+//				break;
+//			case AppConstants.INTERNAL_FULL_REGISTRATION_ID:
+//				break;
+			default:
+				return client.preparedQuery("SELECT reg FROM csource WHERE id = $1").execute(Tuple.of(id)).onFailure()
+						.retry().atMost(3);
+			}
 
 		});
 
@@ -144,9 +162,31 @@ public class CSourceDAO {
 				// }
 				// dollar++;
 			}
+
 			return client.preparedQuery(sql).execute(Tuple.from(tupleItems)).onFailure().retry().atMost(3);
 		});
 
+	}
+
+	public Uni<List<Tuple2<RemoteHost, Map<String, Object>>>> getLocalRegistrationId(List<Tuple3<String, String, String>> tenant2RegType2TargetTenant, String defaultRegType) {
+		if(tenant2RegType2TargetTenant == null) {
+			clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
+				return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem().transformToUni(rows -> {
+					List<Uni<Tuple2<RemoteHost, Map<String, Object>>>> unis = Lists.newArrayList();
+					rows.forEach(row -> {
+						unis.add(getRegistrationById(row.getString(0), defaultRegType).onItem().transform(null)
+								)
+					});
+					return Uni.combine().all().unis(unis).combinedWith(list -> null);
+				});
+			});
+			for(String tenant: clientManager.getAllClients().keySet()) {
+				
+			}
+		}
+		clientManager.getClient(null, false).onItem().transform(clie)
+		
+		return null;
 	}
 
 }
