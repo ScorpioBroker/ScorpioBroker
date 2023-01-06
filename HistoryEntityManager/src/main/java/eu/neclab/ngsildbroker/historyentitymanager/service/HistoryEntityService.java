@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import javax.annotation.PostConstruct;
@@ -32,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttrHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttrInstanceHistoryEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateAttrHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
@@ -95,7 +95,6 @@ public class HistoryEntityService {
 						"No result from the database this should never happen"));
 			}
 			return handleDBCreateResult(request, resultTable, originalContext);
-
 		});
 	}
 
@@ -162,8 +161,38 @@ public class HistoryEntityService {
 		});
 	}
 
-	public void handleInternalRequest(BaseRequest request) {
-
+	public Uni<Void> handleInternalRequest(BaseRequest request) {
+		switch (request.getRequestType()) {
+		case AppConstants.CREATE_REQUEST:
+			return historyDAO.createHistoryEntity(new CreateHistoryEntityRequest(request)).onItem()
+					.transformToUni(resultTable -> {
+						return Uni.createFrom().voidItem();
+					}).onFailure().recoverWithUni(e -> {
+						logger.debug("Failed to record delete", e);
+						return Uni.createFrom().voidItem();
+					});
+		case AppConstants.APPEND_REQUEST:
+		case AppConstants.UPDATE_REQUEST:
+			return historyDAO.appendToHistoryEntity(new AppendHistoryEntityRequest(request)).onItem()
+					.transformToUni(resultTable -> {
+						return Uni.createFrom().voidItem();
+					}).onFailure().recoverWithUni(e -> {
+						logger.debug("Failed to record delete", e);
+						return Uni.createFrom().voidItem();
+					});
+		case AppConstants.DELETE_REQUEST:
+			return historyDAO.setEntityDeleted(request).onFailure().recoverWithUni(e -> {
+				logger.debug("Failed to record delete", e);
+				return Uni.createFrom().voidItem();
+			});
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+			return historyDAO.setAttributeDeleted((DeleteAttributeRequest) request).onFailure().recoverWithUni(e -> {
+				logger.debug("Failed to record delete", e);
+				return Uni.createFrom().voidItem();
+			});
+		default:
+			return Uni.createFrom().voidItem();
+		}
 	}
 
 	private Uni<NGSILDOperationResult> handleDBCreateResult(CreateHistoryEntityRequest request, RowSet<Row> resultTable,

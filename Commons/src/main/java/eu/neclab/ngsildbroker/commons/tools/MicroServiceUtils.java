@@ -18,9 +18,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
@@ -56,13 +58,22 @@ public class MicroServiceUtils {
 	}
 
 	public static BaseRequest deepCopyRequestMessage(BaseRequest originalPayload) {
-		BaseRequest result = new BaseRequest();
+		BaseRequest result;
+		switch (originalPayload.getRequestType()) {
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+			result = new DeleteAttributeRequest();
+			((DeleteAttributeRequest) result).setAttribName(((DeleteAttributeRequest) originalPayload).getAttribName());
+			((DeleteAttributeRequest) result).setDatasetId(((DeleteAttributeRequest) originalPayload).getDatasetId());
+			((DeleteAttributeRequest) result).setDeleteAll(((DeleteAttributeRequest) originalPayload).isDeleteAll());
+			break;
+		default:
+			result = new BaseRequest();
+
+		}
+
 		result.setId(originalPayload.getId());
 		result.setPayload(deepCopyMap(originalPayload.getPayload()));
-		result.setPayload(deepCopyMap(originalPayload.getPayload()));
-
 		result.setTenant(originalPayload.getTenant());
-
 		result.setRequestType(originalPayload.getRequestType());
 		result.setBatchInfo(originalPayload.getBatchInfo());
 		return result;

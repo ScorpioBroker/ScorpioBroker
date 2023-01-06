@@ -33,4 +33,20 @@ public class DeleteAttributeRequest extends EntityRequest {
 		return deleteAll;
 	}
 
+	public boolean isDeleteAll() {
+		return deleteAll;
+	}
+
+	public void setDeleteAll(boolean deleteAll) {
+		this.deleteAll = deleteAll;
+	}
+
+	public void setAttribName(String attribName) {
+		this.attribName = attribName;
+	}
+
+	public void setDatasetId(String datasetId) {
+		this.datasetId = datasetId;
+	}
+
 }
