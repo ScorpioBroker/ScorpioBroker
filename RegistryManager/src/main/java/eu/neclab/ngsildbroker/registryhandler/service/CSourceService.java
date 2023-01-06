@@ -112,8 +112,6 @@ public class CSourceService {
 		}
 	}
 
-
-
 	public Uni<NGSILDOperationResult> createRegistration(String tenant, Map<String, Object> registration) {
 		CreateCSourceRequest request = new CreateCSourceRequest(tenant, registration);
 		return cSourceInfoDAO.createRegistration(request).onItem().transformToUni(rowset -> {
@@ -218,8 +216,54 @@ public class CSourceService {
 	@IfBuildProperty(name = "scorpio.fedupdate", stringValue = "active", enableIfMissing = false)
 	@Scheduled(every = "{scorpio.fedupdaterate}")
 	Uni<Void> checkInternalAndSendUpdateIfNeeded() {
-		//cSourceInfoDAO.getLocalRegistrationId(AUTO_REG_MODE);
-		return Uni.createFrom().voidItem();
+//		return cSourceInfoDAO.getAllTenants().onItem().transformToUni(tenants -> {
+//			List<Uni<Map<String, Object>>> unis = Lists.newArrayList();
+//			tenants.forEach(tenant -> {
+//				unis.add(retrieveRegistration(tenant, AUTO_REG_MODE));
+//			});
+//			return Uni.combine().all().unis(unis).combinedWith(list -> {
+//				List<Uni<Void>> unisForCall = Lists.newArrayList();
+//				for (String fedBroker : FED_BROKERS) {
+//					String finalFedBroker;
+//					if (!fedBroker.endsWith("/")) {
+//						finalFedBroker = fedBroker + "/";
+//					} else {
+//						finalFedBroker = fedBroker;
+//					}
+//					list.forEach(obj -> {
+//						HashMap<String, Object> copyToSend = (HashMap<String, Object>) obj;
+//						String csourceId = microServiceUtils.getGatewayURL().toString();
+//						copyToSend.put(NGSIConstants.JSON_LD_ID, csourceId);
+//						String body = JsonUtils
+//								.toPrettyString(JsonLdProcessor.compact(copyToSend, null, HttpUtils.opts));
+//						unisForCall.add(webClient.patchAbs(finalFedBroker + "csourceRegistrations/" + csourceId)
+//								.putHeader("Content-Type", "application/json").sendBuffer(Buffer.buffer(body))
+//								.onItem().transformToUni(i -> {
+//									if (i.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
+//										return webClient.postAbs(finalFedBroker + "csourceRegistrations/")
+//												.putHeader("Content-Type", "application/json")
+//												.sendBuffer(Buffer.buffer(body)).onItem().transformToUni(r -> {
+//													if (r.statusCode() >= 200 && r.statusCode() < 300) {
+//														return Uni.createFrom().nullItem();
+//													}
+//													return Uni.createFrom().failure(new ResponseException(
+//															ErrorType.InternalError, r.bodyAsString()));
+//												});
+//									}
+//									return Uni.createFrom().voidItem();
+//								}).onFailure().retry().atMost(5).onFailure().recoverWithUni(e -> {
+//									logger.error("Failed to register with fed broker", e);
+//									return Uni.createFrom().voidItem();
+//								}));	
+//					});
+//					
+//				}
+//				return Uni.combine().all().unis(unis).collectFailures()
+//						.combinedWith(l -> Uni.createFrom().voidItem());
+//			});
+//		});
+		
+		return null;
 	}
 
 }
