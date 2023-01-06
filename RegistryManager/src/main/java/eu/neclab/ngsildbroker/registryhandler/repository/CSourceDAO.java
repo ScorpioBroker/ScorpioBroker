@@ -169,22 +169,22 @@ public class CSourceDAO {
 	}
 
 	public Uni<List<Tuple2<RemoteHost, Map<String, Object>>>> getLocalRegistrationId(List<Tuple3<String, String, String>> tenant2RegType2TargetTenant, String defaultRegType) {
-		if(tenant2RegType2TargetTenant == null) {
-			clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-				return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem().transformToUni(rows -> {
-					List<Uni<Tuple2<RemoteHost, Map<String, Object>>>> unis = Lists.newArrayList();
-					rows.forEach(row -> {
-						unis.add(getRegistrationById(row.getString(0), defaultRegType).onItem().transform(null)
-								)
-					});
-					return Uni.combine().all().unis(unis).combinedWith(list -> null);
-				});
-			});
-			for(String tenant: clientManager.getAllClients().keySet()) {
-				
-			}
-		}
-		clientManager.getClient(null, false).onItem().transform(clie)
+//		if(tenant2RegType2TargetTenant == null) {
+//			clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
+//				return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem().transformToUni(rows -> {
+//					List<Uni<Tuple2<RemoteHost, Map<String, Object>>>> unis = Lists.newArrayList();
+//					rows.forEach(row -> {
+//						unis.add(getRegistrationById(row.getString(0), defaultRegType).onItem().transform(null)
+//								)
+//					});
+//					return Uni.combine().all().unis(unis).combinedWith(list -> null);
+//				});
+//			});
+//			for(String tenant: clientManager.getAllClients().keySet()) {
+//				
+//			}
+//		}
+//		clientManager.getClient(null, false).onItem().transform(clie)
 		
 		return null;
 	}
