@@ -6,9 +6,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -42,6 +44,7 @@ public class QQueryTerm {
 	private String attribute = null;
 	private String operator = null;
 	private String operant = null;
+	private Set<String> allAttribs = Sets.newHashSet();
 
 	public QQueryTerm(Context context) {
 		this.linkHeaders = context;
@@ -798,6 +801,15 @@ public class QQueryTerm {
 	public QQueryTerm getDuplicateAndRemoveNotKnownAttrs(String[] attrs) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public Set<String> getAllAttibs() {
+		return allAttribs;
+
+	}
+
+	public void addAttrib(String attrib) {
+		allAttribs.add(linkHeaders.expandIri(attrib, false, true, null, null));
 	}
 
 }

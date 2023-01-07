@@ -934,4 +934,9 @@ public final class HttpUtils {
 		return null;
 	}
 
+	public static String getTriggerReason(int triggerReason) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

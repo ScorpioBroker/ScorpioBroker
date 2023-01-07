@@ -136,15 +136,13 @@ public class MicroServiceUtils {
 	}
 
 	public static SubscriptionRequest deepCopySubscriptionMessage(SubscriptionRequest originalPayload) {
-		SubscriptionRequest tmp = new SubscriptionRequest();
-		tmp.setActive(originalPayload.isActive());
-		tmp.setContext(deppCopyList(originalPayload.getContext()));
-		tmp.setPayload(deepCopyMap(originalPayload.getPayload()));
-		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
-		tmp.setId(originalPayload.getId());
-		tmp.setType(originalPayload.getRequestType());
-		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
-		return tmp;
+		SubscriptionRequest result = new SubscriptionRequest();
+		result.setId(originalPayload.getId());
+		result.setPayload(deepCopyMap(originalPayload.getPayload()));
+		result.setTenant(originalPayload.getTenant());
+		result.setRequestType(originalPayload.getRequestType());
+		result.setBatchInfo(originalPayload.getBatchInfo());
+		return result;
 	}
 
 	public static HeadersMultiMap getHeaders(ArrayListMultimap<String, String> receiverInfo) {
@@ -155,17 +153,17 @@ public class MicroServiceUtils {
 		return result;
 	}
 
-	public static SyncMessage deepCopySyncMessage(SyncMessage originalSync) {
-		SubscriptionRequest tmp = new SubscriptionRequest();
-		SubscriptionRequest originalPayload = originalSync.getRequest();
-		tmp.setActive(originalPayload.isActive());
-		tmp.setContext(deppCopyList(originalPayload.getContext()));
-		tmp.setPayload(deepCopyMap(originalPayload.getPayload()));
-		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
-		tmp.setId(originalPayload.getId());
-		tmp.setType(originalPayload.getRequestType());
-		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
-		return new SyncMessage(originalSync.getSyncId(), tmp);
-	}
+//	public static SyncMessage deepCopySyncMessage(SyncMessage originalSync) {
+//		SubscriptionRequest tmp = new SubscriptionRequest();
+//		SubscriptionRequest originalPayload = originalSync.getRequest();
+//		tmp.setActive(originalPayload.isActive());
+//		tmp.setContext(deppCopyList(originalPayload.getContext()));
+//		tmp.setPayload(deepCopyMap(originalPayload.getPayload()));
+//		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+//		tmp.setId(originalPayload.getId());
+//		tmp.setType(originalPayload.getRequestType());
+//		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
+//		return new SyncMessage(originalSync.getSyncId(), tmp);
+//	}
 
 }

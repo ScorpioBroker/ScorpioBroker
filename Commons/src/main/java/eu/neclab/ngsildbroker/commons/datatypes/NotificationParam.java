@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.enums.Format;
 
@@ -19,7 +22,7 @@ public class NotificationParam implements Serializable {
 	 *
 	 */
 	private static final long serialVersionUID = -5749495213091903926L;
-	private List<String> attributeNames;
+	private Set<String> attributeNames;
 	private EndPoint endPoint;
 	private Format format;
 	private int timesSent = 0;
@@ -30,7 +33,7 @@ public class NotificationParam implements Serializable {
 	// duplicate
 	public NotificationParam(NotificationParam notification) {
 		if (notification.attributeNames != null) {
-			this.attributeNames = new ArrayList<String>(notification.attributeNames);
+			this.attributeNames = Sets.newHashSet(notification.attributeNames);
 		}
 		this.endPoint = new EndPoint(notification.endPoint);
 		this.format = notification.format;
@@ -51,7 +54,7 @@ public class NotificationParam implements Serializable {
 
 	public NotificationParam update(NotificationParam notification) {
 		if (notification.attributeNames != null) {
-			this.attributeNames = new ArrayList<String>(notification.attributeNames);
+			this.attributeNames = Sets.newHashSet(notification.attributeNames);
 		}
 		if (notification.endPoint != null) {
 			this.endPoint.update(notification.endPoint);
@@ -111,11 +114,11 @@ public class NotificationParam implements Serializable {
 
 	}
 
-	public List<String> getAttributeNames() {
+	public Set<String> getAttributeNames() {
 		return attributeNames;
 	}
 
-	public void setAttributeNames(List<String> attributeNames) {
+	public void setAttributeNames(Set<String> attributeNames) {
 		this.attributeNames = attributeNames;
 	}
 

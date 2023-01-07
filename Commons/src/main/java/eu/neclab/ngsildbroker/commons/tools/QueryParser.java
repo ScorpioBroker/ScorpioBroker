@@ -140,6 +140,7 @@ public class QueryParser {
 				readingAttrib = false;
 				if (!attribName.equals("")) {
 					current.setAttribute(attribName);
+					root.addAttrib(attribName);
 					attribName = "";
 				}
 			} else {

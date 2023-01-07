@@ -332,4 +332,8 @@ public interface NGSIConstants {
 	public static final String AGGR_METH_SUMSQ = "sumsq";
 	public static final Set<String> ALLOWED_AGGR_METH = Sets.newHashSet(AGGR_METH_TOTAL_COUNT, AGGR_METH_DISTINCT_COUNT,
 			AGGR_METH_SUM, AGGR_METH_AVG, AGGR_METH_MIN, AGGR_METH_MAX, AGGR_METH_STDDEV, AGGR_METH_SUMSQ);
+	public static final String NGSI_LD_SUBSCRIPTION_ID_SHORT = "subscriptionId";
+	public static final String NGSI_LD_NOTIFIED_AT_SHORT = "notifiedAt";
+	public static final String NGSI_LD_DATA_SHORT = "data";
+	public static final String NGSI_LD_TRIGGER_REASON_SHORT = "triggerReason";
 }

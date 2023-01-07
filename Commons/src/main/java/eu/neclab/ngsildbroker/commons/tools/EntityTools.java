@@ -66,7 +66,7 @@ public abstract class EntityTools {
 	}
 
 	public static Map<String, Object> clearBaseProps(Map<String, Object> fullEntry, SubscriptionRequest subscription) {
-		List<String> notificationAttrs = subscription.getSubscription().getNotification().getAttributeNames();
+		Set<String> notificationAttrs = subscription.getSubscription().getNotification().getAttributeNames();
 		if (notificationAttrs == null || notificationAttrs.isEmpty()) {
 			return fullEntry;
 		}

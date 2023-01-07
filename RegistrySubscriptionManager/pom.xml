@@ -101,5 +101,13 @@
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>commons</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-scheduler</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-quartz</artifactId>
+		</dependency>
 	</dependencies>
 </project>
