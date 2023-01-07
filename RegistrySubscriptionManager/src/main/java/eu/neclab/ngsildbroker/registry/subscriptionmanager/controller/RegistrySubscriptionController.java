@@ -22,12 +22,10 @@ import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.controllers.SubscriptionControllerFunctions;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.oldRegistrySubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.http.HttpServerRequest;
@@ -123,7 +121,16 @@ public class RegistrySubscriptionController {
 	@PATCH
 	public Uni<RestResponse<Object>> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
 			String payload) {
-		return SubscriptionControllerFunctions.updateSubscription(manager, request, id, payload, logger);
+		Tuple2<Context, Map<String, Object>> tuple;
+		try {
+			tuple = HttpUtils.expandBody(request, payload, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return subService.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1()).onItem()
+				.transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1())).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+		
 	}
 
 }

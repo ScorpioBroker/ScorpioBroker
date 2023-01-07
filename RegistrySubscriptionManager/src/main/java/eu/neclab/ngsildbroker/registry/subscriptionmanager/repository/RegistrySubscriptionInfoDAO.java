@@ -20,6 +20,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -31,12 +32,21 @@ public class RegistrySubscriptionInfoDAO {
 	ClientManager clientManager;
 
 	public Uni<RowSet<Row>> createSubscription(SubscriptionRequest request) {
-
-		return null;
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"INSERT INTO registry_subscriptions(subscription_id, subscription, context) VALUES ($1, $2, $3)")
+					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()),
+							new JsonObject(request.getContext().serialize())));
+		});
 	}
 
 	public Uni<RowSet<Row>> updateSubscription(UpdateSubscriptionRequest request) {
-		return null;
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"UPDATE registry_subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscription, context")
+					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()),
+							new JsonObject(request.getContext().serialize())));
+		});
 	}
 
 	public Uni<RowSet<Row>> deleteSubscription(DeleteSubscriptionRequest request) {
@@ -68,6 +78,13 @@ public class RegistrySubscriptionInfoDAO {
 
 		System.out.println(JsonUtils.toPrettyString(context.serialize()));
 		System.out.println(JsonUtils.toPrettyString(test.serialize()));
+	}
+
+	public Uni<RowSet<Row>> getRegById(String tenant, String id) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("SELECT reg FROM csource WHERE id = $1").execute(Tuple.of(id)).onFailure()
+					.retry().atMost(3);
+		});
 	}
 
 }
